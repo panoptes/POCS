@@ -13,7 +13,6 @@ from pocs import hardware
 from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
 
-
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
 
@@ -177,12 +176,7 @@ def can_connect_to_mongo():
     if _can_connect_to_mongo is None:
         logger = get_root_logger()
         try:
-            PanDB(
-                db_type='mongo',
-                db_name='panoptes_testing',
-                logger=logger,
-                connect=True
-            )
+            PanDB(db_type='mongo', db_name='panoptes_testing', logger=logger, connect=True)
             _can_connect_to_mongo = True
         except Exception:
             _can_connect_to_mongo = False
@@ -195,15 +189,12 @@ def db_type(request):
     # If testing mongo, make sure we can connect, otherwise skip.
     if request.param == 'mongo' and not can_connect_to_mongo():
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
-    PanDB.reset_for_test(request.param, 'panoptes_testing')
+    PanDB.permanently_erase_database(
+        request.param, 'panoptes_testing', really='Yes', dangerous='Totally')
     return request.param
 
 
 @pytest.fixture(scope='function')
 def db(db_type):
     return PanDB(
-        db_type=db_type,
-        db_name='panoptes_testing',
-        logger=get_root_logger(),
-        connect=True
-    )
+        db_type=db_type, db_name='panoptes_testing', logger=get_root_logger(), connect=True)

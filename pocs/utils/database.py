@@ -10,7 +10,6 @@ from glob import glob
 from pocs.utils import current_time
 from pocs.utils import serializers as json_util
 from pocs.utils.config import load_config
-from pocs.utils.logger import get_root_logger
 
 
 class AbstractPanDB(metaclass=abc.ABCMeta):
@@ -70,7 +69,7 @@ class AbstractPanDB(metaclass=abc.ABCMeta):
         in a corresponding object that does contain the metadata.
 
         Args:
-            collection (str): Name of valid collection within panoptes db.
+            collection (str): Name of valid collection within the db.
             obj (dict or str): Object to be inserted.
 
         Returns:
@@ -85,6 +84,9 @@ class AbstractPanDB(metaclass=abc.ABCMeta):
 
         Args:
             collection (str): Name of the collection to get most current from
+
+        Returns:
+            dict|None: Current object of the collection or None.
         """
         raise NotImplementedError
 
@@ -151,10 +153,13 @@ class PanDB(object):
         """Create an instance based on db_type."""
 
         if not isinstance(db_name, str) and db_name:
-            raise ValueError('db_name, a string, must be provided')
+            raise ValueError('db_name, a string, must be provided and not empty')
 
         if db_type is None:
             db_type = load_config()['db']['type']
+
+        if not isinstance(db_type, str) and db_type:
+            raise ValueError('db_type, a string, must be provided and not empty')
 
         # Pre-defined list of collections that are valid.
         collection_names = [
@@ -182,31 +187,31 @@ class PanDB(object):
         elif db_type == 'memory':
             return PanMemoryDB.get_or_create(collection_names=collection_names, **kwargs)
         else:
-            raise Exception('Unsupported database type: {!r}', db_type)
+            raise Exception('Unsupported database type: {}', db_type)
 
     @classmethod
-    def reset_for_test(cls, db_type, db_name):
-        if 'test' not in db_name:
+    def permanently_erase_database(cls, db_type, db_name, really=False, dangerous=False):
+        """Permanently delete the contents of the identified database."""
+        if not isinstance(db_type, str) and db_type:
+            raise ValueError('db_type, a string, must be provided and not empty; was {!r}',
+                             db_type)
+        if not isinstance(db_name, str) or 'test' not in db_name:
             raise ValueError(
-                'reset_for_test() called for non-test database {!r}'.format(db_name))
+                'permanently_erase_database() called for non-test database {!r}'.format(db_name))
+        if really != 'Yes' or dangerous != 'Totally':
+            raise Exception('PanDB.permanently_erase_database called with invalid args!')
         if db_type == 'mongo':
-            PanMongoDB.reset_for_test(db_name)
+            PanMongoDB.permanently_erase_database(db_name)
         elif db_type == 'file':
-            PanFileDB.reset_for_test(db_name)
+            PanFileDB.permanently_erase_database(db_name)
         elif db_type == 'memory':
-            PanMemoryDB.reset_for_test(db_name)
+            PanMemoryDB.permanently_erase_database(db_name)
         else:
-            raise Exception('Unsupported database type: {!r}', db_type)
+            raise Exception('Unsupported database type: {}', db_type)
 
 
 class PanMongoDB(AbstractPanDB):
-
-    def __init__(self,
-                 db_name='panoptes',
-                 host='localhost',
-                 port=27017,
-                 connect=False,
-                 **kwargs):
+    def __init__(self, db_name='panoptes', host='localhost', port=27017, connect=False, **kwargs):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -225,7 +230,7 @@ class PanMongoDB(AbstractPanDB):
             or databases.
 
         Args:
-            db_name (str, optional): Name of the database containing the PANOPTES collections.
+            db_name (str, optional): Name of the database containing the collections.
             host (str, optional): hostname running MongoDB.
             port (int, optional): port running MongoDb.
             connect (bool, optional): Connect to mongo on create, defaults to True.
@@ -245,33 +250,30 @@ class PanMongoDB(AbstractPanDB):
             setattr(self, collection, getattr(db_handle, collection))
 
     def insert_current(self, collection, obj, store_permanently=True):
-        if store_permanently:
-            # Why do we only do this for non-current insertions?
-            self.validate_collection(collection)
-
+        self.validate_collection(collection)
         obj = create_storage_obj(collection, obj)
         try:
             # Update `current` record. If one doesn't exist, insert one. This
             # combo is known as UPSERT (i.e. UPDATE or INSERT).
             upsert = True
-            id = self.current.replace_one({'type': collection}, obj, upsert).upserted_id
-            if not store_permanently and not id:
+            obj_id = self.current.replace_one({'type': collection}, obj, upsert).upserted_id
+            if not store_permanently and not obj_id:
                 # There wasn't a pre-existing record, so upserted_id was None.
-                id = self.get_current(collection)['_id']
+                obj_id = self.get_current(collection)['_id']
         except Exception as e:
             self._warn("Problem inserting object into current collection: {}, {!r}".format(e, obj))
-            id = None
+            obj_id = None
 
         if store_permanently:
             try:
                 col = getattr(self, collection)
-                id = col.insert_one(obj).inserted_id
+                obj_id = col.insert_one(obj).inserted_id
             except Exception as e:
                 self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
-                id = None
+                obj_id = None
 
-        if id:
-            return str(id)
+        if obj_id:
+            return str(obj_id)
         return None
 
     def insert(self, collection, obj):
@@ -288,15 +290,15 @@ class PanMongoDB(AbstractPanDB):
     def get_current(self, collection):
         return self.current.find_one({'type': collection})
 
-    def find(self, collection, id):
+    def find(self, collection, obj_id):
         collection = getattr(self, collection)
-        return collection.find_one({'_id': id})
+        return collection.find_one({'_id': obj_id})
 
     def clear_current(self, type):
         self.current.remove({'type': type})
 
     @classmethod
-    def reset_for_test(self, db_name):
+    def permanently_erase_database(self, db_name):
         # TODO(jamessynge): Clear the known collections?
         pass
 
@@ -310,7 +312,7 @@ class PanFileDB(AbstractPanDB):
         This will simply store each json record inside a file corresponding
         to the type. Each entry will be stored in a single line.
         Args:
-            db_name (str, optional): Name of the database containing the PANOPTES collections.
+            db_name (str, optional): Name of the database containing the collections.
         """
 
         super().__init__(db_name=db_name, **kwargs)
@@ -322,9 +324,7 @@ class PanFileDB(AbstractPanDB):
         os.makedirs(self._storage_dir, exist_ok=True)
 
     def insert_current(self, collection, obj, store_permanently=True):
-        if store_permanently:
-            self.validate_collection(collection)
-
+        self.validate_collection(collection)
         obj_id = self._make_id()
         obj = create_storage_obj(collection, obj, obj_id=obj_id)
         current_fn = self._get_file(collection, permanent=False)
@@ -401,7 +401,7 @@ class PanFileDB(AbstractPanDB):
         return str(uuid4())
 
     @classmethod
-    def reset_for_test(cls, db_name):
+    def permanently_erase_database(cls, db_name):
         # Clear out any .json files.
         storage_dir = os.path.join(os.environ['PANDIR'], 'json_store', db_name)
         for f in glob(os.path.join(storage_dir, '*.json')):
@@ -419,10 +419,10 @@ class PanMemoryDB(AbstractPanDB):
 
     @classmethod
     def get_or_create(cls, db_name=None, **kwargs):
-        """Returns the named db, creating if needed.the
+        """Returns the named db, creating if needed.
 
         This method exists because PanDB gets called multiple times for
-        the same database name, With mongo or a file store where the storage
+        the same database name. With mongo or a file store where the storage
         is external from the instance, that is not a problem, but with
         PanMemoryDB the instance is the store, so the instance must be
         shared."""
@@ -438,16 +438,11 @@ class PanMemoryDB(AbstractPanDB):
         self.collections = {}
         self.lock = threading.Lock()
 
-        logger = self.logger or get_root_logger()
-        logger.info('Create new PanMemoryDB for {}', self.db_name)
-
     def _make_id(self):
         return str(uuid4())
 
     def insert_current(self, collection, obj, store_permanently=True):
-        self._warn('insert_current {!r} {!r}'.format(collection, obj))
-        if store_permanently:
-            self.validate_collection(collection)
+        self.validate_collection(collection)
         obj_id = self._make_id()
         obj = create_storage_obj(collection, obj, obj_id=obj_id)
         try:
@@ -462,7 +457,6 @@ class PanMemoryDB(AbstractPanDB):
         return obj_id
 
     def insert(self, collection, obj):
-        self._warn('insert {!r} {!r}'.format(collection, obj))
         self.validate_collection(collection)
         obj_id = self._make_id()
         obj = create_storage_obj(collection, obj, obj_id=obj_id)
@@ -480,7 +474,6 @@ class PanMemoryDB(AbstractPanDB):
             obj = self.current.get(collection, None)
         if obj:
             obj = json_util.loads(obj)
-        self._warn('get_current {!r} -> {!r}'.format(collection, obj))
         return obj
 
     def find(self, collection, obj_id):
@@ -488,7 +481,6 @@ class PanMemoryDB(AbstractPanDB):
             obj = self.collections.get(collection, {}).get(obj_id)
         if obj:
             obj = json_util.loads(obj)
-        self._warn('find {!r} {!r} -> {!r}'.format(collection, obj_id, obj))
         return obj
 
     def clear_current(self, type):
@@ -498,7 +490,7 @@ class PanMemoryDB(AbstractPanDB):
             pass
 
     @classmethod
-    def reset_for_test(self, db_name):
+    def permanently_erase_database(self, db_name):
         # For some reason we're not seeing all the references disappear
         # after tests. Perhaps there is some global variable pointing at
         # the db or one of its referrers, or perhaps a pytest fixture
