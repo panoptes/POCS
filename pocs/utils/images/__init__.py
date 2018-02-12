@@ -98,11 +98,11 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-
 def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=3.0, **kwargs):
-    header = getheader(fname)
-    data = getdata(fname)
-    data = focus_utils.mask_saturated(data)
+    with fits.open(fname) as hdu:
+        header = hdu[0].header
+        data = hdu[0].data
+        data = focus_utils.mask_saturated(data)
 
     title = kwargs.get('title', header.get('FIELD', 'Unknown'))
     exp_time = header.get('EXPTIME', 'Unknown')
@@ -112,11 +112,10 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
 
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
 
-    title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter_type, date_time)
+    title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
 
-    hdu = fits.open(fname)[0]
-    wcs = WCS(hdu.header)
+    wcs = WCS(header)
 
     plt.figure(figsize=figsize, dpi=dpi)
 
@@ -143,7 +142,7 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
     else:
         ax = plt.subplot()
         ax.grid(True, color='white', ls='-', alpha=alpha)
-  
+
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
