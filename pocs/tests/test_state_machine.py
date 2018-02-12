@@ -2,7 +2,7 @@ import os
 import pytest
 import yaml
 
-from pocs import POCS
+from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.utils import error
 

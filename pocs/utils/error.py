@@ -2,7 +2,7 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-from pocs import PanBase
+from pocs.base import PanBase
 
 
 class PanError(AstropyWarning, PanBase):
@@ -51,6 +51,11 @@ class NoObservation(PanError):
 class NotFound(PanError):
 
     """ Generic not found class """
+    pass
+
+
+class InvalidCollection(NotFound):
+    """PanError raised if a collection name is invalid."""
     pass
 
 

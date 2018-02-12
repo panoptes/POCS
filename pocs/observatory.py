@@ -12,7 +12,7 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs import PanBase
+from pocs.base import PanBase
 import pocs.dome
 from pocs.images import Image
 from pocs.scheduler.constraint import Duration
@@ -184,9 +184,17 @@ class Observatory(PanBase):
         """
 
         self.logger.debug("Getting observation for observatory")
+
+        # If observation list is empty or a reread is requested
+        if (self.scheduler.has_valid_observations is False or
+                kwargs.get('reread_fields_file', False)):
+            self.scheduler.read_field_list()
+
+        # This will set the `current_observation`
         self.scheduler.get_observation(*args, **kwargs)
 
-        if self.scheduler.current_observation is None:
+        if self.current_observation is None:
+            self.scheduler.clear_available_observations()
             raise error.NoObservation("No valid observations found")
 
         return self.current_observation
@@ -198,6 +206,17 @@ class Observatory(PanBase):
         `observed_list` when done
 
         """
+        try:
+            upload_images = self.config.get('panoptes_network', {})['image_storage']
+        except KeyError:
+            upload_images = False
+
+        try:
+            pan_id = self.config['pan_id']
+        except KeyError:
+            self.logger.warning("pan_id not set in config, can't upload images.")
+            upload_images = False
+
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
@@ -213,6 +232,10 @@ class Observatory(PanBase):
                 )
 
                 img_utils.clean_observation_dir(dir_name)
+
+                if upload_images is True:
+                    self.logger.debug("Uploading directory to google cloud storage")
+                    img_utils.upload_observation_dir(pan_id, dir_name)
 
             self.logger.debug('Cleanup finished')
 
@@ -281,16 +304,13 @@ class Observatory(PanBase):
             self.logger.debug('Offset Info: {}'.format(
                 self.current_offset_info))
 
-            # Update the observation info with the offsets
-            self.db.observations.update({'data.image_id': image_id}, {
-                '$set': {
-                    'offset_info': {
-                        'd_ra': self.current_offset_info.delta_ra.value,
-                        'd_dec': self.current_offset_info.delta_dec.value,
-                        'magnitude': self.current_offset_info.magnitude.value,
-                        'unit': 'arcsec'
-                    }
-                },
+            # Store the offset information
+            self.db.insert('offset_info', {
+                'image_id': image_id,
+                'd_ra': self.current_offset_info.delta_ra.value,
+                'd_dec': self.current_offset_info.delta_dec.value,
+                'magnitude': self.current_offset_info.magnitude.value,
+                'unit': 'arcsec',
             })
 
         except error.SolveError:
@@ -593,8 +613,6 @@ class Observatory(PanBase):
             mount_info = self.config.get('mount')
 
         model = mount_info.get('model')
-        serial_info = mount_info['serial']
-        port = serial_info['port']
 
         if 'mount' in self.config.get('simulator', []):
             model = 'simulator'
@@ -604,14 +622,21 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             driver = mount_info.get('driver')
 
-            # TODO(jamessynge): We should move the driver specific validation into the driver
-            # module (e.g. module.create_mount_from_config). This means we have to adjust the
-            # definition of this method to return a validated but not fully initialized mount
-            # driver.
-            if model != 'bisque':
+            # See if we have a serial connection
+            try:
+                port = mount_info['serial']['port']
                 if port is None or len(glob(port)) == 0:
                     msg = "Mount port({}) not available. ".format(port) \
-                        + "Use - -simulator = mount for simulator. Exiting."
+                        + "Use simulator = mount for simulator. Exiting."
+                    raise error.MountNotFound(msg=msg)
+            except KeyError:
+                # TODO(jamessynge): We should move the driver specific validation into the driver
+                # module (e.g. module.create_mount_from_config). This means we have to adjust the
+                # definition of this method to return a validated but not fully initialized mount
+                # driver.
+                if model != 'bisque':
+                    msg = "No port specified for mount in config file. " \
+                        + "Use simulator = mount for simulator. Exiting."
                     raise error.MountNotFound(msg=msg)
 
         self.logger.debug('Creating mount: {}'.format(model))

@@ -14,8 +14,8 @@ from astropy.coordinates import ICRS
 from astropy.io import fits
 from astropy.utils import console
 
-from pocs import POCS
 from pocs import hardware
+from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -26,7 +26,7 @@ from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.utils.images import polar_alignment as polar_alignment_utils
 from pocs.utils import listify
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
 from pocs.utils.messaging import PanMessaging
 
 
@@ -73,6 +73,17 @@ class PocsShell(Cmd):
             return False
 
         return self.pocs.is_safe()
+
+    def do_display_config(self, *arg):
+        """ Display the config file for POCS """
+        try:
+            if self.pocs and self.pocs.config:
+                pprint(self.pocs.config)
+            else:
+                print_warning("No config file for POCS.")
+
+        except AttributeError:
+            print_warning("Please run `setup_pocs` before trying to run `display_config`")
 
     def do_drift_align(self, *arg):
         """Enter the drift alignment shell."""
@@ -169,14 +180,10 @@ Hardware names: {}   (or all for all hardware)'''.format(
         self.pocs = None
 
     def do_run_pocs(self, *arg):
-        """Make POCS `run` in a separate process.
+        """Make POCS `run` the state machine.
 
-        Note:
-            Run with `--simulator=all` for simulator
-
-        Arguments:
-            *arg {str} -- Can pass arguments through to `do_connect`
-        """
+        Continues until the user presses Ctrl-C or the state machine
+        exits, such as due to an error."""
         if self.pocs is not None:
             if self.msg_subscriber is None:
                 self.do_start_messaging()
@@ -189,6 +196,8 @@ Hardware names: {}   (or all for all hardware)'''.format(
                 print_warning('POCS interrupted, skipping states and parking')
                 self.pocs.observatory.mount.home_and_park()
                 self._running = False
+            finally:
+                print_info('POCS stopped.')
         else:
             print_warning('Please run `setup_pocs` before trying to run')
 
@@ -211,7 +220,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
                     status = self.pocs.status()
                     pprint(status)
                     print_info('*' * 80)
-                    self.pocs.db.insert_current('system', status, include_collection=False)
+                    self.pocs.db.insert_current('system', status, store_permanently=False)
                     time.sleep(2)
                 except KeyboardInterrupt:
                     print_warning('Stopping collection')
@@ -804,7 +813,7 @@ def process_img(fn, start_time, remove_after=True):
         except Exception:
             pass
 
-        db = PanMongo()
+        db = PanDB()
 
         # Add to DB
         db.drift_align.insert_one({

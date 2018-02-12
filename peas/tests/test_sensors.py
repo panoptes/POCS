@@ -7,9 +7,6 @@ import serial
 from peas import sensors as sensors_module
 from pocs.utils import rs232
 
-# For serial_handlers to be loaded
-import serial_handlers as serial_handlers_module
-
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 
@@ -17,10 +14,10 @@ SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 @pytest.fixture(scope='function')
 def serial_handlers():
     # Install our test handlers for the duration.
-    serial.protocol_handler_packages.insert(0, 'serial_handlers')
+    serial.protocol_handler_packages.insert(0, 'pocs.serial_handlers')
     yield True
     # Remove our test handlers.
-    serial.protocol_handler_packages.remove('serial_handlers')
+    serial.protocol_handler_packages.remove('pocs.serial_handlers')
 
 
 def list_comports():

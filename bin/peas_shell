@@ -6,8 +6,8 @@ import readline
 import sys
 
 from astropy.utils import console
-from pprint import pprint
 from threading import Timer
+from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
@@ -15,7 +15,7 @@ from peas.webcam import Webcam
 
 from pocs.utils import current_time
 from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
 
 
 class PanSensorShell(cmd.Cmd):
@@ -27,7 +27,7 @@ class PanSensorShell(cmd.Cmd):
     environment = None
     weather = None
     active_sensors = dict()
-    db = PanMongo()
+    db = PanDB()
     _keep_looping = False
     _loop_delay = 60
     _timer = None
@@ -123,6 +123,13 @@ class PanSensorShell(cmd.Cmd):
             except Exception as e:
                 print_error("Can't change log level for {}".format(sensor))
 
+    def do_display_config(self, config):
+        """ Display the config file for PEAS """
+        if self.config:
+            pprint(self.config)
+        else:
+            print_warning("No config file for PEAS.")
+
 ##################################################################################################
 # Load Methods
 ##################################################################################################
@@ -183,7 +190,7 @@ class PanSensorShell(cmd.Cmd):
             port = '/dev/ttyUSB0'
 
         print("Loading AAG Cloud Sensor on {}".format(port))
-        self.weather = AAGCloudSensor(serial_address=port, use_mongo=True)
+        self.weather = AAGCloudSensor(serial_address=port, store_result=True)
         self.do_enable_sensor('weather')
 
 ##################################################################################################
@@ -204,7 +211,7 @@ class PanSensorShell(cmd.Cmd):
             * cam_0
         """
         relay = arg[0]
-        relay_lookup = {
+        telemetry_relay_lookup = {
             'fan': {'pin': 6, 'board': 'telemetry_board'},
             'camera_box': {'pin': 7, 'board': 'telemetry_board'},
             'weather': {'pin': 5, 'board': 'telemetry_board'},
@@ -213,16 +220,35 @@ class PanSensorShell(cmd.Cmd):
             'cam_1': {'pin': 6, 'board': 'camera_board'},
         }
 
+        # NOTE: These are not pins but index numbers
+        powerboard_relay_lookup = {
+            'mount': {'pin': 0, 'board': 'power_board'},
+            'fan': {'pin': 1, 'board': 'power_board'},
+            'weather': {'pin': 2, 'board': 'power_board'},
+            'camera_box': {'pin': 3, 'board': 'power_board'},
+        }
+
+        if 'power_board' in self.environment.serial_readers:
+            relay_lookup = powerboard_relay_lookup
+        else:
+            relay_lookup = telemetry_relay_lookup
+
         try:
             relay_info = relay_lookup[relay]
-            self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
+            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+
+            serial_connection.ser.flushInput()
+            serial_connection.write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem toggling relay {}".format(relay))
             print_warning(e)
 
     def complete_toggle_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
-        names = ['cam_0', 'cam_1', 'camera_board', 'fan', 'mount', 'weather']
+        if 'power_board' in self.environment.serial_readers:
+            names = ['camera_box', 'fan', 'mount', 'weather']
+        else:
+            names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
         return [name for name in names if name.startswith(text)]
 
     def do_toggle_computer(self, *arg):
@@ -327,7 +353,7 @@ class PanSensorShell(cmd.Cmd):
         if sensor_name in self.active_sensors:
             sensor = getattr(self, sensor_name)
             try:
-                sensor.capture(use_mongo=True, send_message=True)
+                sensor.capture(store_result=True, send_message=True)
             except Exception as e:
                 pass
 

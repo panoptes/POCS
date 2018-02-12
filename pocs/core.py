@@ -8,7 +8,7 @@ import zmq
 
 from astropy import units as u
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
@@ -81,7 +81,8 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
-        self._retry_attempts = 3
+        self._retry_attempts = kwargs.get('retry_attempts', 3)
+        self._obs_run_retries = self._retry_attempts
 
         self.status()
 
@@ -118,8 +119,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def should_retry(self):
-        self._retry_attempts -= 1
-        return self._retry_attempts >= 0
+        return self._obs_run_retries >= 0
 
 
 ##################################################################################################
@@ -136,6 +136,7 @@ class POCS(PanStateMachine, PanBase):
         """
 
         if not self._initialized:
+            self.logger.info('*' * 80)
             self.say("Initializing the system! Woohoo!")
 
             try:
@@ -176,6 +177,8 @@ class POCS(PanStateMachine, PanBase):
         Args:
             msg(str): Message to be sent
         """
+        if self.has_messaging is False:
+            self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
 
     def send_message(self, msg, channel='POCS'):
@@ -219,8 +222,7 @@ class POCS(PanStateMachine, PanBase):
         if self.connected:
             self.say("I'm powering down")
             self.logger.info(
-                "Shutting down {}, please be patient and allow for exit.".format(
-                    self.name))
+                "Shutting down {}, please be patient and allow for exit.", self.name)
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -260,6 +262,10 @@ class POCS(PanStateMachine, PanBase):
             self._connected = False
             self.logger.info("Power down complete")
 
+    def reset_observing_run(self):
+        """Reset an observing run loop. """
+        self.logger.debug("Resetting observing run attempts")
+        self._obs_run_retries = self._retry_attempts
 
 ##################################################################################################
 # Safety Methods
@@ -275,14 +281,16 @@ class POCS(PanStateMachine, PanBase):
             This condition is called by the state machine during each transition
 
         Args:
-            called from the state machine.
+            no_warning (bool, optional): If a warning message should show in logs,
+                defaults to False.
 
         Returns:
             bool: Latest safety flag
 
-        Deleted Parameters:
-            event_data(transitions.EventData): carries information about the event if
         """
+        if not self.connected:
+            return False
+
         is_safe_values = dict()
 
         # Check if night time
@@ -338,10 +346,9 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning(
-            "No connection to sensors, can't check weather safety")
 
         # Always assume False
+        self.logger.debug("Checking weather safety")
         is_safe = False
         record = {'safe': False}
 
@@ -357,15 +364,16 @@ class POCS(PanStateMachine, PanBase):
             record = self.db.get_current('weather')
 
             is_safe = record['data'].get('safe', False)
-            timestamp = record['date']
+            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
             self.logger.debug(
                 "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
-        except TypeError as e:
-            self.logger.warning("No record found in Mongo DB")
-            self.logger.debug('DB: {}'.format(self.db.current))
+        except (TypeError, KeyError) as e:
+            self.logger.warning("No record found in DB: {}", e)
+        except BaseException as e:
+            self.logger.error("Error checking weather: {}", e)
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -414,15 +422,19 @@ class POCS(PanStateMachine, PanBase):
         # If delay is greater than 10 seconds check for messages during wait
         if delay >= 10.0:
             while delay >= 10.0:
+                self.check_messages()
+                # If we shutdown leave loop
+                if self.connected is False:
+                    return
+
                 time.sleep(10.0)
                 delay -= 10.0
-                self.check_messages()
 
         if delay > 0.0:
             time.sleep(delay)
 
     def wait_until_safe(self):
-        """ Waits until weather is safe
+        """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
@@ -432,10 +444,11 @@ class POCS(PanStateMachine, PanBase):
 
 
 ##################################################################################################
-# Private Methods
+# Class Methods
 ##################################################################################################
 
-    def _check_environment(self):
+    @classmethod
+    def check_environment(cls):
         """ Checks to see if environment is set up correctly
 
         There are a number of environmental variables that are expected
@@ -462,6 +475,10 @@ class POCS(PanStateMachine, PanBase):
         if not os.path.exists("{}/logs".format(pandir)):
             print("Creating log dir at {}/logs".format(pandir))
             os.makedirs("{}/logs".format(pandir))
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _check_messages(self, queue_type, q):
         cmd_dispatch = {

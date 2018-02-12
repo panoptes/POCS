@@ -30,9 +30,9 @@ class Mount(AbstractMount):
         self.template_dir = template_dir
 
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def connect(self):
         """ Connects to the mount via the serial port (`self._port`)
@@ -92,6 +92,7 @@ class Mount(AbstractMount):
     def _update_status(self):
         """ """
         status = self.query('get_status')
+        self.logger.debug("Status: {}".format(status))
 
         try:
             self._at_mount_park = status['parked']
@@ -152,9 +153,9 @@ class Mount(AbstractMount):
         self.logger.info("Mount park position set: {}".format(self._park_coordinates))
 
 
-##################################################################################################
+##########################################################################
 # Movement methods
-##################################################################################################
+##########################################################################
 
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
@@ -181,8 +182,13 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                }, timeout=120)
+                })
                 success = response['success']
+                if success:
+                    self.status()
+                    while self.is_slewing:
+                        self.status()
+                        time.sleep(2)
 
             except Exception as e:
                 self.logger.warning(
@@ -192,6 +198,8 @@ class Mount(AbstractMount):
                 if not self.query('start_tracking')['success']:
                     self.logger.warning("Tracking not turned on for target")
                     self._is_tracking = True
+                else:
+                    self.logger.debug("Now tracking at target")
 
         return success
 
@@ -230,10 +238,7 @@ class Mount(AbstractMount):
         self.logger.debug('Parking mount')
         response = self.query('park')
 
-        if response['success']:
-            while not self.is_parked:
-                self.status()
-                time.sleep(2)
+        self._is_parked = response['success']
 
         return self.is_parked
 
@@ -284,9 +289,9 @@ class Mount(AbstractMount):
             self.query('stop_moving')
 
 
-##################################################################################################
+##########################################################################
 # Communication Methods
-##################################################################################################
+##########################################################################
 
     def write(self, value):
         return self.theskyx.write(value)
@@ -320,9 +325,9 @@ class Mount(AbstractMount):
         return response_obj
 
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def _setup_commands(self, commands):
         """
@@ -339,19 +344,16 @@ class Mount(AbstractMount):
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):
-                    self.logger.debug(
-                        "Loading mount commands file: {}".format(conf_file))
+                    self.logger.debug("Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.debug(
-                                "Mount commands updated from {}".format(conf_file))
+                            self.logger.debug("Mount commands updated from {}".format(conf_file))
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
                     except Exception:
-                        self.logger.warning(
-                            "Problem loading mount command file")
+                        self.logger.warning("Problem loading mount command file")
                 else:
                     self.logger.warning(
                         "No such config file for mount commands: {}".format(conf_file))
@@ -386,7 +388,7 @@ class Mount(AbstractMount):
         if params is None:
             params = {}
 
-        params.setdefault('async', 'false')
+        params.setdefault('async', 'true')
 
         return template.safe_substitute(params)
 

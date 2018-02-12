@@ -1,12 +1,11 @@
 import os
 import subprocess
+import shutil
+import re
 
-import matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io import fits
 from astropy.io.fits import (getdata, getheader)
@@ -18,8 +17,13 @@ from copy import copy
 
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.config import load_config
 from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import focus as focus_utils
+
+palette = copy(plt.cm.inferno)
+palette.set_over('w', 1.0)
+palette.set_under('k', 1.0)
+palette.set_bad('g', 1.0)
 
 palette = copy(plt.cm.inferno)
 palette.set_over('w', 1.0)
@@ -94,6 +98,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
+
 def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=3.0, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
@@ -101,6 +106,7 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
 
     title = kwargs.get('title', header.get('FIELD', 'Unknown'))
     exp_time = header.get('EXPTIME', 'Unknown')
+
     filter_type = header.get('FILTER', 'Unknown filter')
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
 
@@ -137,11 +143,12 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
     else:
         ax = plt.subplot()
         ax.grid(True, color='white', ls='-', alpha=alpha)
-
+  
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
     ax.imshow(data, norm=norm, cmap=palette, origin='lower')
+
     plt.tight_layout(pad=pad)
     plt.title(title)
 
@@ -234,7 +241,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):
 
 
 def clean_observation_dir(dir_name, *args, **kwargs):
-    """ Clean an observation directory
+    """ Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
@@ -299,3 +306,51 @@ def clean_observation_dir(dir_name, *args, **kwargs):
                     warn('Could not delete file: {!r}'.format(e))
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
+
+
+def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs):
+    """Upload an observation directory to google cloud storage.
+
+    Note:
+        This requires that the command line utility `gsutil` be installed
+        and that authentication has properly been set up.
+
+    Args:
+        pan_id (str): A string representing the unit id, e.g. PAN001.
+        dir_name (str): Full path to observation directory.
+        bucket (str, optional): The bucket to place the images in, defaults
+            to 'panoptes-survey'.
+        **kwargs: Optional keywords: verbose
+    """
+    assert os.path.exists(dir_name)
+    assert re.match('PAN\d\d\d', pan_id) is not None
+
+    verbose = kwargs.get('verbose', False)
+
+    def _print(msg):
+        if verbose:
+            print(msg)
+
+    dir_name = dir_name.replace('//', '/')
+    _print("Uploading {}".format(dir_name))
+
+    gsutil = shutil.which('gsutil')
+
+    img_path = os.path.join(dir_name, '*.fz')
+    if glob(img_path):
+        field_dir = dir_name.split('/fields/')[-1]
+        remote_path = os.path.normpath(os.path.join(pan_id, field_dir))
+
+        bucket = 'gs://{}/'.format(bucket)
+        # normpath strips the trailing slash so add here so we place in directory
+        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
+        _print("Running: {}".format(run_cmd))
+
+        try:
+            completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
+
+            if completed_process.returncode != 0:
+                warn("Problem uploading")
+                warn(completed_process.stdout)
+        except Exception as e:
+            warn("Problem uploading: {}".format(e))

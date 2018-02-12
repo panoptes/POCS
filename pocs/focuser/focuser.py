@@ -2,6 +2,7 @@ import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import UnivariateSpline
+from scipy.ndimage import binary_dilation
 
 import numpy as np
 
@@ -10,11 +11,11 @@ from threading import Event
 from threading import Thread
 
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(plt.cm.cubehelix)
+palette = copy(plt.cm.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
@@ -40,6 +41,8 @@ class AbstractFocuser(PanBase):
                  autofocus_take_dark=None,
                  autofocus_merit_function=None,
                  autofocus_merit_function_kwargs=None,
+                 autofocus_mask_dilations=None,
+                 autofocus_spline_smoothing=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -63,16 +66,13 @@ class AbstractFocuser(PanBase):
             self.autofocus_step = None
 
         self.autofocus_seconds = autofocus_seconds
-
         self.autofocus_size = autofocus_size
-
         self.autofocus_keep_files = autofocus_keep_files
-
         self.autofocus_take_dark = autofocus_take_dark
-
         self.autofocus_merit_function = autofocus_merit_function
-
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
+        self.autofocus_mask_dilations = autofocus_mask_dilations
+        self.autofocus_spline_smoothing = autofocus_spline_smoothing
 
         self._camera = camera
 
@@ -149,6 +149,8 @@ class AbstractFocuser(PanBase):
                   take_dark=None,
                   merit_function=None,
                   merit_function_kwargs=None,
+                  mask_dilations=None,
+                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -180,6 +182,10 @@ class AbstractFocuser(PanBase):
                 focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
+            mask_dilations (int, optional): Number of iterations of dilation to perform on the
+                saturated pixel mask (determine size of masked regions), default 10
+            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
+                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
@@ -244,6 +250,18 @@ class AbstractFocuser(PanBase):
             else:
                 merit_function_kwargs = {}
 
+        if mask_dilations is None:
+            if self.autofocus_mask_dilations is not None:
+                mask_dilations = self.autofocus_mask_dilations
+            else:
+                mask_dilations = 10
+
+        if spline_smoothing is None:
+            if self.autofocus_spline_smoothing is not None:
+                spline_smoothing = self.autofocus_spline_smoothing
+            else:
+                spline_smoothing = 0.4
+
         if take_dark:
             image_dir = self.config['directories']['images']
             start_time = current_time(flatten=True)
@@ -279,6 +297,8 @@ class AbstractFocuser(PanBase):
                                            'dark_thumb': dark_thumb,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
+                                           'mask_dilations': mask_dilations,
+                                           'spline_smoothing': spline_smoothing,
                                            'coarse': True,
                                            'plots': plots,
                                            'start_event': None,
@@ -299,6 +319,8 @@ class AbstractFocuser(PanBase):
                                      'dark_thumb': dark_thumb,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
+                                     'mask_dilations': mask_dilations,
+                                     'spline_smoothing': spline_smoothing,
                                      'coarse': False,
                                      'plots': plots,
                                      'start_event': coarse_event,
@@ -324,7 +346,10 @@ class AbstractFocuser(PanBase):
                    plots,
                    start_event,
                    finished_event,
-                   smooth=0.4, *args, **kwargs):
+                   mask_dilations,
+                   spline_smoothing,
+                   *args,
+                   **kwargs):
         # If passed a start_event wait until Event is set before proceeding
         # (e.g. wait for coarse focus to finish before starting fine focus).
         if start_event:
@@ -375,8 +400,9 @@ class AbstractFocuser(PanBase):
                                     min(initial_focus + focus_range / 2, self.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
-
-        metric = np.empty((n_positions))
+        thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size), dtype=thumbnail.dtype)
+        masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
+        metric = np.empty(n_positions)
 
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
@@ -387,13 +413,17 @@ class AbstractFocuser(PanBase):
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            thumbnail = focus_utils.mask_saturated(thumbnail)
+            masks[i] = focus_utils.mask_saturated(thumbnail).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
-            # Calculate focus metric
-            metric[i] = focus_utils.focus_metric(
-                thumbnail, merit_function, **merit_function_kwargs)
-            self.logger.debug("Focus metric at position {}: {}".format(position, metric[i]))
+            thumbnails[i] = thumbnail
+
+        master_mask = masks.any(axis=0)
+        master_mask = binary_dilation(master_mask, iterations=mask_dilations)
+
+        for i, position in enumerate(focus_positions):
+            thumbnail = np.ma.array(thumbnails[i], mask=master_mask)
+            metric[i] = focus_utils.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
 
         fitted = False
 
@@ -408,7 +438,7 @@ class AbstractFocuser(PanBase):
 
         elif not coarse:
             # Crude guess at a standard deviation for focus metric, 40% of the maximum value
-            weights = np.ones(len(focus_positions)) / (smooth * metric.max())
+            weights = np.ones(len(focus_positions)) / (spline_smoothing * metric.max())
 
             # Fit smoothing spline to focus metric data
             fit = UnivariateSpline(focus_positions, metric, w=weights, k=4, ext='raise')
@@ -486,6 +516,13 @@ class AbstractFocuser(PanBase):
             finished_event.set()
 
         return initial_focus, final_focus
+
+    def _fits_header(self, header):
+        header.set('FOC-NAME', self.name, 'Focuser name')
+        header.set('FOC-MOD', self.model, 'Focuser model')
+        header.set('FOC-ID', self.uid, 'Focuser serial number')
+        header.set('FOC-POS', self.position, 'Focuser position')
+        return header
 
     def __str__(self):
         return "{} ({}) on {}".format(self.name, self.uid, self.port)

@@ -143,10 +143,10 @@ class WeatherPlotter(object):
             # Grab data from Mongo
             # -------------------------------------------------------------------------
             import pymongo
-            from pocs.utils.database import PanMongo
+            from pocs.utils.database import PanDB
 
             print('  Retrieving data from Mongo database')
-            db = PanMongo()
+            db = PanDB()
             entries = [x for x in db.weather.find(
                 {'date': {'$gt': self.start, '$lt': self.end}}).sort([
                     ('date', pymongo.ASCENDING)])]
