@@ -68,6 +68,13 @@ def get_root_logger(profile='panoptes', log_config=None):
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
+        # TODO(jamessynge): Figure out why 'formatters' is sometimes
+        # missing from the log_config. It is hard to understand how
+        # this could occur given that none of the callers of
+        # get_root_logger pass in their own log_config.
+        if 'formatters' not in log_config and sys.stdout.isatty():
+            import pdb
+            pdb.set_trace()
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')

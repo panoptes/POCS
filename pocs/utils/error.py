@@ -54,6 +54,11 @@ class NotFound(PanError):
     pass
 
 
+class InvalidCollection(NotFound):
+    """PanError raised if a collection name is invalid."""
+    pass
+
+
 class InvalidConfig(PanError):
 
     """ PanError raised if config file is invalid """

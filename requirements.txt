@@ -13,7 +13,7 @@ numpy >= 1.12.1
 pycodestyle
 pymongo >= 3.2.2
 pyserial >= 3.1.1
-pytest >= 2.8.5
+pytest >= 3.4.0
 python_dateutil >= 2.5.3
 PyYAML >= 3.11
 pyzmq >= 15.3.0
