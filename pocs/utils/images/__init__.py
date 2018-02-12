@@ -8,16 +8,23 @@ from warnings import warn
 
 from astropy import units as u
 from astropy.wcs import WCS
+from astropy.io import fits
 from astropy.io.fits import (getdata, getheader)
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
 from glob import glob
+from copy import copy
 
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.config import load_config
 from pocs.utils.images import fits as fits_utils
+
+palette = copy(plt.cm.inferno)
+palette.set_over('w', 1.0)
+palette.set_under('k', 1.0)
+palette.set_bad('g', 1.0)
 
 
 def crop_data(data, box_width=200, center=None, verbose=False):
@@ -87,45 +94,61 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname, **kwargs):
+def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=3.0, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
+    data = focus_utils.mask_saturated(data)
 
-    title = kwargs.get('title', header.get('FIELD', ''))
+    title = kwargs.get('title', header.get('FIELD', 'Unknown'))
+    exp_time = header.get('EXPTIME', 'Unknown')
+    filter_type = header.get('FILTER', 'Unknown filter')
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
-    cmap = kwargs.get('cmap', 'inferno')
 
-    title = '{} {}'.format(title, date_time)
-
+    title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter_type, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
 
-    wcs = WCS(fname)
+    hdu = fits.open(fname)[0]
+    wcs = WCS(hdu.header)
+
+    plt.figure(figsize=figsize, dpi=dpi)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
-        ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+        ax.coords.grid(True, color='white', ls='-', alpha=alpha)
 
-        ra_axis = ax.coords[0]
+        ra_axis = ax.coords['ra']
+        dec_axis = ax.coords['dec']
+
         ra_axis.set_axislabel('Right Ascension')
-        ra_axis.set_major_formatter('hh:mm')
-
-        dec_axis = ax.coords[1]
         dec_axis.set_axislabel('Declination')
+
+        ra_axis.set_major_formatter('hh:mm')
         dec_axis.set_major_formatter('dd:mm')
+
+        ra_axis.set_ticks(spacing=5 * u.arcmin, color='white', exclude_overlapping=True)
+        dec_axis.set_ticks(spacing=5 * u.arcmin, color='white', exclude_overlapping=True)
+
+        ra_axis.display_minor_ticks(True)
+        dec_axis.display_minor_ticks(True)
+
+        dec_axis.set_minor_frequency(10)
     else:
         ax = plt.subplot()
-        ax.grid(True, color='white', ls='-', alpha=0.3)
+        ax.grid(True, color='white', ls='-', alpha=alpha)
 
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
-    ax.imshow(data, norm=norm, cmap=cmap, origin='lower')
-    plt.tight_layout()
+    ax.imshow(data, norm=norm, cmap=palette, origin='lower')
+    plt.tight_layout(pad=pad)
     plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')
     plt.savefig(new_filename)
+
+    plt.close()
 
     return new_filename
 
