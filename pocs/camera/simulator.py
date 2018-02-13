@@ -96,7 +96,7 @@ class Camera(AbstractCamera):
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'unsolved.fits')
+        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
         fake_data = fits.getdata(file_path)
 
         if header['IMAGETYP'] == 'Dark Frame':
