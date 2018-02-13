@@ -65,4 +65,12 @@ tmux new-window -n peas
 tmux new-window -n pocs
 ./start_pocs.sh :pocs
 
+# Monitor the POCS log file.
+tmux new-window -n log_pocs
+./start_log_viewer.sh :log_pocs "${PANLOG}/pocs_shell-all.log"
+
+# Monitor the PEAS log file.
+tmux new-window -n log_peas
+./start_log_viewer.sh :log_peas "${PANLOG}/peas_shell-all.log"
+
 exit
