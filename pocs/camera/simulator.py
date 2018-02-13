@@ -40,10 +40,9 @@ class Camera(AbstractCamera):
                                                                           *args,
                                                                           **kwargs)
 
-        filename = "solved.{}".format(self.file_extension)
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
-        exp_time = 5
-        self.logger.debug("Trimming camera simulator exposure to 5 s")
+        if exp_time > 5:
+            exp_time = 5
+            self.logger.debug("Trimming camera simulator exposure to 5 s")
 
         self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
 
