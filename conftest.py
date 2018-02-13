@@ -291,18 +291,3 @@ def cmd_subscriber(message_forwarder):
     subscriber = PanMessaging.create_subscriber(port)
     yield subscriber
     subscriber.close()
-
-
-# def test_forwarder(forwarder):
-#     assert forwarder.is_alive() is True
-
-# @pytest.fixture(scope='function')
-# def pub_and_sub(forwarder):
-#     # Ensure that the subscriber is created first.
-#     sub = PanMessaging.create_subscriber(54321)
-#     time.sleep(0.05)
-#     pub = PanMessaging.create_publisher(12345, bind=False, connect=True)
-#     time.sleep(0.05)
-#     yield (pub, sub)
-#     pub.close()
-#     sub.close()

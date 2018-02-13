@@ -145,22 +145,34 @@ class ArduinoIO(object):
         self._keep_running = True
 
     def run(self):
-        """Endless loop for recording data and reading commands.
+        """Main loop for recording data and reading commands.
 
-        This only ends if an Exception is unhandled; the most likely
-        exception is from SerialData.get_and_parse_reading() in the
-        event that the device disconnects from USB.
+        This only ends if an Exception is unhandled or if a 'shutdown'
+        command is received. The most likely exception is from
+        SerialData.get_and_parse_reading() in the event that the device
+        disconnects from USB.
         """
         while self._keep_running:
             self.read_and_record()
             self.handle_commands()
 
     def read_and_record(self):
-        """Read the next reading available reading and write it to a PanDB collection."""
+        """Try to get the next reading and, if successful, record it.
+
+        Write the reading to the appropriate PanDB collections and
+        to the appropriate message channel.
+
+        If there is an interruption in success in reading from the device,
+        we announce (log) the start and end of that situation.
+        """
         reading = self.get_reading()
         if not reading:
             # Consider adding an error counter.
-            self._report_next_reading = True
+            if not self._report_next_reading:
+                self._logger.warning(
+                    'Unable to read from {}. Will report when next successful read.',
+                    self.port)
+                self._report_next_reading = True
             return False
         if self._report_next_reading:
             self._logger.info('Succeeded in reading from {}; got:\n{}', self.port, reading)
@@ -185,6 +197,11 @@ class ArduinoIO(object):
             self._logger.error('Failed to disconnect from {} due to: {}', self.port, e)
 
     def reconnect(self):
+        """Disconnect from and connect to the serial port.
+
+        This supports handling a SerialException, such as when the USB
+        bus is reset.
+        """
         try:
             self.disconnect()
         except Exception:
@@ -204,7 +221,7 @@ class ArduinoIO(object):
         try:
             return self._serial_data.get_and_parse_reading(retry_limit=1)
         except serial.SerialException as e:
-            self._logger.error('Unable to read from port {}', self.port)
+            self._logger.error('Exception raised while reading from port {}', self.port)
             self._logger.error('Exception: {}', "\n".join(traceback.format_exc()))
             if self.reconnect():
                 return None
@@ -227,10 +244,15 @@ class ArduinoIO(object):
             self._db.insert_current(self.board, reading)
 
     def handle_commands(self):
+        """Read and process commands for up to 1 second.
+
+        Returns when there are no more commands available from the
+        command subscriber, or when a second has passed.
+        """
         timeout_obj = serialutil.Timeout(1.0)
-        while True:
+        while not timeout_obj.expired():
             msg_type, msg_obj = self._sub.receive_message(blocking=False)
-            if msg_type is None:
+            if msg_type is None or msg_obj is None:
                 break
             if msg_type.lower() == self._cmd_channel:
                 try:
@@ -238,11 +260,14 @@ class ArduinoIO(object):
                 except Exception as e:
                     self._logger.error('Exception while handling command: {}', e)
                     self._logger.error('msg_obj: {}', msg_obj)
-            if timeout_obj.expired():
-                break
 
     def handle_command(self, msg):
-        """Handle one relay command."""
+        """Handle one relay command.
+
+        TODO(jamessynge): Add support for 'set_relay', where we look
+        up the relay name in self._last_reading to confirm that it
+        exists on this device.
+        """
         if msg['command'] == 'shutdown':
             self._logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
             self._keep_running = False
