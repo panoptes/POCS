@@ -380,6 +380,7 @@ class AbstractCamera(PanBase):
                 header.set('IMAGETYP', 'Dark Frame')
             else:
                 header.set('IMAGETYP', 'Light Frame')
+        header.set('FILTER', self.filter_type)
         try:
             header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
         except NotImplementedError:
