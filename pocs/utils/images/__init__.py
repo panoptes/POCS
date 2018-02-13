@@ -6,6 +6,7 @@ import re
 from matplotlib import pyplot as plt
 from warnings import warn
 
+from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io import fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
