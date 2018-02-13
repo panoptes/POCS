@@ -8,7 +8,6 @@ from warnings import warn
 
 from astropy.wcs import WCS
 from astropy.io import fits
-from astropy.io.fits import (getdata, getheader)
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
@@ -19,11 +18,6 @@ from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import focus as focus_utils
-
-palette = copy(plt.cm.inferno)
-palette.set_over('w', 1.0)
-palette.set_under('k', 1.0)
-palette.set_bad('g', 1.0)
 
 palette = copy(plt.cm.inferno)
 palette.set_over('w', 1.0)
