@@ -103,6 +103,7 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
         header = hdu[0].header
         data = hdu[0].data
         data = focus_utils.mask_saturated(data)
+        wcs = WCS(header)
 
     title = kwargs.get('title', header.get('FIELD', 'Unknown'))
     exp_time = header.get('EXPTIME', 'Unknown')
@@ -114,8 +115,6 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
 
     title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
-
-    wcs = WCS(header)
 
     plt.figure(figsize=figsize, dpi=dpi)
 
