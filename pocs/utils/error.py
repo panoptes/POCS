@@ -89,6 +89,11 @@ class BadSerialConnection(PanError):
     pass
 
 
+class ArduinoDataError(PanError):
+    """PanError raised when there is something very wrong with Arduino information."""
+    pass
+
+
 class MountNotFound(NotFound):
 
     """ Mount cannot be import """

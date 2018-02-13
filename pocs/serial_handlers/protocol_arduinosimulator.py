@@ -55,8 +55,8 @@ class ArduinoSimulator:
         # Interval between outputing chunks of bytes.
         chunks_per_second = 1000.0 / self.chunk_size
         chunk_interval = 1.0 / chunks_per_second
-        self.logger.debug('chunks_per_second={}   chunk_interval={}',
-                          chunks_per_second, chunk_interval)
+        self.logger.debug('chunks_per_second={}   chunk_interval={}', chunks_per_second,
+                          chunk_interval)
         self.chunk_delta = datetime.timedelta(seconds=chunk_interval)
         self.next_chunk_time = None
         self.pending_json_bytes = bytearray()
@@ -324,7 +324,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         v = (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
              self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
         if not v:
-            self.logger.critical('Serial config is not OK: {!r}', (self.get_settings(),))
+            self.logger.critical('Serial config is not OK: {!r}', (self.get_settings(), ))
         return v
 
     def _read1(self, timeout_obj):
@@ -415,8 +415,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         expected = 'expected a string in the form "arduinosimulator://[?board=<name>]"'
         parts = urllib.parse.urlparse(url)
         if parts.scheme != "arduinosimulator":
-            raise Exception(
-                expected + ': got scheme {!r}'.format(parts.scheme))
+            raise Exception(expected + ': got scheme {!r}'.format(parts.scheme))
         params = {}
         for option, values in urllib.parse.parse_qs(parts.query, True).items():
             if option == 'board' and len(values) == 1:
@@ -426,8 +425,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 # been opened.
                 self.name = values[0]
             else:
-                raise Exception(
-                    expected + ': unknown param {!r}'.format(option))
+                raise Exception(expected + ': unknown param {!r}'.format(option))
         return params
 
     def _create_simulator(self, params):
@@ -463,10 +461,13 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                     "humidity":59.60, "temp_00":12.50
                 }
                 """)
+        elif board == 'json_object':
+            # Produce an output that is json, but not what we expect
+            message = {}
         else:
             raise Exception('Unknown board: {}'.format(board))
-        self.device_simulator = ArduinoSimulator(
-            message, self.relay_queue, self.json_queue, self.stop, self.logger)
+        self.device_simulator = ArduinoSimulator(message, self.relay_queue, self.json_queue,
+                                                 self.stop, self.logger)
 
 
 Serial = FakeArduinoSerialHandler
