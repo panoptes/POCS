@@ -34,9 +34,9 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        if exp_time > 5:
-            kwargs['exp_time'] = 5
-            self.logger.debug("Trimming camera simulator exposure to 5 s")
+        if exp_time > 2:
+            kwargs['exp_time'] = 2
+            self.logger.debug("Trimming camera simulator exposure to 2 s")
 
         return super().take_observation(observation,
                                         headers,
@@ -94,8 +94,8 @@ class Camera(AbstractCamera):
 
         fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
 
-    def _process_fits(sefl, file_path, info):
-        super()._process_fits(file_path, info)
+    def _process_fits(self, file_path, info):
+        file_path = super()._process_fits(file_path, info)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
         solved_header = fits.getheader(solved_path)
@@ -104,3 +104,4 @@ class Camera(AbstractCamera):
             hdu.header.set('RA-MNT', solved_header['RA-MNT'], 'Degrees')
             hdu.header.set('HA-MNT', solved_header['HA-MNT'], 'Degrees')
             hdu.header.set('DEC-MNT', solved_header['DEC-MNT'], 'Degrees')
+        return file_path

@@ -268,7 +268,7 @@ class AbstractCamera(PanBase):
         })
 
         # Mark the event as done
-        signal_event.set()
+        observation_event.set()
 
     def autofocus(self,
                   seconds=None,
