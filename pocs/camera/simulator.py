@@ -26,37 +26,23 @@ class Camera(AbstractCamera):
         The simulator merely markes the `connected` property.
         """
         # Create a random serial number
-        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
-        camera_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          *args,
-                                                                          **kwargs)
+        exp_time = kwargs.get('exp_time', observation.exp_time.value)
+        if exp_time > 2:
+            kwargs['exp_time'] = 2
+            self.logger.debug("Trimming camera simulator exposure to 2 s")
 
-        filename = "solved.{}".format(self.file_extension)
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
-        exp_time = 5
-        self.logger.debug("Trimming camera simulator exposure to 5 s")
-
-        self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
-
-        # Add most recent exposure to list
-        observation.exposure_list[image_id] = file_path
-
-        # Process the image after a set amount of time
-        wait_time = exp_time + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
-        t.name = '{}Thread'.format(self.name)
-        t.start()
-
-        return camera_event
+        return super().take_observation(observation,
+                                        headers,
+                                        filename,
+                                        *args,
+                                        **kwargs)
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -97,7 +83,7 @@ class Camera(AbstractCamera):
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'unsolved.fits')
+        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
         fake_data = fits.getdata(file_path)
 
         if header['IMAGETYP'] == 'Dark Frame':
@@ -107,3 +93,15 @@ class Camera(AbstractCamera):
                                           dtype=fake_data.dtype)
 
         fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
+
+    def _process_fits(self, file_path, info):
+        file_path = super()._process_fits(file_path, info)
+        self.logger.debug('Overriding mount coordinates for camera simulator')
+        solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
+        solved_header = fits.getheader(solved_path)
+        with fits.open(file_path, 'update') as f:
+            hdu = f[0]
+            hdu.header.set('RA-MNT', solved_header['RA-MNT'], 'Degrees')
+            hdu.header.set('HA-MNT', solved_header['HA-MNT'], 'Degrees')
+            hdu.header.set('DEC-MNT', solved_header['DEC-MNT'], 'Degrees')
+        return file_path
