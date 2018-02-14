@@ -42,7 +42,7 @@ class Camera(AbstractCamera):
                                         headers,
                                         filename,
                                         *args,
-                                        **kwargs):
+                                        **kwargs)
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
