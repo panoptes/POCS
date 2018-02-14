@@ -94,7 +94,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(
-        fname=None, figsize=(10.6, 8), dpi=150, alpha=0.2, ra_spacing=15, dec_spacing=5, **kwargs):
+        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=15, **kwargs):
 
     with fits.open(fname) as hdu:
         header = hdu[0].header
@@ -123,14 +123,18 @@ def _make_pretty_from_fits(
         ra_axis.set_axislabel('Right Ascension')
         ra_axis.set_major_formatter('hh:mm')
         ra_axis.set_ticks(
-            spacing=ra_spacing * u.arcmin, color='white', exclude_overlapping=True
+            number=number,
+            color='white',
+            exclude_overlapping=True
         )
 
         dec_axis = ax.coords['dec']
         dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
         dec_axis.set_ticks(
-            spacing=dec_spacing * u.arcmin, color='white', exclude_overlapping=True
+            number=number,
+            color='white',
+            exclude_overlapping=True
         )
     else:
         ax = plt.subplot()
