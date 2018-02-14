@@ -93,7 +93,9 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=3.0, **kwargs):
+def _make_pretty_from_fits(
+        fname=None, figsize=(10.6, 8), dpi=150, alpha=0.2, ra_spacing=15, dec_spacing=5, **kwargs):
+
     with fits.open(fname) as hdu:
         header = hdu[0].header
         data = hdu[0].data
@@ -118,21 +120,18 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
         ax.coords.grid(True, color='white', ls='-', alpha=alpha)
 
         ra_axis = ax.coords['ra']
-        dec_axis = ax.coords['dec']
-
         ra_axis.set_axislabel('Right Ascension')
-        dec_axis.set_axislabel('Declination')
-
         ra_axis.set_major_formatter('hh:mm')
+        ra_axis.set_ticks(
+            spacing=ra_spacing * u.arcmin, color='white', exclude_overlapping=True
+        )
+
+        dec_axis = ax.coords['dec']
+        dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
-
-        ra_axis.set_ticks(spacing=5 * u.arcmin, color='white', exclude_overlapping=True)
-        dec_axis.set_ticks(spacing=5 * u.arcmin, color='white', exclude_overlapping=True)
-
-        ra_axis.display_minor_ticks(True)
-        dec_axis.display_minor_ticks(True)
-
-        dec_axis.set_minor_frequency(10)
+        dec_axis.set_ticks(
+            spacing=dec_spacing * u.arcmin, color='white', exclude_overlapping=True
+        )
     else:
         ax = plt.subplot()
         ax.grid(True, color='white', ls='-', alpha=alpha)
@@ -141,13 +140,10 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, alpha=0.2, pad=
         ax.set_ylabel('Y / pixels')
 
     ax.imshow(data, norm=norm, cmap=palette, origin='lower')
-
-    plt.tight_layout(pad=pad)
     plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')
     plt.savefig(new_filename)
-
     plt.close()
 
     return new_filename
