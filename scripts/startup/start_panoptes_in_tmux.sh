@@ -54,9 +54,11 @@ function create_and_init_window() {
     # Create the window.
     tmux new-window -n "${WINDOW}"
 
-    # Give the window a few seconds to start up (i.e. to start bash, and
-    # for bash to run the initialization script).
-    sleep 3s  
+    # Give the window a little while to start up (i.e. to start bash, and
+    # for bash to run the initialization script). 8 seconds was chosen
+    # based on how long it takes on PAN006 for a new tmux window to
+    # print the bash prompt.
+    sleep 8s
 
     # Run the script in a separate process, and prevent it from being
     # killed when this script ends.
