@@ -3,12 +3,10 @@
 WINDOW="${1}"
 echo "Running $(basename "${0}") at $(date), WINDOW=${WINDOW}"
 
-# Wait for bash to be ready (not necessary, but makes
-# the window look tidier when you attach later).
-sleep 1s
-
 tmux send-keys -t "${WINDOW}" "date" C-m
-tmux send-keys -t "${WINDOW}" "cd $POCS" C-m
+sleep 0.5s
+tmux send-keys -t "${WINDOW}" "cd ${POCS}" C-m
+sleep 0.5s
 tmux send-keys -t "${WINDOW}" "bin/pocs_shell" C-m
 sleep 10s
 tmux send-keys -t "${WINDOW}" "setup_pocs" C-m
