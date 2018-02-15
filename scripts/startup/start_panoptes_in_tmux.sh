@@ -15,7 +15,7 @@ echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file
-set -x
+set +x
 
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 
@@ -40,12 +40,6 @@ echo "MATPLOTLIBRC: ${MATPLOTLIBRC}"
 echo '$-:' "$-"
 # Just in case conda isn't setup as expected, don't die here.
 (set +e ; conda info)
-
-# We get noisy complaints from astroplan about the IERS Bulletin A
-# being too old, and this can cause some concern for those running
-# this software. Avoid these by downloading fresh data,; ignore
-# errors, such as due to the lack of an internet connection.
-(set +e ; python "${POCS}/pocs/utils/data.py")
 
 function create_and_init_window() {
     local -r WINDOW="${1}"
@@ -72,6 +66,14 @@ function create_and_init_window() {
     # may not be strictly necessary.
     sleep 2s
 }
+
+set -x
+
+# We get noisy complaints from astroplan about the IERS Bulletin A
+# being too old, and this can cause some concern for those running
+# this software. Avoid these by downloading fresh data,; ignore
+# errors, such as due to the lack of an internet connection.
+(set +e ; python "${POCS}/pocs/utils/data.py")
 
 # Create a window running the zeromq message forwarders.
 # These provide connections between message publishers and subscribers.

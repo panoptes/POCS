@@ -32,6 +32,7 @@ echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file
+set +x
 
 # Record a bunch of environment variables into the log file. This
 # helps us later if we need to debug the execution of this script
@@ -54,6 +55,8 @@ echo 'Shell options ($-):' "$-"
 # their values as they may impact things.
 echo "PIAA: ${PIAA}"
 echo "MATPLOTLIBRC: ${MATPLOTLIBRC}"
+
+set -x
 
 # Finally, the point of this script: create a detached (-d) tmux session
 # called panoptes (-s), with a scrollback buffer of 5000 lines.
