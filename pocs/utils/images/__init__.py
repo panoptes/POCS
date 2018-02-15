@@ -94,7 +94,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(
-        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=15, **kwargs):
+        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=7, **kwargs):
 
     with fits.open(fname) as hdu:
         header = hdu[0].header
@@ -147,7 +147,7 @@ def _make_pretty_from_fits(
     plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')
-    plt.savefig(new_filename)
+    plt.savefig(new_filename, bbox_inches='tight')
     plt.close()
 
     return new_filename
