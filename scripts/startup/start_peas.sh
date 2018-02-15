@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 WINDOW="${1}"
 echo "Running $(basename "${0}") at $(date), WINDOW=${WINDOW}"

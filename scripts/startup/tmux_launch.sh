@@ -11,12 +11,16 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 echo "Setting up logging..."
 
-# Setup a directory into which we can log.
-export STARTUP_LOG_DIR_SLASH="${PANLOG}/per-run/startup/"
+# Setup a directory for the log file from this script and from those
+# it invokes. By creating a unique directory per startup, we make it
+# easier to view the group of files from a single reboot.
+export STARTUP_LOG_DIR_SLASH="${PANLOG}/per-run/startup/$(date +%Y%m%d-%H%M%S-%Z)/"
 mkdir -p "${STARTUP_LOG_DIR_SLASH}"
 
-NOW="$(date +%Y%m%d-%H%M%S-%Z)"
-LOG_FILE="${STARTUP_LOG_DIR_SLASH}$(basename "${BASH_SOURCE[0]}" .sh)-${NOW}.log"
+LOG_NAME="$(basename "${BASH_SOURCE[0]}" .sh).log"
+LOG_FILE="${STARTUP_LOG_DIR_SLASH}${LOG_NAME}"
+
+echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file

@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 # This script is designed to be run inside tmux, launched by
 # tmux_launch.sh. Make sure that is so.
@@ -8,8 +8,10 @@ if [[ -z "${STARTUP_LOG_DIR_SLASH}" ]] ; then
   exit 1
 fi
 
-NOW="$(date +%Y%m%d-%H%M%S-%Z)"
-LOG_FILE="${STARTUP_LOG_DIR_SLASH}$(basename "${BASH_SOURCE[0]}" .sh)-${NOW}.log"
+LOG_NAME="$(basename "${BASH_SOURCE[0]}" .sh).log"
+LOG_FILE="${STARTUP_LOG_DIR_SLASH}${LOG_NAME}"
+
+echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file
@@ -45,32 +47,54 @@ echo '$-:' "$-"
 # errors, such as due to the lack of an internet connection.
 (set +e ; python "${POCS}/pocs/utils/data.py")
 
+function create_and_init_window() {
+    local -r WINDOW="${1}"
+    shift
+    local -r SCRIPT="${1}"
+    shift
+    local -r LOG_NAME="$(basename "${SCRIPT}" .sh)-in-${WINDOW}.log"
+    local -r LOCAL_LOG_FILE="${STARTUP_LOG_DIR_SLASH}${LOG_NAME}"
+
+    echo "Will run ${SCRIPT} in window ${WINDOW}, logging to ${LOCAL_LOG_FILE}"
+
+    # Create the window.
+    tmux new-window -n "${WINDOW}"
+
+    # Give the window a few seconds to start up (i.e. to start bash, and
+    # for bash to run the initialization script).
+    sleep 3s  
+
+    # Run the script in a separate process, and prevent it from being
+    # killed when this script ends.
+    nohup "./${SCRIPT}" ":${WINDOW}" "${@}" > "${LOCAL_LOG_FILE}" 2>&1 &
+
+    # And give that script a couple of seconds to get started. This
+    # may not be strictly necessary.
+    sleep 2s
+}
+
 # Create a window running the zeromq message forwarders.
 # These provide connections between message publishers and subscribers.
-tmux new-window -n messaging
-./start_messaging_hub.sh :messaging
+create_and_init_window messaging start_messaging_hub.sh
 
 # Start PAWS, the PANOPTES Administrative Web Server.
-tmux new-window -n paws
-./start_paws.sh :paws
+create_and_init_window paws start_paws.sh
 
 # Start PEAS, the PANOPTES Environmental Analysis System
 # (primarily takes care of reading from the sensors and loading
 # the data into a Mongo Db).
-tmux new-window -n peas
-./start_peas.sh :peas
+create_and_init_window peas start_peas.sh
 
 # Start POCS, the PANOPTES Observatory Control System,
 # the main software we're interested in having running.
-tmux new-window -n pocs
-./start_pocs.sh :pocs
+create_and_init_window pocs start_pocs.sh
 
 # Monitor the POCS log file.
-tmux new-window -n log_pocs
-./start_log_viewer.sh :log_pocs "${PANLOG}/pocs_shell-all.log"
+create_and_init_window log_pocs start_log_viewer.sh \
+    "${PANLOG}/pocs_shell-all.log"
 
 # Monitor the PEAS log file.
-tmux new-window -n log_peas
-./start_log_viewer.sh :log_peas "${PANLOG}/peas_shell-all.log"
+create_and_init_window log_peas start_log_viewer.sh \
+    "${PANLOG}/peas_shell-all.log"
 
 exit
