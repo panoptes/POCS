@@ -74,8 +74,8 @@ you add that rule at the end of the file, save the file and exit the
 editor. You can confirm that it was added correctly by viewing the
 file with the command `crontab -l`. Next, reboot the computer (e.g.
 with the command `sudo shutdown -r now`), log back in, remove that
-test rule, and see if /tmp/at-reboot-worked was created. If it was,
-then `@reboot` works. Otherwise, skip the @reboot rule in the
+test rule, and see if `/tmp/at-reboot-worked` was created. If it was,
+then `@reboot` works. Otherwise, skip the `@reboot` rule in the
 steps that follow, and follow the instructions in 
 __Execution by `root`__ after editing your crontab.
 
