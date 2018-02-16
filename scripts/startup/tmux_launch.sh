@@ -3,7 +3,9 @@
 # Start the PANOPTES software in a detached tmux (terminal multiplexer)
 # session; this enables the PANOPTES unit's owner/administrator to
 # attach to that session later, see the output and take control of all
-# the shells.
+# the shells. You can attach to the session with this command:
+
+#      tmux attach-session -t panoptes
 
 # This script is intended to be executed in a fully initialized shell
 # (i.e. one in which .profile, .bashrc, etc. have been executed)
@@ -46,15 +48,11 @@ echo "PANDIR: ${PANDIR}"
 echo "PANLOG: ${PANLOG}"
 echo "POCS: ${POCS}"
 echo "PAWS: ${PAWS}"
+echo "PIAA: ${PIAA}"
 
 # $- expands to the current option flags as specified upon invocation, by the
 # set built-in command, or those set by the shell itself (such as the -i).
 echo 'Shell options ($-):' "$-"
-
-# These two environment variables don't have to be set, but let's record
-# their values as they may impact things.
-echo "PIAA: ${PIAA}"
-echo "MATPLOTLIBRC: ${MATPLOTLIBRC}"
 
 set -x
 

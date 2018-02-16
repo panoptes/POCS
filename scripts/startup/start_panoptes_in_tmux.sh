@@ -34,7 +34,6 @@ echo "PANLOG: ${PANLOG}"
 echo "POCS: ${POCS}"
 echo "PAWS: ${PAWS}"
 echo "PIAA: ${PIAA}"
-echo "MATPLOTLIBRC: ${MATPLOTLIBRC}"
 # $- expands to the current option flags as specified upon invocation, by the
 # set built-in command, or those set by the shell itself (such as the -i).
 echo '$-:' "$-"
