@@ -26,6 +26,7 @@ db:
 scheduler:
     type: dispatch
     fields_file: simple.yaml
+    check_file: True
 mount:
     brand: ioptron
     model: 30

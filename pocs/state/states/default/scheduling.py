@@ -22,7 +22,7 @@ def on_enter(event_data):
 
         # Get the next observation
         try:
-            observation = pocs.observatory.get_observation(reread_fields_file=True)
+            observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
         except error.NoObservation as e:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
