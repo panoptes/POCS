@@ -7,11 +7,24 @@
 
 #      tmux attach-session -t panoptes
 
-# This script is intended to be executed in a fully initialized shell
-# (i.e. one in which .profile, .bashrc, etc. have been executed)
+# This script is intended to be executed in a fully initialized bash
+# shell (i.e. one in which .profile, .bashrc, etc. have been executed)
 # because those setup the environment variables needed.
 # In particular, this script can be run by su_panoptes.sh or by
 # a @reboot rule in the crontab of user $PANUSER.
+
+if [[ -z "$BASH_VERSION" ]] ; then
+  echo "This script must be run by bash."
+  exit 1
+fi
+
+# And we need the shell to have the the PANOPTES environment
+# setup.
+if [[ -z "$PANDIR" || -z "$POCS" || -z "$PANLOG" || -z "$PAWS" ]] ; then
+  echo "The PANOPTES environment variables must be set."
+  echo "This script should be run from a login shell."
+  exit 1
+fi
 
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 
@@ -57,8 +70,10 @@ echo 'Shell options ($-):' "$-"
 set -x
 
 # Finally, the point of this script: create a detached (-d) tmux session
-# called panoptes (-s), with a scrollback buffer of 5000 lines.
-tmux set-option -g history-limit 5000 \; new-session -d \
-                -s panoptes ./start_panoptes_in_tmux.sh
+# called panoptes (-s), with a scrollback buffer of 5000 lines, where
+# the shell is bash.
+tmux set-option -g history-limit 5000 \; \
+     set-option -g default-shell /bin/bash \; \
+     new-session -d -s panoptes ./start_panoptes_in_tmux.sh
 
 exit

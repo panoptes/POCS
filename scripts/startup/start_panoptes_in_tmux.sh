@@ -1,10 +1,23 @@
 #!/bin/bash -ex
 
+if [[ -z "$BASH_VERSION" ]] ; then
+  echo "This script must be run by bash."
+  exit 1
+fi
+
 # This script is designed to be run inside tmux, launched by
 # tmux_launch.sh. Make sure that is so.
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 if [[ -z "${STARTUP_LOG_DIR_SLASH}" ]] ; then
   echo "This script must be run by tmux_launch.sh"
+  exit 1
+fi
+
+# And we need the shell to have the the PANOPTES environment
+# setup.
+if [[ -z "$PANDIR" || -z "$POCS" || -z "$PANLOG" || -z "$PAWS" ]] ; then
+  echo "The PANOPTES environment variables must be set."
+  echo "This script should be run from a login shell."
   exit 1
 fi
 
@@ -26,8 +39,8 @@ echo "Running ${BASH_SOURCE[0]} at $(date)"
 # executed). Let's check (PATH and conda info are the giveaway).
 
 echo "Current dir: $(pwd)"
-echo "Current user: ${USER}"
-echo "Current path: ${PATH}"
+echo "USER: ${USER}"
+echo "PATH: ${PATH}"
 echo "PANUSER: ${PANUSER}"
 echo "PANDIR: ${PANDIR}"
 echo "PANLOG: ${PANLOG}"
