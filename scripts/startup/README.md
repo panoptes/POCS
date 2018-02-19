@@ -87,10 +87,15 @@ POCS=/var/panoptes/POCS
 PANLOG=/var/panoptes/logs
 
 # m h  dom mon dow   command
-@reboot              /bin/bash --login $POCS/scripts/startup/tmux_launch.sh
-*/5 *   *   *   *    /bin/bash --login python $POCS/scripts/plot_weather.py >> $PANLOG/plot_weather.log 2>&1
-11  12  *   *   *    /bin/bash --login python $POCS/pocs/utils/data.py >> $PANLOG/update_data.log 2>&1
+@reboot              /bin/bash --login $POCS/scripts/startup/tmux_launch.sh >> $PANLOG/tmux_launch.cron-reboot.log 2>&1
+*/5 *   *   *   *    /bin/bash --login python $POCS/scripts/plot_weather.py >> $PANLOG/plot_weather.cron.log 2>&1
+11  12  *   *   *    /bin/bash --login python $POCS/pocs/utils/data.py >> $PANLOG/update_data.cron.log 2>&1
 ```
+
+
+
+
+
 
 If your values for POCS and PANLOG don't match those shown above, please
 edit them appropriately. Use the fully evaluated values (e.g. the

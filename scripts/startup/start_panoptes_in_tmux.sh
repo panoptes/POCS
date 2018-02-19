@@ -96,6 +96,14 @@ create_and_init_window messaging start_messaging_hub.sh
 # Start PAWS, the PANOPTES Administrative Web Server.
 create_and_init_window paws start_paws.sh
 
+# Monitor the PEAS log file.
+create_and_init_window log_peas start_log_viewer.sh \
+    "${PANLOG}/peas_shell-all.log"
+
+# Monitor the POCS log file.
+create_and_init_window log_pocs start_log_viewer.sh \
+    "${PANLOG}/pocs_shell-all.log"
+
 # Start PEAS, the PANOPTES Environmental Analysis System
 # (primarily takes care of reading from the sensors and loading
 # the data into a Mongo Db).
@@ -104,13 +112,5 @@ create_and_init_window peas start_peas.sh
 # Start POCS, the PANOPTES Observatory Control System,
 # the main software we're interested in having running.
 create_and_init_window pocs start_pocs.sh
-
-# Monitor the POCS log file.
-create_and_init_window log_pocs start_log_viewer.sh \
-    "${PANLOG}/pocs_shell-all.log"
-
-# Monitor the PEAS log file.
-create_and_init_window log_peas start_log_viewer.sh \
-    "${PANLOG}/peas_shell-all.log"
 
 exit
