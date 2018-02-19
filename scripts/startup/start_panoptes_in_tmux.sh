@@ -1,10 +1,23 @@
 #!/bin/bash -ex
 
+if [[ -z "$BASH_VERSION" ]] ; then
+  echo "This script must be run by bash."
+  exit 1
+fi
+
 # This script is designed to be run inside tmux, launched by
 # tmux_launch.sh. Make sure that is so.
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 if [[ -z "${STARTUP_LOG_DIR_SLASH}" ]] ; then
   echo "This script must be run by tmux_launch.sh"
+  exit 1
+fi
+
+# And we need the shell to have the the PANOPTES environment
+# setup.
+if [[ -z "$PANDIR" || -z "$POCS" || -z "$PANLOG" || -z "$PAWS" ]] ; then
+  echo "The PANOPTES environment variables must be set."
+  echo "This script should be run from a login shell."
   exit 1
 fi
 
@@ -15,7 +28,10 @@ echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file
+
 set +x
+# set +x turns off the verbose logging of each line. This makes
+# the following block of echoes easier to read in the log file.
 
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 
@@ -26,8 +42,8 @@ echo "Running ${BASH_SOURCE[0]} at $(date)"
 # executed). Let's check (PATH and conda info are the giveaway).
 
 echo "Current dir: $(pwd)"
-echo "Current user: ${USER}"
-echo "Current path: ${PATH}"
+echo "USER: ${USER}"
+echo "PATH: ${PATH}"
 echo "PANUSER: ${PANUSER}"
 echo "PANDIR: ${PANDIR}"
 echo "PANLOG: ${PANLOG}"
@@ -68,6 +84,7 @@ function create_and_init_window() {
     sleep 2s
 }
 
+# Resume verbose logging in order to support debugging these scripts.
 set -x
 
 # We get noisy complaints from astroplan about the IERS Bulletin A
@@ -83,6 +100,14 @@ create_and_init_window messaging start_messaging_hub.sh
 # Start PAWS, the PANOPTES Administrative Web Server.
 create_and_init_window paws start_paws.sh
 
+# Monitor the PEAS log file.
+create_and_init_window log_peas start_log_viewer.sh \
+    "${PANLOG}/peas_shell-all.log"
+
+# Monitor the POCS log file.
+create_and_init_window log_pocs start_log_viewer.sh \
+    "${PANLOG}/pocs_shell-all.log"
+
 # Start PEAS, the PANOPTES Environmental Analysis System
 # (primarily takes care of reading from the sensors and loading
 # the data into a Mongo Db).
@@ -91,13 +116,5 @@ create_and_init_window peas start_peas.sh
 # Start POCS, the PANOPTES Observatory Control System,
 # the main software we're interested in having running.
 create_and_init_window pocs start_pocs.sh
-
-# Monitor the POCS log file.
-create_and_init_window log_pocs start_log_viewer.sh \
-    "${PANLOG}/pocs_shell-all.log"
-
-# Monitor the PEAS log file.
-create_and_init_window log_peas start_log_viewer.sh \
-    "${PANLOG}/peas_shell-all.log"
 
 exit
