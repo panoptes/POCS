@@ -28,7 +28,10 @@ echo "Will log to ${LOG_FILE}"
 
 exec 2> "${LOG_FILE}"  # send stderr to a log file
 exec 1>&2              # send stdout to the same log file
+
 set +x
+# set +x turns off the verbose logging of each line. This makes
+# the following block of echoes easier to read in the log file.
 
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 
@@ -81,6 +84,7 @@ function create_and_init_window() {
     sleep 2s
 }
 
+# Resume verbose logging in order to support debugging these scripts.
 set -x
 
 # We get noisy complaints from astroplan about the IERS Bulletin A

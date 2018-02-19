@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/bash -ex
 
 # Start running the script tmux_launch as user $PANUSER in a login
 # shell, i.e. one that will run that user's shell initialization

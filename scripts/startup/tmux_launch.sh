@@ -71,7 +71,7 @@ set -x
 
 # Finally, the point of this script: create a detached (-d) tmux session
 # called panoptes (-s), with a scrollback buffer of 5000 lines, where
-# the shell is bash.
+# the shell used by new-window is bash.
 tmux set-option -g history-limit 5000 \; \
      set-option -g default-shell /bin/bash \; \
      new-session -d -s panoptes ./start_panoptes_in_tmux.sh
