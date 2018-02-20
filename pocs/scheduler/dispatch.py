@@ -2,6 +2,7 @@ from astropy import units as u
 
 from astropy.coordinates import get_moon
 
+from pocs.utils import current_time
 from pocs.utils import listify
 from pocs.scheduler import BaseScheduler
 
@@ -21,7 +22,7 @@ class Scheduler(BaseScheduler):
 # Methods
 ##########################################################################
 
-    def get_observation(self, time=None, *args, **kwargs):
+    def get_observation(self, time=None, show_all=False, reread_fields_file=False):
         """Get a valid observation
 
         Args:
@@ -35,7 +36,12 @@ class Scheduler(BaseScheduler):
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
-        super().get_observation(*args, **kwargs)
+        if reread_fields_file:
+            self.logger.debug("Rereading fields file")
+            self.read_field_list()
+
+        if time is None:
+            time = current_time()
 
         valid_obs = {obs: 1.0 for obs in self.observations}
         best_obs = []
@@ -101,7 +107,7 @@ class Scheduler(BaseScheduler):
                     self.logger.warning("No valid observations found")
                     self.current_observation = None
 
-        if not kwargs.get('show_all', False) and len(best_obs) > 0:
+        if not show_all and len(best_obs) > 0:
             best_obs = best_obs[0]
 
         return best_obs

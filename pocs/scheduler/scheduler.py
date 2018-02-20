@@ -177,7 +177,7 @@ class BaseScheduler(PanBase):
         self.current_observation = None
         self._observations = dict()
 
-    def get_observation(self, time=None, show_all=False, reread_fields_file=False):
+    def get_observation(self, time=None, show_all=False):
         """Get a valid observation
 
         Args:
@@ -185,17 +185,11 @@ class BaseScheduler(PanBase):
                 defaults to time called
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
-            reread_fields_file (bool, optional): If the fields file should be reread
-                before scheduling occurs, defaults to False.
+
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
-        if time is None:
-            time = current_time()
-
-        if reread_fields_file:
-            self.logger.debug("Rereading fields file")
-            self.read_field_list()
+        raise NotImplementedError
 
     def status(self):
         return {
