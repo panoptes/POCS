@@ -8,7 +8,6 @@ from pocs.mount import AbstractMount
 
 
 class AbstractSerialMount(AbstractMount):
-
     def __init__(self, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
 
@@ -23,15 +22,14 @@ class AbstractSerialMount(AbstractMount):
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")
         except KeyError:
-            self.logger.critical(
-                'No serial config specified, cannot create mount\n {}', self.config['mount'])
+            self.logger.critical('No serial config specified, cannot create mount\n {}',
+                                 self.config['mount'])
         except Exception as e:
             self.logger.critical(e)
 
     @property
     def _port(self):
         return self.serial.ser.port
-
 
 ##################################################################################################
 # Methods
@@ -88,15 +86,13 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.query(
-                'set_custom_{}_tracking_rate'.format(direction),
-                "{}".format(delta_str))
+            response = self.query('set_custom_{}_tracking_rate'.format(direction),
+                                  "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
-
 
 ##################################################################################################
 # Communication Methods
@@ -181,19 +177,16 @@ class AbstractSerialMount(AbstractMount):
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):
-                    self.logger.info(
-                        "Loading mount commands file: {}".format(conf_file))
+                    self.logger.info("Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.debug(
-                                "Mount commands updated from {}".format(conf_file))
+                            self.logger.debug("Mount commands updated from {}".format(conf_file))
                     except OSError as err:
-                        self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                        self.logger.warning('Cannot load commands config file: {} \n {}'.format(
+                            conf_file, err))
                     except Exception:
-                        self.logger.warning(
-                            "Problem loading mount command file")
+                        self.logger.warning("Problem loading mount command file")
                 else:
                     self.logger.warning(
                         "No such config file for mount commands: {}".format(conf_file))
@@ -220,14 +213,13 @@ class AbstractSerialMount(AbstractMount):
 
             if 'params' in cmd_info:
                 if params is None:
-                    raise error.InvalidMountCommand(
-                        '{} expects params: {}'.format(cmd, cmd_info.get('params')))
+                    raise error.InvalidMountCommand('{} expects params: {}'.format(
+                        cmd, cmd_info.get('params')))
 
-                full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                full_command = "{}{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), params,
+                                                 self._post_cmd)
             else:
-                full_command = "{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+                full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
             # self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:

@@ -19,11 +19,7 @@ class Camera(AbstractCamera):
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
         return super().__new__(cls)
 
-    def __init__(self,
-                 name='SBIG Camera',
-                 set_point=None,
-                 filter_type=None,
-                 *args, **kwargs):
+    def __init__(self, name='SBIG Camera', set_point=None, filter_type=None, *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
@@ -141,8 +137,7 @@ class Camera(AbstractCamera):
                       dark=False,
                       blocking=False,
                       *args,
-                      **kwargs
-                      ):
+                      **kwargs):
         """
         Take an exposure for given number of seconds and saves to provided filename.
 
@@ -165,13 +160,14 @@ class Camera(AbstractCamera):
             seconds, self.name, filename))
         exposure_event = Event()
         header = self._fits_header(seconds, dark)
-        self._SBIGDriver.take_exposure(self._handle, seconds, filename,
-                                       exposure_event, dark, header)
+        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark,
+                                       header)
 
         if blocking:
             exposure_event.wait()
 
         return exposure_event
+
 
 # Private methods
 

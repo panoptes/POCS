@@ -104,8 +104,7 @@ def test_basic_no_op(handler):
 
 def test_basic_io(handler):
     protocol_buffers.ResetBuffers(b'abc\r\ndef\n')
-    ser = rs232.SerialData(port='buffers://', open_delay=0.01, retry_delay=0.01,
-                           retry_limit=2)
+    ser = rs232.SerialData(port='buffers://', open_delay=0.01, retry_delay=0.01, retry_limit=2)
 
     # Peek inside, it should have a BuffersSerial instance as member ser.
     assert isinstance(ser.ser, protocol_buffers.BuffersSerial)
@@ -141,8 +140,7 @@ class HookedSerialHandler(NoOpSerial):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.r_buffer = io.BytesIO(
-            b"{'a': 12, 'b': [1, 2, 3, 4], 'c': {'d': 'message'}}\r\n")
+        self.r_buffer = io.BytesIO(b"{'a': 12, 'b': [1, 2, 3, 4], 'c': {'d': 'message'}}\r\n")
 
     @property
     def in_waiting(self):

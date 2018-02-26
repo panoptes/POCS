@@ -13,7 +13,6 @@ from pocs.utils.config import load_config
 
 
 class Webcam(object):
-
     """ Simple module to take a picture with the webcams
 
     This class will capture images from any webcam entry in the config file.
@@ -121,8 +120,8 @@ class Webcam(object):
                 if self._today_dir is not None:
                     self.logger.debug("Making timelapse for webcam")
                     self.create_timelapse(
-                        self._today_dir, out_file="{}/{}_{}.mp4".format(
-                            self.webcam_dir, today_dir, self.port_name),
+                        self._today_dir,
+                        out_file="{}/{}_{}.mp4".format(self.webcam_dir, today_dir, self.port_name),
                         remove_after=True)
 
                 # If today doesn't exist, make it
@@ -148,13 +147,8 @@ class Webcam(object):
 
         # Assemble all the parameters
         params = " -d {} --title \"{}\" {} --save {} --scale {} {}".format(
-            webcam.get('port'),
-            webcam.get('name'),
-            options,
-            out_file,
-            self._thumbnail_resolution,
-            thumbnail_file
-        )
+            webcam.get('port'), webcam.get('name'), options, out_file, self._thumbnail_resolution,
+            thumbnail_file)
 
         static_out_file = ''
 
@@ -164,17 +158,13 @@ class Webcam(object):
             self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
 
             with open(os.devnull, 'w') as devnull:
-                retcode = subprocess.call(self.cmd + params, shell=True,
-                                          stdout=devnull, stderr=devnull)
+                retcode = subprocess.call(
+                    self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
             if retcode < 0:
                 self.logger.warning(
                     "Image captured terminated for {}. Return code: {} \t Error: {}".format(
-                        webcam.get('name'),
-                        retcode,
-                        sys.stderr
-                    )
-                )
+                        webcam.get('name'), retcode, sys.stderr))
             else:
                 self.logger.debug("Image captured for {}".format(webcam.get('name')))
 
@@ -207,8 +197,11 @@ class Webcam(object):
             out_file = self.port_name
             out_file = '{}/{}.mp4'.format(directory, out_file)
 
-        cmd = [ffmpeg_cmd, '-f', 'image2', '-r', str(fps), '-pattern_type', 'glob',
-               '-i', '{}{}*.jpeg'.format(directory, self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
+        cmd = [
+            ffmpeg_cmd, '-f', 'image2', '-r',
+            str(fps), '-pattern_type', 'glob', '-i', '{}{}*.jpeg'.format(
+                directory, self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file
+        ]
 
         self.logger.debug("Timelapse command: {}".format(cmd))
         try:

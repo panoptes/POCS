@@ -33,7 +33,6 @@ def movingaverage(interval, window_size):
 # AAG Cloud Sensor Class
 # -----------------------------------------------------------------------------
 class AAGCloudSensor(object):
-
     """
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
@@ -169,48 +168,55 @@ class AAGCloudSensor(object):
                 'impulse_duration': 60,
                 'impulse_cycle': 600,
             }
-        self.heater_PID = PID(Kp=3.0, Ki=0.02, Kd=200.0,
-                              max_age=300,
-                              output_limits=[self.heater_cfg['min_power'], 100])
+        self.heater_PID = PID(
+            Kp=3.0,
+            Ki=0.02,
+            Kd=200.0,
+            max_age=300,
+            output_limits=[self.heater_cfg['min_power'], 100])
 
         self.impulse_heating = None
         self.impulse_start = None
 
         # Command Translation
-        self.commands = {'!A': 'Get internal name',
-                         '!B': 'Get firmware version',
-                         '!C': 'Get values',
-                         '!D': 'Get internal errors',
-                         '!E': 'Get rain frequency',
-                         '!F': 'Get switch status',
-                         '!G': 'Set switch open',
-                         '!H': 'Set switch closed',
-                         'P\d\d\d\d!': 'Set PWM value',
-                         '!Q': 'Get PWM value',
-                         '!S': 'Get sky IR temperature',
-                         '!T': 'Get sensor temperature',
-                         '!z': 'Reset RS232 buffer pointers',
-                         '!K': 'Get serial number',
-                         'v!': 'Query if anemometer enabled',
-                         'V!': 'Get wind speed',
-                         'M!': 'Get electrical constants',
-                         '!Pxxxx': 'Set PWM value to xxxx',
-                         }
-        self.expects = {'!A': '!N\s+(\w+)!',
-                        '!B': '!V\s+([\d\.\-]+)!',
-                        '!C': '!6\s+([\d\.\-]+)!4\s+([\d\.\-]+)!5\s+([\d\.\-]+)!',
-                        '!D': '!E1\s+([\d\.]+)!E2\s+([\d\.]+)!E3\s+([\d\.]+)!E4\s+([\d\.]+)!',
-                        '!E': '!R\s+([\d\.\-]+)!',
-                        '!F': '!Y\s+([\d\.\-]+)!',
-                        'P\d\d\d\d!': '!Q\s+([\d\.\-]+)!',
-                        '!Q': '!Q\s+([\d\.\-]+)!',
-                        '!S': '!1\s+([\d\.\-]+)!',
-                        '!T': '!2\s+([\d\.\-]+)!',
-                        '!K': '!K(\d+)\s*\\x00!',
-                        'v!': '!v\s+([\d\.\-]+)!',
-                        'V!': '!w\s+([\d\.\-]+)!',
-                        'M!': '!M(.{12})',
-                        }
+        # yapf: disable
+        self.commands = {
+            '!A': 'Get internal name',
+            '!B': 'Get firmware version',
+            '!C': 'Get values',
+            '!D': 'Get internal errors',
+            '!E': 'Get rain frequency',
+            '!F': 'Get switch status',
+            '!G': 'Set switch open',
+            '!H': 'Set switch closed',
+            'P\d\d\d\d!': 'Set PWM value',
+            '!Q': 'Get PWM value',
+            '!S': 'Get sky IR temperature',
+            '!T': 'Get sensor temperature',
+            '!z': 'Reset RS232 buffer pointers',
+            '!K': 'Get serial number',
+            'v!': 'Query if anemometer enabled',
+            'V!': 'Get wind speed',
+            'M!': 'Get electrical constants',
+            '!Pxxxx': 'Set PWM value to xxxx',
+        }
+        self.expects = {
+            '!A': '!N\s+(\w+)!',
+            '!B': '!V\s+([\d\.\-]+)!',
+            '!C': '!6\s+([\d\.\-]+)!4\s+([\d\.\-]+)!5\s+([\d\.\-]+)!',
+            '!D': '!E1\s+([\d\.]+)!E2\s+([\d\.]+)!E3\s+([\d\.]+)!E4\s+([\d\.]+)!',
+            '!E': '!R\s+([\d\.\-]+)!',
+            '!F': '!Y\s+([\d\.\-]+)!',
+            'P\d\d\d\d!': '!Q\s+([\d\.\-]+)!',
+            '!Q': '!Q\s+([\d\.\-]+)!',
+            '!S': '!1\s+([\d\.\-]+)!',
+            '!T': '!2\s+([\d\.\-]+)!',
+            '!K': '!K(\d+)\s*\\x00!',
+            'v!': '!v\s+([\d\.\-]+)!',
+            'V!': '!w\s+([\d\.\-]+)!',
+            'M!': '!M(.{12})',
+        }
+        # yapf: enable
         self.delays = {
             '!E': 0.350,
             'P\d\d\d\d!': 0.750,
@@ -347,8 +353,8 @@ class AAGCloudSensor(object):
             except Exception:
                 pass
             else:
-                self.logger.debug(
-                    '  Ambient Temperature Query = {:.1f}\t{:.1f}'.format(value, ambient_temp))
+                self.logger.debug('  Ambient Temperature Query = {:.1f}\t{:.1f}'.format(
+                    value, ambient_temp))
                 values.append(ambient_temp)
 
         if len(values) >= n - 1:
@@ -413,8 +419,8 @@ class AAGCloudSensor(object):
                 internal_voltages.append(internal_voltage)
                 LDR_resistance = LDRPullupResistance / ((1023. / float(responses[1])) - 1.)
                 LDR_resistances.append(LDR_resistance)
-                r = np.log((RainPullUpResistance /
-                            ((1023. / float(responses[2])) - 1.)) / RainResAt25)
+                r = np.log(
+                    (RainPullUpResistance / ((1023. / float(responses[2])) - 1.)) / RainResAt25)
                 rain_sensor_temp = 1. / ((r / RainBeta) + (1. / (ABSZERO + 25.))) - ABSZERO
                 rain_sensor_temps.append(rain_sensor_temp)
             except Exception:
@@ -516,10 +522,12 @@ class AAGCloudSensor(object):
         self.logger.debug('Getting errors')
         response = self.query('!D')
         if response:
-            self.errors = {'error_1': str(int(response[0])),
-                           'error_2': str(int(response[1])),
-                           'error_3': str(int(response[2])),
-                           'error_4': str(int(response[3]))}
+            self.errors = {
+                'error_1': str(int(response[0])),
+                'error_2': str(int(response[1])),
+                'error_3': str(int(response[2])),
+                'error_4': str(int(response[3]))
+            }
             self.logger.debug("  Internal Errors: {} {} {} {}".format(
                 self.errors['error_1'],
                 self.errors['error_2'],
@@ -528,10 +536,14 @@ class AAGCloudSensor(object):
             ))
 
         else:
-            self.errors = {'error_1': None,
-                           'error_2': None,
-                           'error_3': None,
-                           'error_4': None}
+            # yapf: disable
+            self.errors = {
+                'error_1': None,
+                'error_2': None,
+                'error_3': None,
+                'error_4': None
+            }
+            # yapf: enable
         return self.errors
 
     def get_switch(self, maxtries=3):
@@ -719,7 +731,9 @@ class AAGCloudSensor(object):
         entries = self.weather_entries
 
         self.logger.debug('  Found {} entries in last {:d} seconds.'.format(
-            len(entries), int(self.heater_cfg['impulse_cycle']), ))
+            len(entries),
+            int(self.heater_cfg['impulse_cycle']),
+        ))
 
         last_entry = self.weather_entries[-1]
         rain_history = [x['rain_safe'] for x in entries if 'rain_safe' in x.keys()]
@@ -737,13 +751,13 @@ class AAGCloudSensor(object):
                 if self.impulse_heating:
                     impulse_time = (now - self.impulse_start).total_seconds()
                     if impulse_time > float(self.heater_cfg['impulse_duration']):
-                        self.logger.debug('Impulse heating on for > {:.0f} s. Turning off.', float(
-                            self.heater_cfg['impulse_duration']))
+                        self.logger.debug('Impulse heating on for > {:.0f} s. Turning off.',
+                                          float(self.heater_cfg['impulse_duration']))
                         self.impulse_heating = False
                         self.impulse_start = None
                     else:
-                        self.logger.debug(
-                            '  Impulse heating has been on for {:.0f} seconds.', impulse_time)
+                        self.logger.debug('  Impulse heating has been on for {:.0f} seconds.',
+                                          impulse_time)
                 else:
                     self.logger.debug('  Starting impulse heating sequence.')
                     self.impulse_start = now
@@ -776,17 +790,22 @@ class AAGCloudSensor(object):
                     deltaT = self.heater_cfg['low_delta'] + frac * \
                         (self.heater_cfg['high_delta'] - self.heater_cfg['low_delta'])
                 target_temp = last_entry['ambient_temp_C'] + deltaT
-                new_PWM = int(self.heater_PID.recalculate(float(last_entry['rain_sensor_temp_C']),
-                                                          new_set_point=target_temp))
+                new_PWM = int(
+                    self.heater_PID.recalculate(
+                        float(last_entry['rain_sensor_temp_C']), new_set_point=target_temp))
                 self.logger.debug('  last PID interval = {:.1f} s'.format(
                     self.heater_PID.last_interval))
-                self.logger.debug('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(
-                    target_temp, float(last_entry['rain_sensor_temp_C']),
-                    new_PWM, self.heater_PID.Kp * self.heater_PID.Pval,
-                    self.heater_PID.Ki * self.heater_PID.Ival,
-                    len(self.heater_PID.history),
-                    self.heater_PID.Kd * self.heater_PID.Dval,
-                ))
+                self.logger.debug(
+                    '  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.
+                    format(
+                        target_temp,
+                        float(last_entry['rain_sensor_temp_C']),
+                        new_PWM,
+                        self.heater_PID.Kp * self.heater_PID.Pval,
+                        self.heater_PID.Ki * self.heater_PID.Ival,
+                        len(self.heater_PID.history),
+                        self.heater_PID.Kd * self.heater_PID.Dval,
+                    ))
                 self.set_PWM(new_PWM)
 
     def make_safety_decision(self, current_values):
@@ -814,11 +833,13 @@ class AAGCloudSensor(object):
         safe = cloud[1] & wind[1] & gust[1] & rain[1]
         self.logger.debug('Weather Safe: {}'.format(safe))
 
+        # yapf: disable
         return {'Safe': safe,
                 'Sky': cloud[0],
                 'Wind': wind[0],
                 'Gust': gust[0],
                 'Rain': rain[0]}
+        # yapf: enable
 
     def _get_cloud_safety(self, current_values):
         safety_delay = self.safety_delay
@@ -827,9 +848,10 @@ class AAGCloudSensor(object):
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
         threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
 
-        sky_diff = [x['sky_temp_C'] - x['ambient_temp_C']
-                    for x in entries
-                    if ('ambient_temp_C' and 'sky_temp_C') in x.keys()]
+        sky_diff = [
+            x['sky_temp_C'] - x['ambient_temp_C'] for x in entries
+            if ('ambient_temp_C' and 'sky_temp_C') in x.keys()
+        ]
 
         if len(sky_diff) == 0:
             self.logger.debug('  UNSAFE: no sky temperatures found')
@@ -838,7 +860,7 @@ class AAGCloudSensor(object):
         else:
             if max(sky_diff) > threshold_cloudy:
                 self.logger.debug('UNSAFE: Cloudy in last {} min. Max sky diff {:.1f} C'.format(
-                                  safety_delay, max(sky_diff)))
+                    safety_delay, max(sky_diff)))
                 sky_safe = False
             else:
                 sky_safe = True
@@ -850,8 +872,8 @@ class AAGCloudSensor(object):
                 cloud_condition = 'Cloudy'
             else:
                 cloud_condition = 'Clear'
-            self.logger.debug(
-                'Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
+            self.logger.debug('Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(
+                cloud_condition, sky_diff[-1]))
 
         return cloud_condition, sky_safe
 
@@ -868,9 +890,7 @@ class AAGCloudSensor(object):
         threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
 
         # Wind (average and gusts)
-        wind_speed = [x['wind_speed_KPH']
-                      for x in entries
-                      if 'wind_speed_KPH' in x.keys()]
+        wind_speed = [x['wind_speed_KPH'] for x in entries if 'wind_speed_KPH' in x.keys()]
 
         if len(wind_speed) == 0:
             self.logger.debug('  UNSAFE: no wind speed readings found')
@@ -890,8 +910,9 @@ class AAGCloudSensor(object):
 
             # Windy?
             if max(wind_mavg) > threshold_very_windy:
-                self.logger.debug('  UNSAFE:  Very windy in last {:.0f} min. Max wind speed {:.1f} kph'.format(
-                    safety_delay, max(wind_mavg)))
+                self.logger.debug(
+                    '  UNSAFE:  Very windy in last {:.0f} min. Max wind speed {:.1f} kph'.format(
+                        safety_delay, max(wind_mavg)))
                 wind_safe = False
             else:
                 wind_safe = True
@@ -902,13 +923,14 @@ class AAGCloudSensor(object):
                 wind_condition = 'Windy'
             else:
                 wind_condition = 'Calm'
-            self.logger.debug(
-                '  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
+            self.logger.debug('  Wind Condition: {} ({:.1f} km/h)'.format(
+                wind_condition, wind_mavg[-1]))
 
             # Gusty?
             if max(wind_speed) > threshold_very_gusty:
-                self.logger.debug('  UNSAFE:  Very gusty in last {:.0f} min. Max gust speed {:.1f} kph'.format(
-                    safety_delay, max(wind_speed)))
+                self.logger.debug(
+                    '  UNSAFE:  Very gusty in last {:.0f} min. Max gust speed {:.1f} kph'.format(
+                        safety_delay, max(wind_speed)))
                 gust_safe = False
             else:
                 gust_safe = True
@@ -921,8 +943,8 @@ class AAGCloudSensor(object):
             else:
                 gust_condition = 'Calm'
 
-            self.logger.debug(
-                '  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
+            self.logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(
+                gust_condition, wind_speed[-1]))
 
         return (wind_condition, wind_safe), (gust_condition, gust_safe)
 

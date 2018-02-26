@@ -29,13 +29,13 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
         os.getenv('POCS'), '/var/panoptes/POCS')
 
     if not os.path.exists(solve_field_script):  # pragma: no cover
-        raise error.InvalidSystemCommand(
-            "Can't find solve-field: {}".format(solve_field_script))
+        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
     if solve_opts is not None:
         options = solve_opts
     else:
+        # yapf: disable
         options = [
             '--guess-scale',
             '--cpulimit', str(timeout),
@@ -47,6 +47,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             '--wcs', 'none',
             '--downsample', '4',
         ]
+        # yapf: enable
 
         if kwargs.get('clobber', True):
             options.append('--overwrite')
@@ -68,14 +69,12 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
         print("Cmd:", cmd)
 
     try:
-        proc = subprocess.Popen(cmd, universal_newlines=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(
+            cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand(
-            "Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand(
-            "Bad parameters to solve_field: {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -111,8 +110,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     if kwargs.get('skip_solved', True) and \
             (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
-            print("Solved file exists, skipping",
-                  "(pass skip_solved=False to solve again):",
+            print("Solved file exists, skipping (pass skip_solved=False to solve again):",
                   fname)
 
         out_dict['solved_fits_file'] = fname
@@ -197,8 +195,7 @@ def get_wcsinfo(fits_fname, verbose=False):
     dict
         Output as returned from `wcsinfo`
     """
-    assert os.path.exists(fits_fname), warn(
-        "No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
 
     wcsinfo = shutil.which('wcsinfo')
     if wcsinfo is None:
@@ -209,8 +206,8 @@ def get_wcsinfo(fits_fname, verbose=False):
     if verbose:
         print("wcsinfo command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(
+        run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:  # pragma: no cover
@@ -290,8 +287,7 @@ def fpack(fits_fname, unpack=False, verbose=False):
     str
         Filename of compressed/decompressed file
     """
-    assert os.path.exists(fits_fname), warn(
-        "No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
 
     if unpack:
         fpack = shutil.which('funpack')
@@ -311,8 +307,8 @@ def fpack(fits_fname, unpack=False, verbose=False):
     if verbose:
         print("fpack command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(
+        run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:

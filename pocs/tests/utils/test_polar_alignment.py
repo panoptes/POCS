@@ -34,10 +34,5 @@ def test_plot_center(pole_fits_file, rotate_fits_file):
     pole_center = pa_utils.analyze_polar_rotation(pole_fits_file)
     rotate_center = pa_utils.analyze_ra_rotation(rotate_fits_file)
 
-    fig = pa_utils.plot_center(
-        pole_fits_file,
-        rotate_fits_file,
-        pole_center,
-        rotate_center
-    )
+    fig = pa_utils.plot_center(pole_fits_file, rotate_fits_file, pole_center, rotate_center)
     assert isinstance(fig, Figure)

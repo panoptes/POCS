@@ -12,7 +12,6 @@ from pocs.camera import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
-
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
         kwargs['file_extension'] = 'cr2'
@@ -34,6 +33,7 @@ class Camera(AbstractGPhotoCamera):
             self._serial_number = _serial_number
 
         # Properties to be set upon init.
+        # yapf: disable
         prop2index = {
             '/main/actions/viewfinder': 1,                # Screen off
             '/main/settings/autopoweroff': 0,             # Don't power off
@@ -49,6 +49,7 @@ class Camera(AbstractGPhotoCamera):
             '/main/capturesettings/drivemode': 0,         # Single exposure
             '/main/capturesettings/shutterspeed': 0,      # Bulb
         }
+        # yapf: enable
         prop2value = {
             '/main/settings/artist': 'Project PANOPTES',
             '/main/settings/ownername': 'Project PANOPTES',
@@ -84,11 +85,8 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          *args,
-                                                                          **kwargs)
+        exp_time, file_path, image_id, metadata = self._setup_observation(
+            observation, headers, filename, *args, **kwargs)
 
         proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
@@ -119,9 +117,8 @@ class Camera(AbstractGPhotoCamera):
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, self.name, filename))
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.value
@@ -132,10 +129,8 @@ class Camera(AbstractGPhotoCamera):
 
         # Take Picture
         try:
-            proc = subprocess.Popen(run_cmd,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    universal_newlines=True)
+            proc = subprocess.Popen(
+                run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         except error.InvalidCommand as e:
             self.logger.warning(e)
         except subprocess.TimeoutExpired:

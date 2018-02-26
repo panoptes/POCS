@@ -5,7 +5,6 @@ from pocs.utils import error
 
 
 class TheSkyX(PanBase):
-
     """ A socket connection for communicating with TheSkyX
 
 

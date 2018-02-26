@@ -64,8 +64,7 @@ class AbstractSerialDome(dome.AbstractDome):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning(
-                    'Could not create serial connection to dome\n{}'.format(err))
+                self.logger.warning('Could not create serial connection to dome\n{}'.format(err))
         else:
             self.logger.debug('Already connected to dome')
 

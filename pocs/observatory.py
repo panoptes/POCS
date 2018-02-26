@@ -27,7 +27,6 @@ from pocs.utils import load_module
 
 
 class Observatory(PanBase):
-
     def __init__(self, *args, **kwargs):
         """Main Observatory class
 
@@ -221,8 +220,7 @@ class Observatory(PanBase):
             self.logger.debug("Housekeeping for {}".format(observation))
 
             for cam_name, camera in self.cameras.items():
-                self.logger.debug('Cleanup for camera {} [{}]'.format(
-                    cam_name, camera.uid))
+                self.logger.debug('Cleanup for camera {} [{}]'.format(cam_name, camera.uid))
 
                 dir_name = "{}/fields/{}/{}/{}/".format(
                     self.config['directories']['images'],
@@ -264,8 +262,7 @@ class Observatory(PanBase):
 
             try:
                 # Start the exposures
-                cam_event = camera.take_observation(
-                    self.current_observation, headers)
+                cam_event = camera.take_observation(self.current_observation, headers)
 
                 camera_events[cam_name] = cam_event
 
@@ -299,19 +296,18 @@ class Observatory(PanBase):
             self.logger.debug("Solve Info: {}".format(solve_info))
 
             # Get the offset between the two
-            self.current_offset_info = current_image.compute_offset(
-                pointing_image)
-            self.logger.debug('Offset Info: {}'.format(
-                self.current_offset_info))
+            self.current_offset_info = current_image.compute_offset(pointing_image)
+            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Store the offset information
-            self.db.insert('offset_info', {
-                'image_id': image_id,
-                'd_ra': self.current_offset_info.delta_ra.value,
-                'd_dec': self.current_offset_info.delta_dec.value,
-                'magnitude': self.current_offset_info.magnitude.value,
-                'unit': 'arcsec',
-            })
+            self.db.insert(
+                'offset_info', {
+                    'image_id': image_id,
+                    'd_ra': self.current_offset_info.delta_ra.value,
+                    'd_dec': self.current_offset_info.delta_dec.value,
+                    'magnitude': self.current_offset_info.magnitude.value,
+                    'unit': 'arcsec',
+                })
 
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
@@ -371,8 +367,7 @@ class Observatory(PanBase):
                 self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
                     dec_direction, dec_ms, dec_offset))
                 if dec_ms >= 1. and dec_ms <= max_time:
-                    self.mount.query('move_ms_{}'.format(
-                        dec_direction), '{:05.0f}'.format(dec_ms))
+                    self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms))
 
                 # Adjust tracking for up to 30 seconds then fail if not done.
                 start_tracking_time = current_time()
@@ -391,8 +386,7 @@ class Observatory(PanBase):
                 self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
                     ra_direction, ra_ms, ra_offset))
                 if ra_ms >= 1. and ra_ms <= max_time:
-                    self.mount.query('move_ms_{}'.format(
-                        ra_direction), '{:05.0f}'.format(ra_ms))
+                    self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms))
 
                 # Adjust tracking for up to 30 seconds then fail if not done.
                 start_tracking_time = current_time()
@@ -417,8 +411,7 @@ class Observatory(PanBase):
         if observation is None:
             observation = self.current_observation
 
-        assert observation is not None, self.logger.warning(
-            "No observation, can't get headers")
+        assert observation is not None, self.logger.warning("No observation, can't get headers")
 
         field = observation.field
 
@@ -472,8 +465,10 @@ class Observatory(PanBase):
         if camera_list:
             # Have been passed a list of camera names, extract dictionary
             # containing only cameras named in the list
-            cameras = {cam_name: self.cameras[
-                cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+            cameras = {
+                cam_name: self.cameras[cam_name]
+                for cam_name in camera_list if cam_name in self.cameras.keys()
+            }
             if cameras == {}:
                 self.logger.warning(
                     "Passed a list of camera names ({}) but no matches found".format(camera_list))
@@ -491,8 +486,7 @@ class Observatory(PanBase):
             try:
                 assert camera.focuser.is_connected
             except AttributeError:
-                self.logger.debug(
-                    'Camera {} has no focuser, skipping autofocus'.format(cam_name))
+                self.logger.debug('Camera {} has no focuser, skipping autofocus'.format(cam_name))
             except AssertionError:
                 self.logger.debug(
                     'Camera {} focuser not connected, skipping autofocus'.format(cam_name))
@@ -501,8 +495,7 @@ class Observatory(PanBase):
                     # Start the autofocus
                     autofocus_event = camera.autofocus(coarse=coarse)
                 except Exception as e:
-                    self.logger.error(
-                        "Problem running autofocus: {}".format(e))
+                    self.logger.error("Problem running autofocus: {}".format(e))
                 else:
                     autofocus_events[cam_name] = autofocus_event
 
@@ -535,6 +528,7 @@ class Observatory(PanBase):
         if not self.dome.is_closed:
             self.logger.info('Closed dome')
         return self.dome.close()
+
 
 ##########################################################################
 # Private Methods
@@ -571,8 +565,7 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            twilight_horizon = config_site.get(
-                'twilight_horizon', -18 * u.degree)
+            twilight_horizon = config_site.get('twilight_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -588,10 +581,8 @@ class Observatory(PanBase):
             self.logger.debug("Location: {}".format(self.location))
 
             # Create an EarthLocation for the mount
-            self.earth_location = EarthLocation(
-                lat=latitude, lon=longitude, height=elevation)
-            self.observer = Observer(
-                location=self.earth_location, name=name, timezone=timezone)
+            self.earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
+            self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
         except Exception:
             raise error.PanError(msg='Bad site information')
 
@@ -687,8 +678,7 @@ class Observatory(PanBase):
         ports = list()
 
         # Lookup the connected ports if not using a simulator
-        auto_detect = kwargs.get(
-            'auto_detect', camera_info.get('auto_detect', False))
+        auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
             try:
@@ -713,15 +703,13 @@ class Observatory(PanBase):
                     try:
                         camera_port = ports.pop()
                     except IndexError:
-                        self.logger.warning(
-                            "No ports left for {}, skipping.".format(cam_name))
+                        self.logger.warning("No ports left for {}, skipping.".format(cam_name))
                         continue
                 else:
                     try:
                         camera_port = camera_config['port']
                     except KeyError:
-                        raise error.CameraNotFound(
-                            msg="No port specified and auto_detect=False")
+                        raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
                 camera_focuser = camera_config.get('focuser', None)
                 camera_readout = camera_config.get('readout_time', 6.0)
@@ -731,13 +719,15 @@ class Observatory(PanBase):
                 # focuser
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
-                camera_focuser = {'model': 'simulator',
-                                  'focus_port': '/dev/ttyFAKE',
-                                  'initial_position': 20000,
-                                  'autofocus_range': (40, 80),
-                                  'autofocus_step': (10, 20),
-                                  'autofocus_seconds': 0.1,
-                                  'autofocus_size': 500}
+                camera_focuser = {
+                    'model': 'simulator',
+                    'focus_port': '/dev/ttyFAKE',
+                    'initial_position': 20000,
+                    'autofocus_range': (40, 80),
+                    'autofocus_step': (10, 20),
+                    'autofocus_seconds': 0.1,
+                    'autofocus_size': 500
+                }
                 camera_readout = 0.5
 
             camera_set_point = camera_config.get('set_point', None)
@@ -752,21 +742,21 @@ class Observatory(PanBase):
                 raise error.CameraNotFound(msg=camera_model)
             else:
                 # Create the camera object
-                cam = module.Camera(name=cam_name,
-                                    model=camera_model,
-                                    port=camera_port,
-                                    set_point=camera_set_point,
-                                    filter_type=camera_filter,
-                                    focuser=camera_focuser,
-                                    readout_time=camera_readout)
+                cam = module.Camera(
+                    name=cam_name,
+                    model=camera_model,
+                    port=camera_port,
+                    set_point=camera_set_point,
+                    filter_type=camera_filter,
+                    focuser=camera_focuser,
+                    readout_time=camera_readout)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:
                     self.primary_camera = cam
                     is_primary = ' [Primary]'
 
-                self.logger.debug("Camera created: {} {} {}".format(
-                    cam.name, cam.uid, is_primary))
+                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
 
                 self.cameras[cam_name] = cam
 
@@ -775,8 +765,7 @@ class Observatory(PanBase):
             self.primary_camera = self.cameras['Cam00']
 
         if len(self.cameras) == 0:
-            raise error.CameraNotFound(
-                msg="No cameras available. Exiting.", exit=True)
+            raise error.CameraNotFound(msg="No cameras available. Exiting.", exit=True)
 
         self.logger.debug("Cameras created")
 
@@ -788,24 +777,20 @@ class Observatory(PanBase):
 
         # Read the targets from the file
         fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories'][
-                                   'targets'], fields_file)
+        fields_path = os.path.join(self.config['directories']['targets'], fields_file)
         self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
         if os.path.exists(fields_path):
 
             try:
                 # Load the required module
-                module = load_module(
-                    'pocs.scheduler.{}'.format(scheduler_type))
+                module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
                 obstruction_list = self.config['location'].get('obstructions', list())
                 default_horizon = self.config['location'].get('horizon', 30 * u.degree)
 
                 horizon_line = horizon_utils.Horizon(
-                    obstructions=obstruction_list,
-                    default_horizon=default_horizon.value
-                )
+                    obstructions=obstruction_list, default_horizon=default_horizon.value)
 
                 # Simple constraint for now
                 constraints = [
@@ -821,5 +806,4 @@ class Observatory(PanBase):
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-            raise error.NotFound(
-                msg="Fields file does not exist: {}".format(fields_file))
+            raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))

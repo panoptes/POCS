@@ -14,14 +14,13 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 
 
-def cr2_to_fits(
-        cr2_fname,
-        fits_fname=None,
-        clobber=False,
-        headers={},
-        fits_headers={},
-        remove_cr2=False,
-        **kwargs):  # pragma: no cover
+def cr2_to_fits(cr2_fname,
+                fits_fname=None,
+                clobber=False,
+                headers={},
+                fits_headers={},
+                remove_cr2=False,
+                **kwargs):  # pragma: no cover
     """ Convert a CR2 file to FITS
 
     This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`.
@@ -64,8 +63,8 @@ def cr2_to_fits(
         # Set the PGM as the primary data for the FITS file
         hdu = fits.PrimaryHDU(pgm)
 
-        obs_date = date_parser.parse(
-            exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat()
+        obs_date = date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-',
+                                                                              2)).isoformat()
 
         # Set some default headers
         hdu.header.set('FILTER', 'RGGB')
@@ -92,7 +91,7 @@ def cr2_to_fits(
 
         for key, value in fits_headers.items():
             try:
-                hdu.header.set(key.upper()[0: 8], value)
+                hdu.header.set(key.upper()[0:8], value)
             except Exception:
                 pass
 
@@ -112,12 +111,8 @@ def cr2_to_fits(
     return fits_fname
 
 
-def cr2_to_pgm(
-        cr2_fname,
-        pgm_fname=None,
-        dcraw='dcraw',
-        clobber=True, *args,
-        **kwargs):  # pragma: no cover
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, *args,
+               **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
     Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
@@ -144,8 +139,7 @@ def cr2_to_pgm(
 
     assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
         "could not execute dcraw in path: {}".format(dcraw)
-    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
-                                      cr2_fname)
+    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(cr2_fname)
 
     verbose = kwargs.get('verbose', False)
 
@@ -154,8 +148,7 @@ def cr2_to_pgm(
 
     if os.path.exists(pgm_fname) and not clobber:
         if verbose:
-            print("PGM file exists, returning existing file: {}".format(
-                  pgm_fname))
+            print("PGM file exists, returning existing file: {}".format(pgm_fname))
     else:
         try:
             # Build the command for this file
@@ -170,8 +163,7 @@ def cr2_to_pgm(
                     print("PGM Conversion command successful")
 
         except subprocess.CalledProcessError as err:
-            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
-                cr2_fname, err))
+            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(cr2_fname, err))
 
     return pgm_fname
 
@@ -205,8 +197,7 @@ def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
         # Run the command
         exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
     except subprocess.CalledProcessError as err:
-        raise error.InvalidSystemCommand(
-            msg="File: {} \n err: {}".format(fname, err))
+        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
 
     return exif[0]
 
@@ -240,17 +231,18 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     # We know our header info is 19 chars long
     header_offset = 19
 
-    img_type, img_size, img_max_value, _ = buffer[
-        0:header_offset].decode().split('\n')
+    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
 
     assert img_type == 'P5', warn("No a PGM file")
 
     # Get the width and height (as strings)
     width, height = img_size.split(' ')
 
-    data = np.flipud(np.frombuffer(buffer[header_offset:],
-                                   dtype=byteorder + 'u2',
-                                   ).reshape((int(height), int(width))))
+    data = np.flipud(
+        np.frombuffer(
+            buffer[header_offset:],
+            dtype=byteorder + 'u2',
+        ).reshape((int(height), int(width))))
 
     if remove_after:
         os.remove(fname)

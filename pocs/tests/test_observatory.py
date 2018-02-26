@@ -160,10 +160,11 @@ def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
     observatory.scheduler.fields_list = [
-        {'name': 'HAT-P-20',
-         'priority': '100',
-         'position': '07h27m39.89s +24d20m14.7s',
-         },
+        {
+            'name': 'HAT-P-20',
+            'priority': '100',
+            'position': '07h27m39.89s +24d20m14.7s',
+        },
     ]
 
     observatory.get_observation()
@@ -179,7 +180,8 @@ def test_standard_headers(observatory):
         'moon_fraction': 0.7880103086091879,
         'moon_separation': 156.1607340087774,
         'observer': 'Generic PANOPTES Unit',
-        'origin': 'Project PANOPTES'}
+        'origin': 'Project PANOPTES'
+    }
 
     assert (headers['airmass'] - test_headers['airmass']) < 1e-4
     assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
@@ -219,11 +221,12 @@ def test_observe(observatory):
 
     time = Time('2016-08-13 10:00:00')
     observatory.scheduler.fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
+        {
+            'name': 'Kepler 1100',
+            'priority': '100',
+            'position': '19h27m29.10s +44d05m15.00s',
+            'exp_time': 10,
+        },
     ]
     observatory.get_observation(time=time)
     assert observatory.current_observation is not None
@@ -305,8 +308,8 @@ def test_no_dome(observatory):
 
 def test_operate_dome(config_with_simulated_dome):
     simulator = hardware.get_all_names(without=['dome', 'night'])
-    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
-                              ignore_local_config=True)
+    observatory = Observatory(
+        config=config_with_simulated_dome, simulator=simulator, ignore_local_config=True)
     assert observatory.has_dome
     assert observatory.open_dome()
     assert observatory.dome.is_open

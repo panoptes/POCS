@@ -170,8 +170,7 @@ class ArduinoIO(object):
             # Consider adding an error counter.
             if not self._report_next_reading:
                 self._logger.warning(
-                    'Unable to read from {}. Will report when next successful read.',
-                    self.port)
+                    'Unable to read from {}. Will report when next successful read.', self.port)
                 self._report_next_reading = True
             return False
         if self._report_next_reading:

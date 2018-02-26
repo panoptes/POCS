@@ -167,7 +167,8 @@ def altaz_to_radec(alt=35, az=90, location=None, obstime=None, *args, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     if verbose:
-        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(alt, az, location, obstime))
+        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(
+            alt, az, location, obstime))
 
     altaz = AltAz(obstime=obstime, location=location, alt=alt * u.deg, az=az * u.deg)
     return SkyCoord(altaz.transform_to(ICRS))

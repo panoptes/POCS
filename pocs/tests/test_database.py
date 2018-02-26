@@ -46,16 +46,18 @@ def test_log_bad_object(db, caplog):
         db.logger = get_root_logger()
 
     assert db.insert_current('observations', {'junk': db}) is None
-    assert any([rec.levelname == 'WARNING' and
-                'Problem inserting object into current collection' in rec.message
-                for rec in caplog.records])
+    assert any([
+        rec.levelname == 'WARNING' and
+        'Problem inserting object into current collection' in rec.message for rec in caplog.records
+    ])
 
     caplog.records.clear()
 
     assert db.insert('observations', {'junk': db}) is None
-    assert any([rec.levelname == 'WARNING' and
-                'Problem inserting object into collection' in rec.message
-                for rec in caplog.records])
+    assert any([
+        rec.levelname == 'WARNING' and 'Problem inserting object into collection' in rec.message
+        for rec in caplog.records
+    ])
 
 
 def test_warn_bad_object(db):

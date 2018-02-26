@@ -10,8 +10,7 @@ from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.theskyx import TheSkyX
 
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture
@@ -104,11 +103,7 @@ def test_update_location(mount, config):
 
     location1 = mount.location
     location2 = EarthLocation(
-        lon=loc['longitude'],
-        lat=loc['latitude'],
-        height=loc['elevation'] -
-        1000 *
-        u.meter)
+        lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
     mount.location = location2
 
     assert location1 != location2

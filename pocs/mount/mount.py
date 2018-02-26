@@ -11,7 +11,6 @@ from pocs.utils import error
 
 
 class AbstractMount(PanBase):
-
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
@@ -36,8 +35,7 @@ class AbstractMount(PanBase):
 
     """
 
-    def __init__(self, location, commands=None, *args, **kwargs
-                 ):
+    def __init__(self, location, commands=None, *args, **kwargs):
         super(AbstractMount, self).__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
@@ -120,7 +118,6 @@ class AbstractMount(PanBase):
 
     def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
-
 
 ##################################################################################################
 # Properties
@@ -311,7 +308,6 @@ class AbstractMount(PanBase):
 
         return separation
 
-
 ##################################################################################################
 # Movement methods
 ##################################################################################################
@@ -332,8 +328,8 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        assert isinstance(coords, tuple), self.logger.warning(
-            'slew_to_coordinates expects RA-Dec coords')
+        assert isinstance(coords,
+                          tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
 
         response = 0
 
@@ -559,6 +555,7 @@ class AbstractMount(PanBase):
     def read(self, *args):
         raise NotImplementedError
 
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -576,8 +573,7 @@ class AbstractMount(PanBase):
             response = cmd_info.get('response')
             # self.logger.debug('Mount Command Response: {}'.format(response))
         else:
-            raise error.InvalidMountCommand(
-                'No result for command {}'.format(cmd))
+            raise error.InvalidMountCommand('No result for command {}'.format(cmd))
 
         return response
 

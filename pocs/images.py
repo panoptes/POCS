@@ -16,7 +16,6 @@ OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 
 
 class Image(PanBase):
-
     def __init__(self, fits_file, wcs_file=None, location=None):
         """Object to represent a single image from a PANOPTES camera.
 
@@ -54,10 +53,11 @@ class Image(PanBase):
         # Location Information
         if location is None:
             cfg_loc = self.config['location']
-            location = EarthLocation(lat=cfg_loc['latitude'],
-                                     lon=cfg_loc['longitude'],
-                                     height=cfg_loc['elevation'],
-                                     )
+            location = EarthLocation(
+                lat=cfg_loc['latitude'],
+                lon=cfg_loc['longitude'],
+                height=cfg_loc['elevation'],
+            )
         # Time Information
         self.starttime = Time(self.header['DATE-OBS'], location=location)
         self.exptime = float(self.header['EXPTIME']) * u.second
@@ -129,10 +129,7 @@ class Image(PanBase):
             d_ra = self.pointing.ra - self.header_pointing.ra
 
             self._pointing_error = OffsetError(
-                d_ra.to(
-                    u.arcsec), d_dec.to(
-                    u.arcsec), mag.to(
-                    u.arcsec))
+                d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
 
         return self._pointing_error
 
@@ -143,15 +140,16 @@ class Image(PanBase):
         the header pointing coordinates are built.
         """
         try:
-            self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
-                                            dec=float(self.header['DEC-MNT']) * u.degree)
+            self.header_pointing = SkyCoord(
+                ra=float(self.header['RA-MNT']) * u.degree,
+                dec=float(self.header['DEC-MNT']) * u.degree)
 
             self.header_ra = self.header_pointing.ra.to(u.hourangle)
             self.header_dec = self.header_pointing.dec.to(u.degree)
 
             # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.header_ha = self.header_pointing.transform_to(
-                self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            self.header_ha = self.header_pointing.transform_to(self.FK5_Jnow).ra.to(
+                u.hourangle) - self.sidereal
         except Exception as e:
             self.logger.warning('Cannot get header pointing information: {}'.format(e))
 
@@ -179,10 +177,11 @@ class Image(PanBase):
         Args:
             **kwargs (dict): Options to be passed to `get_solve_field`
         """
-        solve_info = fits_utils.get_solve_field(self.fits_file,
-                                                ra=self.header_pointing.ra.value,
-                                                dec=self.header_pointing.dec.value,
-                                                **kwargs)
+        solve_info = fits_utils.get_solve_field(
+            self.fits_file,
+            ra=self.header_pointing.ra.value,
+            dec=self.header_pointing.dec.value,
+            **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']
         self.get_wcs_pointing()
@@ -197,8 +196,8 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference")
+        assert isinstance(ref_image,
+                          Image), self.logger.warning("Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

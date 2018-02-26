@@ -102,8 +102,15 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
 
     # Show an arrow
     if (np.abs(pole_cy - rotate_cy) > 25) or (np.abs(pole_cx - rotate_cx) > 25):
-        ax.arrow(rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy -
-                 rotate_cy, fc='r', ec='r', width=20, length_includes_head=True)
+        ax.arrow(
+            rotate_cx,
+            rotate_cy,
+            pole_cx - rotate_cx,
+            pole_cy - rotate_cy,
+            fc='r',
+            ec='r',
+            width=20,
+            length_includes_head=True)
 
     ax.set_title("dx: {:0.2f} pix      dy: {:0.2f} pix".format(d_x, d_y))
 

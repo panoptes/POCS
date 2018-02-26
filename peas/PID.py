@@ -2,7 +2,6 @@ from datetime import datetime
 
 
 class PID:
-
     '''
     Pseudocode from Wikipedia:
 
@@ -18,9 +17,7 @@ class PID:
       goto start
     '''
 
-    def __init__(self, Kp=2., Ki=0., Kd=1.,
-                 set_point=None, output_limits=None,
-                 max_age=None):
+    def __init__(self, Kp=2., Ki=0., Kd=1., set_point=None, output_limits=None, max_age=None):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -37,9 +34,7 @@ class PID:
         self.last_recalc_time = None
         self.last_interval = 0.
 
-    def recalculate(self, value, interval=None,
-                    reset_integral=False,
-                    new_set_point=None):
+    def recalculate(self, value, interval=None, reset_integral=False, new_set_point=None):
         if new_set_point:
             self.set_point = float(new_set_point)
         if reset_integral:

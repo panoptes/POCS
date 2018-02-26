@@ -3,7 +3,6 @@ import pytest
 
 from datetime import datetime as dt
 
-
 from pocs.utils import current_time
 from pocs.utils import list_connected_cameras
 from pocs.utils import listify

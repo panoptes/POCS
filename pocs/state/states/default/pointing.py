@@ -23,9 +23,7 @@ def on_enter(event_data):
 
         observation = pocs.observatory.current_observation
 
-        fits_headers = pocs.observatory.get_standard_headers(
-            observation=observation
-        )
+        fits_headers = pocs.observatory.get_standard_headers(observation=observation)
         fits_headers['POINTING'] = 'True'
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
@@ -41,8 +39,7 @@ def on_enter(event_data):
                             observation,
                             fits_headers,
                             exp_time=30.,
-                            filename='pointing{:02d}'.format(img_num)
-                        )
+                            filename='pointing{:02d}'.format(img_num))
 
                         camera_events[cam_name] = camera_event
 
@@ -67,10 +64,7 @@ def on_enter(event_data):
 
             if pocs.observatory.current_observation is not None:
                 pointing_id, pointing_path = pocs.observatory.current_observation.last_exposure
-                pointing_image = Image(
-                    pointing_path,
-                    location=pocs.observatory.earth_location
-                )
+                pointing_image = Image(pointing_path, location=pocs.observatory.earth_location)
                 pointing_image.solve_field()
 
                 observation.pointing_image = pointing_image

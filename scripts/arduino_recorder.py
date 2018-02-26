@@ -29,7 +29,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Record sensor data from an Arduino and send it relay commands.')
     parser.add_argument(
-        '--board', required=True,
+        '--board',
+        required=True,
         help="Name of the board attached to the port. Currently: 'camera' or 'telemetry'")
     parser.add_argument('--port', help='Port (device path) to connect to.')
     parser.add_argument(

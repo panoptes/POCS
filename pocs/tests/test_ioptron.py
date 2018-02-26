@@ -15,7 +15,6 @@ def test_loading_without_config():
 
 @pytest.mark.with_mount
 class TestMount(object):
-
     """ Test the mount """
 
     @pytest.fixture(autouse=True)
@@ -29,9 +28,7 @@ class TestMount(object):
             mount = Mount(location)
 
         loc = EarthLocation(
-            lon=location['longitude'],
-            lat=location['latitude'],
-            height=location['elevation'])
+            lon=location['longitude'], lat=location['latitude'], height=location['elevation'])
 
         mount = Mount(loc)
         assert mount is not None

@@ -24,7 +24,6 @@ from threading import Thread
 
 
 class AbstractCamera(PanBase):
-
     """ Base class for all cameras """
 
     def __init__(self,
@@ -33,7 +32,8 @@ class AbstractCamera(PanBase):
                  port=None,
                  primary=False,
                  focuser=None,
-                 *args, **kwargs):
+                 *args,
+                 **kwargs):
         super().__init__(*args, **kwargs)
 
         try:
@@ -168,6 +168,7 @@ class AbstractCamera(PanBase):
         """
         raise NotImplementedError
 
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -195,11 +196,8 @@ class AbstractCamera(PanBase):
         # To be used for marking when exposure is complete (see `process_exposure`)
         observation_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          *args,
-                                                                          **kwargs)
+        exp_time, file_path, image_id, metadata = self._setup_observation(
+            observation, headers, filename, *args, **kwargs)
 
         exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
 
@@ -208,7 +206,8 @@ class AbstractCamera(PanBase):
             observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, observation_event, exposure_event))
+        t = Thread(
+            target=self.process_exposure, args=(metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -242,9 +241,8 @@ class AbstractCamera(PanBase):
 
         try:
             self.logger.debug("Extracting pretty image")
-            img_utils.make_pretty_image(file_path,
-                                        title=info['field_name'],
-                                        primary=info['is_primary'])
+            img_utils.make_pretty_image(
+                file_path, title=info['field_name'], primary=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
@@ -261,11 +259,12 @@ class AbstractCamera(PanBase):
             fits_utils.fpack(file_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.insert('observations', {
-            'data': info,
-            'date': current_time(datetime=True),
-            'sequence_id': seq_id,
-        })
+        self.db.insert(
+            'observations', {
+                'data': info,
+                'date': current_time(datetime=True),
+                'sequence_id': seq_id,
+            })
 
         # Mark the event as done
         observation_event.set()
@@ -284,7 +283,8 @@ class AbstractCamera(PanBase):
                   coarse=False,
                   plots=True,
                   blocking=False,
-                  *args, **kwargs):
+                  *args,
+                  **kwargs):
         """
         Focuses the camera using the specified merit function. Optionally
         performs a coarse focus first before performing the default fine focus.
@@ -330,20 +330,22 @@ class AbstractCamera(PanBase):
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
-        return self.focuser.autofocus(seconds=seconds,
-                                      focus_range=focus_range,
-                                      focus_step=focus_step,
-                                      keep_files=keep_files,
-                                      take_dark=take_dark,
-                                      thumbnail_size=thumbnail_size,
-                                      merit_function=merit_function,
-                                      merit_function_kwargs=merit_function_kwargs,
-                                      mask_dilations=mask_dilations,
-                                      spline_smoothing=spline_smoothing,
-                                      coarse=coarse,
-                                      plots=plots,
-                                      blocking=blocking,
-                                      *args, **kwargs)
+        return self.focuser.autofocus(
+            seconds=seconds,
+            focus_range=focus_range,
+            focus_step=focus_step,
+            keep_files=keep_files,
+            take_dark=take_dark,
+            thumbnail_size=thumbnail_size,
+            merit_function=merit_function,
+            merit_function_kwargs=merit_function_kwargs,
+            mask_dilations=mask_dilations,
+            spline_smoothing=spline_smoothing,
+            coarse=coarse,
+            plots=plots,
+            blocking=blocking,
+            *args,
+            **kwargs)
 
     def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
         """
@@ -429,18 +431,10 @@ class AbstractCamera(PanBase):
 
             file_path = filename
 
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
+        image_id = '{}_{}_{}'.format(self.config['name'], self.uid, start_time)
         self.logger.debug("image_id: {}".format(image_id))
 
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
+        sequence_id = '{}_{}_{}'.format(self.config['name'], self.uid, observation.seq_time)
 
         # Camera metadata
         metadata = {
@@ -473,18 +467,13 @@ class AbstractCamera(PanBase):
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
+            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port,
+                                                  self.focuser.name)
         except AttributeError:
             return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
-
     """ Abstract camera class that uses gphoto2 interaction
 
     Args:
@@ -521,15 +510,13 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
-                    shell=False
-                )
+                    shell=False)
             except OSError as e:
-                raise error.InvalidCommand(
-                    "Can't send command to gphoto2. {} \t {}".format(
-                        e, run_cmd))
+                raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(
+                    e, run_cmd))
             except ValueError as e:
-                raise error.InvalidCommand(
-                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(
+                    e, run_cmd))
             except Exception as e:
                 raise error.PanError(e)
 

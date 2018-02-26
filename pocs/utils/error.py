@@ -6,7 +6,6 @@ from pocs.base import PanBase
 
 
 class PanError(AstropyWarning, PanBase):
-
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
@@ -25,7 +24,6 @@ class PanError(AstropyWarning, PanBase):
 
 
 class InvalidSystemCommand(PanError):
-
     """ Error for a system level command malfunction """
 
     def __init__(self, msg='Problem running system command'):
@@ -33,7 +31,6 @@ class InvalidSystemCommand(PanError):
 
 
 class Timeout(PanError):
-
     """ Error called when an event times out """
 
     def __init__(self, msg='Timeout waiting for event'):
@@ -41,7 +38,6 @@ class Timeout(PanError):
 
 
 class NoObservation(PanError):
-
     """ Generic no Observation """
 
     def __init__(self, msg='No valid observations found.'):
@@ -49,7 +45,6 @@ class NoObservation(PanError):
 
 
 class NotFound(PanError):
-
     """ Generic not found class """
     pass
 
@@ -60,31 +55,26 @@ class InvalidCollection(NotFound):
 
 
 class InvalidConfig(PanError):
-
     """ PanError raised if config file is invalid """
     pass
 
 
 class InvalidCommand(PanError):
-
     """ PanError raised if a system command does not run """
     pass
 
 
 class InvalidMountCommand(PanError):
-
     """ PanError raised if attempting to send command that doesn't exist """
     pass
 
 
 class BadConnection(PanError):
-
     """ PanError raised when a connection is bad """
     pass
 
 
 class BadSerialConnection(PanError):
-
     """ PanError raised when serial command is bad """
     pass
 
@@ -95,7 +85,6 @@ class ArduinoDataError(PanError):
 
 
 class MountNotFound(NotFound):
-
     """ Mount cannot be import """
 
     def __init__(self, msg='Mount Not Found'):
@@ -103,7 +92,6 @@ class MountNotFound(NotFound):
 
 
 class CameraNotFound(NotFound):
-
     """ Camera cannot be imported """
     pass
 
@@ -114,7 +102,6 @@ class DomeNotFound(NotFound):
 
 
 class SolveError(NotFound):
-
     """ Camera cannot be imported """
     pass
 

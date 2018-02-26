@@ -50,8 +50,7 @@ def vollath_F4(data, axis=None):
     elif not axis:
         return (_vollath_F4_y(data) + _vollath_F4_x(data)) / 2
     else:
-        raise ValueError(
-            "axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
+        raise ValueError("axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
 
 
 def mask_saturated(data, saturation_level=None, threshold=0.9, dtype=np.float64):

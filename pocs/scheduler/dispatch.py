@@ -8,11 +8,9 @@ from pocs.scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):
-
     def __init__(self, *args, **kwargs):
         """ Inherit from the `BaseScheduler` """
         BaseScheduler.__init__(self, *args, **kwargs)
-
 
 ##########################################################################
 # Properties
@@ -56,8 +54,8 @@ class Scheduler(BaseScheduler):
                 if obs_name in valid_obs:
                     self.logger.debug("\tObservation: {}".format(obs_name))
 
-                    veto, score = constraint.get_score(
-                        time, self.observer, observation, **common_properties)
+                    veto, score = constraint.get_score(time, self.observer, observation,
+                                                       **common_properties)
 
                     self.logger.debug("\t\tScore: {:.05f}\tVeto: {}".format(score, veto))
 

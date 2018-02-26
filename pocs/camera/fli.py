@@ -32,7 +32,8 @@ class Camera(AbstractCamera):
                  name='FLI Camera',
                  set_point=25 * u.Celsius,
                  filter_type='M',
-                 *args, **kwargs):
+                 *args,
+                 **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
@@ -51,8 +52,8 @@ class Camera(AbstractCamera):
                 # No cached device nodes scanning results. 1st get list of all FLI cameras
                 self.logger.debug('Getting serial numbers for all connected FLI cameras')
                 Camera._fli_nodes = {}
-                device_list = self._FLIDriver.FLIList(interface_type=libfli.FLIDOMAIN_USB,
-                                                      device_type=libfli.FLIDEVICE_CAMERA)
+                device_list = self._FLIDriver.FLIList(
+                    interface_type=libfli.FLIDOMAIN_USB, device_type=libfli.FLIDEVICE_CAMERA)
                 if not device_list:
                     message = 'No FLI camera devices found!'
                     self.logger.error(message)
@@ -215,7 +216,8 @@ class Camera(AbstractCamera):
             seconds = seconds * u.second
 
         if not self._exposure_lock.acquire(blocking=False):
-            message = 'Attempt to start exposure on {} ({}) while exposure in progress! Waiting...'.format(self.name, self.uid)
+            message = 'Attempt to start exposure on {} ({}) while exposure in progress! Waiting...'.format(
+                self.name, self.uid)
             self.logger.warning(message)
             warn(message)
             self._exposure_lock.acquire(blocking=True)
@@ -232,8 +234,7 @@ class Camera(AbstractCamera):
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
         # Can later use this for windowed exposures.
-        self._FLIDriver.FLISetImageArea(self._handle,
-                                        self._info['visible corners'][0],
+        self._FLIDriver.FLISetImageArea(self._handle, self._info['visible corners'][0],
                                         self._info['visible corners'][1])
 
         # No on chip binning for now.
@@ -254,20 +255,19 @@ class Camera(AbstractCamera):
 
         # Start readout thread
         exposure_event = Event()
-        readout_args = (filename,
-                        self._info['visible width'],
-                        self._info['visible height'],
-                        header,
-                        exposure_event)
-        readout_thread = Timer(interval=self._FLIDriver.FLIGetExposureStatus(self._handle).value,
-                               function=self._readout,
-                               args=readout_args)
+        readout_args = (filename, self._info['visible width'], self._info['visible height'],
+                        header, exposure_event)
+        readout_thread = Timer(
+            interval=self._FLIDriver.FLIGetExposureStatus(self._handle).value,
+            function=self._readout,
+            args=readout_args)
         readout_thread.start()
 
         if blocking:
             exposure_event.wait()
 
         return exposure_event
+
 
 # Private Methods
 
@@ -313,10 +313,15 @@ class Camera(AbstractCamera):
         self._info['camera model'] = self._FLIDriver.FLIGetModel(self._handle)
         self._info['hardware version'] = self._FLIDriver.FLIGetHWRevision(self._handle)
         self._info['firmware version'] = self._FLIDriver.FLIGetFWRevision(self._handle)
-        self._info['pixel width'], self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(self._handle)
+        self._info['pixel width'], self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(
+            self._handle)
         self._info['array corners'] = self._FLIDriver.FLIGetArrayArea(self._handle)
-        self._info['array height'] = self._info['array corners'][1][1] - self._info['array corners'][0][1]
-        self._info['array width'] = self._info['array corners'][1][0] - self._info['array corners'][0][0]
+        self._info[
+            'array height'] = self._info['array corners'][1][1] - self._info['array corners'][0][1]
+        self._info[
+            'array width'] = self._info['array corners'][1][0] - self._info['array corners'][0][0]
         self._info['visible corners'] = self._FLIDriver.FLIGetVisibleArea(self._handle)
-        self._info['visible height'] = self._info['visible corners'][1][1] - self._info['visible corners'][0][1]
-        self._info['visible width'] = self._info['visible corners'][1][0] - self._info['visible corners'][0][0]
+        self._info[
+            'visible height'] = self._info['visible corners'][1][1] - self._info['visible corners'][0][1]
+        self._info[
+            'visible width'] = self._info['visible corners'][1][0] - self._info['visible corners'][0][0]

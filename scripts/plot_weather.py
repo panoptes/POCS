@@ -34,7 +34,6 @@ def label_pos(lim, pos=0.85):
 
 
 class WeatherPlotter(object):
-
     """ Plot weather information for a given time span """
 
     def __init__(self, date_string=None, data_file=None, *args, **kwargs):
@@ -59,8 +58,7 @@ class WeatherPlotter(object):
 
         else:
             self.today = False
-            self.date = dt.strptime('{} 23:59:59'.format(date_string),
-                                    '%Y%m%dUT %H:%M:%S')
+            self.date = dt.strptime('{} 23:59:59'.format(date_string), '%Y%m%dUT %H:%M:%S')
             self.date_string = date_string
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
@@ -77,8 +75,7 @@ class WeatherPlotter(object):
         self.time = pd.to_datetime(self.table['date'])
         first = self.time[0].isoformat()
         last = self.time[-1].isoformat()
-        print('  Retrieved {} entries between {} and {}'.format(
-              len(self.table), first, last))
+        print('  Retrieved {} entries between {} and {}'.format(len(self.table), first, last))
 
         if self.today:
             self.current_values = self.table[-1]
@@ -89,25 +86,26 @@ class WeatherPlotter(object):
         # -------------------------------------------------------------------------
         # Plot a day's weather
         # -------------------------------------------------------------------------
-        print('  Setting up plot for time range: {} to {}'.format(
-              self.start.isoformat(), self.end.isoformat()))
+        print('  Setting up plot for time range: {} to {}'.format(self.start.isoformat(),
+                                                                  self.end.isoformat()))
         if self.today:
             print('  Will generate last hour plot for time range: {} to {}'.format(
                 self.lhstart.isoformat(), self.lhend.isoformat()))
         self.dpi = self.kwargs.get('dpi', 72)
         self.fig = plt.figure(figsize=(20, 12), dpi=self.dpi)
-#         self.axes = plt.gca()
+        #         self.axes = plt.gca()
         self.hours = HourLocator(byhour=range(24), interval=1)
         self.hours_fmt = DateFormatter('%H')
         self.mins = MinuteLocator(range(0, 60, 15))
         self.mins_fmt = DateFormatter('%H:%M')
-        self.plot_positions = [([0.000, 0.835, 0.700, 0.170], [0.720, 0.835, 0.280, 0.170]),
-                               ([0.000, 0.635, 0.700, 0.170], [0.720, 0.635, 0.280, 0.170]),
-                               ([0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170]),
-                               ([0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170]),
-                               ([0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065]),
-                               ([0.000, 0.000, 0.700, 0.170], [0.720, 0.000, 0.280, 0.170]),
-                               ]
+        self.plot_positions = [
+            ([0.000, 0.835, 0.700, 0.170], [0.720, 0.835, 0.280, 0.170]),
+            ([0.000, 0.635, 0.700, 0.170], [0.720, 0.635, 0.280, 0.170]),
+            ([0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170]),
+            ([0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170]),
+            ([0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065]),
+            ([0.000, 0.000, 0.700, 0.170], [0.720, 0.000, 0.280, 0.170]),
+        ]
         self.plot_ambient_vs_time()
         self.plot_cloudiness_vs_time()
         self.plot_windspeed_vs_time()
@@ -124,6 +122,7 @@ class WeatherPlotter(object):
         """
         table = None
 
+        # yapf: disable
         col_names = ('ambient_temp_C', 'sky_temp_C', 'sky_condition',
                      'wind_speed_KPH', 'wind_condition',
                      'gust_condition', 'rain_frequency',
@@ -135,6 +134,7 @@ class WeatherPlotter(object):
                       'U15', 'f4',
                       'U15', bool, 'f4',
                       'f4', 'O')
+        # yapf: enable
 
         if data_file is not None:
             table = Table.from_pandas(pd.read_csv(data_file, parse_dates=True))
@@ -147,9 +147,15 @@ class WeatherPlotter(object):
 
             print('  Retrieving data from Mongo database')
             db = PanDB()
-            entries = [x for x in db.weather.find(
-                {'date': {'$gt': self.start, '$lt': self.end}}).sort([
-                    ('date', pymongo.ASCENDING)])]
+            entries = [
+                x
+                for x in db.weather.find({
+                    'date': {
+                        '$gt': self.start,
+                        '$lt': self.end
+                    }
+                }).sort([('date', pymongo.ASCENDING)])
+            ]
 
             table = Table(names=col_names, dtype=col_dtypes)
 
@@ -179,33 +185,37 @@ class WeatherPlotter(object):
             lon=config['longitude'],
             height=config['elevation'],
         )
-        obs = Observer(location=location, name='PANOPTES',
-                       timezone=config['timezone'])
+        obs = Observer(location=location, name='PANOPTES', timezone=config['timezone'])
 
         sunset = obs.sun_set_time(Time(self.start), which='next').datetime
         sunrise = obs.sun_rise_time(Time(self.start), which='next').datetime
 
         # Calculate and order twilights and set plotting alpha for each
-        twilights = [(self.start, 'start', 0.0),
-                     (sunset, 'sunset', 0.0),
-                     (obs.twilight_evening_civil(Time(self.start),
-                                                 which='next').datetime, 'ec', 0.1),
-                     (obs.twilight_evening_nautical(Time(self.start),
-                                                    which='next').datetime, 'en', 0.2),
-                     (obs.twilight_evening_astronomical(Time(self.start),
-                                                        which='next').datetime, 'ea', 0.3),
-                     (obs.twilight_morning_astronomical(Time(self.start),
-                                                        which='next').datetime, 'ma', 0.5),
-                     (obs.twilight_morning_nautical(Time(self.start),
-                                                    which='next').datetime, 'mn', 0.3),
-                     (obs.twilight_morning_civil(Time(self.start),
-                                                 which='next').datetime, 'mc', 0.2),
-                     (sunrise, 'sunrise', 0.1),
-                     ]
+        twilights = [
+            (self.start, 'start', 0.0),
+            (sunset, 'sunset', 0.0),
+            (obs.twilight_evening_civil(Time(self.start), which='next').datetime, 'ec', 0.1),
+            (obs.twilight_evening_nautical(Time(self.start), which='next').datetime, 'en', 0.2),
+            (obs.twilight_evening_astronomical(Time(self.start), which='next').datetime, 'ea',
+             0.3),
+            (obs.twilight_morning_astronomical(Time(self.start), which='next').datetime, 'ma',
+             0.5),
+            (obs.twilight_morning_nautical(Time(self.start), which='next').datetime, 'mn', 0.3),
+            (obs.twilight_morning_civil(Time(self.start), which='next').datetime, 'mc', 0.2),
+            (sunrise, 'sunrise', 0.1),
+        ]
 
         twilights.sort(key=lambda x: x[0])
-        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5,
-                 'ma': 0.3, 'mn': 0.2, 'mc': 0.1, 'sunrise': 0.0}
+        final = {
+            'sunset': 0.1,
+            'ec': 0.2,
+            'en': 0.3,
+            'ea': 0.5,
+            'ma': 0.3,
+            'mn': 0.2,
+            'mc': 0.1,
+            'sunrise': 0.0
+        }
         twilights.append((self.end, 'end', final[twilights[-1][1]]))
 
         return twilights
@@ -225,16 +235,16 @@ class WeatherPlotter(object):
 
         amb_temp = self.table['ambient_temp_C']
 
-        plt.plot_date(self.time, amb_temp, 'ko',
-                      markersize=2, markeredgewidth=0, drawstyle="default")
+        plt.plot_date(
+            self.time, amb_temp, 'ko', markersize=2, markeredgewidth=0, drawstyle="default")
 
         try:
             max_temp = max(amb_temp)
             min_temp = min(amb_temp)
             label_time = self.end - tdelta(0, 6 * 60 * 60)
             label_temp = label_pos(self.cfg['amb_temp_limits'])
-            plt.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(
-                min_temp, max_temp),
+            plt.annotate(
+                'Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(min_temp, max_temp),
                 xy=(label_time, max_temp),
                 xytext=(label_time, label_temp),
                 size=16,
@@ -252,27 +262,31 @@ class WeatherPlotter(object):
 
         for i, twi in enumerate(self.twilights):
             if i > 0:
-                plt.axvspan(self.twilights[i - 1][0], self.twilights[i][0],
-                            ymin=0, ymax=1, color='blue', alpha=twi[2])
+                plt.axvspan(
+                    self.twilights[i - 1][0],
+                    self.twilights[i][0],
+                    ymin=0,
+                    ymax=1,
+                    color='blue',
+                    alpha=twi[2])
 
         if self.today:
             tlh_axes = plt.axes(self.plot_positions[0][1])
             plt.title('Last Hour')
-            plt.plot_date(self.time, amb_temp, 'ko',
-                          markersize=4, markeredgewidth=0,
-                          drawstyle="default")
-            plt.plot_date([self.date, self.date], self.cfg['amb_temp_limits'],
-                          'g-', alpha=0.4)
+            plt.plot_date(
+                self.time, amb_temp, 'ko', markersize=4, markeredgewidth=0, drawstyle="default")
+            plt.plot_date([self.date, self.date], self.cfg['amb_temp_limits'], 'g-', alpha=0.4)
             try:
                 current_amb_temp = self.current_values['data']['ambient_temp_C']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 58 * 60)
                 label_temp = label_pos(self.cfg['amb_temp_limits'])
-                tlh_axes.annotate('Currently: {:.1f} $^\circ$C'.format(current_amb_temp),
-                                  xy=(current_time, current_amb_temp),
-                                  xytext=(label_time, label_temp),
-                                  size=16,
-                                  )
+                tlh_axes.annotate(
+                    'Currently: {:.1f} $^\circ$C'.format(current_amb_temp),
+                    xy=(current_time, current_amb_temp),
+                    xytext=(label_time, label_temp),
+                    size=16,
+                )
             except Exception:
                 pass
 
@@ -295,9 +309,14 @@ class WeatherPlotter(object):
 
         temp_diff = np.array(sky_temp_C) - np.array(ambient_temp_C)
 
-        plt.plot_date(self.time, temp_diff, 'ko-', label='Cloudiness',
-                      markersize=2, markeredgewidth=0,
-                      drawstyle="default")
+        plt.plot_date(
+            self.time,
+            temp_diff,
+            'ko-',
+            label='Cloudiness',
+            markersize=2,
+            markeredgewidth=0,
+            drawstyle="default")
 
         wclear = [(x.strip() == 'Clear') for x in sky_condition.data]
         plt.fill_between(self.time, -60, temp_diff, where=wclear, color='green', alpha=0.5)
@@ -311,9 +330,13 @@ class WeatherPlotter(object):
         if self.thresholds:
             st = self.thresholds.get('threshold_very_cloudy', None)
             if st:
-                plt.plot_date([self.start, self.end], [st, st], 'r-',
-                              markersize=2, markeredgewidth=0, alpha=0.3,
-                              drawstyle="default")
+                plt.plot_date(
+                    [self.start, self.end], [st, st],
+                    'r-',
+                    markersize=2,
+                    markeredgewidth=0,
+                    alpha=0.3,
+                    drawstyle="default")
 
         plt.ylabel("Cloudiness")
         plt.grid(which='major', color='k')
@@ -326,35 +349,41 @@ class WeatherPlotter(object):
 
         if self.today:
             tdlh_axes = plt.axes(self.plot_positions[1][1])
-            tdlh_axes.plot_date(self.time, temp_diff, 'ko-',
-                                label='Cloudiness', markersize=4,
-                                markeredgewidth=0, drawstyle="default")
-            plt.fill_between(self.time, -60, temp_diff, where=wclear,
-                             color='green', alpha=0.5)
-            plt.fill_between(self.time, -60, temp_diff, where=wcloudy,
-                             color='yellow', alpha=0.5)
-            plt.fill_between(self.time, -60, temp_diff, where=wvcloudy,
-                             color='red', alpha=0.5)
-            plt.plot_date([self.date, self.date], self.cfg['cloudiness_limits'],
-                          'g-', alpha=0.4)
+            tdlh_axes.plot_date(
+                self.time,
+                temp_diff,
+                'ko-',
+                label='Cloudiness',
+                markersize=4,
+                markeredgewidth=0,
+                drawstyle="default")
+            plt.fill_between(self.time, -60, temp_diff, where=wclear, color='green', alpha=0.5)
+            plt.fill_between(self.time, -60, temp_diff, where=wcloudy, color='yellow', alpha=0.5)
+            plt.fill_between(self.time, -60, temp_diff, where=wvcloudy, color='red', alpha=0.5)
+            plt.plot_date([self.date, self.date], self.cfg['cloudiness_limits'], 'g-', alpha=0.4)
 
             if self.thresholds:
                 st = self.thresholds.get('threshold_very_cloudy', None)
                 if st:
-                    plt.plot_date([self.start, self.end], [st, st], 'r-',
-                                  markersize=2, markeredgewidth=0, alpha=0.3,
-                                  drawstyle="default")
+                    plt.plot_date(
+                        [self.start, self.end], [st, st],
+                        'r-',
+                        markersize=2,
+                        markeredgewidth=0,
+                        alpha=0.3,
+                        drawstyle="default")
 
             try:
                 current_cloudiness = self.current_values['data']['sky_condition']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 58 * 60)
                 label_temp = label_pos(self.cfg['cloudiness_limits'])
-                tdlh_axes.annotate('Currently: {:s}'.format(current_cloudiness),
-                                   xy=(current_time, label_temp),
-                                   xytext=(label_time, label_temp),
-                                   size=16,
-                                   )
+                tdlh_axes.annotate(
+                    'Currently: {:s}'.format(current_cloudiness),
+                    xy=(current_time, label_temp),
+                    xytext=(label_time, label_temp),
+                    size=16,
+                )
             except Exception:
                 pass
 
@@ -377,51 +406,67 @@ class WeatherPlotter(object):
         matime, wind_mavg = moving_averagexy(self.time, wind_speed, 9)
         wind_condition = self.table['wind_condition']
 
-        w_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.5,
-                         markersize=2, markeredgewidth=0,
-                         drawstyle="default")
-        w_axes.plot_date(matime, wind_mavg, 'b-',
-                         label='Wind Speed',
-                         markersize=3, markeredgewidth=0,
-                         linewidth=3, alpha=0.5,
-                         drawstyle="default")
+        w_axes.plot_date(
+            self.time,
+            wind_speed,
+            'ko',
+            alpha=0.5,
+            markersize=2,
+            markeredgewidth=0,
+            drawstyle="default")
+        w_axes.plot_date(
+            matime,
+            wind_mavg,
+            'b-',
+            label='Wind Speed',
+            markersize=3,
+            markeredgewidth=0,
+            linewidth=3,
+            alpha=0.5,
+            drawstyle="default")
         w_axes.plot_date([self.start, self.end], [0, 0], 'k-', ms=1)
         wcalm = [(x.strip() == 'Calm') for x in wind_condition.data]
-        w_axes.fill_between(self.time, -5, wind_speed, where=wcalm,
-                            color='green', alpha=0.5)
+        w_axes.fill_between(self.time, -5, wind_speed, where=wcalm, color='green', alpha=0.5)
         wwindy = [(x.strip() == 'Windy') for x in wind_condition.data]
-        w_axes.fill_between(self.time, -5, wind_speed, where=wwindy,
-                            color='yellow', alpha=0.5)
+        w_axes.fill_between(self.time, -5, wind_speed, where=wwindy, color='yellow', alpha=0.5)
         wvwindy = [(x.strip() == 'Very Windy') for x in wind_condition.data]
-        w_axes.fill_between(self.time, -5, wind_speed, where=wvwindy,
-                            color='red', alpha=0.5)
+        w_axes.fill_between(self.time, -5, wind_speed, where=wvwindy, color='red', alpha=0.5)
 
         if self.thresholds:
             st = self.thresholds.get('threshold_very_windy', None)
             if st:
-                plt.plot_date([self.start, self.end], [st, st], 'r-',
-                              markersize=2, markeredgewidth=0, alpha=0.3,
-                              drawstyle="default")
+                plt.plot_date(
+                    [self.start, self.end], [st, st],
+                    'r-',
+                    markersize=2,
+                    markeredgewidth=0,
+                    alpha=0.3,
+                    drawstyle="default")
             st = self.thresholds.get('threshold_very_gusty', None)
             if st:
-                plt.plot_date([self.start, self.end], [st, st], 'r-',
-                              markersize=2, markeredgewidth=0, alpha=0.3,
-                              drawstyle="default")
+                plt.plot_date(
+                    [self.start, self.end], [st, st],
+                    'r-',
+                    markersize=2,
+                    markeredgewidth=0,
+                    alpha=0.3,
+                    drawstyle="default")
 
         try:
             max_wind = max(wind_speed)
             label_time = self.end - tdelta(0, 5 * 60 * 60)
             label_wind = label_pos(self.cfg['wind_limits'])
-            w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),
-                            xy=(label_time, label_wind),
-                            xytext=(label_time, label_wind),
-                            size=16,
-                            )
+            w_axes.annotate(
+                'Max Gust: {:.1f} (km/h)'.format(max_wind),
+                xy=(label_time, label_wind),
+                xytext=(label_time, label_wind),
+                size=16,
+            )
         except Exception:
             pass
         plt.ylabel("Wind (km/h)")
         plt.grid(which='major', color='k')
-#         plt.yticks(range(0, 200, 10))
+        #         plt.yticks(range(0, 200, 10))
 
         plt.xlim(self.start, self.end)
         plt.ylim(self.cfg['wind_limits'])
@@ -434,50 +479,66 @@ class WeatherPlotter(object):
 
         if self.today:
             wlh_axes = plt.axes(self.plot_positions[2][1])
-            wlh_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.7,
-                               markersize=4, markeredgewidth=0,
-                               drawstyle="default")
-            wlh_axes.plot_date(matime, wind_mavg, 'b-',
-                               label='Wind Speed',
-                               markersize=2, markeredgewidth=0,
-                               linewidth=3, alpha=0.5,
-                               drawstyle="default")
+            wlh_axes.plot_date(
+                self.time,
+                wind_speed,
+                'ko',
+                alpha=0.7,
+                markersize=4,
+                markeredgewidth=0,
+                drawstyle="default")
+            wlh_axes.plot_date(
+                matime,
+                wind_mavg,
+                'b-',
+                label='Wind Speed',
+                markersize=2,
+                markeredgewidth=0,
+                linewidth=3,
+                alpha=0.5,
+                drawstyle="default")
             wlh_axes.plot_date([self.start, self.end], [0, 0], 'k-', ms=1)
-            wlh_axes.fill_between(self.time, -5, wind_speed, where=wcalm,
-                                  color='green', alpha=0.5)
-            wlh_axes.fill_between(self.time, -5, wind_speed, where=wwindy,
-                                  color='yellow', alpha=0.5)
-            wlh_axes.fill_between(self.time, -5, wind_speed, where=wvwindy,
-                                  color='red', alpha=0.5)
-            plt.plot_date([self.date, self.date], self.cfg['wind_limits'],
-                          'g-', alpha=0.4)
+            wlh_axes.fill_between(self.time, -5, wind_speed, where=wcalm, color='green', alpha=0.5)
+            wlh_axes.fill_between(
+                self.time, -5, wind_speed, where=wwindy, color='yellow', alpha=0.5)
+            wlh_axes.fill_between(self.time, -5, wind_speed, where=wvwindy, color='red', alpha=0.5)
+            plt.plot_date([self.date, self.date], self.cfg['wind_limits'], 'g-', alpha=0.4)
 
             if self.thresholds:
                 st = self.thresholds.get('threshold_very_windy', None)
                 if st:
-                    plt.plot_date([self.start, self.end], [st, st], 'r-',
-                                  markersize=2, markeredgewidth=0, alpha=0.3,
-                                  drawstyle="default")
+                    plt.plot_date(
+                        [self.start, self.end], [st, st],
+                        'r-',
+                        markersize=2,
+                        markeredgewidth=0,
+                        alpha=0.3,
+                        drawstyle="default")
                 st = self.thresholds.get('threshold_very_gusty', None)
                 if st:
-                    plt.plot_date([self.start, self.end], [st, st], 'r-',
-                                  markersize=2, markeredgewidth=0, alpha=0.3,
-                                  drawstyle="default")
+                    plt.plot_date(
+                        [self.start, self.end], [st, st],
+                        'r-',
+                        markersize=2,
+                        markeredgewidth=0,
+                        alpha=0.3,
+                        drawstyle="default")
 
             try:
                 current_wind = self.current_values['data']['wind_speed_KPH']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 58 * 60)
                 label_wind = label_pos(self.cfg['wind_limits'])
-                wlh_axes.annotate('Currently: {:.0f} km/h'.format(current_wind),
-                                  xy=(current_time, current_wind),
-                                  xytext=(label_time, label_wind),
-                                  size=16,
-                                  )
+                wlh_axes.annotate(
+                    'Currently: {:.0f} km/h'.format(current_wind),
+                    xy=(current_time, current_wind),
+                    xytext=(label_time, label_wind),
+                    size=16,
+                )
             except Exception:
                 pass
             plt.grid(which='major', color='k')
-#             plt.yticks(range(0, 200, 10))
+            #             plt.yticks(range(0, 200, 10))
             plt.xlim(self.lhstart, self.lhend)
             plt.ylim(self.cfg['wind_limits'])
             wlh_axes.xaxis.set_major_locator(self.mins)
@@ -497,26 +558,32 @@ class WeatherPlotter(object):
         rf_value = self.table['rain_frequency']
         rain_condition = self.table['rain_condition']
 
-        rf_axes.plot_date(self.time, rf_value, 'ko-', label='Rain',
-                          markersize=2, markeredgewidth=0,
-                          drawstyle="default")
+        rf_axes.plot_date(
+            self.time,
+            rf_value,
+            'ko-',
+            label='Rain',
+            markersize=2,
+            markeredgewidth=0,
+            drawstyle="default")
 
         wdry = [(x.strip() == 'Dry') for x in rain_condition.data]
-        rf_axes.fill_between(self.time, 0, rf_value, where=wdry,
-                             color='green', alpha=0.5)
+        rf_axes.fill_between(self.time, 0, rf_value, where=wdry, color='green', alpha=0.5)
         wwet = [(x.strip() == 'Wet') for x in rain_condition.data]
-        rf_axes.fill_between(self.time, 0, rf_value, where=wwet,
-                             color='orange', alpha=0.5)
+        rf_axes.fill_between(self.time, 0, rf_value, where=wwet, color='orange', alpha=0.5)
         wrain = [(x.strip() == 'Rain') for x in rain_condition.data]
-        rf_axes.fill_between(self.time, 0, rf_value, where=wrain,
-                             color='red', alpha=0.5)
+        rf_axes.fill_between(self.time, 0, rf_value, where=wrain, color='red', alpha=0.5)
 
         if self.thresholds:
             st = self.thresholds.get('threshold_wet', None)
             if st:
-                plt.plot_date([self.start, self.end], [st, st], 'r-',
-                              markersize=2, markeredgewidth=0, alpha=0.3,
-                              drawstyle="default")
+                plt.plot_date(
+                    [self.start, self.end], [st, st],
+                    'r-',
+                    markersize=2,
+                    markeredgewidth=0,
+                    alpha=0.3,
+                    drawstyle="default")
 
         plt.ylabel("Rain Sensor")
         plt.grid(which='major', color='k')
@@ -528,32 +595,38 @@ class WeatherPlotter(object):
 
         if self.today:
             rflh_axes = plt.axes(self.plot_positions[3][1])
-            rflh_axes.plot_date(self.time, rf_value, 'ko-', label='Rain',
-                                markersize=4, markeredgewidth=0,
-                                drawstyle="default")
-            rflh_axes.fill_between(self.time, 0, rf_value, where=wdry,
-                                   color='green', alpha=0.5)
-            rflh_axes.fill_between(self.time, 0, rf_value, where=wwet,
-                                   color='orange', alpha=0.5)
-            rflh_axes.fill_between(self.time, 0, rf_value, where=wrain,
-                                   color='red', alpha=0.5)
-            plt.plot_date([self.date, self.date], self.cfg['rain_limits'],
-                          'g-', alpha=0.4)
+            rflh_axes.plot_date(
+                self.time,
+                rf_value,
+                'ko-',
+                label='Rain',
+                markersize=4,
+                markeredgewidth=0,
+                drawstyle="default")
+            rflh_axes.fill_between(self.time, 0, rf_value, where=wdry, color='green', alpha=0.5)
+            rflh_axes.fill_between(self.time, 0, rf_value, where=wwet, color='orange', alpha=0.5)
+            rflh_axes.fill_between(self.time, 0, rf_value, where=wrain, color='red', alpha=0.5)
+            plt.plot_date([self.date, self.date], self.cfg['rain_limits'], 'g-', alpha=0.4)
             if st:
-                plt.plot_date([self.start, self.end], [st, st], 'r-',
-                              markersize=2, markeredgewidth=0, alpha=0.3,
-                              drawstyle="default")
+                plt.plot_date(
+                    [self.start, self.end], [st, st],
+                    'r-',
+                    markersize=2,
+                    markeredgewidth=0,
+                    alpha=0.3,
+                    drawstyle="default")
 
             try:
                 current_rain = self.current_values['data']['rain_condition']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 58 * 60)
                 label_y = label_pos(self.cfg['rain_limits'])
-                rflh_axes.annotate('Currently: {:s}'.format(current_rain),
-                                   xy=(current_time, label_y),
-                                   xytext=(label_time, label_y),
-                                   size=16,
-                                   )
+                rflh_axes.annotate(
+                    'Currently: {:s}'.format(current_rain),
+                    xy=(current_time, label_y),
+                    xytext=(label_time, label_y),
+                    size=16,
+                )
             except Exception:
                 pass
             plt.grid(which='major', color='k')
@@ -572,15 +645,12 @@ class WeatherPlotter(object):
 
         safe_value = [int(x) for x in self.table['safe']]
 
-        safe_axes.plot_date(self.time, safe_value, 'ko',
-                            markersize=2, markeredgewidth=0,
-                            drawstyle="default")
-        safe_axes.fill_between(self.time, -1, safe_value,
-                               where=(self.table['safe'].data),
-                               color='green', alpha=0.5)
-        safe_axes.fill_between(self.time, -1, safe_value,
-                               where=(~self.table['safe'].data),
-                               color='red', alpha=0.5)
+        safe_axes.plot_date(
+            self.time, safe_value, 'ko', markersize=2, markeredgewidth=0, drawstyle="default")
+        safe_axes.fill_between(
+            self.time, -1, safe_value, where=(self.table['safe'].data), color='green', alpha=0.5)
+        safe_axes.fill_between(
+            self.time, -1, safe_value, where=(~self.table['safe'].data), color='red', alpha=0.5)
         plt.ylabel("Safe")
         plt.xlim(self.start, self.end)
         plt.ylim(-0.1, 1.1)
@@ -593,28 +663,35 @@ class WeatherPlotter(object):
 
         if self.today:
             safelh_axes = plt.axes(self.plot_positions[4][1])
-            safelh_axes.plot_date(self.time, safe_value, 'ko-',
-                                  markersize=4, markeredgewidth=0,
-                                  drawstyle="default")
-            safelh_axes.fill_between(self.time, -1, safe_value,
-                                     where=(self.table['safe'].data),
-                                     color='green', alpha=0.5)
-            safelh_axes.fill_between(self.time, -1, safe_value,
-                                     where=(~self.table['safe'].data),
-                                     color='red', alpha=0.5)
-            plt.plot_date([self.date, self.date], [-0.1, 1.1],
-                          'g-', alpha=0.4)
+            safelh_axes.plot_date(
+                self.time, safe_value, 'ko-', markersize=4, markeredgewidth=0, drawstyle="default")
+            safelh_axes.fill_between(
+                self.time,
+                -1,
+                safe_value,
+                where=(self.table['safe'].data),
+                color='green',
+                alpha=0.5)
+            safelh_axes.fill_between(
+                self.time,
+                -1,
+                safe_value,
+                where=(~self.table['safe'].data),
+                color='red',
+                alpha=0.5)
+            plt.plot_date([self.date, self.date], [-0.1, 1.1], 'g-', alpha=0.4)
             try:
                 safe = self.current_values['data']['safe']
                 current_safe = {True: 'Safe', False: 'Unsafe'}[safe]
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 58 * 60)
                 label_y = 0.35
-                safelh_axes.annotate('Currently: {:s}'.format(current_safe),
-                                     xy=(current_time, label_y),
-                                     xytext=(label_time, label_y),
-                                     size=16,
-                                     )
+                safelh_axes.annotate(
+                    'Currently: {:s}'.format(current_safe),
+                    xy=(current_time, label_y),
+                    xytext=(label_time, label_y),
+                    size=16,
+                )
             except Exception:
                 pass
             plt.ylim(-0.1, 1.1)
@@ -643,18 +720,31 @@ class WeatherPlotter(object):
         pwm_value = self.table['pwm_value']
         rst_delta = self.table['rain_sensor_temp_C'] - self.table['ambient_temp_C']
 
-        rst_axes.plot_date(self.time, rst_delta, 'ro-', alpha=0.5,
-                           label='RST Delta (C)',
-                           markersize=2, markeredgewidth=0,
-                           drawstyle="default")
+        rst_axes.plot_date(
+            self.time,
+            rst_delta,
+            'ro-',
+            alpha=0.5,
+            label='RST Delta (C)',
+            markersize=2,
+            markeredgewidth=0,
+            drawstyle="default")
 
         # Add line with same style as above in order to get in to the legend
-        pwm_axes.plot_date([self.start, self.end], [-10, -10], 'ro-',
-                           markersize=2, markeredgewidth=0,
-                           label='RST Delta (C)')
-        pwm_axes.plot_date(self.time, pwm_value, 'bo-', label='Heater',
-                           markersize=2, markeredgewidth=0,
-                           drawstyle="default")
+        pwm_axes.plot_date(
+            [self.start, self.end], [-10, -10],
+            'ro-',
+            markersize=2,
+            markeredgewidth=0,
+            label='RST Delta (C)')
+        pwm_axes.plot_date(
+            self.time,
+            pwm_value,
+            'bo-',
+            label='Heater',
+            markersize=2,
+            markeredgewidth=0,
+            drawstyle="default")
         pwm_axes.xaxis.set_major_locator(self.hours)
         pwm_axes.xaxis.set_major_formatter(self.hours_fmt)
         pwm_axes.legend(loc='best')
@@ -668,17 +758,26 @@ class WeatherPlotter(object):
             rstlh_axes = pwmlh_axes.twinx()
             plt.ylim(-1, 21)
             plt.xlim(self.lhstart, self.lhend)
-            rstlh_axes.plot_date(self.time, rst_delta, 'ro-', alpha=0.5,
-                                 label='RST Delta (C)',
-                                 markersize=4, markeredgewidth=0,
-                                 drawstyle="default")
-            rstlh_axes.plot_date([self.date, self.date], [-1, 21],
-                                 'g-', alpha=0.4)
+            rstlh_axes.plot_date(
+                self.time,
+                rst_delta,
+                'ro-',
+                alpha=0.5,
+                label='RST Delta (C)',
+                markersize=4,
+                markeredgewidth=0,
+                drawstyle="default")
+            rstlh_axes.plot_date([self.date, self.date], [-1, 21], 'g-', alpha=0.4)
             rstlh_axes.xaxis.set_ticklabels([])
             rstlh_axes.yaxis.set_ticklabels([])
-            pwmlh_axes.plot_date(self.time, pwm_value, 'bo', label='Heater',
-                                 markersize=4, markeredgewidth=0,
-                                 drawstyle="default")
+            pwmlh_axes.plot_date(
+                self.time,
+                pwm_value,
+                'bo',
+                label='Heater',
+                markersize=4,
+                markeredgewidth=0,
+                drawstyle="default")
             pwmlh_axes.xaxis.set_major_locator(self.mins)
             pwmlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             pwmlh_axes.yaxis.set_ticklabels([])
@@ -692,8 +791,8 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-            plot_filename = os.path.join(os.path.expandvars(
-                '$PANDIR'), 'weather_plots', plot_filename)
+            plot_filename = os.path.join(
+                os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_filename))
         self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
@@ -722,8 +821,8 @@ def moving_averagexy(x, y, window_size):
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(
-        description="Make a plot of the weather for a give date.")
+    parser = argparse.ArgumentParser(description="Make a plot of the weather for a give date.")
+    # yapf: disable
     parser.add_argument("-d", "--date", type=str, dest="date", default=None,
                         help="UT Date to plot")
     parser.add_argument("-f", "--file", type=str, dest="data_file", default=None,
@@ -732,6 +831,7 @@ if __name__ == '__main__':
                         help="Filename for generated plot")
     parser.add_argument('--plotly-user', help="Username for plotly publishing")
     parser.add_argument('--plotly-api-key', help="API for plotly publishing")
+    # yapf: enable
     args = parser.parse_args()
 
     wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)

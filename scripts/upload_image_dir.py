@@ -41,11 +41,18 @@ def main(date, auto_confirm=False, verbose=False):
     fields_dir = os.path.join(img_dir, 'fields')
 
     # Get all the sequences from previous day
-    seq_ids = db.observations.distinct(
-        'sequence_id', {'date': {'$gte': date}})
+    seq_ids = db.observations.distinct('sequence_id', {'date': {'$gte': date}})
     # Find all images corresponding to those sequences
-    imgs = [record['data']['file_path'] for record in db.observations.find(
-        {'sequence_id': {'$in': seq_ids}}, {'data.file_path': 1})]
+    imgs = [
+        record['data']['file_path']
+        for record in db.observations.find({
+            'sequence_id': {
+                '$in': seq_ids
+            }
+        }, {
+            'data.file_path': 1
+        })
+    ]
 
     # Get directory names without leading fields_dir and trailing image dir
     dirs = sorted(set([img[0:img.rindex('/') - 1].replace(fields_dir, '') for img in imgs]))
@@ -73,14 +80,15 @@ if __name__ == '__main__':
 
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Uploader for image directory")
-    parser.add_argument('--date', default=None,
-                        help='Export start date, e.g. 2016-01-01, defaults to yesterday')
-    parser.add_argument('--auto-confirm', action='store_true', default=False,
-                        help='Auto-confirm upload, implies verbose.')
-    parser.add_argument('--verbose', action='store_true', default=False,
-                        help='Verbose')
+    parser = argparse.ArgumentParser(description="Uploader for image directory")
+    parser.add_argument(
+        '--date', default=None, help='Export start date, e.g. 2016-01-01, defaults to yesterday')
+    parser.add_argument(
+        '--auto-confirm',
+        action='store_true',
+        default=False,
+        help='Auto-confirm upload, implies verbose.')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose')
 
     args = parser.parse_args()
 

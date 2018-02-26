@@ -35,11 +35,7 @@ def wait_for_state(sub, state, max_duration=90):
 @pytest.fixture(scope='function')
 def observatory(config, db_type):
     observatory = Observatory(
-        config=config,
-        simulator=['all'],
-        ignore_local_config=True,
-        db_type=db_type
-    )
+        config=config, simulator=['all'], ignore_local_config=True, db_type=db_type)
     return observatory
 
 
@@ -47,20 +43,18 @@ def observatory(config, db_type):
 def pocs(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
-    pocs = POCS(observatory,
-                run_once=True,
-                config=config,
-                ignore_local_config=True)
+    pocs = POCS(observatory, run_once=True, config=config, ignore_local_config=True)
 
     pocs.observatory.scheduler.fields_file = None
     pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
+        {
+            'name': 'Wasp 33',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        },
     ]
 
     yield pocs
@@ -72,25 +66,24 @@ def pocs(config, observatory):
 def pocs_with_dome(config_with_simulated_dome, db_type):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     simulator = hardware.get_all_names(without=['dome'])
-    observatory = Observatory(config=config_with_simulated_dome,
-                              simulator=simulator,
-                              ignore_local_config=True,
-                              db_type=db_type
-                              )
+    observatory = Observatory(
+        config=config_with_simulated_dome,
+        simulator=simulator,
+        ignore_local_config=True,
+        db_type=db_type)
 
-    pocs = POCS(observatory,
-                run_once=True,
-                config=config_with_simulated_dome,
-                ignore_local_config=True)
+    pocs = POCS(
+        observatory, run_once=True, config=config_with_simulated_dome, ignore_local_config=True)
 
     pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
+        {
+            'name': 'Wasp 33',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        },
     ]
 
     yield pocs
@@ -239,17 +232,17 @@ def test_run_wait_until_safe(observatory):
         # Remove weather simulator, else it would always be safe.
         observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
 
-        pocs = POCS(observatory,
-                    messaging=True, safe_delay=5)
+        pocs = POCS(observatory, messaging=True, safe_delay=5)
 
         pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                    'position': '20h06m15.4536s +44d27m24.75s',
-                                                    'priority': '100',
-                                                    'exp_time': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
-                                                    })
+        pocs.observatory.scheduler.add_observation({
+            'name': 'KIC 8462852',
+            'position': '20h06m15.4536s +44d27m24.75s',
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        })
 
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
@@ -352,13 +345,14 @@ def test_run_complete(pocs):
     pocs._do_states = True
 
     pocs.observatory.scheduler.clear_available_observations()
-    pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                        'position': '20h06m15.4536s +44d27m24.75s',
-                                                        'priority': '100',
-                                                        'exp_time': 2,
-                                                        'min_nexp': 2,
-                                                        'exp_set_size': 2,
-                                                })
+    pocs.observatory.scheduler.add_observation({
+        'name': 'KIC 8462852',
+        'position': '20h06m15.4536s +44d27m24.75s',
+        'priority': '100',
+        'exp_time': 2,
+        'min_nexp': 2,
+        'exp_set_size': 2,
+    })
 
     pocs.initialize()
     assert pocs.is_initialized is True
@@ -374,13 +368,14 @@ def test_run_power_down_interrupt(observatory):
         pocs = POCS(observatory, messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                    'position': '20h06m15.4536s +44d27m24.75s',
-                                                    'priority': '100',
-                                                    'exp_time': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
-                                                    })
+        pocs.observatory.scheduler.add_observation({
+            'name': 'KIC 8462852',
+            'position': '20h06m15.4536s +44d27m24.75s',
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        })
         pocs.logger.info('Starting observatory run')
         pocs.run()
         pocs.power_down()

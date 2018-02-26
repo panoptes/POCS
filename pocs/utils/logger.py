@@ -138,7 +138,6 @@ def get_root_logger(profile='panoptes', log_config=None):
 
 
 class _UTCFormatter(logging.Formatter):
-
     """ Simple class to convert times to UTC in the logger """
     converter = time.gmtime
 

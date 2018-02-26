@@ -14,7 +14,6 @@ from pocs.utils.images import fits as fits_utils
 
 
 class Camera(AbstractCamera):
-
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         super().__init__(name, *args, **kwargs)
         self.logger.debug("Initializing simulated camera")
@@ -38,11 +37,7 @@ class Camera(AbstractCamera):
             kwargs['exp_time'] = 2
             self.logger.debug("Trimming camera simulator exposure to 2 s")
 
-        return super().take_observation(observation,
-                                        headers,
-                                        filename,
-                                        *args,
-                                        **kwargs)
+        return super().take_observation(observation, headers, filename, *args, **kwargs)
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -60,9 +55,8 @@ class Camera(AbstractCamera):
             seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, self.name, filename))
 
         # Build FITS header
         header = self._fits_header(seconds, dark)
@@ -71,9 +65,10 @@ class Camera(AbstractCamera):
         # copy a dummy FITS file to the specified path and adjust the headers
         # according to the exposure time, type.
         exposure_event = Event()
-        exposure_thread = Timer(interval=seconds,
-                                function=self._fake_exposure,
-                                args=[filename, header, exposure_event])
+        exposure_thread = Timer(
+            interval=seconds,
+            function=self._fake_exposure,
+            args=[filename, header, exposure_event])
         exposure_thread.start()
 
         if blocking:
@@ -88,9 +83,8 @@ class Camera(AbstractCamera):
 
         if header['IMAGETYP'] == 'Dark Frame':
             # Replace example data with a bunch of random numbers
-            fake_data = np.random.randint(low=975, high=1026,
-                                          size=fake_data.shape,
-                                          dtype=fake_data.dtype)
+            fake_data = np.random.randint(
+                low=975, high=1026, size=fake_data.shape, dtype=fake_data.dtype)
 
         fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
 

@@ -14,7 +14,6 @@ from pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):
-
     def __init__(self, *args, **kwargs):
         """"""
         super(Mount, self).__init__(*args, **kwargs)
@@ -28,7 +27,6 @@ class Mount(AbstractMount):
             "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
-
 
 ##########################################################################
 # Methods
@@ -152,7 +150,6 @@ class Mount(AbstractMount):
         self.query('set_park_position')
         self.logger.info("Mount park position set: {}".format(self._park_coordinates))
 
-
 ##########################################################################
 # Movement methods
 ##########################################################################
@@ -191,8 +188,8 @@ class Mount(AbstractMount):
                         time.sleep(2)
 
             except Exception as e:
-                self.logger.warning(
-                    "Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+                self.logger.warning("Problem slewing to mount coordinates: {} {}".format(
+                    mount_coords, e))
 
             if success:
                 if not self.query('start_tracking')['success']:
@@ -288,7 +285,6 @@ class Mount(AbstractMount):
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
-
 ##########################################################################
 # Communication Methods
 ##########################################################################
@@ -350,8 +346,8 @@ class Mount(AbstractMount):
                             commands.update(yaml.load(f.read()))
                             self.logger.debug("Mount commands updated from {}".format(conf_file))
                     except OSError as err:
-                        self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                        self.logger.warning('Cannot load commands config file: {} \n {}'.format(
+                            conf_file, err))
                     except Exception:
                         self.logger.warning("Problem loading mount command file")
                 else:

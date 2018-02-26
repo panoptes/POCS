@@ -5,7 +5,6 @@ import sys
 from pocs.sensors import arduino_io
 from pocs.utils import rs232
 
-
 # Support testing by just listing the available devices.
 if __name__ == '__main__':
     port_infos = rs232.get_serial_port_info()

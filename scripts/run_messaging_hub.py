@@ -82,8 +82,7 @@ def run_forwarders(port_pairs):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Run one or more zeromq message forwarder(s).')
+    parser = argparse.ArgumentParser(description='Run one or more zeromq message forwarder(s).')
     parser.add_argument(
         '--pair',
         dest='pairs',

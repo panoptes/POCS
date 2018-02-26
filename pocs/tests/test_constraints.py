@@ -34,9 +34,7 @@ def horizon_line(config):
     default_horizon = config['location'].get('horizon').value
 
     horizon_line = horizon_utils.Horizon(
-        obstructions=obstruction_list,
-        default_horizon=default_horizon
-    )
+        obstructions=obstruction_list, default_horizon=default_horizon)
     return horizon_line
 
 
@@ -140,11 +138,7 @@ def test_custom_altitude(observer, field_list, horizon_line):
     m44 = field_list[-1]
 
     # Then check veto with block
-    horizon_line = horizon_utils.Horizon(
-        obstructions=[
-            [[40, 70], [40, 80]]
-        ],
-    )
+    horizon_line = horizon_utils.Horizon(obstructions=[[[40, 70], [40, 80]]], )
     ac = Altitude(horizon_line)
     observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
@@ -154,11 +148,7 @@ def test_custom_altitude(observer, field_list, horizon_line):
 
 def test_big_wall(observer, field_list):
     time = Time('2018-01-19 07:10:00')
-    horizon_line = horizon_utils.Horizon(
-        obstructions=[
-            [[90, 0], [90, 359]]
-        ],
-    )
+    horizon_line = horizon_utils.Horizon(obstructions=[[[90, 0], [90, 359]]], )
 
     vetoes = list()
     for field in field_list:

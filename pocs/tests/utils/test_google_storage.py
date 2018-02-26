@@ -4,11 +4,8 @@ import os
 from pocs.utils.error import GoogleCloudError
 from pocs.utils.google.storage import PanStorage
 
-
 pytestmark = pytest.mark.skipif(
-    not pytest.config.option.test_cloud_storage,
-    reason="Needs --test-cloud-storage to run"
-)
+    not pytest.config.option.test_cloud_storage, reason="Needs --test-cloud-storage to run")
 
 
 def test_key_exists():

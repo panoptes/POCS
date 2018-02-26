@@ -13,9 +13,13 @@ from pocs.scheduler.observation import Observation
 
 
 class BaseScheduler(PanBase):
-
-    def __init__(self, observer, fields_list=None, fields_file=None,
-                 constraints=list(), *args, **kwargs):
+    def __init__(self,
+                 observer,
+                 fields_list=None,
+                 fields_file=None,
+                 constraints=list(),
+                 *args,
+                 **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
@@ -52,7 +56,6 @@ class BaseScheduler(PanBase):
         self.observed_list = OrderedDict()
 
         self.read_field_list()
-
 
 ##########################################################################
 # Properties
@@ -266,6 +269,7 @@ class BaseScheduler(PanBase):
                     self.add_observation(field_config)
                 except AssertionError:
                     self.logger.debug("Skipping duplicate field.")
+
 
 ##########################################################################
 # Utility Methods

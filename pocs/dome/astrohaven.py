@@ -14,7 +14,7 @@ class Protocol:
     A_IS_CLOSED = '1'  # Only shutter A is fully closed.
     B_IS_CLOSED = '2'  # Only shutter B is fully closed.
 
-    BOTH_OPEN = '3'    # Really means both NOT fully closed.
+    BOTH_OPEN = '3'  # Really means both NOT fully closed.
 
     # Status codes produced by the dome when not responding to a movement command.
     STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)

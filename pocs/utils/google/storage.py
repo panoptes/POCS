@@ -36,18 +36,14 @@ class PanStorage(object):
         self.project_id = project_id
         self.bucket_name = bucket_name
 
-        self.client = storage.Client.from_service_account_json(
-            auth_key,
-            project=self.project_id
-        )
+        self.client = storage.Client.from_service_account_json(auth_key, project=self.project_id)
 
         try:
             self.bucket = self.client.get_bucket(bucket_name)
         except Forbidden as e:
             raise error.GoogleCloudError(
                 "Storage bucket does not exist or no permissions. " +
-                "Ensure that the PANOPTES_CLOUD_KEY variable is properly set"
-            )
+                "Ensure that the PANOPTES_CLOUD_KEY variable is properly set")
 
         self.logger.info("Connected to storage bucket {}", self.bucket_name)
 
@@ -75,16 +71,14 @@ class PanStorage(object):
         if not remote_path.startswith(self.unit_id):
             remote_path = '{}/{}'.format(self.unit_id, remote_path)
 
-        self.logger.debug('Uploading file: {} to bucket: {} object: {} ',
-                          local_path, self.bucket.name, remote_path)
+        self.logger.debug('Uploading file: {} to bucket: {} object: {} ', local_path,
+                          self.bucket.name, remote_path)
 
         try:
-            self.bucket.blob(remote_path).upload_from_filename(
-                filename=local_path)
+            self.bucket.blob(remote_path).upload_from_filename(filename=local_path)
             self.logger.debug('Upload complete')
 
         except Exception as err:
-            self.logger.warning(
-                'Problem uploading file {}: {}'.format(local_path, err))
+            self.logger.warning('Problem uploading file {}: {}'.format(local_path, err))
 
         return remote_path

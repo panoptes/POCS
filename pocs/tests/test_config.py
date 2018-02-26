@@ -23,12 +23,8 @@ def test_no_clobber(config):
 
 def test_clobber(config):
 
-    config01 = {
-        'foo': 'bar'
-    }
-    config02 = {
-        'bar': 'foo'
-    }
+    config01 = {'foo': 'bar'}
+    config02 = {'bar': 'foo'}
 
     assert config01 != config02
 
@@ -67,9 +63,7 @@ def test_local_config():
         conf = load_config(ignore_local=True)
         assert conf['name'] == 'Generic PANOPTES Unit'
 
-        local_yaml = {
-            'name': 'ConfTestName'
-        }
+        local_yaml = {'name': 'ConfTestName'}
         with open(_local_config_file, 'w') as f:
             f.write(yaml.dump(local_yaml))
         conf = load_config()

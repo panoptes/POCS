@@ -1,4 +1,3 @@
-
 def on_enter(event_data):
     """ The unit is tracking the target. Proceed to observations. """
     pocs = event_data.model

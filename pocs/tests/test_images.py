@@ -141,7 +141,6 @@ def test_pointing_error(solved_fits_file):
 #     assert offset_info['offsetX'] - 3.9686712667745043 < 1e-5
 #     assert offset_info['offsetY'] - 17.585827075244445 < 1e-5
 
-
 # def test_compute_offset_pixel(solved_fits_file, unsolved_fits_file):
 #     img0 = Image(solved_fits_file)
 #     img1 = Image(unsolved_fits_file)
@@ -155,7 +154,6 @@ def test_pointing_error(solved_fits_file):
 
 #     assert offset_info_opposite['offsetX'] == -1 * offset_info['offsetX']
 #     assert offset_info_opposite['offsetY'] == -1 * offset_info['offsetY']
-
 
 # def test_compute_offset_string(solved_fits_file, unsolved_fits_file):
 #     img0 = Image(solved_fits_file)

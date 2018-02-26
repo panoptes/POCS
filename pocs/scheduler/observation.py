@@ -6,10 +6,14 @@ from pocs.scheduler.field import Field
 
 
 class Observation(PanBase):
-
     @u.quantity_input(exp_time=u.second)
-    def __init__(self, field, exp_time=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, **kwargs):
+    def __init__(self,
+                 field,
+                 exp_time=120 * u.second,
+                 min_nexp=60,
+                 exp_set_size=10,
+                 priority=100,
+                 **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -75,7 +79,6 @@ class Observation(PanBase):
 
         self.logger.debug("Observation created: {}".format(self))
 
-
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -130,7 +133,6 @@ class Observation(PanBase):
             return list(self.exposure_list.items())[-1]
         except IndexError:
             self.logger.warning("No exposure available")
-
 
 ##################################################################################################
 # Methods

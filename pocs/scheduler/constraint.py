@@ -5,7 +5,6 @@ from pocs.base import PanBase
 
 
 class BaseConstraint(PanBase):
-
     def __init__(self, weight=1.0, default_score=0.0, *args, **kwargs):
         """ Base constraint
 
@@ -35,7 +34,6 @@ class BaseConstraint(PanBase):
 
 
 class Altitude(BaseConstraint):
-
     """ Implements altitude constraints for a horizon """
 
     def __init__(self, horizon=None, *args, **kwargs):
@@ -69,7 +67,6 @@ class Altitude(BaseConstraint):
 
 
 class Duration(BaseConstraint):
-
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -88,9 +85,7 @@ class Duration(BaseConstraint):
 
         if not veto:
             # Get the next meridian flip
-            target_meridian = observer.target_meridian_transit_time(
-                time, target,
-                which='next')
+            target_meridian = observer.target_meridian_transit_time(time, target, which='next')
 
             # If it flips before end_of_night it hasn't flipped yet so
             # use the meridian time as the end time
@@ -104,9 +99,7 @@ class Duration(BaseConstraint):
             # else:
             # Get the next set time
             target_end_time = observer.target_set_time(
-                time, target,
-                which='next',
-                horizon=self.horizon)
+                time, target, which='next', horizon=self.horizon)
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
@@ -128,7 +121,6 @@ class Duration(BaseConstraint):
 
 
 class MoonAvoidance(BaseConstraint):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -157,13 +149,13 @@ class MoonAvoidance(BaseConstraint):
 
 
 class AlreadyVisited(BaseConstraint):
-
     """ Simple Already Visited Constraint
 
     A simple already visited constraint that determines if the given `observation`
     has already been visited before. If given `observation` has already been
     visited then it will not be considered for a call to become the `current observation`.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -33,8 +33,7 @@ def download_all_files(data_folder=None, wide_field=True, narrow_field=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--folder', help='Folder to place astrometry data')
 

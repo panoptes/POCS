@@ -17,7 +17,6 @@ from pocs.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
-
     """The main class representing the Panoptes Observatory Control Software (POCS).
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
@@ -44,12 +43,11 @@ class POCS(PanStateMachine, PanBase):
 
     """
 
-    def __init__(
-            self,
-            observatory,
-            state_machine_file='simple_state_table',
-            messaging=False,
-            **kwargs):
+    def __init__(self,
+                 observatory,
+                 state_machine_file='simple_state_table',
+                 messaging=False,
+                 **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
@@ -57,10 +55,8 @@ class POCS(PanStateMachine, PanBase):
         assert isinstance(observatory, Observatory)
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Initializing PANOPTES unit - {} - {}',
-                         self.name,
-                         self.config['location']['name']
-                         )
+        self.logger.info('Initializing PANOPTES unit - {} - {}', self.name,
+                         self.config['location']['name'])
 
         self._processes = {}
 
@@ -120,7 +116,6 @@ class POCS(PanStateMachine, PanBase):
     @property
     def should_retry(self):
         return self._obs_run_retries >= 0
-
 
 ##################################################################################################
 # Methods
@@ -221,8 +216,7 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info(
-                "Shutting down {}, please be patient and allow for exit.", self.name)
+            self.logger.info("Shutting down {}, please be patient and allow for exit.", self.name)
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -367,8 +361,8 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(
-                "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(
+                is_safe, age, timestamp))
 
         except (TypeError, KeyError) as e:
             self.logger.warning("No record found in DB: {}", e)
@@ -395,7 +389,6 @@ class POCS(PanStateMachine, PanBase):
         """
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
-
 
 ##################################################################################################
 # Convenience Methods
@@ -442,7 +435,6 @@ class POCS(PanStateMachine, PanBase):
         while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
 
-
 ##################################################################################################
 # Class Methods
 ##################################################################################################
@@ -475,6 +467,7 @@ class POCS(PanStateMachine, PanBase):
         if not os.path.exists("{}/logs".format(pandir)):
             print("Creating log dir at {}/logs".format(pandir))
             os.makedirs("{}/logs".format(pandir))
+
 
 ##################################################################################################
 # Private Methods
@@ -527,13 +520,11 @@ class POCS(PanStateMachine, PanBase):
                 pass
 
         cmd_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(
-                cmd_port,), name='CmdForwarder')
+            target=create_forwarder, args=(cmd_port, ), name='CmdForwarder')
         cmd_forwarder_process.start()
 
         msg_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(
-                msg_port,), name='MsgForwarder')
+            target=create_forwarder, args=(msg_port, ), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True
@@ -568,7 +559,7 @@ class POCS(PanStateMachine, PanBase):
 
         self.logger.debug('Starting command message loop')
         check_messages_process = multiprocessing.Process(
-            target=check_message_loop, args=(self._cmd_queue,))
+            target=check_message_loop, args=(self._cmd_queue, ))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))

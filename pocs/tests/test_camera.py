@@ -31,14 +31,16 @@ def images_dir(tmpdir_factory):
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def camera(request, images_dir):
     if request.param[0] == SimCamera:
-        camera = request.param[0](focuser={'model': 'simulator',
-                                           'focus_port': '/dev/ttyFAKE',
-                                           'initial_position': 20000,
-                                           'autofocus_range': (40, 80),
-                                           'autofocus_step': (10, 20),
-                                           'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500,
-                                           'autofocus_keep_files': False})
+        camera = request.param[0](focuser={
+            'model': 'simulator',
+            'focus_port': '/dev/ttyFAKE',
+            'initial_position': 20000,
+            'autofocus_range': (40, 80),
+            'autofocus_step': (10, 20),
+            'autofocus_seconds': 0.1,
+            'autofocus_size': 500,
+            'autofocus_keep_files': False
+        })
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -55,14 +57,15 @@ def camera(request, images_dir):
                         configs.append(camera_config)
 
         if not configs:
-            pytest.skip(
-                "Found no {} configs in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip("Found no {} configs in pocs_local.yaml, skipping tests".format(
+                request.param[1]))
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0])
 
     camera.config['directories']['images'] = images_dir
     return camera
+
 
 # Hardware independent tests, mostly use simulator:
 
@@ -134,6 +137,7 @@ def test_sbig_bad_serial():
     assert camera._connected is False
     if isinstance(camera, SBIGCamera):
         assert camera._handle == INVALID_HANDLE_VALUE
+
 
 # *Potentially* hardware dependant tests:
 

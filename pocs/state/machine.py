@@ -17,7 +17,6 @@ except ImportError:  # pragma: no cover
 
 
 class PanStateMachine(Machine):
-
     """ A finite state machine for PANOPTES.
 
     The state machine guides the overall action of the unit.
@@ -38,8 +37,9 @@ class PanStateMachine(Machine):
         self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
         # Setup Transitions
-        _transitions = [self._load_transition(transition)
-                        for transition in state_machine_table['transitions']]
+        _transitions = [
+            self._load_transition(transition) for transition in state_machine_table['transitions']
+        ]
 
         states = [self._load_state(state) for state in state_machine_table.get('states', [])]
 
@@ -51,8 +51,7 @@ class PanStateMachine(Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            name="POCS State Machine"
-        )
+            name="POCS State Machine")
 
         self._state_machine_table = state_machine_table
         self._next_state = None
@@ -210,7 +209,8 @@ class PanStateMachine(Machine):
 
         # It's always safe to be in some states
         if event_data and event_data.event.name in [
-                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready'
+        ]:
             self.logger.debug("Always safe to move to {}".format(event_data.event.name))
             is_safe = True
         else:
@@ -247,10 +247,8 @@ class PanStateMachine(Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug(
-            "Before calling {} from {} state".format(
-                event_data.event.name,
-                event_data.state.name))
+        self.logger.debug("Before calling {} from {} state".format(event_data.event.name,
+                                                                   event_data.state.name))
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -261,11 +259,8 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains informaton about the event
         """
 
-        self.logger.debug(
-            "After calling {}. Now in {} state".format(
-                event_data.event.name,
-                event_data.state.name))
-
+        self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name,
+                                                                     event_data.state.name))
 
 ##################################################################################################
 # Class Methods
@@ -296,10 +291,11 @@ class PanStateMachine(Machine):
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
         except Exception as err:
-            raise error.InvalidConfig(
-                'Problem loading state table yaml file: {} {}'.format(err, state_table_file))
+            raise error.InvalidConfig('Problem loading state table yaml file: {} {}'.format(
+                err, state_table_file))
 
         return state_table
+
 
 ##################################################################################################
 # Private Methods
@@ -350,19 +346,15 @@ class PanStateMachine(Machine):
         s = None
         try:
             state_module = load_module('{}.{}.{}'.format(
-                self._states_location.replace("/", "."),
-                self._state_table_name,
-                state
-            ))
+                self._states_location.replace("/", "."), self._state_table_name, state))
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
 
             on_enter_method = getattr(state_module, 'on_enter')
             setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-            self.logger.debug(
-                "Added `on_enter` method from {} {}".format(
-                    state_module, on_enter_method))
+            self.logger.debug("Added `on_enter` method from {} {}".format(
+                state_module, on_enter_method))
 
             self.logger.debug("Created state")
             s = State(name=state)

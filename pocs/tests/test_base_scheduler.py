@@ -121,14 +121,16 @@ def test_new_fields_file(scheduler, simple_fields_file):
 def test_new_fields_list(scheduler):
     assert len(scheduler.observations.keys()) > 2
     scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         },
-        {'name': 'Wasp 37',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '50',
-         },
+        {
+            'name': 'Wasp 33',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '100',
+        },
+        {
+            'name': 'Wasp 37',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '50',
+        },
     ]
     assert scheduler.observations is not None
     assert len(scheduler.observations.keys()) == 2

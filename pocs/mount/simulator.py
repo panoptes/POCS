@@ -7,15 +7,10 @@ from pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):
-
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
+    def __init__(self, location, commands=dict(), *args, **kwargs):
 
         super().__init__(location, *args, **kwargs)
 
@@ -27,7 +22,6 @@ class Mount(AbstractMount):
         self._current_coordinates = self._park_coordinates
 
         self.logger.debug('Simulator mount created')
-
 
 ##################################################################################################
 # Properties

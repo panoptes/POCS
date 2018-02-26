@@ -59,7 +59,11 @@ def get_plot(filename=None):
     trace1 = plotly_go.Scatter(
         x=x_data['time'], y=y_data['temp'], name='Temperature', mode='lines', stream=stream_id1)
     trace2 = plotly_go.Scatter(
-        x=x_data['time'], y=y_data['cloudiness'], name='Cloudiness', mode='lines', stream=stream_id2)
+        x=x_data['time'],
+        y=y_data['cloudiness'],
+        name='Cloudiness',
+        mode='lines',
+        stream=stream_id2)
     trace3 = plotly_go.Scatter(
         x=x_data['time'], y=y_data['rain'], name='Rain', mode='lines', stream=stream_id3)
 
@@ -130,18 +134,21 @@ if __name__ == '__main__':
     import argparse
 
     # Get the command line option
-    parser = argparse.ArgumentParser(
-        description="Make a plot of the weather for a give date.")
+    parser = argparse.ArgumentParser(description="Make a plot of the weather for a give date.")
 
-    parser.add_argument('--loop', action='store_true', default=True,
-                        help="If should keep reading, defaults to True")
-    parser.add_argument("-d", "--delay", dest="delay", default=30.0, type=float,
-                        help="Interval to read weather")
-    parser.add_argument("-f", "--filename", dest="filename", default=None,
-                        help="Where to save results")
-    parser.add_argument('--serial-port', dest='serial_port', default=None,
-                        help='Serial port to connect')
-    parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
+    parser.add_argument(
+        '--loop',
+        action='store_true',
+        default=True,
+        help="If should keep reading, defaults to True")
+    parser.add_argument(
+        "-d", "--delay", dest="delay", default=30.0, type=float, help="Interval to read weather")
+    parser.add_argument(
+        "-f", "--filename", dest="filename", default=None, help="Where to save results")
+    parser.add_argument(
+        '--serial-port', dest='serial_port', default=None, help='Serial port to connect')
+    parser.add_argument(
+        '--plotly-stream', action='store_true', default=False, help="Stream to plotly")
     parser.add_argument('--store-result', action='store_true', default=True, help="Save to db")
     parser.add_argument('--send-message', action='store_true', default=True, help="Send message")
     args = parser.parse_args()

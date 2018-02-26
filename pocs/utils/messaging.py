@@ -14,7 +14,6 @@ from pocs.utils.logger import get_root_logger
 
 
 class PanMessaging(object):
-
     """Messaging class for PANOPTES project. Creates a new ZMQ
     context that can be shared across parent application.
 
@@ -120,9 +119,8 @@ class PanMessaging(object):
         if isinstance(message, str):
             message = {
                 'message': message,
-                'timestamp': current_time().isot.replace(
-                    'T',
-                    ' ').split('.')[0]}
+                'timestamp': current_time().isot.replace('T', ' ').split('.')[0]
+            }
         else:
             message = self.scrub_message(message)
 

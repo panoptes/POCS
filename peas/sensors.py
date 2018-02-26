@@ -1,4 +1,3 @@
-
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports

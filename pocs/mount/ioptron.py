@@ -10,7 +10,6 @@ from pocs.mount.serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
-
     """
         Mount class for iOptron mounts. Overrides the base `initialize` method
         and providers some helper methods to convert coordinates.
@@ -26,6 +25,7 @@ class Mount(AbstractSerialMount):
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self._raw_status = None
+        # yapf: disable
         self._status_format = re.compile(
             '(?P<gps>[0-2]{1})' +
             '(?P<state>[0-7]{1})' +
@@ -34,6 +34,7 @@ class Mount(AbstractSerialMount):
             '(?P<time_source>[1-3]{1})' +
             '(?P<hemisphere>[01]{1})'
         )
+        # yapf: enable
 
         self._status_lookup = {
             'gps': {
@@ -82,7 +83,6 @@ class Mount(AbstractSerialMount):
 
         self.logger.info('Mount created')
 
-
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -112,7 +112,6 @@ class Mount(AbstractSerialMount):
         self._is_slewing = 'Slewing' in self.status().get('state', '')
 
         return self._is_slewing
-
 
 ##################################################################################################
 # Public Methods
@@ -205,6 +204,7 @@ class Mount(AbstractSerialMount):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
     def _set_initial_rates(self):
         # Make sure we start at sidereal
         self.set_tracking_rate()
@@ -216,8 +216,8 @@ class Mount(AbstractSerialMount):
         guide_rate = self.query('get_guide_rate')
         self.ra_guide_rate = int(guide_rate[0:2]) / 100
         self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug("Mount guide rate: {} {}".format(
-            self.ra_guide_rate, self.dec_guide_rate))
+        self.logger.debug("Mount guide rate: {} {}".format(self.ra_guide_rate,
+                                                           self.dec_guide_rate))
 
     def _setup_location_for_mount(self):
         """
@@ -289,8 +289,7 @@ class Mount(AbstractSerialMount):
 
             coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
         else:
-            self.logger.warning(
-                "Cannot create SkyCoord from mount coordinates")
+            self.logger.warning("Cannot create SkyCoord from mount coordinates")
 
         return coords
 

@@ -7,7 +7,6 @@ import serial
 from peas import sensors as sensors_module
 from pocs.utils import rs232
 
-
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 
 
@@ -24,7 +23,9 @@ def list_comports():
     return [
         SerDevInfo(device='bogus://', description='Not an arduino'),
         SerDevInfo(device='loop://', description='Some Arduino device'),
-        SerDevInfo(device='arduinosimulator://?board=telemetry&name=t1', description='Some Arduino device'),
+        SerDevInfo(
+            device='arduinosimulator://?board=telemetry&name=t1',
+            description='Some Arduino device'),
         SerDevInfo(device='arduinosimulator://?board=camera&name=c1', description='Arduino Micro'),
     ]
 
@@ -39,6 +40,7 @@ def inject_list_comports():
 
 # --------------------------------------------------------------------------------------------------
 # Basic tests of FakeArduinoSerialHandler.
+
 
 def test_create_camera_simulator(serial_handlers):
     ser = rs232.SerialData(port='arduinosimulator://?board=camera', baudrate=9600)
@@ -75,6 +77,7 @@ def test_create_default_simulator(serial_handlers):
 
 # --------------------------------------------------------------------------------------------------
 
+
 def test_detect_board_on_port_not_a_board():
     """detect_board_on_port will fail if the port doesn't produce the expected output.
 
@@ -106,6 +109,7 @@ def test_detect_board_on_port_telemetry(serial_handlers):
 
 # --------------------------------------------------------------------------------------------------
 
+
 def test_find_arduino_devices(inject_list_comports):
     v = sensors_module.find_arduino_devices()
     assert len(v) == 3
@@ -117,6 +121,7 @@ def test_find_arduino_devices(inject_list_comports):
 
 
 # --------------------------------------------------------------------------------------------------
+
 
 def test_auto_detect_arduino_devices(inject_list_comports, serial_handlers):
     v = sensors_module.auto_detect_arduino_devices()

@@ -10,9 +10,7 @@ from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.theskyx import TheSkyX
 
-
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture
@@ -41,17 +39,22 @@ def pocs(target):
 
     config = load_config(ignore_local=False)
 
-    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True,
-                config=config, db='panoptes_testing', messaging=True)
+    pocs = POCS(
+        simulator=['weather', 'night', 'camera'],
+        run_once=True,
+        config=config,
+        db='panoptes_testing',
+        messaging=True)
 
     pocs.observatory.scheduler.fields_list = [
-        {'name': 'Testing Target',
-         'position': target.to_string(style='hmsdms'),
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
+        {
+            'name': 'Testing Target',
+            'position': target.to_string(style='hmsdms'),
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        },
     ]
 
     yield pocs

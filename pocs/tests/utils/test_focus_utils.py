@@ -32,13 +32,9 @@ def test_focus_metric_vollath(data_dir):
     assert focus_utils.focus_metric(
         data, merit_function='vollath_F4') == pytest.approx(14667.207897717599)
     assert focus_utils.focus_metric(
-        data,
-        merit_function='vollath_F4',
-        axis='Y') == pytest.approx(14380.343807477504)
+        data, merit_function='vollath_F4', axis='Y') == pytest.approx(14380.343807477504)
     assert focus_utils.focus_metric(
-        data,
-        merit_function='vollath_F4',
-        axis='X') == pytest.approx(14954.071987957694)
+        data, merit_function='vollath_F4', axis='X') == pytest.approx(14954.071987957694)
     with pytest.raises(ValueError):
         focus_utils.focus_metric(data, merit_function='vollath_F4', axis='Z')
 
