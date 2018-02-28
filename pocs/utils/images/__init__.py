@@ -8,7 +8,7 @@ from warnings import warn
 
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.io import fits
+from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
@@ -96,7 +96,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 def _make_pretty_from_fits(
         fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=7, **kwargs):
 
-    with fits.open(fname) as hdu:
+    with open_fits(fname) as hdu:
         header = hdu[0].header
         data = hdu[0].data
         data = focus_utils.mask_saturated(data)
