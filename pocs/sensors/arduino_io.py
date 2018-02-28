@@ -6,8 +6,11 @@
 
 import collections
 import copy
-import threading
+import serial
+from serial import serialutil
+import traceback
 
+from pocs.utils.error import ArduinoDataError
 from pocs.utils.logger import get_root_logger
 from pocs.utils import rs232
 
@@ -70,10 +73,10 @@ def detect_board_on_port(port, logger=None):
             (ts, data) = reading
             if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
                 return data['name']
-            logger.warning('Unable to find board name in reading: {!r}', reading)
+            logger.warning('Unable to find board name in reading: {}', reading)
             return None
         except Exception as e:
-            logger.error('Exception while auto-detecting port {!r}: {!r}'.format(port, e))
+            logger.error('Exception while auto-detecting port {}: {}', port, e)
     finally:
         if serial_reader:
             serial_reader.disconnect()
@@ -99,107 +102,88 @@ def open_serial_device(port, serial_config=None, **kwargs):
     # fragments.
     defaults = dict(baudrate=9600, retry_limit=1, retry_delay=0, timeout=4.0, name=port)
     params = collections.ChainMap(dict(port=port), kwargs, serial_config or {}, defaults)
+    params = dict(**params)
     return rs232.SerialData(**params)
 
 
 class ArduinoIO(object):
     """Supports reading from and writing to Arduinos.
 
-    The readings (python dictionaries) are put into an output queue in the
+    The readings (python dictionaries) are recorded in a PanDB collection in
     following form:
-        {'name': self.board_name, 'timestamp': t, 'data': reading}
+        {'name': self.board, 'timestamp': t, 'data': reading}
     """
 
-    def __init__(self, board_name, port, output_queue, serial_config=None):
-        """Inits for board on device.
+    def __init__(self, board, serial_data, db, pub, sub):
+        """Initialize for board on device.
 
         Args:
-            board_name:
+            board:
                 The name of the board, used as the name of the database
-                table/collection to write to.
-            port:
-                The device to connect to.
-            output_queue:
-                The queue to which to send the readings. Will not block
-                on sending (put call), so the queue should have room for
-                a few entries. By not blocking on put, we avoid dropping
-                records while reading from the serial line due to dropped
-                chars, and thus corrupted JSON.
-            serial_config:
-                The portion of the config file descibing the serial settings.
+                table/collection to write to, and the name of the messaging
+                channels for readings or relay commands.
+            serial_data:
+                A SerialData instance connected to the board.
+            db:
+                The PanDB instance in which to record reading.
+            pub:
+                PanMessaging publisher to which to write messages.
+            sub:
+                PanMessaging subscriber from which to read relay change
+                instructions.
         """
-        self.board_name = board_name or port
-        self.port = port
-        self._serial_data = open_serial_device(port, serial_config=serial_config, name=board_name)
-        self._output_queue = output_queue
+        self.board = board.lower()
+        self.port = serial_data.port
+        self._serial_data = serial_data
+        self._db = db
+        self._pub = pub
+        self._sub = sub
         self._logger = get_root_logger()
         self._last_reading = None
+        self._report_next_reading = True
+        self._cmd_channel = "{}:commands".format(board)
+        self._keep_running = True
 
-        self._serial_data_lock = threading.Lock()
-        self._last_reading_lock = threading.Lock()
-        self._thread = None
-        self._stop = threading.Event()
+    def run(self):
+        """Main loop for recording data and reading commands.
 
-    def last_reading(self):
-        """Returns the last reading.
-
-        This may be newer than the last reading in the queue if the queue was full.
+        This only ends if an Exception is unhandled or if a 'shutdown'
+        command is received. The most likely exception is from
+        SerialData.get_and_parse_reading() in the event that the device
+        disconnects from USB.
         """
-        with self._last_reading_lock:
-            return self._last_reading
+        while self._keep_running:
+            self.read_and_record()
+            self.handle_commands()
 
-    def start_reading(self):
-        """Starts a reader thread that reads reports and writes them to a queue."""
-        if self._thread and self._thread.is_alive():
-            self._logger.debug('Thread {!r} is already running with ident {!r}', self._thread.name,
-                               self._thread.ident)
-            return
+    def read_and_record(self):
+        """Try to get the next reading and, if successful, record it.
 
-        def reader():
-            """The function that is executed by the reader thread."""
-            self._logger.info('Started reading from Arduino {!r} on thread with ident {!r}',
-                              threading.current_thread().name, threading.get_ident())
-            announce = False
-            while not self._stop.is_set():
-                reading = self._get_reading()
-                if self._stop.is_set():
-                    break
-                if not reading:
-                    # Consider adding an error counter.
-                    announce = True
-                    continue
-                if announce:
-                    self._logger.info('Succeeded in reading from {!r}; got:\n{!r}', self.port,
-                                      reading)
-                    announce = False
-                self._handle_reading(reading)
-            self._logger.info('Stopping reading from Arduino {!r} on thread with ident {!r}',
-                              threading.current_thread().name, threading.get_ident())
+        Write the reading to the appropriate PanDB collections and
+        to the appropriate message channel.
 
-        self._thread = threading.Thread(target=reader, name=self.board_name)
-        self._thread.daemon = True
-        self._thread.start()
-
-    def stop_reading(self):
-        """Stops the reader thread."""
-        if self._thread and self._thread.is_alive():
-            self._logger.info('Waiting for thread {!r} to stop.', self._thread.name)
-            self._stop.set()
-            self._thread.join(timeout=4.0)
-            if self._thread.is_alive():
-                self._logger.error('Thread {!r} is still running.', self._thread.name)
-            else:
-                self._thread = None
-
-    def write(self, text):
-        """Writes text (a string) to the port.
-
-        Returns: the number of bytes written.
+        If there is an interruption in success in reading from the device,
+        we announce (log) the start and end of that situation.
         """
-        with self._serial_data_lock:
-            if not self._serial_data.is_connected:
-                self._serial_data.connect()
-            return self._serial_data.write(text)
+        reading = self.get_reading()
+        if not reading:
+            # Consider adding an error counter.
+            if not self._report_next_reading:
+                self._logger.warning(
+                    'Unable to read from {}. Will report when next successful read.',
+                    self.port)
+                self._report_next_reading = True
+            return False
+        if self._report_next_reading:
+            self._logger.info('Succeeded in reading from {}; got:\n{}', self.port, reading)
+            self._report_next_reading = False
+        self.handle_reading(reading)
+        return True
+
+    def connect(self):
+        """Connect to the port."""
+        if not self._serial_data.is_connected:
+            self._serial_data.connect()
 
     def disconnect(self):
         """Disconnect from the port.
@@ -207,40 +191,99 @@ class ArduinoIO(object):
         Will re-open automatically if reading or writing occurs.
         """
         try:
-            with self._serial_data_lock:
-                if self._serial_data.is_connected:
-                    self._serial_data.disconnect()
+            if self._serial_data.is_connected:
+                self._serial_data.disconnect()
         except Exception as e:
-            self._logger.error('Failed to disconnect from {!r} due to: {!r}', self.port, e)
-            return None
+            self._logger.error('Failed to disconnect from {} due to: {}', self.port, e)
 
-    def _get_reading(self):
-        """Reads and returns a single reading."""
+    def reconnect(self):
+        """Disconnect from and connect to the serial port.
+
+        This supports handling a SerialException, such as when the USB
+        bus is reset.
+        """
         try:
-            with self._serial_data_lock:
-                if self._stop.is_set():
-                    return None
-                if not self._serial_data.is_connected:
-                    self._serial_data.connect()
-                reading = self._serial_data.get_and_parse_reading()
-                if not reading:
-                    self._logger.warning('Unable to get reading from {}', self.port)
-                    return None
-                return reading
-        except Exception as e:
-            self._logger.error('Failed to read from {!r} due to: {!r}', self.port, e)
-            return None
+            self.disconnect()
+        except Exception:
+            self._logger.error('Unable to disconnect from {}', self.port)
+            return False
+        try:
+            self.connect()
+            return True
+        except Exception:
+            self._logger.error('Unable to reconnect to {}', self.port)
+            return False
 
-    def _handle_reading(self, reading):
+    def get_reading(self):
+        """Reads and returns a single reading."""
+        if not self._serial_data.is_connected:
+            self._serial_data.connect()
+        try:
+            return self._serial_data.get_and_parse_reading(retry_limit=1)
+        except serial.SerialException as e:
+            self._logger.error('Exception raised while reading from port {}', self.port)
+            self._logger.error('Exception: {}', "\n".join(traceback.format_exc()))
+            if self.reconnect():
+                return None
+            raise e
+
+    def handle_reading(self, reading):
         """Saves a reading as the last_reading and writes to output_queue."""
         # TODO(jamessynge): Discuss with Wilfred changing the timestamp to a datetime object
         # instead of a string. Obviously it needs to be serialized eventually.
         timestamp, data = reading
-        reading = dict(timestamp=timestamp, data=data, name=self.board_name)
-        with self._last_reading_lock:
-            self._last_reading = copy.deepcopy(reading)
-        try:
-            self._output_queue.put(reading, block=False)
-        except Exception as e:
-            self._logger.error('output_queue.put failed for board {!r}', self.board_name)
-            self._logger.error('Exception: {!r}', e)
+        if data.get('name', self.board) != self.board:
+            msg = 'Board reports name {}, expected {}'.format(data['name'], self.board)
+            self._logger.critical(msg)
+            raise ArduinoDataError(msg)
+        reading = dict(name=self.board, timestamp=timestamp, data=data)
+        self._last_reading = copy.deepcopy(reading)
+        if self._pub:
+            self._pub.send_message(self.board, reading)
+        if self._db:
+            self._db.insert_current(self.board, reading)
+
+    def handle_commands(self):
+        """Read and process commands for up to 1 second.
+
+        Returns when there are no more commands available from the
+        command subscriber, or when a second has passed.
+        """
+        timeout_obj = serialutil.Timeout(1.0)
+        while not timeout_obj.expired():
+            msg_type, msg_obj = self._sub.receive_message(blocking=False)
+            if msg_type is None or msg_obj is None:
+                break
+            if msg_type.lower() == self._cmd_channel:
+                try:
+                    self.handle_command(msg_obj)
+                except Exception as e:
+                    self._logger.error('Exception while handling command: {}', e)
+                    self._logger.error('msg_obj: {}', msg_obj)
+
+    def handle_command(self, msg):
+        """Handle one relay command.
+
+        TODO(jamessynge): Add support for 'set_relay', where we look
+        up the relay name in self._last_reading to confirm that it
+        exists on this device.
+        """
+        if msg['command'] == 'shutdown':
+            self._logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
+            self._keep_running = False
+        elif msg['command'] == 'write_line':
+            line = msg['line'].rstrip('\r\n')
+            self._logger.debug('Sending line to board {}: {}', self.board, line)
+            line = line + '\n'
+            self.write(line)
+        else:
+            self._logger.error('Ignoring command: {}', msg)
+
+    def write(self, text):
+        """Writes text (a string) to the port.
+
+        Returns: the number of bytes written.
+        """
+        if not self._serial_data.is_connected:
+            self._serial_data.connect()
+        return self._serial_data.write(text)

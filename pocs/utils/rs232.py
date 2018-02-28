@@ -117,6 +117,11 @@ class SerialData(PanBase):
             self.logger.debug('Opened {}', self.name)
 
     @property
+    def port(self):
+        """Name of the port."""
+        return self.ser.port
+
+    @property
     def is_connected(self):
         """True if serial port is open, False otherwise."""
         return self.ser.is_open
@@ -228,7 +233,7 @@ class SerialData(PanBase):
             A pair (tuple) of (timestamp, decoded JSON line). The timestamp is the time of
             completion of the readline operation.
         """
-        for _ in range(retry_limit):
+        for _ in range(max(1, retry_limit)):
             (ts, line) = self.get_reading()
             if not line:
                 continue

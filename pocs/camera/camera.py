@@ -184,14 +184,16 @@ class AbstractCamera(PanBase):
         Args:
             observation (~pocs.scheduler.observation.Observation): Object
                 describing the observation
-            headers (dict): Header data to be saved along with the file.
+            headers (dict, optional): Header data to be saved along with the file.
+            filename (str, optional): pass a filename for the output FITS file to
+                overrride the default file naming system
             **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
         # To be used for marking when exposure is complete (see `process_exposure`)
-        camera_event = Event()
+        observation_event = Event()
 
         exp_time, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
@@ -206,16 +208,16 @@ class AbstractCamera(PanBase):
             observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
+        t = Thread(target=self.process_exposure, args=(metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
-        return camera_event
+        return observation_event
 
     def take_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
-    def process_exposure(self, info, signal_event, exposure_event=None):
+    def process_exposure(self, info, observation_event, exposure_event=None):
         """
         Processes the exposure.
 
@@ -224,7 +226,7 @@ class AbstractCamera(PanBase):
 
         Args:
             info (dict): Header metadata saved for the image
-            signal_event (threading.Event): An event that is set signifying that the
+            observation_event (threading.Event): An event that is set signifying that the
                 camera is done with this exposure
             exposure_event (threading.Event, optional): An event that should be set
                 when the exposure is complete, triggering the processing.
@@ -266,7 +268,7 @@ class AbstractCamera(PanBase):
         })
 
         # Mark the event as done
-        signal_event.set()
+        observation_event.set()
 
     def autofocus(self,
                   seconds=None,
@@ -380,6 +382,7 @@ class AbstractCamera(PanBase):
                 header.set('IMAGETYP', 'Dark Frame')
             else:
                 header.set('IMAGETYP', 'Light Frame')
+        header.set('FILTER', self.filter_type)
         try:
             header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
         except NotImplementedError:

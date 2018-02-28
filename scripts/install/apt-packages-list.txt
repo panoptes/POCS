@@ -65,3 +65,6 @@ tmux
 
 # Used for creating a timelapse.
 ffmpeg
+
+# Used for colorizing log files.
+grc
