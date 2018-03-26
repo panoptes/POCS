@@ -6,13 +6,13 @@
 
 # We need the shell to have the the PANOPTES environment setup.
 
+echo "Running ${BASH_SOURCE[0]} at $(date)"
+
 if [[ -z "$PANDIR" || -z "$POCS" || -z "$PANLOG" ]] ; then
   echo "The PANOPTES environment variables must be set."
   echo "This script should be run from a login shell."
   exit 1
 fi
-
-echo "Running ${BASH_SOURCE[0]} at $(date)"
 
 echo "Setting up logging..."
 
