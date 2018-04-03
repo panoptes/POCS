@@ -6,8 +6,9 @@ import re
 from matplotlib import pyplot as plt
 from warnings import warn
 
+from astropy import units as u
 from astropy.wcs import WCS
-from astropy.io.fits import (getdata, getheader)
+from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
@@ -92,49 +93,61 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, **kwargs):
-    header = getheader(fname)
-    data = getdata(fname)
-    data = focus_utils.mask_saturated(data)
+def _make_pretty_from_fits(
+        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=7, **kwargs):
+
+    with open_fits(fname) as hdu:
+        header = hdu[0].header
+        data = hdu[0].data
+        data = focus_utils.mask_saturated(data)
+        wcs = WCS(header)
 
     title = kwargs.get('title', header.get('FIELD', 'Unknown'))
     exp_time = header.get('EXPTIME', 'Unknown')
-    filter = header.get('FILTER', 'Unknown filter')
+
+    filter_type = header.get('FILTER', 'Unknown filter')
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
 
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
 
-    title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter, date_time)
+    title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
-    wcs = WCS(fname)
 
     plt.figure(figsize=figsize, dpi=dpi)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
-        ax.coords.grid(True, color='white', ls='-', alpha=0.1)
+        ax.coords.grid(True, color='white', ls='-', alpha=alpha)
 
-        ra_axis = ax.coords[0]
+        ra_axis = ax.coords['ra']
         ra_axis.set_axislabel('Right Ascension')
         ra_axis.set_major_formatter('hh:mm')
+        ra_axis.set_ticks(
+            number=number,
+            color='white',
+            exclude_overlapping=True
+        )
 
-        dec_axis = ax.coords[1]
+        dec_axis = ax.coords['dec']
         dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
+        dec_axis.set_ticks(
+            number=number,
+            color='white',
+            exclude_overlapping=True
+        )
     else:
         ax = plt.subplot()
-        ax.grid(True, color='white', ls='-', alpha=0.1)
+        ax.grid(True, color='white', ls='-', alpha=alpha)
 
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
     ax.imshow(data, norm=norm, cmap=palette, origin='lower')
-    plt.tight_layout()
     plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')
-    plt.savefig(new_filename)
-
+    plt.savefig(new_filename, bbox_inches='tight')
     plt.close()
 
     return new_filename
