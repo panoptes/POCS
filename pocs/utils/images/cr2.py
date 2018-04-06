@@ -100,7 +100,7 @@ def cr2_to_fits(
             if verbose:
                 print("Saving fits file to: {}".format(fits_fname))
 
-            hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
+            hdu.writeto(fits_fname, output_verify='silentfix', overwrite=clobber)
         except Exception as e:
             warn("Problem writing FITS file: {}".format(e))
         else:
