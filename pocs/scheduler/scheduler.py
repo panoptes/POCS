@@ -218,9 +218,6 @@ class BaseScheduler(PanBase):
         Args:
             field_config (dict): Configuration items for `Observation`
         """
-        assert field_config['name'] not in self._observations.keys(), \
-            self.logger.error("Cannot add duplicate field name")
-
         if 'exp_time' in field_config:
             field_config['exp_time'] = float(field_config['exp_time']) * u.second
 
@@ -233,6 +230,8 @@ class BaseScheduler(PanBase):
             self.logger.warning("Skipping invalid field config: {}".format(field_config))
             self.logger.warning(e)
         else:
+            if field.name in self._observations:
+                self.logger.debug("Overriding existing entry for {}".format(field.name))
             self._observations[field.name] = obs
 
     def remove_observation(self, field_name):
