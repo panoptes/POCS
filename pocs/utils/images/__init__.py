@@ -90,7 +90,18 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     if fname.endswith('.cr2'):
         return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname, **kwargs)
+        new_fname = _make_pretty_from_fits(fname, **kwargs)
+
+        try:
+            os.unlink('{}/images/latest.jpg'.format(os.getenv('PANDIR')))
+        except Exception:
+            pass
+        try:
+            os.symlink(new_fname, '{}/images/latest.jpg'.format(os.getenv('PANDIR')))
+        except Exception:
+            warn("Can't link latest image")
+
+        return new_fname
 
 
 def _make_pretty_from_fits(
