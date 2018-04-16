@@ -94,7 +94,7 @@ class PanStateMachine(Machine):
     def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
 
-        This runs the state machine in a loop. Setting the machine proprety
+        This runs the state machine in a loop. Setting the machine property
         `is_running` to False will stop the loop.
 
         Args:
@@ -107,7 +107,7 @@ class PanStateMachine(Machine):
 
         self._keep_running = True
         self._do_states = True
-        self._run_once = run_once
+        run_once = run_once or self.run_once
 
         # Start with `get_ready`
         self.next_state = 'ready'
@@ -154,7 +154,7 @@ class PanStateMachine(Machine):
                 if self.state == 'ready':
                     self._obs_run_retries -= 1
 
-                if self.state == 'sleeping' and self.run_once:
+                if self.state == 'sleeping' and run_once:
                     self.stop_states()
             elif exit_when_done:
                 break
