@@ -1,7 +1,6 @@
 import io
 import re
 import serial
-import time
 import glob
 from warnings import warn
 
@@ -54,6 +53,9 @@ class Focuser(AbstractFocuser):
             may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
             to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
             used at the time of writing by Huntsman.
+
+    Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
+    that class' documentation for a complete list.
     """
 
     # Class variable to cache the device node scanning results
@@ -127,12 +129,12 @@ class Focuser(AbstractFocuser):
                 AssertionError) as err:
             message = 'Error connecting to {} on {}: {}'.format(self.name, port, err)
             self.logger.error(message)
-            self.logger.warn(message)
+            warn(message)
             return
 
         Focuser._assigned_nodes.append(self.port)
         self._initialise()
-        if initial_position:
+        if initial_position is not None:
             self.position = initial_position
 
     def __del__(self):
@@ -192,7 +194,7 @@ class Focuser(AbstractFocuser):
         return self._lens_info
 
     @property
-    def library_version(self):
+    def firmware_version(self):
         """
         Returns the version string of the Birger adaptor library (firmware).
         """
@@ -233,8 +235,6 @@ class Focuser(AbstractFocuser):
             self._serial_port = None
             self.logger.critical('Could not open {}!'.format(port))
             raise err
-
-        time.sleep(2)
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
         # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
@@ -384,7 +384,7 @@ class Focuser(AbstractFocuser):
         # Finally move the focus to the far stop (close to where we'll want it) and record position
         self._max_position = self._move_inf()
 
-        self.logger.info('\t\t\t {} initialised'.format(self))
+        self.logger.info('{} initialised'.format(self))
 
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
@@ -443,6 +443,6 @@ class Focuser(AbstractFocuser):
     def _fits_header(self, header):
         header = super()._fits_header(header)
         header.set('FOC-HW', self.hardware_version, 'Focuser hardware version')
-        header.set('FOC-FW', self.library_version, 'Focuser firmware version')
+        header.set('FOC-FW', self.firmware_version, 'Focuser firmware version')
         header.set('LENSINFO', self.lens_info, 'Attached lens')
         return header

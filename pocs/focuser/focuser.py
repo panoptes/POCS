@@ -138,7 +138,7 @@ class AbstractFocuser(PanBase):
 
     def move_by(self, increment):
         """ Move focusser by a given amount """
-        raise NotImplementedError
+        return self.move_to(self.position + increment)
 
     def autofocus(self,
                   seconds=None,
