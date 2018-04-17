@@ -6,6 +6,7 @@ import astropy.units as u
 
 from pocs.focuser import AbstractFocuser
 
+
 class Focuser(AbstractFocuser):
     """
     Focuser class for control of telescope focusers using the Optec FocusLynx focus controller.
