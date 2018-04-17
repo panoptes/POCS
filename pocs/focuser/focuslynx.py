@@ -251,7 +251,7 @@ class Focuser(AbstractFocuser):
         """
         self._send_command(command_str='<F{:1d}HALT>'.format(self._focuser_number),
                            expected_reply='HALTED')
-        message = ("Focuser {} halted".format(self.uid)
+        message = ("Focuser {} halted".format(self.uid))
         self.logger.warning(message)
         warn(message)
         self._update_focuser_status()

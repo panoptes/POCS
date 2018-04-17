@@ -76,7 +76,10 @@ class AbstractFocuser(PanBase):
         self._connected = False
         self._serial_number = 'XXXXXX'
 
-        self._position = int(initial_position)
+        if initial_position is None:
+            self._position = None
+        else:
+            self._position = int(initial_position)
 
         if autofocus_range:
             self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
