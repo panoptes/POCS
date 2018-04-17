@@ -252,9 +252,16 @@ class Focuser(AbstractFocuser):
 
     def move_to(self, position):
         """
-        Move the focus to a specific position in lens encoder units.
-        Does not do any checking of the requested position but will warn if the lens reports hitting a stop.
-        Returns the actual position moved to in lens encoder units.
+        Moves focuser to a new position.
+
+        Args:
+            position (int): new focuser position, in encoder units
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+
+        Does not do any checking of the requested position but will warn if the lens reports hitting
+        a stop.
         """
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
@@ -268,9 +275,16 @@ class Focuser(AbstractFocuser):
 
     def move_by(self, increment):
         """
-        Move the focus to a specific position in lens encoder units.
-        Does not do any checking of the requested increment but will warn if the lens reports hitting a stop.
-        Returns the actual distance moved in lens encoder units.
+        Move focuser by a given amount.
+
+        Args:
+            increment (int): distance to move the focuser, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+
+        Does not do any checking of the requested increment but will warn if the lens reports
+        hitting a stop.
         """
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':

@@ -14,8 +14,9 @@ class Focuser(AbstractFocuser):
     This includes the Starlight Instruments Focus Boss II controller, which is "powered by Optec"
 
     Args:
+        port (str): device node of the serial port the focuser controller is connected to, e.g.
+            '/dev/ttyUSB0'
         name (str, optional): default 'FocusLynx Focuser'
-        model (str, optional): default 'Focus Boss II'
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
         focuser_number (int, optional): for focus controllers that support more than one focuser
@@ -28,14 +29,14 @@ class Focuser(AbstractFocuser):
     that class for a complete list.
     """
     def __init__(self,
+                 port,
                  name='FocusLynx Focuser',
-                 model='FA',
                  initial_position=None,
                  focuser_number=1,
                  min_position=0,
                  max_position=None,
                  *args, **kwargs):
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(port=port, name=name, *args, **kwargs)
         self.logger.debug('Initialising FocusLynx focuser')
 
         try:
@@ -97,7 +98,8 @@ class Focuser(AbstractFocuser):
             self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)'.format(nickname,
                                                                                                 nickname[:16]))
             nickname = nickname[:16]
-        self._set_param('<F{:1d}SCNN{}>'.format(self._focuser_number, nickname))
+        command_str = '<F{:1d}SCNN{}>'.format(self._focuser_number, nicpositionkname)
+        self._send_command(command_str, expected_reply='SET')
         self._get_focuser_config()
 
     @property
@@ -149,9 +151,9 @@ class Focuser(AbstractFocuser):
     @property
     def temperature(self):
         """
-        Current temperature of the focuser
+        Current temperature of the focuser, in degrees Celsus, as an astropy.units.Quantity
         """
-        self._update_focuser_status
+        self._update_focuser_status()
         return self._temperature * u.Celsius
 
     @property
@@ -185,9 +187,17 @@ class Focuser(AbstractFocuser):
 
     def move_to(self, position, blocking=True):
         """
-        Move encoder to a new encoder position. Blocking by default, but if blocking=False is
-        passed then will return immediately. If blocking=True returns actual position following
-        move, otherwise returns target position
+        Moves focuser to a new position.
+
+        Args:
+            position (int): new focuser position, in encoder units. Must be between min_position
+                and max_position.
+            blocking (bool, optional): If True (default) will block until the move is complete,
+                otherwise will return immediately.
+
+        Returns:
+            int: focuser position following the move. If blocking is True this will be the actual
+                focuser position, if False it will be the target position.
         """
         if position < self._min_position:
             message = 'Requested position {} less than min position, moving to {}!'.format(position,
@@ -203,9 +213,9 @@ class Focuser(AbstractFocuser):
             position = self._max_position
 
         self.logger.debug('Moving focuser {} to {}'.format(self.uid, position))
-        self._send_command('<F{:1d}MA{:06d}>'.format(self._focuser_number, position),
-                           command_type='MOVE')
-
+        command_str = '<F{:1d}MA{:06d}>'.format(self._focuser_number, position)
+        self._send_command(command_str, expected_reply='M')
+        # Focuser move commands are non-blocking. Only option is polling is_moving
         if blocking:
             while self.is_moving:
                 time.sleep(1)
@@ -219,12 +229,32 @@ class Focuser(AbstractFocuser):
         else:
             return position
 
+    def move_by(self, increment, blocking=True):
+        """
+        Moves focuser by a given amount.
+
+        Args:
+            increment (int): distance to move the focuser, in encoder units. New position must be
+                between min_position and max_position.
+            blocking (bool, optional): If True (default) will block until the move is complete,
+                otherwise will return immediately.
+
+        Returns:
+            int: focuser position following the move. If blocking is True this will be the actual
+                focuser position, if False it will be the target position.
+        """
+        return self.move_to(self.position + increment)
+
     def halt(self):
         """
         Causes the focuser to immediately stop any movements
         """
-        self._send_command('<F{:1d}HALT>'.format(self._focuser_number), command_type='HALT')
-        self.logger.warning("Focuser {} halted".format(self.uid))
+        self._send_command(command_str='<F{:1d}HALT>'.format(self._focuser_number),
+                           expected_reply='HALTED')
+        message = ("Focuser {} halted".format(self.uid)
+        self.logger.warning(message)
+        warn(message)
+        self._update_focuser_status()
 
 ##################################################################################################
 # Private Methods
@@ -241,48 +271,25 @@ class Focuser(AbstractFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_hub_info(self):
-        self._hub_info = self._get_info('<FHGETHUBINFO>', 'HUB INFO')
+        self._hub_info = self._send_comman(command_str='<FHGETHUBINFO>',
+                                           expected_reply='HUB INFO')
 
     def _get_focuser_config(self):
-        self._focuser_config = self._get_info('<F{:1d}GETCONFIG>'.format(self._focuser_number),
-                                              'CONFIG{:1d}'.format(self._focuser_number))
+        command_str = '<F{:1d}GETCONFIG>'.format(self._focuser_number)
+        expected_reply = 'CONFIG{:1d}'.format(self._focuser_number)
+        self._focuser_config = self._send_command(command_str, expected_reply)
 
     def _update_focuser_status(self):
-        self._focuser_status = self._get_info('<F{:1d}GETSTATUS>'.format(self._focuser_number),
-                                              'STATUS{:1d}'.format(self._focuser_number))
+        command_str = '<F{:1d}GETSTATUS>'.format(self._focuser_number)
+        expected_reply = 'STATUS{:1d}'.format(self._focuser_number)
+        self._focuser_status = self._get_info(command_str, expected_reply)
+
         self._position = int(self._focuser_status['Curr Pos'])
         self._target_position = int(self._focuser_status['Targ Pos'])
         self._is_moving = bool(int(self._focuser_status['IsMoving']))
         self._temperature = float(self._focuser_status['Temp(C)'])
 
-    def _get_info(self, command_str, header_str):
-        """
-        Utility function for info type commands (multiline response, starting with "!" and ending
-        with 'END').
-        """
-        try:
-            info = self._send_command(command_str, command_type='GET INFO', header_str=header_str)
-        except RuntimeError as err:
-            message = "Error setting parameter using command '{}': {}".format(command_str, err)
-            self.logger.error(message)
-            warn(message)
-            return None
-        else:
-            return info
-
-    def _set_param(self, command_str):
-        """
-        Utility function for parameter setting commands. Expected response is 2 lines,
-        '!' and 'SET'.
-        """
-        try:
-            self._send_command(command_str, command_type='SET PARAM')
-        except RuntimeError as err:
-            message = "Error setting parameter using command '{}': {}".format(command_str, err)
-            self.logger.error(message)
-            warn(message)
-
-    def _send_command(self, command_str, command_type, **kwargs):
+    def _send_command(self, command_str, expected_reply):
         """
         Utility function that handles the common aspects of sending commands and
         parsing responses.
@@ -295,12 +302,17 @@ class Focuser(AbstractFocuser):
         # Should always get '!' back unless there's an error
         response = str(self._serial_port.readline(), encoding='ascii').strip()
         if response != '!':
-            raise RuntimeError(response)
-
-        if command_type == 'GET INFO':
-            # Expect header string, several lines of key = value, then 'END'
-            assert str(self._serial_port.readline(),
-                       encoding='ascii').strip() == kwargs['header_str']
+            message = "Error sending command '{}' to {}: {}".format(command_str, self.uid, response)
+            self.logger.error(message)
+            warn(message)
+        # Next line identifies the command the focuser is replying to.
+        assert str(self._serial_port.readline(), encoding='ascii').strip() == expected_reply
+        # For get info type commands then get several lines of key = value, then 'END'
+        if expected_reply in ('HUB INFO',
+                              'CONFIG1',
+                              'CONFIG2',
+                              'STATUS1',
+                              'STATUS2'):
             info = {}
             response = str(self._serial_port.readline(), encoding='ascii').strip()
             while response != 'END':
@@ -308,14 +320,6 @@ class Focuser(AbstractFocuser):
                 info[key] = value
                 response = str(self._serial_port.readline(), encoding='ascii').strip()
             return info
-        elif command_type == 'SET PARAM':
-            assert str(self._serial_port.readline(), encoding='ascii').strip() == 'SET'
-        elif command_type == 'MOVE':
-            assert str(self._serial_port.readline(), encoding='ascii').strip() == 'M'
-        elif command_type == 'HALT':
-            assert str(self._serial_port.readline(), encoding='ascii').strip() == 'HALTED'
-        else:
-            raise ValueError('Invalid command type {}!'.format(command_type))
 
     def _fits_header(self, header):
         header = super()._fits_header(header)
