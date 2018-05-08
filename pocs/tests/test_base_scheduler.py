@@ -161,13 +161,18 @@ def test_scheduler_add_duplicate_field(scheduler):
     scheduler.add_observation({
         'name': 'Duplicate Field',
         'position': '12h30m01s +08d08m08s',
+        'priority': 100
     })
 
-    with pytest.raises(AssertionError):
-        scheduler.add_observation({
-            'name': 'Duplicate Field',
-            'position': '12h30m01s +08d08m08s',
-        })
+    assert scheduler.observations['Duplicate Field'].priority == 100
+
+    scheduler.add_observation({
+        'name': 'Duplicate Field',
+        'position': '12h30m01s +08d08m08s',
+        'priority': 500
+    })
+
+    assert scheduler.observations['Duplicate Field'].priority == 500
 
 
 def test_scheduler_add_duplicate_field_different_name(scheduler):

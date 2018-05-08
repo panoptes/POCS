@@ -30,7 +30,8 @@ def on_enter(event_data):
             pocs.logger.warning("Error in scheduling: {}".format(e))
         else:
 
-            if observation != existing_observation:
+            if ((observation and existing_observation) and
+                    (observation.name != existing_observation.name)):
                 pocs.say("Got it! I'm going to check out: {}".format(observation.name))
 
                 pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
