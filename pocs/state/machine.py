@@ -137,7 +137,9 @@ class PanStateMachine(Machine):
 
                 # If we didn't successfully transition, sleep a while then try again
                 if not state_changed:
-                    if _loop_iteration > 5:
+                    if self.is_safe() is False:
+                        self.next_state = 'parking'
+                    elif _loop_iteration > 5:
                         self.logger.warning("Stuck in current state for 5 iterations, parking")
                         self.next_state = 'parking'
                     else:
