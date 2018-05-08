@@ -48,7 +48,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             '--downsample', '4',
         ]
 
-        if kwargs.get('clobber', True):
+        if kwargs.get('overwrite', True):
             options.append('--overwrite')
         if kwargs.get('skip_solved', True):
             options.append('--skip-solved')
