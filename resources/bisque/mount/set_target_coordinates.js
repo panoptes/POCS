@@ -1,4 +1,3 @@
-/* Java Script */
 var horizon = 30;
 var Out = "";
 sky6RASCOMTheSky.Connect();

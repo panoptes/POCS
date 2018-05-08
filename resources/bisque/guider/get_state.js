@@ -1,4 +1,3 @@
-/* Java Script */
 var msg, success;
 if (ccdsoftCamera.Connect()) {
     msg = "DFError: Not connected";
@@ -42,5 +41,6 @@ if (ccdsoftCamera.Connect()) {
 
 Out = JSON.stringify({
     "success": success,
-    "msg": msg,
+    "status": ccdsoftCamera.Status,
+    "msg": msg
 });

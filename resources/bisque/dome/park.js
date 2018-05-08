@@ -1,4 +1,3 @@
-/* Java Script */
 sky6Dome.Connect();
 if (sky6Dome.IsConnected == 0) {
     Out = "Not connected"

@@ -1,4 +1,3 @@
-/* Java Script */
 Out = '';
 sky6RASCOMTele.GetRaDec();
 var dRa = sky6RASCOMTele.dRa;

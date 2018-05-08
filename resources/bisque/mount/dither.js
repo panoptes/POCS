@@ -1,5 +1,3 @@
-/* Java Script */
-
 /*
 * Dither
 * Params:

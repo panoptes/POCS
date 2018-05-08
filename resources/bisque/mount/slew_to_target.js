@@ -1,5 +1,3 @@
-/* Java Script */
-
 /*
 * Goto a target
 * Params:

@@ -1,4 +1,3 @@
-/* Java Script */
 var msg, success;
 var keep = ccdsoftCamera.AutoSaveOn;
 var im;
@@ -6,7 +5,7 @@ ccdsoftCamera.Autoguider = 1;
 ccdsoftCamera.BinX = $bin;
 ccdsoftCamera.BinY = $bin;
 ccdsoftCamera.AutoguiderExposureTime = $exptime;
-ccdsoftCamera.Asynchronous = false;
+ccdsoftCamera.Asynchronous = $async;
 if (ccdsoftCamera.Connect()) {
    msg = "DFError: Not connected";
    success = false;
@@ -33,5 +32,6 @@ if (ccdsoftCamera.Connect()) {
 
 Out = JSON.stringify({
     "success": success,
+    "status": ccdsoftCamera.Status,    
     "msg": msg,
 });

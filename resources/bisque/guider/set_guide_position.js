@@ -1,7 +1,7 @@
-/* Java Script */
 var msg, success;
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Asynchronous = false;
+ccdsoftCamera.Asynchronous = $async;
+
 if (ccdsoftCamera.Connect()) {
     msg = "DFError: Not connected";
     success = false;
@@ -13,9 +13,9 @@ if (ccdsoftCamera.Connect()) {
     ccdsoftCamera.MoveToX = $x;
     ccdsoftCamera.MoveToY = $y;
     msg = "Guiding at x=$x y=$y.";
-    success = true;
 }
 Out = JSON.stringify({
-  "success": success,
-  "msg": msg,
+    "success": true,
+    "status": ccdsoftCamera.Status,  
+    "msg": msg,
 });

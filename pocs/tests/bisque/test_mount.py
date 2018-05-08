@@ -10,8 +10,10 @@ from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.theskyx import TheSkyX
 
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(
+    TheSkyX(
+        template_dir='{}/resources/bisque/mount'.format(os.getenv('POCS'))).is_connected is False,
+    reason="TheSkyX is not connected")
 
 
 @pytest.fixture

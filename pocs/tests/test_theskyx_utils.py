@@ -20,7 +20,7 @@ def skyx(request):
     if 'theskyx' in pytest.config.getoption('--with-hardware'):
         Mocket.disable()
 
-    theskyx = TheSkyX(connect=False)
+    theskyx = TheSkyX()
 
     yield theskyx
 
@@ -38,45 +38,19 @@ def test_default_connect():
     assert skyx.is_connected is True
 
 
-def test_no_connect_write(skyx):
-    with pytest.raises(error.BadConnection):
-        skyx.write('/* Java Script */')
-
-
-def test_no_connect_read(skyx):
-    with pytest.raises(error.BadConnection):
-        skyx.read()
-
-
-def test_write_bad_key(skyx):
-    skyx.connect()
-    skyx.write('FOOBAR')
-    with pytest.raises(error.TheSkyXKeyError):
-        skyx.read()
+def test_write_bad_template(skyx):
+    with pytest.raises(AssertionError):
+        skyx.query('FOOBAR')
 
 
 def test_write_no_command(skyx):
-    skyx.connect()
-    skyx.write('/* Java Script */')
-    assert skyx.read() == 'undefined'
+    assert skyx._query('/* Java Script */') == 'undefined'
 
 
 def test_get_build(skyx):
     js = '''
 /* Java Script */
-var Out;
 Out=Application.version
 '''
-    skyx.connect()
-    skyx.write(js)
-    assert skyx.read().startswith('10.5')
-
-
-def test_error(skyx):
-    skyx.connect()
-    skyx.write('''
-/* Java Script */
-sky6RASCOMTele.FindHome()
-''')
-    with pytest.raises(error.TheSkyXError):
-        skyx.read()
+    response = skyx._query(js)
+    assert response.startswith('10.5')
