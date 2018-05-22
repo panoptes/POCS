@@ -249,6 +249,10 @@ class AbstractCamera(PanBase):
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
         file_path = self._process_fits(file_path, info)
+        try:
+            info['exp_time'] = info['exp_time'].value
+        except Exception:
+            pass        
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -261,6 +265,7 @@ class AbstractCamera(PanBase):
             fits_utils.fpack(file_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
+
         self.db.insert('observations', {
             'data': info,
             'date': current_time(datetime=True),

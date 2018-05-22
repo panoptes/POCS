@@ -25,6 +25,7 @@ class Dome(pocs.dome.AbstractDome):
             "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
+        self._is_parked = True
 
     @property
     def is_connected(self):
@@ -57,7 +58,18 @@ class Dome(pocs.dome.AbstractDome):
 
     @property
     def status(self):
-        return self.read_slit_state()
+        self.write(self._get_command('dome/status.js'))
+        return self.read()
+
+    @property
+    def position(self):
+        self.write(self._get_command('dome/position.js'))
+        return self.read()    
+
+    @property
+    def is_parked(self):
+        return self._is_parked
+    
 
     def connect(self):
         if not self.is_connected:
@@ -104,6 +116,36 @@ class Dome(pocs.dome.AbstractDome):
                 time.sleep(1)
 
         return self.is_closed
+
+
+    def park(self):
+        if self.is_connected:
+            self.write(self._get_command('dome/park.js'))
+            response = self.read()
+
+            self._is_parked = response['success']
+
+        return self.is_parked        
+
+
+    def unpark(self):
+        if self.is_connected:
+            self.write(self._get_command('dome/unpark.js'))
+            response = self.read()
+
+            self._is_parked = not response['success']
+
+        return not self.is_parked        
+
+
+    def find_home(self):
+        if self.is_connected:
+            self.write(self._get_command('dome/home.js'))
+            response = self.read()
+
+            self._is_parked = response['success']
+
+        return self.is_parked        
 
 ##################################################################################################
 # Communication Methods

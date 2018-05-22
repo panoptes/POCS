@@ -5,6 +5,7 @@ import time
 import warnings
 import multiprocessing
 import zmq
+import requests
 
 from astropy import units as u
 
@@ -180,6 +181,13 @@ class POCS(PanStateMachine, PanBase):
         if self.has_messaging is False:
             self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
+
+        if 'slack_webhook_url' in self.config:
+            try:
+                url = self.config['slack_webhook_url']
+                response = requests.post(url, json={"text": msg})
+            except Exception as e:
+                self.logger.debug("Error posting to slack: {}".format(e))
 
     def send_message(self, msg, channel='POCS'):
         """ Send a message
