@@ -457,6 +457,7 @@ class AbstractFocuser(PanBase):
                          metric[fitting_indices[0]:fitting_indices[1] + 1])
 
             best_focus = -fit.offset_0
+            fitted = True
 
             # Guard against fitting failures, force best focus to stay within sweep range
             if best_focus < focus_positions[0]:
