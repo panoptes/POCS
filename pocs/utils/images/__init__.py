@@ -113,7 +113,7 @@ def _make_pretty_from_fits(
     title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
 
-    plt.figure(figsize=figsize, dpi=dpi)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
@@ -143,7 +143,8 @@ def _make_pretty_from_fits(
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
-    ax.imshow(data, norm=norm, cmap=palette, origin='lower')
+    im = ax.imshow(data, norm=norm, cmap=palette, origin='lower')
+    fig.colorbar(im)
     plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')

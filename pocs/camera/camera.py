@@ -252,7 +252,7 @@ class AbstractCamera(PanBase):
         try:
             info['exp_time'] = info['exp_time'].value
         except Exception:
-            pass        
+            pass
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
