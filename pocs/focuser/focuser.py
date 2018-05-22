@@ -439,7 +439,11 @@ class AbstractFocuser(PanBase):
         elif not coarse:
             # Fit data around the maximum value to determine best focus position.
             # Initialise models
-            fit = models.Lorentz1D(x_0=focus_positions[imax], amplitude=metric.max())
+            shift = models.Shift(offset=-focus_positions[imax])
+            poly = models.Polynomial1D(degree=4, c0=1, c1=0, c2=-1e-2, c3=0, c4=-1e-4,
+                                       fixed={'c0': True, 'c1': True, 'c3': True})
+            scale = models.Scale(factor=metric[imax])
+            reparameterised_polynomial = shift | poly | scale
 
             # Initialise fitter
             fitter = fitting.LevMarLSQFitter()
@@ -448,22 +452,22 @@ class AbstractFocuser(PanBase):
             fitting_indices = (max(imax - 2, 0), min(imax + 2, n_positions - 1))
 
             # Fit models to data
-            fit = fitter(fit,
+            fit = fitter(reparameterised_polynomial,
                          focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
                          metric[fitting_indices[0]:fitting_indices[1] + 1])
 
-            best_focus = fit.x_0.value
+            best_focus = -fit.offset_0
 
             # Guard against fitting failures, force best focus to stay within sweep range
             if best_focus < focus_positions[0]:
                 self.logger.warning("Fitting failure: best focus {} below sweep limit {}".format(best_focus,
                                                                                                  focus_positions[0]))
-                best_focus = focus_positions[0]
+                best_focus = focus_positions[1]
 
             if best_focus > focus_positions[-1]:
                 self.logger.warning("Fitting failure: best focus {} above sweep limit {}".format(best_focus,
                                                                                                  focus_positions[-1]))
-                best_focus = focus_positions[-1]
+                best_focus = focus_positions[-2]
 
         else:
             # Coarse focus, just use max value.
@@ -473,8 +477,9 @@ class AbstractFocuser(PanBase):
             ax2 = fig.add_subplot(3, 1, 2)
             ax2.plot(focus_positions, metric, 'bo', label='{}'.format(merit_function))
             if fitted:
-                fs = np.arange(focus_positions[0], focus_positions[-1] + 1)
-                ax2.plot(fs, fit(fs), 'b-', label='Smoothing spline fit')
+                fs = np.arange(focus_positions[fitting_indices[0]],
+                               focus_positions[fitting_indices[1]] + 1)
+                ax2.plot(fs, fit(fs), 'b-', label='Polynomial fit')
 
             ax2.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
             u_limit = 1.10 * metric.max()
