@@ -89,7 +89,7 @@ PANLOG=/var/panoptes/logs
 # m h  dom mon dow   command
 @reboot              /bin/bash --login $POCS/scripts/startup/tmux_launch.sh >> $PANLOG/tmux_launch.cron-reboot.log 2>&1
 */5 *   *   *   *    /bin/bash --login $POCS/scripts/plot_weather.sh >> $PANLOG/plot_weather.cron.log 2>&1
-11  12  *   *   *    /bin/bash --login $POCS/scripts/update_indices.sh >> $PANLOG/update_indices.cron.log 2>&1
+11  12  *   *   *    /bin/bash --login $POCS/scripts/download_support_files.sh >> $PANLOG/download_support_files.cron.log 2>&1
 ```
 
 If your values for POCS and PANLOG don't match those shown above, please
