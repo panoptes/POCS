@@ -4,6 +4,7 @@
 import argparse
 import os
 import shutil
+import sys
 import warnings
 
 # Importing download_IERS_A can emit a scary warnings, so we suppress it.
@@ -74,7 +75,9 @@ class Downloader:
                 raise e
             print('Failed to download {}: {}'.format(url, e))
             return False
+        # The file has been downloaded to some directory. Move the file into the data folder.
         try:
+            self.create_data_folder()
             shutil.move(df, dest)
             return True
         except OSError as e:
@@ -83,17 +86,14 @@ class Downloader:
             print("Problem saving {}. Check permissions: {}".format(url, e))
             return False
 
-
-def download_all_files(data_folder=None, wide_field=True, narrow_field=False, keep_going=True):
-    dl = Downloader(
-        data_folder=data_folder,
-        keep_going=keep_going,
-        narrow_field=narrow_field,
-        wide_field=wide_field)
-    return dl.download_all_files()
+    def create_data_folder(self):
+        """Creates the data folder if it does not exist."""
+        if not os.path.exists(self.data_folder):
+            print("Creating data folder: {}.".format(self.data_folder))
+            os.makedirs(self.data_folder)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
@@ -103,33 +103,40 @@ if __name__ == '__main__':
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        '--keep_going',
+        '--keep-going',
         action='store_true',
         help='Ignore download failures and keep going to the other downloads (default)')
     group.add_argument(
-        '--nokeep_going', action='store_true', help='Fail immediately if any download fails')
+        '--no-keep-going', action='store_true', help='Fail immediately if any download fails')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        '--narrow_field', action='store_true', help='Do download narrow field indices')
+        '--narrow-field', action='store_true', help='Do download narrow field indices')
     group.add_argument(
-        '--nonarrow_field',
+        '--no-narrow-field',
         action='store_true',
         help='Skip downloading narrow field indices (default)')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        '--wide_field', action='store_true', help='Do download wide field indices (default)')
+        '--wide-field', action='store_true', help='Do download wide field indices (default)')
     group.add_argument(
-        '--nowide_field', action='store_true', help='Skip downloading wide field indices')
+        '--no-wide-field', action='store_true', help='Skip downloading wide field indices')
 
     args = parser.parse_args()
 
     if args.folder and not os.path.exists(args.folder):
         print("Warning, data folder {} does not exist.".format(args.folder))
 
-    download_all_files(
+    # --no_narrow_field is the default, so the the args list below ignores args.no_narrow_field.
+    dl = Downloader(
         data_folder=args.folder,
-        keep_going=args.keep_going or not args.nokeep_going,
+        keep_going=args.keep_going or not args.no_keep_going,
         narrow_field=args.narrow_field,
-        wide_field=args.wide_field or not args.nowide_field)
+        wide_field=args.wide_field or not args.no_wide_field)
+    return dl.download_all_files()
+
+
+if __name__ == '__main__':
+    if not main():
+        sys.exit(1)
