@@ -696,7 +696,7 @@ class WeatherPlotter(object):
                 '$PANDIR'), 'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_filename))
-        self.fig.tight_layout()
+        self.fig.tight_layout()  # Eliminate extra whitespace in plot
         self.fig.savefig(plot_filename, dpi=self.dpi, pad_inches=0.10)
 
 
