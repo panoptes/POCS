@@ -6,20 +6,13 @@ import os
 import shutil
 import warnings
 
-
-def _suppress_IERS_A_warning(message, *args, **kwargs):
-    if 'OldEarthOrientationDataWarning' in message or 'download_IERS_A' in message:
-        return
-    _suppress_IERS_A_warning.original(message, *args, **kwargs)
-
-
-try:
-    _suppress_IERS_A_warning.original = warnings.warn
-    warnings.warn = _suppress_IERS_A_warning
+# Importing download_IERS_A can emit a scary warnings, so we suppress it.
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', message='Your version of the IERS Bulletin A')
     from astroplan import download_IERS_A
+    # And pep8 checks complain about an import after the top of the file, but not when
+    # in this block. Weird.
     from astropy.utils import data
-finally:
-    warnings.warn = _suppress_IERS_A_warning.original
 
 
 def _default_data_folder():
