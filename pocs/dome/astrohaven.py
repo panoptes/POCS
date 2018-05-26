@@ -51,7 +51,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response.
     MOVE_TIMEOUT = 10  # Max number of seconds to run the door motors.
     MOVE_LISTEN_TIMEOUT = 0.1  # When moving, how long to wait for feedback.
-    NUM_FEEDBACKS = 2  # Number of target_feedback bytes needed.
+    NUM_CLOSE_FEEDBACKS = 2  # Number of target_feedback bytes needed.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,8 +87,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
-        self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
-        self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
+        self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT,
+                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
+        self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT,
+                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_CLOSED:
             return True
@@ -146,7 +148,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
             pass
         return c
 
-    def _full_move(self, send, target_feedback):
+    def _full_move(self, send, target_feedback, feedback_countdown=1):
         """Send a command code until the target_feedback is recieved, or a timeout is reached.
 
         Args:
@@ -164,7 +166,6 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # we'll just send another command.
         saved_timeout = self.serial.ser.timeout
         self.serial.ser.timeout = AstrohavenDome.MOVE_LISTEN_TIMEOUT
-        feedback_countdown = AstrohavenDome.NUM_FEEDBACKS
         try:
             have_seen_send = False
             end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT

@@ -90,14 +90,14 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
     return config
 
 
-def save_config(path, config, clobber=True):
+def save_config(path, config, overwrite=True):
     """Save config to yaml file
 
     Args:
         path (str): Path to save, can be relative or absolute. See Notes
             in `load_config`.
         config (dict): Config to save.
-        clobber (bool, optional): True if file should be updated, False
+        overwrite (bool, optional): True if file should be updated, False
             to generate a warning for existing config. Defaults to True
             for updates.
     """
@@ -108,8 +108,8 @@ def save_config(path, config, clobber=True):
         config_dir = '{}/conf_files'.format(os.getenv('POCS'))
         path = os.path.join(config_dir, path)
 
-    if os.path.exists(path) and not clobber:
-        warn("Path exists and clobber=False: {}".format(path))
+    if os.path.exists(path) and not overwrite:
+        warn("Path exists and overwrite=False: {}".format(path))
     else:
         with open(path, 'w') as f:
             f.write(yaml.dump(config))
