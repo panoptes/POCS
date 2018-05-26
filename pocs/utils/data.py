@@ -14,9 +14,7 @@ with warnings.catch_warnings():
     # in this block. Weird.
     from astropy.utils import data
 
-
-def _default_data_folder():
-    return "{}/astrometry/data".format(os.getenv('PANDIR'))
+DEFAULT_DATA_FOLDER = "{}/astrometry/data".format(os.getenv('PANDIR'))
 
 
 class Downloader:
@@ -38,7 +36,7 @@ class Downloader:
             keep_going: If False, exceptions are not suppressed. If True, returns False if there
                 are any download failures, else returns True.
         """
-        self.data_folder = data_folder or _default_data_folder()
+        self.data_folder = data_folder or DEFAULT_DATA_FOLDER
         self.wide_field = wide_field
         self.narrow_field = narrow_field
         self.keep_going = keep_going
@@ -100,9 +98,8 @@ if __name__ == '__main__':
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--folder',
-        help=('Destination folder for astrometry indices. Default: {}'.format(
-            _default_data_folder())),
-        default=_default_data_folder())
+        help='Destination folder for astrometry indices. Default: {}'.format(DEFAULT_DATA_FOLDER),
+        default=DEFAULT_DATA_FOLDER)
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
