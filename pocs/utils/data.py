@@ -32,8 +32,8 @@ class Downloader:
         """
         Args:
             data_folder: Path to directory into which to copy the astrometry.net indices.
-            wide_field: If true, downloads wide field astrometry.net indices.
-            narrow_field: If true, downloads narrow field astrometry.net indices.
+            wide_field: If True, downloads wide field astrometry.net indices.
+            narrow_field: If True, downloads narrow field astrometry.net indices.
             keep_going: If False, exceptions are not suppressed. If True, returns False if there
                 are any download failures, else returns True.
         """
