@@ -42,7 +42,9 @@ echo "Running ${BASH_SOURCE[0]} at $(date)"
 # executed). Let's check (PATH and conda info are the giveaway).
 
 echo "Current dir: $(pwd)"
+echo "Current user: $(whoami)"
 echo "USER: ${USER}"
+echo "LOGNAME: ${LOGNAME}"
 echo "PATH: ${PATH}"
 echo "PANUSER: ${PANUSER}"
 echo "PANDIR: ${PANDIR}"

@@ -54,8 +54,10 @@ set +x
 # and those it invokes.
 echo "Running ${BASH_SOURCE[0]} at $(date)"
 echo "Current dir: $(pwd)"
-echo "Current user: ${USER}"
-echo "Current path: ${PATH}"
+echo "Current user: $(whoami)"
+echo "USER: ${USER}"
+echo "LOGNAME: ${LOGNAME}"
+echo "PATH: ${PATH}"
 echo "PANUSER: ${PANUSER}"
 echo "PANDIR: ${PANDIR}"
 echo "PANLOG: ${PANLOG}"
