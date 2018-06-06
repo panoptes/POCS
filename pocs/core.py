@@ -14,7 +14,8 @@ from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
 from pocs.utils import get_free_space
 from pocs.utils.messaging import PanMessaging
-
+from pocs.utils.social_twitter import SocialTwitter
+from pocs.utils.social_slack import SocialSlack
 
 class POCS(PanStateMachine, PanBase):
 
@@ -571,10 +572,91 @@ class POCS(PanStateMachine, PanBase):
             target=check_message_loop, args=(self._cmd_queue,))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
+
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
+    
+        def check_social_messages_loop():
+            cmd_social_subscriber = PanMessaging.create_subscriber(msg_port + 1, 'PANCHAT')
+
+            poller = zmq.Poller()
+            poller.register(cmd_social_subscriber.socket, zmq.POLLIN)
+
+            try:
+                while self._do_social_msg_check:
+                    # Poll for messages
+                    sockets = dict(poller.poll(500))  # 500 ms timeout
+
+                    if cmd_social_subscriber.socket in sockets and \
+                            sockets[cmd_social_subscriber.socket] == zmq.POLLIN:
+
+                        msg_type, msg_obj = cmd_social_subscriber.receive_message(flags=zmq.NOBLOCK)
+
+                        #Check the various social sinks
+                        if self.social_twitter is not None:
+                            self.social_twitter.send_message(msg_obj['message'], msg_obj['timestamp'])
+
+                        if self.social_slack is not None:
+                            self.social_slack.send_message(msg_obj['message'], msg_obj['timestamp'])
+
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
+
+        social_messages_process = multiprocessing.Process(
+            target=check_social_messages_loop, args=())
+        social_messages_process.name = 'SocialMessageCheckLoop'
+
+        #Initialise social sinks to None
+        self.social_twitter = None
+        self.social_slack = None
+        if 'social_accounts' in self.config:
+            self._do_social_msg_check = True
+            socialConfig = self.config['social_accounts']
+
+            #See which social sink we can create based on config
+
+            #Twitter sink
+            if socialConfig is not None and 'twitter' in socialConfig: 
+                twitterConfig = socialConfig['twitter']
+                if twitterConfig is not None and \
+                    'consumer_key' in twitterConfig and \
+                    'consumer_secret' in twitterConfig and \
+                    'access_token' in twitterConfig and \
+                    'access_token_secret' in twitterConfig:
+
+                    #Output timestamp should always be True in Twitter
+                    #otherwise Twitter will reject duplicate statuses
+                    if 'output_timestamp' in twitterConfig:
+                        output_timestamp = twitterConfig['output_timestamp']
+                    else:
+                        output_timestamp = True
+
+                    self.social_twitter = SocialTwitter(twitterConfig['consumer_key'],
+                        twitterConfig['consumer_secret'],
+                        twitterConfig['access_token'],
+                        twitterConfig['access_token_secret'],
+                        output_timestamp)
+
+            #Slack sink
+            if socialConfig is not None and 'slack' in socialConfig: 
+                slackConfig = socialConfig['slack']
+                if slackConfig is not None and \
+                    'webhook_url' in slackConfig:
+
+                    if 'output_timestamp' in slackConfig:
+                        output_timestamp = slackConfig['output_timestamp']
+                    else:
+                        output_timestamp = True
+
+                    self.social_slack = SocialSlack(slackConfig['webhook_url'],
+                        output_timestamp)
+
+            self.logger.debug('Starting social subscriber message loop')
+            social_messages_process.start()
 
         self._processes = {
             'check_messages': check_messages_process,
             'cmd_forwarder': cmd_forwarder_process,
             'msg_forwarder': msg_forwarder_process,
+            'social_messages': social_messages_process,
         }
