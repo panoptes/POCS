@@ -3,6 +3,7 @@ import tweepy
 from pocs.utils import current_time
 from pocs.utils.logger import get_root_logger
 
+
 class SocialTwitter(object):
 
     """Messaging class to output to Twitter
@@ -20,7 +21,6 @@ class SocialTwitter(object):
 
         except tweepy.TweepError as e:
             self.logger.error('Error connecting to Twitter. Err: {} - Message: {}'.format(e.args[0][0]['code'], e.args[0][0]['message']))
-
 
     def send_message(self, msg, timestamp):
         try:

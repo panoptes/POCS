@@ -17,6 +17,7 @@ from pocs.utils.messaging import PanMessaging
 from pocs.utils.social_twitter import SocialTwitter
 from pocs.utils.social_slack import SocialSlack
 
+
 class POCS(PanStateMachine, PanBase):
 
     """The main class representing the Panoptes Observatory Control Software (POCS).
@@ -574,7 +575,7 @@ class POCS(PanStateMachine, PanBase):
         check_messages_process.start()
 
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
-    
+
         def check_social_messages_loop():
             cmd_social_subscriber = PanMessaging.create_subscriber(msg_port + 1, 'PANCHAT')
 
@@ -591,7 +592,7 @@ class POCS(PanStateMachine, PanBase):
 
                         msg_type, msg_obj = cmd_social_subscriber.receive_message(flags=zmq.NOBLOCK)
 
-                        #Check the various social sinks
+                        # Check the various social sinks
                         if self.social_twitter is not None:
                             self.social_twitter.send_message(msg_obj['message'], msg_obj['timestamp'])
 
@@ -606,42 +607,41 @@ class POCS(PanStateMachine, PanBase):
             target=check_social_messages_loop, args=())
         social_messages_process.name = 'SocialMessageCheckLoop'
 
-        #Initialise social sinks to None
+        # Initialise social sinks to None
         self.social_twitter = None
         self.social_slack = None
         if 'social_accounts' in self.config:
             self._do_social_msg_check = True
             socialConfig = self.config['social_accounts']
 
-            #See which social sink we can create based on config
+            # See which social sink we can create based on config
 
-            #Twitter sink
-            if socialConfig is not None and 'twitter' in socialConfig: 
+            # Twitter sink
+            if socialConfig is not None and 'twitter' in socialConfig:
                 twitterConfig = socialConfig['twitter']
                 if twitterConfig is not None and \
-                    'consumer_key' in twitterConfig and \
-                    'consumer_secret' in twitterConfig and \
-                    'access_token' in twitterConfig and \
-                    'access_token_secret' in twitterConfig:
-
-                    #Output timestamp should always be True in Twitter
-                    #otherwise Twitter will reject duplicate statuses
+                        'consumer_key' in twitterConfig and \
+                        'consumer_secret' in twitterConfig and \
+                        'access_token' in twitterConfig and \
+                        'access_token_secret' in twitterConfig:
+                    # Output timestamp should always be True in Twitter
+                    # otherwise Twitter will reject duplicate statuses
                     if 'output_timestamp' in twitterConfig:
                         output_timestamp = twitterConfig['output_timestamp']
                     else:
                         output_timestamp = True
 
                     self.social_twitter = SocialTwitter(twitterConfig['consumer_key'],
-                        twitterConfig['consumer_secret'],
-                        twitterConfig['access_token'],
-                        twitterConfig['access_token_secret'],
-                        output_timestamp)
+                                                        twitterConfig['consumer_secret'],
+                                                        twitterConfig['access_token'],
+                                                        twitterConfig['access_token_secret'],
+                                                        output_timestamp)
 
-            #Slack sink
-            if socialConfig is not None and 'slack' in socialConfig: 
+            # Slack sink
+            if socialConfig is not None and 'slack' in socialConfig:
                 slackConfig = socialConfig['slack']
                 if slackConfig is not None and \
-                    'webhook_url' in slackConfig:
+                        'webhook_url' in slackConfig:
 
                     if 'output_timestamp' in slackConfig:
                         output_timestamp = slackConfig['output_timestamp']
@@ -649,7 +649,7 @@ class POCS(PanStateMachine, PanBase):
                         output_timestamp = True
 
                     self.social_slack = SocialSlack(slackConfig['webhook_url'],
-                        output_timestamp)
+                                                    output_timestamp)
 
             self.logger.debug('Starting social subscriber message loop')
             social_messages_process.start()
