@@ -1,6 +1,5 @@
 import tweepy
 
-from pocs.utils import current_time
 from pocs.utils.logger import get_root_logger
 
 
@@ -18,9 +17,8 @@ class SocialTwitter(object):
 
             self.api = tweepy.API(auth)
             self.output_timestamp = output_timestamp
-
         except tweepy.TweepError as e:
-            self.logger.error('Error connecting to Twitter. Err: {} - Message: {}'.format(e.args[0][0]['code'], e.args[0][0]['message']))
+            self.logger.warning('Error connecting to Twitter. Err: {} - Message: {}'.format(e.args[0][0]['code'], e.args[0][0]['message']))
 
     def send_message(self, msg, timestamp):
         try:
@@ -29,4 +27,4 @@ class SocialTwitter(object):
             else:
                 retStatus = self.api.update_status(msg)
         except tweepy.TweepError as e:
-            self.logger.debug('Error tweeting message. Err: {} - Message: {}'.format(e.args[0][0]['code'], e.args[0][0]['message']))
+            self.logger.debug('Error tweeting message. Please check your Twitter configuration.')

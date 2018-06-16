@@ -61,6 +61,6 @@ messaging:
 #         access_token_secret: [your_access_token_secret] 
 #     slack:
 #         webhook_url: [your_webhook_url]
-#         output_timestamp: True
+#         output_timestamp: False
 
 state_machine: simple_state_table

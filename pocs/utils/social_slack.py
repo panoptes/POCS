@@ -1,6 +1,5 @@
 import requests
 
-from pocs.utils import current_time
 from pocs.utils.logger import get_root_logger
 
 
