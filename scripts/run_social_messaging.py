@@ -113,51 +113,33 @@ if __name__ == '__main__':
     
     if args.from_config:
         config = load_config(config_files=['pocs'])
-        
-        if 'social_accounts' in config:
-            social_config = config['social_accounts']
 
-            # See which social sink we can create based on config
+        social_config = config.get('social_accounts')
+        if social_config:
+            # Check which social sinks we can create based on config
 
             # Twitter sink
-            if social_config is not None and 'twitter' in social_config:
-                twitter_config = social_config['twitter']
-                if twitter_config is not None and \
-                        'consumer_key' in twitter_config and \
-                        'consumer_secret' in twitter_config and \
-                        'access_token' in twitter_config and \
-                        'access_token_secret' in twitter_config:
-                    # Output timestamp should always be True in Twitter
-                    # otherwise Twitter will reject duplicate statuses
-                    if 'output_timestamp' in twitter_config:
-                        output_timestamp = twitter_config['output_timestamp']
-                    else:
-                        output_timestamp = True
-
-                    social_twitter = SocialTwitter(twitter_config['consumer_key'],
-                                                    twitter_config['consumer_secret'],
-                                                    twitter_config['access_token'],
-                                                    twitter_config['access_token_secret'],
-                                                    output_timestamp)
+            twitter_config = social_config.get('twitter')
+            if twitter_config:
+                try:
+                    social_twitter = SocialTwitter(**twitter_config)
+                except ValueError as e:
+                    print('Twitter sink could not be initialised. Please check your config. Error: {}'.format(str(e)))
 
             # Slack sink
-            if social_config is not None and 'slack' in social_config:
-                slack_config = social_config['slack']
-                if slack_config is not None and \
-                        'webhook_url' in slack_config:
-
-                    if 'output_timestamp' in slack_config:
-                        output_timestamp = slack_config['output_timestamp']
-                    else:
-                        output_timestamp = False
-
-                    social_slack = SocialSlack(slack_config['webhook_url'],
-                                                    output_timestamp)
+            slack_config = social_config.get('slack')
+            if slack_config:
+                try:
+                    social_slack = SocialSlack(**slack_config)
+                except ValueError as e:
+                    print('Slack sink could not be initialised. Please check your config. Error: {}'.format(str(e)))
         else:
-            arg_error('social_accounts setting not defined in config.')
+            print('No social accounts defined in config, exiting.')
+            sys.exit(0)
 
     if not social_twitter and not social_slack:
-        arg_error('No social messaging sinks could be initialised. Please check your config settings.')
+        print('No social messaging sinks defined, exiting.')
+        sys.exit(0)
 
     # Messaging port to subscribe on
     msg_port = config['messaging']['msg_port'] + 1

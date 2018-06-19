@@ -5,13 +5,16 @@ from pocs.utils.logger import get_root_logger
 
 class SocialSlack(object):
 
-    """Messaging class to output to Slack
-    """
+    """Social Messaging sink to output to Slack."""
+
     logger = get_root_logger()
 
-    def __init__(self, web_hook, output_timestamp):
-        self.output_timestamp = output_timestamp
-        self.web_hook = web_hook
+    def __init__(self, **kwargs):
+        self.web_hook = kwargs.get("webhook_url")
+        if self.web_hook:
+            self.output_timestamp = kwargs.get("output_timestamp", False)
+        else:
+            raise ValueError('webhook_url parameter is not defined.')
 
     def send_message(self, msg, timestamp):
         try:
