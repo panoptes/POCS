@@ -10,17 +10,17 @@ class SocialTwitter(object):
     logger = get_root_logger()
 
     def __init__(self, **kwargs):
-        consumer_key = kwargs.get("consumer_key")
-        if consumer_key is None:
+        consumer_key = kwargs.get('consumer_key', '')
+        if consumer_key == '':
             raise ValueError('consumer_key parameter is not defined.')
-        consumer_secret = kwargs.get("consumer_secret")
-        if consumer_secret is None:
+        consumer_secret = kwargs.get('consumer_secret', '')
+        if consumer_secret == '':
             raise ValueError('consumer_secret parameter is not defined.')
-        access_token = kwargs.get("access_token")
-        if access_token is None:
+        access_token = kwargs.get('access_token', '')
+        if access_token == '':
             raise ValueError('access_token parameter is not defined.')
-        access_token_secret = kwargs.get("access_token_secret")
-        if access_token_secret is None:
+        access_token_secret = kwargs.get('access_token_secret', '')
+        if access_token_secret == '':
             raise ValueError('access_token_secret parameter is not defined.')
 
         # Output timestamp should always be True by default otherwise Twitter will reject duplicate statuses.
