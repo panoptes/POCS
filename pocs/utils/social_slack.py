@@ -19,7 +19,7 @@ class SocialSlack(object):
     def send_message(self, msg, timestamp):
         try:
             if self.output_timestamp:
-                post_msg = '{} - {}'.format(timestamp, msg)
+                post_msg = '{} - {}'.format(msg, timestamp)
             else:
                 post_msg = msg
 

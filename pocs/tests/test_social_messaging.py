@@ -21,34 +21,30 @@ def slack_config():
 
 # Twitter sink tests
 def test_no_consumer_key(twitter_config):
-    with unittest.mock.patch.dict(twitter_config):
+    with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['consumer_key']
-        with pytest.raises(ValueError) as ve:
-            social_twitter = SocialTwitter(**twitter_config)
+        social_twitter = SocialTwitter(**twitter_config)
         assert 'consumer_key parameter is not defined.' == str(ve.value)
 
 
 def test_no_consumer_secret(twitter_config):
-    with unittest.mock.patch.dict(twitter_config):
+    with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['consumer_secret']
-        with pytest.raises(ValueError) as ve:
-            social_twitter = SocialTwitter(**twitter_config)
+        social_twitter = SocialTwitter(**twitter_config)
         assert 'consumer_secret parameter is not defined.' == str(ve.value)
 
 
 def test_no_access_token(twitter_config):
-    with unittest.mock.patch.dict(twitter_config):
+    with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['access_token']
-        with pytest.raises(ValueError) as ve:
-            social_twitter = SocialTwitter(**twitter_config)
+        social_twitter = SocialTwitter(**twitter_config)
         assert 'access_token parameter is not defined.' == str(ve.value)
 
 
 def test_no_access_token_secret(twitter_config):
-    with unittest.mock.patch.dict(twitter_config):
+    with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['access_token_secret']
-        with pytest.raises(ValueError) as ve:
-            social_twitter = SocialTwitter(**twitter_config)
+        social_twitter = SocialTwitter(**twitter_config)
         assert 'access_token_secret parameter is not defined.' == str(ve.value)
 
 
@@ -59,26 +55,24 @@ def test_send_message_twitter(twitter_config):
         mock_timestamp = "mock_timestamp"
         social_twitter.send_message(mock_message, mock_timestamp)
 
-        mock_update_status.assert_called_once_with('{} - {}'.format(mock_timestamp, mock_message))
+        mock_update_status.assert_called_once_with('{} - {}'.format(mock_message, mock_timestamp))
 
 
 def test_send_message_twitter_no_timestamp(twitter_config):
-    with unittest.mock.patch.dict(twitter_config, {'output_timestamp': False}):
-        with unittest.mock.patch.object(tweepy.API, 'update_status') as mock_update_status:
-            social_twitter = SocialTwitter(**twitter_config)
-            mock_message = "mock_message"
-            mock_timestamp = "mock_timestamp"
-            social_twitter.send_message(mock_message, mock_timestamp)
+    with unittest.mock.patch.dict(twitter_config, {'output_timestamp': False}), unittest.mock.patch.object(tweepy.API, 'update_status') as mock_update_status:
+        social_twitter = SocialTwitter(**twitter_config)
+        mock_message = "mock_message"
+        mock_timestamp = "mock_timestamp"
+        social_twitter.send_message(mock_message, mock_timestamp)
 
-            mock_update_status.assert_called_once_with(mock_message)
+        mock_update_status.assert_called_once_with(mock_message)
 
 
 # Slack sink tests
 def test_no_webhook_url(slack_config):
-    with unittest.mock.patch.dict(slack_config):
+    with unittest.mock.patch.dict(slack_config), pytest.raises(ValueError) as ve:
         del slack_config['webhook_url']
-        with pytest.raises(ValueError) as ve:
-            slack_config = SocialSlack(**slack_config)
+        slack_config = SocialSlack(**slack_config)
         assert 'webhook_url parameter is not defined.' == str(ve.value)
 
 
@@ -93,11 +87,10 @@ def test_send_message_slack(slack_config):
 
 
 def test_send_message_slack_timestamp(slack_config):
-    with unittest.mock.patch.dict(slack_config, {'output_timestamp': True}):
-        with unittest.mock.patch.object(requests, 'post') as mock_post:
-            social_slack = SocialSlack(**slack_config)
-            mock_message = "mock_message"
-            mock_timestamp = "mock_timestamp"
-            social_slack.send_message(mock_message, mock_timestamp)
+    with unittest.mock.patch.dict(slack_config, {'output_timestamp': True}), unittest.mock.patch.object(requests, 'post') as mock_post:
+        social_slack = SocialSlack(**slack_config)
+        mock_message = "mock_message"
+        mock_timestamp = "mock_timestamp"
+        social_slack.send_message(mock_message, mock_timestamp)
 
-            mock_post.assert_called_once_with(slack_config['webhook_url'], json={'text': '{} - {}'.format(mock_timestamp, mock_message)})
+        mock_post.assert_called_once_with(slack_config['webhook_url'], json={'text': '{} - {}'.format(mock_message, mock_timestamp)})

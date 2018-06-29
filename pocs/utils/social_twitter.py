@@ -40,7 +40,7 @@ class SocialTwitter(object):
     def send_message(self, msg, timestamp):
         try:
             if self.output_timestamp:
-                retStatus = self.api.update_status('{} - {}'.format(timestamp, msg))
+                retStatus = self.api.update_status('{} - {}'.format(msg, timestamp))
             else:
                 retStatus = self.api.update_status(msg)
         except tweepy.TweepError as e:
