@@ -52,4 +52,15 @@ messaging:
     # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
+#Enable to output POCS messages to social accounts
+# social_accounts:
+#     twitter:
+#         consumer_key: [your_consumer_key]
+#         consumer_secret: [your_consumer_secret]
+#         access_token: [your_access_token]
+#         access_token_secret: [your_access_token_secret] 
+#     slack:
+#         webhook_url: [your_webhook_url]
+#         output_timestamp: False
+
 state_machine: simple_state_table
