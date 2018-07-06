@@ -5,12 +5,14 @@ from collections import OrderedDict
 from datetime import datetime
 
 from glob import glob
+from subprocess import TimeoutExpired
 
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
+from astropy.coordinates import SkyCoord, AltAz
 
 from pocs.base import PanBase
 import pocs.dome
@@ -24,6 +26,9 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
+from pocs.utils import altaz_to_radec
+from pocs.utils.images import cr2 as cr2_utils
+from pocs.utils.images import fits as fits_utils
 
 
 class Observatory(PanBase):
@@ -536,6 +541,96 @@ class Observatory(PanBase):
         if not self.dome.is_closed:
             self.logger.info('Closed dome')
         return self.dome.close()
+
+    def calibrate_mount(self, target=None, exp_time=30):
+        """Calibrates the mount to a target.
+
+        Note:
+            This assumes the mount is roughly polar aligned such
+            that a slew to a given AltAz will at the very least
+            point somewhere above the horizon.
+
+        Performs the following steps:
+             1. Slews to home.
+             2. Slews to Alt=40° and Az=80°.
+             3. Takes a 30 second image with the primary camera.
+             4. Plates solves image and obtains coords for center of image.
+             5. Displays current separation.
+             6. Tells the mount the current coords.
+             7. Slews to home.
+             8. Slews to Alt=40° and Az=80°.
+             9. Takes a 30 second image with the primary camera.
+            10. Plates solves image and obtains coords for center of image.
+            11. Displays separation.
+            12. Slews to home and then parks.
+
+        Args:
+            target (astropy.coordinates.AltAz, optional): AltAz coords, default
+                Alt=40° and Az=80°.
+            exp_time (int, optional): Image exposure time, default 30 seconds.
+        """
+
+        if target is None:
+            target = altaz_to_radec(
+                alt=40,
+                az=80,
+                location=self.earth_location
+            )
+
+        assert isinstance(target, AltAz), "Must pass an AltAz target"
+        assert exp_time > 1, "Exposure time must be larger than 1 second"
+
+        for i in range(2):
+            self.logging.info("Slewing to home")
+            self.mount.slew_to_home()
+            while self.mount.is_home is False:
+                time.sleep(2)
+
+            self.logging.info("Slewing to {}".format(target))
+            self.mount.set_target_coordinates(target)
+            self.mount.slew_to_target()
+
+            while self.mount.is_tracking is False:
+                time.sleep(2)
+
+            self.logging.info("Taking {} second image".format(exp_time))
+
+            filename = os.path.join(
+                self.config['directories']['images'],
+                'calibrate0_{}'.format(i)
+            )
+
+            proc0 = self.primary_camera.take_exposure(seconds=exp_time, filename=filename)
+            try:
+                self.logging.info("Waiting for image.")
+                outs, errs = proc0.communicate(timeout=exp_time + 5)
+            except TimeoutExpired:
+                self.logging.info("Killing exposure command")
+                proc0.kill()
+                outs, errs = proc0.communicate()
+
+            if errs is not None:
+                self.logging.warning(errs)
+
+            self.logging.info("Converting to FITS and plate-solving")
+            fits_fn = cr2_utils.cr2_to_fits('/var/panoptes/POCS/calibrate0_0.cr2')
+            solve_info = fits_utils.get_solve_field(
+                fits_fn, verbose=True, skip_solved=False, timeout=45)
+
+            t2 = SkyCoord(ra=solve_info['CRVAL1'] * u.deg,
+                          dec=solve_info['CRVAL2'] * u.deg)
+            self.logging.info("Center coords: {}".format(t2))
+
+            sep = target.separation(t2).to(u.arcsec)
+            self.logging.info("Current separation: {}".format(sep))
+
+            self.logging.info("Setting mount coords to image coords")
+            self.mount.set_target_coordinates(t2)
+            self.mount.query('calibrate_mount')
+
+        self.logging.info("Slewing to home then parking")
+        self.mount.home_and_park()
+
 
 ##########################################################################
 # Private Methods
