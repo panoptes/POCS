@@ -552,17 +552,13 @@ class Observatory(PanBase):
 
         Performs the following steps:
              1. Slews to home.
-             2. Slews to Alt=40° and Az=80°.
+             2. Slews to target (default Alt=40° and Az=80°).
              3. Takes a 30 second image with the primary camera.
              4. Plates solves image and obtains coords for center of image.
              5. Displays current separation.
-             6. Tells the mount the current coords.
-             7. Slews to home.
-             8. Slews to Alt=40° and Az=80°.
-             9. Takes a 30 second image with the primary camera.
-            10. Plates solves image and obtains coords for center of image.
-            11. Displays separation.
-            12. Slews to home and then parks.
+             6. Sets mount to current coords.
+             7. Repeat steps 1-6.
+             8. Slews to home then parks.
 
         Args:
             target (astropy.coordinates.AltAz, optional): AltAz coords, default
