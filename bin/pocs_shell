@@ -100,9 +100,6 @@ class PocsShell(Cmd):
         it is pointing.
 
         """
-        assert self.pocs and self.pocs.is_initialized(), \
-            "POCS has not been setup."
-
         if self.pocs.observatory.mount.is_parked:
             print_warning('Mount is parked. To unpark run `unpark`')
             return
