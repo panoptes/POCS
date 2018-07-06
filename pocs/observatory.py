@@ -12,7 +12,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import SkyCoord
 
 from pocs.base import PanBase
 import pocs.dome
@@ -29,6 +29,7 @@ from pocs.utils import load_module
 from pocs.utils import altaz_to_radec
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import make_pretty_image
 
 
 class Observatory(PanBase):
@@ -608,6 +609,11 @@ class Observatory(PanBase):
                 self.logger.warning(errs)
 
             self.logger.info("Converting to FITS and plate-solving")
+            try:
+                make_pretty_image(filename)
+            except Exception as e:
+                self.logger.warning(e)
+
             fits_fn = cr2_utils.cr2_to_fits(filename)
             solve_info = fits_utils.get_solve_field(
                 fits_fn, skip_solved=False, timeout=45)
