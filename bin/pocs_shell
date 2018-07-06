@@ -103,6 +103,10 @@ class PocsShell(Cmd):
         assert self.pocs and self.pocs.is_initialized(), \
             "POCS has not been setup."
 
+        if self.pocs.observatory.mount.is_parked:
+            print_warning('Mount is parked. To unpark run `unpark`')
+            return
+
         print_info("Starting mount calibration")
         self.pocs.observatory.calibrate_mount()
 

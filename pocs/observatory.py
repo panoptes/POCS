@@ -573,58 +573,57 @@ class Observatory(PanBase):
                 location=self.earth_location
             )
 
-        assert isinstance(target, AltAz), "Must pass an AltAz target"
         assert exp_time > 1, "Exposure time must be larger than 1 second"
 
         for i in range(2):
-            self.logging.info("Slewing to home")
+            self.logger.info("Slewing to home")
             self.mount.slew_to_home()
             while self.mount.is_home is False:
                 time.sleep(2)
 
-            self.logging.info("Slewing to {}".format(target))
+            self.logger.info("Slewing to {}".format(target))
             self.mount.set_target_coordinates(target)
             self.mount.slew_to_target()
 
             while self.mount.is_tracking is False:
                 time.sleep(2)
 
-            self.logging.info("Taking {} second image".format(exp_time))
+            self.logger.info("Taking {} second image".format(exp_time))
 
             filename = os.path.join(
                 self.config['directories']['images'],
-                'calibrate0_{}'.format(i)
+                'calibrate0_{}.cr2'.format(i)
             )
 
             proc0 = self.primary_camera.take_exposure(seconds=exp_time, filename=filename)
             try:
-                self.logging.info("Waiting for image.")
+                self.logger.info("Waiting for image.")
                 outs, errs = proc0.communicate(timeout=exp_time + 5)
             except TimeoutExpired:
-                self.logging.info("Killing exposure command")
+                self.logger.info("Killing exposure command")
                 proc0.kill()
-                outs, errs = proc0.communicate()
+                outs, errs = proc0.communicate(timeout=1)
 
             if errs is not None:
-                self.logging.warning(errs)
+                self.logger.warning(errs)
 
-            self.logging.info("Converting to FITS and plate-solving")
-            fits_fn = cr2_utils.cr2_to_fits('/var/panoptes/POCS/calibrate0_0.cr2')
+            self.logger.info("Converting to FITS and plate-solving")
+            fits_fn = cr2_utils.cr2_to_fits(filename)
             solve_info = fits_utils.get_solve_field(
-                fits_fn, verbose=True, skip_solved=False, timeout=45)
+                fits_fn, skip_solved=False, timeout=45)
 
             t2 = SkyCoord(ra=solve_info['CRVAL1'] * u.deg,
                           dec=solve_info['CRVAL2'] * u.deg)
-            self.logging.info("Center coords: {}".format(t2))
+            self.logger.info("Center coords: {}".format(t2))
 
             sep = target.separation(t2).to(u.arcsec)
-            self.logging.info("Current separation: {}".format(sep))
+            self.logger.info("Current separation: {}".format(sep))
 
-            self.logging.info("Setting mount coords to image coords")
+            self.logger.info("Setting mount coords to image coords")
             self.mount.set_target_coordinates(t2)
             self.mount.query('calibrate_mount')
 
-        self.logging.info("Slewing to home then parking")
+        self.logger.info("Slewing to home then parking")
         self.mount.home_and_park()
 
 
