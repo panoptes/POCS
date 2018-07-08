@@ -181,7 +181,7 @@ def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
-def create_timelapse(directory, fn_out=None, **kwargs):
+def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
     """Create a timelapse
 
     A timelapse is created from all the jpg images in a given `directory`
@@ -190,6 +190,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):
         directory (str): Directory containing jpg files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
+        file_type (str, optional): Type of file to search for, default 'jpg'.
         **kwargs (dict): Valid keywords: verbose
 
     Returns:
@@ -207,7 +208,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):
 
     fn_dir = os.path.dirname(fn_out)
     os.makedirs(fn_dir, exist_ok=True)
-    inputs_glob = os.path.join(directory, '*.jpg')
+    inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
 
     try:
         ff = FFmpeg(
