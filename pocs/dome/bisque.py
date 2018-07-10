@@ -64,12 +64,11 @@ class Dome(pocs.dome.AbstractDome):
     @property
     def position(self):
         self.write(self._get_command('dome/position.js'))
-        return self.read()    
+        return self.read()
 
     @property
     def is_parked(self):
         return self._is_parked
-    
 
     def connect(self):
         if not self.is_connected:
@@ -117,7 +116,6 @@ class Dome(pocs.dome.AbstractDome):
 
         return self.is_closed
 
-
     def park(self):
         if self.is_connected:
             self.write(self._get_command('dome/park.js'))
@@ -125,8 +123,7 @@ class Dome(pocs.dome.AbstractDome):
 
             self._is_parked = response['success']
 
-        return self.is_parked        
-
+        return self.is_parked
 
     def unpark(self):
         if self.is_connected:
@@ -135,8 +132,7 @@ class Dome(pocs.dome.AbstractDome):
 
             self._is_parked = not response['success']
 
-        return not self.is_parked        
-
+        return not self.is_parked
 
     def find_home(self):
         if self.is_connected:
@@ -145,7 +141,7 @@ class Dome(pocs.dome.AbstractDome):
 
             self._is_parked = response['success']
 
-        return self.is_parked        
+        return self.is_parked
 
 ##################################################################################################
 # Communication Methods
@@ -174,7 +170,6 @@ class Dome(pocs.dome.AbstractDome):
             }
 
         return response_obj
-
 
 ##################################################################################################
 # Private Methods
