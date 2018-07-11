@@ -705,7 +705,7 @@ class WeatherPlotter(object):
             plot_filename,
             dpi=self.dpi,
             bbox_inches='tight',
-            bbox_extra_artists=[],
+            bbox_extra_artists=[],  # https://github.com/panoptes/POCS/issues/528
             pad_inches=0.10
         )
 
