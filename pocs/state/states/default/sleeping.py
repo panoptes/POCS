@@ -2,7 +2,7 @@ def on_enter(event_data):
     """ """
     pocs = event_data.model
 
-    if pocs.should_retry is False:
+    if pocs.is_safe() and pocs.should_retry is False:
         pocs.say("Weather is good and it is dark. Something must have gone wrong. " +
                  "Stopping loop.")
         pocs.stop_states()
