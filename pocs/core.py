@@ -122,7 +122,6 @@ class POCS(PanStateMachine, PanBase):
     def should_retry(self):
         return self._obs_run_retries >= 0
 
-
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -181,13 +180,6 @@ class POCS(PanStateMachine, PanBase):
         if self.has_messaging is False:
             self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
-
-        if 'slack_webhook_url' in self.config:
-            try:
-                url = self.config['slack_webhook_url']
-                response = requests.post(url, json={"text": msg})
-            except Exception as e:
-                self.logger.debug("Error posting to slack: {}".format(e))
 
     def send_message(self, msg, channel='POCS'):
         """ Send a message
@@ -404,7 +396,6 @@ class POCS(PanStateMachine, PanBase):
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
 
-
 ##################################################################################################
 # Convenience Methods
 ##################################################################################################
@@ -449,7 +440,6 @@ class POCS(PanStateMachine, PanBase):
         """
         while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
-
 
 ##################################################################################################
 # Class Methods

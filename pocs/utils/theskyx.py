@@ -56,7 +56,6 @@ class TheSkyX(PanBase):
 
             try:
                 response = self.socket.recv(4096).decode()
-                self.logger.debug('Response from reading TSX socket: {}'.format(response))
                 if '|' in response:
                     response, err = response.split('|')
 
