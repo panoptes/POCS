@@ -1,12 +1,15 @@
 #!/bin/bash
 
-SOLVE_FIELD="${PANDIR}/astrometry/bin/solve-field"
 if [ ! -f $SOLVE_FIELD ]
 then
-  echo 2>&1 ""
-  echo 2>&1 "Please install astrometry into ${PANDIR}/astrometry to enable $0"
-  echo 2>&1 ""
-  exit 3 # Command not found
+	SOLVE_FIELD="${PANDIR}/astrometry/bin/solve-field"
+	if [ ! -f $SOLVE_FIELD ]
+	then
+	  echo 2>&1 ""
+	  echo 2>&1 "Please install astrometry into ${PANDIR}/astrometry to enable $0"
+	  echo 2>&1 ""
+	  exit 3 # Command not found
+	 fi
 fi
 
 if [[ $# == 1 ]]; then

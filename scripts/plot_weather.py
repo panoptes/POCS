@@ -701,7 +701,8 @@ class WeatherPlotter(object):
             os.makedirs(plot_dir)
 
         print('Saving Figure: {}'.format(plot_filename))
-        self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
+        self.fig.tight_layout()  # Eliminate extra whitespace in plot
+        self.fig.savefig(plot_filename, dpi=self.dpi, pad_inches=0.10)
 
 
 def moving_average(interval, window_size):

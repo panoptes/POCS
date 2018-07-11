@@ -6,7 +6,6 @@ import re
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
@@ -90,7 +89,19 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     if fname.endswith('.cr2'):
         return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname, **kwargs)
+        new_fname = _make_pretty_from_fits(fname, **kwargs)
+
+        # Symlink latest.jpg to the image; first remove the symlink if it already exists.
+        try:
+            os.unlink('{}/images/latest.jpg'.format(os.getenv('PANDIR')))
+        except Exception:
+            pass
+        try:
+            os.symlink(new_fname, '{}/images/latest.jpg'.format(os.getenv('PANDIR')))
+        except Exception:
+            warn("Can't link latest image")
+
+        return new_fname
 
 
 def _make_pretty_from_fits(

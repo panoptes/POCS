@@ -148,7 +148,7 @@ def test_continue_observation(scheduler):
     assert scheduler.current_observation is not None
     obs = scheduler.current_observation
 
-    time = Time('2016-08-13 13:00:00')
+    time = Time('2016-08-13 12:00:00')
     scheduler.get_observation(time=time)
     assert scheduler.current_observation == obs
 

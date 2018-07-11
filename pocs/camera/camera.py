@@ -250,6 +250,11 @@ class AbstractCamera(PanBase):
 
         file_path = self._process_fits(file_path, info)
 
+        try:
+            info['exp_time'] = info['exp_time'].value
+        except Exception as e:
+            pass
+
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
             try:
