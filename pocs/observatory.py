@@ -52,7 +52,6 @@ class Observatory(PanBase):
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
-        self._coarse_focus_done = False
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
@@ -486,9 +485,6 @@ class Observatory(PanBase):
 
         autofocus_events = dict()
 
-        if coarse is None:
-            coarse = not self._coarse_focus_done
-
         # Start autofocus with each camera
         for cam_name, camera in cameras.items():
             self.logger.debug("Autofocusing camera: {}".format(cam_name))
@@ -510,8 +506,6 @@ class Observatory(PanBase):
                         "Problem running autofocus: {}".format(e))
                 else:
                     autofocus_events[cam_name] = autofocus_event
-
-        self._coarse_focus_done = True
 
         return autofocus_events
 

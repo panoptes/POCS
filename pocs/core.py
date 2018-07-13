@@ -5,7 +5,6 @@ import time
 import warnings
 import multiprocessing
 import zmq
-import requests
 
 from astropy import units as u
 
