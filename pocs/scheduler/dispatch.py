@@ -97,7 +97,7 @@ class Scheduler(BaseScheduler):
         else:
             # Favor the current observation if still available
             if self.current_observation is not None:
-                # Check that the target field is still avialable
+                # Check that the target field is still available
                 end_of_next_set = time + self.current_observation.set_duration
                 can_complete_set = end_of_next_set < common_properties['end_of_night']
                 still_up = self.observation_available(self.current_observation, end_of_next_set)
