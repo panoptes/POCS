@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # If SOLVE_FIELD is not set, try the default; warn if default unavailable.
-SOLVE_FIELD=${SOLVE_FIELD:"${PANDIR}/astrometry/bin/solve-field"}
+SOLVE_FIELD=${SOLVE_FIELD:-"${PANDIR}/astrometry/bin/solve-field"}
 if [ ! -f $SOLVE_FIELD ]
 then
 	echo 2>&1 ""
