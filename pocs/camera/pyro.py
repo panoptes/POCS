@@ -13,7 +13,8 @@ class Camera(AbstractCamera):
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
 
-        self._name_server = self._get_name_server()
+        # Get a proxy for the name server (will raise NamingError if not found)
+        self._name_server = Pyro4.locateNS()
 
     @property
     def name_server(self):
@@ -21,11 +22,10 @@ class Camera(AbstractCamera):
 
     def _get_name_server(self):
         """
-        Tries to find Pyro name server.
+        Tries to find Pyro name server and returns a proxy to it.
         """
         name_server = None
         try:
-            self.logger.debug("Looking for Pyro name server...")
             name_server = Pyro4.locateNS()
         except Pyro4.errors.NamingError:
             err = "No Pyro name server found!"
@@ -33,3 +33,10 @@ class Camera(AbstractCamera):
             raise RuntimeError(err)
 
         return name_server
+
+    def _get_camera_list(self):
+        """
+        Queries the name server for a list of all registered POCS
+        Camera objects.
+        """
+        return self.name_server.list(metadata_all={'POCS', 'Camera'})
