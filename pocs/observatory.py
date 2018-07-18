@@ -187,7 +187,8 @@ class Observatory(PanBase):
 
         # If observation list is empty or a reread is requested
         if (self.scheduler.has_valid_observations is False or
-                kwargs.get('reread_fields_file', False)):
+                kwargs.get('reread_fields_file', False) or
+                self.config['scheduler'].get('check_file', False)):
             self.scheduler.read_field_list()
 
         # This will set the `current_observation`
@@ -454,7 +455,7 @@ class Observatory(PanBase):
 
         return headers
 
-    def autofocus_cameras(self, camera_list=None, coarse=False):
+    def autofocus_cameras(self, camera_list=None, coarse=None):
         """
         Perform autofocus on all cameras with focus capability, or a named subset
         of these. Optionally will perform a coarse autofocus first, otherwise will

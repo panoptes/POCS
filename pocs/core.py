@@ -121,7 +121,6 @@ class POCS(PanStateMachine, PanBase):
     def should_retry(self):
         return self._obs_run_retries >= 0
 
-
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -396,7 +395,6 @@ class POCS(PanStateMachine, PanBase):
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
 
-
 ##################################################################################################
 # Convenience Methods
 ##################################################################################################
@@ -441,7 +439,6 @@ class POCS(PanStateMachine, PanBase):
         """
         while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
-
 
 ##################################################################################################
 # Class Methods

@@ -88,8 +88,8 @@ PANLOG=/var/panoptes/logs
 
 # m h  dom mon dow   command
 @reboot              /bin/bash --login $POCS/scripts/startup/tmux_launch.sh >> $PANLOG/tmux_launch.cron-reboot.log 2>&1
-*/5 *   *   *   *    /bin/bash --login python $POCS/scripts/plot_weather.py >> $PANLOG/plot_weather.cron.log 2>&1
-11  12  *   *   *    /bin/bash --login python $POCS/pocs/utils/data.py >> $PANLOG/update_data.cron.log 2>&1
+*/5 *   *   *   *    /bin/bash --login $POCS/scripts/plot_weather.sh >> $PANLOG/plot_weather.cron.log 2>&1
+11  12  *   *   *    /bin/bash --login $POCS/scripts/download_support_files.sh >> $PANLOG/download_support_files.cron.log 2>&1
 ```
 
 If your values for POCS and PANLOG don't match those shown above, please
@@ -112,9 +112,9 @@ coordinate system data every day at 11 minutes after noon.
 
 ## Execution by `root`
 
-If your crontab does not support the `@reboot` directive (you can 
-If necessary, you can modify the Linux boot scripts to start the
-PANOPTES software. For that, we provide the script `su_panoptes.sh`.
+If your crontab does not support the `@reboot` directive, you can modify
+the Linux boot scripts to start the PANOPTES software. For that, we
+provide the script `su_panoptes.sh`.
 
 First, copy that file to /etc:
 

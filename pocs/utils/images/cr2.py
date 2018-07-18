@@ -17,7 +17,7 @@ from pocs.utils.images import fits as fits_utils
 def cr2_to_fits(
         cr2_fname,
         fits_fname=None,
-        clobber=False,
+        overwrite=False,
         headers={},
         fits_headers={},
         remove_cr2=False,
@@ -37,7 +37,7 @@ def cr2_to_fits(
     Keyword Arguments:
         fits_fname {str} -- Name of FITS file to output. If None (default), the `cr2_fname` is used
             as base (default: {None})
-        clobber {bool} -- A bool indicating if existing FITS should be clobbered (default: {False})
+        overwrite {bool} -- A bool indicating if existing FITS should be overwritten (default: {False})
         headers {dict} -- Header data that is filtered and added to the FITS header.
         fits_headers {dict} -- Header data that is added to the FITS header without filtering.
         remove_cr2 {bool} -- A bool indicating if the CR2 should be removed (default: {False})
@@ -51,7 +51,7 @@ def cr2_to_fits(
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
 
-    if not os.path.exists(fits_fname) or clobber:
+    if not os.path.exists(fits_fname) or overwrite:
         if verbose:
             print("Converting CR2 to PGM: {}".format(cr2_fname))
 
@@ -100,7 +100,7 @@ def cr2_to_fits(
             if verbose:
                 print("Saving fits file to: {}".format(fits_fname))
 
-            hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
+            hdu.writeto(fits_fname, output_verify='silentfix', overwrite=overwrite)
         except Exception as e:
             warn("Problem writing FITS file: {}".format(e))
         else:
@@ -116,7 +116,7 @@ def cr2_to_pgm(
         cr2_fname,
         pgm_fname=None,
         dcraw='dcraw',
-        clobber=True, *args,
+        overwrite=True, *args,
         **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
@@ -134,7 +134,7 @@ def cr2_to_pgm(
         pgm_fname {str} -- Name of PGM file to output, if None (default) then
                            use same name as CR2 (default: {None})
         dcraw {str} -- Path to installed `dcraw` (default: {'dcraw'})
-        clobber {bool} -- A bool indicating if existing PGM should be clobbered
+        overwrite {bool} -- A bool indicating if existing PGM should be overwritten
                          (default: {True})
 
     Returns:
@@ -152,7 +152,7 @@ def cr2_to_pgm(
     if pgm_fname is None:
         pgm_fname = cr2_fname.replace('.cr2', '.pgm')
 
-    if os.path.exists(pgm_fname) and not clobber:
+    if os.path.exists(pgm_fname) and not overwrite:
         if verbose:
             print("PGM file exists, returning existing file: {}".format(
                   pgm_fname))
@@ -227,7 +227,7 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
         fname(str):         Filename of PGM to be converted
         byteorder(str):     Big endian
         remove_after(bool): Delete fname file after reading, defaults to False.
-        clobber(bool):      Clobber existing PGM or not, defaults to True
+        overwrite(bool):      overwrite existing PGM or not, defaults to True
 
     Returns:
         numpy.array:        The raw data from the PGMx

@@ -695,8 +695,19 @@ class WeatherPlotter(object):
             plot_filename = os.path.join(os.path.expandvars(
                 '$PANDIR'), 'weather_plots', plot_filename)
 
+        plot_filename = os.path.abspath(plot_filename)
+        plot_dir = os.path.dirname(plot_filename)
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+
         print('Saving Figure: {}'.format(plot_filename))
-        self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
+        self.fig.savefig(
+            plot_filename,
+            dpi=self.dpi,
+            bbox_inches='tight',
+            bbox_extra_artists=[],  # https://github.com/panoptes/POCS/issues/528
+            pad_inches=0.10
+        )
 
 
 def moving_average(interval, window_size):

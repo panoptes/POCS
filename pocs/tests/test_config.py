@@ -16,12 +16,12 @@ def test_load_simulator(config):
     assert 'night' in config['simulator']
 
 
-def test_no_clobber(config):
+def test_no_overwrite(config):
     with pytest.warns(UserWarning):
-        save_config('pocs', config, clobber=False)
+        save_config('pocs', config, overwrite=False)
 
 
-def test_clobber(config):
+def test_overwrite(config):
 
     config01 = {
         'foo': 'bar'

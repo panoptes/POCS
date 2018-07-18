@@ -13,3 +13,4 @@ ignore:
   - "pocs/mount/serial.py"
   - "pocs/mount/ioptron.py"
   - "pocs/focuser/birger.py"
+  - "pocs/focuser/focuslynx.py"
