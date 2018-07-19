@@ -1,6 +1,6 @@
 # PANOPTES development container
 
-FROM ubuntu:16.04 as build-env
+FROM ubuntu as build-env
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pan_dir=/var/panoptes
@@ -19,7 +19,7 @@ ENV PANUSER root
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
 	&& apt-get update --fix-missing \
 	&& apt-get -y full-upgrade \
-	&& apt-get -y install wget bzip2 ca-certificates build-essential sudo python3-numpy git \
+	&& apt-get -y install wget build-essential zlib1g-dev bzip2 ca-certificates astrometry.net \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& wget --quiet https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/install-dependencies.sh -O ~/install-pocs-dependencies.sh \
 	&& wget --quiet https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/apt-packages-list.txt -O ~/apt-packages-list.txt  \
@@ -28,23 +28,23 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
 	&& rm ~/install-pocs-dependencies.sh \
 	&& rm ~/conda-packages-list.txt \
 	&& rm ~/apt-packages-list.txt \
-	&& echo 'export PATH=$PANDIR/astrometry/bin:/opt/conda/bin:$PATH' > /root/.bashrc \
+	&& echo 'export PATH=/opt/conda/bin:$PATH' > /root/.bashrc \
 	&& mkdir -p $POCS \
 	&& mkdir -p $PAWS \
 	&& mkdir -p $PANLOG \
     && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/anaconda.sh \
     && /bin/bash ~/anaconda.sh -b -p /opt/conda \
     && rm ~/anaconda.sh \
-	&& /opt/conda/bin/conda install --yes -c conda-forge jupyterlab \
 	&& cd $pan_dir \
-	&& git clone https://github.com/panoptes/POCS \
+    && wget --quiet https://github.com/panoptes/POCS/archive/develop.tar.gz -O POCS.tar.gz \
+    && tar zxf POCS.tar.gz -C $POCS --strip-components=1 \
+    && rm POCS.tar.gz \
 	&& cd $POCS && /opt/conda/bin/pip install -Ur requirements.txt \
+	&& /opt/conda/bin/pip install -U setuptools \
+	&& /opt/conda/bin/python setup.py install \
 	&& cd $PANDIR \
-	&& git clone https://github.com/panoptes/PAWS \
-	&& cd $PAWS && /opt/conda/bin/pip install -Ur requirements.txt \
 	&& /opt/conda/bin/conda clean --all --yes
 
 WORKDIR ${POCS}
 
-# Added by PANOPTES install-dependencies.sh
-CMD ["/opt/conda/bin/jupyter-lab", "--no-browser", "--ip=0.0.0.0", "--port=9000", "--allow-root"]
+CMD ["/opt/conda/bin/python", "/var/panoptes/POCS/scripts/run_messaging_hub.py", "--from_config"]
