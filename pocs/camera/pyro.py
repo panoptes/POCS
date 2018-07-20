@@ -8,12 +8,13 @@ from threading import Lock
 from astropy import units as u
 import Pyro4
 
+from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 
 
 class Camera(AbstractCamera):
     """
-    Class representing the interface to a distributed array of cameras
+    Class representing the client side interface to a distributed array of cameras
     """
     def __init__(self,
                  name='Pyro Camera Array',
@@ -215,3 +216,12 @@ class Camera(AbstractCamera):
             raise RuntimeError(err)
 
         return name_server
+
+
+class CameraServer(PanBase):
+    """
+    Wrapper for the camera class for use as a Pyro camera server
+    """
+    def __init__(self):
+        # Pyro classes ideally have no constructor arguments. Do it all from config file.
+        super().__init__()

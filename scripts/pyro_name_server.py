@@ -5,6 +5,7 @@ from Pyro4 import naming, errors
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", help="hostname or IP address to bind the server on")
+parser.add_argument("--port", help="port number to bind the server on")
 args = parser.parse_args()
 
 try:
@@ -20,7 +21,9 @@ except errors.NamingError:
         gateway_IP, interface = default_gateway[netifaces.AF_INET]
         print('Found default gateway {} using interface {}'.format(gateway_IP, interface))
         # Get the IP addresses from the interface
-        addresses = [address['addr'] for address in netifaces.ifaddresses(interface)[netifaces.AF_INET]]
+        addresses = []
+        for address in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+            addresses.append(address['addr'])
         # This will be a list with one or more entries. Probably want the one that starts
         # the same as the default gateway's IP.
         if len(addresses) > 1:
@@ -39,6 +42,6 @@ except errors.NamingError:
         host = args.host
 
     print("Starting Pyro name server... (Control-C/Command-C to exit)")
-    naming.startNSloop(host=host)
+    naming.startNSloop(host=host, port=args.port)
 else:
     print("Pyro name server {} already running! Exiting...".format(name_server))

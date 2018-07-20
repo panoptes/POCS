@@ -2,18 +2,18 @@
 import argparse
 import Pyro4
 
-from pocs.camera.simulator import Camera
+from pocs.utils import config
+from pocs.camera.pyro import CameraServer
 
 parser = argparse.ArgumentParser()
-parser.add_argument("host", help="hostname or IP address to bind the server on")
+parser.add_argument("--ignore_local",
+                    help="ignore pyro_camera_local.yaml config file",
+                    action="store_true")
 args = parser.parse_args()
+config = config.load_config(config_files=['pyro_camera.yaml'], ignore_local=args.ignore_local)
 
-ExposedCamera = Pyro4.expose(Camera)
-
-name = "camera.simulator"
-
-with Pyro4.Daemon(host=args.host) as daemon:
+with Pyro4.Daemon(host=config['host'], port=config['port']) as daemon:
     name_server = Pyro4.locateNS()
-    uri = daemon.register(ExposedCamera)
-    name_server.register(name, uri, metadata={"POCS", "Camera", "simulator"})
+    uri = daemon.register(CameraServer)
+    name_server.register(config['name'], uri, metadata={"POCS", "Camera", "simulator"})
     daemon.requestLoop()
