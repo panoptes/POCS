@@ -13,13 +13,14 @@ ENV PANLOG $PANDIR/logs
 ENV POCS $PANDIR/POCS  
 ENV PAWS $PANDIR/PAWS  
 ENV PANUSER root
+ENV SOLVE_FIELD=/usr/bin/solve-field
 
 # Use "bash" as replacement for	"sh"
 # Note: I don't think this is the preferred way to do this anymore
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
 	&& apt-get update --fix-missing \
 	&& apt-get -y full-upgrade \
-	&& apt-get -y install wget build-essential zlib1g-dev bzip2 ca-certificates astrometry.net \
+	&& apt-get -y install wget build-essential zlib1g-dev bzip2 ca-certificates astrometry.net git \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& wget --quiet https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/install-dependencies.sh -O ~/install-pocs-dependencies.sh \
 	&& wget --quiet https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/apt-packages-list.txt -O ~/apt-packages-list.txt  \
@@ -47,4 +48,4 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
 
 WORKDIR ${POCS}
 
-CMD ["/opt/conda/bin/python", "/var/panoptes/POCS/scripts/run_messaging_hub.py", "--from_config"]
+CMD ["/bin/bash"]
