@@ -64,3 +64,8 @@ messaging:
 #         output_timestamp: False
 
 state_machine: simple_state_table
+# Default coordinates to take evening flats
+flat_field:
+    twilight:
+        alt: 70
+        az: 120

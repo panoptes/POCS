@@ -217,12 +217,27 @@ class PanStateMachine(Machine):
 
         self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
-        # It's always safe to be in some states
-        if event_data and event_data.event.name in [
-                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
-            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
-            is_safe = True
-        else:
+        always_safe = [
+            'park',
+            'set_park',
+            'clean_up',
+            'goto_sleep',
+            'get_ready',
+        ]
+
+        safe_when_dark = [
+            'calibrating'
+        ]
+
+        try:
+            if event_data.event.name in always_safe:
+                self.logger.debug("Always safe to move to {}".format(event_data.event.name))
+                is_safe = True
+            elif event_data.event.name in safe_when_dark:
+                is_safe = self.is_dark() and self.has_free_space()
+            else:
+                is_safe = self.is_safe()
+        except Exception as e:
             is_safe = self.is_safe()
 
         return is_safe
