@@ -6,6 +6,7 @@ states:
     - sleeping
     - housekeeping
     - ready
+    - calibrating
     - scheduling
     - slewing
     - pointing
@@ -17,6 +18,7 @@ transitions:
     -
         source:
             - ready
+            - calibrating
             - scheduling
             - slewing
             - pointing
@@ -49,6 +51,10 @@ transitions:
         conditions: mount_is_initialized
     -
         source: ready
+        dest: calibrating
+        trigger: calibrate
+    -
+        source: calibrating
         dest: scheduling
         trigger: schedule
     -

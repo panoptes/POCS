@@ -8,6 +8,8 @@ from glob import glob
 
 from astroplan import Observer
 from astropy import units as u
+from astropy.io import fits
+from astropy import stats
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
@@ -18,6 +20,9 @@ from pocs.images import Image
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import Altitude
+from pocs.scheduler.observation import Observation
+from pocs.scheduler.field import Field
+from pocs import utils
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
@@ -60,6 +65,8 @@ class Observatory(PanBase):
         self.logger.info('\tSetting up scheduler')
         self.scheduler = None
         self._create_scheduler()
+
+        self.take_flat_fields = kwargs.get('take_flat_fields', True)
 
         self.current_offset_info = None
 
@@ -378,8 +385,9 @@ class Observatory(PanBase):
                 # Adjust tracking for up to 30 seconds then fail if not done.
                 start_tracking_time = current_time()
                 while self.mount.is_tracking is False:
-                    if (current_time() - start_tracking_time).sec > 30:
-                        raise Exception("Trying to adjust Dec tracking for more than 30 seconds")
+                    if (current_time() - start_tracking_time).sec * 1000 > max_time:
+                        raise Exception(
+                            "Trying to adjust Dec tracking for more than {} seconds".format(int(max_time / 1000)))
 
                     self.logger.debug("Waiting for Dec tracking adjustment")
                     time.sleep(0.1)
@@ -398,8 +406,9 @@ class Observatory(PanBase):
                 # Adjust tracking for up to 30 seconds then fail if not done.
                 start_tracking_time = current_time()
                 while self.mount.is_tracking is False:
-                    if (current_time() - start_tracking_time).sec > 30:
-                        raise Exception("Trying to adjust RA tracking for more than 30 seconds")
+                    if (current_time() - start_tracking_time).sec * 1000 > max_time:
+                        raise Exception(
+                            "Trying to adjust RA tracking for more than {} seconds".format(int(max_time/1000)))
 
                     self.logger.debug("Waiting for RA tracking adjustment")
                     time.sleep(0.1)
@@ -536,6 +545,210 @@ class Observatory(PanBase):
         if not self.dome.is_closed:
             self.logger.info('Closed dome')
         return self.dome.close()
+
+    def take_evening_flats(self,
+                           alt=None,
+                           az=None,
+                           min_counts=1000,
+                           max_counts=12000,
+                           bias=2048,
+                           max_exptime=60.,
+                           camera_list=None,
+                           target_adu_percentage=0.5,
+                           max_num_exposures=10,
+                           take_darks=False,
+                           *args, **kwargs
+                           ):
+        """Take flat fields
+
+        Args:
+            alt (float, optional): Altitude for flats
+            az (float, optional): Azimuth for flats
+            min_counts (int, optional): Minimum ADU count
+            max_counts (int, optional): Maximum ADU count
+            bias (int, optional): Default bias for the cameras
+            max_exptime (float, optional): Maximum exposure time before stopping
+            camera_list (list, optional): List of cameras to use for flat-fielding
+            target_adu_percentage (float, optional): Exposure time will be adjust so
+                that counts are close to: target * (`min_counts` + `max_counts`). Default
+                to 0.5
+            max_num_exposures (int, optional): Maximum number of flats to take
+            take_darks (bool, optional): If dark fields matching flat fields should be
+                taken, default False.
+            *args (TYPE): Description
+            **kwargs (TYPE): Description
+        """
+        target_adu = target_adu_percentage * (min_counts + max_counts)
+
+        image_dir = self.config['directories']['images']
+
+        flat_obs = self._create_flat_field_observation(alt=alt, az=az)
+
+        if camera_list is None:
+            camera_list = list(self.cameras.keys())
+
+        # Start with 1 second exposures for each camera
+        exp_times = {cam_name: [1. * u.second] for cam_name in camera_list}
+
+        # Loop until conditions are met for flat-fielding
+        while True:
+            self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
+            self.mount.set_target_coordinates(flat_obs.field)
+            self.mount.slew_to_target()
+            self.status()  # Seems to help with reading coords
+
+            fits_headers = self.get_standard_headers(observation=flat_obs)
+
+            start_time = current_time(flatten=True)
+            fits_headers['start_time'] = start_time
+
+            camera_events = dict()
+
+            # Take the observations
+            for cam_name in camera_list:
+
+                camera = self.cameras[cam_name]
+                exp_time = exp_times[cam_name][-1].value
+
+                filename = "{}/flats/{}/{}/{}.{}".format(
+                    image_dir,
+                    camera.uid,
+                    flat_obs.seq_time,
+                    'flat_{:02d}'.format(flat_obs.current_exp),
+                    camera.file_extension)
+
+                # Take picture and get event
+                camera_event = camera.take_observation(
+                    flat_obs,
+                    fits_headers,
+                    filename=filename,
+                    exp_time=exp_time
+                )
+
+                camera_events[cam_name] = {
+                    'event': camera_event,
+                    'filename': filename,
+                }
+
+            # Block until done exposing on all cameras
+            while not all([info['event'].is_set() for info in camera_events.values()]):
+                self.logger.debug('Waiting for flat-field image')
+                time.sleep(1)
+
+            # Check the counts for each image
+            is_saturated = False
+            for cam_name, info in camera_events.items():
+                img_file = info['filename'].replace('.cr2', '.fits')
+                self.logger.debug("Checking counts for {}".format(img_file))
+
+                data = fits.getdata(img_file)
+
+                mean, median, stddev = stats.sigma_clipped_stats(data, iters=2)
+
+                counts = mean - bias
+
+                # Don't deal with negative values
+                if counts <= 0:
+                    counts = 10
+
+                self.logger.debug("Counts: {}".format(counts))
+
+                # If we are saturating then wait a bit and redo
+                if counts >= max_counts:
+                    self.logger.debug("Image is saturated")
+                    is_saturated = True
+
+                if counts < min_counts:
+                    self.logger.debug("Counts are too low, flat should be discarded")
+
+                elapsed_time = (current_time() - start_time).sec
+                self.logger.debug("Elapsed time: {}".format(elapsed_time))
+
+                # Get suggested exposure time
+                previous_exp_time = exp_times[cam_name][-1].value
+
+                exp_time = int(previous_exp_time * (target_adu / counts) *
+                               (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
+                exp_times[cam_name].append(exp_time * u.second)
+
+            self.logger.debug("Checking for long exposures")
+            # Stop flats if any time is greater than max
+            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
+                self.logger.debug("Exposure times greater than max, stopping flat fields")
+                break
+
+            self.logger.debug("Checking for too many exposures")
+            # Stop flats if we are going on too long
+            if any([len(t) >= max_num_exposures for t in exp_times.values()]):
+                self.logger.debug("Too many flats, quitting")
+                break
+
+            self.logger.debug("Checking for saturation on short exposure")
+            if is_saturated and exp_times[cam_name][-1].value <= 2:
+                self.logger.debug(
+                    "Saturated with short exposure, waiting 30 seconds before next exposure")
+                max_num_exposures += 1
+                time.sleep(30)
+                break
+
+            self.logger.debug("Incrementing exposure count")
+            flat_obs.current_exp += 1
+
+        # Add a bias exposure at beginning
+        for cam_name in camera_list:
+            exp_times[cam_name].insert(0, 0 * u.second)
+
+            # Record how many exposures we took
+            num_exposures = len(exp_times[cam_name])
+
+        # Reset to first exposure so we can loop through again taking darks
+        flat_obs.current_exp = 0
+
+        if take_darks:
+            # Take darks
+            for i in range(num_exposures):
+                self.logger.debug("Slewing to dark-field coords: {}".format(flat_obs.field))
+                self.mount.set_target_coordinates(flat_obs.field)
+                self.mount.slew_to_target()
+                self.status()
+
+                for cam_name in camera_list:
+
+                    camera = self.cameras[cam_name]
+
+                    filename = "{}/darks/{}/{}/{}.{}".format(
+                        image_dir,
+                        camera.uid,
+                        flat_obs.seq_time,
+                        'dark_{:02d}'.format(flat_obs.current_exp),
+                        camera.file_extension)
+
+                    exp_time = exp_times[cam_name][i]
+                    if exp_time > max_exptime:
+                        continue
+
+                    # Take picture and wait for result
+                    camera_event = camera.take_observation(
+                        flat_obs,
+                        fits_headers,
+                        filename=filename,
+                        exp_time=exp_times[cam_name][i],
+                        dark=True
+                    )
+
+                    camera_events[cam_name] = {
+                        'event': camera_event,
+                        'filename': filename,
+                    }
+
+                # Will block here until done exposing on all cameras
+                while not all([info['event'].is_set() for info in camera_events.values()]):
+                    self.logger.debug('Waiting for dark-field image')
+                    time.sleep(1)
+
+                flat_obs.current_exp = i
+
 
 ##########################################################################
 # Private Methods
@@ -824,3 +1037,21 @@ class Observatory(PanBase):
         else:
             raise error.NotFound(
                 msg="Fields file does not exist: {}".format(fields_file))
+
+    def _create_flat_field_observation(self, alt=None, az=None):
+        if alt is None and az is None:
+            flat_config = self.config['flat_field']['twilight']
+            alt = flat_config['alt']
+            az = flat_config['az']
+
+        flat_coords = utils.altaz_to_radec(
+            alt=alt, az=az, location=self.earth_location, obstime=current_time())
+
+        self.logger.debug("Creating flat-field observation")
+        field = Field('Evening Flats', flat_coords.to_string('hmsdms'))
+        flat_obs = Observation(field, exp_time=1. * u.second)
+        flat_obs.seq_time = utils.current_time(flatten=True)
+
+        self.logger.debug("Flat-field observation: {}".format(flat_obs))
+
+        return flat_obs
