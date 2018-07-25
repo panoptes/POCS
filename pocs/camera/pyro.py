@@ -105,7 +105,8 @@ class Camera(AbstractCamera):
                 timeout = timeout.value
 
         # Start the exposure on all cameras
-        for cam_name, cam_proxy in self.cameras:
+        exposure_results = {}
+        for cam_name, cam_proxy in self.cameras.items():
             self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds,
                                                                            cam_name,
                                                                            filename))
@@ -230,7 +231,7 @@ class Camera(AbstractCamera):
             if timeout is not None:
                 wait_start_time = time.time()
             future_result.wait(timeout)
-            result[name] = future_result.value(timeout)
+            results[name] = future_result.value
             if timeout is not None:
                 # Need to adjust timeout, otherwise we're resetting the clock each time a
                 # single result returns.
