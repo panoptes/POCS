@@ -559,7 +559,29 @@ class Observatory(PanBase):
                            take_darks=False,
                            *args, **kwargs
                            ):
-        """Take flat fields
+        """Take flat fields.
+
+        This method will slew the mount to the given AltAz coordiates (which should
+        be roughly opposite of the setting sun) and then begin the flat-field
+        procedure. The first image starts with a simple 1 second exposure and
+        after each image is taken the average counts are anazlyzed and the exposure
+        time is adjusted to try to keep the counts close to `target_adu_percentage`
+        of the `(max_counts + min_counts) - bias`.
+
+        The next exposure time is calculated as:
+
+        ```
+            exp_time = int(previous_exp_time * (target_adu / counts) *
+                       (2.0 ** (elapsed_time / 180.0)) + 0.5)
+        ```
+
+        Under- and over-exposed images are rejected. If image is saturated with
+        a short exposure the method will wait 60 seconds before beginning next
+        exposure.
+
+        Optionally, the method can also take dark exposures of equal exposure
+        time to each flat-field image.
+
 
         Args:
             alt (float, optional): Altitude for flats
@@ -689,7 +711,7 @@ class Observatory(PanBase):
                 self.logger.debug(
                     "Saturated with short exposure, waiting 30 seconds before next exposure")
                 max_num_exposures += 1
-                time.sleep(30)
+                time.sleep(60)
                 break
 
             self.logger.debug("Incrementing exposure count")
