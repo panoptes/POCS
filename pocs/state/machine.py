@@ -124,8 +124,9 @@ class PanStateMachine(Machine):
 
                 # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
-                    if self.is_safe() is not True:
-                        self.wait_until_safe()
+                    if self.observatory.is_dark is False:
+                        self.logger.warning("Waiting until evening")
+                        self.wait_until_dark()
 
                 try:
                     state_changed = self.goto_next_state()
@@ -226,7 +227,7 @@ class PanStateMachine(Machine):
         ]
 
         safe_when_dark = [
-            'calibrating'
+            'calibrate'
         ]
 
         try:

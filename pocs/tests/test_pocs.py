@@ -228,8 +228,8 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return msg_type, msg_obj
 
 
-def test_run_wait_until_safe(observatory):
-    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+def test_run_wait_until_evening(observatory):
+    os.environ['POCSTIME'] = '2016-09-09 03:00:00'
 
     # Make sure DB is clear for current weather
     observatory.db.clear_current('weather')
@@ -237,7 +237,7 @@ def test_run_wait_until_safe(observatory):
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
         # Remove weather simulator, else it would always be safe.
-        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
+        observatory.config['simulator'] = hardware.get_all_names(without=['night'])
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=5)
@@ -253,10 +253,10 @@ def test_run_wait_until_safe(observatory):
 
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
-        assert pocs.is_weather_safe() is False
+        assert pocs.observatory.is_dark is False
         pocs.send_message('RUNNING')
         pocs.run(run_once=True, exit_when_done=True)
-        assert pocs.is_weather_safe() is True
+        assert pocs.observatory.is_dark is True
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 
@@ -272,9 +272,9 @@ def test_run_wait_until_safe(observatory):
 
         time.sleep(2)
         # Insert a dummy weather record to break wait
-        observatory.db.insert_current('weather', {'safe': True})
+        os.environ['POCSTIME'] = '2016-09-09 05:00:00'
 
-        assert wait_for_state(sub, 'scheduling')
+        assert wait_for_state(sub, 'ready')
     finally:
         pub.send_message('POCS-CMD', 'shutdown')
         pocs_thread.join(timeout=30)

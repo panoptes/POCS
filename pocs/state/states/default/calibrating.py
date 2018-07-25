@@ -11,15 +11,11 @@ def on_enter(event_data):
 
     pocs.next_state = 'parking'
 
-    twilight_horizon = pocs.config['location']['twilight_horizon']
-    try:
-        twilight_horizon = twilight_horizon.value
-    except AttributeError:
-        pass
-
     try:
 
         if pocs.observatory.take_flat_fields:
+            observe_horizon = pocs.config['location']['observe_horizon'].value
+            twilight_horizon = pocs.config['location']['twilight_horizon'].value
 
             # Wait for twilight if needed
             while True:
@@ -29,10 +25,10 @@ def on_enter(event_data):
                 ).alt
 
                 # Take the flats
-                if sun_pos.value <= 0 and sun_pos.value > twilight_horizon:
+                if sun_pos.value <= twilight_horizon and sun_pos.value > observe_horizon:
                     pocs.say("Taking some flat fields to start the night")
                     pocs.observatory.take_evening_flats()
-                elif sun_pos.value <= twilight_horizon:
+                elif sun_pos.value <= observe_horizon:
                     pocs.say("Done with calibration frames")
                     break
 

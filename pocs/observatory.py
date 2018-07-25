@@ -79,7 +79,7 @@ class Observatory(PanBase):
 
     @property
     def is_dark(self):
-        horizon = self.location.get('twilight_horizon', -18 * u.degree)
+        horizon = self.location.get('twilight_horizon', 0 * u.degree)
 
         t0 = current_time()
         is_dark = self.observer.is_night(t0, horizon=horizon)
@@ -785,8 +785,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            twilight_horizon = config_site.get(
-                'twilight_horizon', -18 * u.degree)
+            observe_horizon = config_site.get(
+                'observe_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -797,7 +797,7 @@ class Observatory(PanBase):
                 'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon,
-                'twilight_horizon': twilight_horizon,
+                'observe_horizon': observe_horizon,
             }
             self.logger.debug("Location: {}".format(self.location))
 

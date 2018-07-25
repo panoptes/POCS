@@ -431,13 +431,14 @@ class POCS(PanStateMachine, PanBase):
         if delay > 0.0:
             time.sleep(delay)
 
-    def wait_until_safe(self):
-        """ Waits until weather is safe.
+    def wait_until_dark(self):
+        """ Waits until it is dark.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe(no_warning=True):
+        while not self.observatory.is_dark:
+            self.logger.warning("Still Waiting until evening")
             self.sleep(delay=self._safe_delay)
 
 ##################################################################################################
