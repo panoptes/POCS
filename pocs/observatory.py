@@ -561,8 +561,8 @@ class Observatory(PanBase):
                            ):
         """Take flat fields.
 
-        This method will slew the mount to the given AltAz coordiates (which should
-        be roughly opposite of the setting sun) and then begin the flat-field
+        This method will slew the mount to the given AltAz coordinates (which
+        should be roughly opposite of the setting sun) and then begin the flat-field
         procedure. The first image starts with a simple 1 second exposure and
         after each image is taken the average counts are anazlyzed and the exposure
         time is adjusted to try to keep the counts close to `target_adu_percentage`
