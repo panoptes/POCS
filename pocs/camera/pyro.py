@@ -1,4 +1,5 @@
-from time import time
+import os
+import time
 from warnings import warn
 from threading import Event
 from threading import Timer
@@ -9,6 +10,9 @@ from astropy import units as u
 import Pyro4
 
 from pocs.base import PanBase
+from pocs.utils import config
+from pocs.utils.logger import get_root_logger
+from pocs.utils import load_module
 from pocs.camera import AbstractCamera
 
 
@@ -24,8 +28,47 @@ class Camera(AbstractCamera):
 
         # Get a proxy for the name server (will raise NamingError if not found)
         self._name_server = Pyro4.locateNS()
+        # Connect to cameras
+        self.connect()
 
 # Methods
+
+    def connect(self):
+        """
+        Find and (re)connect to all the distributed cameras.
+        """
+        # Find all the registered cameras.
+        camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
+        msg = "Found {} cameras registered with Pyro name server".format(len(camera_uris))
+        self.logger.debug(msg)
+
+        # Get a proxy for each camera
+        self.cameras = {}
+        for cam_name, cam_uri in camera_uris.items():
+            self.logger.debug("Getting proxy for {}...".format(cam_name))
+            try:
+                self.cameras[cam_name] = Pyro4.Proxy(cam_uri)
+            except Pyro4.errors.NamingError as err:
+                msg = "Couldn't get proxy to camera {}: {}".format(cam_nam, err)
+                warn(msg)
+                self.logger.error(msg)
+                self.cameras.pop(cam_name)
+            # Set aync mode
+            self.cameras[cam_name]._pyroAsync()
+
+        # Force each camera proxy to connect by getting the camera uids.
+        # This will trigger the remote object creation & (re)initialise the camera & focuser,
+        # which can take a long time with real hardware, so do this in parallel.
+        async_results = {}
+        for cam_name, cam_proxy in self.cameras.items():
+            self.logger.debug("Connecting to {}...".format(cam_name))
+            async_results[cam_name] = cam_proxy.get_uid()
+
+        self.uids = {}
+        for cam_name, result in async_results.items():
+            self.uids[cam_name] = result.value
+
+        self.logger.debug("Got camera UIDs: {}".format(self.uids))
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -56,22 +99,22 @@ class Camera(AbstractCamera):
             seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        # Find registered cameras and start exposure on each.
-        cameras = self._name_server.list(metadata_all={'POCS', 'Camera'})
-        exposure_results = {}
-        for cam_name, cam_uri in cameras.items():
+        if timeout is not None:
+            if isinstance(timeout, u.Quantity):
+                timeout = timeout.to(u.second)
+                timeout = timeout.value
+
+        # Start the exposure on all cameras
+        for cam_name, cam_proxy in self.cameras:
             self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds,
                                                                            cam_name,
                                                                            filename))
-            with Pyro4.Proxy(cam_uri) as cam_proxy:
-                # Put the proxy into async mode
-                Pyro4.async(cam_proxy)
-                exposure_results[cam_name] = cam_proxy.take_exposure(seconds=seconds,
-                                                                     filename=filename,
-                                                                     dark=dark,
-                                                                     blocking=True,
-                                                                     *args,
-                                                                     **kwargs)
+            exposure_results[cam_name] = cam_proxy.take_exposure(seconds=seconds,
+                                                                 filename=filename,
+                                                                 dark=dark,
+                                                                 *args,
+                                                                 **kwargs)
+
         # Start a thread that will set an event once all exposures have completed
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
@@ -163,8 +206,6 @@ class Camera(AbstractCamera):
         for cam_name, cam_uri in cameras.items():
             self.logger.debug('Starting autofocus on {}'.format(cam_name))
             with Pyro4.Proxy(cam_uri) as cam_proxy:
-                # Put the proxy into async mode
-                Pyro4.async(cam_proxy)
                 autofocus_results[cam_name] = cam_proxy.autofocus(*args,
                                                                   **autofocus_kwargs,
                                                                   **kwargs)
@@ -182,46 +223,118 @@ class Camera(AbstractCamera):
 
 # Private Methods
 
-    def _async_wait(self, async_results, async_event, timeout=None):
-        if timeout is not None:
-            if isinstance(timeout, u.Quantity):
-                timeout = timeout.to(u.second)
-                timeout = timeout.value
+    def _async_wait(self, future_results, event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
-        for result in async_results.values():
+        results = {}
+        for name, future_result in future_results.items():
             if timeout is not None:
-                wait_start_time = time()
-            result.wait(timeout)
+                wait_start_time = time.time()
+            future_result.wait(timeout)
+            result[name] = future_result.value(timeout)
             if timeout is not None:
                 # Need to adjust timeout, otherwise we're resetting the clock each time a
-                # result returns.
-                waited = time() - wait_start_time
+                # single result returns.
+                waited = time.time() - wait_start_time
                 if waited < timeout:
                     timeout = timeout - waited
                 else:
                     timeout = 0
 
-        async_event.set()
+        if event is not None:
+            event.set()
 
-    def _get_name_server(self):
-        """
-        Tries to find Pyro name server and returns a proxy to it.
-        """
-        name_server = None
-        try:
-            name_server = Pyro4.locateNS()
-        except Pyro4.errors.NamingError:
-            err = "No Pyro name server found!"
-            self.logger.error(err)
-            raise RuntimeError(err)
-
-        return name_server
+        return results
 
 
-class CameraServer(PanBase):
+@Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
+class CameraServer(object):
     """
     Wrapper for the camera class for use as a Pyro camera server
     """
     def __init__(self):
-        # Pyro classes ideally have no constructor arguments. Do it all from config file.
-        super().__init__()
+        # Pyro classes ideally have no arguments in for the constructor. Do it all from config file.
+        self.config = config.load_config(config_files=['pyro_camera.yaml'])
+        self.name = self.config.get('name')
+        self.host = self.config.get('host')
+        self.port = self.config.get('port')
+        self.user = os.getenv('PANUSER', 'panoptes')
+
+        camera_config = self.config.get('camera')
+        camera_model = camera_config.get('model')
+        camera_port = camera_config.get('port')
+        camera_set_point = camera_config.get('set_point', None)
+        camera_filter_type = camera_config.get('filter_type', None)
+        camera_readout_time = camera_config.get('readout_time', None)
+        camera_focuser = camera_config.get('focuser', None)
+
+        module = load_module('pocs.camera.{}'.format(camera_model))
+        self._camera = module.Camera(name=self.name,
+                                     model=camera_model,
+                                     port=camera_port,
+                                     set_point=camera_set_point,
+                                     filter_type=camera_filter_type,
+                                     focuser=camera_focuser,
+                                     readout_time=camera_readout_time,
+                                     logger=get_root_logger(self.name))
+
+# Properties
+
+    @property
+    def uid(self):
+        return self._camera.uid
+
+# Methods
+
+    def get_uid(self):
+        return self._camera.uid
+
+    def take_observation(self, oservation, headers=None, filename=None, *args, **kwargs):
+        return self._camera.take_observation(self, observation, headers=None, filename=None,
+                                             *args, *kwargs)
+
+    def take_exposure(self, seconds, filename, dark, *args, **kwargs):
+        # Start the exposure and wait for it complete
+        self._camera.take_exposure(seconds, filename, dark, blocking=True, *args, **kwargs)
+        # Return the user@host:/path for created file to enable it to be moved over the network.
+        return "{}@{}:{}".format(self.user, self.host, os.path.abspath(filename))
+
+    def process_exposure(self, info, observation_event, exposure_event=None):
+        return self._camera.process_exposure(info, observation_event, exposure_event)
+
+    def autofocus(self,
+                  seconds=None,
+                  focus_range=None,
+                  focus_step=None,
+                  thumbnail_size=None,
+                  keep_files=None,
+                  take_dark=None,
+                  merit_function='vollath_F4',
+                  merit_function_kwargs={},
+                  mask_dilations=None,
+                  spline_smoothing=None,
+                  coarse=False,
+                  plots=True,
+                  blocking=False,
+                  *args, **kwargs):
+        return self._camera.autofocus(self,
+                                      seconds=None,
+                                      focus_range=None,
+                                      focus_step=None,
+                                      thumbnail_size=None,
+                                      keep_files=None,
+                                      take_dark=None,
+                                      merit_function='vollath_F4',
+                                      merit_function_kwargs={},
+                                      mask_dilations=None,
+                                      spline_smoothing=None,
+                                      coarse=False,
+                                      plots=True,
+                                      blocking=False,
+                                      *args, **kwargs)
+
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
+        return self._camera.get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False,
+                                          *args, **kwargs)
+
+# Private methods

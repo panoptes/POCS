@@ -28,6 +28,10 @@ camera:
       - 25
     autofocus_seconds: 1
     autofocus_size: 1000
+directories:
+    base: /var/panoptes
+    images: images
+    data: data
 #
 # SBIG camera with Birger focuser:
 # name: camera.sbig.001
