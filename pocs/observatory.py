@@ -621,8 +621,8 @@ class Observatory(PanBase):
 
             fits_headers = self.get_standard_headers(observation=flat_obs)
 
-            start_time = current_time(flatten=True)
-            fits_headers['start_time'] = start_time
+            start_time = current_time()
+            fits_headers['start_time'] = utils.flatten_time(start_time)
 
             camera_events = dict()
 
@@ -663,7 +663,10 @@ class Observatory(PanBase):
                 img_file = info['filename'].replace('.cr2', '.fits')
                 self.logger.debug("Checking counts for {}".format(img_file))
 
-                data = fits.getdata(img_file)
+                try:
+                    data = fits.getdata(img_file)
+                except FileNotFoundError:
+                    data = fits.getdata(img_file.replace('.fits', '.fits.fz'))
 
                 mean, median, stddev = stats.sigma_clipped_stats(data, iters=2)
 
