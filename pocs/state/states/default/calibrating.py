@@ -28,9 +28,12 @@ def on_enter(event_data):
                 if sun_pos.value <= twilight_horizon and sun_pos.value > observe_horizon:
                     pocs.say("Taking some flat fields to start the night")
                     pocs.observatory.take_evening_flats()
+                    break
                 elif sun_pos.value <= observe_horizon:
                     pocs.say("Done with calibration frames")
                     break
+
+                pocs.sleep(60)
 
         pocs.next_state = 'scheduling'
 
