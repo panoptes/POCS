@@ -18,22 +18,17 @@ def on_enter(event_data):
             twilight_horizon = pocs.config['location']['twilight_horizon'].value
 
             # Wait for twilight if needed
-            while True:
-                sun_pos = pocs.observatory.observer.altaz(
-                    current_time(),
-                    target=get_sun(current_time())
-                ).alt
+            sun_pos = pocs.observatory.observer.altaz(
+                current_time(),
+                target=get_sun(current_time())
+            ).alt
 
-                # Take the flats
-                if sun_pos.value <= twilight_horizon and sun_pos.value > observe_horizon:
-                    pocs.say("Taking some flat fields to start the night")
-                    pocs.observatory.take_evening_flats()
-                    break
-                elif sun_pos.value <= observe_horizon:
-                    pocs.say("Done with calibration frames")
-                    break
-
-                pocs.sleep(60)
+            # Take the flats
+            if sun_pos.value <= twilight_horizon and sun_pos.value > observe_horizon:
+                pocs.say("Taking some flat fields to start the night")
+                pocs.observatory.take_evening_flats()
+            elif sun_pos.value <= observe_horizon:
+                pocs.say("Sun is below {}, stopping calibration".format(observe_horizon))
 
         pocs.next_state = 'scheduling'
 
