@@ -1,10 +1,11 @@
 #!/bin/bash -e
 
 ##################################################
-# Take a bias from
+# Take a series of bias frame images.
 # 
 # This will change the camera setting to the quickest
 # exposure possible and then take a number of photos
+# before changing camera back to bulb setting.
 ##################################################
 
 P=$1
