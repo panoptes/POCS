@@ -13,7 +13,7 @@ P=$1
 SAVE_FILE=${2:-"bias-%Y%m%d-%H%M%S.cr2"}
 echo "Taking bias frames on port ${P}: ${SAVE_FILE}"
 
-NUM_FRAMES=${4:-5}
+NUM_FRAMES=${4:-1}
 SHUTTER_INDEX=${3:-52} # 1/4000s on EOS 100D
 
 # Set to fast speed
