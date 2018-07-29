@@ -91,9 +91,12 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         pretty_path = _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
         pretty_path = _make_pretty_from_fits(fname, **kwargs)
+    else:
+        warn("File must be a Canon CR2 or FITS file.")
+        return None
 
     # Symlink latest.jpg to the image; first remove the symlink if it already exists.
-    if os.path.exists(pretty_path):
+    if os.path.exists(pretty_path) and pretty_path.endswith('.jpg'):
         latest_path = '{}/images/latest.jpg'.format(os.getenv('PANDIR'))
         try:
             os.remove(latest_path)
