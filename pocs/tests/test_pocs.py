@@ -253,10 +253,10 @@ def test_run_wait_until_evening(observatory):
 
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
-        assert pocs.observatory.is_dark() is False
+        assert pocs.observatory.is_dark(horizon='civil') is False
         pocs.send_message('RUNNING')
         pocs.run(run_once=True, exit_when_done=True)
-        assert pocs.observatory.is_dark() is True
+        assert pocs.observatory.is_dark(horizon='civil') is True
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 

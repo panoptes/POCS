@@ -7,8 +7,8 @@ location:
     elevation: 3400.0 # Meters
     utc_offset: -10.00 # Hours
     horizon: 30 # Degrees
-    twilight_horizon: 0 # Degrees
-    observe_horizon: -18 # Degrees
+    civil_horizon: 0 # Degrees
+    twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
     gmt_offset: -600
 directories:

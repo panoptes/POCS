@@ -438,7 +438,7 @@ class POCS(PanStateMachine, PanBase):
         blocking until then.
         """
         while not self.observatory.is_dark(horizon=horizon):
-            self.logger.warning("Still Waiting until evening")
+            self.logger.warning("Still waiting until evening")
             self.sleep(delay=self._safe_delay)
 
 ##################################################################################################

@@ -80,12 +80,13 @@ class Observatory(PanBase):
     def is_dark(self, horizon='astro'):
 
         try:
-            horizon_deg = self.location['{}_horizon'.format(horizon)]
+            horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
         except KeyError:
             # Look for legacy name. Note this will happen for either horizon
             try:
-                horizon_deg = self.location['twilight_horizon']
+                horizon_deg = self.config['location']['twilight_horizon']
             except KeyError:
+                self.logger.info("Can't find twilight_horizon, using -18°")
                 horizon_deg = -18 * u.degree
 
         t0 = current_time()
@@ -93,7 +94,8 @@ class Observatory(PanBase):
 
         if not is_dark:
             sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
-            self.logger.debug("Sun {:.02f} > {}".format(sun_pos, horizon))
+            self.logger.debug("Sun {:.02f} > {} [{}]".format(
+                sun_pos, horizon, horizon_deg))
 
         return is_dark
 
