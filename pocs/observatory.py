@@ -77,12 +77,19 @@ class Observatory(PanBase):
 # Properties
 ##########################################################################
 
-    @property
-    def is_dark(self):
-        horizon = self.location.get('twilight_horizon', 0 * u.degree)
+    def is_dark(self, horizon='astro'):
+
+        try:
+            horizon_deg = self.location['{}_horizon'.format(horizon)]
+        except KeyError:
+            # Look for legacy name. Note this will happen for either horizon
+            try:
+                horizon_deg = self.location['twilight_horizon']
+            except KeyError:
+                horizon_deg = -18 * u.degree
 
         t0 = current_time()
-        is_dark = self.observer.is_night(t0, horizon=horizon)
+        is_dark = self.observer.is_night(t0, horizon=horizon_deg)
 
         if not is_dark:
             sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt

@@ -150,10 +150,10 @@ def test_default_config(observatory):
 
 def test_is_dark(observatory):
     os.environ['POCSTIME'] = '2016-08-13 10:00:00'
-    assert observatory.is_dark is True
+    assert observatory.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
-    assert observatory.is_dark is False
+    assert observatory.is_dark() is False
 
 
 def test_standard_headers(observatory):

@@ -323,7 +323,7 @@ class POCS(PanStateMachine, PanBase):
 
         """
         # See if dark
-        is_dark = self.observatory.is_dark
+        is_dark = self.observatory.is_dark()
 
         # Check simulator
         try:
@@ -431,13 +431,13 @@ class POCS(PanStateMachine, PanBase):
         if delay > 0.0:
             time.sleep(delay)
 
-    def wait_until_dark(self):
+    def wait_until_dark(self, horizon='astro'):
         """ Waits until it is dark.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.observatory.is_dark:
+        while not self.observatory.is_dark(horizon=horizon):
             self.logger.warning("Still Waiting until evening")
             self.sleep(delay=self._safe_delay)
 
