@@ -4,7 +4,6 @@ FNAME=$1
 NAME=$2
 
 JPG=${FNAME/cr2/jpg}
-LATEST=${PANDIR}/images/latest.jpg
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
@@ -21,4 +20,4 @@ fi
 
 # Make thumbnail from jpg.
 convert ${JPG} -thumbnail 1280x1024 -background black -fill red \
-    -font ubuntu -pointsize 24 label:"${NAME}" -gravity South -append ${LATEST}
+    -font ubuntu -pointsize 24 label:"${NAME}" -gravity South -append ${JPG}
