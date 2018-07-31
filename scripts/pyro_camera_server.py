@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+from warnings import warn
 import Pyro4
 
 from pocs.utils import config
@@ -15,7 +16,11 @@ args = parser.parse_args()
 config = config.load_config(config_files=['pyro_camera.yaml'], ignore_local=args.ignore_local)
 
 with Pyro4.Daemon(host=config['host'], port=config['port']) as daemon:
-    name_server = Pyro4.locateNS()
+    try:
+        name_server = Pyro4.locateNS()
+    except Pyro4.errors.NamingError as err:
+        warn('Failed to locate Pyro name server: {}'.format(err))
+        exit(1)
     uri = daemon.register(CameraServer)
     name_server.register(config['name'], uri, metadata={"POCS",
                                                         "Camera",

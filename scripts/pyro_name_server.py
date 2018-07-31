@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import argparse
 import netifaces
-from Pyro4 import naming, errors
+from Pyro4 import naming, errors, config
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", help="hostname or IP address to bind the server on")
 parser.add_argument("--port", help="port number to bind the server on")
+parser.add_argument("--autoclean", help="length of time between cleaning of registrations that are no longer available (0=disabled)")
 args = parser.parse_args()
+
+config.NS_AUTOCLEAN = float(args.autoclean)
 
 try:
     # Check that there isn't a name server already running
@@ -39,9 +42,9 @@ except errors.NamingError:
         host = addresses[0]
         print('Using IP address {} on interface {}'.format(addresses[0], interface))
     else:
-        host = args.host
+        host = str(args.host)
 
     print("Starting Pyro name server... (Control-C/Command-C to exit)")
-    naming.startNSloop(host=host, port=args.port)
+    naming.startNSloop(host=host, port=int(args.port))
 else:
     print("Pyro name server {} already running! Exiting...".format(name_server))

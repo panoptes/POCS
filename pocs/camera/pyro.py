@@ -254,7 +254,7 @@ class CameraServer(object):
     Wrapper for the camera class for use as a Pyro camera server
     """
     def __init__(self):
-        # Pyro classes ideally have no arguments in for the constructor. Do it all from config file.
+        # Pyro classes ideally have no arguments in the constructor. Do it all from config file.
         self.config = config.load_config(config_files=['pyro_camera.yaml'])
         self.name = self.config.get('name')
         self.host = self.config.get('host')
