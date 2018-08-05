@@ -1,4 +1,8 @@
 -
+    name: Kepler 488 b
+    position: 18:51:51.88s +48:20:42.3s
+    priority: 125
+-
     name: Kepler 1100
     position: 19h27m29.10s +44d05m15.00s
     priority: 125
