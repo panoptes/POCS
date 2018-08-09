@@ -127,7 +127,7 @@ class Camera(AbstractCamera):
                                                     *args,
                                                     **kwargs)
             # Tag the file transfer on the end, and keep future result to check for completion
-            destination = os.path.join(dir_name, self.uids[cam_name], base_name)
+            destination = os.path.join(dir_name, self.uids[cam_name], '/')
             exposure_results[cam_name] = future_result.then(self._file_transfer,
                                                             destination)
 
@@ -245,7 +245,8 @@ class Camera(AbstractCamera):
         """
         try:
             result = subprocess.run(['rsync',
-                                     '-ah',
+                                     '--archive',
+                                     '--relative'
                                      '--remove-source-files',
                                      source,
                                      destination],
@@ -255,6 +256,7 @@ class Camera(AbstractCamera):
             warn(msg)
             self.logger.error(msg)
             raise err
+        self.logger.debug("File transfer {} -> {} complete".format(source, destination))
 
     def _async_wait(self, future_results, method='?', event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
@@ -332,12 +334,13 @@ class CameraServer(object):
         return self._camera.uid
 
     def take_exposure(self, seconds, base_name, dark, *args, **kwargs):
+        # Using the /./ syntax for partial relative paths (needs rsync >= 2.6.7)
         filename = os.path.join(os.getenv('PANDIR', '/var/panoptes'),
-                                'temp',
+                                'temp/./',
                                 base_name)
         # Start the exposure and wait for it complete
         self._camera.take_exposure(seconds, filename, dark, blocking=True, *args, **kwargs)
         # Return the user@host:/path for created file to enable it to be moved over the network.
-        return "{}@{}:{}".format(self.user, self.host, os.path.abspath(filename))
+        return "{}@{}:{}".format(self.user, self.host, filename)
 
 # Private methods
