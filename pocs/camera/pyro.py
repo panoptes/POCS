@@ -127,7 +127,7 @@ class Camera(AbstractCamera):
                                                     *args,
                                                     **kwargs)
             # Tag the file transfer on the end, and keep future result to check for completion
-            destination = os.path.join(dir_name, self.uids[cam_name], '/')
+            destination = os.path.join(dir_name, self.uids[cam_name]) + '/'
             exposure_results[cam_name] = future_result.then(self._file_transfer,
                                                             destination)
 
