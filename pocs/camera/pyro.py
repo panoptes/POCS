@@ -246,7 +246,7 @@ class Camera(AbstractCamera):
         try:
             result = subprocess.run(['rsync',
                                      '--archive',
-                                     '--relative'
+                                     '--relative',
                                      '--remove-source-files',
                                      source,
                                      destination],
