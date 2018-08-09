@@ -109,6 +109,8 @@ class Camera(AbstractCamera):
         # Find somewhere to insert the indivudual camera UIDs
         if "<uid>" in filename:
             dir_name, base_name = filename.split(sep="<uid>", maxsplit=1)
+            dir_name = dir_name.rstrip('/')
+            base_name = base_name.lstrip('/')
         else:
             dir_name, base_name = os.path.split(filename)
 
