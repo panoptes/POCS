@@ -109,7 +109,10 @@ class Camera(AbstractCamera):
         # Find somewhere to insert the indivudual camera UIDs
         if "<uid>" in filename:
             dir_name, base_name = filename.split(sep="<uid>", maxsplit=1)
+            # Make sure dir_name has a trailing slash
             dir_name = dir_name.rstrip('/')
+            dir_name = dir_name + '/'
+            # Make sure base name doesn't have a leading slash
             base_name = base_name.lstrip('/')
         else:
             dir_name, base_name = os.path.split(filename)
@@ -127,9 +130,7 @@ class Camera(AbstractCamera):
                                                     *args,
                                                     **kwargs)
             # Tag the file transfer on the end, and keep future result to check for completion
-            destination = os.path.join(dir_name, self.uids[cam_name]) + '/'
-            exposure_results[cam_name] = future_result.then(self._file_transfer,
-                                                            destination)
+            exposure_results[cam_name] = future_result.then(self._file_transfer, dir_name)
 
         # Start a thread that will set an event once all exposures have completed
         exposure_event = Event()
@@ -337,6 +338,7 @@ class CameraServer(object):
         # Using the /./ syntax for partial relative paths (needs rsync >= 2.6.7)
         filename = os.path.join(os.getenv('PANDIR', '/var/panoptes'),
                                 'temp/./',
+                                self.uid,
                                 base_name)
         # Start the exposure and wait for it complete
         self._camera.take_exposure(seconds, filename, dark, blocking=True, *args, **kwargs)
