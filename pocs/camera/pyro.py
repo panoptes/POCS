@@ -70,7 +70,9 @@ class Camera(AbstractCamera):
         for cam_name, result in async_results.items():
             self.uids[cam_name] = result.value
 
-        self.logger.debug("Got camera UIDs: {}".format(self.uids))
+        self.logger.debug("Got camera UIDs:")
+        for cam_name, uid in self.uids.items():
+            self.logger.debug("\t{} : {}".format(cam_name, uid))
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -106,10 +108,10 @@ class Camera(AbstractCamera):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
 
-        # Find somewhere to insert the indivudual camera UIDs
+        # Find somewhere to insert the individual camera UIDs
         if "<uid>" in filename:
             dir_name, base_name = filename.split(sep="<uid>", maxsplit=1)
-            # Make sure dir_name has a trailing slash
+            # Make sure dir_name has one and only one trailing slash
             dir_name = dir_name.rstrip('/')
             dir_name = dir_name + '/'
             # Make sure base name doesn't have a leading slash
@@ -244,6 +246,9 @@ class Camera(AbstractCamera):
         """
         Used rsync to move a file from source to destination.
         """
+        # Need to make sure the destination directory already exists because rsync isn't
+        # very good at creating directories.
+        os.makedirs(os.path.dirname(destination), mode=0o755, exist_ok=True)
         try:
             result = subprocess.run(['rsync',
                                      '--archive',
@@ -257,7 +262,8 @@ class Camera(AbstractCamera):
             warn(msg)
             self.logger.error(msg)
             raise err
-        self.logger.debug("File transfer {} -> {} complete".format(source, destination))
+        self.logger.debug("File transfer {} -> {} complete".format(source.split('/./')[1],
+                                                                   destination))
 
     def _async_wait(self, future_results, method='?', event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
