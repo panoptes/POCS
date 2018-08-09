@@ -9,7 +9,7 @@
 # Simulated camera and focusers:
 name: camera.simulator.001
 host: 127.0.0.1
-port: 9091
+# port: 9091
 camera:
   model: simulator
   port: /dev/ttyFAKE01

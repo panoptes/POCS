@@ -5,6 +5,7 @@ from threading import Event
 from threading import Timer
 from threading import Thread
 from threading import Lock
+import subprocess
 
 from astropy import units as u
 import Pyro4
@@ -52,9 +53,10 @@ class Camera(AbstractCamera):
                 msg = "Couldn't get proxy to camera {}: {}".format(cam_nam, err)
                 warn(msg)
                 self.logger.error(msg)
-                self.cameras.pop(cam_name)
-            # Set aync mode
-            self.cameras[cam_name]._pyroAsync()
+                self.cameras.remove(cam_name)
+            else:
+                # Set aync mode
+                self.cameras[cam_name]._pyroAsync()
 
         # Force each camera proxy to connect by getting the camera uids.
         # This will trigger the remote object creation & (re)initialise the camera & focuser,
@@ -79,7 +81,7 @@ class Camera(AbstractCamera):
                       *args,
                       **kwargs):
         """
-        Take an exposure for given number of seconds and saves to provided filename.
+        Take exposures for a given number of seconds and saves to provided filename.
 
         Args:
             seconds (u.second, optional): Length of exposure
@@ -91,7 +93,7 @@ class Camera(AbstractCamera):
                 for exposures to complete. If not given will wait indefinitely.
 
         Returns:
-            threading.Event: Event that will be set when exposure is complete
+            threading.Event: Event that will be set when exposures are complete
 
         """
         # Want exposure time as a builtin type for Pyro serialisation
@@ -104,23 +106,34 @@ class Camera(AbstractCamera):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
 
+        # Find somewhere to insert the indivudual camera UIDs
+        if "<uid>" in filename:
+            dir_name, base_name = filename.split(sep="<uid>", maxsplit=1)
+        else:
+            dir_name, base_name = os.path.split(filename)
+
         # Start the exposure on all cameras
         exposure_results = {}
         for cam_name, cam_proxy in self.cameras.items():
             self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds,
                                                                            cam_name,
-                                                                           filename))
-            exposure_results[cam_name] = cam_proxy.take_exposure(seconds=seconds,
-                                                                 filename=filename,
-                                                                 dark=dark,
-                                                                 *args,
-                                                                 **kwargs)
+                                                                           base_name))
+            # Remote method call to start the exposure
+            future_result = cam_proxy.take_exposure(seconds=seconds,
+                                                    base_name=base_name,
+                                                    dark=dark,
+                                                    *args,
+                                                    **kwargs)
+            # Tag the file transfer on the end, and keep future result to check for completion
+            destination = os.path.join(dir_name, self.uids[cam_name], base_name)
+            exposure_results[cam_name] = future_result.then(self._file_transfer,
+                                                            destination)
 
         # Start a thread that will set an event once all exposures have completed
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
                                 function=self._async_wait,
-                                args=(exposure_results, exposure_event, timeout))
+                                args=(exposure_results, 'exposure', exposure_event, timeout))
         exposure_thread.start()
 
         if blocking:
@@ -224,14 +237,36 @@ class Camera(AbstractCamera):
 
 # Private Methods
 
-    def _async_wait(self, future_results, event=None, timeout=None):
+    def _file_transfer(self, source, destination):
+        """
+        Used rsync to move a file from source to destination.
+        """
+        try:
+            result = subprocess.run(['rsync',
+                                     '-ah',
+                                     '--remove-source-files',
+                                     source,
+                                     destination],
+                                    check=True)
+        except subprocess.CalledProcessError as err:
+            msg = "File transfer {} -> {} failed".format(source, destination)
+            warn(msg)
+            self.logger.error(msg)
+            raise err
+
+    def _async_wait(self, future_results, method='?', event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
         results = {}
+        if timeout is not None:
+            wait_start_time = time.time()
+
         for name, future_result in future_results.items():
-            if timeout is not None:
-                wait_start_time = time.time()
-            future_result.wait(timeout)
-            results[name] = future_result.value
+            if future_result.wait(timeout):
+                results[name] = future_result.value
+            else:
+                msg = "Timeout while waiting for {} on {}".format(method, name)
+                warn(msg)
+                self.logger.error(msg)
             if timeout is not None:
                 # Need to adjust timeout, otherwise we're resetting the clock each time a
                 # single result returns.
@@ -254,7 +289,7 @@ class CameraServer(object):
     Wrapper for the camera class for use as a Pyro camera server
     """
     def __init__(self):
-        # Pyro classes ideally have no arguments in the constructor. Do it all from config file.
+        # Pyro classes ideally have no arguments for the constructor. Do it all from config file.
         self.config = config.load_config(config_files=['pyro_camera.yaml'])
         self.name = self.config.get('name')
         self.host = self.config.get('host')
@@ -288,54 +323,19 @@ class CameraServer(object):
 # Methods
 
     def get_uid(self):
+        """
+        Added as an alternative to accessing the uid property because that didn't trigger
+        object creation.
+        """
         return self._camera.uid
 
-    def take_observation(self, oservation, headers=None, filename=None, *args, **kwargs):
-        return self._camera.take_observation(self, observation, headers=None, filename=None,
-                                             *args, *kwargs)
-
-    def take_exposure(self, seconds, filename, dark, *args, **kwargs):
+    def take_exposure(self, seconds, base_name, dark, *args, **kwargs):
+        filename = os.path.join(os.getenv('PANDIR', '/var/panoptes'),
+                                'temp',
+                                base_name)
         # Start the exposure and wait for it complete
         self._camera.take_exposure(seconds, filename, dark, blocking=True, *args, **kwargs)
         # Return the user@host:/path for created file to enable it to be moved over the network.
         return "{}@{}:{}".format(self.user, self.host, os.path.abspath(filename))
-
-    def process_exposure(self, info, observation_event, exposure_event=None):
-        return self._camera.process_exposure(info, observation_event, exposure_event)
-
-    def autofocus(self,
-                  seconds=None,
-                  focus_range=None,
-                  focus_step=None,
-                  thumbnail_size=None,
-                  keep_files=None,
-                  take_dark=None,
-                  merit_function='vollath_F4',
-                  merit_function_kwargs={},
-                  mask_dilations=None,
-                  spline_smoothing=None,
-                  coarse=False,
-                  plots=True,
-                  blocking=False,
-                  *args, **kwargs):
-        return self._camera.autofocus(self,
-                                      seconds=None,
-                                      focus_range=None,
-                                      focus_step=None,
-                                      thumbnail_size=None,
-                                      keep_files=None,
-                                      take_dark=None,
-                                      merit_function='vollath_F4',
-                                      merit_function_kwargs={},
-                                      mask_dilations=None,
-                                      spline_smoothing=None,
-                                      coarse=False,
-                                      plots=True,
-                                      blocking=False,
-                                      *args, **kwargs)
-
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
-        return self._camera.get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False,
-                                          *args, **kwargs)
 
 # Private methods
