@@ -22,8 +22,12 @@ with Pyro4.Daemon(host=config['host'], port=port) as daemon:
     except Pyro4.errors.NamingError as err:
         warn('Failed to locate Pyro name server: {}'.format(err))
         exit(1)
+    print('Found Pyro name server')
     uri = daemon.register(CameraServer)
+    print('Camera server registered with daemon as {}'.format(uri))
     name_server.register(config['name'], uri, metadata={"POCS",
                                                         "Camera",
                                                         config['camera']['model']})
+    print('Registered with name server as {}'.format(config['name']))
+    print('Starting request loop... (Control-C/Command-C to exit)')
     daemon.requestLoop()
