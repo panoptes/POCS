@@ -14,8 +14,9 @@ parser.add_argument("--ignore_local",
                     action="store_true")
 args = parser.parse_args()
 config = config.load_config(config_files=['pyro_camera.yaml'], ignore_local=args.ignore_local)
+port = config.get('port', None)
 
-with Pyro4.Daemon(host=config['host'], port=config['port']) as daemon:
+with Pyro4.Daemon(host=config['host'], port=port) as daemon:
     try:
         name_server = Pyro4.locateNS()
     except Pyro4.errors.NamingError as err:
