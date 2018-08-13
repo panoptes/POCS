@@ -97,13 +97,13 @@ set -x
 
 # Create a window running the zeromq message forwarders.
 # These provide connections between message publishers and subscribers.
-create_and_init_window messaging start_messaging_hub.sh
+create_and_init_window msg_hub start_messaging_hub.sh
 
 # Create a window running the social messaging program. It subscribes to
 # zeromq and posts some messages to Twitter or Slack, if
 # conf_files/pocs_local.yaml has the appropriate config values; if not,
 # the program just exits.
-create_and_init_window messaging start_social_messaging.sh
+create_and_init_window social start_social_messaging.sh
 
 # Start PAWS, the PANOPTES Administrative Web Server.
 create_and_init_window paws start_paws.sh

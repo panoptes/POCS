@@ -94,6 +94,10 @@ def run_social_sinks(msg_port, social_twitter, social_slack):
 
 
 if __name__ == '__main__':
+    # This is early in startup to ensure the PANOPTES logging code is installed early.
+    pocs_config = load_config(config_files=['pocs'])
+    the_root_logger = get_root_logger()
+
     parser = argparse.ArgumentParser(
         description='Run social messaging to forward platform messages to social channels.')
     parser.add_argument(
@@ -102,19 +106,14 @@ if __name__ == '__main__':
         help='Read social channels config from the pocs.yaml and pocs_local.yaml config files.')
     args = parser.parse_args()
 
-    def arg_error(msg):
-        print(msg, file=sys.stderr)
-        parser.print_help()
-        sys.exit(1)
+    say('run_social_messaging starting up...')
 
     # Initialise social sinks to None
     social_twitter = None
     social_slack = None
-    
-    if args.from_config:
-        config = load_config(config_files=['pocs'])
 
-        social_config = config.get('social_accounts')
+    if args.from_config:
+        social_config = pocs_config.get('social_accounts')
         if social_config:
             # Check which social sinks we can create based on config
 
@@ -142,8 +141,6 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # Messaging port to subscribe on
-    msg_port = config['messaging']['msg_port'] + 1
-
-    the_root_logger = get_root_logger()
+    msg_port = pocs_config['messaging']['msg_port'] + 1
 
     run_social_sinks(msg_port, social_twitter, social_slack)
