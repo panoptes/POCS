@@ -33,21 +33,24 @@ before_install:
     - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
     - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
     - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+    - ssh-keygen -b 2048 -t rsa -f id_rsa -N ''
+    - touch ~/.ssh/authorized_hosts
+    - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_hosts
 addons:
   apt:
     packages:
     - gphoto2
-    - libcairo2-dev 
-    - libnetpbm10-dev 
+    - libcairo2-dev
+    - libnetpbm10-dev
     - netpbm
     - libpng12-dev
     - libjpeg-dev
     - python-numpy
     - python-pyfits
-    - python-dev 
-    - zlib1g-dev 
-    - libbz2-dev 
-    - swig 
+    - python-dev
+    - zlib1g-dev
+    - libbz2-dev
+    - swig
     - cfitsio-dev
 install:
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz

@@ -15,7 +15,9 @@ parser.add_argument("--ignore_local",
                     action="store_true")
 args = parser.parse_args()
 config = config.load_config(config_files=['pyro_camera.yaml'], ignore_local=args.ignore_local)
-host = config.get('host', get_own_ip(verbose=True))
+host = config.get('host')
+if not host:
+    host = get_own_ip(verbose=True)
 port = config.get('port', 0)
 
 with Pyro4.Daemon(host=host, port=port) as daemon:
