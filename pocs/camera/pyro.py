@@ -163,8 +163,9 @@ class Camera(AbstractCamera):
                   timeout=None,
                   *args, **kwargs):
         """
-        Focuses the camera using the specified merit function. Optionally
-        performs a coarse focus first before performing the default fine focus.
+        Focuses the camera using the specified merit function.
+
+        Optionally performs a coarse focus first before performing the default fine focus.
         The expectation is that coarse focus will only be required for first use
         of a optic to establish the approximate position of infinity focus and
         after updating the intial focus position in the config only fine focus
