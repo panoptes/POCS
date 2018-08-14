@@ -34,8 +34,8 @@ before_install:
     - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
     - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
     - ssh-keygen -b 2048 -t rsa -f ~/.ssh/id_rsa -N ''
-    - touch ~/.ssh/authorized_hosts
-    - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_hosts
+    - touch ~/.ssh/authorized_keys
+    - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
     - ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
 addons:
   apt:
