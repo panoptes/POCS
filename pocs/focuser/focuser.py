@@ -47,8 +47,6 @@ class AbstractFocuser(PanBase):
             for the merit function.
         autofocus_mask_dilations (int, optional): Number of iterations of dilation to perform on the
             saturated pixel mask (determine size of masked regions), default 10
-        autofocus_spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-            the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
     """
     def __init__(self,
                  name='Generic Focuser',
@@ -98,7 +96,6 @@ class AbstractFocuser(PanBase):
         self.autofocus_merit_function = autofocus_merit_function
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
         self.autofocus_mask_dilations = autofocus_mask_dilations
-        self.autofocus_spline_smoothing = autofocus_spline_smoothing
 
         self._camera = camera
 
@@ -176,7 +173,6 @@ class AbstractFocuser(PanBase):
                   merit_function=None,
                   merit_function_kwargs=None,
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -210,8 +206,6 @@ class AbstractFocuser(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
@@ -282,35 +276,6 @@ class AbstractFocuser(PanBase):
             else:
                 mask_dilations = 10
 
-        if spline_smoothing is None:
-            if self.autofocus_spline_smoothing is not None:
-                spline_smoothing = self.autofocus_spline_smoothing
-            else:
-                spline_smoothing = 0.4
-
-        if take_dark:
-            image_dir = self.config['directories']['images']
-            start_time = current_time(flatten=True)
-            file_path = "{}/{}/{}/{}/{}.{}".format(image_dir,
-                                                   'focus',
-                                                   self._camera.uid,
-                                                   start_time,
-                                                   "dark",
-                                                   self._camera.file_extension)
-            self.logger.debug('Taking dark frame {} on camera {}'.format(file_path, self._camera))
-            try:
-                dark_thumb = self._camera.get_thumbnail(seconds,
-                                                        file_path,
-                                                        thumbnail_size,
-                                                        keep_file=True,
-                                                        dark=True)
-                # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_thumb = focus_utils.mask_saturated(dark_thumb, threshold=0.3)
-            except TypeError:
-                self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
-        else:
-            dark_thumb = None
-
         if coarse:
             coarse_event = Event()
             coarse_thread = Thread(target=self._autofocus,
@@ -320,11 +285,10 @@ class AbstractFocuser(PanBase):
                                            'focus_step': focus_step,
                                            'thumbnail_size': thumbnail_size,
                                            'keep_files': keep_files,
-                                           'dark_thumb': dark_thumb,
+                                           'take_dark': take_dark,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
                                            'mask_dilations': mask_dilations,
-                                           'spline_smoothing': spline_smoothing,
                                            'coarse': True,
                                            'plots': plots,
                                            'start_event': None,
@@ -342,11 +306,10 @@ class AbstractFocuser(PanBase):
                                      'focus_step': focus_step,
                                      'thumbnail_size': thumbnail_size,
                                      'keep_files': keep_files,
-                                     'dark_thumb': dark_thumb,
+                                     'take_dark': take_dark,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
                                      'mask_dilations': mask_dilations,
-                                     'spline_smoothing': spline_smoothing,
                                      'coarse': False,
                                      'plots': plots,
                                      'start_event': coarse_event,
@@ -365,7 +328,7 @@ class AbstractFocuser(PanBase):
                    focus_step,
                    thumbnail_size,
                    keep_files,
-                   dark_thumb,
+                   take_dark,
                    merit_function,
                    merit_function_kwargs,
                    coarse,
@@ -373,7 +336,6 @@ class AbstractFocuser(PanBase):
                    start_event,
                    finished_event,
                    mask_dilations,
-                   spline_smoothing,
                    *args,
                    **kwargs):
         # If passed a start_event wait until Event is set before proceeding
@@ -397,6 +359,22 @@ class AbstractFocuser(PanBase):
                                               'focus',
                                               self._camera.uid,
                                               start_time)
+
+        if take_dark:
+            file_path = "{}/{}.{}".format(file_path_root, "dark", self._camera.file_extension)
+            self.logger.debug('Taking dark frame {} on camera {}'.format(file_path, self._camera))
+            try:
+                dark_thumb = self._camera.get_thumbnail(seconds,
+                                                        file_path,
+                                                        thumbnail_size,
+                                                        keep_file=True,
+                                                        dark=True)
+                # Mask 'saturated' with a low threshold to remove hot pixels
+                dark_thumb = focus_utils.mask_saturated(dark_thumb, threshold=0.3)
+            except TypeError:
+                self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
+            else:
+                dark_thumb = None
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
         file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus,

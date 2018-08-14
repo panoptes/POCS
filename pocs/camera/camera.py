@@ -68,7 +68,7 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self)
+                    self.focuser = module.Focuser(**focuser, camera=self, config=self.config)
                     self.logger.debug("Focuser created: {}".format(self.focuser))
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
@@ -285,7 +285,6 @@ class AbstractCamera(PanBase):
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -319,8 +318,6 @@ class AbstractCamera(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing,
                 default False
             plots (bool, optional: Whether to write focus plots to images folder,
@@ -344,7 +341,6 @@ class AbstractCamera(PanBase):
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
-                                      spline_smoothing=spline_smoothing,
                                       coarse=coarse,
                                       plots=plots,
                                       blocking=blocking,

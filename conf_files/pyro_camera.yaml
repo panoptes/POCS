@@ -9,7 +9,6 @@
 # Simulated camera and focusers:
 name: camera.simulator.001
 host: 127.0.0.1
-# port: 9091
 camera:
   model: simulator
   port: /dev/ttyFAKE01
@@ -27,16 +26,15 @@ camera:
       - 5
       - 25
     autofocus_seconds: 1
-    autofocus_size: 1000
+    autofocus_size: 500
 directories:
     base: /var/panoptes
-    images: images
+    images: temp
     data: data
 #
 # SBIG camera with Birger focuser:
 # name: camera.sbig.001
 # host: 127.0.0.1
-# port: 9091
 # camera:
 #   model: sbig
 #     port: 83F012345
@@ -59,7 +57,6 @@ directories:
 # FLI camera with Birger focuser:
 # name: camera.fli.001
 # host: 999.999.999.999
-# port: 9091
 # camera:
 #   model: fli
 #     port: ML12345
@@ -82,7 +79,6 @@ directories:
 # FLI Camera with FocusLynx focuser:
 # name: camera.fli.002
 # host: 999.999.999.999
-# port: 9091
 # camera:
 #   model: fli
 #     port: ML12345

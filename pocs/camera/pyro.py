@@ -1,4 +1,6 @@
+import sys
 import os
+import glob
 import time
 from warnings import warn
 from threading import Event
@@ -15,6 +17,10 @@ from pocs.utils import config
 from pocs.utils.logger import get_root_logger
 from pocs.utils import load_module
 from pocs.camera import AbstractCamera
+
+
+# Enable local display of remote tracebacks
+sys.excepthook = Pyro4.util.excepthook
 
 
 class Camera(AbstractCamera):
@@ -131,8 +137,10 @@ class Camera(AbstractCamera):
                                                     dark=dark,
                                                     *args,
                                                     **kwargs)
-            # Tag the file transfer on the end, and keep future result to check for completion
-            exposure_results[cam_name] = future_result.then(self._file_transfer, dir_name)
+            # Tag the file transfer on the end.
+            future_result = future_result.then(self._file_transfer, dir_name)
+            # Tag empty directory cleanup on the end & keep future result to check for completion
+            exposure_results[cam_name] = future_result.then(self._clean_directories)
 
         # Start a thread that will set an event once all exposures have completed
         exposure_event = Event()
@@ -156,7 +164,6 @@ class Camera(AbstractCamera):
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -186,14 +193,12 @@ class Camera(AbstractCamera):
             take_dark (bool, optional): If True will attempt to take a dark frame
                 before the focus run, and use it for dark subtraction and hot
                 pixel masking, default True.
-            merit_function (str/callable, optional): Merit function to use as a
+            merit_function (str, optional): Merit function to use as a
                 focus metric.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing,
                 default False
             plots (bool, optional: Whether to write focus plots to images folder,
@@ -206,6 +211,16 @@ class Camera(AbstractCamera):
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
+        # Make certain that all the argument are builtin types for easy Pyro serialisation
+        if isinstance(seconds, u.Quantity):
+            seconds = seconds.to(u.second)
+            seconds = seconds.value
+
+        if timeout is not None:
+            if isinstance(timeout, u.Quantity):
+                timeout = timeout.to(u.second)
+                timeout = timeout.value
+
         autofocus_kwargs = {'seconds': seconds,
                             'focus_range': focus_range,
                             'focus_step': focus_step,
@@ -215,25 +230,26 @@ class Camera(AbstractCamera):
                             'merit_function': merit_function,
                             'merit_function_kwargs': merit_function_kwargs,
                             'mask_dilations': mask_dilations,
-                            'spline_smoothing': spline_smoothing,
                             'coarse': coarse,
-                            'plots': plots,
-                            'blocking': True}
+                            'plots': plots}
 
-        # Find registered cameras and start autofocus on each.
-        cameras = self._name_server.list(metadata_all={'POCS', 'Camera'})
+        focus_dir = os.path.join(os.path.abspath(self.config['directories']['images']), 'focus/')
+
+        # Start autofocus on all cameras
         autofocus_results = {}
-        for cam_name, cam_uri in cameras.items():
+        for cam_name, cam_proxy in self.cameras.items():
             self.logger.debug('Starting autofocus on {}'.format(cam_name))
-            with Pyro4.Proxy(cam_uri) as cam_proxy:
-                autofocus_results[cam_name] = cam_proxy.autofocus(*args,
-                                                                  **autofocus_kwargs,
-                                                                  **kwargs)
+            # Remote method call to start the autofocus
+            future_result = cam_proxy.autofocus(*args, **autofocus_kwargs, **kwargs)
+            # Tag the file transfer on the end.
+            future_result = future_result.then(self._file_transfer, focus_dir)
+            # Tag empty directory cleanup on the end & keep future result to check for completion
+            autofocus_results[cam_name] = future_result.then(self._clean_directories)
 
         # Start a thread that will set an event once all exposures have completed
         autofocus_event = Event()
-        autofocus_thread = Thread(function=self._async_wait,
-                                  args=(autofocus_results, autofocus_event, timeout))
+        autofocus_thread = Thread(target=self._async_wait,
+                                  args=(autofocus_results, 'autofocus', autofocus_event, timeout))
         autofocus_thread.start()
 
         if blocking:
@@ -242,6 +258,26 @@ class Camera(AbstractCamera):
         return autofocus_event
 
 # Private Methods
+
+    def _clean_directories(self, source):
+        """
+        Clean up empty directories left behind by rsysc.
+        """
+        user_at_host, path = source.split(':')
+        path_root = path.split('/./')[0]
+        try:
+            result = subprocess.run(['ssh',
+                                     user_at_host,
+                                     'find {} -empty -delete'.format(path_root)],
+                                    check=True)
+        except subprocess.CalledProcessError as err:
+            msg = "Clean up of empty directories in {}:{} failed".format(user_at_host, path_root)
+            warn(msg)
+            self.logger.error(msg)
+            raise err
+        self.logger.debug("Clean up of empty directories in {}:{} complete".format(user_at_host,
+                                                                                   path_root))
+        return source
 
     def _file_transfer(self, source, destination):
         """
@@ -254,6 +290,7 @@ class Camera(AbstractCamera):
             result = subprocess.run(['rsync',
                                      '--archive',
                                      '--relative',
+                                     '--recursive',
                                      '--remove-source-files',
                                      source,
                                      destination],
@@ -265,6 +302,7 @@ class Camera(AbstractCamera):
             raise err
         self.logger.debug("File transfer {} -> {} complete".format(source.split('/./')[1],
                                                                    destination))
+        return source
 
     def _async_wait(self, future_results, method='?', event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
@@ -324,7 +362,8 @@ class CameraServer(object):
                                      filter_type=camera_filter_type,
                                      focuser=camera_focuser,
                                      readout_time=camera_readout_time,
-                                     logger=get_root_logger(self.name))
+                                     logger=get_root_logger(self.name),
+                                     config=self.config)
 
 # Properties
 
@@ -343,13 +382,56 @@ class CameraServer(object):
 
     def take_exposure(self, seconds, base_name, dark, *args, **kwargs):
         # Using the /./ syntax for partial relative paths (needs rsync >= 2.6.7)
-        filename = os.path.join(os.getenv('PANDIR', '/var/panoptes'),
-                                'temp/./',
+        filename = os.path.join(os.path.abspath(self.config['directories']['images']),
+                                './',
                                 self.uid,
                                 base_name)
         # Start the exposure and wait for it complete
-        self._camera.take_exposure(seconds, filename, dark, blocking=True, *args, **kwargs)
+        self._camera.take_exposure(seconds=seconds,
+                                   filename=filename,
+                                   dark=dark,
+                                   blocking=True,
+                                   *args,
+                                   **kwargs)
         # Return the user@host:/path for created file to enable it to be moved over the network.
         return "{}@{}:{}".format(self.user, self.host, filename)
 
-# Private methods
+    def autofocus(self,
+                  seconds,
+                  focus_range,
+                  focus_step,
+                  keep_files,
+                  take_dark,
+                  thumbnail_size,
+                  merit_function,
+                  merit_function_kwargs,
+                  mask_dilations,
+                  coarse,
+                  plots,
+                  *args,
+                  **kwargs):
+        # Start the autofocus and wait for it to completed
+        self._camera.autofocus(seconds=seconds,
+                               focuse_range=focus_range,
+                               focus_step=focus_step,
+                               keep_files=keep_files,
+                               take_dark=take_dark,
+                               thumbnail_size=thumbnail_size,
+                               merit_function=merit_function,
+                               merit_function_kwargs=merit_function_kwargs,
+                               mask_dilations=mask_dilations,
+                               coarse=coarse,
+                               plot=plots,
+                               blocking=True,
+                               *args,
+                               **kwargs)
+        # Find where the resulting files are
+        focus_root = os.path.join(os.path.abspath(self.config['directories']['images']),
+                                  'focus/./',
+                                  self.uid)
+        focus_dirs = glob.glob('{}/*/'.format(focus_root))
+        focus_dirs.sort()
+        latest_focus_dir = focus_dirs[-1]
+        focus_path = latest_focus_dir.rstrip('/') + '*'
+        # Return the user@host:/path for created files to enable them to be moved over the network.
+        return "{}@{}:{}".format(self.user, self.host, focus_path)

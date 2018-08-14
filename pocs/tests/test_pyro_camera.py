@@ -11,27 +11,28 @@ import pytest
 from pocs.camera.pyro import Camera
 
 
-def end_process(proc):
-    print('Sending SIGINT to {}'.format(proc))
-    proc.send_signal(signal.SIGINT)
-    return_code = proc.wait()
-    print('{} terminated, return code {}'.format(proc, return_code))
-
-
 @pytest.fixture(scope='module')
 def name_server(request):
+    print('Starting name server')
     ns_cmds = [os.path.expandvars('$POCS/scripts/pyro_name_server.py'), '--host', '127.0.0.1']
     ns_proc = subprocess.Popen(ns_cmds)
-    request.addfinalizer(lambda: end_process(ns_proc))
-    return ns_proc
+    yield ns_proc
+    print('Sending SIGINT to name server ({})'.format(ns_proc.pid))
+    ns_proc.send_signal(signal.SIGINT)
+    return_code = ns_proc.wait()
+    print('Name server ({}) terminated, return code {}'.format(ns_proc.pid, return_code))
 
 
 @pytest.fixture(scope='module')
 def camera_server(name_server, request):
+    print('Starting camera server')
     cs_cmds = [os.path.expandvars('$POCS/scripts/pyro_camera_server.py'), '--ignore_local']
     cs_proc = subprocess.Popen(cs_cmds)
-    request.addfinalizer(lambda: end_process(cs_proc))
-    return cs_proc
+    yield cs_proc
+    print('Sending SIGINT to camera server ({})'.format(cs_proc.pid))
+    cs_proc.send_signal(signal.SIGINT)
+    return_code = cs_proc.wait()
+    print('Camera server ({}) terminated, return code {}'.format(cs_proc.pid, return_code))
 
 
 @pytest.fixture(scope='module')
@@ -84,3 +85,13 @@ def test_take_exposure_blocking(camera, tmpdir):
     header = fits.getheader(real_fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
+
+
+def test_autofocus_fine(camera):
+    event = camera.autofocus()
+    event.wait()
+
+
+def test_autofocus_coarse(camera):
+    event = camera.autofocus(coarse=True)
+    event.wait()
