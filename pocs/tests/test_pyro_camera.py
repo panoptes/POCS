@@ -1,29 +1,37 @@
 import subprocess
 import time
 import os
+import glob
+import signal
 
 from astropy.io import fits
-import glob
 import Pyro4
 import pytest
 
 from pocs.camera.pyro import Camera
 
 
-@pytest.fixture(scope='module')
-def name_server():
-    ns_cmd = '$POCS/scripts/pyro_name_server.py --host 127.0.0.1'
-    with subprocess.Popen(ns_cmd, shell=True) as ns_proc:
-        yield ns_proc
-        ns_proc.terminate()
+def end_process(proc):
+    print('Sending SIGINT to {}'.format(proc))
+    proc.send_signal(signal.SIGINT)
+    return_code = proc.wait()
+    print('{} terminated, return code {}'.format(proc, return_code))
 
 
 @pytest.fixture(scope='module')
-def camera_server(name_server):
-    cs_cmd = '$POCS/scripts/pyro_camera_server.py --ignore_local'
-    with subprocess.Popen(cs_cmd, shell=True) as cs_proc:
-        yield cs_proc
-        cs_proc.terminate()
+def name_server(request):
+    ns_cmds = [os.path.expandvars('$POCS/scripts/pyro_name_server.py'), '--host', '127.0.0.1']
+    ns_proc = subprocess.Popen(ns_cmds)
+    request.addfinalizer(lambda: end_process(ns_proc))
+    return ns_proc
+
+
+@pytest.fixture(scope='module')
+def camera_server(name_server, request):
+    cs_cmds = [os.path.expandvars('$POCS/scripts/pyro_camera_server.py'), '--ignore_local']
+    cs_proc = subprocess.Popen(cs_cmds)
+    request.addfinalizer(lambda: end_process(cs_proc))
+    return cs_proc
 
 
 @pytest.fixture(scope='module')
@@ -45,7 +53,7 @@ def test_locate_name_server(name_server):
 
 def test_camera_server(camera_server):
     # Give camera server time to start up
-    time.sleep(1)
+    time.sleep(2)
     # Check that it's running.
     assert camera_server.poll() is None
 
