@@ -16,7 +16,7 @@ class Focuser(AbstractFocuser):
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")
         self.connect()
-        self.logger.info("\t\t\t {} initialised".format(self))
+        self.logger.info("{} initialised".format(self))
 
 ##################################################################################################
 # Methods
@@ -36,7 +36,7 @@ class Focuser(AbstractFocuser):
     def move_to(self, position):
         """ Move focuser to a new encorder position """
         self.logger.debug('Moving focuser {} to {}'.format(self.uid, position))
-        time.sleep(0.11)
+        time.sleep(0.1)
         position = int(position)
         position = min(position, self.max_position)
         position = max(position, self.min_position)

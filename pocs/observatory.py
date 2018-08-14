@@ -455,7 +455,7 @@ class Observatory(PanBase):
 
         return headers
 
-    def autofocus_cameras(self, camera_list=None, coarse=False):
+    def autofocus_cameras(self, camera_list=None, coarse=None):
         """
         Perform autofocus on all cameras with focus capability, or a named subset
         of these. Optionally will perform a coarse autofocus first, otherwise will
