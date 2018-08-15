@@ -425,13 +425,11 @@ class CameraServer(object):
                                blocking=True,
                                *args,
                                **kwargs)
-        # Find where the resulting files are
-        focus_root = os.path.join(os.path.abspath(self.config['directories']['images']),
+        # Find where the resulting files are. Need to cast a wide net to get both
+        # coarse and fine focus files, anything in focus directory should be fair game.
+        focus_path = os.path.join(os.path.abspath(self.config['directories']['images']),
                                   'focus/./',
-                                  self.uid)
-        focus_dirs = glob.glob('{}/*/'.format(focus_root))
-        focus_dirs.sort()
-        latest_focus_dir = focus_dirs[-1]
-        focus_path = latest_focus_dir.rstrip('/') + '*'
+                                  self.uid,
+                                  '*')
         # Return the user@host:/path for created files to enable them to be moved over the network.
         return "{}@{}:{}".format(self.user, self.host, focus_path)
