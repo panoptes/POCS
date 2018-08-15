@@ -1,38 +1,39 @@
-import subprocess
 import time
 import os
 import glob
-import signal
+import multiprocessing
 
 from astropy.io import fits
 import Pyro4
 import pytest
 
 from pocs.camera.pyro import Camera
-
+from pocs.utils.pyro import pyro_name_server, pyro_camera_server
 
 @pytest.fixture(scope='module')
 def name_server(request):
     print('Starting name server')
-    ns_cmds = [os.path.expandvars('$POCS/scripts/pyro_name_server.py'), '--host', '127.0.0.1']
-    ns_proc = subprocess.Popen(ns_cmds)
+    ns_proc = multiprocessing.Process(target=pyro_name_server.run_name_server,
+                                      kwargs={'host': '127.0.01', 'autoclean': 30})
+    ns_proc.start()
     yield ns_proc
-    print('Sending SIGINT to name server ({})'.format(ns_proc.pid))
-    ns_proc.send_signal(signal.SIGINT)
-    return_code = ns_proc.wait()
-    print('Name server ({}) terminated, return code {}'.format(ns_proc.pid, return_code))
+    print('Terminating name server ({})'.format(ns_proc.pid))
+    ns_proc.terminate()
+    ns_proc.join()
+    print('Name server ({}) terminated, exit code {}'.format(ns_proc.pid, ns_proc.exitcode))
 
 
 @pytest.fixture(scope='module')
 def camera_server(name_server, request):
     print('Starting camera server')
-    cs_cmds = [os.path.expandvars('$POCS/scripts/pyro_camera_server.py'), '--ignore_local']
-    cs_proc = subprocess.Popen(cs_cmds)
+    cs_proc = multiprocessing.Process(target=pyro_camera_server.run_camera_server,
+                                      kwargs={'ignore_local': True})
+    cs_proc.start()
     yield cs_proc
-    print('Sending SIGINT to camera server ({})'.format(cs_proc.pid))
-    cs_proc.send_signal(signal.SIGINT)
-    return_code = cs_proc.wait()
-    print('Camera server ({}) terminated, return code {}'.format(cs_proc.pid, return_code))
+    print('Terminating camera server ({})'.format(cs_proc.pid))
+    cs_proc.terminate()
+    cs_proc.join()
+    print('Camera server ({}) terminated, exit code {}'.format(cs_proc.pid, cs_proc.exitcode))
 
 
 @pytest.fixture(scope='module')
@@ -44,7 +45,7 @@ def test_name_server(name_server):
     # Give name server time to start up
     time.sleep(5)
     # Check that it's running.
-    assert name_server.poll() is None
+    assert name_server.is_alive()
 
 
 def test_locate_name_server(name_server):
@@ -56,7 +57,7 @@ def test_camera_server(camera_server):
     # Give camera server time to start up
     time.sleep(2)
     # Check that it's running.
-    assert camera_server.poll() is None
+    assert camera_server.is_alive()
 
 
 def test_camera_connect(camera):

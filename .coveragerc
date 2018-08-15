@@ -4,8 +4,6 @@ concurrency = multiprocessing
 source =
     peas
     pocs
-    scripts/pyro_name_server.py
-    scripts/pyro_camera_server.py
 omit =
 	pocs/utils/data.py
 
