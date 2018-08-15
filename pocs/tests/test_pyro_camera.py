@@ -10,6 +10,7 @@ import pytest
 from pocs.camera.pyro import Camera
 from pocs.utils.pyro import pyro_name_server, pyro_camera_server
 
+
 @pytest.fixture(scope='module')
 def name_server(request):
     print('Starting name server')
