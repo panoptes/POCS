@@ -4,7 +4,8 @@ concurrency = multiprocessing
 source =
     peas
     pocs
-omit = 
+    scripts/pyro_*
+omit =
 	pocs/utils/data.py
 
 [report]
