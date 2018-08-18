@@ -129,10 +129,10 @@ class Image(PanBase):
             d_ra = self.pointing.ra - self.header_pointing.ra
 
             self._pointing_error = OffsetError(
-                d_ra.to(
-                    u.arcsec), d_dec.to(
-                    u.arcsec), mag.to(
-                    u.arcsec))
+                d_ra.to(u.arcsec),
+                d_dec.to(u.arcsec),
+                mag.to(u.arcsec)
+            )
 
         return self._pointing_error
 

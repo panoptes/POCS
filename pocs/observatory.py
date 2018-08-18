@@ -1,5 +1,4 @@
 import os
-import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -351,84 +350,15 @@ class Observatory(PanBase):
                 pass
 
             self.logger.debug("Pointing HA: {}".format(pointing_ha))
+            correction_info = self.mount.get_tracking_correction(
+                self.current_offset_info,
+                pointing_ha
+            )
 
-            pier_side = 'east'
-            if pointing_ha <= 12:
-                pier_side = 'west'
-
-            self.logger.debug("Mount pier side: {}".format(pier_side))
-
-            # find the number of ms and direction for Dec axis
-            dec_offset = self.current_offset_info.delta_dec
-            dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
-
-            # find the number of ms and direction for RA axis
-            ra_offset = self.current_offset_info.delta_ra
-            ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
-
-            # Determine which direction to move based on direction mount
-            # is moving (i.e. what side it started on).
-            if pier_side == 'east':
-                if dec_offset >= 0:
-                    dec_direction = 'north'
-                else:
-                    dec_direction = 'south'
-            else:
-                if dec_offset >= 0:
-                    dec_direction = 'south'
-                else:
-                    dec_direction = 'north'
-
-            if ra_offset >= 0:
-                ra_direction = 'west'
-            else:
-                ra_direction = 'east'
-
-            dec_ms = abs(dec_ms.value) * 1.
-            ra_ms = abs(ra_ms.value) * 1.
-
-            # Ensure we don't try to move for too long
-            max_time = 99999
-
-            # Correct the Dec axis (if offset is large enough)
-            if dec_ms > max_time:
-                dec_ms = max_time
-
-            if dec_ms >= 50:
-                self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
-                    dec_direction, dec_ms, dec_offset))
-                if dec_ms >= 1. and dec_ms <= max_time:
-                    self.mount.query('move_ms_{}'.format(
-                        dec_direction), '{:05.0f}'.format(dec_ms))
-
-                # Adjust tracking for up to 30 seconds then fail if not done.
-                start_tracking_time = current_time()
-                while self.mount.is_tracking is False:
-                    if (current_time() - start_tracking_time).sec > 30:
-                        raise Exception("Trying to adjust Dec tracking for more than 30 seconds")
-
-                    self.logger.debug("Waiting for Dec tracking adjustment")
-                    time.sleep(0.1)
-
-            # Correct the RA axis (if offset is large enough)
-            if ra_ms > max_time:
-                ra_ms = max_time
-
-            if ra_ms >= 50:
-                self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
-                    ra_direction, ra_ms, ra_offset))
-                if ra_ms >= 1. and ra_ms <= max_time:
-                    self.mount.query('move_ms_{}'.format(
-                        ra_direction), '{:05.0f}'.format(ra_ms))
-
-                # Adjust tracking for up to 30 seconds then fail if not done.
-                start_tracking_time = current_time()
-                while self.mount.is_tracking is False:
-                    if (current_time() - start_tracking_time).sec > 30:
-                        raise Exception("Trying to adjust RA tracking for more than 30 seconds")
-
-                    self.logger.debug("Waiting for RA tracking adjustment")
-                    time.sleep(0.1)
+            try:
+                self.mount.correct_tracking(correction_info)
+            except error.Timeout:
+                self.logger.warning("Timeout while correcting tracking")
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers

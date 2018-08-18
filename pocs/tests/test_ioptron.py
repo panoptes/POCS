@@ -1,8 +1,33 @@
+import os
 import pytest
 
 from astropy.coordinates import EarthLocation
+from astropy import units as u
 
+from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
+from pocs.utils.config import load_config
+
+
+@pytest.fixture
+def location():
+    config = load_config(ignore_local=True)
+    loc = config['location']
+    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+
+
+@pytest.fixture(scope="function")
+def mount(config, location):
+    try:
+        del os.environ['POCSTIME']
+    except KeyError:
+        pass
+
+    config['mount'] = {
+        'brand': 'bisque',
+        'template_dir': 'resources/bisque',
+    }
+    return Mount(location=location, config=config)
 
 
 @pytest.mark.with_mount
@@ -64,3 +89,24 @@ class TestMount(object):
         assert self.mount.is_parked is False
         self.mount.home_and_park()
         assert self.mount.is_parked is True
+
+
+def test_get_tracking_correction(mount):
+    pointing_ha = 12
+    offset_info = OffsetError(
+        -13.0881456 * u.arcsec,
+        1.4009 * u.arcsec,
+        12.154 * u.arcsec
+    )
+    correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
+
+    dec_info = correction_info['dec']
+    ra_info = correction_info['ra']
+
+    assert dec_info[0].value == pytest.approx(1.4009, rel=1e-2)
+    assert dec_info[1] == pytest.approx(103.49, rel=1e-2)
+    assert dec_info[2] == 'south'
+
+    assert ra_info[0].value == pytest.approx(-13.09, rel=1e-2)
+    assert ra_info[1] == pytest.approx(966.84, rel=1e-2)
+    assert ra_info[2] == 'east'
