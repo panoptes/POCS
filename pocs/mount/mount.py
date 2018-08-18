@@ -312,6 +312,19 @@ class AbstractMount(PanBase):
         return separation
 
     def get_tracking_correction(self, offset_info, pointing_ha):
+        """Determine the needed tracking corrections from current position.
+
+        Args:
+            offset_info (`OffsetError`): A named tuple describing the offset
+                error. See `pocs.images.OffsetError`.
+            pointing_ha (float): The Hour Angle (HA) of the mount at the
+                beginning of the observation sequence in degrees. This affects
+                the direction of the Dec adjustment.
+
+        Returns:
+            dict[tuple]: Offset corrections for each axis:
+                (arcsec, millisecond, direction).
+        """
         pier_side = 'east'
         if pointing_ha <= 12:
             pier_side = 'west'
@@ -365,7 +378,7 @@ class AbstractMount(PanBase):
         return axis_corrections
 
     def correct_tracking(self, correction_info, axis_timeout=30.):
-        """ Make tracking adjustment corrections
+        """ Make tracking adjustment corrections.
 
         Args:
             correction_info (dict[tuple]): Correction info to be applied, see
