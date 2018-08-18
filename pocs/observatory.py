@@ -342,23 +342,49 @@ class Observatory(PanBase):
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
 
+            # Get the pier side of pointing image
+            pointing_ha = self.current_observation.pointing_image.header_ha
+
+            try:
+                pointing_ha = pointing_ha.value
+            except AttributeError:
+                pass
+
+            self.logger.debug("Pointing HA: {}".format(pointing_ha))
+
+            pier_side = 'east'
+            if pointing_ha <= 12:
+                pier_side = 'west'
+
+            self.logger.debug("Mount pier side: {}".format(pier_side))
+
             # find the number of ms and direction for Dec axis
             dec_offset = self.current_offset_info.delta_dec
             dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
-            if dec_offset >= 0:
-                dec_direction = 'north'
-            else:
-                dec_direction = 'south'
 
             # find the number of ms and direction for RA axis
             ra_offset = self.current_offset_info.delta_ra
             ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
+
+            # Determine which direction to move based on direction mount
+            # is moving (i.e. what side it started on).
+            if pier_side == 'east':
+                if dec_offset >= 0:
+                    dec_direction = 'north'
+                else:
+                    dec_direction = 'south'
+            else:
+                if dec_offset >= 0:
+                    dec_direction = 'south'
+                else:
+                    dec_direction = 'north'
+
             if ra_offset >= 0:
                 ra_direction = 'west'
             else:
                 ra_direction = 'east'
 
-            dec_ms = abs(dec_ms.value) * 1.5  # TODO(wtgee): Figure out why 1.5
+            dec_ms = abs(dec_ms.value) * 1.
             ra_ms = abs(ra_ms.value) * 1.
 
             # Ensure we don't try to move for too long
