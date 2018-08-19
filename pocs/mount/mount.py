@@ -314,6 +314,12 @@ class AbstractMount(PanBase):
     def get_tracking_correction(self, offset_info, pointing_ha):
         """Determine the needed tracking corrections from current position.
 
+        This method will determine the direction and number of milliseconds to
+        correct the mount for each axis in order to correct for any tracking
+        drift. The Declination axis correction ('north' or 'south') depends on
+        the movement of the camera box with respect to the pier, which can be
+        determined from the Hour Angle (HA) of the pointing image in the sequence.
+
         Args:
             offset_info (`OffsetError`): A named tuple describing the offset
                 error. See `pocs.images.OffsetError`.
@@ -322,8 +328,13 @@ class AbstractMount(PanBase):
                 the direction of the Dec adjustment.
 
         Returns:
-            dict[tuple]: Offset corrections for each axis:
-                (arcsec, millisecond, direction).
+            dict: Offset corrections for each axis ::
+
+                dict: {
+                    # axis: (arcsec, millisecond, direction)
+                    'ra': (float, float, str),
+                    'dec': (float, float, str),
+                }
         """
         pier_side = 'east'
         if pointing_ha <= 12:
