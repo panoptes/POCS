@@ -320,6 +320,10 @@ class AbstractMount(PanBase):
         the movement of the camera box with respect to the pier, which can be
         determined from the Hour Angle (HA) of the pointing image in the sequence.
 
+        Note:
+            Correction values below 50ms will be skipped and values above 99999ms
+            will be clipped.
+
         Args:
             offset_info (`OffsetError`): A named tuple describing the offset
                 error. See `pocs.images.OffsetError`.
@@ -328,7 +332,7 @@ class AbstractMount(PanBase):
                 the direction of the Dec adjustment.
 
         Returns:
-            dict: Offset corrections for each axis ::
+            dict: Offset corrections for each axis as needed ::
 
                 dict: {
                     # axis: (arcsec, millisecond, direction)
