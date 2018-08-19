@@ -92,21 +92,31 @@ class TestMount(object):
 
 
 def test_get_tracking_correction(mount):
-    pointing_ha = 12
-    offset_info = OffsetError(
-        -13.0881456 * u.arcsec,
-        1.4009 * u.arcsec,
-        12.154 * u.arcsec
-    )
-    correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
 
-    dec_info = correction_info['dec']
-    ra_info = correction_info['ra']
+    offsets = [
+        (2, -13.0881456, 1.4009, 12.154),
+        (14, -13.0881456, 1.4009, 12.154),
+    ]
 
-    assert dec_info[0].value == pytest.approx(1.4009, rel=1e-2)
-    assert dec_info[1] == pytest.approx(103.49, rel=1e-2)
-    assert dec_info[2] == 'south'
+    corrections = [
+        (103.49, 'south', 966.84, 'east'),
+        (103.49, 'north', 966.84, 'east'),
+    ]
 
-    assert ra_info[0].value == pytest.approx(-13.09, rel=1e-2)
-    assert ra_info[1] == pytest.approx(966.84, rel=1e-2)
-    assert ra_info[2] == 'east'
+    for offset, correction in zip(offsets, corrections):
+        pointing_ha = offset[0]
+        offset_info = OffsetError(
+            offset[1] * u.arcsec,
+            offset[2] * u.arcsec,
+            offset[3] * u.arcsec
+        )
+        correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
+
+        dec_info = correction_info['dec']
+        ra_info = correction_info['ra']
+
+        assert dec_info[1] == pytest.approx(correction[0], rel=1e-2)
+        assert dec_info[2] == correction[1]
+
+        assert ra_info[1] == pytest.approx(correction[2], rel=1e-2)
+        assert ra_info[2] == correction[3]
