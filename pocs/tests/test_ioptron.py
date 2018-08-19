@@ -1,8 +1,33 @@
+import os
 import pytest
 
 from astropy.coordinates import EarthLocation
+from astropy import units as u
 
+from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
+from pocs.utils.config import load_config
+
+
+@pytest.fixture
+def location():
+    config = load_config(ignore_local=True)
+    loc = config['location']
+    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+
+
+@pytest.fixture(scope="function")
+def mount(config, location):
+    try:
+        del os.environ['POCSTIME']
+    except KeyError:
+        pass
+
+    config['mount'] = {
+        'brand': 'bisque',
+        'template_dir': 'resources/bisque',
+    }
+    return Mount(location=location, config=config)
 
 
 @pytest.mark.with_mount
@@ -64,3 +89,41 @@ class TestMount(object):
         assert self.mount.is_parked is False
         self.mount.home_and_park()
         assert self.mount.is_parked is True
+
+
+def test_get_tracking_correction(mount):
+
+    offsets = [
+        # HA, ΔRA, ΔDec, Magnitude
+        (2, -13.0881456, 1.4009, 12.154),
+        (2, -13.0881456, -1.4009, 12.154),
+        (2, 13.0881456, 1.4009, 12.154),
+        (14, -13.0881456, 1.4009, 12.154),
+        (14, 13.0881456, 1.4009, 12.154),
+    ]
+
+    corrections = [
+        (103.49, 'south', 966.84, 'east'),
+        (103.49, 'north', 966.84, 'east'),
+        (103.49, 'south', 966.84, 'west'),
+        (103.49, 'north', 966.84, 'east'),
+        (103.49, 'north', 966.84, 'west'),
+    ]
+
+    for offset, correction in zip(offsets, corrections):
+        pointing_ha = offset[0]
+        offset_info = OffsetError(
+            offset[1] * u.arcsec,
+            offset[2] * u.arcsec,
+            offset[3] * u.arcsec
+        )
+        correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
+
+        dec_info = correction_info['dec']
+        ra_info = correction_info['ra']
+
+        assert dec_info[1] == pytest.approx(correction[0], rel=1e-2)
+        assert dec_info[2] == correction[1]
+
+        assert ra_info[1] == pytest.approx(correction[2], rel=1e-2)
+        assert ra_info[2] == correction[3]
