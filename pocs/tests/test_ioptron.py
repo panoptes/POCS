@@ -94,13 +94,20 @@ class TestMount(object):
 def test_get_tracking_correction(mount):
 
     offsets = [
+        # HA, ΔRA, ΔDec, Magnitude
         (2, -13.0881456, 1.4009, 12.154),
+        (2, -13.0881456, -1.4009, 12.154),
+        (2, 13.0881456, 1.4009, 12.154),
         (14, -13.0881456, 1.4009, 12.154),
+        (14, 13.0881456, 1.4009, 12.154),
     ]
 
     corrections = [
         (103.49, 'south', 966.84, 'east'),
         (103.49, 'north', 966.84, 'east'),
+        (103.49, 'south', 966.84, 'west'),
+        (103.49, 'north', 966.84, 'east'),
+        (103.49, 'north', 966.84, 'west'),
     ]
 
     for offset, correction in zip(offsets, corrections):
