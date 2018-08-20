@@ -6,9 +6,9 @@ location:
     longitude: -155.58 # Degrees
     elevation: 3400.0 # Meters
     utc_offset: -10.00 # Hours
-    horizon: 30 # Degrees
-    civil_horizon: 0 # Degrees
-    twilight_horizon: -18 # Degrees
+    horizon: 30 # Degrees - Targets above this limit
+    civil_horizon: 0 # Degrees - Sun below this limit for flats
+    twilight_horizon: -18 # Degrees - Sun below this limit to observe
     timezone: US/Hawaii
     gmt_offset: -600
 directories:
