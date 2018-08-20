@@ -125,11 +125,11 @@ class PanStateMachine(Machine):
                 # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
                     if self.observatory.is_dark(horizon='civil') is False:
-                        self.logger.warning("Waiting until evening")
+                        self.logger.warning("Waiting until civil twilight")
                         self.wait_until_dark(horizon='civil')
                 elif self.state == 'calibrating':
                     if self.observatory.is_dark(horizon='astro') is False:
-                        self.logger.warning("Waiting until evening")
+                        self.logger.warning("Waiting until astronomical twilight")
                         self.wait_until_dark(horizon='astro')
 
                 try:

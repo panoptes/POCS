@@ -596,11 +596,11 @@ class Observatory(PanBase):
                 camera = self.cameras[cam_name]
                 exp_time = exp_times[cam_name][-1].value
 
-                filename = "{}/flats/{}/{}/{}.{}".format(
+                filename = "{}/flats/{}/{}/flat_{:02d}.{}".format(
                     image_dir,
                     camera.uid,
                     flat_obs.seq_time,
-                    'flat_{:02d}'.format(flat_obs.current_exp),
+                    flat_obs.current_exp,
                     camera.file_extension)
 
                 # Take picture and get event
@@ -706,11 +706,11 @@ class Observatory(PanBase):
 
                     camera = self.cameras[cam_name]
 
-                    filename = "{}/darks/{}/{}/{}.{}".format(
+                    filename = "{}/darks/{}/{}/dark_{:02d}.{}".format(
                         image_dir,
                         camera.uid,
                         flat_obs.seq_time,
-                        'dark_{:02d}'.format(flat_obs.current_exp),
+                        flat_obs.current_exp,
                         camera.file_extension)
 
                     exp_time = exp_times[cam_name][i]
@@ -774,8 +774,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            observe_horizon = config_site.get(
-                'observe_horizon', -18 * u.degree)
+            civil_horizon = config_site.get('civil_horizon', 0 * u.degree)
+            astro_horizon = config_site.get('astro_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -786,7 +786,8 @@ class Observatory(PanBase):
                 'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon,
-                'observe_horizon': observe_horizon,
+                'civil_horizon': civil_horizon,
+                'astro_horizon': astro_horizon,
             }
             self.logger.debug("Location: {}".format(self.location))
 

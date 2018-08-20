@@ -8,7 +8,7 @@ location:
     utc_offset: -10.00 # Hours
     horizon: 30 # Degrees - Targets above this limit
     civil_horizon: 0 # Degrees - Sun below this limit for flats
-    twilight_horizon: -18 # Degrees - Sun below this limit to observe
+    astro_horizon: -18 # Degrees - Sun below this limit to observe
     timezone: US/Hawaii
     gmt_offset: -600
 directories:
@@ -65,7 +65,7 @@ messaging:
 #         output_timestamp: False
 
 state_machine: simple_state_table
-# Default coordinates to take evening flats
+# Default coordinates to take evening flats - may need to be adjusted
 flat_field:
     twilight:
         alt: 70
