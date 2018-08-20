@@ -115,13 +115,6 @@ def test_update_location(mount, config):
     assert mount.location == location2
 
 
-# def test_target_coords_below_horizon(mount, target_down):
-#     mount.initialize()
-
-#     assert mount.set_target_coordinates(target_down) is False
-#     assert mount.get_target_coordinates() is None
-
-
 def test_target_coords(mount, target):
     mount.initialize(unpark=True)
 
