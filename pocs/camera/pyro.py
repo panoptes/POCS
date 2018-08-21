@@ -13,6 +13,7 @@ from astropy import units as u
 import Pyro4
 
 from pocs.base import PanBase
+from pocs.utils import current_time
 from pocs.utils import config
 from pocs.utils.logger import get_root_logger
 from pocs.utils import load_module
@@ -25,60 +26,114 @@ sys.excepthook = Pyro4.util.excepthook
 
 class Camera(AbstractCamera):
     """
-    Class representing the client side interface to a distributed array of cameras
+    Class representing the client side interface to a distributed camera
     """
     def __init__(self,
-                 name='Pyro Camera Array',
-                 model='pyro',
+                 name,
+                 model='pyro'
+                 uri,
                  *args, **kwargs):
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, port=uri, model=model, *args, **kwargs)
 
-        # Get a proxy for the name server (will raise NamingError if not found)
-        self._name_server = Pyro4.locateNS()
-        # Connect to cameras
-        self.connect()
+        # Connect to camera
+        self.connect(uri)
+
+# Properties
+
+    @AbstractCamera.uid.getter
+    def uid(self):
+        # Neet to overide this because the base class only returns the 1st 6 characters of the
+        # serial number, which is not a unique identifier for most of the camera types.
+        return self._serial_number
+
+    @property
+    def ccd_temp(self):
+        """
+        Current temperature of the camera's image sensor.
+        """
+        temperature = self._proxy.ccd_temp
+        if temperature is None:
+            raise NotImplementedError
+        return temperature * u.Celsius
+
+    @property
+    def ccd_set_point(self):
+        """
+        Current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Can be set by assigning an astropy.units.Quantity.
+        """
+        temperature = self._proxy.ccd_set_point
+        if temperature is None:
+            raise NotImplementedError
+        return temperature * u.Celsius
+
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
+        if isinstance(set_point, u.Quantity):
+            set_point = set_point.to(u.Celsius).value
+        if self._proxy.ccd_set_point(set_point) is None:
+            raise NotImplementedError
+
+    @property
+    def ccd_cooling_enabled(self):
+        """
+        Current status of the camera's image sensor cooling system (enabled/disabled).
+
+        For some cameras it is possible to change this by assigning a boolean
+        """
+        return self._proxy.ccd_cooling_enabled
+
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, enabled):
+        if self._proxy.ccd_cooling_enabled(bool(enabled)) is None:
+            raise NotImplementedError
+
+    @property
+    def ccd_cooling_power(self):
+        power = self._proxy.ccd_cooling_power
+        if power is None:
+            raise NotImplementedError
+        return power
 
 # Methods
 
-    def connect(self):
+    def connect(self, uri):
         """
-        Find and (re)connect to all the distributed cameras.
+        (re)connect to the distributed camera.
         """
-        # Find all the registered cameras.
-        camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
-        msg = "Found {} cameras registered with Pyro name server".format(len(camera_uris))
-        self.logger.debug(msg)
+        self.logger.debug('Connecting to {} on {}'.format(self.name, uri))
 
-        # Get a proxy for each camera
-        self.cameras = {}
-        for cam_name, cam_uri in camera_uris.items():
-            self.logger.debug("Getting proxy for {}...".format(cam_name))
-            try:
-                self.cameras[cam_name] = Pyro4.Proxy(cam_uri)
-            except Pyro4.errors.NamingError as err:
-                msg = "Couldn't get proxy to camera {}: {}".format(cam_nam, err)
-                warn(msg)
-                self.logger.error(msg)
-                self.cameras.remove(cam_name)
-            else:
-                # Set aync mode
-                self.cameras[cam_name]._pyroAsync()
+        # Get a proxy for the camera
+        try:
+            self._proxy = Pyro4.Proxy(uri)
+        except Pyro4.errors.NamingError as err:
+            msg = "Couldn't get proxy to camera {}: {}".format(self.name, err)
+            warn(msg)
+            self.logger.error(msg)
+            return
 
-        # Force each camera proxy to connect by getting the camera uids.
+        # Set sync mode
+        Pyro4.async(self._proxy, async=False)
+
+        # Force camera proxy to connect by getting the camera uid.
         # This will trigger the remote object creation & (re)initialise the camera & focuser,
-        # which can take a long time with real hardware, so do this in parallel.
-        async_results = {}
-        for cam_name, cam_proxy in self.cameras.items():
-            self.logger.debug("Connecting to {}...".format(cam_name))
-            async_results[cam_name] = cam_proxy.get_uid()
+        # which can take a long time with real hardware.
+        uid = self._proxy.get_uid()
+        if not uid:
+            msg = "Couldn't connect to {} on {}!".format(self.name, uri)
+            warn(msg)
+            self.logger.error(msg)
+            return
 
-        self.uids = {}
-        for cam_name, result in async_results.items():
-            self.uids[cam_name] = result.value
-
-        self.logger.debug("Got camera UIDs:")
-        for cam_name, uid in self.uids.items():
-            self.logger.debug("\t{} : {}".format(cam_name, uid))
+        self._connected = True
+        self._serial_number = uid
+        self.model = self._proxy.model
+        self._file_extension = self._proxy.file_extension
+        self._readout_time = self._proxy.readout_time
+        self.filter_type = self._proxy.filter_type
+        self.logger.debug("{} connected".format(self))
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -89,7 +144,7 @@ class Camera(AbstractCamera):
                       *args,
                       **kwargs):
         """
-        Take exposures for a given number of seconds and saves to provided filename.
+        Take exposure for a given number of seconds and saves to provided filename.
 
         Args:
             seconds (u.second, optional): Length of exposure
@@ -101,7 +156,7 @@ class Camera(AbstractCamera):
                 for exposures to complete. If not given will wait indefinitely.
 
         Returns:
-            threading.Event: Event that will be set when exposures are complete
+            threading.Event: Event that will be set when exposure is complete
 
         """
         # Want exposure time as a builtin type for Pyro serialisation
@@ -114,39 +169,30 @@ class Camera(AbstractCamera):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
 
-        # Find somewhere to insert the individual camera UIDs
-        if "<uid>" in filename:
-            dir_name, base_name = filename.split(sep="<uid>", maxsplit=1)
-            # Make sure dir_name has one and only one trailing slash
-            dir_name = dir_name.rstrip('/')
-            dir_name = dir_name + '/'
-            # Make sure base name doesn't have a leading slash
-            base_name = base_name.lstrip('/')
-        else:
-            dir_name, base_name = os.path.split(filename)
+        dir_name, base_name = os.path.split(filename)
 
-        # Start the exposure on all cameras
-        exposure_results = {}
-        for cam_name, cam_proxy in self.cameras.items():
-            self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds,
-                                                                           cam_name,
-                                                                           base_name))
-            # Remote method call to start the exposure
-            future_result = cam_proxy.take_exposure(seconds=seconds,
+        # Make sure proxy is in async mode
+        Pyro4.async(self.proxy, async=True)
+
+        # Start the exposure
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, cam_name, base_name))
+        # Remote method call to start the exposure
+        exposure_result = self._proxy.take_exposure(seconds=seconds,
                                                     base_name=base_name,
                                                     dark=dark,
                                                     *args,
                                                     **kwargs)
-            # Tag the file transfer on the end.
-            future_result = future_result.then(self._file_transfer, dir_name)
-            # Tag empty directory cleanup on the end & keep future result to check for completion
-            exposure_results[cam_name] = future_result.then(self._clean_directories)
+        # Tag the file transfer on the end.
+        exposure_result = exposure_result.then(self._file_transfer, dir_name)
+        # Tag empty directory cleanup on the end & keep future result to check for completion
+        exposure_result = exposure_result.then(self._clean_directories)
 
-        # Start a thread that will set an event once all exposures have completed
+        # Start a thread that will set an event once exposure has completed
         exposure_event = Event()
-        exposure_thread = Timer(interval=seconds,
+        exposure_thread = Timer(interval=seconds + self._readout_time,
                                 function=self._async_wait,
-                                args=(exposure_results, 'exposure', exposure_event, timeout))
+                                args=(exposure_result, 'exposure', exposure_event, timeout))
         exposure_thread.start()
 
         if blocking:
@@ -235,21 +281,23 @@ class Camera(AbstractCamera):
 
         focus_dir = os.path.join(os.path.abspath(self.config['directories']['images']), 'focus/')
 
-        # Start autofocus on all cameras
-        autofocus_results = {}
-        for cam_name, cam_proxy in self.cameras.items():
-            self.logger.debug('Starting autofocus on {}'.format(cam_name))
-            # Remote method call to start the autofocus
-            future_result = cam_proxy.autofocus(*args, **autofocus_kwargs, **kwargs)
-            # Tag the file transfer on the end.
-            future_result = future_result.then(self._file_transfer, focus_dir)
-            # Tag empty directory cleanup on the end & keep future result to check for completion
-            autofocus_results[cam_name] = future_result.then(self._clean_directories)
+        # Make sure proxy is in async mode
+        Pyro4.async(self.proxy, async=True)
 
-        # Start a thread that will set an event once all exposures have completed
+        # Start autofocus
+        autofocus_result = {}
+        self.logger.debug('Starting autofocus on {}'.format(cam_name))
+        # Remote method call to start the autofocus
+        autofocus_result = self._proxy.autofocus(*args, **autofocus_kwargs, **kwargs)
+        # Tag the file transfer on the end.
+        autofocus_result = autofocus_result.then(self._file_transfer, focus_dir)
+        # Tag empty directory cleanup on the end & keep future result to check for completion
+        autofocus_result = autofocus_result.then(self._clean_directories)
+
+        # Start a thread that will set an event once autofocus has completed
         autofocus_event = Event()
         autofocus_thread = Thread(target=self._async_wait,
-                                  args=(autofocus_results, 'autofocus', autofocus_event, timeout))
+                                  args=(autofocus_result, 'autofocus', autofocus_event, timeout))
         autofocus_thread.start()
 
         if blocking:
@@ -304,32 +352,20 @@ class Camera(AbstractCamera):
                                                                    destination))
         return source
 
-    def _async_wait(self, future_results, method='?', event=None, timeout=None):
+    def _async_wait(self, future_result, name='?', event=None, timeout=None):
         # For now not checking for any problems, just wait for everything to return (or timeout)
-        results = {}
-        if timeout is not None:
-            wait_start_time = time.time()
-
-        for name, future_result in future_results.items():
-            if future_result.wait(timeout):
-                results[name] = future_result.value
-            else:
-                msg = "Timeout while waiting for {} on {}".format(method, name)
-                warn(msg)
-                self.logger.error(msg)
-            if timeout is not None:
-                # Need to adjust timeout, otherwise we're resetting the clock each time a
-                # single result returns.
-                waited = time.time() - wait_start_time
-                if waited < timeout:
-                    timeout = timeout - waited
-                else:
-                    timeout = 0
+        if future_result.wait(timeout):
+            result = future_result.value
+        else:
+            msg = "Timeout while waiting for {} on {}".format(name, self.name)
+            warn(msg)
+            self.logger.error(msg)
+            return False
 
         if event is not None:
             event.set()
 
-        return results
+        return result
 
 
 @Pyro4.expose
@@ -370,6 +406,66 @@ class CameraServer(object):
     @property
     def uid(self):
         return self._camera.uid
+
+    @property
+    def model(self):
+        return self._camera.model
+
+    @property
+    def filter_type(self):
+        return self._camera.model
+
+    @property
+    def file_extension(self):
+        return self._camera.file_extension
+
+    @property
+    def readout_time(self):
+        return self._camera.readout_time
+
+    @property
+    def ccd_temp(self):
+        try:
+            temperature = self._camera.ccd_temp
+        except NotImplementedError:
+            return None
+        return temperature.to(u.Celsius).value
+
+    @property
+    def ccd_set_point(self):
+        try:
+            temperature = self._camera.ccd_set_point
+        except NotImplementedError:
+            return None
+        return temperature.to(u.Celsius).value
+
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
+        try:
+            self._camera.ccd_set_point = set_point
+        except NotImplementedError:
+            return None
+        return set_point
+
+    @property
+    def ccd_cooling_enabled(self):
+        return self._camera.ccd_cooling_enabled
+
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, enabled):
+        try:
+            self._camera.ccd_cooling_enabled = enabled
+        except NotImplmentedError:
+            return None
+        return enabled
+
+    @property
+    def ccd_cooling_power(self):
+        try:
+            power = self._camera.ccd_cooling_power
+        except NotImplementedError:
+            return None
+        return power
 
 # Methods
 

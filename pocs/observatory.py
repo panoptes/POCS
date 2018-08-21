@@ -1,9 +1,7 @@
 import os
 import time
-
 from collections import OrderedDict
 from datetime import datetime
-
 from glob import glob
 
 from astroplan import Observer
@@ -11,6 +9,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
+import Pyro4
 
 from pocs.base import PanBase
 import pocs.dome
@@ -24,6 +23,11 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
+from pocs.camera import pyro
+
+
+# Enable local display of remote tracebacks
+sys.excepthook = Pyro4.util.excepthook
 
 
 class Observatory(PanBase):
@@ -770,6 +774,35 @@ class Observatory(PanBase):
                     cam.name, cam.uid, is_primary))
 
                 self.cameras[cam_name] = cam
+
+        distributed_cameras = kwargs.get('distributed_cameras',
+                                         camera_info.get('distributed_cameras', False))
+        if not a_simulator and distributed_cameras:
+            # Get a proxy for the name server (will raise NamingError if not found)
+            try:
+                self._name_server = Pyro4.locateNS()
+            except Pyro4.errors.NamingError() as err:
+                msg = "Couldn't connect to Pyro name server: {}".format(err)
+                self.logger.error(msg)
+            else:
+                # Find all the registered cameras
+                camera_uris = self._name_server.list(metadata_all={'POCS', 'Cameras'})
+                msg = "Found {} distributed cameras on name server".format(len(camera_uris))
+                self.logger.debug(msg)
+
+                # Create the camera objects.
+                # TODO: do this in parallel because initialising cameras can take a while.
+                for cam_name, cam_uri in camera_uris.items():
+                    cam = pyro.Camera(name=cam_name, uri=cam_uri)
+                    is_primary = ''
+                    if camera_info.get('primary', '') == cam.uid:
+                        self.primary_camera = cam
+                        is_primary = ' [Primary]'
+
+                    self.logger.debug("Camera created: {} {} {}".format(
+                        cam.name, cam.uid, is_primary))
+
+                    self.cameras[cam_name] = cam
 
         # If no camera was specified as primary use the first
         if self.primary_camera is None:

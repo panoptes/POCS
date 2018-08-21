@@ -1,6 +1,6 @@
 [run]
 branch = True
-concurrency = multiprocessing
+concurrency = multiprocessing, threading, subprocess
 source =
     peas
     pocs

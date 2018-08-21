@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Script to run the Pyro name server. This must be running in order to use distributed cameras with
+POCS. The name server can be run on any computer on the network, but would normally be run on the
+main control computer. The name server should be started before the distributed camera servers and
+POCS.
+"""
 import argparse
 import os
 from Pyro4 import naming, errors, config

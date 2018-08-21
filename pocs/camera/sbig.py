@@ -45,8 +45,8 @@ class Camera(AbstractCamera):
 
     @AbstractCamera.uid.getter
     def uid(self):
-        # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
-        # Need to use the whole thing.
+        # Neet to overide this because the base class only returns the 1st 6 characters of the
+        # serial number, which is not a unique identifier for most of the camera types.
         return self._serial_number
 
     @property
