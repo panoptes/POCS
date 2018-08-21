@@ -88,9 +88,28 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     if fname.endswith('.cr2'):
-        return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+        pretty_path = _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname, **kwargs)
+        pretty_path = _make_pretty_from_fits(fname, **kwargs)
+    else:
+        warn("File must be a Canon CR2 or FITS file.")
+        return None
+
+    # Symlink latest.jpg to the image; first remove the symlink if it already exists.
+    if os.path.exists(pretty_path) and pretty_path.endswith('.jpg'):
+        latest_path = '{}/images/latest.jpg'.format(os.getenv('PANDIR'))
+        try:
+            os.remove(latest_path)
+        except FileNotFoundError:
+            pass
+        try:
+            os.symlink(pretty_path, latest_path)
+        except Exception as e:
+            warn("Can't link latest image: {}".format(e))
+
+        return pretty_path
+    else:
+        return None
 
 
 def _make_pretty_from_fits(
