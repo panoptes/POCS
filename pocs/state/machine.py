@@ -129,6 +129,10 @@ class PanStateMachine(Machine):
                         self.wait_until_dark(horizon='civil')
                 elif self.state == 'calibrating':
                     if self.observatory.is_dark(horizon='astro') is False:
+                        # Send the mount to home to wait
+                        self.logger.warning("Sending mount to home")
+                        self.observatory.mount.slew_to_home()
+
                         self.logger.warning("Waiting until astronomical twilight")
                         self.wait_until_dark(horizon='astro')
 
