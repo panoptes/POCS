@@ -1,5 +1,4 @@
 import os
-
 from collections import OrderedDict
 from datetime import datetime
 from glob import glob
@@ -743,7 +742,7 @@ class Observatory(PanBase):
                 self.logger.error(msg)
             else:
                 # Find all the registered cameras
-                camera_uris = self._name_server.list(metadata_all={'POCS', 'Cameras'})
+                camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
                 msg = "Found {} distributed cameras on name server".format(len(camera_uris))
                 self.logger.debug(msg)
 

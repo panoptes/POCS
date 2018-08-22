@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import yaml
 import os
+import copy
 
 from threading import Event
 from threading import Thread
@@ -68,7 +69,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self, config=self.config)
+                    kwargs = copy.copy(focuser)
+                    kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**kwargs)
                     self.logger.debug("Focuser created: {}".format(self.focuser))
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
@@ -409,16 +412,15 @@ class AbstractCamera(PanBase):
         start_time = headers.get('start_time', current_time(flatten=True))
 
         # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
-            self.uid,
-            observation.seq_time,
-        )
+        image_dir = os.path.join(self.config['directories']['images'],
+                                 'fields',
+                                 observation.field.field_name,
+                                 self.uid,
+                                 observation.seq_time)
 
         # Get full file path
         if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
+            file_path = "{}.{}".format(os.path.join(image_dir, start_time), self.file_extension)
         else:
             # Add extension
             if '.' not in filename:
@@ -426,7 +428,7 @@ class AbstractCamera(PanBase):
 
             # Add directory
             if '/' not in filename:
-                filename = '{}/{}'.format(image_dir, filename)
+                filename = os.path.join(image_dir, filename)
 
             file_path = filename
 

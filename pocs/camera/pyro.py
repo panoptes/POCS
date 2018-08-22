@@ -29,9 +29,9 @@ class Camera(AbstractCamera):
     Class representing the client side interface to a distributed camera
     """
     def __init__(self,
-                 name,
-                 model='pyro'
                  uri,
+                 name='Pyro Camera',
+                 model='pyro',
                  *args, **kwargs):
         super().__init__(name=name, port=uri, model=model, *args, **kwargs)
 
@@ -51,10 +51,7 @@ class Camera(AbstractCamera):
         """
         Current temperature of the camera's image sensor.
         """
-        temperature = self._proxy.ccd_temp
-        if temperature is None:
-            raise NotImplementedError
-        return temperature * u.Celsius
+        return self._proxy.ccd_temp * u.Celsius
 
     @property
     def ccd_set_point(self):
@@ -64,17 +61,13 @@ class Camera(AbstractCamera):
 
         Can be set by assigning an astropy.units.Quantity.
         """
-        temperature = self._proxy.ccd_set_point
-        if temperature is None:
-            raise NotImplementedError
-        return temperature * u.Celsius
+        return self._proxy.ccd_set_point * u.Celsius
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
         if isinstance(set_point, u.Quantity):
             set_point = set_point.to(u.Celsius).value
-        if self._proxy.ccd_set_point(set_point) is None:
-            raise NotImplementedError
+        self._proxy.ccd_set_point = set_point
 
     @property
     def ccd_cooling_enabled(self):
@@ -87,15 +80,15 @@ class Camera(AbstractCamera):
 
     @ccd_cooling_enabled.setter
     def ccd_cooling_enabled(self, enabled):
-        if self._proxy.ccd_cooling_enabled(bool(enabled)) is None:
-            raise NotImplementedError
+        self._proxy.ccd_cooling_enabled = bool(enabled)
 
     @property
     def ccd_cooling_power(self):
-        power = self._proxy.ccd_cooling_power
-        if power is None:
-            raise NotImplementedError
-        return power
+        """
+        Current power level of the camera's image sensor cooling system (typically as
+        a percentage of the maximum).
+        """
+        return self._proxy.ccd_cooling_power
 
 # Methods
 
@@ -159,6 +152,10 @@ class Camera(AbstractCamera):
             threading.Event: Event that will be set when exposure is complete
 
         """
+        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+
         # Want exposure time as a builtin type for Pyro serialisation
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second)
@@ -170,13 +167,15 @@ class Camera(AbstractCamera):
                 timeout = timeout.value
 
         dir_name, base_name = os.path.split(filename)
+        # Make sure dir_name has one and only one trailing slash, otherwise rsync may fail
+        dir_name = dir_name.rstrip('/') + '/'
 
         # Make sure proxy is in async mode
-        Pyro4.async(self.proxy, async=True)
+        Pyro4.async(self._proxy, async=True)
 
         # Start the exposure
         self.logger.debug('Taking {} second exposure on {}: {}'.format(
-            seconds, cam_name, base_name))
+            seconds, self.name, base_name))
         # Remote method call to start the exposure
         exposure_result = self._proxy.take_exposure(seconds=seconds,
                                                     base_name=base_name,
@@ -190,7 +189,7 @@ class Camera(AbstractCamera):
 
         # Start a thread that will set an event once exposure has completed
         exposure_event = Event()
-        exposure_thread = Timer(interval=seconds + self._readout_time,
+        exposure_thread = Timer(interval=seconds + self.readout_time,
                                 function=self._async_wait,
                                 args=(exposure_result, 'exposure', exposure_event, timeout))
         exposure_thread.start()
@@ -282,11 +281,11 @@ class Camera(AbstractCamera):
         focus_dir = os.path.join(os.path.abspath(self.config['directories']['images']), 'focus/')
 
         # Make sure proxy is in async mode
-        Pyro4.async(self.proxy, async=True)
+        Pyro4.async(self._proxy, async=True)
 
         # Start autofocus
         autofocus_result = {}
-        self.logger.debug('Starting autofocus on {}'.format(cam_name))
+        self.logger.debug('Starting autofocus on {}'.format(self.name))
         # Remote method call to start the autofocus
         autofocus_result = self._proxy.autofocus(*args, **autofocus_kwargs, **kwargs)
         # Tag the file transfer on the end.
@@ -333,7 +332,7 @@ class Camera(AbstractCamera):
         """
         # Need to make sure the destination directory already exists because rsync isn't
         # very good at creating directories.
-        os.makedirs(os.path.dirname(destination), mode=0o755, exist_ok=True)
+        os.makedirs(os.path.dirname(destination), mode=0o775, exist_ok=True)
         try:
             result = subprocess.run(['rsync',
                                      '--archive',
@@ -383,23 +382,11 @@ class CameraServer(object):
         self.user = os.getenv('PANUSER', 'panoptes')
 
         camera_config = self.config.get('camera')
-        camera_model = camera_config.get('model')
-        camera_port = camera_config.get('port')
-        camera_set_point = camera_config.get('set_point', None)
-        camera_filter_type = camera_config.get('filter_type', None)
-        camera_readout_time = camera_config.get('readout_time', None)
-        camera_focuser = camera_config.get('focuser', None)
-
-        module = load_module('pocs.camera.{}'.format(camera_model))
-        self._camera = module.Camera(name=self.name,
-                                     model=camera_model,
-                                     port=camera_port,
-                                     set_point=camera_set_point,
-                                     filter_type=camera_filter_type,
-                                     focuser=camera_focuser,
-                                     readout_time=camera_readout_time,
-                                     logger=get_root_logger(self.name),
-                                     config=self.config)
+        camera_config.update({'name': self.name,
+                              'logger': get_root_logger(self.name),
+                              'config': self.config})
+        module = load_module('pocs.camera.{}'.format(camera_config['model']))
+        self._camera = module.Camera(**camera_config)
 
 # Properties
 
@@ -413,7 +400,7 @@ class CameraServer(object):
 
     @property
     def filter_type(self):
-        return self._camera.model
+        return self._camera.filter_type
 
     @property
     def file_extension(self):
@@ -425,27 +412,17 @@ class CameraServer(object):
 
     @property
     def ccd_temp(self):
-        try:
-            temperature = self._camera.ccd_temp
-        except NotImplementedError:
-            return None
+        temperature = self._camera.ccd_temp
         return temperature.to(u.Celsius).value
 
     @property
     def ccd_set_point(self):
-        try:
-            temperature = self._camera.ccd_set_point
-        except NotImplementedError:
-            return None
+        temperature = self._camera.ccd_set_point
         return temperature.to(u.Celsius).value
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
-        try:
-            self._camera.ccd_set_point = set_point
-        except NotImplementedError:
-            return None
-        return set_point
+        self._camera.ccd_set_point = set_point
 
     @property
     def ccd_cooling_enabled(self):
@@ -453,19 +430,11 @@ class CameraServer(object):
 
     @ccd_cooling_enabled.setter
     def ccd_cooling_enabled(self, enabled):
-        try:
-            self._camera.ccd_cooling_enabled = enabled
-        except NotImplmentedError:
-            return None
-        return enabled
+        self._camera.ccd_cooling_enabled = enabled
 
     @property
     def ccd_cooling_power(self):
-        try:
-            power = self._camera.ccd_cooling_power
-        except NotImplementedError:
-            return None
-        return power
+        return self._camera.ccd_cooling_power
 
 # Methods
 
@@ -480,7 +449,6 @@ class CameraServer(object):
         # Using the /./ syntax for partial relative paths (needs rsync >= 2.6.7)
         filename = os.path.join(os.path.abspath(self.config['directories']['images']),
                                 './',
-                                self.uid,
                                 base_name)
         # Start the exposure and wait for it complete
         self._camera.take_exposure(seconds=seconds,

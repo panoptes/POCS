@@ -1,6 +1,7 @@
 import pytest
 
 from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.pyro import Camera as PyroCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -11,14 +12,18 @@ from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 
 import os
+import glob
 import time
+import subprocess
+import signal
 from ctypes.util import find_library
 
 import astropy.units as u
 import astropy.io.fits as fits
+import Pyro4
 
-params = [SimCamera, SBIGCamera, FLICamera]
-ids = ['simulator', 'sbig', 'fli']
+params = [SimCamera, PyroCamera, SBIGCamera, FLICamera]
+ids = ['simulator', 'pyro', 'sbig', 'fli']
 
 
 @pytest.fixture(scope='module')
@@ -27,18 +32,46 @@ def images_dir(tmpdir_factory):
     return str(directory)
 
 
+def end_process(proc):
+    proc.send_signal(signal.SIGINT)
+    return_code = proc.wait()
+
+
+@pytest.fixture(scope='module')
+def name_server(request):
+    ns_cmds = [os.path.expandvars('$POCS/pocs/utils/pyro/pyro_name_server.py'),
+               '--host', 'localhost']
+    ns_proc = subprocess.Popen(ns_cmds)
+    request.addfinalizer(lambda: end_process(ns_proc))
+    return ns_proc
+
+
+@pytest.fixture(scope='module')
+def camera_server(name_server, request):
+    cs_cmds = [os.path.expandvars('$POCS/pocs/utils/pyro/pyro_camera_server.py'),
+               '--ignore_local']
+    cs_proc = subprocess.Popen(cs_cmds)
+    request.addfinalizer(lambda: end_process(cs_proc))
+    return cs_proc
+
+
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
-def camera(request, images_dir):
+def camera(request, images_dir, camera_server):
     if request.param[0] == SimCamera:
-        camera = request.param[0](focuser={'model': 'simulator',
-                                           'focus_port': '/dev/ttyFAKE',
-                                           'initial_position': 20000,
-                                           'autofocus_range': (40, 80),
-                                           'autofocus_step': (10, 20),
-                                           'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500,
-                                           'autofocus_keep_files': False})
+        camera = SimCamera(focuser={'model': 'simulator',
+                                    'focus_port': '/dev/ttyFAKE',
+                                    'initial_position': 20000,
+                                    'autofocus_range': (40, 80),
+                                    'autofocus_step': (10, 20),
+                                    'autofocus_seconds': 0.1,
+                                    'autofocus_size': 500,
+                                    'autofocus_keep_files': False})
+    elif request.param[0] == PyroCamera:
+        ns = Pyro4.locateNS(host='localhost')
+        cameras = ns.list(metadata_all={'POCS', 'Camera'})
+        cam_name, cam_uri = cameras.popitem()
+        camera = PyroCamera(name=cam_name, uri=cam_uri)
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -64,7 +97,7 @@ def camera(request, images_dir):
     camera.config['directories']['images'] = images_dir
     return camera
 
-# Hardware independent tests, mostly use simulator:
+# Hardware independent tests using simulator:
 
 
 def test_sim_create_focuser():
@@ -110,6 +143,36 @@ def test_sim_readout_time():
     assert sim_camera.readout_time == 2.0
 
 
+# Hardware independent tests for distributed cameras
+
+def test_name_server(name_server):
+    # Give name server time to start up
+    time.sleep(5)
+    # Check that it's running.
+    assert name_server.poll() is None
+
+
+def test_locate_name_server(name_server):
+    # Check that we can connect to the name server
+    Pyro4.locateNS(host='localhost')
+
+
+def test_camera_server(camera_server):
+    # Give camera server time to start up
+    time.sleep(2)
+    # Check that it's running.
+    assert camera_server.poll() is None
+
+
+def test_camera_detection(camera_server):
+    ns = Pyro4.locateNS(host='localhost')
+    cameras = ns.list(metadata_all={'POCS', 'Camera'})
+    # Should be one distributed camera, a simulator with simulated focuser
+    assert len(cameras) == 1
+
+# Hardware independent tests for SBIG camera.
+
+
 def test_sbig_driver_bad_path():
     """
     Manually specify an incorrect path for the SBIG shared library. The
@@ -134,6 +197,7 @@ def test_sbig_bad_serial():
     assert camera._connected is False
     if isinstance(camera, SBIGCamera):
         assert camera._handle == INVALID_HANDLE_VALUE
+
 
 # *Potentially* hardware dependant tests:
 
@@ -279,14 +343,21 @@ def test_exposure_not_connected(camera):
     camera._connected = True
 
 
-def test_observation(camera):
+def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exp_time=1.5 * u.second)
+    observation.seq_time = 'seq_time'
     camera.take_observation(observation, headers={})
     time.sleep(7)
+    assert glob.glob(os.path.join(images_dir,
+                                  'fields',
+                                  'TestObservation',
+                                  camera.uid,
+                                  'seq_time',
+                                  '*.fits*'))
 
 
 def test_autofocus_coarse(camera):
