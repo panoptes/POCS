@@ -464,14 +464,17 @@ class AbstractFocuser(PanBase):
             fitted = True
 
             # Guard against fitting failures, force best focus to stay within sweep range
-            if best_focus < focus_positions[0]:
-                self.logger.warning("Fitting failure: best focus {} below sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[0]))
+            min_focus, max_focus = focus_positions[0], focus_positions[-1]
+            if best_focus < min_focus:
+                m = "Fitting failure: best focus {} below sweep limit {}".format(best_focus,
+                                                                                 min_focus)
+                self.logger.warning(msg)
                 best_focus = focus_positions[1]
 
-            if best_focus > focus_positions[-1]:
-                self.logger.warning("Fitting failure: best focus {} above sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[-1]))
+            if best_focus > max_focus:
+                m = "Fitting failure: best focus {} above sweep limit {}".format(best_focus,
+                                                                                 max_focus)
+                self.logger.warning(msg)
                 best_focus = focus_positions[-2]
 
         else:

@@ -97,6 +97,11 @@ def camera(request, images_dir, camera_server):
     camera.config['directories']['images'] = images_dir
     return camera
 
+
+@pytest.fixture(scope='module')
+def counter():
+    return {'value': 0}
+
 # Hardware independent tests using simulator:
 
 
@@ -159,7 +164,7 @@ def test_locate_name_server(name_server):
 
 def test_camera_server(camera_server):
     # Give camera server time to start up
-    time.sleep(2)
+    time.sleep(3)
     # Check that it's running.
     assert camera_server.poll() is None
 
@@ -352,41 +357,57 @@ def test_observation(camera, images_dir):
     observation.seq_time = 'seq_time'
     camera.take_observation(observation, headers={})
     time.sleep(7)
-    assert glob.glob(os.path.join(images_dir,
-                                  'fields',
-                                  'TestObservation',
-                                  camera.uid,
-                                  'seq_time',
-                                  '*.fits*'))
+    observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
+                                       camera.uid, 'seq_time', '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
 
 
-def test_autofocus_coarse(camera):
+def test_autofocus_coarse(camera, images_dir, counter):
     autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
+    coarse_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_coarse.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    counter['value'] = 1
+    assert len(glob.glob(coarse_plot_pattern)) == 1
+    assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
-def test_autofocus_fine(camera):
+def test_autofocus_fine(camera, images_dir, counter):
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
+    counter['value'] += 1
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
-def test_autofocus_fine_blocking(camera):
+def test_autofocus_fine_blocking(camera, images_dir, counter):
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
+    counter['value'] += 1
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
-def test_autofocus_no_plots(camera):
+def test_autofocus_no_plots(camera, images_dir, counter):
     autofocus_event = camera.autofocus(plots=False)
     autofocus_event.wait()
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
-def test_autofocus_keep_files(camera):
+def test_autofocus_keep_files(camera, images_dir, counter):
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
 def test_autofocus_no_size(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     thumbnail_size = camera.focuser.autofocus_size
     camera.focuser.autofocus_size = None
     with pytest.raises(ValueError):
@@ -396,7 +417,10 @@ def test_autofocus_no_size(camera):
 
 
 def test_autofocus_no_seconds(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     seconds = camera.focuser.autofocus_seconds
     camera.focuser.autofocus_seconds = None
     with pytest.raises(ValueError):
@@ -406,7 +430,10 @@ def test_autofocus_no_seconds(camera):
 
 
 def test_autofocus_no_step(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     autofocus_step = camera.focuser.autofocus_step
     camera.focuser.autofocus_step = None
     with pytest.raises(ValueError):
@@ -416,7 +443,10 @@ def test_autofocus_no_step(camera):
 
 
 def test_autofocus_no_range(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     autofocus_range = camera.focuser.autofocus_range
     camera.focuser.autofocus_range = None
     with pytest.raises(ValueError):
@@ -426,7 +456,10 @@ def test_autofocus_no_range(camera):
 
 
 def test_autofocus_camera_disconnected(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     camera._connected = False
     with pytest.raises(AssertionError):
         camera.autofocus()
@@ -435,7 +468,10 @@ def test_autofocus_camera_disconnected(camera):
 
 
 def test_autofocus_focuser_disconnected(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     camera.focuser._connected = False
     with pytest.raises(AssertionError):
         camera.autofocus()
@@ -444,7 +480,10 @@ def test_autofocus_focuser_disconnected(camera):
 
 
 def test_autofocus_no_focuser(camera):
-    initial_focus = camera.focuser.position
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     focuser = camera.focuser
     camera.focuser = None
     with pytest.raises(AttributeError):

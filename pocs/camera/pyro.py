@@ -380,10 +380,11 @@ class CameraServer(object):
         self.host = self.config.get('host')
         self.port = self.config.get('port')
         self.user = os.getenv('PANUSER', 'panoptes')
+        self.logger = get_root_logger(self.name)
 
         camera_config = self.config.get('camera')
         camera_config.update({'name': self.name,
-                              'logger': get_root_logger(self.name),
+                              'logger': self.logger,
                               'config': self.config})
         module = load_module('pocs.camera.{}'.format(camera_config['model']))
         self._camera = module.Camera(**camera_config)
@@ -460,35 +461,10 @@ class CameraServer(object):
         # Return the user@host:/path for created file to enable it to be moved over the network.
         return "{}@{}:{}".format(self.user, self.host, filename)
 
-    def autofocus(self,
-                  seconds,
-                  focus_range,
-                  focus_step,
-                  keep_files,
-                  take_dark,
-                  thumbnail_size,
-                  merit_function,
-                  merit_function_kwargs,
-                  mask_dilations,
-                  coarse,
-                  plots,
-                  *args,
-                  **kwargs):
+    def autofocus(self, *args, **kwargs):
         # Start the autofocus and wait for it to completed
-        self._camera.autofocus(seconds=seconds,
-                               focuse_range=focus_range,
-                               focus_step=focus_step,
-                               keep_files=keep_files,
-                               take_dark=take_dark,
-                               thumbnail_size=thumbnail_size,
-                               merit_function=merit_function,
-                               merit_function_kwargs=merit_function_kwargs,
-                               mask_dilations=mask_dilations,
-                               coarse=coarse,
-                               plot=plots,
-                               blocking=True,
-                               *args,
-                               **kwargs)
+        kwargs['blocking'] = True
+        self._camera.autofocus(*args, **kwargs)
         # Find where the resulting files are. Need to cast a wide net to get both
         # coarse and fine focus files, anything in focus directory should be fair game.
         focus_path = os.path.join(os.path.abspath(self.config['directories']['images']),

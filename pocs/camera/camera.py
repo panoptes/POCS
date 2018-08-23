@@ -69,9 +69,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    kwargs = copy.copy(focuser)
-                    kwargs.update({'camera': self, 'config': self.config})
-                    self.focuser = module.Focuser(**kwargs)
+                    focuser_kwargs = copy.copy(focuser)
+                    focuser_kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**focuser_kwargs)
                     self.logger.debug("Focuser created: {}".format(self.focuser))
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
