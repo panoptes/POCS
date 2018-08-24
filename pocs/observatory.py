@@ -516,6 +516,7 @@ class Observatory(PanBase):
                            min_counts=1000,
                            max_counts=12000,
                            bias=2048,
+                           initial_exptime=1.,
                            max_exptime=60.,
                            camera_list=None,
                            target_adu_percentage=0.5,
@@ -553,6 +554,8 @@ class Observatory(PanBase):
             min_counts (int, optional): Minimum ADU count
             max_counts (int, optional): Maximum ADU count
             bias (int, optional): Default bias for the cameras
+            initial_exptime (float, optional): Start the flat fields with this exposure
+                time, default 1 second
             max_exptime (float, optional): Maximum exposure time before stopping
             camera_list (list, optional): List of cameras to use for flat-fielding
             target_adu_percentage (float, optional): Exposure time will be adjust so
@@ -568,7 +571,8 @@ class Observatory(PanBase):
 
         image_dir = self.config['directories']['images']
 
-        flat_obs = self._create_flat_field_observation(alt=alt, az=az)
+        flat_obs = self._create_flat_field_observation(
+            alt=alt, az=az, initial_exptime=initial_exptime)
 
         if camera_list is None:
             camera_list = list(self.cameras.keys())
@@ -1028,18 +1032,20 @@ class Observatory(PanBase):
             raise error.NotFound(
                 msg="Fields file does not exist: {}".format(fields_file))
 
-    def _create_flat_field_observation(self, alt=None, az=None):
+    def _create_flat_field_observation(self, alt=None, az=None, initial_exptime=1):
+        # Get an Alt and Az from the config
         if alt is None and az is None:
             flat_config = self.config['flat_field']['twilight']
             alt = flat_config['alt']
             az = flat_config['az']
 
+        # Construct RA/Dec coords from the Alt Az
         flat_coords = utils.altaz_to_radec(
             alt=alt, az=az, location=self.earth_location, obstime=current_time())
 
         self.logger.debug("Creating flat-field observation")
         field = Field('Evening Flats', flat_coords.to_string('hmsdms'))
-        flat_obs = Observation(field, exp_time=1. * u.second)
+        flat_obs = Observation(field, exp_time=initial_exptime * u.second)
         flat_obs.seq_time = utils.current_time(flatten=True)
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
