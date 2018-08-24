@@ -94,8 +94,11 @@ def run_social_sinks(msg_port, social_twitter, social_slack):
 
 
 if __name__ == '__main__':
-    # This is early in startup to ensure the PANOPTES logging code is installed early.
-    pocs_config = load_config(config_files=['pocs'])
+    # This is early in startup to ensure the PANOPTES logging code is
+    # installed early. Unfortunately this doesn't (yet) prevent the
+    # problem with our format keyword 'fileline' causing problems for
+    # other loggers.
+    pocs_config = load_config()
     the_root_logger = get_root_logger()
 
     parser = argparse.ArgumentParser(
