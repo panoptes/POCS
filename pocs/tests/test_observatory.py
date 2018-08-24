@@ -9,7 +9,9 @@ import pocs.version
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+from pocs.camera.pyro import Camera as PyroCamera
 from pocs.utils import error
+from pocs.tests.test_camera import name_server, camera_server
 
 
 @pytest.fixture
@@ -146,6 +148,17 @@ def test_default_config(observatory):
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
+
+
+def test_pyro_camera(config, name_server, camera_server):
+    conf = config.copy()
+    conf['cameras'] = {'distributed_cameras': True}
+    simulator = hardware.get_all_names(without=['camera'])
+    obs = Observatory(config=conf, simulator=simulator, ignore_local_config=True)
+    assert len(obs.cameras) == 1
+    assert 'camera.simulator.001' in obs.cameras
+    assert isinstance(obs.cameras['camera.simulator.001'], PyroCamera)
+    assert obs.cameras['camera.simulator.001'].is_connected
 
 
 def test_is_dark(observatory):

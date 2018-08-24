@@ -763,7 +763,8 @@ class Observatory(PanBase):
 
         # If no camera was specified as primary use the first
         if self.primary_camera is None:
-            self.primary_camera = self.cameras['Cam00']
+            camera_names = sorted(self.cameras.keys())
+            self.primary_camera = self.cameras[camera_names[0]]
 
         if len(self.cameras) == 0:
             raise error.CameraNotFound(

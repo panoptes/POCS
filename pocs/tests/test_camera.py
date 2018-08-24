@@ -43,6 +43,8 @@ def name_server(request):
                '--host', 'localhost']
     ns_proc = subprocess.Popen(ns_cmds)
     request.addfinalizer(lambda: end_process(ns_proc))
+    # Give name server time to start up
+    time.sleep(5)
     return ns_proc
 
 
@@ -52,6 +54,8 @@ def camera_server(name_server, request):
                '--ignore_local']
     cs_proc = subprocess.Popen(cs_cmds)
     request.addfinalizer(lambda: end_process(cs_proc))
+    # Give camera server time to start up
+    time.sleep(3)
     return cs_proc
 
 
@@ -151,8 +155,6 @@ def test_sim_readout_time():
 # Hardware independent tests for distributed cameras
 
 def test_name_server(name_server):
-    # Give name server time to start up
-    time.sleep(5)
     # Check that it's running.
     assert name_server.poll() is None
 
@@ -163,8 +165,6 @@ def test_locate_name_server(name_server):
 
 
 def test_camera_server(camera_server):
-    # Give camera server time to start up
-    time.sleep(3)
     # Check that it's running.
     assert camera_server.poll() is None
 
