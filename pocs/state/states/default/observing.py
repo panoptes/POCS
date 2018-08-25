@@ -1,7 +1,11 @@
-from pocs.utils import error
-from time import sleep
+import time
 
-wait_interval = 15.
+from pocs.utils import error
+
+min_sleeping_interval = 0.1
+waiting_msg_interval = 15
+
+# Why is this not passed in based on the length of the current observation?
 timeout = 150.
 
 
@@ -13,23 +17,35 @@ def on_enter(event_data):
 
     try:
         # Start the observing
+        start_time = time.time()
         camera_events = pocs.observatory.observe()
 
-        wait_time = 0.
+        timeout_time = start_time + timeout
+        next_msg_time = start_time + waiting_msg_interval
         while not all([event.is_set() for event in camera_events.values()]):
             pocs.check_messages()
             if pocs.interrupted:
                 pocs.say("Observation interrupted!")
                 break
 
-            pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
-            pocs.status()
+            now = time.time()
+            if now >= next_msg_time:
+                pocs.logger.debug(
+                    'Waiting for images: {} seconds elapsed'.format(round(now - start_time)))
+                pocs.status()
+                next_msg_time += waiting_msg_interval
+                now = time.time()
 
-            if wait_time > timeout:
+            if now >= timeout_time:
                 raise error.Timeout
 
-            sleep(wait_interval)
-            wait_time += wait_interval
+            # Sleep until almost the time for the next message, or just
+            # before the timeout time. We assume that checking the
+            # camera events and messages will take a small fraction of
+            # a second
+            sleep_time = min(next_msg_time - now, timeout_time - now)
+            sleep_time = max(min_sleeping_interval, sleep_time - min_sleeping_interval)
+            time.sleep(sleep_time)
 
     except error.Timeout as e:
         pocs.logger.warning(
