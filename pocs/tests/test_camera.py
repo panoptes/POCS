@@ -11,11 +11,12 @@ from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 
+from pocs.tests.utils.test_pyro_utils import name_server, camera_server
+
 import os
 import glob
 import time
-import subprocess
-import signal
+
 from ctypes.util import find_library
 
 import astropy.units as u
@@ -30,33 +31,6 @@ ids = ['simulator', 'pyro', 'sbig', 'fli']
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
     return str(directory)
-
-
-def end_process(proc):
-    proc.send_signal(signal.SIGINT)
-    return_code = proc.wait()
-
-
-@pytest.fixture(scope='module')
-def name_server(request):
-    ns_cmds = [os.path.expandvars('$POCS/pocs/utils/pyro/pyro_name_server.py'),
-               '--host', 'localhost']
-    ns_proc = subprocess.Popen(ns_cmds)
-    request.addfinalizer(lambda: end_process(ns_proc))
-    # Give name server time to start up
-    time.sleep(5)
-    return ns_proc
-
-
-@pytest.fixture(scope='module')
-def camera_server(name_server, request):
-    cs_cmds = [os.path.expandvars('$POCS/pocs/utils/pyro/pyro_camera_server.py'),
-               '--ignore_local']
-    cs_proc = subprocess.Popen(cs_cmds)
-    request.addfinalizer(lambda: end_process(cs_proc))
-    # Give camera server time to start up
-    time.sleep(3)
-    return cs_proc
 
 
 # Ugly hack to access id inside fixture
@@ -151,29 +125,6 @@ def test_sim_readout_time():
     sim_camera = SimCamera(readout_time=2.0)
     assert sim_camera.readout_time == 2.0
 
-
-# Hardware independent tests for distributed cameras
-
-def test_name_server(name_server):
-    # Check that it's running.
-    assert name_server.poll() is None
-
-
-def test_locate_name_server(name_server):
-    # Check that we can connect to the name server
-    Pyro4.locateNS(host='localhost')
-
-
-def test_camera_server(camera_server):
-    # Check that it's running.
-    assert camera_server.poll() is None
-
-
-def test_camera_detection(camera_server):
-    ns = Pyro4.locateNS(host='localhost')
-    cameras = ns.list(metadata_all={'POCS', 'Camera'})
-    # Should be one distributed camera, a simulator with simulated focuser
-    assert len(cameras) == 1
 
 # Hardware independent tests for SBIG camera.
 

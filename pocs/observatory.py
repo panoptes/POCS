@@ -26,10 +26,6 @@ from pocs.utils import load_module
 from pocs.camera import pyro
 
 
-# Enable local display of remote tracebacks
-sys.excepthook = Pyro4.util.excepthook
-
-
 class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
@@ -735,31 +731,7 @@ class Observatory(PanBase):
         distributed_cameras = kwargs.get('distributed_cameras',
                                          camera_info.get('distributed_cameras', False))
         if not a_simulator and distributed_cameras:
-            # Get a proxy for the name server (will raise NamingError if not found)
-            try:
-                self._name_server = Pyro4.locateNS()
-            except Pyro4.errors.NamingError() as err:
-                msg = "Couldn't connect to Pyro name server: {}".format(err)
-                self.logger.error(msg)
-            else:
-                # Find all the registered cameras
-                camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
-                msg = "Found {} distributed cameras on name server".format(len(camera_uris))
-                self.logger.debug(msg)
-
-                # Create the camera objects.
-                # TODO: do this in parallel because initialising cameras can take a while.
-                for cam_name, cam_uri in camera_uris.items():
-                    cam = pyro.Camera(name=cam_name, uri=cam_uri)
-                    is_primary = ''
-                    if camera_info.get('primary', '') == cam.uid:
-                        self.primary_camera = cam
-                        is_primary = ' [Primary]'
-
-                    self.logger.debug("Camera created: {} {} {}".format(
-                        cam.name, cam.uid, is_primary))
-
-                    self.cameras[cam_name] = cam
+            self._create_distributed_cameras(camera_info)
 
         # If no camera was specified as primary use the first
         if self.primary_camera is None:
@@ -771,6 +743,35 @@ class Observatory(PanBase):
                 msg="No cameras available. Exiting.", exit=True)
 
         self.logger.debug("Cameras created")
+
+    def _create_distributed_cameras(self, camera_info):
+        # Enable local display of remote tracebacks
+        sys.excepthook = Pyro4.util.excepthook
+
+        # Get a proxy for the name server (will raise NamingError if not found)
+        try:
+            self._name_server = Pyro4.locateNS()
+        except Pyro4.errors.NamingError() as err:
+            msg = "Couldn't connect to Pyro name server: {}".format(err)
+            self.logger.error(msg)
+        else:
+            # Find all the registered cameras
+            camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
+            msg = "Found {} distributed cameras on name server".format(len(camera_uris))
+            self.logger.debug(msg)
+
+            # Create the camera objects.
+            # TODO: do this in parallel because initialising cameras can take a while.
+            for cam_name, cam_uri in camera_uris.items():
+                cam = pyro.Camera(name=cam_name, uri=cam_uri)
+                is_primary = ''
+                if camera_info.get('primary', '') == cam.uid:
+                    self.primary_camera = cam
+                    is_primary = ' [Primary]'
+
+                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
+
+                self.cameras[cam_name] = cam
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """

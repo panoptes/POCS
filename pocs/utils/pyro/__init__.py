@@ -1,4 +1,11 @@
+import os
+
 import netifaces
+import Pyro4
+from Pyro4 import naming, errors
+
+from pocs.camera.pyro import CameraServer
+from pocs.utils.config import load_config
 
 
 def get_own_ip(verbose=False, logger=None):
@@ -63,3 +70,52 @@ def get_own_ip(verbose=False, logger=None):
     if logger:
         logger.debug(msg)
     return host
+
+
+def run_name_server(host=None, port=None, autoclean=0):
+    try:
+        # Check that there isn't a name server already running
+        name_server = Pyro4.locateNS()
+    except errors.NamingError:
+        if not host:
+            # Not given an hostname or IP address. Will attempt to work it out.
+            host = get_own_ip(verbose=True)
+        else:
+            host = str(host)
+
+        if port:
+            port = int(port)
+        else:
+            port = None
+
+        Pyro4.config.NS_AUTOCLEAN = float(autoclean)
+
+        print("Starting Pyro name server... (Control-C/Command-C to exit)")
+        naming.startNSloop(host=host, port=port)
+    else:
+        print("Pyro name server {} already running! Exiting...".format(name_server))
+
+
+def run_camera_server(ignore_local):
+    Pyro4.config.SERVERTYPE = "multiplex"
+    config = load_config(config_files=['pyro_camera.yaml'], ignore_local=ignore_local)
+    host = config.get('host', None)
+    if not host:
+        host = get_own_ip(verbose=True)
+    port = config.get('port', 0)
+
+    with Pyro4.Daemon(host=host, port=port) as daemon:
+        try:
+            name_server = Pyro4.locateNS()
+        except errors.NamingError as err:
+            warn('Failed to locate Pyro name server: {}'.format(err))
+            exit(1)
+        print('Found Pyro name server')
+        uri = daemon.register(CameraServer)
+        print('Camera server registered with daemon as {}'.format(uri))
+        name_server.register(config['name'], uri, metadata={"POCS",
+                                                            "Camera",
+                                                            config['camera']['model']})
+        print('Registered with name server as {}'.format(config['name']))
+        print('Starting request loop... (Control-C/Command-C to exit)')
+        daemon.requestLoop()

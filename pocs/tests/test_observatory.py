@@ -11,7 +11,8 @@ from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.camera.pyro import Camera as PyroCamera
 from pocs.utils import error
-from pocs.tests.test_camera import name_server, camera_server
+
+from pocs.tests.utils.test_pyro_utils import name_server, camera_server
 
 
 @pytest.fixture
@@ -150,7 +151,7 @@ def test_default_config(observatory):
     assert isinstance(observatory.scheduler, Scheduler)
 
 
-def test_pyro_camera(config, name_server, camera_server):
+def test_pyro_camera(config, camera_server):
     conf = config.copy()
     conf['cameras'] = {'distributed_cameras': True}
     simulator = hardware.get_all_names(without=['camera'])
