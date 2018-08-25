@@ -11,6 +11,7 @@ and call the single command function (SBIGDriver._send_command()).
 import platform
 import ctypes
 from ctypes.util import find_library
+from warnings import warn
 import _ctypes
 import os
 import time

@@ -2,11 +2,12 @@ import pytest
 
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
+from pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from pocs.camera.simulator import Camera
 from pocs.utils.config import load_config
 
-params = [SimFocuser, BirgerFocuser]
-ids = ['simulator', 'birger']
+params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
+ids = ['simulator', 'birger', 'focuslynx']
 
 
 # Ugly hack to access id inside fixture
@@ -50,6 +51,8 @@ def tolerance(focuser):
         return 0
     elif isinstance(focuser, BirgerFocuser):
         return 2
+    elif isinstance(focuser, FocusLynxFocuser):
+        return 0
 
 
 def test_init(focuser):
