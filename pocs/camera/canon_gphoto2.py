@@ -35,6 +35,8 @@ class Camera(AbstractGPhotoCamera):
 
         # Properties to be set upon init.
         prop2index = {
+            '/main/settings/datetime': 'now',             # Current datetime
+            '/main/settings/datetimeutc': 'now',          # Current datetime
             '/main/actions/viewfinder': 1,                # Screen off
             '/main/settings/autopoweroff': 0,             # Don't power off
             '/main/settings/reviewtime': 0,               # Screen off after taking pictures
