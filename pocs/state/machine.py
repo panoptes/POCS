@@ -243,7 +243,7 @@ class PanStateMachine(Machine):
                 self.logger.debug("Always safe to move to {}".format(event_data.event.name))
                 is_safe = True
             elif event_data.event.name in safe_when_dark:
-                is_safe = self.is_dark() and self.has_free_space()
+                is_safe = self.is_dark(horizon='civil') and self.has_free_space()
             else:
                 is_safe = self.is_safe()
         except Exception as e:
