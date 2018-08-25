@@ -405,6 +405,9 @@ class AbstractMount(PanBase):
             `error.Timeout`: Timeout error.
         """
         for axis, corrections in correction_info.items():
+            if correction_info is None:
+                continue
+
             offset = corrections[0]
             offset_ms = corrections[1]
             delta_direction = corrections[2]
@@ -412,14 +415,14 @@ class AbstractMount(PanBase):
             self.logger.info("Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
                 axis, delta_direction, offset_ms, offset))
 
-            self.mount.query(
+            self.query(
                 'move_ms_{}'.format(delta_direction),
                 '{:05.0f}'.format(offset_ms)
             )
 
             # Adjust tracking for `axis_timeout` seconds then fail if not done.
             start_tracking_time = current_time()
-            while self.mount.is_tracking is False:
+            while self.is_tracking is False:
                 if (current_time() - start_tracking_time).sec > axis_timeout:
                     raise error.Timeout("Tracking adjustment timeout: {}".format(axis))
 
