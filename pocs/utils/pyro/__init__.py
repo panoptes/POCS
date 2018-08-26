@@ -73,6 +73,22 @@ def get_own_ip(verbose=False, logger=None):
 
 
 def run_name_server(host=None, port=None, autoclean=0):
+    """
+    Runs a Pyro name server.
+
+    The name server must be running in order to use distributed cameras with POCS. The name server
+    should be started before starting camera servers or POCS.
+
+    Args:
+        host (str, optional): hostname/IP address to bind the name server to. If not given then
+            get_own_ip will be used to attempt to automatically determine the IP addresses of
+            the computer that the name server is being started on.
+        port (int, optional): port number to bind the name server to. If not given then the port
+            will be selected automatically (usually 9090).
+        autoclean (int, optional): interval, in seconds, for automatic deregistration of objects
+            from the name server if they cannot be connected. If not given no autocleaning will
+            be done.
+    """
     try:
         # Check that there isn't a name server already running
         name_server = Pyro4.locateNS()
@@ -97,6 +113,17 @@ def run_name_server(host=None, port=None, autoclean=0):
 
 
 def run_camera_server(ignore_local):
+    """
+    Runs a Pyro camera server.
+
+    The camera server should be run on the camera control computers of distributed cameras. The
+    camera servers should be started after the name server, but before POCS.
+
+    Args:
+        ignore_local (bool, optional): If True use the default $POCS/conf_files/pyro_camera.yaml
+            only. If False will allow $POCS/conf_files/pyro_camera_local.yaml to override the
+            default configuration. Default False.
+    """
     Pyro4.config.SERVERTYPE = "multiplex"
     config = load_config(config_files=['pyro_camera.yaml'], ignore_local=ignore_local)
     host = config.get('host', None)
