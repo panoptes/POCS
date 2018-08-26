@@ -405,7 +405,7 @@ class AbstractMount(PanBase):
             `error.Timeout`: Timeout error.
         """
         for axis, corrections in correction_info.items():
-            if correction_info is None:
+            if not axis or not corrections:
                 continue
 
             offset = corrections[0]
