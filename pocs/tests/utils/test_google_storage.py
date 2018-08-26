@@ -2,7 +2,7 @@ import pytest
 import os
 
 from pocs.utils.error import GoogleCloudError
-from pocs.utils.google.storage import PanStorage
+from pocs.utils.google import storage
 
 
 pytestmark = pytest.mark.skipif(
@@ -11,24 +11,25 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_key_exists():
-    assert os.environ['PANOPTES_CLOUD_KEY']
-    assert os.path.exists(os.environ['PANOPTES_CLOUD_KEY'])
+def test_key_exists(config):
+    key_file = config['panoptes_network']['keyfile']
+    assert os.path.exists(
+        os.path.join(
+            os.environ['PANDIR'],
+            '.key',
+            key_file
+        )
+    ), "No API key file"
 
 
 def test_bad_bucket():
-    with pytest.raises(AssertionError):
-        PanStorage('fake-bucket')
-
-    auth_key_path = os.environ['PANOPTES_CLOUD_KEY']
     with pytest.raises(GoogleCloudError):
-        PanStorage('fake-bucket', auth_key=auth_key_path)
+        storage.get_bucket('fake-bucket')
 
 
 @pytest.fixture(scope="function")
-def storage():
-    auth_key_path = os.environ['PANOPTES_CLOUD_KEY']
-    return PanStorage('panoptes-test-bucket', auth_key=auth_key_path)
+def bucket():
+    return storage.get_bucket('panoptes-test-bucket')
 
 
 def test_unit_id(storage):

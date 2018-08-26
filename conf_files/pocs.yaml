@@ -20,6 +20,7 @@ directories:
     mounts: POCS/resources/mounts
 panoptes_network:
     image_storage: True
+    keyfile: # Update
 db: 
     name: panoptes
     type: mongo

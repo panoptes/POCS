@@ -7,8 +7,8 @@ from astropy.io import fits
 
 from pocs.utils.config import load_config
 from pocs.utils.images import clean_observation_dir
-from pong.storage import upload_directory_to_bucket
-from pong.clouddb import add_header_to_db
+from pocs.utils.google.storage import upload_directory_to_bucket
+from pocs.utils.google.clouddb import add_header_to_db
 
 
 def main(directory, upload=True, send_headers=True, verbose=False):

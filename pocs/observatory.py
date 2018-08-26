@@ -20,11 +20,9 @@ from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
-from pong.storage import upload_directory_to_bucket
 
 
 class Observatory(PanBase):
