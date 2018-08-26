@@ -1,5 +1,6 @@
 import os
 
+import subprocess
 from collections import OrderedDict
 from datetime import datetime
 
@@ -23,6 +24,7 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
+from pong.storage import upload_directory_to_bucket
 
 
 class Observatory(PanBase):
@@ -211,11 +213,7 @@ class Observatory(PanBase):
         except KeyError:
             upload_images = False
 
-        try:
-            pan_id = self.config['pan_id']
-        except KeyError:
-            self.logger.warning("pan_id not set in config, can't upload images.")
-            upload_images = False
+        dir_process = list()
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -231,11 +229,15 @@ class Observatory(PanBase):
                     seq_time,
                 )
 
-                img_utils.clean_observation_dir(dir_name)
+                cmd = [
+                    os.path.join(os.environ['POCS'], 'scripts', 'upload_image_dir.py'),
+                    '--directory', dir_name,
+                ]
+                if upload_images:
+                    cmd.append('--upload')
 
-                if upload_images is True:
-                    self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                proc = subprocess.run(cmd)
+                dir_process.append(proc)
 
             self.logger.debug('Cleanup finished')
 

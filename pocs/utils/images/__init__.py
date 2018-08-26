@@ -254,14 +254,14 @@ def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
     return fn_out
 
 
-def clean_observation_dir(dir_name, *args, **kwargs):
+def clean_observation_dir(dir_name, remove_jpgs=False, *args, **kwargs):
     """ Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
         * Create timelapse from JPG files if present
-        * Remove JPG files
+        * Remove JPG files (optional)
 
     Args:
         dir_name (str): Full path to observation directory
@@ -311,60 +311,13 @@ def clean_observation_dir(dir_name, *args, **kwargs):
             video_file = create_timelapse(dir_name)
             _print('Timelapse created: {}'.format(video_file))
 
-            # Remove jpgs
-            _print('Removing jpgs')
-            for f in jpg_list:
-                try:
-                    os.remove(f)
-                except OSError as e:
-                    warn('Could not delete file: {!r}'.format(e))
+            if remove_jpgs:
+                # Remove jpgs
+                _print('Removing jpgs')
+                for f in jpg_list:
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        warn('Could not delete file: {!r}'.format(e))
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
-
-
-def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs):
-    """Upload an observation directory to google cloud storage.
-
-    Note:
-        This requires that the command line utility `gsutil` be installed
-        and that authentication has properly been set up.
-
-    Args:
-        pan_id (str): A string representing the unit id, e.g. PAN001.
-        dir_name (str): Full path to observation directory.
-        bucket (str, optional): The bucket to place the images in, defaults
-            to 'panoptes-survey'.
-        **kwargs: Optional keywords: verbose
-    """
-    assert os.path.exists(dir_name)
-    assert re.match('PAN\d\d\d', pan_id) is not None
-
-    verbose = kwargs.get('verbose', False)
-
-    def _print(msg):
-        if verbose:
-            print(msg)
-
-    dir_name = dir_name.replace('//', '/')
-    _print("Uploading {}".format(dir_name))
-
-    gsutil = shutil.which('gsutil')
-
-    img_path = os.path.join(dir_name, '*.fz')
-    if glob(img_path):
-        field_dir = dir_name.split('/fields/')[-1]
-        remote_path = os.path.normpath(os.path.join(pan_id, field_dir))
-
-        bucket = 'gs://{}/'.format(bucket)
-        # normpath strips the trailing slash so add here so we place in directory
-        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
-        _print("Running: {}".format(run_cmd))
-
-        try:
-            completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
-
-            if completed_process.returncode != 0:
-                warn("Problem uploading")
-                warn(completed_process.stdout)
-        except Exception as e:
-            warn("Problem uploading: {}".format(e))
