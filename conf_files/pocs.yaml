@@ -21,6 +21,9 @@ directories:
 panoptes_network:
     image_storage: True
     keyfile: # Update
+    cloudsql_instances:
+        panoptes-meta: # Update
+        tess-catalog: # Update
 db: 
     name: panoptes
     type: mongo
