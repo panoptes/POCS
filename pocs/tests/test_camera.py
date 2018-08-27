@@ -46,7 +46,7 @@ def camera(request, images_dir, camera_server):
                                     'autofocus_size': 500,
                                     'autofocus_keep_files': False})
     elif request.param[0] == PyroCamera:
-        ns = Pyro4.locateNS(host='localhost')
+        ns = Pyro4.locateNS()
         cameras = ns.list(metadata_all={'POCS', 'Camera'})
         cam_name, cam_uri = cameras.popitem()
         camera = PyroCamera(name=cam_name, uri=cam_uri)

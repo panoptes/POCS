@@ -60,7 +60,7 @@ def test_name_server(name_server):
 
 def test_locate_name_server(name_server):
     # Check that we can connect to the name server
-    Pyro4.locateNS(host='localhost')
+    Pyro4.locateNS()
 
 
 def test_camera_server(camera_server):
@@ -69,7 +69,7 @@ def test_camera_server(camera_server):
 
 
 def test_camera_detection(camera_server):
-    ns = Pyro4.locateNS(host='localhost')
+    ns = Pyro4.locateNS()
     cameras = ns.list(metadata_all={'POCS', 'Camera'})
     # Should be one distributed camera, a simulator with simulated focuser
     assert len(cameras) == 1
