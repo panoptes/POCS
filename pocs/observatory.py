@@ -199,7 +199,7 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self, directory_timeout=5):
+    def cleanup_observations(self, directory_timeout=10):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
@@ -207,7 +207,7 @@ class Observatory(PanBase):
 
         Args:
             directory_timeout (int, optional): Timeout for each directory
-                upload. Note that this is in *minutes*.
+                upload. Note that this is in *minutes*, default 10 minutes.
         """
         try:
             upload_images = self.config.get('panoptes_network', {})['image_storage']
