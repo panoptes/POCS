@@ -115,7 +115,7 @@ def get_db_conn(instance='panoptes-meta',
     return conn
 
 
-def get_cursor(**kwargs):
+def get_cursor(use_proxy=False, **kwargs):
     """Get a Cursor object.
 
     Args:
@@ -124,7 +124,11 @@ def get_cursor(**kwargs):
     Returns:
         `psycopg2.Cursor`: Cursor object.
     """
-    conn = get_db_proxy_conn(**kwargs)
+    if use_proxy is False:
+        conn = get_db_conn(**kwargs)
+    else:
+        conn = get_db_proxy_conn(**kwargs)
+
     cur = conn.cursor()
 
     return cur
