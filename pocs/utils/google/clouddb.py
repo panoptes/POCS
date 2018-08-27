@@ -38,7 +38,8 @@ def get_db_proxy_conn(
         host='127.0.0.1',
         db_name='panoptes',
         db_user='panoptes',
-        port=5432):
+        port=5432,
+        **kwargs):
     """Return postgress connection to local proxy.
 
     Args:
@@ -63,16 +64,17 @@ def get_db_proxy_conn(
         'dbname': db_name,
         'password': pg_pass,
     }
-    conn_str = ' '.join("{}={}".format(k, v) for k, v in conn_params.items())
 
-    conn = psycopg2.connect(conn_str)
+    conn = psycopg2.connect(**conn_params)
     return conn
 
 
 def get_db_conn(instance='panoptes-meta',
                 db_name='panoptes',
                 db_user='panoptes',
-                port=5432):
+                port=5432,
+                **kwargs
+                ):
     """Gets a connection to the Cloud SQL db.
 
     Args:
