@@ -8,7 +8,9 @@ python:
 cache:
   - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER
+  - ARDUINO_VERSION=1.8.1
+  - COVERAGE_PROCESS_START=.coveragerc
 before_install:
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
@@ -78,8 +80,9 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
+  - export PYTHONPATH="$PYTHONPATH:$TRAVIS_BUILD_DIR/scripts/coverage"
   - coverage run $(which pytest) -v
-  - coverage combine .coverage*
+  - coverage combine
 
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then

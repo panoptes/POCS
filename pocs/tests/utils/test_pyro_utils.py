@@ -15,7 +15,7 @@ def end_process(proc):
     return_code = proc.wait()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def name_server(request):
     ns_cmds = [os.path.expandvars('$POCS/scripts/pyro_name_server.py'),
                '--host', 'localhost']
@@ -26,7 +26,7 @@ def name_server(request):
     return ns_proc
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def camera_server(name_server, request):
     cs_cmds = [os.path.expandvars('$POCS/scripts/pyro_camera_server.py'),
                '--ignore_local']
