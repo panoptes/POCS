@@ -199,45 +199,71 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self):
+    def cleanup_observations(self, directory_timeout=5):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
         `observed_list` when done
 
+        Args:
+            directory_timeout (int, optional): Timeout for each directory
+                upload. Note that this is in *minutes*.
         """
         try:
             upload_images = self.config.get('panoptes_network', {})['image_storage']
         except KeyError:
             upload_images = False
 
-        dir_process = list()
+        process_script = 'process_image_dir.py'
+        process_cmd = [
+            os.path.join(os.environ['POCS'], 'scripts', process_script),
+        ]
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
-            for cam_name, camera in self.cameras.items():
-                self.logger.debug('Cleanup for camera {} [{}]'.format(
-                    cam_name, camera.uid))
+            observation_dir = os.path.join([
+                self.config['directories']['images'],
+                'fields',
+                observation.field.field_name,
+            ])
 
-                dir_name = "{}/fields/{}/{}/{}/".format(
-                    self.config['directories']['images'],
-                    observation.field.field_name,
+            self.logger.debug('Searching directory {}'.format(observation_dir))
+
+            for cam_name, camera in self.cameras.items():
+                # Setup the directory
+                seq_dir = os.path.join([
+                    observation_dir,
                     camera.uid,
                     seq_time,
-                )
+                ])
+                self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                cmd = [
-                    os.path.join(os.environ['POCS'], 'scripts', 'upload_image_dir.py'),
-                    '--directory', dir_name,
-                ]
+                # Add directory to command
+                process_cmd.append([
+                    '--directory', seq_dir,
+                ])
+
+                # Add upload flag
                 if upload_images:
-                    cmd.append('--upload')
+                    process_cmd.append('--upload')
 
-                proc = subprocess.run(cmd)
-                dir_process.append(proc)
+                # Start the subprocess in background and collect proc object.
+                clean_proc = subprocess.Popen(process_cmd,
+                                              universal_newlines=True,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE
+                                              )
+                self.logger.info('Cleaning directory pid={}'.format(clean_proc.pid))
 
-            self.logger.debug('Cleanup finished')
+                # Block and wait for directory to finish
+                try:
+                    outs, errs = clean_proc.communicate(timeout=directory_timeout * 60)
+                except subprocess.TimeoutExpired:
+                    clean_proc.kill()
+                    outs, errs = clean_proc.communicate()
+                    if errs is not None:
+                        self.logger.warning("Problem cleaning: {}".format(errs))
 
         self.scheduler.reset_observed_list()
 
