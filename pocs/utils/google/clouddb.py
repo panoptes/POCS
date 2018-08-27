@@ -5,13 +5,33 @@ from warnings import warn
 import psycopg2
 from astropy.wcs import WCS
 
-try:
-    host_lookup = {
-        'panoptes-meta': os.environ['METADB_IP'],
-        'tess-catalog': os.environ['TESSDB_IP'],
-    }
-except KeyError:
-    host_lookup = dict()
+from pocs.utils import error
+from pocs.utils.config import load_config
+
+
+def get_instance_ip(instance):
+    """Return the IP address for the given clouddb instance.
+
+    Args:
+        instance (str): instance of the db, currently one of 'panotes-meta',
+            'tess-catalog'.
+
+    Returns:
+        str: IP address of the host.
+
+    Raises:
+        error.GoogleCloudError: If `instance` key is not found under the
+            `panoptes_network` key in the config file.
+    """
+    instance_ip = None
+    try:
+        config = load_config()
+        cloud_config = config['panoptes_network']['cloudsql_instances']
+        instance_ip = cloud_config[instance.lower()]
+    except KeyError:
+        raise error.GoogleCloudError('Hostname IP not found in config')
+
+    return instance_ip
 
 
 def get_db_proxy_conn(
@@ -74,21 +94,22 @@ def get_db_conn(instance='panoptes-meta',
     ssl_client_cert = os.path.join(os.environ['SSL_KEYS_DIR'], instance, 'client-cert.pem')
     ssl_client_key = os.path.join(os.environ['SSL_KEYS_DIR'], instance, 'client-key.pem')
 
+    host_addr = get_instance_ip(instance)
+
     conn_params = {
         'sslmode': 'verify-full',
         'sslrootcert': ssl_root_cert,
         'sslcert': ssl_client_cert,
         'sslkey': ssl_client_key,
-        'hostaddr': host_lookup[instance],
+        'hostaddr': host_addr,
         'host': instance,
         'port': port,
         'user': db_user,
         'dbname': db_name,
         'password': pg_pass,
     }
-    conn_str = ' '.join("{}={}".format(k, v) for k, v in conn_params.items())
 
-    conn = psycopg2.connect(conn_str)
+    conn = psycopg2.connect(**conn_params)
     return conn
 
 
