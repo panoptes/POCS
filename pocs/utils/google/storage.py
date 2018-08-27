@@ -6,30 +6,69 @@ import shutil
 from warnings import warn
 from glob import glob
 
-import google.cloud.exceptions
+from google.cloud import exceptions
 from google.cloud import storage
 
-from pocs.utils.error import GoogleCloudError
+from pocs.utils. config import load_config
+from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 
 
-def get_bucket(name):
+def get_storage_client(auth_key=None, project_id='panoptes-survey'):
+    """Get the google storage client using an auth_key.
+
+    Args:
+        auth_key (str, optional): Pathname to auth_key. Default None, in which case
+            the `panoptes_network.auth_key` config item is used.
+        project_id (str, optional): Connect to project, default 'panoptes-survey'.
+
+    Returns:
+        `google.cloud.storage.Client`: The storage client.
+    """
+    if auth_key is None:
+        config = load_config()
+
+        try:
+            auth_key = config['panoptes_network']['auth_key']
+        except KeyError as e:
+            raise error.GoogleCloudError(
+                "Can't connect to project {}. ".format(project_id) +
+                "Ensure that `panoptes_network.auth_key` is set in the config."
+            )
+
+    client = storage.Client.from_service_account_json(
+        auth_key,
+        project=project_id
+    )
+
+    return client
+
+
+def get_bucket(name, **kwargs):
     """Get Storage bucket object.
 
     Args:
         name (str): Name of Storage bucket.
+        **kwargs: Arguments passed to `get_storage_client`.
 
     Returns:
         google.cloud.storage.client.Client|None: Stroage Client or None
             if bucket does not exist.
+
+    Raises:
+        GoogleCloudError: Description
     """
-    client = storage.Client()
+
+    client = get_storage_client(**kwargs)
     bucket = None
 
     try:
         bucket = client.get_bucket(name)
-    except google.cloud.exceptions.NotFound:
-        raise GoogleCloudError('Sorry, that bucket does not exist!')
+    except exceptions.Forbidden as e:
+        raise error.GoogleCloudError(
+            "Storage bucket does not exist or no permissions. " +
+            "Ensure that `panoptes_network.auth_key` is set in the config."
+        )
 
     return bucket
 
@@ -150,6 +189,7 @@ def upload_fits_file(img_path, bucket_name='panoptes-survey'):
     bucket = get_bucket(bucket_name)
 
     # Replace anything before the unit id
+    assert re.match('PAN\d\d\d', img_path) is not None
     bucket_path = re.sub(r'^.*PAN', 'PAN', img_path).replace('_', '/')
 
     try:

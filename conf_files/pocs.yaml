@@ -19,8 +19,11 @@ directories:
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
 panoptes_network:
+    auth_key: # Update
+    project_id: panoptes-survey
     image_storage: True
-    keyfile: # Update
+    buckets:
+        images: panoptes-survey
     cloudsql_instances:
         panoptes-meta: # Update
         tess-catalog: # Update
