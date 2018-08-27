@@ -6,6 +6,9 @@
 
 import copy
 import os
+import signal
+import subprocess
+import time
 import pytest
 
 import pocs.base
@@ -41,3 +44,30 @@ def config_with_simulated_dome(config):
 @pytest.fixture
 def data_dir():
     return '{}/pocs/tests/data'.format(os.getenv('POCS'))
+
+
+def end_process(proc):
+    proc.send_signal(signal.SIGINT)
+    return_code = proc.wait()
+
+
+@pytest.fixture(scope='session')
+def name_server(request):
+    ns_cmds = [os.path.expandvars('$POCS/scripts/pyro_name_server.py'),
+               '--host', 'localhost']
+    ns_proc = subprocess.Popen(ns_cmds)
+    request.addfinalizer(lambda: end_process(ns_proc))
+    # Give name server time to start up
+    time.sleep(5)
+    return ns_proc
+
+
+@pytest.fixture(scope='session')
+def camera_server(name_server, request):
+    cs_cmds = [os.path.expandvars('$POCS/scripts/pyro_camera_server.py'),
+               '--ignore_local']
+    cs_proc = subprocess.Popen(cs_cmds)
+    request.addfinalizer(lambda: end_process(cs_proc))
+    # Give camera server time to start up
+    time.sleep(3)
+    return cs_proc

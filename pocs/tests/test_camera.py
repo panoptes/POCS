@@ -11,8 +11,6 @@ from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 
-from pocs.tests.utils.test_pyro_utils import name_server, camera_server
-
 import os
 import glob
 import time

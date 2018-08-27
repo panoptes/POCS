@@ -14,6 +14,6 @@ if __name__ == "__main__":
     parser.add_argument("--host", help="hostname or IP address to bind the server on")
     parser.add_argument("--port", help="port number to bind the server on")
     parser.add_argument("--autoclean", help="interval between registration autoclean (0=disabled)",
-                        default=30)
+                        default=0)
     args = parser.parse_args()
     run_name_server(args.host, args.port, args.autoclean)

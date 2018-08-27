@@ -12,8 +12,6 @@ from pocs.scheduler.observation import Observation
 from pocs.camera.pyro import Camera as PyroCamera
 from pocs.utils import error
 
-from pocs.tests.utils.test_pyro_utils import name_server, camera_server
-
 
 @pytest.fixture
 def simulator():
