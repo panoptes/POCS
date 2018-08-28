@@ -56,14 +56,17 @@ def get_plot(filename=None):
         y_data['cloudiness'] = data.sky_temp_C
         y_data['rain'] = data.rain_frequency
 
-    trace1 = plotly_go.Scatter(
-        x=x_data['time'], y=y_data['temp'], name='Temperature', mode='lines', stream=stream_id1)
-    trace2 = plotly_go.Scatter(
-        x=x_data['time'], y=y_data['cloudiness'], name='Cloudiness', mode='lines', stream=stream_id2)
-    trace3 = plotly_go.Scatter(
-        x=x_data['time'], y=y_data['rain'], name='Rain', mode='lines', stream=stream_id3)
+    trace1 = plotly_go.Scatter(x=x_data['time'], y=y_data['temp'],
+                               name='Temperature', mode='lines',
+                               stream=stream_id1)
+    trace2 = plotly_go.Scatter(x=x_data['time'], y=y_data['cloudiness'],
+                               name='Cloudiness', mode='lines',
+                               stream=stream_id2)
+    trace3 = plotly_go.Scatter(x=x_data['time'], y=y_data['rain'], name='Rain',
+                               mode='lines', stream=stream_id3)
 
-    fig = plotly_tools.make_subplots(rows=3, cols=1, shared_xaxes=True, shared_yaxes=False)
+    fig = plotly_tools.make_subplots(rows=3, cols=1, shared_xaxes=True,
+                                     shared_yaxes=False)
     fig.append_trace(trace1, 1, 1)
     fig.append_trace(trace2, 2, 1)
     fig.append_trace(trace3, 3, 1)
@@ -131,7 +134,7 @@ if __name__ == '__main__':
 
     # Get the command line option
     parser = argparse.ArgumentParser(
-        description="Make a plot of the weather for a give date.")
+        description="Make a plot of the weather for a given date.")
 
     parser.add_argument('--loop', action='store_true', default=True,
                         help="If should keep reading, defaults to True")
@@ -141,20 +144,24 @@ if __name__ == '__main__':
                         help="Where to save results")
     parser.add_argument('--serial-port', dest='serial_port', default=None,
                         help='Serial port to connect')
-    parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
-    parser.add_argument('--store-result', action='store_true', default=True, help="Save to db")
-    parser.add_argument('--send-message', action='store_true', default=True, help="Send message")
+    parser.add_argument('--plotly-stream', action='store_true',
+                        default=False, help="Stream to plotly")
+    parser.add_argument('--store-result', action='store_true',
+                        default=True, help="Save to db")
+    parser.add_argument('--send-message', action='store_true',
+                        default=True, help="Send message")
     args = parser.parse_args()
 
     # Weather object
-    aag = weather.AAGCloudSensor(serial_address=args.serial_port, store_result=args.store_result)
+    aag = weather.AAGCloudSensor(serial_address=args.serial_port,
+                                 store_result=args.store_result)
 
     if args.plotly_stream:
-        streams = None
         streams = get_plot(filename=args.filename)
 
     while True:
-        data = aag.capture(store_result=args.store_result, send_message=args.send_message)
+        data = aag.capture(store_result=args.store_result,
+                           send_message=args.send_message)
 
         # Save to file
         if args.filename is not None:
@@ -162,11 +169,15 @@ if __name__ == '__main__':
 
         if args.plotly_stream:
             now = datetime.datetime.now()
-            streams['temp'].write({'x': now, 'y': data['ambient_temp_C']})
-            streams['cloudiness'].write({'x': now, 'y': data['sky_temp_C']})
-            streams['rain'].write({'x': now, 'y': data['rain_frequency']})
+            streams['temp'].write(
+                plotly_go.Scatter(x=[now], y=[data['ambient_temp_C']]))
+            streams['cloudiness'].write(
+                plotly_go.Scatter(x=[now], y=[data['sky_temp_C']]))
+            streams['rain'].write(
+                plotly_go.Scatter(x=[now], y=[data['rain_frequency']]))
 
         if not args.loop:
             break
 
         time.sleep(args.delay)
+
