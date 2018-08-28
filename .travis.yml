@@ -8,7 +8,7 @@ python:
 cache:
   - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes ARDUINO_VERSION=1.8.1
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
@@ -37,17 +37,17 @@ addons:
   apt:
     packages:
     - gphoto2
-    - libcairo2-dev 
-    - libnetpbm10-dev 
+    - libcairo2-dev
+    - libnetpbm10-dev
     - netpbm
     - libpng12-dev
     - libjpeg-dev
     - python-numpy
     - python-pyfits
-    - python-dev 
-    - zlib1g-dev 
-    - libbz2-dev 
-    - swig 
+    - python-dev
+    - zlib1g-dev
+    - libbz2-dev
+    - swig
     - cfitsio-dev
 install:
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
@@ -74,8 +74,10 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
+  - export PYTHONPATH="$PYTHONPATH:$TRAVIS_BUILD_DIR/scripts/coverage"
+  - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v
-  - coverage combine .coverage*
+  - coverage combine
 
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
