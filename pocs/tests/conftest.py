@@ -9,6 +9,7 @@ import os
 import signal
 import subprocess
 import time
+from warnings import warn
 import pytest
 
 import pocs.base
@@ -48,7 +49,32 @@ def data_dir():
 
 def end_process(proc):
     proc.send_signal(signal.SIGINT)
-    return_code = proc.wait()
+    expected_return = -signal.SIGINT
+    if proc.poll() is None:
+        # I'm not dead!
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired as err:
+            warn("Timeout waiting for {} to exit! Sending SIGTERM.".format(proc.pid))
+            proc.terminate()
+            expected_return = -signal.SIGTERM
+            if proc.poll() is None:
+                # I'm getting better!
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired as err:
+                    warn("Timeout waiting for {} to terminate! Sending SIGKILL".format(proc.pid))
+                    proc.kill()
+                    expected_return = -signal.SIGKILL
+                    if proc.poll() is None:
+                        # I feel fine!
+                        warn("Timeout waiting for {} to die! Giving up.".format(proc.pid))
+                        raise err
+    if proc.returncode != expected_return:
+        warn("Expected return code {} from {}, got {}!".format(expected_return,
+                                                               proc.pid,
+                                                               proc.returncode))
+    return proc.returncode
 
 
 @pytest.fixture(scope='session')
