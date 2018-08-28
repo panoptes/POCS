@@ -68,8 +68,12 @@ def end_process(proc):
                     expected_return = -signal.SIGKILL
                     if proc.poll() is None:
                         # I feel fine!
-                        warn("Timeout waiting for {} to die! Giving up.".format(proc.pid))
-                        raise err
+                        try:
+                            proc.wait(timeout=10)
+                        except subprocess.TimeoutExpired as err:
+                            warn("Timeout waiting for {} to die! Giving up.".format(proc.pid))
+                            raise err
+
     if proc.returncode != expected_return:
         warn("Expected return code {} from {}, got {}!".format(expected_return,
                                                                proc.pid,
