@@ -48,31 +48,36 @@ def data_dir():
 
 
 def end_process(proc):
-    proc.send_signal(signal.SIGINT)
-    expected_return = -signal.SIGINT
+    expected_return = 0
     if proc.poll() is None:
         # I'm not dead!
+        expected_return = -signal.SIGINT
+        proc.send_signal(signal.SIGINT)
         try:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired as err:
-            warn("Timeout waiting for {} to exit! Sending SIGTERM.".format(proc.pid))
-            proc.terminate()
-            expected_return = -signal.SIGTERM
+            warn("Timeout waiting for {} to exit!".format(proc.pid))
             if proc.poll() is None:
                 # I'm getting better!
+                warn("Sending SIGTERM to {}...".format(proc.pid))
+                expected_return = -signal.SIGTERM
+                proc.terminate()
                 try:
                     proc.wait(timeout=10)
                 except subprocess.TimeoutExpired as err:
-                    warn("Timeout waiting for {} to terminate! Sending SIGKILL".format(proc.pid))
-                    proc.kill()
-                    expected_return = -signal.SIGKILL
+                    warn("Timeout waiting for {} to terminate!".format(proc.pid))
                     if proc.poll() is None:
                         # I feel fine!
+                        warn("Sending SIGKILL to {}...".format(proc.pid))
+                        expected_return = -signal.SIGKILL
+                        proc.kill()
                         try:
                             proc.wait(timeout=10)
                         except subprocess.TimeoutExpired as err:
-                            warn("Timeout waiting for {} to die! Giving up.".format(proc.pid))
+                            warn("Timeout waiting for {} to die! Giving up".format(proc.pid))
                             raise err
+    else:
+        warn("Process {} already exited!".format(proc.pid))
 
     if proc.returncode != expected_return:
         warn("Expected return code {} from {}, got {}!".format(expected_return,
