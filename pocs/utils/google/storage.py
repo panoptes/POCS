@@ -73,7 +73,7 @@ def get_bucket(name, **kwargs):
     return bucket
 
 
-def get_observation_blob(blob_name, bucket_name='panoptes-survey'):
+def get_observation_blob(blob_name, bucket_name='panoptes-survey', **kwargs):
     """Returns an individual Blob.
 
     Args:
@@ -84,10 +84,10 @@ def get_observation_blob(blob_name, bucket_name='panoptes-survey'):
     Returns:
         google.cloud.storage.blob.Blob|None: Blob object or None.
     """
-    return get_bucket(bucket_name).get_blob(blob_name)
+    return get_bucket(bucket_name, **kwargs).get_blob(blob_name)
 
 
-def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-survey'):
+def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-survey', **kwargs):
     """Returns the list of Storage blobs (files) matching the prefix.
 
     Note:
@@ -110,7 +110,7 @@ def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-
     """
 
     # The bucket we will use to fetch our objects
-    bucket = get_bucket(bucket_name)
+    bucket = get_bucket(bucket_name, **kwargs)
 
     objs = list()
     for f in bucket.list_blobs(prefix=prefix):
