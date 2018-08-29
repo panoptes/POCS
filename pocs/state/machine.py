@@ -179,7 +179,7 @@ class PanStateMachine(Machine):
 
         self.logger.debug("Transition method: {}".format(call_method))
 
-        caller = getattr(self, call_method, 'park')
+        caller = getattr(self, call_method, self.park)
         state_changed = caller()
         self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
