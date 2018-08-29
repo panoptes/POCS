@@ -312,19 +312,19 @@ class POCS(PanStateMachine, PanBase):
 
         return safe
 
-    def is_dark(self, horizon='civil'):
+    def is_dark(self, horizon='flat'):
         """Is it dark.
 
         Checks whether it is dark at the location provided. This checks for the
-        config entry `location.civil_horizon` or 0° by default.
+        config entry `location.flat_horizon` or 10° by default.
 
         Args:
-            horizon (str, optional): Which horizon to use, 'civil' or 'astro'.
+            horizon (str, optional): Which horizon to use, 'flat' or 'observe'.
 
         Returns:
             bool: Is night at location.
         """
-        # See if we are at civil twilight
+        # See if we are at flat twilight
         is_dark = self.observatory.is_dark(horizon=horizon)
 
         # Check simulator

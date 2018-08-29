@@ -124,17 +124,17 @@ class PanStateMachine(Machine):
 
                 # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
-                    if self.observatory.is_dark(horizon='civil') is False:
-                        self.logger.warning("Waiting until civil twilight")
-                        self.wait_until_dark(horizon='civil')
+                    if self.observatory.is_dark(horizon='flat') is False:
+                        self.logger.warning("Waiting until flat twilight")
+                        self.wait_until_dark(horizon='flat')
                 elif self.state == 'calibrating':
-                    if self.observatory.is_dark(horizon='astro') is False:
+                    if self.observatory.is_dark(horizon='observe') is False:
                         # Send the mount to home to wait
                         self.logger.warning("Sending mount to home")
                         self.observatory.mount.slew_to_home()
 
-                        self.logger.warning("Waiting until astronomical twilight")
-                        self.wait_until_dark(horizon='astro')
+                        self.logger.warning("Waiting until observing twilight")
+                        self.wait_until_dark(horizon='observe')
 
                 try:
                     state_changed = self.goto_next_state()
@@ -243,7 +243,7 @@ class PanStateMachine(Machine):
                 self.logger.debug("Always safe to move to {}".format(event_data.event.name))
                 is_safe = True
             elif event_data.event.name in safe_when_dark:
-                is_safe = self.is_dark(horizon='civil') and self.has_free_space()
+                is_safe = self.is_dark(horizon='flat') and self.has_free_space()
             else:
                 is_safe = self.is_safe()
         except Exception as e:

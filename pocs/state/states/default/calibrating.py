@@ -14,8 +14,8 @@ def on_enter(event_data):
     try:
 
         if pocs.observatory.take_flat_fields:
-            civil_horizon = pocs.config['location']['civil_horizon'].value
-            astro_horizon = pocs.config['location']['astro_horizon'].value
+            flat_horizon = pocs.config['location']['flat_horizon'].value
+            observe_horizon = pocs.config['location']['observe_horizon'].value
 
             # Wait for twilight if needed
             sun_pos = pocs.observatory.observer.altaz(
@@ -24,11 +24,11 @@ def on_enter(event_data):
             ).alt
 
             # Take the flats
-            if sun_pos.value <= civil_horizon and sun_pos.value > astro_horizon:
+            if sun_pos.value <= flat_horizon and sun_pos.value > observe_horizon:
                 pocs.say("Taking some flat fields to start the night")
                 pocs.observatory.take_evening_flats()
-            elif sun_pos.value <= astro_horizon:
-                pocs.say("Sun is below {}, stopping calibration".format(astro_horizon))
+            elif sun_pos.value <= observe_horizon:
+                pocs.say("Sun is below {}, stopping calibration".format(observe_horizon))
 
         pocs.next_state = 'scheduling'
 

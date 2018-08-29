@@ -778,8 +778,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            civil_horizon = config_site.get('civil_horizon', 0 * u.degree)
-            astro_horizon = config_site.get('astro_horizon', -18 * u.degree)
+            flat_horizon = config_site.get('flat_horizon', 0 * u.degree)
+            observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -790,8 +790,8 @@ class Observatory(PanBase):
                 'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon,
-                'civil_horizon': civil_horizon,
-                'astro_horizon': astro_horizon,
+                'flat_horizon': flat_horizon,
+                'observe_horizon': observe_horizon,
             }
             self.logger.debug("Location: {}".format(self.location))
 

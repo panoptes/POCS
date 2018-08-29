@@ -124,8 +124,8 @@ def _parse_config(config):
             'latitude',
             'longitude',
             'horizon',
-            'civil_horizon',
-            'astro_horizon',
+            'flat_horizon',
+            'observe_horizon',
             'twilight_horizon'
         ]:
             if angle in loc:
