@@ -14,7 +14,7 @@ $PANUSER has permissions to execute `sudo`.
 > tmux attach-session -t panoptes
 > ```
 
-# PANOPTES Environement Variables
+# PANOPTES Environment Variables
 
 First we need to have the PANOPTES environement variables set in all
 the shells that are involved in running PANOPTES. The simplest
