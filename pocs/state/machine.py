@@ -172,15 +172,27 @@ class PanStateMachine(Machine):
                 self.sleep(60)
 
     def goto_next_state(self):
+        """Make a transition to the next state.
+
+        Each state is responsible for setting the `next_state` property based
+        off the logic that happens inside the state. This method will look up
+        the transition method to reach the next state and call that method.
+
+        If no transition method is defined for whatever is set as `next_state`
+        then the `park` method will be called.
+
+        Returns:
+            bool: If state was successfully changed.
+        """
         state_changed = False
 
         # Get the next transition method based off `state` and `next_state`
-        call_method = self._lookup_trigger()
+        transition_method_name = self._lookup_trigger()
 
-        self.logger.debug("Transition method: {}".format(call_method))
+        self.logger.debug("Transition method: {}".format(transition_method_name))
 
-        caller = getattr(self, call_method, 'park')
-        state_changed = caller()
+        transition_method = getattr(self, transition_method_name, self.park)
+        state_changed = transition_method()
         self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
