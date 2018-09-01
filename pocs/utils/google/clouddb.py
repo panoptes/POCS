@@ -72,6 +72,7 @@ def get_db_proxy_conn(
 def get_db_conn(instance='panoptes-meta',
                 db_name='panoptes',
                 db_user='panoptes',
+                project_id='panoptes-survey',
                 port=5432,
                 **kwargs
                 ):
@@ -104,7 +105,7 @@ def get_db_conn(instance='panoptes-meta',
         'sslcert': ssl_client_cert,
         'sslkey': ssl_client_key,
         'hostaddr': host_addr,
-        'host': instance,
+        'host': '{}:{}'.format(project_id, instance),
         'port': port,
         'user': db_user,
         'dbname': db_name,

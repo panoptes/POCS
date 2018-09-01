@@ -14,7 +14,7 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 
 
-def get_storage_client(auth_key=None, project_id='panoptes-survey'):
+def get_storage_client_from_key(auth_key=None, project_id='panoptes-survey'):
     """Get the google storage client using an auth_key.
 
     Args:
@@ -44,7 +44,7 @@ def get_storage_client(auth_key=None, project_id='panoptes-survey'):
     return client
 
 
-def get_bucket(name, **kwargs):
+def get_bucket(name, client=None, **kwargs):
     """Get Storage bucket object.
 
     Args:
@@ -59,7 +59,9 @@ def get_bucket(name, **kwargs):
         GoogleCloudError: Description
     """
 
-    client = get_storage_client(**kwargs)
+    if client is None:
+        client = get_storage_client_from_key(**kwargs)
+    
     bucket = None
 
     try:
@@ -73,7 +75,7 @@ def get_bucket(name, **kwargs):
     return bucket
 
 
-def get_observation_blob(blob_name, bucket_name='panoptes-survey'):
+def get_observation_blob(blob_name, bucket_name='panoptes-survey', **kwargs):
     """Returns an individual Blob.
 
     Args:
@@ -84,10 +86,10 @@ def get_observation_blob(blob_name, bucket_name='panoptes-survey'):
     Returns:
         google.cloud.storage.blob.Blob|None: Blob object or None.
     """
-    return get_bucket(bucket_name).get_blob(blob_name)
+    return get_bucket(bucket_name, **kwargs).get_blob(blob_name)
 
 
-def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-survey'):
+def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-survey', **kwargs):
     """Returns the list of Storage blobs (files) matching the prefix.
 
     Note:
@@ -110,7 +112,7 @@ def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-
     """
 
     # The bucket we will use to fetch our objects
-    bucket = get_bucket(bucket_name)
+    bucket = get_bucket(bucket_name, **kwargs)
 
     objs = list()
     for f in bucket.list_blobs(prefix=prefix):
@@ -124,7 +126,7 @@ def get_observation_blobs(prefix, include_pointing=False, bucket_name='panoptes-
     return sorted(objs, key=lambda x: x.name)
 
 
-def download_fits_file(img_blob, save_dir='.', force=False, unpack=False, callback=None):
+def download_fits_file(img_blob, save_dir='.', force=False, unpack=False, callback=None, **kwargs):
     """Downloads (and uncompresses) the image blob data.
 
     Args:
@@ -140,7 +142,7 @@ def download_fits_file(img_blob, save_dir='.', force=False, unpack=False, callba
         str: Path to local (uncompressed) FITS file
     """
     if isinstance(img_blob, str):
-        img_blob = get_observation_blob(img_blob)
+        img_blob = get_observation_blob(img_blob, **kwargs)
 
     output_path = os.path.join(
         save_dir,
@@ -178,7 +180,7 @@ def download_fits_file(img_blob, save_dir='.', force=False, unpack=False, callba
     return output_path
 
 
-def upload_fits_file(img_path, bucket_name='panoptes-survey'):
+def upload_fits_file(img_path, bucket_name='panoptes-survey', **kwargs):
     """Uploads an image to the storage bucket.
 
     Args:
@@ -186,7 +188,7 @@ def upload_fits_file(img_path, bucket_name='panoptes-survey'):
         bucket_name (str, optional): Bucket to upload, default 'panoptes-survey'.
 
     """
-    bucket = get_bucket(bucket_name)
+    bucket = get_bucket(bucket_name, **kwargs)
 
     # Replace anything before the unit id
     assert re.match('PAN\d\d\d', img_path) is not None
