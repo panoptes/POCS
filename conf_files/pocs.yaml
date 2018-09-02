@@ -18,15 +18,6 @@ directories:
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-panoptes_network:
-    auth_key: # Update
-    project_id: panoptes-survey
-    image_storage: True
-    buckets:
-        images: panoptes-survey
-    cloudsql_instances:
-        panoptes-meta: # Update
-        tess-catalog: # Update
 db: 
     name: panoptes
     type: mongo
@@ -59,6 +50,18 @@ messaging:
     # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
+
+# Google Network #
+panoptes_network:
+    auth_key: # Update
+    project_id: panoptes-survey
+    image_storage: True
+    buckets:
+        images: panoptes-survey
+    cloudsql_instances:
+        panoptes-meta: # Update
+        tess-catalog: # Update
+        
 #Enable to output POCS messages to social accounts
 # social_accounts:
 #     twitter:
