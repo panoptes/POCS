@@ -99,7 +99,7 @@ def test_upload_observation_to_bucket(storage):
     new_dir = os.path.join('/tmp', 'fields', 'fake_obs')
     shutil.copytree(dir_name, new_dir)
 
-    include_files = '*.fits'
+    include_files = '*'
 
     pan_id = storage.unit_id
     assert upload_observation_to_bucket(

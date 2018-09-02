@@ -7,7 +7,7 @@ from astropy.io import fits
 
 from pocs.utils.config import load_config
 from pocs.utils.images import clean_observation_dir
-from pocs.utils.google.storage import upload_directory_to_bucket
+from pocs.utils.google.storage import upload_observation_to_bucket
 from pocs.utils.google.clouddb import add_header_to_db
 
 
@@ -26,11 +26,11 @@ def main(directory, upload=True, send_headers=True, verbose=False):
             print(msg)
 
     _print("Cleaning observation directory")
-    clean_observation_dir(directory)
+    clean_observation_dir(directory, remove_jpgs=False)
 
     if upload:
         _print("Uploading to storage bucket")
-        upload_directory_to_bucket(pan_id, directory)
+        upload_observation_to_bucket(pan_id, directory, include_files='*')
 
     if send_headers:
         _print("Sending FITS headers to metadb")

@@ -74,6 +74,7 @@ class PanStorage(object):
         if remote_path is None:
             remote_path = local_path
 
+        # Prepend the unit id
         if not remote_path.startswith(self.unit_id):
             remote_path = os.path.join(self.unit_id, remote_path)
 
