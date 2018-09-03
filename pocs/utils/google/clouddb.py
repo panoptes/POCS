@@ -14,6 +14,10 @@ def get_db_proxy_conn(
         **kwargs):
     """Return postgress connection to local proxy.
 
+    Note:
+        The proxy must be started and authenticated to the appropriate instance
+        before this function will work.
+
     Args:
         host (str, optional): Hostname, default localhost.
         db_user (str, optional): Name of db user, default 'panoptes'.
