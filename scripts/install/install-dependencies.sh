@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# Run with --help to see your options. With no options, does a complete install
+# of dependencies, though attempts to reuse existing installs.
+
 THIS_DIR="$(dirname $(readlink -f "${0}"))"
 THIS_PROGRAM="$(basename "${0}")"
 
@@ -11,8 +14,6 @@ fi
 
 mkdir -p "${PANDIR}"
 cd "${PANDIR}"
-
-# TODO(jamessynge): Add flags to control behavior, such as skipping apt-get.
 
 ASTROMETRY_VERSION="0.72"
 INSTALL_PREFIX="/usr/local"
@@ -27,40 +28,88 @@ DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
 DO_PIP_REQUIREMENTS=1
 
+# Which bash file do we need to modify? The last found here is the one that
+# bash executes for login shells, and so provides the environment for
+# all processes under that.
+THE_PROFILE="${HOME}/.profile"
+if [[ -f "${HOME}/.bash_login" ]] ; then
+  THE_PROFILE="${HOME}/.bash_login"
+fi
+if [[ -f "${HOME}/.bash_profile" ]] ; then
+  THE_PROFILE="${HOME}/.bash_profile"
+fi
+
 function echo_bar() {
-  eval $(resize|grep COLUMNS=)
+  if [[ -n "$(which resize)" ]] ; then
+    eval $(resize|grep COLUMNS=)
+  elif [[ -n "$(which stty)" ]] ; then
+    COLUMNS="$(stty size | cut '-d ' -f2)"
+  fi
   printf "%${COLUMNS:-80}s\n" | tr ' ' '#'
 }
 
-# Append $1 to .profile 
-function add_to_profile() {
-  local -r the_line="${1}"
-  local -r the_file="${HOME}/.profile"
-  if [[ ! -f "${the_file}" ]] ; then
-    touch "${the_file}"
+function ensure_profile_exists() {
+  if [[ ! -f "${THE_PROFILE}" ]] ; then
+    touch "${THE_PROFILE}"
   fi
-  if [[ -z "$(fgrep -- "${the_line}" "${the_file}")" ]] ; then
-    echo >>"${the_file}" "
-# Added by PANOPTES install-dependencies.sh
-${the_line}"
-    echo "Appended to ${the_file}: ${the_line}"
+}
+
+function profile_contains_text() {
+  local -r target_text="${1}"
+  if [[ -n "$(fgrep -- "${target_text}" "${THE_PROFILE}")" ]] ; then
+    return 0
   else
-    echo "Already in ${the_file}: ${the_line}"
+    return 1
   fi
+}
+
+function add_to_profile_before_target() {
+  local -r new_text="${1}"
+  local -r target_text="${2}"
+  if profile_contains_text "${new_text}" ; then
+    echo "Already in ${THE_PROFILE}: ${new_text}"
+    return 0
+  fi
+  ensure_profile_exists
+  # This backup is just for debugging (i.e. showing the before and after
+  # diff).
+  local -r the_backup="$(mktemp "${THE_PROFILE}.pre-edit.XXXXX")"
+  cp -p "${THE_PROFILE}" "${the_backup}"
+  if profile_contains_text "${target_text}" ; then
+    # Add just before the target text.
+    sed -i "/${target_text}/i \
+# Added by PANOPTES install-dependencies.sh\n\
+${new_text}\n" "${THE_PROFILE}"
+  else
+    # Append to the end of the file.
+    echo >>"${THE_PROFILE}" "
+# Added by PANOPTES install-dependencies.sh
+${new_text}"
+  fi
+  # Again, this diff is just for debugging.
+  echo "Modified ${THE_PROFILE}:"
+  echo
+  diff -u "${the_backup}" "${THE_PROFILE}" || /bin/true
+  echo
+  rm "${the_backup}"
+}
+
+# Add $1 to .profile before where bashrc is invoked.
+# This assumes a standard (default) .profile.
+function add_to_profile_before_bashrc() {
+  add_to_profile_before_target "${1}" "# if running bash"
 }
 
 # Append $1 to PATH and write command to do the same to .profile.
 function add_to_PATH() {
   local -r the_dir="$(readlink -f "${1}")"
-  add_to_profile "PATH=\"${the_dir}:\${PATH}\""
+  add_to_profile_before_bashrc "PATH=\"${the_dir}:\${PATH}\""
   PATH="${the_dir}:${PATH}"
 
   return 0
 
   local -r the_file="${HOME}/.profile"
-  if [[ ! -f "${the_file}" ]] ; then
-    touch "${the_file}"
-  fi
+  ensure_profile_exists
   if [[ -z "$(egrep -- "PATH=.*${the_dir}" "${the_file}")" ]] ; then
     echo >>"${the_file}" "
 # Added by PANOPTES install-dependencies.sh
@@ -94,19 +143,47 @@ function install_apt_packages() {
 }
 
 function install_mongodb() {
-  # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu-16.04/
+  # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
   # Note this function does not configure mongodb itself, i.e. no users or
   # security settings.
   echo_bar
+  local MONGO_KEY=""
+  local MONGO_URL="http://repo.mongodb.org/apt/ubuntu"
+  local MONGO_VERSION=""
+  local MONGO_SOURCE_PATH=""
+  local LSB_RELEASE=""
+  if [[ -n "$(which lsb_release)" ]] ; then
+    LSB_RELEASE="$(lsb_release -sc)"
+  fi
+  if [[ "${LSB_RELEASE}" = "xenial" ]] ; then
+    MONGO_KEY=2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+    MONGO_VERSION=3.6
+  elif [[ "${LSB_RELEASE}" = "bionic" ]] ; then
+    MONGO_KEY=9DA31620334BD75D9DCB49F368818C72E52529D4
+    MONGO_VERSION=4.0
+  else
+    echo "ERROR: don't know which version of MongoDB to install."
+    return 1
+  fi
+  MONGO_URL+=" ${LSB_RELEASE}/mongodb-org/${MONGO_VERSION}"
+  MONGO_SOURCE_PATH="/etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.list"
+
   echo "
-Installing mongodb, for which several commands require sudo, so
-you may be prompted for you password.
+Installing MongoDB ${MONGO_VERSION}, for which several commands require sudo,
+so you may be prompted for you password. Starting by telling APT where to find
+the MongoDB packages.
 "
-  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
-  echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.2 multiverse" \
-     | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
+  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv ${MONGO_KEY}
+  echo "deb ${MONGO_URL} multiverse" | sudo tee "${MONGO_SOURCE_PATH}"
+  echo "
+Updating the list of packages so APT finds the MongoDB packages,
+then installing MongoDB.
+"
   sudo apt-get update
   sudo apt-get install -y mongodb-org
+  echo "
+MongoDB is installed, now updating the config and starting mongod.
+"
   echo "[Unit]
 Description=High-performance, schema-free document-oriented database
 After=network.target
@@ -135,22 +212,45 @@ function maybe_install_mongodb() {
 # the set to install.
 function install_conda() {
   local -r the_script="${PANDIR}/tmp/miniconda.sh"
+  local -r the_destination="${PANDIR}/miniconda"
+  if [[ -d "${the_destination}" ]] ; then
+    echo_bar
+    echo
+    echo "Removing previous miniconda installation from ${the_destination}"
+    rm -rf "${the_destination}"
+  fi
   echo_bar
   echo
   echo "Installing miniconda. License at: https://conda.io/docs/license.html"
   wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
        -O "${the_script}"
-  bash "${the_script}" -b -p "${PANDIR}/miniconda"
+  bash "${the_script}" -b -p "${the_destination}"
   rm "${the_script}"
-  add_to_PATH miniconda/bin
+
+  # As per the Anaconda 4.4 release notes, one is supposed to add the following
+  # to .bash_profile, .bashrc or whereever is appropriate:
+  #    . $CONDA_LOCATION/etc/profile.d/conda.sh
+  #    conda activate base
+  # Where CONDA_LOCATION is where Anaconda or miniconda was installed.
+  # We do the first step here, but obviously only we we are actually
+  # installing conda. The second step will be done unconditionally
+  # elsewhere in this file.
+
+  . ${the_destination}/etc/profile.d/conda.sh
+  add_to_profile_before_bashrc \
+      ". ${the_destination}/etc/profile.d/conda.sh"
 }
 
 function install_conda_if_missing() {
   # Intall latest version of Miniconda (Anaconda with
   # fewer packages; any that are needed can then be installed).
-  CONDA_BIN="$(which conda)"  # Assuming is a python3 version if found.
-  if [[ -z "${CONDA_BIN}" ]] ; then
+  # Note that if conda is found, we assume that a Python 3 version is installed.
+  if [[ -z "$(which conda)" ]] ; then
     install_conda
+  else
+    echo_bar
+    echo
+    echo "Reusing existing conda:" "$(which conda)"
   fi
 }
 
@@ -369,48 +469,66 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
   install_conda_if_missing
 fi
 
+# Use the base Anaconda environment until we're ready to
+# work with the PANOPTES environment.
+conda activate base
 
 # Make sure we use the correct Anaconda environment.
 DO_CREATE_CONDA_ENV=0
-if [[ -z "$(conda info --envs | grep panoptes-env)" ]] ; then
+if [[ -z "$(conda env list | grep panoptes-env)" ]] ; then
   DO_CREATE_CONDA_ENV=1
 elif [[ "${DO_REBUILD_CONDA_ENV}" -eq 1 ]] ; then
-  source activate root
+  echo_bar
+  echo 
+  echo "Removing previous PANOPTES conda env"
   conda remove --all --yes --quiet -n panoptes-env
   DO_CREATE_CONDA_ENV=1
 fi
-if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 ]] ; then
-  conda create --yes -n panoptes-env python=3
-fi
-
-add_to_profile "source activate panoptes-env"
-source activate panoptes-env
 
 if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
       "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo_bar
   echo
-  echo "Updating conda installation."
+  echo "Updating base conda installation."
+  conda update --quiet --yes -n base conda
   conda update --quiet --all --yes
 fi
 
+if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 ]] ; then
+  echo_bar
+  echo 
+  echo "Creating conda env for PANOPTES: panoptes-env"
+  conda create --yes -n panoptes-env python=3
+fi
+
+add_to_profile_before_bashrc "conda activate panoptes-env"
+conda activate panoptes-env
+
+if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
+      "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
+  echo_bar
+  echo
+  echo "Updating packages in panoptes-env."
+  conda update --quiet --all --yes
+fi
 
 if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
   echo_bar
   echo
-  echo "Installing conda packages"
+  echo "Installing conda packages needed for PANOPTES"
   conda install --yes "--file=${THIS_DIR}/conda-packages-list.txt"
 fi
 
+echo_bar
+echo "PATH=$PATH"
+echo_bar
 
 if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
+  echo_bar
+  echo
+  echo "Installing Python packages using pip"
   # Upgrade pip itself before installing other python packages.
   pip install -U pip
-  # TODO(jamessynge): Move this script and needed text files into an install
-  # directory.
-  # TODO(wtgee): Consider whether to inline the needed text files into this
-  # file, and add git clone of the PANOPTES repos, so that the user can do
-  # an install with just about two commands (wget script, then run script).
   pip install -r "${POCS}/requirements.txt"
 fi
 
@@ -437,10 +555,11 @@ set +x
 echo
 echo_bar
 echo_bar
-echo
-echo "Remember to update PATH in your shell before running tests"
-echo "and to run \"source activate panoptes-env\""
-echo
+echo "
+Your ${THE_PROFILE} has been modified. To pickup that change,
+please logout completely, then log back in. Don't just open
+a new terminal window.
+"
 
 exit
 

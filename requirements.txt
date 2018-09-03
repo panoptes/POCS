@@ -21,6 +21,13 @@ readline
 requests
 scikit_image >= 0.12.3
 scipy >= 0.17.1
+
+# Jupyter-notebook requires Tornado versions between 4 and 5. See:
+# https://stackoverflow.com/questions/49141525/install-jupyter-notebook-on-miniconda
+# https://github.com/ipython/ipython/issues/8249
+# https://github.com/jupyter/help/issues/324
+
+tornado == 4.5.3
 transitions >= 0.4.0
 tweepy
 wcsaxes
