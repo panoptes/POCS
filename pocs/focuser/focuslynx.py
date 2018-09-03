@@ -271,8 +271,8 @@ class Focuser(AbstractFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_hub_info(self):
-        self._hub_info = self._send_comman(command_str='<FHGETHUBINFO>',
-                                           expected_reply='HUB INFO')
+        self._hub_info = self._send_command(command_str='<FHGETHUBINFO>',
+                                            expected_reply='HUB INFO')
 
     def _get_focuser_config(self):
         command_str = '<F{:1d}GETCONFIG>'.format(self._focuser_number)
