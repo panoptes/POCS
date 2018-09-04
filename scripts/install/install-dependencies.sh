@@ -469,6 +469,15 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
   install_conda_if_missing
 fi
 
+# Add the astropy channel, i.e. an additional repository in which to
+# look for packages. With conda 4.1.0 and later, by default the highest
+# priority repository that contains a package is used as the source for
+# that package, even if there is a newer version in a lower priority
+# package. And by default the most recently added repository is treated
+# as the highest priority repository. Here we use prepend to be clear
+# that we want astropy to be highest priority.
+conda config --add channels astropy
+
 # Use the base Anaconda environment until we're ready to
 # work with the PANOPTES environment.
 conda activate base
@@ -491,7 +500,6 @@ if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
   echo
   echo "Updating base conda installation."
   conda update --quiet --yes -n base conda
-  conda update --quiet --all --yes
 fi
 
 if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 ]] ; then
@@ -509,7 +517,8 @@ if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
   echo_bar
   echo
   echo "Updating packages in panoptes-env."
-  conda update --quiet --all --yes
+  conda update -n panoptes-env --quiet --yes conda
+  conda update -n panoptes-env --quiet --yes --all
 fi
 
 if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
@@ -522,6 +531,8 @@ fi
 echo_bar
 echo "PATH=$PATH"
 echo_bar
+
+exit
 
 if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo_bar
