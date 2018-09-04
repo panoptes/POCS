@@ -37,6 +37,7 @@ mount:
         baudrate: 9600
     non_sidereal_available: True
 pointing:
+    auto_correct: True
     threshold: 0.05
     exptime: 30
     max_iterations: 3
