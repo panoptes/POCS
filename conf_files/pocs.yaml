@@ -38,8 +38,8 @@ mount:
     non_sidereal_available: True
 pointing:
     auto_correct: True
-    threshold: 0.05
-    exptime: 30
+    threshold: 0.05 # degrees
+    exptime: 30 # seconds
     max_iterations: 3
 cameras:
     auto_detect: True
