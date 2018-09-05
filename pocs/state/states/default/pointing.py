@@ -73,7 +73,7 @@ def on_enter(event_data):
                 wait_time += wait_interval
 
             # Analyze pointing
-            if pocs.observatory.current_observation is not None:
+            if observation is not None:
                 pointing_id, pointing_path = observation.last_exposure
                 pointing_image = Image(
                     pointing_path,
@@ -92,16 +92,22 @@ def on_enter(event_data):
 
                 separation = pointing_image.pointing_error.magnitude.value
 
+                if should_correct is False:
+                    pocs.logger.info("Pointing correction turned off, done with pointing.")
+                    break
+
                 # Correct the pointing
-                if should_correct and separation > pointing_threshold:
+                if separation > pointing_threshold:
                     pocs.say("I'm still a bit away from the field so I'm going to get closer.")
 
                     # Tell the mount we are at the field, which is the center
                     pocs.say("Syncing with the latest image...")
-                    has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
+                    has_field = pocs.observatory.mount.set_target_coordinates(
+                        pointing_image.pointing)
                     pocs.logger.debug("Coords set, calibrating")
 
-                    # Sync the mount
+                    # Calibrate the mount - Sync the mount's known position
+                    # with the current actual position.
                     pocs.observatory.mount.query('calibrate_mount')
 
                     # Now set back to field
@@ -111,8 +117,7 @@ def on_enter(event_data):
                             pocs.observatory.mount.set_target_coordinates(observation.field)
                             pocs.observatory.mount.slew_to_target()
                 else:
-                    # Either we want to correct pointing or we are close enough
-                    # so we stop the pointing loop correction.
+                    pocs.logger.info("Separation is within pointing threshold.")
                     break
 
         pocs.next_state = 'tracking'
