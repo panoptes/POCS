@@ -1,8 +1,16 @@
 import os
 import re
 
-from gcloud import storage
-from gcloud.exceptions import Forbidden
+# Supporting a change in Google Cloud libraries by trying imports both ways:
+try:
+    # New way:
+    from google.cloud import storage
+    from google.cloud.exceptions import Forbidden
+except:
+    # Old way:
+    from gcloud import storage
+    from gcloud.exceptions import Forbidden
+
 
 from pocs.utils import error
 from pocs.utils.logger import get_root_logger
