@@ -476,7 +476,16 @@ fi
 # package. And by default the most recently added repository is treated
 # as the highest priority repository. Here we use prepend to be clear
 # that we want astropy to be highest priority.
-conda config --add channels astropy
+if [[ -n "$(conda config --show channels | fgrep astropy)" ]] ; then
+  conda config --remove channels astropy
+fi
+conda config --prepend channels astropy
+
+# And put conda-forge at the back of the line.
+if [[ -n "$(conda config --show channels | fgrep conda-forge)" ]] ; then
+  conda config --remove channels conda-forge
+fi
+conda config --append channels conda-forge
 
 # Use the base Anaconda environment until we're ready to
 # work with the PANOPTES environment.
