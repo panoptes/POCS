@@ -3,10 +3,11 @@ import subprocess
 import shutil
 import re
 
+from contextlib import suppress
+
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
@@ -81,7 +82,8 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         timeout {number} -- Process timeout (default: {15})
 
     Returns:
-        str -- Filename of image that was created
+        str|None -- Path to file, either specific path or the more common
+            symlinked path. If no file was generated return None.
 
     """
     assert os.path.exists(fname),\
@@ -95,21 +97,26 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         warn("File must be a Canon CR2 or FITS file.")
         return None
 
-    # Symlink latest.jpg to the image; first remove the symlink if it already exists.
+    latest_path = None
+
+    # If we have a valid image then link to common path and return that name
     if os.path.exists(pretty_path) and pretty_path.endswith('.jpg'):
+
+        # Symlink latest.jpg to the image
         latest_path = '{}/images/latest.jpg'.format(os.getenv('PANDIR'))
-        try:
+
+        # First remove the symlink if it already exists
+        with suppress(FileNotFoundError):
             os.remove(latest_path)
-        except FileNotFoundError:
-            pass
+
+        # Make symlink, if error return regular path
         try:
             os.symlink(pretty_path, latest_path)
         except Exception as e:
             warn("Can't link latest image: {}".format(e))
+            return pretty_path
 
-        return pretty_path
-    else:
-        return None
+    return latest_path
 
 
 def _make_pretty_from_fits(
