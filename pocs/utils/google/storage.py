@@ -2,11 +2,11 @@ import os
 import re
 
 # Supporting a change in Google Cloud libraries by trying imports both ways:
-try:
+try:  # pragma: no cover
     # New way:
     from google.cloud import storage
     from google.cloud.exceptions import Forbidden
-except:
+except ImportError:  # pragma: no cover
     # Old way:
     from gcloud import storage
     from gcloud.exceptions import Forbidden
