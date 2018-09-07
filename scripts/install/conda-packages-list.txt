@@ -1,6 +1,11 @@
+# These are packages that we install with conda. They include both Python
+# packages and non-Python libraries on which we depend (usually via a
+# Python package depending on some native code).
+
 astroplan
 astropy >= 3.0.0
 ccdproc
+cfitsio   # This is an experiment. Requires adjusting apt-packages-list.
 codecov
 coveralls
 cython

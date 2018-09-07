@@ -2,7 +2,8 @@
 # Lines starting with # are comments as are blank lines,
 # and # starts trailing comments.
 
-# dcraw decodes Canon raw images
+# dcraw decodes Canon raw images. See also libraw.org for an alternate source
+# of the underlying algorithms. Neither has an up-to-date conda package.
 dcraw
 
 # gphoto2 enables remote control of cameras, including the Canon DSLRs that
@@ -11,31 +12,34 @@ dcraw
 # old relative to the latest stable version. gphoto2-updater is an install
 # script that we might want to use if we need a newer version. For more info,
 # see: https://github.com/gonzalo/gphoto2-updater
+# There is an old conda package.
 gphoto2
 
 # Packages needed according to http://astrometry.net/doc/build.html
-libbz2-dev
-libbz2-dev
-libcfitsio-dev
-libjpeg-dev
-libnetpbm10-dev
-libpng-dev
-netpbm
-python-dev
-python-numpy
-python-pyfits
-swig
-zlib1g-dev
+libbz2-dev        # Not available in our conda repos.
+libcfitsio-dev    # Probably already satisfied in conda.
+libjpeg-dev       # Conda has libjpeg-turbo, apparently the same API but faster.
+libnetpbm10-dev   # Used for making pretty pictures of solutions.
+libpng-dev        # Used for making pretty pictures of solutions. ALREADY installed by conda.
+netpbm            # Used for making pretty pictures of solutions.
+python-dev        # Probably already satisfied in conda.
+python-numpy      # Probably already satisfied in conda.
+python-pyfits     # Not available in our conda repos.
+swig              # Available from conda.
+zlib1g-dev        # Available from conda as zlib.
 
-# Cairo is a graphics library, and matplotlib can use it as a backend
-# for rendering.
-libcairo2-dev 
+# Cairo is a 2D graphics library, and matplotlib can use it as a backend
+# for rendering, and used by astrometry for pretty pictures of solutions.
+# Stable, but not latest, version available from conda.
+libcairo2-dev
 
-# exiftool is used in a couple of places to extract info from the .cr2 file
-exiftool 
+# exiftool is used in a couple of places to extract info from the .cr2 file.
+# Consider using Python package exifread instead, which doesn't require exiftool
+exiftool
 
 # We use cfitsio command line tools (e.g. fpack) from POCS, in addition to the
 # uses of the cfitsio libraries by astrometry above.
+# Not available in our conda repos.
 libcfitsio-bin
 
 # These are used if you want to setup SSH access into the computer (pretty
@@ -44,6 +48,8 @@ openssh-client
 openssh-server
 
 # Graphviz is used for rendering the state machine of POCS.
+# Do we need both of these? Do we use the command-line tools in graphviz,
+# or just the pygraphviz library?
 graphviz
 libgraphviz-dev
 
@@ -51,9 +57,11 @@ libgraphviz-dev
 pkg-config
 
 # Improves interaction with pocs_shell (via readline).
+# Available from conda as ncurses.
 libncurses5-dev
 
 # These support the Python package "Shapely", used in PIAA (called from POCS).
+# Conda has geos 3.6. Not sure if this covers libgeos-c1v5 and libgeos-dev.
 libgeos-3.*
 libgeos-c1v5
 libgeos-dev
@@ -64,11 +72,14 @@ byobu
 tmux
 
 # Used for creating a timelapse.
+# Available from conda.
 ffmpeg
 
 # Used for colorizing log files.
 grc
 
 # https://jupyter.org/
+# Lots of jupyter packages available from conda, not sure whether this includes
+# jupyter-notebook features exactly as we need.
 jupyter-notebook
 

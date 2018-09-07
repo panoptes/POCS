@@ -3,7 +3,7 @@
 # known repositories that do offer them, but that is
 # more of a security risk.
 
-# Python wrapper for ffmpeg.
+# Thin Python wrapper for ffmpeg. We *could* replace with our own wrapper.
 ffmpy
 
 # Mock object support for Python testing.
