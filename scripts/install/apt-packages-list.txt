@@ -39,7 +39,7 @@ exiftool
 
 # We use cfitsio command line tools (e.g. fpack) from POCS, in addition to the
 # uses of the cfitsio libraries by astrometry above.
-# Not available in our conda repos.
+# 'conda install cfitsio' brings in fpack.
 libcfitsio-bin
 
 # These are used if you want to setup SSH access into the computer (pretty
