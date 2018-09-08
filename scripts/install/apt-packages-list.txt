@@ -19,7 +19,7 @@ libbz2-dev
 libcfitsio-dev
 libjpeg-dev
 libnetpbm10-dev
-libpng12-dev
+libpng-dev
 netpbm
 python-dev
 python-numpy
