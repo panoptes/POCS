@@ -3,6 +3,7 @@ import os
 from warnings import warn
 
 import psycopg2
+from psycopg2.extras import DictCursor
 from astropy.wcs import WCS
 
 from pocs.utils import error
@@ -130,7 +131,7 @@ def get_cursor(use_proxy=False, **kwargs):
     else:
         conn = get_db_proxy_conn(**kwargs)
 
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=DictCursor)
 
     return cur
 
