@@ -12,7 +12,7 @@ def get_db_proxy_conn(
         db_user='panoptes',
         port=5432,
         **kwargs):
-    """Return postgress connection to local proxy.
+    """Return postgres connection to local proxy.
 
     Note:
         The proxy must be started and authenticated to the appropriate instance
