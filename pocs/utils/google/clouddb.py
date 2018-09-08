@@ -6,34 +6,6 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from astropy.wcs import WCS
 
-from pocs.utils import error
-from pocs.utils.config import load_config
-
-
-def get_instance_ip(instance):
-    """Return the IP address for the given clouddb instance.
-
-    Args:
-        instance (str): instance of the db, currently one of 'panotes-meta',
-            'tess-catalog'.
-
-    Returns:
-        str: IP address of the host.
-
-    Raises:
-        error.GoogleCloudError: If `instance` key is not found under the
-            `panoptes_network` key in the config file.
-    """
-    instance_ip = None
-    try:
-        config = load_config()
-        cloud_config = config['panoptes_network']['cloudsql_instances']
-        instance_ip = cloud_config[instance.lower()]
-    except KeyError:
-        raise error.GoogleCloudError('Hostname IP not found in config')
-
-    return instance_ip
-
 
 def get_db_proxy_conn(
         host='127.0.0.1',
@@ -41,7 +13,11 @@ def get_db_proxy_conn(
         db_user='panoptes',
         port=5432,
         **kwargs):
-    """Return postgress connection to local proxy.
+    """Return postgres connection to local proxy.
+
+    Note:
+        The proxy must be started and authenticated to the appropriate instance
+        before this function will work.
 
     Args:
         host (str, optional): Hostname, default localhost.
@@ -70,68 +46,19 @@ def get_db_proxy_conn(
     return conn
 
 
-def get_db_conn(instance='panoptes-meta',
-                db_name='panoptes',
-                db_user='panoptes',
-                project_id='panoptes-survey',
-                port=5432,
-                **kwargs
-                ):
-    """Gets a connection to the Cloud SQL db.
-
-    Args:
-        instance (str, optional): Cloud SQL instance to connect to.
-        db_user (str, optional): Name of db user, default 'panoptes'.
-        db_name (str, optional): Name of db, default 'panoptes'.
-        port (int, optional): DB port.
-
-    Returns:
-        `psycopg2.Connection`: DB connection handle.
-    """
-    try:
-        pg_pass = os.environ['PGPASSWORD']
-    except KeyError:
-        warn("DB password has not been set")
-        return None
-
-    ssl_root_cert = os.path.join(os.environ['SSL_KEYS_DIR'], instance, 'server-ca.pem')
-    ssl_client_cert = os.path.join(os.environ['SSL_KEYS_DIR'], instance, 'client-cert.pem')
-    ssl_client_key = os.path.join(os.environ['SSL_KEYS_DIR'], instance, 'client-key.pem')
-
-    host_addr = get_instance_ip(instance)
-
-    conn_params = {
-        'sslmode': 'verify-full',
-        'sslrootcert': ssl_root_cert,
-        'sslcert': ssl_client_cert,
-        'sslkey': ssl_client_key,
-        'hostaddr': host_addr,
-        'host': '{}:{}'.format(project_id, instance),
-        'port': port,
-        'user': db_user,
-        'dbname': db_name,
-        'password': pg_pass,
-    }
-
-    conn = psycopg2.connect(**conn_params)
-    return conn
-
-
-def get_cursor(use_proxy=False, **kwargs):
+def get_cursor(**kwargs):
     """Get a Cursor object.
 
     Args:
-        **kwargs: Passed to `get_db_conn`
+        **kwargs: Passed to `get_db_prox_conn`
 
     Returns:
         `psycopg2.Cursor`: Cursor object.
     """
-    if use_proxy is False:
-        conn = get_db_conn(**kwargs)
-    else:
-        conn = get_db_proxy_conn(**kwargs)
-
     cur = conn.cursor(cursor_factory=DictCursor)
+
+    conn = get_db_proxy_conn(**kwargs)
+    cur = conn.cursor()
 
     return cur
 
