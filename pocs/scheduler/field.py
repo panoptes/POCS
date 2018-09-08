@@ -30,6 +30,8 @@ class Field(FixedTarget, PanBase):
         super().__init__(SkyCoord(position, equinox=equinox, frame='icrs'), name=name, **kwargs)
 
         self._field_name = self.name.title().replace(' ', '').replace('-', '')
+        if not self._field_name:
+            raise ValueError('Name is empty')
 
 
 ##################################################################################################
