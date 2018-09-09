@@ -45,7 +45,6 @@ if [[ -f "${HOME}/.bash_profile" ]] ; then
 fi
 
 # Track the changes that occurred.
-DID_CHANGE_CONDA=0
 PROFILE_HAS_BEEN_CHANGED=0
 
 #-------------------------------------------------------------------------------
@@ -332,11 +331,9 @@ function is_panoptes_env_activated() {
   if ! conda_is_present ; then
     return 1  # No
   fi
-  # Do we have a conda executable?
-  if [[ -z "${CONDA_EXE}" ]] ; then
-    return 1  # No
-  fi
-  if [[ ! -x "${CONDA_EXE}" ]] ; then
+  # Do we have a conda executable? If not, then no environment has
+  # been activated so far.
+  if [[ -z "${CONDA_EXE}" || ! -x "${CONDA_EXE}" ]] ; then
     return 1  # No
   fi
   # Does it work?
@@ -372,23 +369,27 @@ function get_panoptes_env_location() {
   if ! conda_is_present ; then
     return
   fi
-  # Do we have a conda executable?
-  if [[ -z "${CONDA_EXE}" ]] ; then
-    return
+  # Do we have a conda executable? We don't require CONDA_EXE to already be set
+  # because conda doesn't set it  until the first environment is activated.
+  local -r conda_exe="${CONDA_EXE:-${CONDA_INSTALL_DIR}/bin/conda}"
+  if [[ -z "${conda_exe}" || ! -x "${conda_exe}" ]] ; then
+    return  # No
   fi
-  if [[ ! -x "${CONDA_EXE}" ]] ; then
-    return
-  fi
-  # Does it work?
-  local -r conda_envs="$("${CONDA_EXE}" info --envs 2>/dev/null || /bin/true)"
+  # Get the list of environments.
+  local -r conda_envs="$("${conda_exe}" info --envs 2>/dev/null || /bin/true)"
   if [[ -z "${conda_envs}" ]] ; then
-    return
+    return  # Cound't find any environments
   fi
   # Is there a panoptes-env?
-  if ! (echo "${conda_envs}" | grep -E -q '\spanoptes-env$') ; then
-    return
+  local -r panoptes_env="$(
+      echo "${conda_envs}" |
+      (grep -E '^panoptes-env[[:space:]]' || /bin/true))"
+  if [[ -z "${panoptes_env}" ]] ; then
+    return  # No panoptes environment.
   fi
-  echo "/$(echo "${conda_envs}" | grep -E -q '\spanoptes-env$' | cut -d/ -f2-)"
+  # Extract the panoptes-env line and print the path that comes at
+  # the end of that line.
+  echo "${panoptes_env}" | sed 's_.* /_/_'
 }
 
 # Checksum the contents of the panoptes env, allowing us to determine
@@ -431,7 +432,6 @@ function install_conda() {
   add_to_profile_before_target \
       ". ${the_destination}/etc/profile.d/conda.sh"
   . "${the_destination}/etc/profile.d/conda.sh"
-  DID_CHANGE_CONDA=1
 }
 
 # Add additional repositories in which conda should search for packages.
@@ -468,7 +468,6 @@ function prepare_panoptes_conda_env() {
   elif [[ "${DO_REBUILD_CONDA_ENV}" -eq 1 ]] ; then
     conda remove --all --yes --quiet -n panoptes-env
     do_create_conda_env=1
-    DID_CHANGE_CONDA=1
   fi
 
   # Create the PANOPTES environment if necessary.
@@ -478,7 +477,6 @@ function prepare_panoptes_conda_env() {
     echo "Creating conda environment 'panoptes-env' with Python 3.6"
     # 3.6 works around a problem building astroscrappy in 3.7.
     conda create -n panoptes-env --yes --quiet python=3.6
-    DID_CHANGE_CONDA=1
   fi
 
   if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
@@ -491,8 +489,6 @@ function prepare_panoptes_conda_env() {
     echo
     echo "Updating all panoptes-env packages."
     conda update -n panoptes-env --yes --quiet --all
-
-    DID_CHANGE_CONDA=1
   fi
 
   # Activate the PANOPTES environment at login.
@@ -834,14 +830,6 @@ echo_bar
 echo_bar
 echo
 
-did_change_conda=0
-if [[ "${orig_panoptes_env_checksum}" != "$(checksum_panoptes_env)" ]] ; then
-  # FOR DEBUGGING:
-  echo "orig_panoptes_env_checksum: ${orig_panoptes_env_checksum}"
-  echo "new  panoptes_env_checksum: $(checksum_panoptes_env)"
-  did_change_conda=1
-fi
-
 ok_to_test=1
 if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
   ok_to_test=0
@@ -850,7 +838,10 @@ if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
   tput rmso  # Exit standout mode
 fi
 
-if [[ "${did_change_conda}" -eq 1 ]] ; then
+if [[ "${orig_panoptes_env_checksum}" != "$(checksum_panoptes_env)" ]] ; then
+  # FOR DEBUGGING:
+  echo "orig_panoptes_env_checksum: ${orig_panoptes_env_checksum}"
+  echo "new  panoptes_env_checksum: $(checksum_panoptes_env)"
   ok_to_test=0
   tput smso  # Enter standout mode
   echo "Your Python environment has been modified."
