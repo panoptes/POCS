@@ -12,7 +12,7 @@ if [[ -z "${PANDIR}" || -z "${POCS}" || -z "${PAWS}" || -z "${PANLOG}" ||
   exit 1
 fi
 
-ASTROMETRY_VERSION="0.72"
+ASTROMETRY_VERSION="latest"
 INSTALL_PREFIX="/usr/local"
 CONDA_INSTALL_DIR="${PANDIR}/miniconda"
 TIMESTAMP="$(date "+%Y%m%d.%H%M%S")"
@@ -137,12 +137,20 @@ done
 
 # Print a separator bar of # characters.
 function echo_bar() {
+  local terminal_width
   if [[ -n "$(which resize)" ]] ; then
-    eval "$(resize|grep COLUMNS=)"
+    terminal_width="$(resize|grep COLUMNS=|cut -d= -f2)"
   elif [[ -n "$(which stty)" ]] ; then
-    COLUMNS="$(stty size | cut '-d ' -f2)"
+    terminal_width="$(stty size | cut '-d ' -f2)"
   fi
-  printf "%${COLUMNS:-80}s\n" | tr ' ' '#'
+  printf "%${terminal_width:-80}s\n" | tr ' ' '#'
+}
+
+# Get the type of the first arg, i.e. shell function, executable, etc.
+# For more info: https://ss64.com/bash/type.html
+#            or: https://bash.cyberciti.biz/guide/Type_command
+function safe_type() {
+  type -t $1 || /bin/true
 }
 
 # If the desired profile file doesn't exist, create it.
@@ -170,7 +178,9 @@ function add_to_profile_before_target() {
   local -r new_text="${1}"
   local -r target_text="${2:-${THE_PROFILE_TARGET}}"
   if profile_contains_text "${new_text}" ; then
-    echo "Already in ${THE_PROFILE}: ${new_text}"
+    # TODO Add logging/verbosity support, so messages like this always
+    # go to the log file, and conditionally to stdout or stderr.
+    # echo "Already in ${THE_PROFILE}: ${new_text}"
     return 0
   fi
   ensure_profile_exists
@@ -392,10 +402,6 @@ function prepare_panoptes_conda_env() {
   add_to_profile_before_target "conda activate panoptes-env"
 }
 
-function safe_type() {
-  type $1 2>/dev/null || /bin/true
-}
-
 # Install conda if we can't find it. Note that starting with version
 # 4.4, conda's bin directory is not on the path, so 'which conda'
 # can't be used to determine if it is present.
@@ -488,21 +494,38 @@ function install_latest_cfitsio() {
   rm -rf tmp/cfitsio_latest.tar.gz tmp/cfitsio
 }
 
+function get_installed_astrometry_version() {
+  local -r solve_field="${PANDIR}/astrometry/bin/solve-field"
+  if [[ -x "${solve_field}" ]] ; then
+    "${solve_field}" --help|(grep -E '^Revision [0-9.]+,' || /bin/true)|cut -c10-|cut -d, -f1
+  fi
+}
+
+function test_installed_astrometry_version() {
+  local -r installed_version="$(get_installed_astrometry_version)"
+  if [[ -n "${installed_version}" && \
+        "${ASTROMETRY_VERSION}" == "${installed_version}" ]] ; then
+    echo_bar
+    echo
+    echo "Reusing existing astrometry ${installed_version} installation."
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Downloads astrometry version ${ASTROMETRY_VERSION} into a temp directory,
-# then builds and installs into ${PANDIR}/astrometry.
+# then builds and installs into ${PANDIR}/astrometry. Skips as much as
+# possible if able to determine that the version hasn't changed.
 # TODO(jamessynge): Discuss whether to continue installing directly in
 # ${PANDIR}/astrometry, or to instead install into /usr/local as we do
 # with cfitsio.
-# TODO(jamessynge): Come up with a way to determine if the installed version
-# is the same as the new version: i.e. skip the build and install if it isn't
-# trivially apparent that something has changed; the user can always wipe out
-# the dir if necessary to force the matter.
 function install_astrometry() {
-  local -r DIR="astrometry.net-${ASTROMETRY_VERSION}"
-  local -r FN="${DIR}.tar.gz"
+  local -r FN="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
   local -r URL="http://astrometry.net/downloads/${FN}"
-  local -r SCRATCH_DIR="$(mktemp -d "${TMPDIR:-/tmp/}install-astrometry.XXXXXXXXXXXX")"
+  local -r SCRATCH_DIR="$(mktemp -d "${PANDIR}/tmp/install-astrometry.XXXXXXXXXXXX")"
   local -r INSTALL_TO="${PANDIR}/astrometry"
+  local -r md5sum_file="${INSTALL_TO}/TAR_MD5SUM.txt"
   local -r make_log="${INSTALL_LOGS_DIR}/make-astrometry.log"
   local -r make_py_log="${INSTALL_LOGS_DIR}/make-astrometry-py.log"
   local -r make_install_log="${INSTALL_LOGS_DIR}/make-astrometry-install.log"
@@ -512,12 +535,56 @@ function install_astrometry() {
   echo
   echo "Fetching astrometry into directory $(pwd)"
   wget "${URL}"
-  tar zxf "${FN}"
-  cd "${DIR}"
+
+  # Is the file the same as the one used for the current install?
+  if [[ -f "${md5sum_file}" ]] && md5sum --check --status "${md5sum_file}" && \
+    [[ "$(get_installed_astrometry_version)" != "" ]] ; then
+    echo_bar
+    echo
+    echo -n "Checksum matches already installed astrometry version "
+    echo "$(get_installed_astrometry_version), not replacing."
+    cd "${PANDIR}"
+    rm -rf "${SCRATCH_DIR}"
+    return
+  fi
+  local -r tar_md5sum="$(md5sum "${FN}")"
 
   echo_bar
   echo
-  echo "Building astrometry, logging to ${make_log}"
+  echo "Unpacking ${FN}."
+  tar zxf "${FN}"
+
+  if [[ "${ASTROMETRY_VERSION}" == "latest" ]] ; then
+    # We need to know the version that is in the tar file in order to
+    # enter that directory.
+    ASTROMETRY_VERSION=""
+    for version in "$(find astrometry.net-* -maxdepth 0 -type d | sed "s/astrometry.net-//")"
+    do
+      if [[ "${ASTROMETRY_VERSION}" == "" ]] ; then
+        ASTROMETRY_VERSION="${version}"
+      else
+        echo_bar
+        echo
+        echo "ERROR: Found two version number directories in the tar file!"
+        find astrometry.net-* -type d -maxdepth 0
+        exit 1
+      fi
+    done
+
+    if [[ ! -f "${md5sum_file}" ]] ; then
+      # We've not yet been able to check if the installed version should
+      # be replaced.
+      if test_installed_astrometry_version ; then
+        return
+      fi
+    fi
+  fi
+
+  echo_bar
+  echo
+  echo "Building astrometry ${ASTROMETRY_VERSION}, logging to ${make_log}"
+
+  cd "astrometry.net-${ASTROMETRY_VERSION}"
   make >"${make_log}" 2>&1
 
   echo_bar
@@ -538,6 +605,23 @@ function install_astrometry() {
   add_to_PATH "${INSTALL_TO}/bin"
   cd "${PANDIR}"
   rm -rf "${SCRATCH_DIR}"
+
+  echo "${tar_md5sum}" >"${md5sum_file}"
+  local -r installed_version="$(get_installed_astrometry_version)"
+  if [[ "${ASTROMETRY_VERSION}" != "${installed_version}" ]] ; then
+    echo
+    echo "ERROR: version mismatch after installing astrometry!"
+    echo "Expected: ${ASTROMETRY_VERSION}"
+    echo "  Actual: ${installed_version}"
+    exit 1
+  fi
+}
+
+# Installs astrometry if missing or if the wrong version.
+function maybe_install_astrometry() {
+  if ! test_installed_astrometry_version ; then
+    install_astrometry
+  fi
 }
 
 # Run a POCS script for installing the indices used by astrometry
@@ -589,7 +673,7 @@ if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 || \
   prepare_panoptes_conda_env
 fi
 
-if [[ -z "$(which conda)" ]] ; then
+if [[ -z "$(safe_type conda)" ]] ; then
   echo_bar
   echo "
 Error: conda is not installed, but remaining installation steps make
@@ -625,7 +709,7 @@ fi
 # Install the astrometry.net software package, enabling plate-solving
 # of images captured by a PANOPTES unit.
 if [[ "${DO_ASTROMETRY}" -eq 1 ]] ; then
-  (install_astrometry)
+  (maybe_install_astrometry)
 fi
 if [[ "${DO_ASTROMETRY_INDICES}" -eq 1 ]] ; then
   (install_astrometry_indices)

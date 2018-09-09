@@ -68,3 +68,8 @@ ffmpeg
 
 # Used for colorizing log files.
 grc
+
+# GNU coreutils provides basic commands that we depend on (echo, ls), and is
+# almost certainly already installed, but let's make sure.
+coreutils
+
