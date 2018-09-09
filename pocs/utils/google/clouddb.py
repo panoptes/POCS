@@ -9,9 +9,10 @@ from astropy.wcs import WCS
 
 def get_db_proxy_conn(
         host='127.0.0.1',
+        port=5432,
         db_name='panoptes',
         db_user='panoptes',
-        port=5432,
+        db_pass=None,
         **kwargs):
     """Return postgres connection to local proxy.
 
@@ -21,25 +22,24 @@ def get_db_proxy_conn(
 
     Args:
         host (str, optional): Hostname, default localhost.
+        port (str, optional): Port, default 5432.
         db_user (str, optional): Name of db user, default 'panoptes'.
         db_name (str, optional): Name of db, default 'postgres'.
-        port (int, optional): DB port.
+        db_pass (str, optional): Password for given db and user, defaults to
+            $PG_PASSWORD or None if not set.
 
     Returns:
         `psycopg2.Connection`: DB connection object.
     """
-    try:
-        pg_pass = os.environ['PGPASSWORD']
-    except KeyError:
-        warn("DB password has not been set")
-        return None
-
+    if db_pass is None:
+        db_pass = os.getenv('PG_PASSWORD')
+    
     conn_params = {
         'host': host,
         'port': port,
         'user': db_user,
         'dbname': db_name,
-        'password': pg_pass,
+        'password': db_pass,
     }
 
     conn = psycopg2.connect(**conn_params)
@@ -55,10 +55,8 @@ def get_cursor(**kwargs):
     Returns:
         `psycopg2.Cursor`: Cursor object.
     """
-    cur = conn.cursor(cursor_factory=DictCursor)
-
     conn = get_db_proxy_conn(**kwargs)
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=DictCursor)
 
     return cur
 
