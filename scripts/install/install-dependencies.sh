@@ -761,7 +761,7 @@ orig_panoptes_env_checksum="$(checksum_panoptes_env)"
 # Before installing conda, figure out if the calling shell had the correct
 # environment setup.
 had_activated_panoptes_env=0
-if panoptes_env_is_activated ; then
+if is_panoptes_env_activated ; then
   had_activated_panoptes_env=1
 fi
 
