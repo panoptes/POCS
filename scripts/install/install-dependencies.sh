@@ -773,12 +773,10 @@ fi
 rmdir --ignore-fail-on-non-empty "${PANDIR}/tmp"
 
 set +x
+
 echo
 echo_bar
 echo_bar
-echo "
-Installation complete.
-"
 
 if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 || \
       "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
@@ -791,9 +789,19 @@ if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 || \
   if [[ "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
     echo "Your Python environment has been modified."
   fi
-  echo "Please log out and back in again to pickup the changes."
+  echo "Please log out and back in again to pickup the changes,
+then re-run this script, which should leave you ready for testing.
+"
   tput rmso  # Exit standout mode
   echo
+else
+  echo "
+Installation complete. Please run these commands:
+      cd $POCS
+      python setup.py install
+      pytest
+All of the tests should pass.
+"
 fi
 
 exit
