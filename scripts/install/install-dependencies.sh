@@ -158,11 +158,11 @@ function safe_type() {
 
 # Print the disk location of the first arg.
 function safe_which() {
-  type -f "${1}" || /bin/true
+  type -p "${1}" || /bin/true
 }
 
 # Does the first arg start with the second arg?
-function beginswith() { case "${2}" in "${1}"*) true;; *) false;; esac; }
+function beginswith() { case "${1}" in "${2}"*) true;; *) false;; esac; }
 
 # If the desired profile file doesn't exist, create it.
 function ensure_profile_exists() {
@@ -320,14 +320,27 @@ function maybe_install_mongodb() {
   fi
 }
 
-function panoptes_env_is_activated() {
-  set -x
-  # Do we have a conda command (probably a shell function)?
-  if [[ -z "$(safe_type conda)" ]] ; then
+# Did the user source conda's etc/profile.d/conda.sh?
+function conda_is_present() {
+  if [[ -z "${CONDA_SHLVL}" ]] ; then
+    return 1  # No
+  fi
+  return 0  # Probably
+}
+
+function is_panoptes_env_activated() {
+  if ! conda_is_present ; then
+    return 1  # No
+  fi
+  # Do we have a conda executable?
+  if [[ -z "${CONDA_EXE}" ]] ; then
+    return 1  # No
+  fi
+  if [[ ! -x "${CONDA_EXE}" ]] ; then
     return 1  # No
   fi
   # Does it work?
-  local -r conda_info="$(conda info 2>/dev/null || /bin/true)"
+  local -r conda_info="$("${CONDA_EXE}" info 2>/dev/null || /bin/true)"
   if [[ -z "${conda_info}" ]] ; then
     return 1  # No
   fi
@@ -352,6 +365,40 @@ function panoptes_env_is_activated() {
   fi
   # Looks good.
   return 0
+}
+
+# Get the location of the panoptes environment.
+function get_panoptes_env_location() {
+  if ! conda_is_present ; then
+    return
+  fi
+  # Do we have a conda executable?
+  if [[ -z "${CONDA_EXE}" ]] ; then
+    return
+  fi
+  if [[ ! -x "${CONDA_EXE}" ]] ; then
+    return
+  fi
+  # Does it work?
+  local -r conda_envs="$("${CONDA_EXE}" info --envs 2>/dev/null || /bin/true)"
+  if [[ -z "${conda_envs}" ]] ; then
+    return
+  fi
+  # Is there a panoptes-env?
+  if ! (echo "${conda_envs}" | grep -E -q '\spanoptes-env$') ; then
+    return
+  fi
+  echo "/$(echo "${conda_envs}" | grep -E -q '\spanoptes-env$' | cut -d/ -f2-)"
+}
+
+# Checksum the contents of the panoptes env, allowing us to determine
+# if it changed. This is useful for upgrades, not the first install.
+# For speed and simplicity, we actually just checksum the listing.
+function checksum_panoptes_env() {
+  local -r location="$(get_panoptes_env_location)"
+  if [[ -n "${location}" ]] ; then
+    (cd "${location}" ; find . -type f -ls) | md5sum
+  fi
 }
 
 # Install latest version of Miniconda (Anaconda with very few packages; any that
@@ -455,7 +502,7 @@ function prepare_panoptes_conda_env() {
 # Install conda if we can't find it. Note that starting with version
 # 4.4, conda's bin directory is not on the path, so 'which conda'
 # can't be used to determine if it is present.
-function install_conda_if_missing() {
+function maybe_install_conda() {
   # Just in case conda isn't setup, but exists...
   local -r conda_sh="${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh"
   if [[ -z "$(safe_type conda)" && -f "${conda_sh}" ]] ; then
@@ -691,12 +738,16 @@ mkdir -p "${INSTALL_LOGS_DIR}"
 
 # For testing, run the named function in a sub-shell, then exit.
 if [[ -n "${DO_RUN_ONE_FUNCTION}" ]] ; then
-  ("${DO_RUN_ONE_FUNCTION}")
+  if ("${DO_RUN_ONE_FUNCTION}") ; then
+    echo "Function was successful."
+  else
+    echo "Function failed with status $?"
+  fi
   exit
 fi
 
-# Install packages using the APT package manager. Works on Debian based systems,
-# including Ubuntu.
+# Install packages using the APT package manager. Works on Debian based systems
+# such as Ubuntu.
 if [[ "${DO_APT_GET}" -eq 1 ]] ; then
   install_apt_packages
 fi
@@ -707,18 +758,22 @@ if [[ "${DO_MONGODB}" -eq 1 ]] ; then
   maybe_install_mongodb
 fi
 
+# Before installing conda, checksum the environment so we can easily tell
+# if it changed.
+orig_panoptes_env_checksum="$(checksum_panoptes_env)"
+
 # Before installing conda, figure out if the calling shell had the correct
-# environment setup, which isn't about to be wiped out.
-HAD_PANOPTES_ENV=0
-if [[ "${DO_REBUILD_CONDA_ENV}" -eq 0 ]] && panoptes_env_is_activated ; then
-  HAD_PANOPTES_ENV=1
+# environment setup.
+had_activated_panoptes_env=0
+if panoptes_env_is_activated ; then
+  had_activated_panoptes_env=1
 fi
 
 # Install Conda, a Python package manager from Anaconda, Inc. Supports both
 # pure Python packages (just as pip does) and packages with non-Python parts
 # (e.g. native libraries).
 if [[ "${DO_CONDA}" -eq 1 ]] ; then
-  install_conda_if_missing
+  maybe_install_conda
 fi
 
 if [[ "${DO_CONDA}" -eq 1 || \
@@ -747,12 +802,12 @@ if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo_bar
   echo
   echo "Upgrading pip before installing other python packages."
-  pip install -U pip
+  pip install --quiet --upgrade pip
 
   echo_bar
   echo
   echo "Installing python packages using pip."
-  pip install -r "${POCS}/requirements.txt"
+  pip install --quiet --requirement "${POCS}/requirements.txt"
 fi
 
 # Install cfitsio, native tools for reading and writing FITS files.
@@ -777,23 +832,44 @@ set +x
 echo
 echo_bar
 echo_bar
+echo
 
-if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 || \
-      "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
-  echo_bar
-  echo
+did_change_conda=0
+if [[ "${orig_panoptes_env_checksum}" != "$(checksum_panoptes_env)" ]] ; then
+  # FOR DEBUGGING:
+  echo "orig_panoptes_env_checksum: ${orig_panoptes_env_checksum}"
+  echo "new  panoptes_env_checksum: $(checksum_panoptes_env)"
+  did_change_conda=1
+fi
+
+ok_to_test=1
+if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
+  ok_to_test=0
   tput smso  # Enter standout mode
-  if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
-    echo "Your shell initialization script ($THE_PROFILE) has been modified."
-  fi
-  if [[ "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
-    echo "Your Python environment has been modified."
-  fi
+  echo "Your shell initialization script ($THE_PROFILE) has been modified."
+  tput rmso  # Exit standout mode
+fi
+
+if [[ "${did_change_conda}" -eq 1 ]] ; then
+  ok_to_test=0
+  tput smso  # Enter standout mode
+  echo "Your Python environment has been modified."
+  tput rmso  # Exit standout mode
+fi
+
+if [[ "${had_activated_panoptes_env}" -eq 0 ]] ; then
+  ok_to_test=0
+  tput smso  # Enter standout mode
+  echo "The conda panoptes-env was not activated."
+  tput rmso  # Exit standout mode
+fi
+
+if [[ "${ok_to_test}" -eq 0 ]] ; then
+  tput smso  # Enter standout mode
   echo "Please log out and back in again to pickup the changes,
 then re-run this script, which should leave you ready for testing.
 "
   tput rmso  # Exit standout mode
-  echo
 else
   echo "
 Installation complete. Please run these commands:
