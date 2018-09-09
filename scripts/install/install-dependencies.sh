@@ -43,6 +43,9 @@ if [[ -f "${HOME}/.bash_profile" ]] ; then
   THE_PROFILE="${HOME}/.bash_profile"
   THE_PROFILE_TARGET=""
 fi
+
+# Track the changes that occurred.
+DID_CHANGE_CONDA=0
 PROFILE_HAS_BEEN_CHANGED=0
 
 #-------------------------------------------------------------------------------
@@ -150,8 +153,16 @@ function echo_bar() {
 # For more info: https://ss64.com/bash/type.html
 #            or: https://bash.cyberciti.biz/guide/Type_command
 function safe_type() {
-  type -t $1 || /bin/true
+  type -t "${1}" || /bin/true
 }
+
+# Print the disk location of the first arg.
+function safe_which() {
+  type -f "${1}" || /bin/true
+}
+
+# Does the first arg start with the second arg?
+function beginswith() { case "${2}" in "${1}"*) true;; *) false;; esac; }
 
 # If the desired profile file doesn't exist, create it.
 function ensure_profile_exists() {
@@ -253,7 +264,7 @@ function install_mongodb() {
   local MONGO_VERSION=""
   local MONGO_SOURCE_PATH=""
   local LSB_RELEASE=""
-  if [[ -n "$(which lsb_release)" ]] ; then
+  if [[ -n "$(safe_which lsb_release)" ]] ; then
     LSB_RELEASE="$(lsb_release -sc)"
   fi
   if [[ "${LSB_RELEASE}" = "xenial" ]] ; then
@@ -304,9 +315,43 @@ WantedBy=multi-user.target" | sudo tee /lib/systemd/system/mongod.service
 }
 
 function maybe_install_mongodb() {
-  if [[ -z "$(which mongo)" || -z "$(systemctl | grep mongo)" ]] ; then
+  if [[ -z "$(safe_which mongo)" ]] || ! (systemctl | grep -q -F mongo) ; then
     install_mongodb
   fi
+}
+
+function panoptes_env_is_activated() {
+  set -x
+  # Do we have a conda command (probably a shell function)?
+  if [[ -z "$(safe_type conda)" ]] ; then
+    return 1  # No
+  fi
+  # Does it work?
+  local -r conda_info="$(conda info 2>/dev/null || /bin/true)"
+  if [[ -z "${conda_info}" ]] ; then
+    return 1  # No
+  fi
+  # Is the panoptes-env activated?
+  if ! (echo "${conda_info}" | grep -q -E 'active environment.*:.*panoptes-env$') ; then
+    return 1  # No
+  fi
+  # Does the env have a valid location?
+  local -r env_location="$(echo "${conda_info}" | \
+                           (grep -E 'active env location :' || /bin/true) | \
+                           cut -d: -f2 | xargs)"
+  if [[ -z "${env_location}" ]] ; then
+    return 1  # No
+  fi
+  if [[ ! -d "${env_location}" ]] ; then
+    return 1  # No
+  fi
+  # Is python in that location?
+  local -r python_location="$(safe_which python)"
+  if ! beginswith "${python_location}" "${env_location}" ; then
+    return 1  # No
+  fi
+  # Looks good.
+  return 0
 }
 
 # Install latest version of Miniconda (Anaconda with very few packages; any that
@@ -338,7 +383,8 @@ function install_conda() {
 
   add_to_profile_before_target \
       ". ${the_destination}/etc/profile.d/conda.sh"
-  . ${the_destination}/etc/profile.d/conda.sh
+  . "${the_destination}/etc/profile.d/conda.sh"
+  DID_CHANGE_CONDA=1
 }
 
 # Add additional repositories in which conda should search for packages.
@@ -370,11 +416,12 @@ function prepare_panoptes_conda_env() {
 
   # Determine if the PANOPTES environment already exists.
   local do_create_conda_env=0
-  if [[ -z "$(conda info --envs | grep panoptes-env)" ]] ; then
+  if ! (conda info --envs | grep -q panoptes-env) ; then
     do_create_conda_env=1
   elif [[ "${DO_REBUILD_CONDA_ENV}" -eq 1 ]] ; then
     conda remove --all --yes --quiet -n panoptes-env
     do_create_conda_env=1
+    DID_CHANGE_CONDA=1
   fi
 
   # Create the PANOPTES environment if necessary.
@@ -384,6 +431,7 @@ function prepare_panoptes_conda_env() {
     echo "Creating conda environment 'panoptes-env' with Python 3.6"
     # 3.6 works around a problem building astroscrappy in 3.7.
     conda create -n panoptes-env --yes --quiet python=3.6
+    DID_CHANGE_CONDA=1
   fi
 
   if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
@@ -396,6 +444,8 @@ function prepare_panoptes_conda_env() {
     echo
     echo "Updating all panoptes-env packages."
     conda update -n panoptes-env --yes --quiet --all
+
+    DID_CHANGE_CONDA=1
   fi
 
   # Activate the PANOPTES environment at login.
@@ -517,9 +567,6 @@ function test_installed_astrometry_version() {
 # Downloads astrometry version ${ASTROMETRY_VERSION} into a temp directory,
 # then builds and installs into ${PANDIR}/astrometry. Skips as much as
 # possible if able to determine that the version hasn't changed.
-# TODO(jamessynge): Discuss whether to continue installing directly in
-# ${PANDIR}/astrometry, or to instead install into /usr/local as we do
-# with cfitsio.
 function install_astrometry() {
   local -r FN="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
   local -r URL="http://astrometry.net/downloads/${FN}"
@@ -558,7 +605,7 @@ function install_astrometry() {
     # We need to know the version that is in the tar file in order to
     # enter that directory.
     ASTROMETRY_VERSION=""
-    for version in "$(find astrometry.net-* -maxdepth 0 -type d | sed "s/astrometry.net-//")"
+    for version in $(find astrometry.net-* -maxdepth 0 -type d | sed "s/astrometry.net-//")
     do
       if [[ "${ASTROMETRY_VERSION}" == "" ]] ; then
         ASTROMETRY_VERSION="${version}"
@@ -566,7 +613,7 @@ function install_astrometry() {
         echo_bar
         echo
         echo "ERROR: Found two version number directories in the tar file!"
-        find astrometry.net-* -type d -maxdepth 0
+        find astrometry.net-* -maxdepth 0 -type d
         exit 1
       fi
     done
@@ -660,6 +707,13 @@ if [[ "${DO_MONGODB}" -eq 1 ]] ; then
   maybe_install_mongodb
 fi
 
+# Before installing conda, figure out if the calling shell had the correct
+# environment setup, which isn't about to be wiped out.
+HAD_PANOPTES_ENV=0
+if [[ "${DO_REBUILD_CONDA_ENV}" -eq 0 ]] && panoptes_env_is_activated ; then
+  HAD_PANOPTES_ENV=1
+fi
+
 # Install Conda, a Python package manager from Anaconda, Inc. Supports both
 # pure Python packages (just as pip does) and packages with non-Python parts
 # (e.g. native libraries).
@@ -667,7 +721,7 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
   install_conda_if_missing
 fi
 
-if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 || \
+if [[ "${DO_CONDA}" -eq 1 || \
       "${DO_REBUILD_CONDA_ENV}" -eq 1 || \
       "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
   prepare_panoptes_conda_env
@@ -726,13 +780,20 @@ echo "
 Installation complete.
 "
 
-if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
-  echo "
-Your shell initialization script ($THE_PROFILE) has been
-modified. Please log out and back in again to pickup the
-changes.
-
-"
+if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 || \
+      "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
+  echo_bar
+  echo
+  tput smso  # Enter standout mode
+  if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
+    echo "Your shell initialization script ($THE_PROFILE) has been modified."
+  fi
+  if [[ "${DID_CHANGE_CONDA}" -eq 1 || "${HAD_PANOPTES_ENV}" -eq 0 ]] ; then
+    echo "Your Python environment has been modified."
+  fi
+  echo "Please log out and back in again to pickup the changes."
+  tput rmso  # Exit standout mode
+  echo
 fi
 
 exit
