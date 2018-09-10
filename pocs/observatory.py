@@ -335,8 +335,6 @@ class Observatory(PanBase):
         Here we take the number of arcseconds that the mount is offset and,
         via the `mount.get_ms_offset`, find the number of milliseconds we
         should adjust in a given direction, one for each axis.
-
-        Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
