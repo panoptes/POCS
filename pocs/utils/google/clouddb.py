@@ -32,8 +32,8 @@ def get_db_proxy_conn(
         `psycopg2.Connection`: DB connection object.
     """
     if db_pass is None:
-        db_pass = os.getenv('PG_PASSWORD')
-    
+        db_pass = os.getenv('PGPASSWORD')
+
     conn_params = {
         'host': host,
         'port': port,
