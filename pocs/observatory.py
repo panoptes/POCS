@@ -222,21 +222,21 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
-            observation_dir = os.path.join([
+            observation_dir = os.path.join(
                 self.config['directories']['images'],
                 'fields',
                 observation.field.field_name,
-            ])
+            )
 
             self.logger.debug('Searching directory {}'.format(observation_dir))
 
             for cam_name, camera in self.cameras.items():
                 # Setup the directory
-                seq_dir = os.path.join([
+                seq_dir = os.path.join(
                     observation_dir,
                     camera.uid,
                     seq_time,
-                ])
+                )
                 self.logger.info('Cleaning directory {}'.format(seq_dir))
 
                 # Add directory to command
