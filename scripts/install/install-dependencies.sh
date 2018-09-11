@@ -93,20 +93,49 @@ function install_apt_packages() {
   (set -x ; sudo apt-get install --yes ${APT_PKGS})
 }
 
+
 function install_mongodb() {
-  # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu-16.04/
+  # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
   # Note this function does not configure mongodb itself, i.e. no users or
   # security settings.
   echo_bar
+  local MONGO_KEY=""
+  local MONGO_URL="http://repo.mongodb.org/apt/ubuntu"
+  local MONGO_VERSION=""
+  local MONGO_SOURCE_PATH=""
+  local LSB_RELEASE=""
+  if [[ -n "$(which lsb_release)" ]] ; then
+    LSB_RELEASE="$(lsb_release -sc)"
+  fi
+  if [[ "${LSB_RELEASE}" = "xenial" ]] ; then
+    MONGO_KEY=2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+    MONGO_VERSION=3.6
+  elif [[ "${LSB_RELEASE}" = "bionic" ]] ; then
+    MONGO_KEY=9DA31620334BD75D9DCB49F368818C72E52529D4
+    MONGO_VERSION=4.0
+  else
+    echo "ERROR: don't know which version of MongoDB to install."
+    return 1
+  fi
+  MONGO_URL+=" ${LSB_RELEASE}/mongodb-org/${MONGO_VERSION}"
+  MONGO_SOURCE_PATH="/etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.list"
+
   echo "
-Installing mongodb, for which several commands require sudo, so
-you may be prompted for you password.
+Installing MongoDB ${MONGO_VERSION}, for which several commands require sudo,
+so you may be prompted for you password. Starting by telling APT where to find
+the MongoDB packages.
 "
-  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
-  echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.2 multiverse" \
-     | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
+  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv ${MONGO_KEY}
+  echo "deb ${MONGO_URL} multiverse" | sudo tee "${MONGO_SOURCE_PATH}"
+  echo "
+Updating the list of packages so APT finds the MongoDB packages,
+then installing MongoDB.
+"
   sudo apt-get update
   sudo apt-get install -y mongodb-org
+  echo "
+MongoDB is installed, now updating the config and starting mongod.
+"
   echo "[Unit]
 Description=High-performance, schema-free document-oriented database
 After=network.target

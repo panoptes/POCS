@@ -369,6 +369,8 @@ def test_run_complete(pocs):
 
 
 def test_run_power_down_interrupt(observatory):
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
         pocs = POCS(observatory, messaging=True)

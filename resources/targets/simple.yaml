@@ -1,4 +1,8 @@
 -
+    name: Kepler 488
+    position: 18h51m51.88s +48d20m42.3s
+    priority: 125
+-
     name: Kepler 1100
     position: 19h27m29.10s +44d05m15.00s
     priority: 125
@@ -90,6 +94,10 @@
 -
     name: HAT-P-12
     position: 13h57m33.48s +43d29m36.7s
+    priority: 100
+-
+    name: HAT-P-19
+    position: 00h38m04.01s +34d42m41.5s
     priority: 100
 -
     name: HAT-P-30
