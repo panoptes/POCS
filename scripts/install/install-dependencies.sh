@@ -6,17 +6,101 @@
 THIS_DIR="$(dirname "$(readlink -f "${0}")")"
 THIS_PROGRAM="$(basename "${0}")"
 
-if [[ -z "${PANDIR}" || -z "${POCS}" || -z "${PAWS}" || -z "${PANLOG}" ||
-      -z "${PANUSER}" ]] ; then
+# We try to figure out where things are so that minimal work is required
+# by the user.
+VARS_ARE_OK=1
+GUESSED_A_VAR=0
+if [[ -z "${PANDIR}" ]] ; then
+  if [[ -d /var/panoptes ]] ; then
+    PANDIR=/var/panoptes
+    GUESSED_A_VAR=1
+  else
+    echo "Unable to find the PANOPTES directory; usually /var/panoptes."
+    VARS_ARE_OK=0
+  fi
+elif [[ -e "${PANDIR}" && ! -d "${PANDIR}" ]] ; then
+  echo "PANDIR (${PANDIR}) is not a directory."
+  VARS_ARE_OK=0
+fi
+
+if [[ -z "${POCS}" && ! -z "${PANDIR}" ]] ; then
+  POCS="${PANDIR}/POCS"
+  GUESSED_A_VAR=1
+fi
+if [[ -z "${POCS}" ]] ; then
+  echo "Unable to find the POCS directory; usually /var/panoptes/POCS."
+  VARS_ARE_OK=0
+elif [[ ! -d "${POCS}" ]] ; then
+  echo '$'"POCS (${POCS}) is not a directory."
+  VARS_ARE_OK=0
+fi
+
+if [[ -z "${PAWS}" && ! -z "${PANDIR}" ]] ; then
+  PAWS="${PANDIR}/PAWS"
+  GUESSED_A_VAR=1
+fi
+if [[ -z "${PAWS}" ]] ; then
+  echo "Unable to find the PAWS directory; usually /var/panoptes/PAWS."
+  VARS_ARE_OK=0
+elif [[ ! -d "${PAWS}" ]] ; then
+  echo '$'"PAWS (${PAWS}) is not a directory."
+  VARS_ARE_OK=0
+fi
+
+if [[ -z "${PANLOG}" && ! -z "${PANDIR}" ]] ; then
+  PANLOG="${PANDIR}/logs"
+  GUESSED_A_VAR=1
+fi
+if [[ -z "${PANLOG}" ]] ; then
+  echo "Unable to find the PANLOG directory; usually /var/panoptes/logs."
+  VARS_ARE_OK=0
+elif [[ -e "${PANLOG}" && ! -d "${PANLOG}" ]] ; then
+  echo '$'"PANLOG (${PANLOG}) is not a directory."
+  VARS_ARE_OK=0
+fi
+
+if [[ -z "${PANUSER}" && "$(whoami)" == "panoptes" ]] ; then
+  PANUSER="panoptes"
+  GUESSED_A_VAR=1
+elif [[ -z "${PANUSER}" ]] ; then
+  echo "Unable to determine the PANOPTES user name (PANUSER); usually panoptes."
+  VARS_ARE_OK=0
+fi
+
+if [[ "${VARS_ARE_OK}" == "0" ]] ; then
   echo "Please set the Panoptes environment variables, then re-run this script."
   exit 1
 fi
 
+if [[ "${GUESSED_A_VAR}" == "1" ]] ; then
+  echo "
+    Using these variable assignments:
+
+     PANDIR = ${PANDIR}
+       POCS = ${POCS}
+       PAWS = ${PAWS}
+     PANLOG = ${PANLOG}
+    PANUSER = ${USER}
+"
+fi
+
+# Python 3.6 works around a problem building astroscrappy in 3.7.
+PYTHON_VERSION="3.6"
 ASTROMETRY_VERSION="latest"
 INSTALL_PREFIX="/usr/local"
+ASTROMETRY_DIR="${PANDIR}/astrometry"
 CONDA_INSTALL_DIR="${PANDIR}/miniconda"
 TIMESTAMP="$(date "+%Y%m%d.%H%M%S")"
 INSTALL_LOGS_DIR="${PANDIR}/logs/install/${TIMESTAMP}"
+# To which shell file do we need to prepend our additions?
+USERS_SHELL_RC="${HOME}/.bashrc"
+PANOPTES_ENV_SH="${PANDIR}/set-panoptes-env.sh"
+
+# Accumulate the text that should be added to the user's profile.
+# TODO(jamessynge): Consider whether it should be in another file, and source'd
+# into the user's environment (e.g. "source $HOME/.panoptes-environment.sh").
+# This might help when dealing with users with shells other than bash.
+declare -x PROFILE_ADDITIONS
 
 DO_APT_GET=1
 DO_MONGODB=1
@@ -28,21 +112,6 @@ DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
 DO_PIP_REQUIREMENTS=1
 DO_RUN_ONE_FUNCTION=""
-
-# Which bash file do we need to modify? The last found here is the one that
-# bash executes for login shells, and so provides the environment for
-# all processes under that. THE_PROFILE_TARGET represents the point before
-# which we should insert lines.
-THE_PROFILE="${HOME}/.profile"
-THE_PROFILE_TARGET="# if running bash"
-if [[ -f "${HOME}/.bash_login" ]] ; then
-  THE_PROFILE="${HOME}/.bash_login"
-  THE_PROFILE_TARGET=""
-fi
-if [[ -f "${HOME}/.bash_profile" ]] ; then
-  THE_PROFILE="${HOME}/.bash_profile"
-  THE_PROFILE_TARGET=""
-fi
 
 # Track the changes that occurred.
 PROFILE_HAS_BEEN_CHANGED=0
@@ -66,7 +135,9 @@ options:
 --rebuild-conda-env        rebuild the panoptes-env
 --no-astrometry            don't install astrometry.net software
 --no-astrometry-indices    don't install astrometry.net indices
---no-pip-requirements      don't install python packages"
+--no-pip-requirements      don't install python packages
+--conda-install-dir <dir>  override default of ${CONDA_INSTALL_DIR}
+"
 }
 
 # Parse the command line args.
@@ -136,6 +207,7 @@ while test ${#} -gt 0; do
 done
 
 #-------------------------------------------------------------------------------
+# Logging support (nascent; I want to add more control and a log file).
 
 # Print a separator bar of # characters.
 function echo_bar() {
@@ -147,6 +219,9 @@ function echo_bar() {
   fi
   printf "%${terminal_width:-80}s\n" | tr ' ' '#'
 }
+
+#-------------------------------------------------------------------------------
+# Misc helper functions.
 
 # Get the type of the first arg, i.e. shell function, executable, etc.
 # For more info: https://ss64.com/bash/type.html
@@ -163,10 +238,51 @@ function safe_which() {
 # Does the first arg start with the second arg?
 function beginswith() { case "${1}" in "${2}"*) true;; *) false;; esac; }
 
+# Backup the file whose path is the first arg, and print the path of the
+# backup file. If the file doesn't exist, no path is output.
+function backup_file() {
+  local -r the_original="${1}"
+  if [[ ! -e "${the_original}" ]] ; then
+    return
+  fi
+  if [[ ! -f "${the_original}" ]] ; then
+    echo 1>2 "
+${the_original} is not a regular file, can't copy!
+"
+    exit 1
+  fi
+  local -r the_backup="$(mktemp "${the_original}.backup.XXXXXXX")"
+  cp -p "${the_original}" "${the_backup}"
+}
+
+function diff_backup_and_file_then_cleanup() {
+  local -r the_backup="${1}"
+  local -r the_file="${2}"
+  if [[ -z "${the_backup}" ]] ; then
+    echo "Created ${the_file}:"
+    echo
+    cat "${the_file}"
+    echo
+    return
+  fi
+  if ! cmp "${the_backup}" "${the_file}" ; then
+    echo "Modified ${the_file}:"
+    echo
+   diff -u "${the_backup}" "${the_file}" || /bin/true
+    echo
+  fi
+  rm "${the_backup}"
+}
+
+#-------------------------------------------------------------------------------
+# Functions for creating the file in which we record the PANOPTES environment
+# variables and shell setup commands, and for inserting a 'source <the file>'
+# into the user's bashrc.
+
 # If the desired profile file doesn't exist, create it.
 function ensure_profile_exists() {
-  if [[ ! -f "${THE_PROFILE}" ]] ; then
-    touch "${THE_PROFILE}"
+  if [[ ! -f "${USERS_SHELL_RC}" ]] ; then
+    touch "${USERS_SHELL_RC}"
     PROFILE_HAS_BEEN_CHANGED=1
   fi
 }
@@ -175,29 +291,28 @@ function ensure_profile_exists() {
 # text in the first arg to this function (true if contains, false otherwise).
 function profile_contains_text() {
   local -r target_text="${1}"
-  if grep -F -q -- "${target_text}" "${THE_PROFILE}" ; then
+  if grep -F -q -- "${target_text}" "${USERS_SHELL_RC}" ; then
     return 0
   else
     return 1
   fi
 }
 
-# Add the text of the first arg to the profile file, just before the appropriate
-# target line, unless the text is already in the file.
+################# REMOVE
 function add_to_profile_before_target() {
   local -r new_text="${1}"
-  local -r target_text="${2:-${THE_PROFILE_TARGET}}"
+  local -r target_text="${2:-${USERS_SHELL_RC_TARGET}}"
   if profile_contains_text "${new_text}" ; then
     # TODO Add logging/verbosity support, so messages like this always
     # go to the log file, and conditionally to stdout or stderr.
-    # echo "Already in ${THE_PROFILE}: ${new_text}"
+    # echo "Already in ${USERS_SHELL_RC}: ${new_text}"
     return 0
   fi
   ensure_profile_exists
   # This backup is just for debugging (i.e. showing the before and after
   # diff).
-  local -r the_backup="$(mktemp "${THE_PROFILE}.pre-edit.XXXXX")"
-  cp -p "${THE_PROFILE}" "${the_backup}"
+  local -r the_backup="$(mktemp "${USERS_SHELL_RC}.pre-edit.XXXXX")"
+  cp -p "${USERS_SHELL_RC}" "${the_backup}"
   if [[ -n "${target_text}" ]] && \
      profile_contains_text "${target_text}" ; then
     # Add just before the target text.
@@ -205,28 +320,66 @@ function add_to_profile_before_target() {
     # the insert before every occurrence of the target text. Sigh.
     sed -i "/${target_text}/i \
 # Added by PANOPTES install-dependencies.sh\n\
-${new_text}\n" "${THE_PROFILE}"
+${new_text}\n" "${USERS_SHELL_RC}"
   else
     # Append to the end of the file.
-    echo >>"${THE_PROFILE}" "
+    echo >>"${USERS_SHELL_RC}" "
 # Added by PANOPTES install-dependencies.sh
 ${new_text}"
   fi
   PROFILE_HAS_BEEN_CHANGED=1
   # Again, this diff is just for debugging.
-  echo "Modified ${THE_PROFILE}:"
+  echo "Modified ${USERS_SHELL_RC}:"
   echo
-  diff -u "${the_backup}" "${THE_PROFILE}" || /bin/true
+  diff -u "${the_backup}" "${USERS_SHELL_RC}" || /bin/true
   echo
   rm "${the_backup}"
+}
+
+# Add the text of the first arg to the profile.
+function add_to_profile() {
+  PROFILE_ADDITIONS+=("${1}")
 }
 
 # Append $1 to PATH and write command to do the same to the profile file.
 function add_to_PATH() {
   local -r the_dir="$(readlink -f "${1}")"
-  add_to_profile_before_target "PATH=\"${the_dir}:\${PATH}\""
   PATH="${the_dir}:${PATH}"
+  PROFILE_ADDITIONS+=("PATH=\"${the_dir}:\${PATH}\"")
 }
+
+function update_panoptes_env_file() {
+  local  -r the_backup="$(backup_file ${PANOPTES_ENV_SH})"
+  cat >"${PANOPTES_ENV_SH}" <<END_OF_FILE
+# PANOPTES environment setup.
+
+export PANDIR="${PANDIR}"
+export POCS="${POCS}"
+export PAWS="${PAWS}"
+export PANLOG="${PANLOG}"
+export PANUSER="${USER}"
+
+# Configure the conda environment:
+. "${PANDIR}/miniconda/etc/profile.d/conda.sh"
+conda activate panoptes-env
+
+# Add astrometry to the path.
+PATH="${ASTROMETRY_DIR}/bin:${PATH}"
+END_OF_FILE
+  diff_backup_and_file_then_cleanup "${the_backup}" "${PANOPTES_ENV_SH}"
+}
+
+# Prepend the accumulated text to the profile.
+function prepend_additions_to_profile()
+  ensure_profile_exists
+  backup_profile
+  remove_old_additions
+  prepend_additions
+  diff_backup_and_profile
+  remove_backup
+}
+
+#-------------------------------------------------------------------------------
 
 # Given the path to a pkg-config file (.pc), extract the version number.
 function extract_version_from_pkg_config() {
@@ -429,7 +582,7 @@ function install_conda() {
   # Where CONDA_LOCATION is where Anaconda or miniconda was installed.
   # We do the first step here. Later we'll activate the PANOPTES environment.
 
-  add_to_profile_before_target \
+  add_to_profile \
       ". ${the_destination}/etc/profile.d/conda.sh"
   . "${the_destination}/etc/profile.d/conda.sh"
 }
@@ -474,9 +627,8 @@ function prepare_panoptes_conda_env() {
   if [[ "${do_create_conda_env}" -eq 1 ]] ; then
     echo_bar
     echo
-    echo "Creating conda environment 'panoptes-env' with Python 3.6"
-    # 3.6 works around a problem building astroscrappy in 3.7.
-    conda create -n panoptes-env --yes --quiet python=3.6
+    echo "Creating conda environment 'panoptes-env' with Python ${PYTHON_VERSION}"
+    conda create -n panoptes-env --yes --quiet "python=${PYTHON_VERSION}"
   fi
 
   if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
@@ -492,7 +644,7 @@ function prepare_panoptes_conda_env() {
   fi
 
   # Activate the PANOPTES environment at login.
-  add_to_profile_before_target "conda activate panoptes-env"
+  add_to_profile "conda activate panoptes-env"
 }
 
 # Install conda if we can't find it. Note that starting with version
@@ -588,7 +740,7 @@ function install_latest_cfitsio() {
 }
 
 function get_installed_astrometry_version() {
-  local -r solve_field="${PANDIR}/astrometry/bin/solve-field"
+  local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
   if [[ -x "${solve_field}" ]] ; then
     "${solve_field}" --help|(grep -E '^Revision [0-9.]+,' || /bin/true)|cut -c10-|cut -d, -f1
   fi
@@ -608,13 +760,13 @@ function test_installed_astrometry_version() {
 }
 
 # Downloads astrometry version ${ASTROMETRY_VERSION} into a temp directory,
-# then builds and installs into ${PANDIR}/astrometry. Skips as much as
+# then builds and installs into ${ASTROMETRY_DIR}. Skips as much as
 # possible if able to determine that the version hasn't changed.
 function install_astrometry() {
   local -r FN="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
   local -r URL="http://astrometry.net/downloads/${FN}"
   local -r SCRATCH_DIR="$(mktemp -d "${PANDIR}/tmp/install-astrometry.XXXXXXXXXXXX")"
-  local -r INSTALL_TO="${PANDIR}/astrometry"
+  local -r INSTALL_TO="${ASTROMETRY_DIR}"
   local -r md5sum_file="${INSTALL_TO}/TAR_MD5SUM.txt"
   local -r make_log="${INSTALL_LOGS_DIR}/make-astrometry.log"
   local -r make_py_log="${INSTALL_LOGS_DIR}/make-astrometry-py.log"
@@ -720,7 +872,7 @@ function install_astrometry_indices() {
   echo_bar
   echo
   echo "Fetching astrometry and other indices."
-  mkdir -p "${PANDIR}/astrometry/data"
+  mkdir -p "${ASTROMETRY_DIR}/data"
   python "${POCS}/pocs/utils/data.py"
 }
 
@@ -748,8 +900,8 @@ if [[ "${DO_APT_GET}" -eq 1 ]] ; then
   install_apt_packages
 fi
 
-# Install Mongodb, a document database. Used by POCS for storing environment
-# readings, from which weather plots are generated.
+# Install Mongodb, a document database. Used by POCS for storing observation
+# metadata and the environment readings from which weather plots are generated.
 if [[ "${DO_MONGODB}" -eq 1 ]] ; then
   maybe_install_mongodb
 fi
@@ -834,7 +986,7 @@ ok_to_test=1
 if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
   ok_to_test=0
   tput smso  # Enter standout mode
-  echo "Your shell initialization script ($THE_PROFILE) has been modified."
+  echo "Your shell initialization script ($USERS_SHELL_RC) has been modified."
   tput rmso  # Exit standout mode
 fi
 
