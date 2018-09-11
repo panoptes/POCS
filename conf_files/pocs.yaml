@@ -37,7 +37,7 @@ mount:
         baudrate: 9600
     non_sidereal_available: True
 pointing:
-    auto_correct: True
+    auto_correct: False
     threshold: 500 # arcseconds ~ 50 pixels
     exptime: 30 # seconds
     max_iterations: 3
