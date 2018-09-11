@@ -347,7 +347,7 @@ class Observatory(PanBase):
             except AttributeError:
                 pass
 
-            self.logger.debug("Pointing HA: {}".format(pointing_ha))
+            self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
             correction_info = self.mount.get_tracking_correction(
                 self.current_offset_info,
                 pointing_ha
