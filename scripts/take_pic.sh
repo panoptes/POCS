@@ -13,6 +13,9 @@ usage() {
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.
   EXPTIME           Exposure time in seconds, should be greater than 1 second.
   OUTFILE           Output filename (with .cr2 extension).
+
+ Example:
+  scripts/take_pic.sh usb:001,005 5 /var/panoptes/images/temp.cr2
 "
 }
 
