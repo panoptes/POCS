@@ -644,7 +644,7 @@ class Observatory(PanBase):
                 if counts <= 0:
                     counts = 10
 
-                self.logger.debug("Counts: {}".format(counts))
+                self.logger.debug("Counts: {:.02f}".format(counts))
 
                 # If we are saturating then wait a bit and redo
                 if counts >= max_counts:
@@ -655,14 +655,14 @@ class Observatory(PanBase):
                     self.logger.debug("Counts are too low, flat should be discarded")
 
                 elapsed_time = (current_time() - start_time).sec
-                self.logger.debug("Elapsed time: {}".format(elapsed_time))
+                self.logger.debug("Elapsed time: {:.02f}".format(elapsed_time))
 
                 # Get suggested exposure time
                 previous_exp_time = exp_times[cam_name][-1].value
 
                 exp_time = int(previous_exp_time * (target_adu / counts) *
                                (2.0 ** (elapsed_time / 180.0)) + 0.5)
-                self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
+                self.logger.debug("Suggested exp_time for {}: {:.02f}".format(cam_name, exp_time))
                 exp_times[cam_name].append(exp_time * u.second)
 
             self.logger.debug("Checking for long exposures")
