@@ -86,21 +86,16 @@ fi
 
 # Python 3.6 works around a problem building astroscrappy in 3.7.
 PYTHON_VERSION="3.6"
-ASTROMETRY_VERSION="latest"
+ASTROMETRY_VERSION="0.76"
 INSTALL_PREFIX="/usr/local"
 ASTROMETRY_DIR="${PANDIR}/astrometry"
 CONDA_INSTALL_DIR="${PANDIR}/miniconda"
+CONDA_SH="${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh"
 TIMESTAMP="$(date "+%Y%m%d.%H%M%S")"
 INSTALL_LOGS_DIR="${PANDIR}/logs/install/${TIMESTAMP}"
 # To which shell file do we need to prepend our additions?
-USERS_SHELL_RC="${HOME}/.bashrc"
+SHELL_RC="${HOME}/.bashrc"
 PANOPTES_ENV_SH="${PANDIR}/set-panoptes-env.sh"
-
-# Accumulate the text that should be added to the user's profile.
-# TODO(jamessynge): Consider whether it should be in another file, and source'd
-# into the user's environment (e.g. "source $HOME/.panoptes-environment.sh").
-# This might help when dealing with users with shells other than bash.
-declare -x PROFILE_ADDITIONS
 
 DO_APT_GET=1
 DO_MONGODB=1
@@ -112,9 +107,6 @@ DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
 DO_PIP_REQUIREMENTS=1
 DO_RUN_ONE_FUNCTION=""
-
-# Track the changes that occurred.
-PROFILE_HAS_BEEN_CHANGED=0
 
 #-------------------------------------------------------------------------------
 
@@ -253,12 +245,15 @@ ${the_original} is not a regular file, can't copy!
   fi
   local -r the_backup="$(mktemp "${the_original}.backup.XXXXXXX")"
   cp -p "${the_original}" "${the_backup}"
+  echo "${the_backup}"
 }
 
 function diff_backup_and_file_then_cleanup() {
   local -r the_backup="${1}"
   local -r the_file="${2}"
   if [[ -z "${the_backup}" ]] ; then
+    echo_bar
+    echo
     echo "Created ${the_file}:"
     echo
     cat "${the_file}"
@@ -266,24 +261,25 @@ function diff_backup_and_file_then_cleanup() {
     return
   fi
   if ! cmp "${the_backup}" "${the_file}" ; then
+    echo_bar
+    echo
     echo "Modified ${the_file}:"
     echo
-   diff -u "${the_backup}" "${the_file}" || /bin/true
+    diff -u "${the_backup}" "${the_file}" || /bin/true
     echo
   fi
-  rm "${the_backup}"
+  rm -f "${the_backup}"
 }
 
 #-------------------------------------------------------------------------------
 # Functions for creating the file in which we record the PANOPTES environment
 # variables and shell setup commands, and for inserting a 'source <the file>'
-# into the user's bashrc.
+# into the rc file of the user's shell (e.g. $HOME/.bashrc for bash).
 
-# If the desired profile file doesn't exist, create it.
-function ensure_profile_exists() {
-  if [[ ! -f "${USERS_SHELL_RC}" ]] ; then
-    touch "${USERS_SHELL_RC}"
-    PROFILE_HAS_BEEN_CHANGED=1
+# If the desired shell rc file doesn't exist, create it.
+function ensure_shell_rc_exists() {
+  if [[ ! -f "${SHELL_RC}" ]] ; then
+    touch "${SHELL_RC}"
   fi
 }
 
@@ -291,65 +287,30 @@ function ensure_profile_exists() {
 # text in the first arg to this function (true if contains, false otherwise).
 function profile_contains_text() {
   local -r target_text="${1}"
-  if grep -F -q -- "${target_text}" "${USERS_SHELL_RC}" ; then
+  if grep -F -q -- "${target_text}" "${SHELL_RC}" ; then
     return 0
   else
     return 1
   fi
 }
 
-################# REMOVE
-function add_to_profile_before_target() {
-  local -r new_text="${1}"
-  local -r target_text="${2:-${USERS_SHELL_RC_TARGET}}"
-  if profile_contains_text "${new_text}" ; then
-    # TODO Add logging/verbosity support, so messages like this always
-    # go to the log file, and conditionally to stdout or stderr.
-    # echo "Already in ${USERS_SHELL_RC}: ${new_text}"
-    return 0
-  fi
-  ensure_profile_exists
-  # This backup is just for debugging (i.e. showing the before and after
-  # diff).
-  local -r the_backup="$(mktemp "${USERS_SHELL_RC}.pre-edit.XXXXX")"
-  cp -p "${USERS_SHELL_RC}" "${the_backup}"
-  if [[ -n "${target_text}" ]] && \
-     profile_contains_text "${target_text}" ; then
-    # Add just before the target text.
-    # Warning, this isn't a very good sed script. It actually performs
-    # the insert before every occurrence of the target text. Sigh.
-    sed -i "/${target_text}/i \
-# Added by PANOPTES install-dependencies.sh\n\
-${new_text}\n" "${USERS_SHELL_RC}"
-  else
-    # Append to the end of the file.
-    echo >>"${USERS_SHELL_RC}" "
-# Added by PANOPTES install-dependencies.sh
-${new_text}"
-  fi
-  PROFILE_HAS_BEEN_CHANGED=1
-  # Again, this diff is just for debugging.
-  echo "Modified ${USERS_SHELL_RC}:"
-  echo
-  diff -u "${the_backup}" "${USERS_SHELL_RC}" || /bin/true
-  echo
-  rm "${the_backup}"
+# Add the text of the first arg to the PANOPTES environment setup.
+function add_to_panoptes_env_setup() {
+  PANOPTES_ENV_SETUP+=("${1}")
 }
 
-# Add the text of the first arg to the profile.
-function add_to_profile() {
-  PROFILE_ADDITIONS+=("${1}")
-}
-
-# Append $1 to PATH and write command to do the same to the profile file.
+# Append $1 to PATH and write command to do the same to the
+# PANOPTES environment setup.
 function add_to_PATH() {
   local -r the_dir="$(readlink -f "${1}")"
   PATH="${the_dir}:${PATH}"
-  PROFILE_ADDITIONS+=("PATH=\"${the_dir}:\${PATH}\"")
+  PANOPTES_ENV_SETUP+=("PATH=\"${the_dir}:\${PATH}\"")
 }
 
+# Create (or overwrite) the PANOPTES environment setup file,
+# and print a diff showing the changes, if there are any.
 function update_panoptes_env_file() {
-  local  -r the_backup="$(backup_file ${PANOPTES_ENV_SH})"
+  local  -r the_backup="$(backup_file "${PANOPTES_ENV_SH}")"
   cat >"${PANOPTES_ENV_SH}" <<END_OF_FILE
 # PANOPTES environment setup.
 
@@ -365,18 +326,41 @@ conda activate panoptes-env
 
 # Add astrometry to the path.
 PATH="${ASTROMETRY_DIR}/bin:${PATH}"
+
 END_OF_FILE
+  # We allow for other (optional) commands to be added by adding to
+  # the array PANOPTES_ENV_SETUP.
+  printf '%s\n' "${PANOPTES_ENV_SETUP[@]}" >>"${PANOPTES_ENV_SH}"
   diff_backup_and_file_then_cleanup "${the_backup}" "${PANOPTES_ENV_SH}"
 }
 
-# Prepend the accumulated text to the profile.
-function prepend_additions_to_profile()
-  ensure_profile_exists
-  backup_profile
-  remove_old_additions
-  prepend_additions
-  diff_backup_and_profile
-  remove_backup
+# Arrange for the PANOPTES environment setup file to be used
+# when the rc file of the user's shell is executed.
+function update_shell_rc_file() {
+  if [[ ! -f "${SHELL_RC}" ]] ; then
+    cat >"${PANOPTES_ENV_SH}" <<END_OF_FILE
+# File created by PANOPTES install-dependencies.sh
+source ${PANOPTES_ENV_SH}
+END_OF_FILE
+    echo_bar
+    echo
+    echo "Created ${SHELL_RC}."
+    return
+  fi
+  local -r new_text="source ${PANOPTES_ENV_SH}"
+  if profile_contains_text "${new_text}" ; then
+    # TODO Add logging/verbosity support, so messages like this always
+    # go to the log file, and conditionally to stdout or stderr.
+    echo "Already in ${SHELL_RC}: ${new_text}"
+    return 0
+  fi
+  local  -r the_backup="$(backup_file "${SHELL_RC}")"
+    (cat <<END_OF_FILE; cat "${the_backup}") > "${SHELL_RC}"
+# Added by PANOPTES install-dependencies.sh
+source ${PANOPTES_ENV_SH}
+
+END_OF_FILE
+  diff_backup_and_file_then_cleanup "${the_backup}" "${SHELL_RC}"
 }
 
 #-------------------------------------------------------------------------------
@@ -582,8 +566,6 @@ function install_conda() {
   # Where CONDA_LOCATION is where Anaconda or miniconda was installed.
   # We do the first step here. Later we'll activate the PANOPTES environment.
 
-  add_to_profile \
-      ". ${the_destination}/etc/profile.d/conda.sh"
   . "${the_destination}/etc/profile.d/conda.sh"
 }
 
@@ -642,17 +624,16 @@ function prepare_panoptes_conda_env() {
     echo "Updating all panoptes-env packages."
     conda update -n panoptes-env --yes --quiet --all
   fi
-
-  # Activate the PANOPTES environment at login.
-  add_to_profile "conda activate panoptes-env"
 }
 
 # Install conda if we can't find it. Note that starting with version
 # 4.4, conda's bin directory is not on the path, so 'which conda'
 # can't be used to determine if it is present.
+#
+# TODO(jamessynge): Stopy allowing for an existing conda to be
+# located elsewhere.
 function maybe_install_conda() {
   # Just in case conda isn't setup, but exists...
-  local -r conda_sh="${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh"
   if [[ -z "$(safe_type conda)" && -f "${conda_sh}" ]] ; then
     . "${conda_sh}"
   fi
@@ -844,7 +825,6 @@ function install_astrometry() {
   mkdir -p "${INSTALL_TO}"
   make install "INSTALL_DIR=${INSTALL_TO}" >"${make_install_log}" 2>&1
 
-  add_to_PATH "${INSTALL_TO}/bin"
   cd "${PANDIR}"
   rm -rf "${SCRATCH_DIR}"
 
@@ -972,6 +952,9 @@ if [[ "${DO_ASTROMETRY_INDICES}" -eq 1 ]] ; then
   (install_astrometry_indices)
 fi
 
+update_panoptes_env_file
+update_shell_rc_file
+
 # Cleanup the tmp directory, but only if it is empty.
 rmdir --ignore-fail-on-non-empty "${PANDIR}/tmp"
 
@@ -981,45 +964,13 @@ echo
 echo_bar
 echo_bar
 echo
-
-ok_to_test=1
-if [[ "${PROFILE_HAS_BEEN_CHANGED}" -eq 1 ]] ; then
-  ok_to_test=0
-  tput smso  # Enter standout mode
-  echo "Your shell initialization script ($USERS_SHELL_RC) has been modified."
-  tput rmso  # Exit standout mode
-fi
-
-if [[ "${orig_panoptes_env_checksum}" != "$(checksum_panoptes_env)" ]] ; then
-  # FOR DEBUGGING:
-  echo "orig_panoptes_env_checksum: ${orig_panoptes_env_checksum}"
-  echo "new  panoptes_env_checksum: $(checksum_panoptes_env)"
-  ok_to_test=0
-  tput smso  # Enter standout mode
-  echo "Your Python environment has been modified."
-  tput rmso  # Exit standout mode
-fi
-
-if [[ "${had_activated_panoptes_env}" -eq 0 ]] ; then
-  ok_to_test=0
-  tput smso  # Enter standout mode
-  echo "The conda panoptes-env was not activated."
-  tput rmso  # Exit standout mode
-fi
-
-if [[ "${ok_to_test}" -eq 0 ]] ; then
-  tput smso  # Enter standout mode
-  echo "Please log out and back in again to pickup the changes,
-then re-run this script, which should leave you ready for testing.
-"
-  tput rmso  # Exit standout mode
-else
-  echo "
+echo "
 Installation complete. Please run these commands:
-      cd $POCS
+      source ${PANOPTES_ENV_SH}
+      cd \$POCS
       python setup.py install
       pytest
-All of the tests should pass.
+None of the tests should fail.
 "
 fi
 
