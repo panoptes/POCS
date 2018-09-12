@@ -102,7 +102,6 @@ DO_MONGODB=1
 DO_CONDA=1
 DO_REBUILD_CONDA_ENV=0
 DO_INSTALL_CONDA_PACKAGES=1
-DO_CFITSIO=0  # Disabled in favor of installing with apt-get.
 DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
 DO_PIP_REQUIREMENTS=1
@@ -121,7 +120,6 @@ options:
 --run <function>           run the named function and exit, for debugging
 --no-apt-get               don't run apt-get to install Linux packages
 --no-mongodb               don't install and start mongodb server
---no-cfitsio               don't install the latest version of cfitsio
 --no-conda                 don't install the latest version of Anaconda
 --no-conda-packages        don't install packages into Anaconda
 --rebuild-conda-env        rebuild the panoptes-env
@@ -159,10 +157,6 @@ while test ${#} -gt 0; do
       ;;
     --no-mongodb)
       DO_MONGODB=0
-      shift
-      ;;
-    --no-cfitsio)
-      DO_CFITSIO=0
       shift
       ;;
     --no-conda)
@@ -650,76 +644,6 @@ function maybe_install_conda() {
   conda update -n base --yes --quiet conda
 }
 
-# Fetches and configures the latest version of cfitsio; this allows us to
-# extract the version from the package config file (cfitsio.pc).
-function fetch_and_configure_cfitsio() {
-  echo_bar
-  echo
-  echo "Fetching and configuring latest cfitsio release..."
-  echo
-  # Unpack into PANDIR/tmp/cfitsio
-  cd "${PANDIR}"
-  mkdir -p tmp/cfitsio
-  cd tmp
-  rm -rf cfitsio
-  wget \
-    http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz \
-    -O cfitsio_latest.tar.gz
-  tar zxf cfitsio_latest.tar.gz
-  cd cfitsio
-  ./configure --prefix=${INSTALL_PREFIX}
-}
-
-# Builds the downloaded version of cfitsio.
-function build_cfitsio() {
-  echo
-  echo "Building cfitsio..."
-  echo
-  cd "${PANDIR}/tmp/cfitsio"
-  make
-  make utils stand_alone shared
-}
-
-# Print the version of the downloaded and built cfitsio version number, as in
-# its pkg-config file (cfitsio.pc).
-function latest_cfitsio_version() {
-  extract_version_from_pkg_config tmp/cfitsio/cfitsio.pc
-}
-
-# Prints the installed cfitsio version number.
-function installed_cfitsio_version() {
-  pkg-config --mod-version --silence-errors cfitsio || /bin/true
-}
-
-# Install the downloaded and built cfitsio.
-function sudo_install_cfitsio() {
-  echo
-  echo "Running sudo make install for cfitsio, you may be prompted for your password."
-  echo
-  cd "${PANDIR}/tmp/cfitsio"
-  (set -x ; sudo make install)
-}
-
-# Install the latest versio of cfitsio if it is not already installed.
-function install_latest_cfitsio() {
-  (fetch_and_configure_cfitsio)
-  local -r LATEST_CFITSIO_VERSION="$(latest_cfitsio_version)"
-  local -r INSTALLED_CFITSIO_VERSION="$(installed_cfitsio_version)"
-  if [[ "${LATEST_CFITSIO_VERSION}" == "${INSTALLED_CFITSIO_VERSION}" ]] ; then
-    echo "Installed cfitsio is at latest version (${LATEST_CFITSIO_VERSION})."
-  else
-    if [[ -z "${INSTALLED_CFITSIO_VERSION}" ]] ; then
-      echo "Installing cfitsio version ${LATEST_CFITSIO_VERSION}."
-    else
-      echo "Installing cfitsio version ${LATEST_CFITSIO_VERSION}, replacing" \
-        "installed version ${OLD_CFITSIO_VERSION}."
-    fi
-    (build_cfitsio)
-    (sudo_install_cfitsio)
-  fi
-  rm -rf tmp/cfitsio_latest.tar.gz tmp/cfitsio
-}
-
 function get_installed_astrometry_version() {
   local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
   if [[ -x "${solve_field}" ]] ; then
@@ -936,11 +860,6 @@ if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo
   echo "Installing python packages using pip."
   pip install --quiet --requirement "${POCS}/requirements.txt"
-fi
-
-# Install cfitsio, native tools for reading and writing FITS files.
-if [[ "${DO_CFITSIO}" -eq 1 ]] ; then
-  install_latest_cfitsio
 fi
 
 # Install the astrometry.net software package, enabling plate-solving
