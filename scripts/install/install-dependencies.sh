@@ -315,7 +315,7 @@ export PANLOG="${PANLOG}"
 export PANUSER="${USER}"
 
 # Configure the conda environment:
-. "${PANDIR}/miniconda/etc/profile.d/conda.sh"
+. "\${PANDIR}/miniconda/etc/profile.d/conda.sh"
 conda activate panoptes-env
 
 # Add astrometry to the path.
