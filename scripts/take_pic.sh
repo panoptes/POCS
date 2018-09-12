@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 usage() {
   echo -n "##################################################
@@ -7,7 +7,7 @@ usage() {
 # This will change the camera setting to bulb and then take
 # an exposure for the requested amount of time.
 ##################################################
- $ $(basename $0) PORT EXPTIME FILENAME
+ $ $(basename $0) PORT EXPTIME OUTFILE
  
  Options:
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.

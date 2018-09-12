@@ -1,9 +1,36 @@
-#!/usr/bin/env bash
+#!/bin/bash -e
+
+usage() {
+  echo -n "##################################################
+# Make a jpeg from the Canon Raw vs (.CR2) file.
+# 
+# If exiftool is present this merely extracts the thumbnail from
+# the CR2 file, otherwise use dcraw to create a jpeg.
+#
+# If present the CAPTION is added as a caption to the jpeg.
+##################################################
+ $ $(basename $0) FILENAME [CAPTION]
+ 
+ Options:
+  FILENAME          Name of CR2 file that holds jpeg.
+  CAPTION           Optional caption to be placed on jpeg.
+
+ Example:
+  scripts/cr2_to_jpg.sh /var/panoptes/images/temp.cr2 \"M42 (Orion's Nebula)\"
+"
+}
+
+if [ $# -eq 0 ]; then
+    usage
+    exit 1
+fi
 
 FNAME=$1
-NAME=$2
+CAPTION=$2
 
 JPG=${FNAME/cr2/jpg}
+
+echo "Converting ${FNAME} to jpg."
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
@@ -18,6 +45,12 @@ else
     fi
 fi
 
-# Make thumbnail from jpg.
-convert ${JPG} -thumbnail 1280x1024 -background black -fill red \
-    -font ubuntu -pointsize 24 label:"${NAME}" -gravity South -append ${JPG}
+if [[ $CAPTION ]]
+  then
+  	echo "Adding caption \"${CAPTION}\""
+	# Make thumbnail from jpg.
+	convert ${JPG} -background black -fill red \
+	    -font ubuntu -pointsize 60 label:"${CAPTION}" -gravity South -append ${JPG}
+fi
+
+echo "${JPG}"
