@@ -319,7 +319,7 @@ export PANUSER="${USER}"
 conda activate panoptes-env
 
 # Add astrometry to the path.
-PATH="${ASTROMETRY_DIR}/bin:${PATH}"
+PATH="${ASTROMETRY_DIR}/bin:\${PATH}"
 
 END_OF_FILE
   # We allow for other (optional) commands to be added by adding to
