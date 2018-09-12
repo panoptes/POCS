@@ -536,12 +536,11 @@ function checksum_panoptes_env() {
 # Install latest version of Miniconda (Anaconda with very few packages; any that
 # are needed can then be installed).
 function install_conda() {
-  local -r the_destination="${CONDA_INSTALL_DIR}"
-  if [[ -d "${the_destination}" ]] ; then
+  if [[ -d "${CONDA_INSTALL_DIR}" ]] ; then
     echo_bar
     echo
-    echo "Removing previous miniconda installation from ${the_destination}"
-    rm -rf "${the_destination}"
+    echo "Removing previous miniconda installation from ${CONDA_INSTALL_DIR}"
+    rm -rf "${CONDA_INSTALL_DIR}"
   fi
 
   echo_bar
@@ -550,17 +549,17 @@ function install_conda() {
   local -r the_script="${PANDIR}/tmp/miniconda.sh"
   wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
        -O "${the_script}"
-  bash "${the_script}" -b -p "${the_destination}"
+  bash "${the_script}" -b -p "${CONDA_INSTALL_DIR}"
   rm "${the_script}"
 
   # As per the Anaconda 4.4 release notes, one is supposed to add the following
   # to .bash_profile, .bashrc or wherever is appropriate:
-  #    . $CONDA_LOCATION/etc/profile.d/conda.sh
+  #    . $CONDA_INSTALL_DIR/etc/profile.d/conda.sh
   #    conda activate <name-of-desired-environment>
-  # Where CONDA_LOCATION is where Anaconda or miniconda was installed.
+  # Where CONDA_INSTALL_DIR is where Anaconda or miniconda was installed.
   # We do the first step here. Later we'll activate the PANOPTES environment.
 
-  . "${the_destination}/etc/profile.d/conda.sh"
+  . "${CONDA_SH}"
 }
 
 # Add additional repositories in which conda should search for packages.
@@ -572,6 +571,7 @@ function add_conda_channels() {
   # package. And by default the most recently added repository is treated
   # as the highest priority repository. Here we use prepend to be clear
   # that we want astropy to be highest priority.
+  . "${CONDA_SH}"
   if (conda config --show channels | grep -F -q astropy) ; then
     conda config --remove channels astropy
   fi
@@ -588,6 +588,7 @@ function add_conda_channels() {
 function prepare_panoptes_conda_env() {
   # Use the base Anaconda environment until we're ready to
   # work with the PANOPTES environment.
+  . "${CONDA_SH}"
   conda activate base
 
   # Determine if the PANOPTES environment already exists.
@@ -628,8 +629,8 @@ function prepare_panoptes_conda_env() {
 # located elsewhere.
 function maybe_install_conda() {
   # Just in case conda isn't setup, but exists...
-  if [[ -z "$(safe_type conda)" && -f "${conda_sh}" ]] ; then
-    . "${conda_sh}"
+  if [[ -z "$(safe_type conda)" && -f "${CONDA_SH}" ]] ; then
+    . "${CONDA_SH}"
   fi
   if [[ -z "$(safe_type conda)" ]] ; then
     install_conda
@@ -828,19 +829,21 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
   maybe_install_conda
 fi
 
-if [[ "${DO_CONDA}" -eq 1 || \
-      "${DO_REBUILD_CONDA_ENV}" -eq 1 || \
-      "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
-  prepare_panoptes_conda_env
-fi
-
-if [[ -z "$(safe_type conda)" ]] ; then
+if [[ -f "${CONDA_SH}" ]] ; then
+  . "${CONDA_SH}"
+else
   echo_bar
   echo "
 Error: conda is not installed, but remaining installation steps make
 use of the conda environment for PANOPTES (panoptes-env).
 "
   exit 1
+fi
+
+if [[ "${DO_CONDA}" -eq 1 || \
+      "${DO_REBUILD_CONDA_ENV}" -eq 1 || \
+      "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
+  prepare_panoptes_conda_env
 fi
 
 # Activate the PANOPTES environment in this shell.
@@ -891,6 +894,5 @@ Installation complete. Please run these commands:
       pytest
 None of the tests should fail.
 "
-fi
 
 exit
