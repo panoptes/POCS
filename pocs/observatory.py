@@ -516,7 +516,7 @@ class Observatory(PanBase):
                            min_counts=1000,
                            max_counts=12000,
                            bias=2048,
-                           initial_exptime=1.,
+                           initial_exptime=3.,
                            max_exptime=60.,
                            camera_list=None,
                            target_adu_percentage=0.5,
@@ -636,7 +636,8 @@ class Observatory(PanBase):
                 except FileNotFoundError:
                     data = fits.getdata(img_file.replace('.fits', '.fits.fz'))
 
-                mean, median, stddev = stats.sigma_clipped_stats(data, iters=2)
+                # Simple mean works just as well and is quicker
+                mean = data.mean()
 
                 counts = mean - bias
 
