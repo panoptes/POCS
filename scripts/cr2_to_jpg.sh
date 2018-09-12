@@ -2,7 +2,7 @@
 
 usage() {
   echo -n "##################################################
-# Make a jpeg from the Canon Raw vs (.CR2) file.
+# Make a jpeg from the Canon Raw v2 (.CR2) file.
 # 
 # If exiftool is present this merely extracts the thumbnail from
 # the CR2 file, otherwise use dcraw to create a jpeg.
