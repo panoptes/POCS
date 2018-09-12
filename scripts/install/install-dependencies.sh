@@ -890,8 +890,7 @@ echo "
 Installation complete. Please run these commands:
       source ${PANOPTES_ENV_SH}
       cd \$POCS
-      python setup.py install
-      pytest
+      python setup.py install ; pytest
 None of the tests should fail.
 "
 
