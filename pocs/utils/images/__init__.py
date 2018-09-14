@@ -199,7 +199,7 @@ def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
-def create_timelapse(
+def make_timelapse(
         directory,
         fn_out=None,
         file_type='jpg',
@@ -207,7 +207,7 @@ def create_timelapse(
         timeout=60,
         verbose=False,
         **kwargs):
-    """Create a timelapse
+    """Create a timelapse.
 
     A timelapse is created from all the jpg images in a given `directory`
 
@@ -335,7 +335,7 @@ def clean_observation_dir(dir_name, *args, **kwargs):
 
             # Create timelapse
             _print('Creating timelapse for {}'.format(dir_name))
-            video_file = create_timelapse(dir_name)
+            video_file = make_timelapse(dir_name)
             _print('Timelapse created: {}'.format(video_file))
 
             # Remove jpgs
