@@ -223,6 +223,10 @@ def make_timelapse(
 
     Returns:
         str: Name of output file
+
+    Raises:
+        error.InvalidSystemCommand: Raised if ffmpeg command is not found.
+        FileExistsError: Raised if fn_out already exists and overwrite=False.
     """
     if fn_out is None:
         head, tail = os.path.split(directory)
@@ -241,6 +245,9 @@ def make_timelapse(
         raise FileExistsError("Timelapse exists. Set overwrite=True if needed")
 
     ffmpeg = shutil.which('ffmpeg')
+    if ffmpeg is None:
+        raise error.InvalidSystemCommand("ffmpeg not found, can't make timelapse")
+
     inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
 
     try:
@@ -334,9 +341,12 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            _print('Creating timelapse for {}'.format(dir_name))
-            video_file = make_timelapse(dir_name)
-            _print('Timelapse created: {}'.format(video_file))
+            try:
+                _print('Creating timelapse for {}'.format(dir_name))
+                video_file = make_timelapse(dir_name)
+                _print('Timelapse created: {}'.format(video_file))
+            except Exception as e:
+                _print("Problem creating timelapse: {}".format(e))
 
             # Remove jpgs
             _print('Removing jpgs')
