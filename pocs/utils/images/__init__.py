@@ -209,10 +209,10 @@ def make_timelapse(
         **kwargs):
     """Create a timelapse.
 
-    A timelapse is created from all the jpg images in a given `directory`
+    A timelapse is created from all the images in a given `directory`
 
     Args:
-        directory (str): Directory containing jpg files
+        directory (str): Directory containing image files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
         file_type (str, optional): Type of file to search for, default 'jpg'.
@@ -280,7 +280,10 @@ def make_timelapse(
             if verbose:
                 print(outs)
                 print(errs)
-            fn_out = None
+
+            # Double-check for file existence
+            if not os.path.exists(fn_out):
+                fn_out = None
     except Exception as e:
         warn("Problem creating timelapse in {}: {!r}".format(fn_out, e))
         fn_out = None
