@@ -2,7 +2,7 @@
 def on_enter(event_data):
     """ """
     pocs = event_data.model
-    pocs.say("I'm parked now. Phew.")
+    pocs.say("I'm parked now.")
 
     if pocs.run_once is True:
         pocs.say("Done running loop, going to clean up and sleep!")
@@ -11,9 +11,7 @@ def on_enter(event_data):
         pocs.say("Done with retrying loop, going to clean up and sleep!")
         pocs.next_state = 'housekeeping'
     else:
-        has_valid_observations = pocs.observatory.scheduler.has_valid_observations
-
-        if has_valid_observations:
+        if pocs.observatory.scheduler.has_valid_observations:
             if pocs.is_safe():
                 pocs.say("Things look okay for now. I'm going to try again.")
                 pocs.next_state = 'ready'
