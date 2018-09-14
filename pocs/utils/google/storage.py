@@ -10,11 +10,11 @@ from glob import glob
 try:  # pragma: no cover
     # New way:
     from google.cloud import storage
-    from google.cloud.exceptions import Forbidden
+    from google.cloud import exceptions
 except ImportError:  # pragma: no cover
     # Old way:
     from gcloud import storage
-    from gcloud.exceptions import Forbidden
+    from gcloud import exceptions
 
 from pocs.utils.logger import get_root_logger
 from pocs.utils.config import load_config
