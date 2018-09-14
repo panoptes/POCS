@@ -35,26 +35,31 @@ class Camera(AbstractGPhotoCamera):
 
         # Properties to be set upon init.
         prop2index = {
+            '/main/actions/viewfinder': 1,                # Screen off
+            '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
+            '/main/capturesettings/continuousaf': 0,      # No auto-focus
+            '/main/capturesettings/drivemode': 0,         # Single exposure
+            '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
+            '/main/capturesettings/shutterspeed': 0,      # Bulb
+            '/main/imgsettings/imageformat': 9,           # RAW
+            '/main/imgsettings/imageformatcf': 9,         # RAW
+            '/main/imgsettings/imageformatsd': 9,         # RAW
+            '/main/imgsettings/iso': 1,                   # ISO 100
+            '/main/settings/autopoweroff': 0,             # Don't power off
+            '/main/settings/capturetarget': 0,            # Capture to RAM, for download
             '/main/settings/datetime': 'now',             # Current datetime
             '/main/settings/datetimeutc': 'now',          # Current datetime
-            '/main/actions/viewfinder': 1,                # Screen off
-            '/main/settings/autopoweroff': 0,             # Don't power off
             '/main/settings/reviewtime': 0,               # Screen off after taking pictures
-            '/main/settings/capturetarget': 0,            # Capture to RAM, for download
-            '/main/imgsettings/imageformat': 9,           # RAW
-            '/main/imgsettings/imageformatsd': 9,         # RAW
-            '/main/imgsettings/imageformatcf': 9,         # RAW
-            '/main/imgsettings/iso': 1,                   # ISO 100
-            '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
-            '/main/capturesettings/continuousaf': 0,      # No auto-focus
-            '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
-            '/main/capturesettings/drivemode': 0,         # Single exposure
-            '/main/capturesettings/shutterspeed': 0,      # Bulb
         }
+
+        owner_name = 'Project PANOPTES'
+        artist_name = self.config.get('unit_id', owner_name)
+        copyright = 'owner_name {}'.format(owner_name, current_time().datetime.year)
+
         prop2value = {
-            '/main/settings/artist': 'Project PANOPTES',
-            '/main/settings/ownername': 'Project PANOPTES',
-            '/main/settings/copyright': 'Project PANOPTES {}'.format(current_time().datetime.year),
+            '/main/settings/artist': artist_name,
+            '/main/settings/copyright': copyright,
+            '/main/settings/ownername': owner_name,
         }
 
         self.set_properties(prop2index, prop2value)
