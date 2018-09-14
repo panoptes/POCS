@@ -344,7 +344,7 @@ class AbstractMount(PanBase):
         if pointing_ha >= 0 and pointing_ha <= 12:
             pier_side = 'west'
 
-        self.logger.debug("Mount pier side: {}".format(pier_side))
+        self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
 
         axis_corrections = {
             'dec': None,
