@@ -21,6 +21,7 @@ def on_enter(event_data):
     num_pointing_images = pointing_config.get('max_iterations', 3)
     should_correct = pointing_config.get('auto_correct', False)
     pointing_threshold = pointing_config.get('threshold', 0.05)  # degrees
+    exptime = pointing_config.get('exptime', 30)  # seconds
 
     try:
         pocs.say("Taking pointing picture.")
@@ -46,7 +47,7 @@ def on_enter(event_data):
                         camera_event = camera.take_observation(
                             observation,
                             fits_headers,
-                            exp_time=30.,
+                            exp_time=exptime,
                             filename='pointing{:02d}'.format(img_num)
                         )
 
