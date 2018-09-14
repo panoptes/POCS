@@ -53,7 +53,7 @@ class PanStorage(object):
 
         try:
             self.bucket = self.client.get_bucket(bucket_name)
-        except exceptions.Forbidden as e:
+        except exceptions.Forbidden:
             raise error.GoogleCloudError(
                 "Storage bucket does not exist or no permissions. " +
                 "Ensure that the auth_key has valid permissions to the bucket."
@@ -185,7 +185,7 @@ class PanStorage(object):
         if callback is not None:
             try:
                 callback()
-            except TypeError as e:
+            except TypeError:
                 warn('callback must be callable')
 
         return output_path
@@ -237,7 +237,7 @@ class PanStorage(object):
                 if parse_line is not None:
                     try:
                         parse_line(item_string)
-                    except TypeError as e:
+                    except TypeError:
                         warn('parse_line must be callable')
                     continue
 
@@ -293,6 +293,9 @@ def upload_observation_to_bucket(pan_id,
         bucket (str, optional): The bucket to place the images in, defaults
             to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
+
+    Returns:
+        str: Image path used to search for images.
     """
     assert os.path.exists(dir_name)
     assert re.match(r'PAN\d\d\d', pan_id) is not None
@@ -334,3 +337,5 @@ def upload_observation_to_bucket(pan_id,
                 return True
         except Exception as e:
             warn("Problem uploading: {}".format(e))
+
+    return img_path
