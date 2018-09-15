@@ -146,12 +146,19 @@ class Image(PanBase):
             self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
                                             dec=float(self.header['DEC-MNT']) * u.degree)
 
-            self.header_ra = self.header_pointing.ra.to(u.hourangle)
+            self.header_ra = self.header_pointing.ra.to(u.degree)
             self.header_dec = self.header_pointing.dec.to(u.degree)
 
-            # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.header_ha = self.header_pointing.transform_to(
-                self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            try:
+                self.header_ha = float(self.header['HA-MNT']) * u.hourangle
+            except KeyError as e:
+                # Compute the HA from the RA and sidereal time.
+                # Precess to the current equinox otherwise the
+                # RA - LST method will be off.
+                # NOTE(wtgee): This conversion doesn't seem to be correct.
+                self.header_ha = self.header_pointing.transform_to(
+                    self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+
         except Exception as e:
             self.logger.warning('Cannot get header pointing information: {}'.format(e))
 
@@ -167,11 +174,11 @@ class Image(PanBase):
 
             self.pointing = SkyCoord(ra=ra * u.degree, dec=dec * u.degree)
 
-            self.ra = self.pointing.ra.to(u.hourangle)
+            self.ra = self.pointing.ra.to(u.degree)
             self.dec = self.pointing.dec.to(u.degree)
 
             # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
     def solve_field(self, **kwargs):
         """ Solve field and populate WCS information

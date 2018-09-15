@@ -37,8 +37,9 @@ mount:
         baudrate: 9600
     non_sidereal_available: True
 pointing:
-    threshold: 0.05
-    exptime: 30
+    auto_correct: False
+    threshold: 500 # arcseconds ~ 50 pixels
+    exptime: 30 # seconds
     max_iterations: 3
 cameras:
     auto_detect: True
