@@ -6,12 +6,10 @@ import re
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
-from ffmpy import FFmpeg
 from glob import glob
 from copy import copy
 
@@ -201,20 +199,34 @@ def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
-def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
-    """Create a timelapse
+def make_timelapse(
+        directory,
+        fn_out=None,
+        file_type='jpg',
+        overwrite=False,
+        timeout=60,
+        verbose=False,
+        **kwargs):
+    """Create a timelapse.
 
-    A timelapse is created from all the jpg images in a given `directory`
+    A timelapse is created from all the images in a given `directory`
 
     Args:
-        directory (str): Directory containing jpg files
+        directory (str): Directory containing image files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
         file_type (str, optional): Type of file to search for, default 'jpg'.
+        overwrite (bool, optional): Overwrite timelapse if exists, default False.
+        timeout (int): Timeout for making movie, default 60 seconds.
+        verbose (bool, optional): Show output, default False.
         **kwargs (dict): Valid keywords: verbose
 
     Returns:
         str: Name of output file
+
+    Raises:
+        error.InvalidSystemCommand: Raised if ffmpeg command is not found.
+        FileExistsError: Raised if fn_out already exists and overwrite=False.
     """
     if fn_out is None:
         head, tail = os.path.split(directory)
@@ -224,29 +236,54 @@ def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
         field_name = head.split('/')[-2]
         cam_name = head.split('/')[-1]
         fname = '{}_{}_{}.mp4'.format(field_name, cam_name, tail)
-        fn_out = os.path.join(os.getenv('PANDIR'), 'images', 'timelapse', fname)
+        fn_out = os.path.normpath(os.path.join(directory, fname))
 
-    fn_dir = os.path.dirname(fn_out)
-    os.makedirs(fn_dir, exist_ok=True)
+    if verbose:
+        print("Timelapse file: {}".format(fn_out))
+
+    if os.path.exists(fn_out) and not overwrite:
+        raise FileExistsError("Timelapse exists. Set overwrite=True if needed")
+
+    ffmpeg = shutil.which('ffmpeg')
+    if ffmpeg is None:
+        raise error.InvalidSystemCommand("ffmpeg not found, can't make timelapse")
+
     inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
 
     try:
-        ff = FFmpeg(
-            global_options='-r 3 -pattern_type glob',
-            inputs={inputs_glob: None},
-            outputs={
-                fn_out: '-s hd1080 -vcodec libx264'
-            })
+        ffmpeg_cmd = [
+            ffmpeg,
+            '-r', '3',
+            '-pattern_type', 'glob',
+            '-i', inputs_glob,
+            '-s', 'hd1080',
+            '-vcodec', 'libx264',
+        ]
 
-        if 'verbose' in kwargs:
-            out = None
-            err = None
-            print("Timelapse command: ", ff.cmd)
-        else:
-            out = open(os.devnull, 'w')
-            err = open(os.devnull, 'w')
+        if overwrite:
+            ffmpeg_cmd.append('-y')
 
-        ff.run(stdout=out, stderr=err)
+        ffmpeg_cmd.append(fn_out)
+
+        if verbose:
+            print(ffmpeg_cmd)
+
+        proc = subprocess.Popen(ffmpeg_cmd, universal_newlines=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            # Don't wait forever
+            outs, errs = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            outs, errs = proc.communicate()
+        finally:
+            if verbose:
+                print(outs)
+                print(errs)
+
+            # Double-check for file existence
+            if not os.path.exists(fn_out):
+                fn_out = None
     except Exception as e:
         warn("Problem creating timelapse in {}: {!r}".format(fn_out, e))
         fn_out = None
@@ -307,9 +344,12 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            _print('Creating timelapse for {}'.format(dir_name))
-            video_file = create_timelapse(dir_name)
-            _print('Timelapse created: {}'.format(video_file))
+            try:
+                _print('Creating timelapse for {}'.format(dir_name))
+                video_file = make_timelapse(dir_name)
+                _print('Timelapse created: {}'.format(video_file))
+            except Exception as e:
+                _print("Problem creating timelapse: {}".format(e))
 
             # Remove jpgs
             _print('Removing jpgs')
