@@ -33,11 +33,11 @@ echo "TIME = ${TIME}s"
 echo "FILE = ${FILENAME}"
 
 # Open shutter
-gphoto2 --port=${PORT} \
+gphoto2 --port="${PORT}" \
         --set-config shutterspeed=0 `#Always set to bulb` \
         --set-config capturetarget=0 `#Capture to RAM for download` \
         --set-config eosremoterelease=Immediate \
-        --wait-event=${EXPTIME}s \
+        --wait-event="${EXPTIME}s" \
         --set-config eosremoterelease=4 \
         --wait-event-and-download=2s \
         --filename "${FILENAME}"
