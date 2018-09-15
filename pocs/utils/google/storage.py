@@ -290,12 +290,12 @@ def upload_observation_to_bucket(pan_id,
         dir_name (str): Full path to directory.
         include_files (str, optional): Filename filter, defaults to
             compressed FITS files '.fz'.
-        bucket (str, optional): The bucket to place the images in, defaults
+        bucket (str, optional): The bucket to place the files in, defaults
             to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
 
     Returns:
-        str: Image path used to search for images.
+        str: A string path used to search for files.
     """
     assert os.path.exists(dir_name)
     assert re.match(r'PAN\d\d\d', pan_id) is not None
@@ -311,8 +311,8 @@ def upload_observation_to_bucket(pan_id,
     gsutil = shutil.which('gsutil')
     assert gsutil is not None
 
-    img_path = os.path.join(dir_name, include_files)
-    if glob(img_path):
+    file_search_path = os.path.join(dir_name, include_files)
+    if glob(file_search_path):
         # Get just the observation path
         field_dir = dir_name.split('/fields/')[-1]
         remote_path = os.path.normpath(os.path.join(
@@ -323,7 +323,7 @@ def upload_observation_to_bucket(pan_id,
 
         # normpath strips the trailing slash so add here so files go in directory
         destination = 'gs://{}/'.format(remote_path)
-        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, destination]
+        run_cmd = [gsutil, '-mq', 'cp', '-r', file_search_path, destination]
         _print("Running: {}".format(run_cmd))
 
         try:
@@ -338,4 +338,4 @@ def upload_observation_to_bucket(pan_id,
         except Exception as e:
             warn("Problem uploading: {}".format(e))
 
-    return img_path
+    return file_search_path
