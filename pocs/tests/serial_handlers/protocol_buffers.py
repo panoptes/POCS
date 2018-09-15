@@ -3,6 +3,7 @@
 from pocs.tests.serial_handlers import NoOpSerial
 
 import io
+from serial import serialutil
 import threading
 
 # r_buffer and w_buffer are binary I/O buffers. read(size=N) on an instance

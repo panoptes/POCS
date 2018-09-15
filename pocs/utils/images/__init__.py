@@ -6,7 +6,6 @@ import re
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
@@ -337,7 +336,7 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         **kwargs: Optional keywords: verbose
     """
     assert os.path.exists(dir_name)
-    assert re.match('PAN\d\d\d', pan_id) is not None
+    assert re.match(r'PAN\d\d\d', pan_id) is not None
 
     verbose = kwargs.get('verbose', False)
 

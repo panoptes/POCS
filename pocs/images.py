@@ -151,7 +151,7 @@ class Image(PanBase):
 
             try:
                 self.header_ha = float(self.header['HA-MNT']) * u.hourangle
-            except KeyError as e:
+            except KeyError:
                 # Compute the HA from the RA and sidereal time.
                 # Precess to the current equinox otherwise the
                 # RA - LST method will be off.
