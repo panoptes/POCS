@@ -1,5 +1,6 @@
 ---
 name: Generic PANOPTES Unit
+# pan_id: PANxyz   # This unit's assigned identifier.
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees
@@ -9,7 +10,8 @@ location:
     horizon: 30 # Degrees
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
-    gmt_offset: -600
+    gmt_offset: -600 # Offset in minutes from GMT during
+                     # standard time (not daylight saving)
 directories:
     base: /var/panoptes
     images: images
