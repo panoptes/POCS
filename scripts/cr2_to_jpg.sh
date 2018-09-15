@@ -26,19 +26,19 @@ if [ $# -eq 0 ]; then
 fi
 
 FNAME=$1
-CAPTION=$2
+CAPTION="${2}"
 
-JPG=${FNAME/cr2/jpg}
+JPG="${FNAME%.cr2}.jpg"
 
 echo "Converting ${FNAME} to jpg."
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
-    exiftool -b -PreviewImage ${FNAME} > ${JPG}
+    exiftool -b -PreviewImage "${FNAME}" > "${JPG}"
 else
     if hash dcraw 2>/dev/null; then
         # Convert CR2 to JPG
-        dcraw -c -q 3 -a -w -H 5 -b 5 ${FNAME} | cjpeg -quality 90 > ${JPG}
+        dcraw -c -q 3 -a -w -H 5 -b 5 "${FNAME}" | cjpeg -quality 90 > "${JPG}"
     else
         echo "Can't find either exiftool or dcraw, cannot proceed"
         exit
@@ -49,8 +49,9 @@ if [[ $CAPTION ]]
   then
   	echo "Adding caption \"${CAPTION}\""
 	# Make thumbnail from jpg.
-	convert ${JPG} -background black -fill red \
-	    -font ubuntu -pointsize 60 label:"${CAPTION}" -gravity South -append ${JPG}
+	convert "${JPG}" -background black -fill red \
+	    -font ubuntu -pointsize 60 label:"${CAPTION}" \
+	    -gravity South -append "${JPG}"
 fi
 
 echo "${JPG}"
