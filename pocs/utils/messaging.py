@@ -184,15 +184,13 @@ class PanMessaging(object):
         if not isinstance(channel, str):
             raise ValueError('Channel name must be a string')
         elif not self.name_re.fullmatch(channel):
-            raise ValueError('Channel name ("{}") is not valid'
-                .format(channel))
+            raise ValueError('Channel name ("{}") is not valid'.format(channel))
 
         if isinstance(message, str):
             message = {
                 'message': message,
-                'timestamp': current_time().isot.replace(
-                    'T',
-                    ' ').split('.')[0]}
+                'timestamp': current_time().isot.replace('T', ' ').split('.')[0]
+            }
         elif isinstance(message, dict):
             message = self.scrub_message(message)
         else:
