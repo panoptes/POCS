@@ -34,8 +34,8 @@ echo "FILE = ${FILENAME}"
 
 # Open shutter
 gphoto2 --port=${PORT} \
-        --set-config shutterspeed=0 \
-        --set-config capturetarget=0 \
+        --set-config shutterspeed=0 `#Always set to bulb` \
+        --set-config capturetarget=0 `#Capture to RAM for download` \
         --set-config eosremoterelease=Immediate \
         --wait-event=${EXPTIME}s \
         --set-config eosremoterelease=4 \

@@ -30,7 +30,7 @@ CAPTION="${2}"
 
 JPG="${FNAME%.cr2}.jpg"
 
-echo "Converting ${FNAME} to jpg."
+echo "Converting CR2 to ${JPG}."
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
@@ -45,7 +45,7 @@ else
     fi
 fi
 
-if [[ $CAPTION ]]
+if [[ -n "$CAPTION" ]]
   then
   	echo "Adding caption \"${CAPTION}\""
 	# Make thumbnail from jpg.
