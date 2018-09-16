@@ -68,6 +68,13 @@ panoptes_network:
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
+    cloudsql_instances:
+        meta:
+            location: us-central1
+            database: panoptes-meta
+        tess:
+            location: us-central1
+            database: tess-catalog            
         
 #Enable to output POCS messages to social accounts
 # social_accounts:
