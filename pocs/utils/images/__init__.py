@@ -291,8 +291,8 @@ def make_timelapse(
     return fn_out
 
 
-def clean_observation_dir(dir_name, remove_jpgs=False, *args, **kwargs):
-    """ Clean an observation directory.
+def clean_observation_dir(dir_name, remove_jpgs=False, overwrite=False, *args, **kwargs):
+    """Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
@@ -302,6 +302,8 @@ def clean_observation_dir(dir_name, remove_jpgs=False, *args, **kwargs):
 
     Args:
         dir_name (str): Full path to observation directory
+        remove_jpgs (bool, optional): If JPGs should be removed, default False.
+        overwrite (bool, optional): If timelapse should be overwritten, default False.
         *args: Description
         **kwargs: Can include `verbose`
     """
@@ -346,7 +348,7 @@ def clean_observation_dir(dir_name, remove_jpgs=False, *args, **kwargs):
             # Create timelapse
             try:
                 _print('Creating timelapse for {}'.format(dir_name))
-                video_file = make_timelapse(dir_name)
+                video_file = make_timelapse(dir_name, overwrite=overwrite)
                 _print('Timelapse created: {}'.format(video_file))
             except Exception as e:
                 _print("Problem creating timelapse: {}".format(e))
