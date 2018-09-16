@@ -98,7 +98,7 @@ class Focuser(AbstractFocuser):
             self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)'.format(nickname,
                                                                                                 nickname[:16]))
             nickname = nickname[:16]
-        command_str = '<F{:1d}SCNN{}>'.format(self._focuser_number, nicpositionkname)
+        command_str = '<F{:1d}SCNN{}>'.format(self._focuser_number, nickname)
         self._send_command(command_str, expected_reply='SET')
         self._get_focuser_config()
 

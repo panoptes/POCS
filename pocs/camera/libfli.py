@@ -12,24 +12,24 @@ import numpy as np
 import astropy.units as u
 
 from pocs.base import PanBase
-from pocs.camera.libfliconstants import *  # Bad form, but done for readability
+import pocs.camera.libfliconstants as c
 
-valid_values = {'interface type': (FLIDOMAIN_PARALLEL_PORT,
-                                   FLIDOMAIN_USB,
-                                   FLIDOMAIN_SERIAL,
-                                   FLIDOMAIN_INET,
-                                   FLIDOMAIN_SERIAL_1200,
-                                   FLIDOMAIN_SERIAL_19200),
-                'device type': (FLIDEVICE_CAMERA,
-                                FLIDEVICE_FILTERWHEEL,
-                                FLIDEVICE_FOCUSER,
-                                FLIDEVICE_HS_FILTERWHEEL,
-                                FLIDEVICE_RAW,
-                                FLIDEVICE_ENUMERATE_BY_CONNECTION),
-                'frame type': (FLI_FRAME_TYPE_NORMAL,
-                               FLI_FRAME_TYPE_DARK,
-                               FLI_FRAME_TYPE_FLOOD,
-                               FLI_FRAME_TYPE_RBI_FLUSH)}
+valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
+                                   c.FLIDOMAIN_USB,
+                                   c.FLIDOMAIN_SERIAL,
+                                   c.FLIDOMAIN_INET,
+                                   c.FLIDOMAIN_SERIAL_1200,
+                                   c.FLIDOMAIN_SERIAL_19200),
+                'device type': (c.FLIDEVICE_CAMERA,
+                                c.FLIDEVICE_FILTERWHEEL,
+                                c.FLIDEVICE_FOCUSER,
+                                c.FLIDEVICE_HS_FILTERWHEEL,
+                                c.FLIDEVICE_RAW,
+                                c.FLIDEVICE_ENUMERATE_BY_CONNECTION),
+                'frame type': (c.FLI_FRAME_TYPE_NORMAL,
+                               c.FLI_FRAME_TYPE_DARK,
+                               c.FLI_FRAME_TYPE_FLOOD,
+                               c.FLI_FRAME_TYPE_RBI_FLUSH)}
 
 ################################################################################
 # Main SBIGDriver class
@@ -84,7 +84,7 @@ class FLIDriver(PanBase):
 
     # Public methods
 
-    def FLIList(self, interface_type=FLIDOMAIN_USB, device_type=FLIDEVICE_CAMERA):
+    def FLIList(self, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """
         List available devices.
 
@@ -120,7 +120,7 @@ class FLIDriver(PanBase):
 
         return available_devices
 
-    def FLIOpen(self, port, interface_type=FLIDOMAIN_USB, device_type=FLIDEVICE_CAMERA):
+    def FLIOpen(self, port, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """
         Get a handle to an FLI device.
 

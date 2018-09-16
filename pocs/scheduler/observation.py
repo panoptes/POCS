@@ -155,7 +155,7 @@ class Observation(PanBase):
             equinox = self.field.coord.equinox.value
         except AttributeError:
             equinox = self.field.coord.equinox
-        except Exception as e:
+        except Exception:
             equinox = 'J2000'
 
         status = {

@@ -1,14 +1,13 @@
 import io
 import pytest
 import serial
+from serial import serialutil
 
 from pocs.utils import error
 from pocs.utils import rs232
-from pocs.utils.config import load_config
 
 from pocs.tests.serial_handlers import NoOpSerial
 from pocs.tests.serial_handlers import protocol_buffers
-from pocs.tests.serial_handlers import protocol_no_op
 from pocs.tests.serial_handlers import protocol_hooked
 
 
@@ -174,7 +173,6 @@ class HookedSerialHandler(NoOpSerial):
         if not self.is_open:
             raise serialutil.portNotOpenError
         # If at end of the stream, reset the stream.
-        avail = self.in_waiting
         return self.r_buffer.read(min(size, self.in_waiting))
 
     def write(self, data):

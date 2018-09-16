@@ -7,10 +7,10 @@ from warnings import warn
 from pocs.focuser import AbstractFocuser
 
 # Birger adaptor serial numbers should be 5 digits
-serial_number_pattern = re.compile('^\d{5}$')
+serial_number_pattern = re.compile(r'^\d{5}$')
 
 # Error codes should be 'ERR' followed by 1-2 digits
-error_pattern = re.compile('(?<=ERR)\d{1,2}')
+error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
 
 error_messages = ('No error',
                   'Unrecognised command',
@@ -127,7 +127,7 @@ class Focuser(AbstractFocuser):
         except (serial.SerialException,
                 serial.SerialTimeoutException,
                 AssertionError) as err:
-            message = 'Error connecting to {} on {}: {}'.format(self.name, port, err)
+            message = 'Error connecting to {} on {}: {}'.format(self.name, self.port, err)
             self.logger.error(message)
             warn(message)
             return

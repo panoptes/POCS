@@ -1,11 +1,8 @@
 import copy
-import os
 import pytest
 
 import pocs.dome
 from pocs.dome import simulator
-
-# Dome as DomeSimulator
 
 
 # Yields two different dome controllers configurations,

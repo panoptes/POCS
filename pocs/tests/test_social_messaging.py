@@ -23,29 +23,33 @@ def slack_config():
 def test_no_consumer_key(twitter_config):
     with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['consumer_key']
-        social_twitter = SocialTwitter(**twitter_config)
-        assert 'consumer_key parameter is not defined.' == str(ve.value)
+        SocialTwitter(**twitter_config)
+        assert False  # We don't reach this point
+    assert 'consumer_key parameter is not defined.' == str(ve.value)
 
 
 def test_no_consumer_secret(twitter_config):
     with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['consumer_secret']
-        social_twitter = SocialTwitter(**twitter_config)
-        assert 'consumer_secret parameter is not defined.' == str(ve.value)
+        SocialTwitter(**twitter_config)
+        assert False  # We don't reach this point
+    assert 'consumer_secret parameter is not defined.' == str(ve.value)
 
 
 def test_no_access_token(twitter_config):
     with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['access_token']
-        social_twitter = SocialTwitter(**twitter_config)
-        assert 'access_token parameter is not defined.' == str(ve.value)
+        SocialTwitter(**twitter_config)
+        assert False  # We don't reach this point
+    assert 'access_token parameter is not defined.' == str(ve.value)
 
 
 def test_no_access_token_secret(twitter_config):
     with unittest.mock.patch.dict(twitter_config), pytest.raises(ValueError) as ve:
         del twitter_config['access_token_secret']
-        social_twitter = SocialTwitter(**twitter_config)
-        assert 'access_token_secret parameter is not defined.' == str(ve.value)
+        SocialTwitter(**twitter_config)
+        assert False  # We don't reach this point
+    assert 'access_token_secret parameter is not defined.' == str(ve.value)
 
 
 def test_send_message_twitter(twitter_config):
@@ -73,7 +77,7 @@ def test_no_webhook_url(slack_config):
     with unittest.mock.patch.dict(slack_config), pytest.raises(ValueError) as ve:
         del slack_config['webhook_url']
         slack_config = SocialSlack(**slack_config)
-        assert 'webhook_url parameter is not defined.' == str(ve.value)
+    assert 'webhook_url parameter is not defined.' == str(ve.value)
 
 
 def test_send_message_slack(slack_config):

@@ -377,7 +377,7 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         **kwargs: Optional keywords: verbose
     """
     assert os.path.exists(dir_name)
-    assert re.match('PAN\d\d\d', pan_id) is not None
+    assert re.match(r'PAN\d\d\d', pan_id) is not None
 
     verbose = kwargs.get('verbose', False)
 
