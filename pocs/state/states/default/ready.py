@@ -13,4 +13,8 @@ def on_enter(event_data):
         pocs.next_state = 'parking'
     else:
         pocs.observatory.mount.unpark()
-        pocs.next_state = 'calibrating'
+
+        if pocs.observatory.take_flat_fields:
+            pocs.next_state = 'calibrating'
+        else:
+            pocs.next_state = 'scheduling'
