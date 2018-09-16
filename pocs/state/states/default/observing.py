@@ -55,7 +55,7 @@ def on_enter(event_data):
             # Sleep for a little bit.
             time.sleep(SLEEP_SECONDS)
 
-    except pocs_utils.error.Timeout as e:
+    except pocs_utils.error.Timeout:
         pocs.logger.warning(
             "Timeout while waiting for images. Something wrong with camera, going to park.")
     except Exception as e:

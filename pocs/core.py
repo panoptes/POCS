@@ -47,7 +47,7 @@ class POCS(PanStateMachine, PanBase):
     def __init__(
             self,
             observatory,
-            state_machine_file='simple_state_table',
+            state_machine_file=None,
             messaging=False,
             **kwargs):
 
@@ -70,6 +70,9 @@ class POCS(PanStateMachine, PanBase):
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
+
+        if state_machine_file is None:
+            state_machine_file = self.config.get('state_machine', 'simple_state_table')
 
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 

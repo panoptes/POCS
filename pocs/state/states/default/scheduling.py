@@ -24,7 +24,7 @@ def on_enter(event_data):
         try:
             observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
-        except error.NoObservation as e:
+        except error.NoObservation:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
         except Exception as e:
             pocs.logger.warning("Error in scheduling: {}".format(e))

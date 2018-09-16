@@ -63,7 +63,7 @@ def detect_board_on_port(port, logger=None):
             if not serial_reader.is_connected:
                 serial_reader.connect()
             logger.debug('Connected to {}', port)
-        except Exception as e:
+        except Exception:
             logger.warning('Could not connect to port: {}'.format(port))
             return None
         try:

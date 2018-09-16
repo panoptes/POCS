@@ -6,7 +6,6 @@ import json
 import queue
 import random
 from serial import serialutil
-import sys
 import threading
 import time
 import urllib
