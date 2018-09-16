@@ -63,6 +63,10 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
+    if fname.endswith('.fz'):
+        options.append('--extension')
+        options.append('1')
+
     cmd = [solve_field_script] + options + [fname]
     if verbose:
         print("Cmd:", cmd)
