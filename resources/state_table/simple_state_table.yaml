@@ -54,6 +54,10 @@ transitions:
         dest: calibrating
         trigger: calibrate
     -
+        source: ready
+        dest: scheduling
+        trigger: schedule
+    -
         source: calibrating
         dest: scheduling
         trigger: schedule
