@@ -9,7 +9,7 @@ from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.images import clean_observation_dir
 from pocs.utils.google.storage import upload_observation_to_bucket
-from pocs.utils.google.clouddb import add_header_to_db
+from pocs.utils.db.postgres import add_header_to_db
 
 
 def main(directory, upload=True, remove_jpgs=False, send_headers=True, verbose=False, **kwargs):
