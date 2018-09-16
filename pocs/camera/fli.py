@@ -1,5 +1,4 @@
 import time
-import os
 import re
 from warnings import warn
 from threading import Event
@@ -9,14 +8,13 @@ from threading import Lock
 import numpy as np
 
 from astropy import units as u
-from astropy.io import fits
 
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
 from pocs.utils.images import fits as fits_utils
 
 # FLI camera serial numbers have pairs of letters followed by a sequence of numbers
-serial_number_pattern = re.compile('^(ML|PL|KL|HP)\d+$')
+serial_number_pattern = re.compile(r'^(ML|PL|KL|HP)\d+$')
 
 
 class Camera(AbstractCamera):

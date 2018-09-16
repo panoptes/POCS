@@ -39,7 +39,7 @@ class PanStorage(object):
         super(PanStorage, self).__init__()
 
         self.unit_id = load_config()['pan_id']
-        assert re.match('PAN\d\d\d', self.unit_id) is not None
+        assert re.match(r'PAN\d\d\d', self.unit_id) is not None
 
         self.project_id = project_id
         self.bucket_name = bucket_name
@@ -51,10 +51,11 @@ class PanStorage(object):
 
         try:
             self.bucket = self.client.get_bucket(bucket_name)
-        except Forbidden as e:
+        except Forbidden:
             raise error.GoogleCloudError(
-                "Storage bucket does not exist or no permissions. " +
-                "Ensure that the PANOPTES_CLOUD_KEY variable is properly set"
+                "Storage bucket does not exist or no permissions. "
+                "Ensure that the PANOPTES_CLOUD_KEY variable is properly set "
+                "or that you have executed 'gcloud auth'"
             )
 
         self.logger.info("Connected to storage bucket {}", self.bucket_name)

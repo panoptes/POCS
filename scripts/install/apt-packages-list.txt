@@ -68,3 +68,13 @@ ffmpeg
 
 # Used for colorizing log files.
 grc
+
+# GNU coreutils provides basic commands that we depend on (echo, ls), and is
+# almost certainly already installed, but let's make sure.
+coreutils
+
+# Want git for upgrading to the latest version. Probably already installed
+# but not necessarily (i.e. it is possible to download a zip of POCS, which
+# includes this file).
+git
+
