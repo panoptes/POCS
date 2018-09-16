@@ -240,7 +240,7 @@ class Observatory(PanBase):
                 self.logger.info('Cleaning directory {}'.format(seq_dir))
 
                 # Add directory to command
-                process_cmd.append([
+                process_cmd.extend([
                     '--directory', seq_dir,
                 ])
 
