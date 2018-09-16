@@ -273,7 +273,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self, no_warning=False):
+    def is_safe(self, no_warning=False, horizon='observe'):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -285,6 +285,8 @@ class POCS(PanStateMachine, PanBase):
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
+            horizon (str, optional): For night time check use given horizon,
+                default 'observe'.
 
         Returns:
             bool: Latest safety flag
@@ -296,7 +298,7 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values = dict()
 
         # Check if night time
-        is_safe_values['is_dark'] = self.is_dark()
+        is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
@@ -445,6 +447,12 @@ class POCS(PanStateMachine, PanBase):
         while not self.observatory.is_dark(horizon=horizon):
             self.logger.warning("Still waiting until evening")
             self.sleep(delay=self._safe_delay)
+
+            # Check weather
+            if not self.is_weather_safe():
+                self.logger.warning("Weather is no longer safe, parking")
+                self.next_state = 'parking'
+                return
 
 ##################################################################################################
 # Class Methods

@@ -26,9 +26,9 @@ def on_enter(event_data):
             # Take the flats
             if sun_pos.value <= flat_horizon and sun_pos.value > observe_horizon:
                 pocs.say("Taking some flat fields to start the night")
-                pocs.observatory.take_evening_flats()
+                pocs.observatory.take_evening_flats(initial_exptime=5, max_exptime=150)
             elif sun_pos.value <= observe_horizon:
-                pocs.say("Sun is below {}, stopping calibration".format(observe_horizon))
+                pocs.say("Sun is below {} - end of calibration".format(observe_horizon))
 
         pocs.next_state = 'scheduling'
 
