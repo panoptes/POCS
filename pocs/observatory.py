@@ -9,7 +9,6 @@ from glob import glob
 from astroplan import Observer
 from astropy import units as u
 from astropy.io import fits
-from astropy import stats
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
@@ -583,6 +582,11 @@ class Observatory(PanBase):
             self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
             self.mount.set_target_coordinates(flat_obs.field)
             self.mount.slew_to_target()
+
+            while not self.mount.is_tracking:
+                self.logger.debug("Slewing to target")
+                time.sleep(2)
+
             self.status()  # Seems to help with reading coords
 
             fits_headers = self.get_standard_headers(observation=flat_obs)
