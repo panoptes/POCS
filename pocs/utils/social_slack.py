@@ -23,6 +23,7 @@ class SocialSlack(object):
             else:
                 post_msg = msg
 
-            response = requests.post(self.web_hook, json={'text': post_msg})
+            # We ignore the response body and headers of a successful post.
+            requests.post(self.web_hook, json={'text': post_msg})
         except Exception as e:
             self.logger.debug('Error posting to slack: {}'.format(e))

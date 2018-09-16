@@ -193,9 +193,12 @@ Hardware names: {}   (or all for all hardware)'''.format(
             try:
                 self.pocs.run()
             except KeyboardInterrupt:
-                print_warning('POCS interrupted, skipping states and parking')
-                self.pocs.observatory.mount.home_and_park()
-                self._running = False
+                print_warning('POCS interrupted, parking')
+                if self.pocs.state not in ['sleeping', 'housekeeping', 'parked', 'parking']:
+                    self.pocs.park()
+                else:
+                    self.pocs.observatory.mount.home_and_park()
+                self._obs_run_retries = 0  # Don't retry
             finally:
                 print_info('POCS stopped.')
         else:

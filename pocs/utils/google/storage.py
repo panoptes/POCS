@@ -55,8 +55,9 @@ class PanStorage(object):
             self.bucket = self.client.get_bucket(bucket_name)
         except exceptions.Forbidden:
             raise error.GoogleCloudError(
-                "Storage bucket does not exist or no permissions. " +
+                "Storage bucket does not exist or no permissions."
                 "Ensure that the auth_key has valid permissions to the bucket."
+                "or that you have executed 'gcloud auth'"
             )
 
         self.logger.info("Connected to storage bucket {}", self.bucket_name)

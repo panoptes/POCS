@@ -64,7 +64,7 @@ class ArduinoSerialMonitor(object):
             serial_reader.connect()
             self.logger.debug('Connected to {}', port)
             return serial_reader
-        except Exception as e:
+        except Exception:
             self.logger.warning('Could not connect to port: {}'.format(port))
             return None
 
@@ -165,7 +165,7 @@ def detect_board_on_port(port, logger=None):
         if not serial_reader.is_connected:
             serial_reader.connect()
         logger.debug('Connected to {}', port)
-    except Exception as e:
+    except Exception:
         logger.warning('Could not connect to port: {}'.format(port))
         return None
     try:

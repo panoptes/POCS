@@ -4,7 +4,6 @@ ccdproc
 codecov
 coveralls
 dateparser
-ffmpy
 gcloud
 google-cloud-storage
 matplotlib

@@ -1,1 +1,1 @@
-from pocs.focuser.focuser import AbstractFocuser
+from pocs.focuser.focuser import AbstractFocuser  # pragma: no flakes

@@ -341,10 +341,10 @@ class AbstractMount(PanBase):
                 }
         """
         pier_side = 'east'
-        if pointing_ha <= 12:
+        if pointing_ha >= 0 and pointing_ha <= 12:
             pier_side = 'west'
 
-        self.logger.debug("Mount pier side: {}".format(pier_side))
+        self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
 
         axis_corrections = {
             'dec': None,
@@ -388,6 +388,7 @@ class AbstractMount(PanBase):
             if offset_ms > max_time:
                 offset_ms = max_time
 
+            self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
             axis_corrections[axis] = (offset, offset_ms, delta_direction)
 
         return axis_corrections
