@@ -81,12 +81,8 @@ class Observatory(PanBase):
         try:
             horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
         except KeyError:
-            # Look for legacy name. Note this will happen for either horizon
-            try:
-                horizon_deg = self.config['location']['twilight_horizon']
-            except KeyError:
-                self.logger.info("Can't find twilight_horizon, using -18°")
-                horizon_deg = -18 * u.degree
+            self.logger.info("Can't find twilight_horizon, using -18°")
+            horizon_deg = -18 * u.degree
 
         t0 = current_time()
         is_dark = self.observer.is_night(t0, horizon=horizon_deg)
