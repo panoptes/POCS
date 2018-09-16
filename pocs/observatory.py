@@ -575,7 +575,8 @@ class Observatory(PanBase):
             camera_list = list(self.cameras.keys())
 
         # Start with 1 second exposures for each camera
-        exp_times = {cam_name: [1. * u.second] for cam_name in camera_list}
+        exp_times = {cam_name: [initial_exptime * u.second]
+                     for cam_name in camera_list}
 
         # Loop until conditions are met for flat-fielding
         while True:
