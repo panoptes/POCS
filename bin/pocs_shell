@@ -92,6 +92,21 @@ class PocsShell(Cmd):
         i = DriftShell()
         i.cmdloop()
 
+    def do_calibrate_mount(self, *arg):
+        """Calibrates the mount.
+
+        This should only be run during initial setup of the unit
+        or when the mount has become "lost" and no longer knows where
+        it is pointing.
+
+        """
+        if self.pocs.observatory.mount.is_parked:
+            print_warning('Mount is parked. To unpark run `unpark`')
+            return
+
+        print_info("Starting mount calibration")
+        self.pocs.observatory.calibrate_mount()
+
     def do_start_messaging(self, *arg):
         """Starts the messaging system for the POCS ecosystem.
 
