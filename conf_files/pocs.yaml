@@ -54,15 +54,13 @@ messaging:
     cmd_port: 6500
     msg_port: 6510
 
-############ Google Network ############
-# By default all images are stored on google
-# cloud servers and we also use a few google
-# services to store metadata, communicate with
-# servers, etc.
+######################## Google Network ####################################
+# By default all images are stored on googlecloud servers and we also
+# use a few google services to store metadata, communicate with servers, etc.
 #
 # See $POCS/pocs/utils/google/README.md for
 # details about authentication.
-########################################
+############################################################################
 panoptes_network:
     image_storage: True
     metadata_storage: True
