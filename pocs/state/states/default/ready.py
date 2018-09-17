@@ -14,7 +14,9 @@ def on_enter(event_data):
     else:
         pocs.observatory.mount.unpark()
 
-        if pocs.observatory.take_flat_fields:
+        # This will check the config settings and current time to
+        # determine if we should take flats.
+        if pocs.observatory.should_take_flats(which='evening'):
             pocs.next_state = 'calibrating'
         else:
             pocs.next_state = 'scheduling'

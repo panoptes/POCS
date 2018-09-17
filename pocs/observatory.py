@@ -65,18 +65,19 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self.take_flat_fields = kwargs.get('take_flat_fields', True)
-
         self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
+
 ##########################################################################
-# Properties
+# Helper Methods
 ##########################################################################
 
-    def is_dark(self, horizon='astro'):
+    def is_dark(self, horizon='observe', at_time=None):
+        if at_time is None:
+            at_time = current_time()
 
         try:
             horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
@@ -84,15 +85,87 @@ class Observatory(PanBase):
             self.logger.info("Can't find twilight_horizon, using -18°")
             horizon_deg = -18 * u.degree
 
-        t0 = current_time()
-        is_dark = self.observer.is_night(t0, horizon=horizon_deg)
+        is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
-            sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
+            sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
             self.logger.debug("Sun {:.02f} > {} [{}]".format(
                 sun_pos, horizon, horizon_deg))
 
         return is_dark
+
+    def is_morning(self, at_time=None):
+        """Small convenience method to determine if morning at time.
+
+        Args:
+            at_time (`astropy.time.Time`, optional): Time, default now.
+
+        Returns:
+            bool: If sun is in range Alt=(0°, 180°) and Az=(0°, -18°)
+        """
+        alt_limits = (0, -18)
+        az_limits = (0, 180)  # Could be smarter
+        return self.is_sun_between(alt_limits, az_limits, at_time=at_time)
+
+    def is_evening(self, at_time=None):
+        """Small convenience method to determine if evening at time.
+
+        Args:
+            at_time (`astropy.time.Time`, optional): Time, default now.
+
+        Returns:
+            bool: If sun is in range Alt=(180°, 360°) and Az=(0°, -18°)
+        """
+        alt_limits = (0, -18)
+        az_limits = (180, 360)  # Could be smarter
+        return self.is_sun_between(alt_limits, az_limits, at_time=at_time)
+
+    def is_sun_between(self, alt_limits, az_limits, at_time=None):
+        """Small convenience method to determine if sun is within certain position.
+
+        This is mostly used to determine if it is currently evening or morning
+        twilight.
+
+        Example:
+
+            alt_limits = (0, -18) # Twilight
+            az_limits = (0, 180) # Morning
+
+            if self.is_sun_between(alt_limits, az_limits):
+                self.take_flats(which='morning')
+
+        Args:
+            alt_limits (tuple(float, float)): Upper and lower limits for the altitude.
+            az_limits (tuple(float, float)): Upper and lower limits for the azimuth.
+            at_time (`astropy.time.Time`, optional): Time, default now.
+
+        Returns:
+            bool: If sun is between limits.
+        """
+        assert len(alt_limits) == 2
+        assert len(az_limits) == 2
+
+        in_range = False
+
+        # Get the current time to determine if evening
+        if at_time is None:
+            at_time = current_time()
+
+        sun_pos = self.observer.sun_altaz(at_time)
+        sun_alt = sun_pos.alt.value
+        sun_az = sun_pos.az.value
+
+        # First check altitude
+        if sun_alt < alt_limits[0] and sun_alt > alt_limits[1]:
+            # Then check azimuth
+            if sun_az >= az_limits[0] and sun_az <= az_limits[1]:
+                in_range = True
+
+        return in_range
+
+##########################################################################
+# Properties
+##########################################################################
 
     @property
     def sidereal_time(self):
@@ -187,7 +260,7 @@ class Observatory(PanBase):
         """Gets the next observation from the scheduler
 
         Returns:
-            observation (pocs.scheduler.observation.Observation or None): An
+            observation(pocs.scheduler.observation.Observation or None): An
                 an object that represents the obervation to be made
 
         Raises:
@@ -374,7 +447,7 @@ class Observatory(PanBase):
         """Get a set of standard headers
 
         Args:
-            observation (`~pocs.scheduler.observation.Observation`, optional): The
+            observation(`~pocs.scheduler.observation.Observation`, optional): The
                 observation to use for header values. If None is given, use
                 the `current_observation`.
 
@@ -428,12 +501,12 @@ class Observatory(PanBase):
         just fine tune focus.
 
         Args:
-            camera_list (list, optional): list containing names of cameras to autofocus.
-            coarse (bool, optional): Whether to performan a coarse autofocus before
+            camera_list(list, optional): list containing names of cameras to autofocus.
+            coarse(bool, optional): Whether to performan a coarse autofocus before
             fine tuning, default False.
 
         Returns:
-            dict of str:threading_Event key:value pairs, containing camera names and
+            dict of str: threading_Event key: value pairs, containing camera names and
                 corresponding Events which will be set when the camera completes autofocus.
         """
         if camera_list:
@@ -479,7 +552,7 @@ class Observatory(PanBase):
         """Open the dome, if there is one.
 
         Returns: False if there is a problem opening the dome,
-                 else True if open (or if not exists).
+                 else True if open(or if not exists).
         """
         if not self.dome:
             return True
@@ -493,7 +566,7 @@ class Observatory(PanBase):
         """Close the dome, if there is one.
 
         Returns: False if there is a problem closing the dome,
-                 else True if closed (or if not exists).
+                 else True if closed(or if not exists).
         """
         if not self.dome:
             return True
@@ -503,23 +576,56 @@ class Observatory(PanBase):
             self.logger.info('Closed dome')
         return self.dome.close()
 
+    def should_take_flats(self, at_time=None, which=None):
+        """Determine if flats should be taken for given time.
+
+        Args:
+            at_time(`astropy.time.Time`, optional): The time at which to
+                check if flats are valid, defaults to now.
+            which(str, optional): Only check for 'evening' or 'morning',
+                default None will search both.
+
+        Returns:
+            bool: If flats should be taken.
+        """
+        take_flats = False  # Assume not
+
+        # Get the current time to determine if evening or morning
+        if at_time is None:
+            at_time = current_time()
+
+        # Check the config for flats
+        flat_field_config = self.config['flat_field']
+
+        if which is 'evening' or which is None:
+            is_evening = self.is_evening(at_time=at_time)
+            if is_evening and flat_field_config['take_evening_flats']:
+                take_flats = True
+
+        if which is 'morning' or which is None:
+            is_morning = self.is_morning(at_time=at_time)
+            if is_morning and flat_field_config['take_morning_flats']:
+                take_flats = True
+
+        return take_flats
+
     def take_evening_flats(self,
                            alt=None,
                            az=None,
                            min_counts=1000,
                            max_counts=12000,
-                           bias=2048,
+                           target_adu_percentage=0.5,
                            initial_exptime=3.,
                            max_exptime=60.,
                            camera_list=None,
-                           target_adu_percentage=0.5,
+                           bias=2048,
                            max_num_exposures=10,
                            take_darks=False,
                            *args, **kwargs
                            ):
         """Take flat fields.
 
-        This method will slew the mount to the given AltAz coordinates (which
+        This method will slew the mount to the given AltAz coordinates(which
         should be roughly opposite of the setting sun) and then begin the flat-field
         procedure. The first image starts with a simple 1 second exposure and
         after each image is taken the average counts are anazlyzed and the exposure
@@ -527,38 +633,36 @@ class Observatory(PanBase):
         of the `(max_counts + min_counts) - bias`.
 
         The next exposure time is calculated as:
+            ```
+                exp_time = int(previous_exp_time * (target_adu / counts) *
+                           (2.0 ** (elapsed_time / 180.0)) + 0.5)
+            ```
 
-        ```
-            exp_time = int(previous_exp_time * (target_adu / counts) *
-                       (2.0 ** (elapsed_time / 180.0)) + 0.5)
-        ```
+            Under - and over-exposed images are rejected. If image is saturated with
+            a short exposure the method will wait 60 seconds before beginning next
+            exposure.
 
-        Under- and over-exposed images are rejected. If image is saturated with
-        a short exposure the method will wait 60 seconds before beginning next
-        exposure.
-
-        Optionally, the method can also take dark exposures of equal exposure
-        time to each flat-field image.
-
+            Optionally, the method can also take dark exposures of equal exposure
+            time to each flat-field image.
 
         Args:
-            alt (float, optional): Altitude for flats
-            az (float, optional): Azimuth for flats
-            min_counts (int, optional): Minimum ADU count
-            max_counts (int, optional): Maximum ADU count
-            bias (int, optional): Default bias for the cameras
-            initial_exptime (float, optional): Start the flat fields with this exposure
-                time, default 1 second
-            max_exptime (float, optional): Maximum exposure time before stopping
-            camera_list (list, optional): List of cameras to use for flat-fielding
-            target_adu_percentage (float, optional): Exposure time will be adjust so
+            alt(float, optional): Altitude for flats
+            az(float, optional): Azimuth for flats
+            min_counts(int, optional): Minimum ADU count
+            max_counts(int, optional): Maximum ADU count
+            target_adu_percentage(float, optional): Exposure time will be adjust so
                 that counts are close to: target * (`min_counts` + `max_counts`). Default
                 to 0.5
-            max_num_exposures (int, optional): Maximum number of flats to take
-            take_darks (bool, optional): If dark fields matching flat fields should be
+            initial_exptime(float, optional): Start the flat fields with this exposure
+                time, default 1 second
+            max_exptime(float, optional): Maximum exposure time before stopping
+            camera_list(list, optional): List of cameras to use for flat-fielding
+            bias(int, optional): Default bias for the cameras
+            max_num_exposures(int, optional): Maximum number of flats to take
+            take_darks(bool, optional): If dark fields matching flat fields should be
                 taken, default False.
-            *args (TYPE): Description
-            **kwargs (TYPE): Description
+            *args(TYPE): Description
+            **kwargs(TYPE): Description
         """
         target_adu = target_adu_percentage * (min_counts + max_counts)
 
@@ -812,7 +916,7 @@ class Observatory(PanBase):
         This method ensures that the proper mount type is loaded.
 
         Args:
-            mount_info (dict):  Configuration items for the mount.
+            mount_info(dict):  Configuration items for the mount.
 
         Returns:
             pocs.mount:     Returns a sub-class of the mount type
@@ -872,7 +976,7 @@ class Observatory(PanBase):
             call the 'camear.connect()' explicitly.
 
         Args:
-            **kwargs (dict): Can pass a camera_config object that overrides the info in
+            **kwargs(dict): Can pass a camera_config object that overrides the info in
                 the configuration file. Can also pass `auto_detect`(bool) to try and
                 automatically discover the ports.
 
@@ -1032,21 +1136,50 @@ class Observatory(PanBase):
             raise error.NotFound(
                 msg="Fields file does not exist: {}".format(fields_file))
 
-    def _create_flat_field_observation(self, alt=None, az=None, initial_exptime=1):
+    def _create_flat_field_observation(self,
+                                       which='evening',
+                                       alt=None,
+                                       az=None,
+                                       flat_time=None,
+                                       initial_exptime=5):
+        """Small convenince wrapper.
+
+        Args:
+            which(str, optional): Which flat field to take, 'evening' or
+                'morning'. Will look up flat-field information from config file.
+                If `alt` and `az` are specified than the config entry is ignored.
+            alt(float, optional): Altitude desired, in degrees.
+            az(float, optional): Azimuth desired, in degrees.
+            flat_time(`astropy.time.Time`, optional): The time at which the flats
+                will be taken, default `now`.
+            initial_exptime(int, optional): Initial exptime in seconds, default 5
+
+        Returns:
+            `pocs.scheduler.Observation`: Information about the flat-field.
+        """
+        self.logger.debug("Creating flat-field observation")
+
         # Get an Alt and Az from the config
         if alt is None and az is None:
-            flat_config = self.config['flat_field']['twilight']
+            flat_config = self.config['flat_field'][which]
             alt = flat_config['alt']
             az = flat_config['az']
 
+        if flat_time is None:
+            flat_time = current_time()
+
         # Construct RA/Dec coords from the Alt Az
         flat_coords = utils.altaz_to_radec(
-            alt=alt, az=az, location=self.earth_location, obstime=current_time())
+            alt=alt,
+            az=az,
+            location=self.earth_location,
+            obstime=flat_time)
 
-        self.logger.debug("Creating flat-field observation")
         field = Field('Evening Flats', flat_coords.to_string('hmsdms'))
         flat_obs = Observation(field, exp_time=initial_exptime * u.second)
-        flat_obs.seq_time = utils.current_time(flatten=True)
+
+        # Note different 'flat' concepts
+        flat_obs.seq_time = utils.flatten_time(flat_time)
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
 

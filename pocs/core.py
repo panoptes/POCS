@@ -438,7 +438,7 @@ class POCS(PanStateMachine, PanBase):
         if delay > 0.0:
             time.sleep(delay)
 
-    def wait_until_dark(self, horizon='astro'):
+    def wait_until_dark(self, horizon='observe'):
         """ Waits until sun is below the given horizon.
 
         This will wait until a True value is returned from the safety check,
