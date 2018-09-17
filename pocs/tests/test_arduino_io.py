@@ -3,12 +3,9 @@
 import collections
 import datetime
 import pytest
-import queue as queue_module
 import serial
-import time
 
 from pocs.sensors import arduino_io
-from pocs.utils.database import AbstractPanDB
 import pocs.utils.error as error
 from pocs.utils.logger import get_root_logger
 from pocs.utils import rs232

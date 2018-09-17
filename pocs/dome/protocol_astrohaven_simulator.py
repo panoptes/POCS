@@ -1,7 +1,6 @@
 import datetime
 import queue
 from serial import serialutil
-import sys
 import threading
 import time
 
@@ -38,8 +37,6 @@ class Shutter(object):
         self.max_position = max(CLOSED_POSITION, OPEN_POSITION)
 
     def handle_input(self, input_char):
-        ts = datetime.datetime.now()
-        msg = ts.strftime('%M:%S.%f')
         if input_char in self.open_commands:
             if self.is_open:
                 return (False, self.is_open_char)

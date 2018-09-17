@@ -320,6 +320,7 @@ class Mount(AbstractMount):
             response_obj = {
                 "response": response,
                 "success": False,
+                "error": e,
             }
 
         return response_obj

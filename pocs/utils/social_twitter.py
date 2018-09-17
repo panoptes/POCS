@@ -32,16 +32,19 @@ class SocialTwitter(object):
             auth.set_access_token(access_token, access_token_secret)
 
             self.api = tweepy.API(auth)
-        except tweepy.TweepError as e:
+        except tweepy.TweepError:
             msg = 'Error authenicating with Twitter. Please check your Twitter configuration.'
             self.logger.warning(msg)
             raise ValueError(msg)
 
     def send_message(self, msg, timestamp):
         try:
+            # update_status returns a tweepy Status instance, but we
+            # drop it on the floor because we don't have anything we
+            # can do with it.
             if self.output_timestamp:
-                retStatus = self.api.update_status('{} - {}'.format(msg, timestamp))
+                self.api.update_status('{} - {}'.format(msg, timestamp))
             else:
-                retStatus = self.api.update_status(msg)
-        except tweepy.TweepError as e:
+                self.api.update_status(msg)
+        except tweepy.TweepError:
             self.logger.debug('Error tweeting message. Please check your Twitter configuration.')
