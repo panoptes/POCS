@@ -121,21 +121,6 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
-
-                # If sleeping, wait until safe (or interrupt)
-                if self.state == 'sleeping':
-                    if self.observatory.is_dark(horizon='flat') is False:
-                        self.logger.warning("Waiting until flat twilight")
-                        self.wait_until_dark(horizon='flat')
-                elif self.state == 'calibrating':
-                    if self.observatory.is_dark(horizon='observe') is False:
-                        # Send the mount to home to wait
-                        self.logger.warning("Sending mount to home")
-                        self.observatory.mount.slew_to_home()
-
-                        self.logger.warning("Waiting until observing twilight")
-                        self.wait_until_dark(horizon='observe')
-
                 try:
                     state_changed = self.goto_next_state()
                 except Exception as e:

@@ -439,12 +439,21 @@ class POCS(PanStateMachine, PanBase):
             time.sleep(delay)
 
     def wait_until_dark(self, horizon='observe'):
-        """ Waits until sun is below the given horizon.
+        """Waits until sun is below the given horizon.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
+
+        Args:
+            horizon (str, optional): Which horizon to check, either
+                'observe' or 'flat', default 'observe'.
         """
         while not self.observatory.is_dark(horizon=horizon):
+            if self.observatory.mount.is_home is False:
+                # Send the mount to home to wait
+                self.logger.warning("Sending mount to home to wait for dark")
+                self.observatory.mount.slew_to_home()
+
             self.logger.warning("Still waiting until evening")
             self.sleep(delay=self._safe_delay)
 

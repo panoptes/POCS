@@ -10,23 +10,16 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     try:
-
         pocs.say("Let's take some flat fields!")
-
-        flat_horizon = pocs.config['location']['flat_horizon'].value
-        observe_horizon = pocs.config['location']['observe_horizon'].value
-
-        # Wait for twilight if needed
-        sun_pos = pocs.observatory.observer.sun_altaz(current_time()).alt.value
+        pocs.next_state = 'scheduling'
 
         # Take the flats
-        if sun_pos <= flat_horizon and sun_pos > observe_horizon:
+        if pocs.observatory.should_take_flats(which='evening'):
             pocs.say("Taking some flat fields to start the night")
             pocs.observatory.take_evening_flats(initial_exptime=5)
-        elif sun_pos <= observe_horizon:
-            pocs.say("Sun is below {} - end of calibration".format(observe_horizon))
-
-        pocs.next_state = 'scheduling'
+        else:
+            pocs.say("Checking if it's dark enough to observe")
+            pocs.wait_until_dark(horizon='observe')
 
     except Exception as e:
         pocs.logger.warning("Problem with flat-fielding: {}".format(e))
