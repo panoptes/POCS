@@ -100,8 +100,11 @@ class PanStorage(object):
 
         return remote_path
 
-    def get_file(self, blob_name):
-        """Returns an individual blob.
+    def get_file_blob(self, blob_name):
+        """Returns an individual blob (meta info about file).
+
+        Note:
+            See `get_file_blobs` for examples.
 
         Args:
             blob_name (str): Full name of Blob to be fetched.
@@ -111,8 +114,8 @@ class PanStorage(object):
         """
         return self.bucket.get_blob(blob_name)
 
-    def get_files(self, prefix, filter_ext=None, include_pointing=False):
-        """Returns the list of Storage blobs (files) matching the prefix.
+    def get_file_blobs(self, prefix, filter_ext=None, include_pointing=False):
+        """Get storage blobs (meta info about files) matching the prefix.
 
         Note:
             The prefix can be any pattern, e.g:
@@ -158,7 +161,7 @@ class PanStorage(object):
         """
         # Get blob object if just a path
         if isinstance(remote_path, str):
-            remote_path = self.get_file(remote_path)
+            remote_path = self.get_file_blob(remote_path)
 
         output_path = os.path.join(
             save_dir,
