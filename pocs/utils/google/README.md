@@ -1,3 +1,5 @@
+# PANOPTES Google Network
+
 PANOPTES uses various google technologies in order to effectively
 create a network of automated observatories. This includes basic 
 image storage on google servers (called storage _buckets_) as well

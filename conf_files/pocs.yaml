@@ -65,6 +65,7 @@ messaging:
 ########################################
 panoptes_network:
     image_storage: True
+    metadata_storage: True
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
