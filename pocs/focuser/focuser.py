@@ -1,6 +1,9 @@
 import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+
 from astropy.modeling import models, fitting
 from scipy.ndimage import binary_dilation
 
@@ -407,7 +410,11 @@ class AbstractFocuser(PanBase):
             thumbnail = focus_utils.mask_saturated(thumbnail)
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
-            fig = plt.figure(figsize=(9, 18), tight_layout=True)
+
+            fig = Figure()
+            FigureCanvas(fig)
+            fig.set_size_inches(9, 18)
+
             ax1 = fig.add_subplot(3, 1, 1)
             im1 = ax1.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
             fig.colorbar(im1)
@@ -543,6 +550,7 @@ class AbstractFocuser(PanBase):
             else:
                 plot_path = file_path_root + '_fine.png'
 
+            fig.tight_layout()
             fig.savefig(plot_path)
             plt.close(fig)
             if coarse:
