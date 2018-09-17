@@ -46,6 +46,6 @@ The [instructions by google](https://cloud.google.com/sdk/gcloud/reference/auth/
 
 ```bash
 gcloud auth activate-service-account \
-	--project panotpes-survey \
+	--project panoptes-survey \
 	--key-file $PANDIR/.keys/panoptes-survey-pan001.json
 ```
