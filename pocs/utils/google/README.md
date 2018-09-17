@@ -38,7 +38,7 @@ mkdir -p .keys
 mv <LOCATION_OF_DOWNLOADED_KEY_FILE>/panoptes-survey-pan001.json $PANDIR/.keys/
 ```
 
-## Authenticating on PANOPTES' Google network
+## Authenticating on PANOPTES Google network
 
 Once you have your service account key you can authenticate (log in) to the PANOPTES network once and never worry about it again!
 
