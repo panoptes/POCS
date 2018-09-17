@@ -19,7 +19,7 @@ def auth_key():
     local_config = load_config('pocs_local', ignore_local=True)
     auth_key = os.path.join(
         os.environ['PANDIR'],
-        '.key',
+        '.keys',
         local_config['panoptes_network']['auth_key']
     )
 
