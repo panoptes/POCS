@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-####################################
+########################################################################
 # connect_clouddb_proxy.py
 #
-# This is a simple wrapper that looks up
-# the connection information in the config
-# and establishes a local proxy.
-#
-####################################
+# This is a simple wrapper that looks up the connection information in the
+# config and establishes a local proxy.
+########################################################################
 
 
 import os
@@ -20,11 +18,13 @@ from pocs.utils.config import load_config
 
 def main(instance_id, local_port, verbose=False):
     proxy_cmd = os.path.join(os.environ['POCS'], 'bin', 'cloud_sql_proxy')
-    connection_str = '-instances={}=tcp:{}'.format(instance_id, local_port)
+
+    connection_str = '{}=tcp:{}'.format(instance_id, local_port)
+    instances_arg = '-instances={}'.format(connection_str)
 
     assert os.path.isfile(proxy_cmd)
 
-    run_proxy_cmd = [proxy_cmd, connection_str]
+    run_proxy_cmd = [proxy_cmd, instances_arg]
 
     stdout_handler = subprocess.PIPE
     if verbose:
