@@ -18,7 +18,7 @@ def get_db_proxy_conn(
 
     Note:
         The proxy must be started and authenticated to the appropriate instance
-        before this function will work.
+        before this function will work. See `$POCS/scripts/connect_clouddb_proxy.py`.
 
     Args:
         host (str, optional): Hostname, default localhost.
