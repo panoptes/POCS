@@ -11,6 +11,7 @@ from astropy import units as u
 
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
+from pocs.camera import libfliconstants as c
 from pocs.utils.images import fits as fits_utils
 
 # FLI camera serial numbers have pairs of letters followed by a sequence of numbers
@@ -50,8 +51,8 @@ class Camera(AbstractCamera):
                 # No cached device nodes scanning results. 1st get list of all FLI cameras
                 self.logger.debug('Getting serial numbers for all connected FLI cameras')
                 Camera._fli_nodes = {}
-                device_list = self._FLIDriver.FLIList(interface_type=libfli.FLIDOMAIN_USB,
-                                                      device_type=libfli.FLIDEVICE_CAMERA)
+                device_list = self._FLIDriver.FLIList(interface_type=c.FLIDOMAIN_USB,
+                                                      device_type=c.FLIDEVICE_CAMERA)
                 if not device_list:
                     message = 'No FLI camera devices found!'
                     self.logger.error(message)
@@ -172,7 +173,7 @@ class Camera(AbstractCamera):
 
         # Get handle from the SBIGDriver.
         self._handle = self._FLIDriver.FLIOpen(port=self.port)
-        if self._handle == libfli.FLI_INVALID_DEVICE:
+        if self._handle == c.FLI_INVALID_DEVICE:
             message = 'Could not connect to {} on {}!'.format(self.name, self.port)
             self.logger.error(message)
             warn(message)
@@ -225,9 +226,9 @@ class Camera(AbstractCamera):
         self._FLIDriver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
         if dark:
-            frame_type = libfli.FLI_FRAME_TYPE_DARK
+            frame_type = c.FLI_FRAME_TYPE_DARK
         else:
-            frame_type = libfli.FLI_FRAME_TYPE_NORMAL
+            frame_type = c.FLI_FRAME_TYPE_NORMAL
         self._FLIDriver.FLISetFrameType(self._handle, frame_type)
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
