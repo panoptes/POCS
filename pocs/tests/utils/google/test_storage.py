@@ -1,15 +1,20 @@
 import pytest
 import os
-import re
 import shutil
 
 from pocs.utils.error import GoogleCloudError
+from pocs.utils.google import is_authenticated
 from pocs.utils.google.storage import PanStorage, upload_observation_to_bucket
 
 
 pytestmark = pytest.mark.skipif(
     not pytest.config.option.test_cloud_storage,
-    reason="Needs --test-cloud-storage to run"
+    reason="Needs --test-cloud-storage to run."
+)
+
+pytestmark = pytest.mark.skipif(
+    not is_authenticated(),
+    reason="Not authenticated on Google network."
 )
 
 
