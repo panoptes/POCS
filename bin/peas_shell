@@ -120,7 +120,7 @@ class PanSensorShell(cmd.Cmd):
             try:
                 log = getattr(self, sensor).logger
                 log.setLevel(get_level[log.getEffectiveLevel()])
-            except Exception as e:
+            except Exception:
                 print_error("Can't change log level for {}".format(sensor))
 
     def do_display_config(self, config):
@@ -354,7 +354,7 @@ class PanSensorShell(cmd.Cmd):
             sensor = getattr(self, sensor_name)
             try:
                 sensor.capture(store_result=True, send_message=True)
-            except Exception as e:
+            except Exception:
                 pass
 
             self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
