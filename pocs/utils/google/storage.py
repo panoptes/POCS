@@ -45,7 +45,12 @@ class PanStorage(object):
         self.logger = get_root_logger()
         super(PanStorage, self).__init__()
 
-        self.unit_id = load_config()['pan_id']
+        try:
+            self.unit_id = load_config()['pan_id']
+        except KeyError:
+            raise error.GoogleCloudError("Missing pan_id in config "
+                                         "Cannot connect to Google services.")
+
         assert re.match(r'PAN\d\d\d', self.unit_id) is not None
 
         self.project_id = project_id
@@ -56,8 +61,8 @@ class PanStorage(object):
             self.bucket = self.client.get_bucket(bucket_name)
         except exceptions.Forbidden:
             raise error.GoogleCloudError(
-                "Storage bucket does not exist or no permissions."
-                "Ensure that the auth_key has valid permissions to the bucket."
+                "Storage bucket does not exist or no permissions. "
+                "Ensure that the auth_key has valid permissions to the bucket. "
                 "or that you have executed 'gcloud auth'"
             )
 
