@@ -32,9 +32,9 @@ class PanMessaging(object):
     an instance of PanMessaging, on which they can then call
     receive_message.
 
-    Messages are sent to channels, a name that can be used to allow
-    a high-level partitioning of messages. A channel name may not
-    include whitespace. Among the currently used channel names are:
+    Messages are sent to topics, a name that can be used to allow
+    a high-level partitioning of messages. A topic name may not
+    include whitespace. Among the currently used topic names are:
 
       * PANCHAT (sent from POCS.say)
       * PAWS-CMD (sent from PAWS websockets.py)
@@ -46,24 +46,19 @@ class PanMessaging(object):
       * telemetry:commands (in ArduinoIO... new)
       * camera:commands (in ArduinoIO... new)
 
-    And some other channels are used in tests:
+    And some other topics are used in tests:
 
-      * TEST-CHANNEL (test_messaging.py)
+      * Test-Topic (test_messaging.py)
       * RUNNING (test_pocs.py)
       * POCS-CMD (test_pocs.py)
 
-    The method receive_message will return messages from all channels;
-    the caller must check the returned channel name to determine if
+    The method receive_message will return messages from all topics;
+    the caller must check the returned topic name to determine if
     the message value is of interest.
 
     Note: PAWS doesn't use PanMessaging, which will likely result in
-    problems as we evolve PanMessaging and the set of channels.
+    problems as we evolve PanMessaging and the set of topics.
     TODO: Figure out how to share PanMessaging with PAWS.
-
-    Note: there is some inconsistency in the code. Senders refer to
-    the channel of a message, but receivers refer to messages as having
-    a msg_type.
-    TODO: Make this more consistent.
 
     The value of a message being sent may be a string (in which case it
     is wrapped in a dict(message=<value>, timestamp=<now>) or a dict,
@@ -77,14 +72,14 @@ class PanMessaging(object):
 
     ZeroMQ is used to provide the underlying pub-sub support. ZeroMQ
     supports only a very basic message format: an array of bytes.
-    PanMessaging converts the provided message channel and value into
+    PanMessaging converts the provided message topic and value into
     a byte array of this format:
-        <channel-name><space><serialized-value>
+        <topic-name><space><serialized-value>
     """
     logger = get_root_logger()
 
-    # Channel names must consist of the characters.
-    name_re = re.compile('[a-zA-Z][-a-zA-Z0-9_.:]*')
+    # Topic names must consist of the characters.
+    topic_name_re = re.compile('[a-zA-Z][-a-zA-Z0-9_.:]*')
 
     def __init__(self, **kwargs):
         """Do not call this directly."""
@@ -146,16 +141,16 @@ class PanMessaging(object):
         return obj
 
     @classmethod
-    def create_subscriber(cls, port, channel='', bind=False, connect=True):
+    def create_subscriber(cls, port, topic='', bind=False, connect=True):
         """ Create a listener
 
         Args:
             port (int):         The port (on localhost) to bind to.
-            channel (str):      Which topic channel to subscribe to.
+            topic (str):      Which topic or topic prefix to subscribe to.
 
         """
         obj = cls()
-        obj.logger.debug("Creating subscriber. Port: {} \tChannel: {}".format(port, channel))
+        obj.logger.debug("Creating subscriber. Port: {} \tTopic: {}".format(port, topic))
 
         socket = obj.context.socket(zmq.SUB)
 
@@ -167,24 +162,24 @@ class PanMessaging(object):
         elif connect:
             socket.connect('tcp://localhost:{}'.format(port))
 
-        socket.setsockopt_string(zmq.SUBSCRIBE, channel)
+        socket.setsockopt_string(zmq.SUBSCRIBE, topic)
 
         obj.socket = socket
 
         return obj
 
-    def send_message(self, channel, message):
-        """ Responsible for actually sending message across a channel
+    def send_message(self, topic, message):
+        """ Responsible for actually sending message across a topic
 
         Args:
-            channel(str):   Name of channel to send on. The name must
-                match name_re.
+            topic(str):   Name of topic to send on. The name must
+                match topic_name_re.
             message:   Message to be sent (a string or a dict).
         """
-        if not isinstance(channel, str):
-            raise ValueError('Channel name must be a string')
-        elif not self.name_re.fullmatch(channel):
-            raise ValueError('Channel name ("{}") is not valid'.format(channel))
+        if not isinstance(topic, str):
+            raise ValueError('Topic name must be a string')
+        elif not self.topic_name_re.fullmatch(topic):
+            raise ValueError('Topic name ("{}") is not valid'.format(topic))
 
         if isinstance(message, str):
             message = {
@@ -198,10 +193,10 @@ class PanMessaging(object):
 
         msg_object = dumps(message, skipkeys=True)
 
-        full_message = '{} {}'.format(channel, msg_object)
+        full_message = '{} {}'.format(topic, msg_object)
 
-        if channel == 'PANCHAT':
-            self.logger.info("{} {}".format(channel, message['message']))
+        if topic == 'PANCHAT':
+            self.logger.info("{} {}".format(topic, message['message']))
 
         # Send the message
         self.socket.send_string(full_message, flags=zmq.NOBLOCK)
@@ -216,9 +211,9 @@ class PanMessaging(object):
             flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
 
         Returns:
-            tuple(str, dict): Tuple containing the channel and a dict
+            tuple(str, dict): Tuple containing the topic and a dict
         """
-        msg_type = None
+        topic = None
         msg_obj = None
         if not blocking:
             flags = flags | zmq.NOBLOCK
@@ -227,13 +222,13 @@ class PanMessaging(object):
         except Exception:
             pass
         else:
-            msg_type, msg = message.split(' ', maxsplit=1)
+            topic, msg = message.split(' ', maxsplit=1)
             try:
                 msg_obj = loads(msg)
             except Exception:
                 msg_obj = yaml.load(msg)
 
-        return msg_type, msg_obj
+        return topic, msg_obj
 
     def close(self):
         """Close the socket """

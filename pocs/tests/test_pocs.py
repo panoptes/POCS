@@ -16,7 +16,7 @@ def wait_for_running(sub, max_duration=90):
     """Given a message subscriber, wait for a RUNNING message."""
     timeout = Timeout(max_duration)
     while not timeout.expired():
-        msg_type, msg_obj = sub.receive_message()
+        topic, msg_obj = sub.receive_message()
         if msg_obj and 'RUNNING' == msg_obj.get('message'):
             return True
     return False
@@ -26,8 +26,8 @@ def wait_for_state(sub, state, max_duration=90):
     """Given a message subscriber, wait for the specified state."""
     timeout = Timeout(max_duration)
     while not timeout.expired():
-        msg_type, msg_obj = sub.receive_message()
-        if msg_type == 'STATUS' and msg_obj and msg_obj.get('state') == state:
+        topic, msg_obj = sub.receive_message()
+        if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:
             return True
     return False
 
@@ -216,16 +216,16 @@ def wait_for_message(sub, type=None, attr=None, value=None):
     """Wait for a message of the specified type and contents."""
     assert (attr is None) == (value is None)
     while True:
-        msg_type, msg_obj = sub.receive_message()
+        topic, msg_obj = sub.receive_message()
         if not msg_obj:
             continue
-        if type and msg_type != type:
+        if type and topic != type:
             continue
         if not attr or attr not in msg_obj:
             continue
         if value and msg_obj[attr] != value:
             continue
-        return msg_type, msg_obj
+        return topic, msg_obj
 
 
 def test_run_wait_until_evening(observatory):

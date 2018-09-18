@@ -604,11 +604,11 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def send_message(self, msg, channel='weather'):
+    def send_message(self, msg, topic='weather'):
         if self.messaging is None:
             self.messaging = PanMessaging.create_publisher(6510)
 
-        self.messaging.send_message(channel, msg)
+        self.messaging.send_message(topic, msg)
 
     def capture(self, store_result=False, send_message=False, **kwargs):
         """ Query the CloudWatcher """
@@ -660,7 +660,7 @@ class AAGCloudSensor(object):
         self.calculate_and_set_PWM()
 
         if send_message:
-            self.send_message({'data': data}, channel='weather')
+            self.send_message({'data': data}, topic='weather')
 
         if store_result:
             self.db.insert_current('weather', data)
