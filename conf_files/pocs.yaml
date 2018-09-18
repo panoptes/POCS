@@ -20,8 +20,6 @@ directories:
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-panoptes_network:
-    image_storage: True
 db: 
     name: panoptes
     type: mongo
@@ -65,6 +63,7 @@ messaging:
 ############################################################################
 panoptes_network:
     image_storage: True
+    metadata_storage: True
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
