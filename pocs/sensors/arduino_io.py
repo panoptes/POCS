@@ -121,7 +121,7 @@ class ArduinoIO(object):
             board:
                 The name of the board, used as the name of the database
                 table/collection to write to, and the name of the messaging
-                channels for readings or relay commands.
+                topics for readings or relay commands.
             serial_data:
                 A SerialData instance connected to the board.
             db:
@@ -141,7 +141,7 @@ class ArduinoIO(object):
         self._logger = get_root_logger()
         self._last_reading = None
         self._report_next_reading = True
-        self._cmd_channel = "{}:commands".format(board)
+        self._cmd_topic = "{}:commands".format(board)
         self._keep_running = True
 
     def run(self):
@@ -160,7 +160,7 @@ class ArduinoIO(object):
         """Try to get the next reading and, if successful, record it.
 
         Write the reading to the appropriate PanDB collections and
-        to the appropriate message channel.
+        to the appropriate message topic.
 
         If there is an interruption in success in reading from the device,
         we announce (log) the start and end of that situation.
@@ -251,10 +251,10 @@ class ArduinoIO(object):
         """
         timeout_obj = serialutil.Timeout(1.0)
         while not timeout_obj.expired():
-            msg_type, msg_obj = self._sub.receive_message(blocking=False)
-            if msg_type is None or msg_obj is None:
+            topic, msg_obj = self._sub.receive_message(blocking=False)
+            if topic is None or msg_obj is None:
                 break
-            if msg_type.lower() == self._cmd_channel:
+            if topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:

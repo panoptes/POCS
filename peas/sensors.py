@@ -73,11 +73,11 @@ class ArduinoSerialMonitor(object):
             reader = reader_info['reader']
             reader.stop()
 
-    def send_message(self, msg, channel='environment'):
+    def send_message(self, msg, topic='environment'):
         if self.messaging is None:
             self.messaging = PanMessaging.create_publisher(6510)
 
-        self.messaging.send_message(channel, msg)
+        self.messaging.send_message(topic, msg)
 
     def capture(self, store_result=True, send_message=True):
         """
@@ -114,7 +114,7 @@ class ArduinoSerialMonitor(object):
                 data['date'] = time_stamp
                 sensor_data[sensor_name] = data
                 if send_message:
-                    self.send_message({'data': data}, channel='environment')
+                    self.send_message({'data': data}, topic='environment')
             except Exception as e:
                 self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
 
