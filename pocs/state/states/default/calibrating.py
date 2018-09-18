@@ -14,7 +14,8 @@ def on_enter(event_data):
         pocs.next_state = 'scheduling'
 
         # Take the flats
-        if pocs.observatory.should_take_flats(which='evening'):
+        if (pocs.observatory.should_take_flats(which='evening') and
+                pocs.observatory.is_dark(horizon='flat') is False):
             pocs.say("Taking some flat fields to start the night")
             pocs.observatory.take_evening_flats(initial_exptime=5)
         else:

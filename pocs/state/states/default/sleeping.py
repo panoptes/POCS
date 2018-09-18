@@ -15,7 +15,7 @@ def on_enter(event_data):
         pocs.say("Another successful night!")
 
         # Wait until dark
-        if (pocs.observatory.should_take_flats() and
+        if (pocs.observatory.should_take_flats(which='evening') and
                 pocs.observatory.is_dark(horizon='flat') is False):
             pocs.logger.warning("Waiting until flat twilight")
             pocs.wait_until_dark(horizon='flat')

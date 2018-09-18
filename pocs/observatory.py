@@ -588,32 +588,31 @@ class Observatory(PanBase):
         Returns:
             bool: If flats should be taken.
         """
+        # TODO(wtgee) Cleanup all of this.
         take_flats = False  # Assume not
 
         # Get the current time to determine if evening or morning
         if at_time is None:
             at_time = current_time()
 
-        self.logger.debug("Checking we we should take flats at {}".format(at_time))
+        self.logger.debug("Checking if we should take flats at {}".format(at_time))
 
         # Check the config for flats
         flat_field_config = self.config['flat_field']
 
         if which is 'evening' or which is None:
             self.logger.debug("Checking for evening twilight")
-            is_evening = self.is_evening(at_time=at_time)
-            if is_evening and flat_field_config['take_evening_flats']:
+            if flat_field_config['take_evening_flats']:
                 take_flats = True
 
-            self.logger.debug("Evening flats: {}".format(take_flats))
+            self.logger.debug("Ok to take evening flats: {}".format(take_flats))
 
         if which is 'morning' or which is None:
             self.logger.debug("Checking for morning twilight")
-            is_morning = self.is_morning(at_time=at_time)
-            if is_morning and flat_field_config['take_morning_flats']:
+            if flat_field_config['take_morning_flats']:
                 take_flats = True
 
-            self.logger.debug("Morning flats: {}".format(take_flats))
+            self.logger.debug("Ok to take morning flats: {}".format(take_flats))
 
         return take_flats
 
