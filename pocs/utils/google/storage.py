@@ -24,20 +24,25 @@ from pocs.utils import error
 class PanStorage(object):
     """ Class for interacting with Google Cloud Platform """
 
-    def __init__(self, bucket_name, auth_key=None, project_id='panoptes-survey'):
+    def __init__(self, bucket_name, project_id='panoptes-survey'):
         """Create an object that can interact easily with storage buckets.
+
+        Note:
+            This assumes that you have authenticated to the Google Cloud network
+            using your provided auth_key.
+
+            See the README:
+
+            https://github.com/panoptes/POCS/tree/develop/pocs/utils/google
+
         Args:
             bucket_name (str): Name of bucket to use.
-            auth_key (str, optional): Path to valid json authorization token.
             project_id (str, optional): Project id hosting the bucket. Default 'panoptes-survey'
         Raises:
             error.GoogleCloudError: Error raised if valid connection cannot be formed for
                 given project, bucket, and authorization.
         """
         self.logger = get_root_logger()
-        assert auth_key is not None and os.path.exists(auth_key), self.logger.error(
-            "Cannot use google storage without a valid auth_key.")
-
         super(PanStorage, self).__init__()
 
         self.unit_id = load_config()['pan_id']
@@ -46,12 +51,8 @@ class PanStorage(object):
         self.project_id = project_id
         self.bucket_name = bucket_name
 
-        self.client = storage.Client.from_service_account_json(
-            auth_key,
-            project=self.project_id
-        )
-
         try:
+            self.client = storage.Client(project=self.project_id)
             self.bucket = self.client.get_bucket(bucket_name)
         except exceptions.Forbidden:
             raise error.GoogleCloudError(

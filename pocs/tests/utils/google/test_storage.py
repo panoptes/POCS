@@ -3,7 +3,6 @@ import os
 import re
 import shutil
 
-from pocs.utils.config import load_config
 from pocs.utils.error import GoogleCloudError
 from pocs.utils.google.storage import PanStorage, upload_observation_to_bucket
 
@@ -14,40 +13,17 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(scope="module")
-def auth_key():
-    local_config = load_config('pocs_local', ignore_local=True)
-    auth_key = os.path.join(
-        os.environ['PANDIR'],
-        '.keys',
-        local_config['panoptes_network']['auth_key']
-    )
-
-    return auth_key
-
-
-def test_key_exists(auth_key):
-    assert os.path.exists(auth_key), "No API key file"
-
-
-def test_bad_bucket(auth_key):
+def test_bad_bucket():
     with pytest.raises(AssertionError):
         PanStorage('fake-bucket')
 
     with pytest.raises(GoogleCloudError):
-        PanStorage('fake-bucket', auth_key=auth_key)
+        PanStorage('fake-bucket')
 
 
 @pytest.fixture(scope="function")
-def storage(auth_key):
-    return PanStorage('panoptes-test-bucket', auth_key=auth_key)
-
-
-def test_unit_id(storage):
-    assert storage.unit_id is not None
-    # TODO(wtgee)Verify the unit id better after #384 is done.
-    assert re.match(r'PAN\d\d\d', storage.unit_id), storage.logger.error(
-        "Must have valid pan_id. Please change your conf_files/pocs_local.yaml")
+def storage():
+    return PanStorage('panoptes-test-bucket')
 
 
 def test_bucket_exists(storage):
