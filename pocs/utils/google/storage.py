@@ -146,14 +146,15 @@ class PanStorage(object):
 
         return sorted(objs, key=lambda x: x.name)
 
-    def download_file(self, remote_path, save_dir='.', force=False, callback=None):
+    def download_file(self, remote_path, save_dir='.', overwrite=False, callback=None):
         """Downloads (and uncompresses) the image blob data.
 
         Args:
             remote_path (str|`google.cloud.storage.blob.Blob`): Blob or path to remote blob.
                 If just the blob name is given then file will be downloaded.
             save_dir (str, optional): Path for saved file, defaults to current directory.
-            force (bool, optional): Force a download even if file exists locally, default False.
+            overwrite (bool, optional): Overwrite a download even if file exists locally,
+                default False.
             callback (callable, optional): A callable object that gets called at end of
                 function.
 
@@ -172,9 +173,9 @@ class PanStorage(object):
         # Make dir if needed
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # If we don't  have file (or force=True) then download directly to
+        # If we don't  have file (or overwrite=True) then download directly to
         # (compressed) FITS file.
-        if not os.path.exists(output_path) or force:
+        if not os.path.exists(output_path) or overwrite:
             with open(output_path, 'wb') as f:
                 remote_path.download_to_file(f)
 
