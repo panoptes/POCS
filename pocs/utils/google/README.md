@@ -34,7 +34,7 @@ Your service account key will be named something like `panoptes-survey-pan001.js
 You should place this key in a hidden directory within `$PANDIR`. 
 
 > :bulb: **Tip:** On Ubuntu (and on Mac OSX) a
-hidden directory can be specified by placing a period (`.`) at the beginninf of the name. When
+hidden directory can be specified by placing a period (`.`) at the beginning of the name. When
 looking for hidden files/directories you can use the `-a` (for 'all') flag in `ls`, i.e. `ls -a`
 
 ```bash
