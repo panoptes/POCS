@@ -159,9 +159,9 @@ class PanStorage(object):
                 function.
 
         Returns:
-            str: Path to local (uncompressed) FITS file
+            str: Path to local (uncompressed) FITS file.
         """
-        # Get blob object if just a path
+        # Get blob object if just a path.
         if isinstance(remote_path, str):
             remote_path = self.get_file_blob(remote_path)
 
@@ -196,7 +196,7 @@ class PanStorage(object):
 
         return output_path
 
-    def lookup_fits_header(self, remote_blob, parse_line=None):
+    def lookup_fits_header(self, remote_path, parse_line=None):
         """Read the FITS header from storage.
 
         FITS Header Units are stored in blocks of 2880 bytes consisting of 36 lines
@@ -209,16 +209,20 @@ class PanStorage(object):
         See https://fits.gsfc.nasa.gov/fits_primer.html for overview of FITS format.
 
         Args:
-            remote_blob (google.cloud.storage.blob.Blob): Blob object
-                corresponding to stored FITS file.
+            remote_path (str|`google.cloud.storage.blob.Blob`): Blob or path to remote blob.
+                If just the blob name is given then the blob is looked up first.
             parse_line (callable, optional): A callable function which will be
                 passed an 80 character string corresponding to each line in the header.
 
         Returns:
             dict: FITS header as a dictonary.
         """
+        # Get blob object if just a path.
+        if isinstance(remote_path, str):
+            remote_path = self.get_file_blob(remote_path)
+
         i = 1
-        if remote_blob.name.endswith('.fz'):
+        if remote_path.name.endswith('.fz'):
             i = 2  # We skip the compression header info
 
         headers = dict()
@@ -228,7 +232,7 @@ class PanStorage(object):
             # Get a header card
             start_byte = 2880 * (i - 1)
             end_byte = (2880 * i) - 1
-            b_string = remote_blob.download_as_string(start=start_byte, end=end_byte)
+            b_string = remote_path.download_as_string(start=start_byte, end=end_byte)
 
             # Loop over 80-char lines
             for j in range(0, len(b_string), 80):
@@ -290,6 +294,8 @@ def upload_observation_to_bucket(pan_id,
     Note:
         This requires that the command line utility `gsutil` be installed
         and that authentication has properly been set up.
+
+    TODO(wtgee): This could be merged into the PanStorage class.
 
     Args:
         pan_id (str): A string representing the unit id, e.g. PAN001.
