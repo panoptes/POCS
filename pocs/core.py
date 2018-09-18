@@ -167,38 +167,38 @@ class POCS(PanStateMachine, PanBase):
         except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get status: {}".format(e))
         else:
-            self.send_message(status, channel='STATUS')
+            self.send_message(status, topic='STATUS')
 
         return status
 
     def say(self, msg):
         """ PANOPTES Units like to talk!
 
-        Send a message. Message sent out through zmq has unit name as channel.
+        Send a message.
 
         Args:
-            msg(str): Message to be sent
+            msg(str): Message to be sent to topic PANCHAT.
         """
         if self.has_messaging is False:
             self.logger.info('Unit says: {}', msg)
-        self.send_message(msg, channel='PANCHAT')
+        self.send_message(msg, topic='PANCHAT')
 
-    def send_message(self, msg, channel='POCS'):
+    def send_message(self, msg, topic='POCS'):
         """ Send a message
 
         This will use the `self._msg_publisher` to send a message
 
         Note:
-            The `channel` and `msg` params are switched for convenience
+            The `topic` and `msg` params are switched for convenience
 
         Arguments:
             msg {str} -- Message to be sent
 
         Keyword Arguments:
-            channel {str} -- Channel to send message on (default: {'POCS'})
+            topic {str} -- Topic to send message on (default: {'POCS'})
         """
         if self.has_messaging:
-            self._msg_publisher.send_message(channel, msg)
+            self._msg_publisher.send_message(topic, msg)
 
     def check_messages(self):
         """ Check messages for the system
@@ -556,10 +556,10 @@ class POCS(PanStateMachine, PanBase):
                     if cmd_subscriber.socket in sockets and \
                             sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
-                        msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                        topic, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
                         # Put the message in a queue to be processed
-                        if msg_type == 'POCS-CMD':
+                        if topic == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
 
                     time.sleep(1)
