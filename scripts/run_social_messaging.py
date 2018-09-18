@@ -42,7 +42,7 @@ def check_social_messages_loop(msg_port, social_twitter, social_slack):
             if cmd_social_subscriber.socket in sockets and \
                     sockets[cmd_social_subscriber.socket] == zmq.POLLIN:
 
-                msg_type, msg_obj = cmd_social_subscriber.receive_message(flags=zmq.NOBLOCK)
+                topic, msg_obj = cmd_social_subscriber.receive_message(flags=zmq.NOBLOCK)
 
                 # Check the various social sinks
                 if social_twitter is not None:

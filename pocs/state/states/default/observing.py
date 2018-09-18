@@ -14,7 +14,7 @@ def on_enter(event_data):
 
     Frequently check for the exposures to complete, the observation to be
     interrupted, messages to be received. Periodically post to the STATUS
-    channel and to the debug log.
+    topic and to the debug log.
      """
     pocs = event_data.model
     pocs.say("I'm finding exoplanets!")

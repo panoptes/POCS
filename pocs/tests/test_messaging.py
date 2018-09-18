@@ -61,10 +61,10 @@ def pub_and_sub(forwarder):
 
 def test_send_string(pub_and_sub):
     pub, sub = pub_and_sub
-    pub.send_message('TEST-CHANNEL', 'Hello')
-    msg_type, msg_obj = sub.receive_message()
+    pub.send_message('Test-Topic', 'Hello')
+    topic, msg_obj = sub.receive_message()
 
-    assert msg_type == 'TEST-CHANNEL'
+    assert topic == 'Test-Topic'
     assert isinstance(msg_obj, dict)
     assert 'message' in msg_obj
     assert msg_obj['message'] == 'Hello'
@@ -72,16 +72,16 @@ def test_send_string(pub_and_sub):
 
 def test_send_datetime(pub_and_sub):
     pub, sub = pub_and_sub
-    pub.send_message('TEST-CHANNEL', {'date': datetime(2017, 1, 1)})
-    msg_type, msg_obj = sub.receive_message()
+    pub.send_message('Test-Topic', {'date': datetime(2017, 1, 1)})
+    topic, msg_obj = sub.receive_message()
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 
 
 def test_storage_id(pub_and_sub, config, db):
     id0 = db.insert_current('config', {'foo': 'bar'}, store_permanently=False)
     pub, sub = pub_and_sub
-    pub.send_message('TEST-CHANNEL', db.get_current('config'))
-    msg_type, msg_obj = sub.receive_message()
+    pub.send_message('Test-Topic', db.get_current('config'))
+    topic, msg_obj = sub.receive_message()
     assert '_id' in msg_obj
     assert isinstance(msg_obj['_id'], str)
     assert id0 == msg_obj['_id']
