@@ -146,7 +146,7 @@ class PanMessaging(object):
 
         Args:
             port (int):         The port (on localhost) to bind to.
-            topic (str):      Which topic topic to subscribe to.
+            topic (str):      Which topic or topic prefix to subscribe to.
 
         """
         obj = cls()
