@@ -21,8 +21,8 @@ class Mount(AbstractSerialMount):
         self.logger.info('Creating iOptron mount')
 
         # Regexp to match the iOptron RA/Dec format
-        self._ra_format = '(?P<ra_millisecond>\d{8})'
-        self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
+        self._ra_format = r'(?P<ra_millisecond>\d{8})'
+        self._dec_format = r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self._raw_status = None
