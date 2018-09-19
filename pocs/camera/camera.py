@@ -241,11 +241,12 @@ class AbstractCamera(PanBase):
         file_path = info['file_path']
         field_name = info['field_name']
 
-        image_title = '{} {} {}'.format(field_name, seq_id.split('_'), current_time(pretty=True))
-        self.logger.debug("Processing {}".format(image_title))
+        image_title = '{} {} {}'.format(field_name,
+                                        seq_id.replace('_', ' '),
+                                        current_time(pretty=True))
 
         try:
-            self.logger.debug("Extracting pretty image")
+            self.logger.debug("Processing {}".format(image_title))
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
                                         primary=info['is_primary'])
