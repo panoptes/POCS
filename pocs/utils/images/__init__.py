@@ -12,6 +12,7 @@ from astropy.visualization import (PercentileInterval, LogStretch, ImageNormaliz
 
 from glob import glob
 from copy import copy
+from dateutil import parser as date_parser
 
 from pocs.utils import current_time
 from pocs.utils import error
@@ -125,10 +126,22 @@ def _make_pretty_from_fits(fname=None,
         wcs = WCS(header)
 
     if not title:
-        field = header.get('FIELD', 'Unknown')
-        exp_time = header.get('EXPTIME', 'Unknown')
+        field = header.get('FIELD', 'Unknown field')
+        exp_time = header.get('EXPTIME', 'Unknown exptime')
         filter_type = header.get('FILTER', 'Unknown filter')
-        date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+
+        try:
+            date_time = header['DATE-OBS']
+        except KeyError:
+            # If we don't have DATE-OBS, check filename for date
+            try:
+                basename = os.path.splitext(os.path.basename(fname))[0]
+                date_time = date_parser.parse(basename).isoformat()
+            except Exception:
+                # Otherwise use now
+                date_time = current_time(pretty=True)
+
+        date_time = date_time.replace('T', ' ', 1)
 
         title = '{} ({}s {}) {}'.format(field, exp_time, filter_type, date_time)
 
