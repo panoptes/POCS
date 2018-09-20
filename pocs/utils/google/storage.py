@@ -156,7 +156,8 @@ class PanStorage(object):
 
         Args:
             remote_path (str|`google.cloud.storage.blob.Blob`): Blob or path to remote blob.
-                If just the blob name is given then file will be downloaded.
+                If just the blob name is given then file will be downloaded. See `get_file_blobs`
+                for example of blob names.
             save_dir (str, optional): Path for saved file, defaults to current directory.
             overwrite (bool, optional): Overwrite a download even if file exists locally,
                 default False.
