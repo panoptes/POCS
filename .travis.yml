@@ -1,4 +1,4 @@
-dist: trusty
+  dist: trusty
 sudo: required
 language: python
 services:
@@ -14,6 +14,7 @@ cache:
   directories:
     - $PANDIR/astrometry/data
 before_install:
+    - sudo mkdir -p $PANDIR/astrometry/data && sudo chmod -R 777 $PANDIR
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
