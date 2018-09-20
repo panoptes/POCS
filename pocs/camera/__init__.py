@@ -29,7 +29,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             automatically discover the ports.
 
     Returns:
-        list: A list of created camera objects.
+        OrderedDict: An ordered dictionary of created camera objects.
 
     Raises:
         error.CameraNotFound: Description
