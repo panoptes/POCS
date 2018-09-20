@@ -8,7 +8,7 @@ python:
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir -p $PANDIR/astrometry/data && sudo chmod -R 777 $PANDIR
+    - sudo mkdir -p $PANDIR && sudo chmod -R 777 $PANDIR
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
@@ -22,6 +22,8 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
+    - sudo mkdir -p /var/panoptes/astrometry/data
+    - sudo chmod -R 777 /var/panoptes/astrometry/    
     - cd $HOME
     - export DISPLAY=:1.0
     - export
