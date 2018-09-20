@@ -19,12 +19,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     Creates a camera for each camera item listed in the config. Ensures the
     appropriate camera module is loaded.
 
-    Note: We are currently only operating with one camera and the `take_pic.sh`
-        script automatically discovers the ports.
-
     Note:
-        This does not actually make a usb connection to the camera. To do so,
-        call the 'camear.connect()' explicitly.
+        This does not actually make a connection to the camera. To do so,
+        call 'camera.connect()' explicitly.
 
     Args:
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
