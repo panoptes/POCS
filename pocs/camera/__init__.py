@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from pocs.utils import error
 from pocs.utils import load_module
+from pocs.utils.config import load_config
 
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
@@ -10,7 +11,7 @@ from pocs.utils import list_connected_cameras
 from pocs.utils import logger as logger_module
 
 
-def create_cameras_from_config(config, logger=None, **kwargs):
+def create_cameras_from_config(config=None, logger=None, **kwargs):
     """Creates a camera object(s)
 
     Loads the cameras via the configuration.
@@ -39,6 +40,9 @@ def create_cameras_from_config(config, logger=None, **kwargs):
     """
     if not logger:
         logger = logger_module.get_root_logger()
+
+    if not config:
+        config = load_config(**kwargs)
 
     if 'cameras' not in config:
         logger.info('No camera information in config.')
