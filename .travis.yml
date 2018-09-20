@@ -5,17 +5,17 @@ services:
   - mongodb
 python:
   - "3.6"
+env:
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_cache:
-    - sudo mkdir -p /var/panoptes/astrometry/data && sudo chmod -R 777 /var/panoptes
+    - sudo mkdir -p $PANDIR/astrometry/data && sudo chmod -R 777 $PANDIR
 cache:
   pip: true
   directories:
-    - /var/panoptes/astrometry/data
-env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
+    - $PANDIR/astrometry/data
 before_install:
     - mkdir $PANDIR/logs
-    - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
+    - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
     - pip install -U pip
     - cd $HOME
