@@ -23,7 +23,7 @@ before_install:
     - make funpack
     - sudo make install
     - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod -R 777 /var/panoptes/astrometry/    
+    - sudo chmod -R 777 /var/panoptes/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
     - export
