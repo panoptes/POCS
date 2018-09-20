@@ -1,4 +1,7 @@
 from collections import OrderedDict
+import re
+import shutil
+import subprocess
 
 from pocs.utils import error
 from pocs.utils import load_module
@@ -7,8 +10,34 @@ from pocs.utils.config import load_config
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
 
-from pocs.utils import list_connected_cameras
 from pocs.utils import logger as logger_module
+
+
+def list_connected_cameras():
+    """Detect connected cameras.
+
+    Uses gphoto2 to try and detect which cameras are connected. Cameras should
+    be known and placed in config but this is a useful utility.
+
+    Returns:
+        list: A list of the ports with detected cameras.
+    """
+
+    gphoto2 = shutil.which('gphoto2')
+    command = [gphoto2, '--auto-detect']
+    result = subprocess.check_output(command)
+    lines = result.decode('utf-8').split('\n')
+
+    ports = []
+
+    for line in lines:
+        camera_match = re.match(r'([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
+        if camera_match:
+            # camera_name = camera_match.group(1).strip()
+            port = camera_match.group(2).strip()
+            ports.append(port)
+
+    return ports
 
 
 def create_cameras_from_config(config=None, logger=None, **kwargs):

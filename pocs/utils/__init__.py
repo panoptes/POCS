@@ -1,7 +1,5 @@
 import os
-import re
 import shutil
-import subprocess
 import time
 
 from astropy import units as u
@@ -117,29 +115,6 @@ def get_free_space(dir=None):
     _, _, free_space = shutil.disk_usage(dir)
     free_space = (free_space * u.byte).to(u.gigabyte)
     return free_space
-
-
-def list_connected_cameras():
-    """
-    Uses gphoto2 to try and detect which cameras are connected.
-    Cameras should be known and placed in config but this is a useful utility.
-    """
-
-    gphoto2 = shutil.which('gphoto2')
-    command = [gphoto2, '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
-
-    ports = []
-
-    for line in lines:
-        camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-        if camera_match:
-            # camera_name = camera_match.group(1).strip()
-            port = camera_match.group(2).strip()
-            ports.append(port)
-
-    return ports
 
 
 def load_module(module_name):
