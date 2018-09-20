@@ -9,6 +9,7 @@ import pocs.version
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+from pocs.camera import create_cameras_from_config
 from pocs.utils import error
 
 
@@ -25,7 +26,11 @@ def simulator():
 @pytest.fixture
 def observatory(config, simulator):
     """Return a valid Observatory instance with a specific config."""
-    obs = Observatory(config=config, simulator=simulator, ignore_local_config=True)
+    cameras = create_cameras_from_config(config)
+    obs = Observatory(config=config,
+                      simulator=simulator,
+                      cameras=cameras,
+                      ignore_local_config=True)
     return obs
 
 
@@ -83,37 +88,37 @@ def test_bad_scheduler_fields_file(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-@pytest.mark.without_camera
-def test_bad_camera(config):
+def test_camera_wrong_type(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
+
+    with pytest.raises(AttributeError):
+        Observatory(simulator=simulator,
+                    cameras=[Time.now()],
+                    config=conf,
+                    auto_detect=False,
+                    ignore_local_config=True
+                    )
+
+    with pytest.raises(AssertionError):
+        Observatory(simulator=simulator,
+                    cameras={'Cam00': Time.now()},
+                    config=conf,
+                    auto_detect=False,
+                    ignore_local_config=True
+                    )
 
 
-@pytest.mark.without_camera
-def test_camera_not_found(config):
+def test_camera(config):
     conf = config.copy()
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
-def test_camera_port_error(config):
-    conf = config.copy()
-    conf['cameras']['devices'][0]['model'] = 'foobar'
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.CameraNotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
-
-
-def test_camera_import_error(config):
-    conf = config.copy()
-    conf['cameras']['devices'][0]['model'] = 'foobar'
-    conf['cameras']['devices'][0]['port'] = 'usb:001,002'
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+    cameras = create_cameras_from_config(conf)
+    obs = Observatory(
+        cameras=cameras,
+        config=conf,
+        auto_detect=False,
+        ignore_local_config=True
+    )
+    assert obs.has_cameras
 
 
 def test_status(observatory):
