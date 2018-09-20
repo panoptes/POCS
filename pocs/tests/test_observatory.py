@@ -121,6 +121,10 @@ def test_camera(config):
     assert obs.has_cameras
 
 
+def test_primary_camera(observatory):
+    assert observatory.primary_camera is not None
+
+
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     status = observatory.status()
@@ -204,10 +208,6 @@ def test_sidereal_time(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
     st = observatory.sidereal_time
     assert abs(st.value - 9.145547849536634) < 1e-4
-
-
-def test_primary_camera(observatory):
-    assert observatory.primary_camera is not None
 
 
 def test_get_observation(observatory):

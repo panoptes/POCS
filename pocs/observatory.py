@@ -22,11 +22,12 @@ from pocs.utils import error
 from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
+from pocs.camera import AbstractCamera
 
 
 class Observatory(PanBase):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cameras=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -46,10 +47,15 @@ class Observatory(PanBase):
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\tSetting up cameras')
-        self.cameras = OrderedDict()
-        self._primary_camera = None
-        self._create_cameras(**kwargs)
+        if not cameras:
+            cameras = OrderedDict()
+
+        if cameras:
+            self.logger.info('Adding the cameras to the observatory')
+            self._primary_camera = None
+            self.cameras = cameras
+            for cam_name, camera in cameras.items():
+                self.add_camera(cam_name, camera)
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
@@ -86,7 +92,23 @@ class Observatory(PanBase):
         return self.observer.local_sidereal_time(current_time())
 
     @property
+    def has_cameras(self):
+        return len(self.cameras) > 0
+
+    @property
     def primary_camera(self):
+        """Return primary camera.
+
+        Note:
+            If no camera has been marked as primary this will set and return
+            the first camera in the OrderedDict as primary.
+
+        Returns:
+            `pocs.camera.Camera`: The primary camera.
+        """
+        if not self._primary_camera and self.has_cameras:
+            self._primary_camera = self.cameras[list(self.cameras.keys())[0]]
+
         return self._primary_camera
 
     @primary_camera.setter
@@ -105,6 +127,42 @@ class Observatory(PanBase):
     @property
     def has_dome(self):
         return self.dome is not None
+
+
+##########################################################################
+# Device Getters/Setters
+##########################################################################
+
+    def add_camera(self, cam_name, camera):
+        """Add camera to list of cameras as cam_name.
+
+        Args:
+            cam_name (str): The name to use for the camera, e.g. `Cam00`.
+            camera (`pocs.camera.camera.Camera`): An instance of the `~Camera` class.
+        """
+        assert isinstance(camera, AbstractCamera)
+        self.logger.debug('Adding {}: {}'.format(cam_name, camera))
+        if cam_name in self.cameras:
+            self.logger.debug('{} already exists, replacing existing camera under that name.')
+
+        self.cameras[cam_name] = camera
+        if camera.is_primary:
+            self.primary_camera = camera
+
+    def remove_camera(self, cam_name):
+        """Remove cam_name from list of attached cameras.
+
+        Note:
+            If you remove and then add a camera you will change the index order
+            of the camera. If you prefer to keep the same order then use `add_camera`
+            with the same name as an existing camera to to update the list and preserve
+            the order.
+
+        Args:
+            cam_name (str): Name of camera to remove.
+        """
+        self.logger.debug('Removing {}'.format(cam_name))
+        del self.cameras[cam_name]
 
 ##########################################################################
 # Methods
