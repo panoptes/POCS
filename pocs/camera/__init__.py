@@ -12,16 +12,14 @@ from pocs.utils import logger as logger_module
 
 
 def create_cameras_from_config(config=None, logger=None, **kwargs):
-    """Creates a camera object(s)
-
-    Loads the cameras via the configuration.
+    """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
     appropriate camera module is loaded.
 
     Note:
         This does not actually make a connection to the camera. To do so,
-        call 'camera.connect()' explicitly.
+        call 'camera.connect()' explicitly on each camera.
 
     Args:
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
@@ -29,7 +27,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             automatically discover the ports.
 
     Returns:
-        OrderedDict: An ordered dictionary of created camera objects.
+        OrderedDict: An ordered dictionary of created camera objects, with the
+            camera name as key and camera instance as value. Returns an empty
+            OrderedDict if there is no camera configuration items.
 
     Raises:
         error.CameraNotFound: Description
@@ -41,9 +41,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     if not config:
         config = load_config(**kwargs)
 
+    cameras = OrderedDict()
     if 'cameras' not in config:
         logger.info('No camera information in config.')
-        return None
+        return cameras
 
     # Helper method to first check kwargs then config
     def kwargs_or_config(item, default=None):
@@ -71,7 +72,6 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         else:
             logger.debug("Detected Ports: {}".format(ports))
 
-    cameras = OrderedDict()
     primary_camera = None
 
     device_info = camera_info['devices']
