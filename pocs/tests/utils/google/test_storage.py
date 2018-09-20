@@ -1,41 +1,34 @@
 import pytest
 import os
+import shutil
 
 from pocs.utils.error import GoogleCloudError
-from pocs.utils.google.storage import PanStorage
+from pocs.utils.google import is_authenticated
+from pocs.utils.google.storage import PanStorage, upload_observation_to_bucket
 
 
 pytestmark = pytest.mark.skipif(
     not pytest.config.option.test_cloud_storage,
-    reason="Needs --test-cloud-storage to run"
+    reason="Needs --test-cloud-storage to run."
 )
 
-
-def test_key_exists():
-    assert os.environ['PANOPTES_CLOUD_KEY']
-    assert os.path.exists(os.environ['PANOPTES_CLOUD_KEY'])
+pytestmark = pytest.mark.skipif(
+    not is_authenticated(),
+    reason="Not authenticated on Google network."
+)
 
 
 def test_bad_bucket():
     with pytest.raises(AssertionError):
         PanStorage('fake-bucket')
 
-    auth_key_path = os.environ['PANOPTES_CLOUD_KEY']
     with pytest.raises(GoogleCloudError):
-        PanStorage('fake-bucket', auth_key=auth_key_path)
+        PanStorage('fake-bucket')
 
 
 @pytest.fixture(scope="function")
 def storage():
-    auth_key_path = os.environ['PANOPTES_CLOUD_KEY']
-    return PanStorage('panoptes-test-bucket', auth_key=auth_key_path)
-
-
-def test_unit_id(storage):
-    assert storage.unit_id is not None
-    # TODO(wtgee)Verify the unit id better after #384 is done.
-    assert storage.unit_id.startswith('PAN'), storage.logger.error(
-        "Must have valid pan_id. Please change your conf_files/pocs_local.yaml")
+    return PanStorage('panoptes-test-bucket')
 
 
 def test_bucket_exists(storage):
@@ -47,8 +40,8 @@ def test_file_upload_no_prepend(storage):
     with open(temp_fn, 'w') as f:
         f.write('Hello World')
 
-    remote_path = storage.upload(temp_fn)
-    assert remote_path == '{}/{}'.format(storage.unit_id, temp_fn)
+    remote_path = storage.upload_file(temp_fn)
+    assert remote_path == os.path.join(storage.unit_id, temp_fn)
     assert storage.bucket.blob(remote_path).exists()
     os.unlink(temp_fn)
 
@@ -58,8 +51,8 @@ def test_file_upload_prepend_remote_path(storage):
     with open(temp_fn, 'w') as f:
         f.write('Hello World')
 
-    remote_path = '{}/{}'.format(storage.unit_id, temp_fn)
-    returned_remote_path = storage.upload(temp_fn, remote_path=remote_path)
+    remote_path = os.path.join(storage.unit_id, temp_fn)
+    returned_remote_path = storage.upload_file(temp_fn, remote_path=remote_path)
     assert remote_path == returned_remote_path
     assert storage.bucket.blob(returned_remote_path).exists()
     os.unlink(temp_fn)
@@ -74,4 +67,26 @@ def test_delete(storage):
     remote_path = '{}/pong.txt'.format(storage.unit_id)
     assert storage.bucket.blob(remote_path).exists()
     storage.bucket.blob(remote_path).delete()
-    assert storage.bucket.blob(remote_path).exists() is False
+
+
+def test_upload_observation_to_bucket(storage):
+    dir_name = os.path.join(
+        os.environ['POCS'],
+        'pocs', 'tests', 'data'
+    )
+
+    # We copy all the files to a temp dir and then upload that to get
+    # correct pathnames.
+    new_dir = os.path.join('/tmp', 'fields', 'fake_obs')
+    shutil.copytree(dir_name, new_dir)
+
+    include_files = '*'
+
+    pan_id = storage.unit_id
+    assert upload_observation_to_bucket(
+        pan_id,
+        new_dir,
+        include_files=include_files,
+        bucket='panoptes-test-bucket')
+
+    shutil.rmtree(new_dir, ignore_errors=True)
