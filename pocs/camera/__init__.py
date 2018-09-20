@@ -45,21 +45,19 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         logger.info('No camera information in config.')
         return None
 
+    # Helper method to first check kwargs then config
     def kwargs_or_config(item, default=None):
         return kwargs.get(item, config.get(item, default))
 
     camera_info = kwargs_or_config('cameras')
-    logger.debug("Camera config: \n {}".format(camera_info))
-
     a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
-    if a_simulator:
-        logger.debug("Using simulator for camera")
+    auto_detect = kwargs_or_config('auto_detect', default=False)
+
+    logger.debug("Camera config: {}".format(camera_info))
 
     ports = list()
 
     # Lookup the connected ports if not using a simulator
-    auto_detect = kwargs_or_config('auto_detect', default=False)
-
     if not a_simulator and auto_detect:
         logger.debug("Auto-detecting ports for cameras")
         try:
@@ -102,6 +100,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             camera_readout = device_config.get('readout_time', 6.0)
 
         else:
+            logger.debug('Using camera simulator.')
             # Set up a simulated camera with fully configured simulated
             # focuser
             camera_model = 'simulator'
