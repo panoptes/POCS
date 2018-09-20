@@ -239,11 +239,13 @@ class AbstractCamera(PanBase):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
+        exptime = info['exp_time']
         field_name = info['field_name']
 
-        image_title = '{} {} {}'.format(field_name,
-                                        seq_id.replace('_', ' '),
-                                        current_time(pretty=True))
+        image_title = '{} [{}] {} {}'.format(field_name,
+                                             exptime,
+                                             seq_id.replace('_', ' '),
+                                             current_time(pretty=True))
 
         try:
             self.logger.debug("Processing {}".format(image_title))
