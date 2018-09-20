@@ -81,6 +81,6 @@ script:
   - coverage combine
 
 after_success:
-    - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
-          bash <(curl -s https://codecov.io/bash);
-      fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
+        bash <(curl -s https://codecov.io/bash);
+    fi
