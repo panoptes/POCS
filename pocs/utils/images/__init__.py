@@ -64,7 +64,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, timeout=15, link_latest=True, **kwargs):  # pragma: no cover
+def make_pretty_image(fname, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
     """Make a pretty image
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
