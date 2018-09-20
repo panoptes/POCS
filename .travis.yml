@@ -78,7 +78,7 @@ script:
   - coverage combine
 before_cache:
   # Travis doesn't like to cache world-writable directories
-  - chmod 775 $PANDIR/astrometry/data
+  - chmod -R 775 $PANDIR/astrometry/
 cache:
   pip: true
   directories:
