@@ -1,6 +1,6 @@
 ---
 name: Generic PANOPTES Unit
-# pan_id: PANxyz   # This unit's assigned identifier.
+pan_id: PAN000   # This unit's assigned identifier.
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees
