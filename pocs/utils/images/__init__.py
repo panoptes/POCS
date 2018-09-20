@@ -69,7 +69,7 @@ def make_pretty_image(fname, title=None, timeout=15, **kwargs):  # pragma: no co
     This will create a jpg file from either a CR2 (Canon) or FITS file.
 
     Notes:
-        See `/scripts/cr2_to_jpg.sh` for CR2 process.
+        See `$POCS/scripts/cr2_to_jpg.sh` for CR2 process.
 
     Arguments:
         fname {str} -- Name of image file, may be either .fits or .cr2
