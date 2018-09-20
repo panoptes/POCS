@@ -6,7 +6,9 @@ services:
 python:
   - "3.6"
 cache:
-  - pip
+  pip: true
+  directories:
+    - /var/panoptes/astrometry/data
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
