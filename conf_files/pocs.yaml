@@ -1,6 +1,18 @@
 ---
+######################### PANOPTES UNIT ########################################
+# name:   Can be anything you want it to be. This name is displayed in several
+#         places and should be a "personal" name for the unit.
+#
+# pan_id: This is an identification number assigned by the PANOPTES team and is
+#         the official designator for your unit. This id is used to store image
+#         files and communicate with the Google Cloud network.
+#
+#         Leave the pan_id at `PAN000` for testing until you have been assigned
+#         an official id. Update pocs_local.yaml with offical name once received.
+################################################################################
 name: Generic PANOPTES Unit
-pan_id: PAN000   # This unit's assigned identifier.
+pan_id: PAN000   
+
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees
@@ -54,13 +66,13 @@ messaging:
     cmd_port: 6500
     msg_port: 6510
 
-######################## Google Network ####################################
+######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
 # See $POCS/pocs/utils/google/README.md for
 # details about authentication.
-############################################################################
+################################################################################
 panoptes_network:
     image_storage: True
     metadata_storage: True
