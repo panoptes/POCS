@@ -5,6 +5,8 @@ services:
   - mongodb
 python:
   - "3.6"
+before_cache:
+    - sudo mkdir -p /var/panoptes/astrometry/data && sudo chmod -R 777 /var/panoptes
 cache:
   pip: true
   directories:
@@ -12,7 +14,6 @@ cache:
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
     - pip install coveralls
@@ -26,8 +27,6 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod -R 777 /var/panoptes/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
     - export
