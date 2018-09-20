@@ -76,6 +76,9 @@ script:
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v
   - coverage combine
+before_cache:
+  # Travis doesn't like to cache world-writable directories
+  - chmod 775 $PANDIR/astrometry/data
 cache:
   pip: true
   directories:
