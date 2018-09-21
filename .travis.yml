@@ -74,7 +74,7 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
   - export PYTHONPATH="$PYTHONPATH:$TRAVIS_BUILD_DIR/scripts/coverage"
   - export COVERAGE_PROCESS_START=.coveragerc
-  - coverage run $(which pytest) -v
+  - coverage run $(which pytest) -v --test-databases all
   - coverage combine
 before_cache:
   # Travis doesn't like to cache world-writable directories

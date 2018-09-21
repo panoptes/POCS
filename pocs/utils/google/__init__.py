@@ -1,6 +1,5 @@
 import warnings
 
-from pocs.utils.error import GoogleCloudError
 from pocs.utils.google.storage import PanStorage
 
 
@@ -20,5 +19,5 @@ def is_authenticated():
             PanStorage('test-bucket')
 
         return True
-    except GoogleCloudError:
+    except Exception:
         return False
