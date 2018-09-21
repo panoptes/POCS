@@ -2,6 +2,7 @@ import os
 import subprocess
 import shutil
 import re
+from contextlib import suppress
 
 from matplotlib import pyplot as plt
 from warnings import warn
@@ -64,7 +65,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, title=None, timeout=15, **kwargs):  # pragma: no cover
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
     """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
@@ -76,11 +77,12 @@ def make_pretty_image(fname, title=None, timeout=15, **kwargs):  # pragma: no co
         fname {str} -- Name of image file, may be either .fits or .cr2
         title (None|str, optional): Title to be placed on image, default None.
         timeout (int, optional): Timeout for conversion, default 15 seconds.
+        link_latest (bool, optional): If the pretty picture should be linked to
+            `$PANDIR/images/latest.jpg`, default False.
         **kwargs {dict} -- Additional arguments to be passed to external script.
 
     Returns:
         str -- Filename of image that was created.
-
     """
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
@@ -94,20 +96,21 @@ def make_pretty_image(fname, title=None, timeout=15, **kwargs):  # pragma: no co
         return None
 
     # Symlink latest.jpg to the image; first remove the symlink if it already exists.
-    if os.path.exists(pretty_path) and pretty_path.endswith('.jpg'):
-        latest_path = '{}/images/latest.jpg'.format(os.getenv('PANDIR'))
-        try:
+    if link_latest and os.path.exists(pretty_path):
+        latest_path = os.path.join(
+            os.getenv('PANDIR'),
+            'images',
+            'latest.jpg'
+        )
+        with suppress(FileNotFoundError):
             os.remove(latest_path)
-        except FileNotFoundError:
-            pass
+
         try:
             os.symlink(pretty_path, latest_path)
         except Exception as e:
             warn("Can't link latest image: {}".format(e))
 
-        return pretty_path
-    else:
-        return None
+    return pretty_path
 
 
 def _make_pretty_from_fits(fname=None,
