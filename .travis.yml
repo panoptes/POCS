@@ -11,9 +11,8 @@ env:
   - PANUSER=$USER 
   - ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir -p $PANDIR && sudo chmod -R 775 $PANDIR
+    - sudo mkdir -p $PANDIR && sudo chmod -R 755 $PANDIR
     - sudo chown -R $PANUSER:$PANUSER $PANDIR
-    - sudo addgroup $USER $PANUSER
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
@@ -28,7 +27,7 @@ before_install:
     - make funpack
     - sudo make install
     - mkdir -p $PANDIR/astrometry/data
-    - chmod -R 775 $PANDIR/astrometry/
+    - chmod -R 755 $PANDIR/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
     - export
@@ -82,9 +81,6 @@ script:
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v --test-databases all
   - coverage combine
-before_cache:
-  # Travis doesn't like to cache world-writable directories
-  - chmod -R 775 $PANDIR/astrometry/
 cache:
   pip: true
   directories:
