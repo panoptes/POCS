@@ -13,8 +13,8 @@ env:
 before_install:
     - sudo mkdir -p $PANDIR
     - sudo chown -R $PANUSER:$PANUSER $PANDIR
-    - chmod -R 755 $PANDIR
-    - mkdir $PANDIR/logs
+    - sudo chmod -R 755 $PANDIR
+    - sudo mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
     - pip install -U pip
@@ -27,8 +27,8 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - mkdir -p $PANDIR/astrometry/data
-    - chmod -R 755 $PANDIR/astrometry/
+    - sudo mkdir -p $PANDIR/astrometry/data
+    - sudo chmod -R 755 $PANDIR/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
     - export
