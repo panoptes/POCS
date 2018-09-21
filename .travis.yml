@@ -11,8 +11,9 @@ env:
   - PANUSER=$USER 
   - ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir -p $PANDIR && sudo chmod -R 755 $PANDIR
+    - sudo mkdir -p $PANDIR
     - sudo chown -R $PANUSER:$PANUSER $PANDIR
+    - chmod -R 755 $PANDIR
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
     - pip install coveralls
