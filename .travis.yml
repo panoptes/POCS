@@ -6,7 +6,10 @@ services:
 python:
   - "3.6"
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
+  - POCS=$TRAVIS_BUILD_DIR 
+  - PANDIR=/var/panoptes 
+  - PANUSER=$USER 
+  - ARDUINO_VERSION=1.8.1
 before_install:
     - sudo mkdir -p $PANDIR && sudo chmod -R 775 $PANDIR
     - sudo chown -R $PANUSER:$PANUSER $PANDIR
@@ -24,8 +27,8 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - mkdir -p /var/panoptes/astrometry/data
-    - chmod -R 775 /var/panoptes/astrometry/
+    - mkdir -p $PANDIR/astrometry/data
+    - chmod -R 775 $PANDIR/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
     - export
@@ -52,8 +55,8 @@ addons:
 install:
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
   - tar zxvf astrometry.net-0.72.tar.gz
-  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=/var/panoptes/astrometry
-  - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /var/panoptes/astrometry/etc/astrometry.cfg
+  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
+  - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:/var/panoptes/astrometry/bin:$PATH"
@@ -68,7 +71,8 @@ install:
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
-  - python pocs/utils/data.py
+  - python pocs/utils/data.py --folder $TRAVIS_BUILD_DIR/astrometry/data
+  - ln -s $TRAVIS_BUILD_DIR/astrometry/data $PANDIR/astrometry/data
 script:
   - export BOARD="arduino:avr:micro"
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
