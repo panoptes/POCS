@@ -7,13 +7,13 @@ usage() {
 # If exiftool is present this merely extracts the thumbnail from
 # the CR2 file, otherwise use dcraw to create a jpeg.
 #
-# If present the CAPTION is added as a caption to the jpeg.
+# If present the TITLE is added as a title to the jpeg.
 ##################################################
- $ $(basename $0) FILENAME [CAPTION]
+ $ $(basename $0) FILENAME [TITLE]
  
  Options:
   FILENAME          Name of CR2 file that holds jpeg.
-  CAPTION           Optional caption to be placed on jpeg.
+  TITLE             Optional tilte to be placed on jpeg.
 
  Example:
   scripts/cr2_to_jpg.sh /var/panoptes/images/temp.cr2 \"M42 (Orion's Nebula)\"
@@ -26,7 +26,7 @@ if [ $# -eq 0 ]; then
 fi
 
 FNAME=$1
-CAPTION="${2}"
+TITLE="${2}"
 
 JPG="${FNAME%.cr2}.jpg"
 
@@ -45,12 +45,12 @@ else
     fi
 fi
 
-if [[ -n "$CAPTION" ]]
+if [[ -n "$TITLE" ]]
   then
-  	echo "Adding caption \"${CAPTION}\""
+  	echo "Adding title \"${TITLE}\""
 	# Make thumbnail from jpg.
 	convert "${JPG}" -background black -fill red \
-	    -font ubuntu -pointsize 60 label:"${CAPTION}" \
+	    -font ubuntu -pointsize 60 label:"${TITLE}" \
 	    -gravity South -append "${JPG}"
 fi
 
