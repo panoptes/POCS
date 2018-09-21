@@ -70,20 +70,20 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     if not config:
         config = load_config(**kwargs)
 
-    cameras = OrderedDict()
-    if 'cameras' not in config:
-        logger.info('No camera information in config.')
-        return cameras
-
     # Helper method to first check kwargs then config
     def kwargs_or_config(item, default=None):
         return kwargs.get(item, config.get(item, default))
 
+    cameras = OrderedDict()
     camera_info = kwargs_or_config('cameras')
-    a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
-    auto_detect = kwargs_or_config('auto_detect', default=False)
+    if not camera_info:
+        logger.info('No camera information in config.')
+        return cameras
 
     logger.debug("Camera config: {}".format(camera_info))
+
+    a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
+    auto_detect = kwargs_or_config('auto_detect', default=False)
 
     ports = list()
 
