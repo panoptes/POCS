@@ -244,7 +244,7 @@ class AbstractCamera(PanBase):
             self.logger.debug("Extracting pretty image")
             img_utils.make_pretty_image(file_path,
                                         title=info['field_name'],
-                                        primary=info['is_primary'])
+                                        link_latest=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
