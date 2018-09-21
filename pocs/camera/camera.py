@@ -434,15 +434,19 @@ class AbstractCamera(PanBase):
 
             file_path = filename
 
+        unit_id = self.config['pan_id']
+
+        # Make the image_id
         image_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             start_time
         )
         self.logger.debug("image_id: {}".format(image_id))
 
+        # Make the sequence_id
         sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             observation.seq_time
         )
