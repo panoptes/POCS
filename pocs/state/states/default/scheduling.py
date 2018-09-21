@@ -32,6 +32,9 @@ def on_enter(event_data):
 
             if existing_observation and observation.name == existing_observation.name:
                 pocs.say("I'm sticking with {}".format(observation.name))
+
+                # Make sure we are using existing observation (with pointing image)
+                pocs.observatory.current_observation = existing_observation
                 pocs.next_state = 'tracking'
             else:
                 pocs.say("Got it! I'm going to check out: {}".format(observation.name))
