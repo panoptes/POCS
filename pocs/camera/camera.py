@@ -1,3 +1,15 @@
+import re
+import shutil
+import subprocess
+import yaml
+import os
+import copy
+from threading import Event
+from threading import Thread
+from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
+
 from pocs.base import PanBase
 
 from pocs.utils import current_time
@@ -8,19 +20,6 @@ from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
 
 from pocs.focuser import AbstractFocuser
-
-from astropy.io import fits
-from astropy.time import Time
-import astropy.units as u
-
-import re
-import shutil
-import subprocess
-import yaml
-import os
-
-from threading import Event
-from threading import Thread
 
 
 class AbstractCamera(PanBase):
@@ -68,8 +67,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self)
-                    self.logger.debug("Focuser created: {}".format(self.focuser))
+                    focuser_kwargs = copy.copy(focuser)
+                    focuser_kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**focuser_kwargs)
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
@@ -208,7 +208,8 @@ class AbstractCamera(PanBase):
             observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, observation_event, exposure_event))
+        t = Thread(target=self.process_exposure, args=(
+            metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
