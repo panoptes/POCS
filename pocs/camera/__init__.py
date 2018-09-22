@@ -61,7 +61,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             OrderedDict if there is no camera configuration items.
 
     Raises:
-        error.CameraNotFound: Description
+        error.CameraNotFound: Raised if camera cannot be found at specified port or if
+            auto_detect=True and no cameras are found.
         error.PanError: Description
     """
     if not logger:
