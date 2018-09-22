@@ -83,7 +83,6 @@ script:
   - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v --test-databases all
-  - coverage combine
 cache:
   pip: true
   directories:
