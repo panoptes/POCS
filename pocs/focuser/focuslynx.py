@@ -65,9 +65,8 @@ class Focuser(AbstractFocuser):
                 else:
                     raise ValueError('Max position must be greater than min position!')
             else:
-                message = "Specified max_position {} greater than focuser max {}!".format(max_position,
-                                                                                          self._max_position)
-                warn(message)
+                self.logger.warning("Specified max_position {} greater than focuser max {}!",
+                                    max_position, self._max_position)
 
         if initial_position is not None:
             self.position = initial_position
@@ -96,8 +95,8 @@ class Focuser(AbstractFocuser):
     @uid.setter
     def uid(self, nickname):
         if len(nickname) > 16:
-            self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)'.format(nickname,
-                                                                                                nickname[:16]))
+            self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)',
+                                nickname, nickname[:16])
             nickname = nickname[:16]
         command_str = '<F{:1d}SCNN{}>'.format(self._focuser_number, nickname)
         self._send_command(command_str, expected_reply='SET')
@@ -201,31 +200,25 @@ class Focuser(AbstractFocuser):
                 focuser position, if False it will be the target position.
         """
         if position < self._min_position:
-            message = 'Requested position {} less than min position, moving to {}!'.format(position,
-                                                                                           self._min_position)
-            self.logger.error(message)
-            warn(message)
+            self.logger.error('Requested position {} less than min position, moving to {}!',
+                              position, self._min_position)
             position = self._min_position
         elif position > self._max_position:
-            message = 'Requested position {} greater than max position, moving to {}!'.format(position,
-                                                                                              self._max_position)
-            self.logger.error(message)
-            warn(message)
+            self.logger.error('Requested position {} greater than max position, moving to {}!',
+                              position, self._max_position)
             position = self._max_position
 
         self.logger.debug('Moving focuser {} to {}'.format(self.uid, position))
         command_str = '<F{:1d}MA{:06d}>'.format(self._focuser_number, position)
         self._send_command(command_str, expected_reply='M')
+
         # Focuser move commands are non-blocking. Only option is polling is_moving
         if blocking:
             while self.is_moving:
                 time.sleep(1)
             if self.position != self._target_position:
-                message = "Focuser {} did not reach target position {}, now at {}!".format(self.uid,
-                                                                                           self._target_position,
-                                                                                           self._position)
-                self.logger.warning(message)
-                warn(message)
+                self.logger.warning("Focuser {} did not reach target position {}, now at {}!",
+                                    self.uid, self._target_position, self._position)
             return self._position
         else:
             return position
@@ -306,14 +299,14 @@ class Focuser(AbstractFocuser):
         self._serial_port.write(command_str.encode('ascii'))
         response = str(self._serial_port.readline(), encoding='ascii').strip()
         if not response:
-            message = "No response to command '{}' from {}".format(command_str, name)
+            message = "No response to command '{}' from focuser {}".format(command_str, name)
             self.logger.error(message)
-            warn(message)
             raise RuntimeError(message)
 
         # Should always get '!' back unless there's an error
         if response != '!':
-            message = "Error sending command '{}' to {}: {}".format(command_str, name, response)
+            message = "Error sending command '{}' to focuser {}: {}".format(
+                command_str, name, response)
             self.logger.error(message)
             raise RuntimeError(message)
 
