@@ -176,6 +176,7 @@ class AbstractFocuser(PanBase):
                   merit_function=None,
                   merit_function_kwargs=None,
                   mask_dilations=None,
+                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -209,6 +210,8 @@ class AbstractFocuser(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
+            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
+                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
