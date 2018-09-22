@@ -251,9 +251,9 @@ class AbstractCamera(PanBase):
         field_name = info['field_name']
 
         image_title = '{} [{}s] {} {}'.format(field_name,
-                                             exptime,
-                                             seq_id.replace('_', ' '),
-                                             current_time(pretty=True))
+                                              exptime,
+                                              seq_id.replace('_', ' '),
+                                              current_time(pretty=True))
 
         try:
             self.logger.debug("Processing {}".format(image_title))
