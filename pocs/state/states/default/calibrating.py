@@ -1,5 +1,3 @@
-from pocs.utils import current_time
-
 
 def on_enter(event_data):
     """Calibrating State
@@ -15,10 +13,6 @@ def on_enter(event_data):
 
         # Take the flats
         if pocs.observatory.should_take_flats(which='evening'):
-            if pocs.observatory.is_dark(horizon='flat') is False:
-                pocs.say("Not dark enough for flats yet, goingn to wait a little while.")
-                pocs.wait_until_dark(horizon='flat')
-
             pocs.say("Taking some flat fields to start the night")
             pocs.observatory.take_evening_flats(initial_exptime=5)
         else:
