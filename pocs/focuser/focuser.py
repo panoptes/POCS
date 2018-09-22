@@ -53,6 +53,7 @@ class AbstractFocuser(PanBase):
         autofocus_spline_smoothing (float, optional): smoothing parameter for the spline fitting to
             the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
     """
+
     def __init__(self,
                  name='Generic Focuser',
                  model='simulator',
@@ -456,7 +457,8 @@ class AbstractFocuser(PanBase):
 
         for i, position in enumerate(focus_positions):
             thumbnail = np.ma.array(thumbnails[i], mask=master_mask)
-            metric[i] = focus_utils.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
+            metric[i] = focus_utils.focus_metric(
+                thumbnail, merit_function, **merit_function_kwargs)
 
         fitted = False
 
