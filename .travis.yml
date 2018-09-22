@@ -10,6 +10,7 @@ env:
 before_install:
     - mkdir -p $PANDIR/logs
     - mkdir -p $PANDIR/astrometry/data
+    - ln -s $POCS $PANDIR/POCS
     - pip install -U pip
     - pip install coveralls
 
