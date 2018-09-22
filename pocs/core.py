@@ -449,7 +449,8 @@ class POCS(PanStateMachine, PanBase):
                 'observe' or 'flat', default 'observe'.
         """
         while not self.observatory.is_dark(horizon=horizon):
-            if self.observatory.mount.is_home is False:
+            if (self.observatory.mount.is_home is False and
+                    self.observatory.mount.is_parked is False):
                 # Send the mount to home to wait
                 self.logger.warning("Sending mount to home to wait for dark")
                 self.observatory.mount.slew_to_home()
