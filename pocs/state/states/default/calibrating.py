@@ -15,9 +15,11 @@ def on_enter(event_data):
         if pocs.observatory.should_take_flats(which='evening'):
             pocs.say("Taking some flat fields to start the night")
             pocs.observatory.take_evening_flats(initial_exptime=5)
-        else:
-            pocs.say("Checking if it's dark enough to observe")
-            pocs.wait_until_dark(horizon='observe')
+            pocs.say("Done taking flat fields.")
+
+        # Wait until dark enough to observe (will send to Home)
+        pocs.say("Checking if it's dark enough to observe")
+        pocs.wait_until_dark(horizon='observe')
 
     except Exception as e:
         pocs.logger.warning("Problem with flat-fielding: {}".format(e))
