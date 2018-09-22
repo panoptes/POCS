@@ -300,8 +300,6 @@ def test_unsafe_park(pocs):
     assert pocs.state == 'parking'
     pocs.set_park()
     pocs.clean_up()
-    pocs.goto_sleep()
-    assert pocs.state == 'sleeping'
     pocs.power_down()
 
 
