@@ -501,14 +501,14 @@ class AbstractFocuser(PanBase):
 
         final_focus = self.move_to(best_focus)
 
-        final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
-        file_path = os.path.join(file_path_root, final_fn)
-
-        final_thumbnail = self._camera.get_thumbnail(
-            seconds, file_path, thumbnail_size, keep_file=True)
-
         if plots:
             initial_thumbnail = focus_utils.mask_saturated(initial_thumbnail)
+
+            final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
+            file_path = os.path.join(file_path_root, final_fn)
+
+            final_thumbnail = self._camera.get_thumbnail(
+                seconds, file_path, thumbnail_size, keep_file=True)
             final_thumbnail = focus_utils.mask_saturated(final_thumbnail)
             if dark_thumb is not None:
                 initial_thumbnail = initial_thumbnail - dark_thumb
