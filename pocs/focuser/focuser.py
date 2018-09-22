@@ -1,3 +1,4 @@
+import os
 import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
@@ -159,11 +160,11 @@ class AbstractFocuser(PanBase):
 ##################################################################################################
 
     def move_to(self, position):
-        """ Move focusser to new encoder position """
+        """ Move focuser to new encoder position """
         raise NotImplementedError
 
     def move_by(self, increment):
-        """ Move focusser by a given amount """
+        """ Move focuser by a given amount """
         return self.move_to(self.position + increment)
 
     def autofocus(self,
@@ -219,6 +220,7 @@ class AbstractFocuser(PanBase):
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
+        self.logger.debug('Starting autofocus')
         assert self._camera.is_connected, self.logger.error(
             "Camera must be connected for autofocus!")
 
@@ -324,6 +326,7 @@ class AbstractFocuser(PanBase):
                                      'start_event': coarse_event,
                                      'finished_event': fine_event,
                                      **kwargs})
+
         fine_thread.start()
 
         if blocking:
@@ -337,7 +340,7 @@ class AbstractFocuser(PanBase):
                    focus_step,
                    thumbnail_size,
                    keep_files,
-                   dark_thumb,
+                   take_dark,
                    merit_function,
                    merit_function_kwargs,
                    coarse,
@@ -348,6 +351,7 @@ class AbstractFocuser(PanBase):
                    spline_smoothing,
                    *args,
                    **kwargs):
+
         # If passed a start_event wait until Event is set before proceeding
         # (e.g. wait for coarse focus to finish before starting fine focus).
         if start_event:
@@ -365,13 +369,15 @@ class AbstractFocuser(PanBase):
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
-        file_path_root = "{}/{}/{}/{}".format(image_dir,
-                                              'focus',
-                                              self._camera.uid,
-                                              start_time)
+        file_path_root = os.path.join(image_dir,
+                                      'focus',
+                                      self._camera.uid,
+                                      start_time)
 
+        dark_thumb = None
         if take_dark:
-            file_path = os.path.join(file_path_root, 'dark', self._camera.file_extension)
+            file_path = os.path.join(file_path_root, '{}.{}'.format(
+                'dark', self._camera.file_extension))
             self.logger.debug('Taking dark frame {} on camera {}'.format(file_path, self._camera))
             try:
                 dark_thumb = self._camera.get_thumbnail(seconds,
@@ -383,12 +389,11 @@ class AbstractFocuser(PanBase):
                 dark_thumb = focus_utils.mask_saturated(dark_thumb, threshold=0.3)
             except TypeError:
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
-        else:
-            dark_thumb = None
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus,
-                                         "initial", self._camera.file_extension)
+        file_path = os.path.join(file_path_root, "{}_{}.{}".format(
+            initial_focus, "initial", self._camera.file_extension))
+
         thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
 
         if plots:
