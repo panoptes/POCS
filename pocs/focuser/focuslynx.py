@@ -28,6 +28,7 @@ class Focuser(AbstractFocuser):
     Additional positional and keyword arguments are passed to the base class, AbstractFocuser. See
     that class for a complete list.
     """
+
     def __init__(self,
                  port,
                  name='FocusLynx Focuser',
@@ -271,8 +272,8 @@ class Focuser(AbstractFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_hub_info(self):
-        self._hub_info = self._send_comman(command_str='<FHGETHUBINFO>',
-                                           expected_reply='HUB INFO')
+        self._hub_info = self._send_command(command_str='<FHGETHUBINFO>',
+                                            expected_reply='HUB INFO')
 
     def _get_focuser_config(self):
         command_str = '<F{:1d}GETCONFIG>'.format(self._focuser_number)
@@ -294,19 +295,36 @@ class Focuser(AbstractFocuser):
         Utility function that handles the common aspects of sending commands and
         parsing responses.
         """
+        name = self.port
+        if hasattr(self, '_focuser_config'):
+            name = self.uid
+
         # Make sure we start with a clean slate
         self._serial_port.reset_output_buffer()
         self._serial_port.reset_input_buffer()
         # Send command
         self._serial_port.write(command_str.encode('ascii'))
-        # Should always get '!' back unless there's an error
         response = str(self._serial_port.readline(), encoding='ascii').strip()
-        if response != '!':
-            message = "Error sending command '{}' to {}: {}".format(command_str, self.uid, response)
+        if not response:
+            message = "No response to command '{}' from {}".format(command_str, name)
             self.logger.error(message)
             warn(message)
+            raise RuntimeError(message)
+
+        # Should always get '!' back unless there's an error
+        if response != '!':
+            message = "Error sending command '{}' to {}: {}".format(command_str, name, response)
+            self.logger.error(message)
+            raise RuntimeError(message)
+
         # Next line identifies the command the focuser is replying to.
-        assert str(self._serial_port.readline(), encoding='ascii').strip() == expected_reply
+        command_echo = str(self._serial_port.readline(), encoding='ascii').strip()
+        if command_echo != expected_reply:
+            message = "Expected reply '{}' from {}, got '{}'".format(
+                expected_reply, name, command_echo)
+            self.logger.error(message)
+            raise RuntimeError(message)
+
         # For get info type commands then get several lines of key = value, then 'END'
         if expected_reply in ('HUB INFO',
                               'CONFIG1',
