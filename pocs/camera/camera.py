@@ -23,7 +23,17 @@ from pocs.focuser import AbstractFocuser
 
 class AbstractCamera(PanBase):
 
-    """ Base class for all cameras """
+    """Base class for all cameras.
+
+    Attributes:
+        filter_type (str): Type of filter attached to camera, default RGGB.
+        focuser (`pocs.cameras.focuser.Focuser`|None): Focuser for the camera, default None.
+        is_primary (bool): If this camera is the primary camera for the system, default False.
+        model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
+        name (str): Name of the camera, default 'Generic Camera'.
+        port (str): The port the camera is connected to, typically a usb device, default None.
+        properties (dict): A collection of camera properties as read from the camera.
+    """
 
     def __init__(self,
                  name='Generic Camera',
@@ -42,16 +52,15 @@ class AbstractCamera(PanBase):
         self.model = model
         self.port = port
         self.name = name
-
         self.is_primary = primary
+        self.properties = None
+
+        self.filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
-        self._serial_number = 'XXXXXX'
+        self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self.filter_type = 'RGGB'
-
-        self.properties = None
         self._current_observation = None
 
         if focuser:
