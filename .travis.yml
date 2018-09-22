@@ -6,15 +6,11 @@ services:
 python:
   - "3.6"
 env:
-    - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes PANUSER=$USER ARDUINO_VERSION=1.8.1
+    - PANDIR=$TRAVIS_BUILD_DIR POCS="$TRAVIS_BUILD_DIR/POCS" PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir -p $PANDIR
-    - sudo chown -R $PANUSER:$PANUSER $PANDIR
-    - sudo chmod -R 755 $PANDIR
-    - sudo mkdir $PANDIR/logs
-    - ln -s $TRAVIS_BUILD_DIR $PANDIR/POCS
-    - pip install coveralls
+    - mkdir $PANDIR/logs
     - pip install -U pip
+    - pip install coveralls
     - cd $HOME
     - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
     - tar zxf cfitsio_latest.tar.gz
@@ -24,8 +20,7 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - sudo mkdir -p $PANDIR/astrometry/data
-    - sudo chmod -R 755 $PANDIR/astrometry/
+    - mkdir -p $PANDIR/astrometry/data
     - cd $HOME
     - export DISPLAY=:1.0
     - export
@@ -50,13 +45,14 @@ addons:
     - swig
     - cfitsio-dev
 install:
+  - cd $TRAVIS_BUILD_DIR
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
   - tar zxvf astrometry.net-0.72.tar.gz
   - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:/var/panoptes/astrometry/bin:$PATH"
+  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$PANDIR/astrometry/bin:$PATH"
   - hash -r
 
   - conda config --set always_yes yes --set changeps1 no
@@ -65,24 +61,23 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
-  - cd $TRAVIS_BUILD_DIR
+  - cd $POCS
   - pip install -r requirements.txt
   - python setup.py install
-  - python pocs/utils/data.py --folder $TRAVIS_BUILD_DIR/astrometry/data
-  - ln -s $TRAVIS_BUILD_DIR/astrometry/data $PANDIR/astrometry/data
+  - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
   - export BOARD="arduino:avr:micro"
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
-  - export PYTHONPATH="$PYTHONPATH:$TRAVIS_BUILD_DIR/scripts/coverage"
+  - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v --test-databases all
   - coverage combine
 cache:
   pip: true
   directories:
-    - $PANDIR/astrometry/data
+    - $PANDIR/astrometry/
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
         bash <(curl -s https://codecov.io/bash);
