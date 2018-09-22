@@ -9,6 +9,7 @@ env:
     - PANDIR=$TRAVIS_BUILD_DIR POCS="$TRAVIS_BUILD_DIR/POCS" PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
     - mkdir $PANDIR/logs
+    - mkdir $POCS
     - pip install -U pip
     - pip install coveralls
     - cd $HOME
