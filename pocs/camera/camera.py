@@ -239,12 +239,18 @@ class AbstractCamera(PanBase):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        self.logger.debug("Processing {}".format(image_id))
+        exptime = info['exp_time']
+        field_name = info['field_name']
+
+        image_title = '{} [{}] {} {}'.format(field_name,
+                                             exptime,
+                                             seq_id.replace('_', ' '),
+                                             current_time(pretty=True))
 
         try:
-            self.logger.debug("Extracting pretty image")
+            self.logger.debug("Processing {}".format(image_title))
             img_utils.make_pretty_image(file_path,
-                                        title=info['field_name'],
+                                        title=image_title,
                                         link_latest=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
@@ -435,15 +441,19 @@ class AbstractCamera(PanBase):
 
             file_path = filename
 
+        unit_id = self.config['pan_id']
+
+        # Make the image_id
         image_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             start_time
         )
         self.logger.debug("image_id: {}".format(image_id))
 
+        # Make the sequence_id
         sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             observation.seq_time
         )

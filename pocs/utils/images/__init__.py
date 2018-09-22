@@ -13,6 +13,7 @@ from astropy.visualization import (PercentileInterval, LogStretch, ImageNormaliz
 
 from glob import glob
 from copy import copy
+from dateutil import parser as date_parser
 
 from pocs.utils import current_time
 from pocs.utils import error
@@ -64,30 +65,32 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
-    """Make a pretty image
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
+    """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
 
+    Notes:
+        See `$POCS/scripts/cr2_to_jpg.sh` for CR2 process.
+
     Arguments:
-        fname (str): Name of image file, may be either .fits or .cr2.
-        timeout (int, optional): Timeout for image conversion in seconds,
-            default 15 seconds.
+        fname {str} -- Name of image file, may be either .fits or .cr2
+        title (None|str, optional): Title to be placed on image, default None.
+        timeout (int, optional): Timeout for conversion, default 15 seconds.
         link_latest (bool, optional): If the pretty picture should be linked to
             `$PANDIR/images/latest.jpg`, default False.
-        **kwargs: Additional keyword arguments passed to the conversion methods.
+        **kwargs {dict} -- Additional arguments to be passed to external script.
 
     Returns:
-        str -- Filename of image that was created
-
+        str -- Filename of image that was created.
     """
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     if fname.endswith('.cr2'):
-        pretty_path = _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+        pretty_path = _make_pretty_from_cr2(fname, title=title, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        pretty_path = _make_pretty_from_fits(fname, **kwargs)
+        pretty_path = _make_pretty_from_fits(fname, title=title, **kwargs)
     else:
         warn("File must be a Canon CR2 or FITS file.")
         return None
@@ -110,8 +113,14 @@ def make_pretty_image(fname, timeout=15, link_latest=False, **kwargs):  # pragma
     return pretty_path
 
 
-def _make_pretty_from_fits(
-        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=7, **kwargs):
+def _make_pretty_from_fits(fname=None,
+                           title=None,
+                           figsize=(10, 10 / 1.325),
+                           dpi=150,
+                           alpha=0.2,
+                           number_ticks=7,
+                           clip_percent=99.9,
+                           **kwargs):
 
     with open_fits(fname) as hdu:
         header = hdu[0].header
@@ -119,16 +128,27 @@ def _make_pretty_from_fits(
         data = focus_utils.mask_saturated(data)
         wcs = WCS(header)
 
-    title = kwargs.get('title', header.get('FIELD', 'Unknown'))
-    exp_time = header.get('EXPTIME', 'Unknown')
+    if not title:
+        field = header.get('FIELD', 'Unknown field')
+        exp_time = header.get('EXPTIME', 'Unknown exptime')
+        filter_type = header.get('FILTER', 'Unknown filter')
 
-    filter_type = header.get('FILTER', 'Unknown filter')
-    date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+        try:
+            date_time = header['DATE-OBS']
+        except KeyError:
+            # If we don't have DATE-OBS, check filename for date
+            try:
+                basename = os.path.splitext(os.path.basename(fname))[0]
+                date_time = date_parser.parse(basename).isoformat()
+            except Exception:
+                # Otherwise use now
+                date_time = current_time(pretty=True)
 
-    percent_value = kwargs.get('normalize_clip_percent', 99.9)
+        date_time = date_time.replace('T', ' ', 1)
 
-    title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
-    norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
+        title = '{} ({}s {}) {}'.format(field, exp_time, filter_type, date_time)
+
+    norm = ImageNormalize(interval=PercentileInterval(clip_percent), stretch=LogStretch())
 
     fig = plt.figure(figsize=figsize, dpi=dpi)
 
@@ -140,7 +160,7 @@ def _make_pretty_from_fits(
         ra_axis.set_axislabel('Right Ascension')
         ra_axis.set_major_formatter('hh:mm')
         ra_axis.set_ticks(
-            number=number,
+            number=number_ticks,
             color='white',
             exclude_overlapping=True
         )
@@ -149,7 +169,7 @@ def _make_pretty_from_fits(
         dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
         dec_axis.set_ticks(
-            number=number,
+            number=number_ticks,
             color='white',
             exclude_overlapping=True
         )
@@ -171,16 +191,14 @@ def _make_pretty_from_fits(
     return new_filename
 
 
-def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
+def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: no cover
     verbose = kwargs.get('verbose', False)
 
-    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+    script_name = os.path.join(os.getenv('POCS'), 'scripts', 'cr2_to_jpg.sh')
+    cmd = [script_name, fname]
 
-    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'))
-    cmd = [solve_field, fname, title]
-
-    if kwargs.get('primary', False):
-        cmd.append('link')
+    if title:
+        cmd.append(title)
 
     if verbose:
         print(cmd)

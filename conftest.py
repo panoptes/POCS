@@ -46,6 +46,11 @@ def pytest_addoption(parser):
         dest="test_cloud_storage",
         help="Tests cloud strorage functions." +
         "Requires $PANOPTES_CLOUD_KEY to be set to path of valid json service key")
+    group.addoption(
+        "--test-databases",
+        nargs="+",
+        default=['mongo'],
+        help="Test databases in the list. Note that travis-ci will test all of them by default.")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -214,6 +219,11 @@ def can_connect_to_mongo():
 
 @pytest.fixture(scope='function', params=['mongo', 'file', 'memory'])
 def db_type(request):
+
+    db_list = pytest.config.option.test_databases
+    if request.param not in db_list and 'all' not in db_list:
+        pytest.skip("Skipping {} DB, set --test-all-databases=True".format(request.param))
+
     # If testing mongo, make sure we can connect, otherwise skip.
     if request.param == 'mongo' and not can_connect_to_mongo():
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
