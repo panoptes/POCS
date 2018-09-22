@@ -1,31 +1,39 @@
-from pocs.base import PanBase
+import re
+import shutil
+import subprocess
+import yaml
+import os
+import copy
+from threading import Event
+from threading import Thread
 
+from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
+
+from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
-
 from pocs.focuser import AbstractFocuser
-
-from astropy.io import fits
-from astropy.time import Time
-import astropy.units as u
-
-import re
-import shutil
-import subprocess
-import yaml
-import os
-
-from threading import Event
-from threading import Thread
 
 
 class AbstractCamera(PanBase):
 
-    """ Base class for all cameras """
+    """Base class for all cameras.
+
+    Attributes:
+        filter_type (str): Type of filter attached to camera, default RGGB.
+        focuser (`pocs.cameras.focuser.Focuser`|None): Focuser for the camera, default None.
+        is_primary (bool): If this camera is the primary camera for the system, default False.
+        model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
+        name (str): Name of the camera, default 'Generic Camera'.
+        port (str): The port the camera is connected to, typically a usb device, default None.
+        properties (dict): A collection of camera properties as read from the camera.
+    """
 
     def __init__(self,
                  name='Generic Camera',
@@ -44,16 +52,15 @@ class AbstractCamera(PanBase):
         self.model = model
         self.port = port
         self.name = name
-
         self.is_primary = primary
+        self.properties = None
+
+        self.filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
-        self._serial_number = 'XXXXXX'
+        self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self.filter_type = 'RGGB'
-
-        self.properties = None
         self._current_observation = None
 
         if focuser:
@@ -68,8 +75,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self)
-                    self.logger.debug("Focuser created: {}".format(self.focuser))
+                    focuser_kwargs = copy.copy(focuser)
+                    focuser_kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**focuser_kwargs)
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
