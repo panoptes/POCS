@@ -351,20 +351,23 @@ class AbstractFocuser(PanBase):
                    spline_smoothing,
                    *args,
                    **kwargs):
+        """Private helper method for calling autofocus in a Thread.
+
+        See public `autofocus` for information about the parameters.
+        """
 
         # If passed a start_event wait until Event is set before proceeding
         # (e.g. wait for coarse focus to finish before starting fine focus).
         if start_event:
             start_event.wait()
 
-        initial_focus = self.position
+        focus_type = 'fine'
         if coarse:
-            self.logger.debug(
-                "Beginning coarse autofocus of {} - initial position: {}",
-                self._camera, initial_focus)
-        else:
-            self.logger.debug(
-                "Beginning autofocus of {} - initial position: {}", self._camera, initial_focus)
+            focus_type = 'coarse'
+
+        initial_focus = self.position
+        self.logger.debug("Beginning {} autofocus of {} - initial position: {}",
+                          focus_type, self._camera, initial_focus)
 
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.config['directories']['images']
@@ -376,12 +379,12 @@ class AbstractFocuser(PanBase):
 
         dark_thumb = None
         if take_dark:
-            file_path = os.path.join(file_path_root, '{}.{}'.format(
-                'dark', self._camera.file_extension))
-            self.logger.debug('Taking dark frame {} on camera {}'.format(file_path, self._camera))
+            dark_path = os.path.join(file_path_root,
+                                     '{}.{}'.format('dark', self._camera.file_extension))
+            self.logger.debug('Taking dark frame {} on camera {}'.format(dark_path, self._camera))
             try:
                 dark_thumb = self._camera.get_thumbnail(seconds,
-                                                        file_path,
+                                                        dark_path,
                                                         thumbnail_size,
                                                         keep_file=True,
                                                         dark=True)
@@ -391,24 +394,11 @@ class AbstractFocuser(PanBase):
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        file_path = os.path.join(file_path_root, "{}_{}.{}".format(
-            initial_focus, "initial", self._camera.file_extension))
+        initial_fn = "{}_{}.{}".format(initial_focus, "initial", self._camera.file_extension)
+        initial_path = os.path.join(file_path_root, initial_fn)
 
-        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
-
-        if plots:
-            thumbnail = focus_utils.mask_saturated(thumbnail)
-            if dark_thumb is not None:
-                thumbnail = thumbnail - dark_thumb
-
-            fig = Figure()
-            FigureCanvas(fig)
-            fig.set_size_inches(9, 18)
-
-            ax1 = fig.add_subplot(3, 1, 1)
-            im1 = ax1.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
-            fig.colorbar(im1)
-            ax1.set_title('Initial focus position: {}'.format(initial_focus))
+        initial_thumbnail = self._camera.get_thumbnail(
+            seconds, initial_path, thumbnail_size, keep_file=True)
 
         # Set up encoder positions for autofocus sweep, truncating at focus travel
         # limits if required.
@@ -423,17 +413,21 @@ class AbstractFocuser(PanBase):
                                     min(initial_focus + focus_range / 2, self.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
-        thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size), dtype=thumbnail.dtype)
+
+        thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size),
+                              dtype=initial_thumbnail.dtype)
         masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
         metric = np.empty(n_positions)
 
+        # Take and store an exposure for each focus position.
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
             focus_positions[i] = self.move_to(position)
 
             # Take exposure
-            file_path = "{}/{}_{}.{}".format(file_path_root,
-                                             focus_positions[i], i, self._camera.file_extension)
+            focus_fn = "{}_{:02d}.{}".format(focus_positions[i], i, self._camera.file_extension)
+            file_path = os.path.join(file_path_root, focus_fn)
+
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
             masks[i] = focus_utils.mask_saturated(thumbnail).mask
@@ -444,8 +438,9 @@ class AbstractFocuser(PanBase):
         master_mask = masks.any(axis=0)
         master_mask = binary_dilation(master_mask, iterations=mask_dilations)
 
-        for i, position in enumerate(focus_positions):
-            thumbnail = np.ma.array(thumbnails[i], mask=master_mask)
+        # Apply the master mask and then get metrics for each frame.
+        for i, thumbnail in enumerate(thumbnails):
+            thumbnail = np.ma.array(thumbnail, mask=master_mask)
             metric[i] = focus_utils.focus_metric(
                 thumbnail, merit_function, **merit_function_kwargs)
 
@@ -504,7 +499,31 @@ class AbstractFocuser(PanBase):
             # Coarse focus, just use max value.
             best_focus = focus_positions[imax]
 
+        final_focus = self.move_to(best_focus)
+
+        final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
+        file_path = os.path.join(file_path_root, final_fn)
+
+        final_thumbnail = self._camera.get_thumbnail(
+            seconds, file_path, thumbnail_size, keep_file=True)
+
         if plots:
+            initial_thumbnail = focus_utils.mask_saturated(initial_thumbnail)
+            final_thumbnail = focus_utils.mask_saturated(final_thumbnail)
+            if dark_thumb is not None:
+                initial_thumbnail = initial_thumbnail - dark_thumb
+                final_thumbnail = final_thumbnail - dark_thumb
+
+            fig = Figure()
+            FigureCanvas(fig)
+            fig.set_size_inches(9, 18)
+
+            ax1 = fig.add_subplot(3, 1, 1)
+            im1 = ax1.imshow(initial_thumbnail, interpolation='none',
+                             cmap=palette, norm=colours.LogNorm())
+            fig.colorbar(im1)
+            ax1.set_title('Initial focus position: {}'.format(initial_focus))
+
             ax2 = fig.add_subplot(3, 1, 2)
             ax2.plot(focus_positions, metric, 'bo', label='{}'.format(merit_function))
             if fitted:
@@ -520,42 +539,26 @@ class AbstractFocuser(PanBase):
                        label='Initial focus')
             ax2.vlines(best_focus, l_limit, u_limit, colors='k', linestyles='--',
                        label='Best focus')
+
             ax2.set_xlabel('Focus position')
             ax2.set_ylabel('Focus metric')
-            if coarse:
-                ax2.set_title('{} coarse focus at {}'.format(self._camera, start_time))
-            else:
-                ax2.set_title('{} fine focus at {}'.format(self._camera, start_time))
+
+            ax2.set_title('{} {} focus at {}'.format(self._camera, focus_type, start_time))
             ax2.legend(loc='best')
 
-        final_focus = self.move_to(best_focus)
-
-        file_path = "{}/{}_{}.{}".format(file_path_root, final_focus,
-                                         "final", self._camera.file_extension)
-        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
-
-        if plots:
-            thumbnail = focus_utils.mask_saturated(thumbnail)
-            if dark_thumb is not None:
-                thumbnail = thumbnail - dark_thumb
             ax3 = fig.add_subplot(3, 1, 3)
-            im3 = ax3.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
+            im3 = ax3.imshow(final_thumbnail, interpolation='none',
+                             cmap=palette, norm=colours.LogNorm())
             fig.colorbar(im3)
             ax3.set_title('Final focus position: {}'.format(final_focus))
-            if coarse:
-                plot_path = file_path_root + '_coarse.png'
-            else:
-                plot_path = file_path_root + '_fine.png'
+            plot_path = os.path.join(file_path_root, '{}_focus.png'.format(focus_type))
 
             fig.tight_layout()
-            fig.savefig(plot_path)
+            fig.savefig(plot_path, transparent=False)
             plt.close(fig)
-            if coarse:
-                self.logger.info('Coarse focus plot for camera {} written to {}'.format(
-                    self._camera, plot_path))
-            else:
-                self.logger.info('Fine focus plot for camera {} written to {}'.format(
-                    self._camera, plot_path))
+
+            self.logger.info('{} focus plot for camera {} written to {}'.format(
+                focus_type.capitalize(), self._camera, plot_path))
 
         self.logger.debug(
             'Autofocus of {} complete - final focus position: {}', self._camera, final_focus)
