@@ -6,19 +6,18 @@ import os
 import copy
 from threading import Event
 from threading import Thread
+
 from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
 from pocs.base import PanBase
-
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
-
 from pocs.focuser import AbstractFocuser
 
 
