@@ -99,7 +99,6 @@ class AbstractFocuser(PanBase):
         self.autofocus_merit_function = autofocus_merit_function
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
         self.autofocus_mask_dilations = autofocus_mask_dilations
-        self.autofocus_spline_smoothing = autofocus_spline_smoothing
 
         self._camera = camera
 
