@@ -403,33 +403,42 @@ class Focuser(AbstractFocuser):
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
-        self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
+        self.logger.debug("Got serial number {} for {} on {}".format(
+            self.uid,
+            self.name,
+            self.port))
 
     def _get_library_version(self):
         response = self._send_command('lv', response_length=1)
         self._library_version = response[0].rstrip()
-        self.logger.debug("Got library version '{}' for {} on {}".format(self.library_version, self.name, self.port))
+        self.logger.debug("Got library version '{}' for {} on {}".format(self._library_version,
+                                                                         self.name,
+                                                                         self.port))
 
     def _get_hardware_version(self):
         response = self._send_command('hv', response_length=1)
         self._hardware_version = response[0].rstrip()
-        self.logger.debug("Got hardware version {} for {} on {}".format(self.hardware_version, self.name, self.port))
+        self.logger.debug("Got hardware version {} for {} on {}".format(self._hardware_version,
+                                                                        self.name,
+                                                                        self.port))
 
     def _get_lens_info(self):
         response = self._send_command('id', response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug("Got lens info '{}' for {} on {}".format(self.lens_info, self.name, self.port))
+        self.logger.debug("Got lens info '{}' for {} on {}".format(self._lens_info,
+                                                                   self.name,
+                                                                   self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        response = self._send_command('in', response_length=1)
-        if response[0].rstrip() != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONE'!".format(self, response[0].rstrip()))
+        response = self._send_command('in', response_length=1)[0].rstrip()
+        if response != 'DONE':
+            self.logger.error("{} got '{}', expected 'DONE'!".format(self, response))
 
     def _move_zero(self):
-        response = self._send_command('mz', response_length=1)
-        if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+        response = self._send_command('mz', response_length=1)[0].rstrip()
+        if response[:4] != 'DONE':
+            self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
@@ -441,14 +450,14 @@ class Focuser(AbstractFocuser):
 
     def _learn_focus_range(self):
         self.logger.debug('Learning absolute focus range')
-        response = self._send_command('la', response_length=1)
-        if response[0].rstrip() != 'DONE:LA':
-            self.logger.error("{} got response '{}', expected 'DONE:LA'!".format(self, response[0].rstrip()))
+        response = self._send_command('la', response_length=1)[0].rstrip()
+        if response != 'DONE:LA':
+            self.logger.error("{} got '{}', expected 'DONE:LA'!".format(self, response))
 
     def _move_inf(self):
-        response = self._send_command('mi', response_length=1)
-        if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+        response = self._send_command('mi', response_length=1).rstrip()
+        if response[:4] != 'DONE':
+            self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
