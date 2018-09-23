@@ -216,9 +216,14 @@ class AbstractFocuser(PanBase):
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
+            *args: Optional arguments passed to focus procedure.
+            **kwargs: Optional keyword arguments passed to focus procedure.
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
+
+        Raises:
+            ValueError: If invalid values are passed for any of the focus parameters.
         """
         self.logger.debug('Starting autofocus')
         assert self._camera.is_connected, self.logger.error(
@@ -284,49 +289,41 @@ class AbstractFocuser(PanBase):
             else:
                 mask_dilations = 10
 
+        # Set up the focus parameters
+        focus_params = {
+            'seconds': seconds,
+            'focus_range': focus_range,
+            'focus_step': focus_step,
+            'thumbnail_size': thumbnail_size,
+            'keep_files': keep_files,
+            'take_dark': take_dark,
+            'merit_function': merit_function,
+            'merit_function_kwargs': merit_function_kwargs,
+            'mask_dilations': mask_dilations,
+            'spline_smoothing': spline_smoothing,
+            'plots': plots,
+            'start_event': None,
+            'finished_event': None,
+        }
+
+        # Coarse focus
         if coarse:
             coarse_event = Event()
-            coarse_thread = Thread(target=self._autofocus,
-                                   args=args,
-                                   kwargs={'seconds': seconds,
-                                           'focus_range': focus_range,
-                                           'focus_step': focus_step,
-                                           'thumbnail_size': thumbnail_size,
-                                           'keep_files': keep_files,
-                                           'take_dark': take_dark,
-                                           'merit_function': merit_function,
-                                           'merit_function_kwargs': merit_function_kwargs,
-                                           'mask_dilations': mask_dilations,
-                                           'spline_smoothing': spline_smoothing,
-                                           'coarse': True,
-                                           'plots': plots,
-                                           'start_event': None,
-                                           'finished_event': coarse_event,
-                                           **kwargs}
-                                   )
+            focus_params['finished_event'] = coarse_event
+            focus_params['coarse'] = True
+
+            coarse_thread = Thread(target=self._autofocus, kwargs=focus_params)
             coarse_thread.start()
         else:
             coarse_event = None
 
+        # Fine Focus - This will wait for the coarse_event to finish.
         fine_event = Event()
-        fine_thread = Thread(target=self._autofocus,
-                             args=args,
-                             kwargs={'seconds': seconds,
-                                     'focus_range': focus_range,
-                                     'focus_step': focus_step,
-                                     'thumbnail_size': thumbnail_size,
-                                     'keep_files': keep_files,
-                                     'take_dark': take_dark,
-                                     'merit_function': merit_function,
-                                     'merit_function_kwargs': merit_function_kwargs,
-                                     'mask_dilations': mask_dilations,
-                                     'spline_smoothing': spline_smoothing,
-                                     'coarse': False,
-                                     'plots': plots,
-                                     'start_event': coarse_event,
-                                     'finished_event': fine_event,
-                                     **kwargs})
+        focus_params['start_event'] = coarse_event
+        focus_params['finished_event'] = fine_event
+        focus_params['coarse'] = False
 
+        fine_thread = Thread(target=self._autofocus, kwargs=focus_params)
         fine_thread.start()
 
         if blocking:
@@ -343,12 +340,12 @@ class AbstractFocuser(PanBase):
                    take_dark,
                    merit_function,
                    merit_function_kwargs,
-                   coarse,
-                   plots,
-                   start_event,
-                   finished_event,
                    mask_dilations,
                    spline_smoothing,
+                   plots,
+                   coarse,
+                   start_event,
+                   finished_event,
                    *args,
                    **kwargs):
         """Private helper method for calling autofocus in a Thread.
