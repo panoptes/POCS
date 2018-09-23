@@ -80,7 +80,10 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
-  - coverage run $(which pytest) -v --test-databases=all
+  - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
+  - export COVERAGE_PROCESS_START=.coveragerc
+  - coverage run $(which pytest) -v --test-databases all
+  - coverage combine  
 cache:
   pip: true
   directories:
