@@ -8,13 +8,14 @@ from astropy import units as u
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
-from pocs.utils import Timer
+from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
+from pocs.utils import error
 
 
 def wait_for_running(sub, max_duration=90):
     """Given a message subscriber, wait for a RUNNING message."""
-    timeout = Timer(max_duration)
+    timeout = CountdownTimer(max_duration)
     while not timeout.expired():
         topic, msg_obj = sub.receive_message()
         if msg_obj and 'RUNNING' == msg_obj.get('message'):
@@ -24,7 +25,7 @@ def wait_for_running(sub, max_duration=90):
 
 def wait_for_state(sub, state, max_duration=90):
     """Given a message subscriber, wait for the specified state."""
-    timeout = Timer(max_duration)
+    timeout = CountdownTimer(max_duration)
     while not timeout.expired():
         topic, msg_obj = sub.receive_message()
         if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:
@@ -194,6 +195,33 @@ def test_is_weather_safe_simulator(pocs):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather']
     assert pocs.is_weather_safe() is True
+
+
+def test_wait_for_events_timeout(pocs):
+    test_event = threading.Event()
+
+    # Test timeout
+    with pytest.raises(error.Timeout):
+        pocs.wait_for_events(test_event, 1)
+
+    # Test timeout
+    with pytest.raises(error.Timeout):
+        pocs.wait_for_events(test_event, 5 * u.second, sleep_delay=1)
+
+
+def test_wait_for_events(pocs):
+    test_event = threading.Event()
+
+    def set_event():
+        test_event.set()
+
+    # Mark as set in 1 second
+    t = threading.Timer(1.0, set_event)
+    t.start()
+
+    # Wait for 10 seconds (should trip in 1 second)
+    pocs.wait_for_events(test_event, 10)
+    assert test_event.is_set()
 
 
 def test_is_weather_safe_no_simulator(pocs):

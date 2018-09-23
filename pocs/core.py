@@ -13,7 +13,7 @@ from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
 from pocs.utils import get_free_space
-from pocs.utils import Timer
+from pocs.utils import CountdownTimer
 from pocs.utils import listify
 from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
@@ -440,20 +440,23 @@ class POCS(PanStateMachine, PanBase):
     def wait_for_events(self,
                         events,
                         timeout,
-                        sleep_delay=1,
-                        status_interval=10,
-                        msg_interval=30,
+                        sleep_delay=1 * u.second,
+                        status_interval=10 * u.second,
+                        msg_interval=30 * u.second,
                         event_type='generic'):
         """Wait for event(s) to be set.
 
         This method will wait for a maximum of `timeout` seconds for all of the
-        `events` to complete. The loop will `check_messages` each time in case of
-        interrupt or bad weather and will also output status messages at periodic
-        intervals.
+        `events` to complete.
+
+        Will check at least every `sleep_delay` seconds for the events to be done,
+        and also for interrupts and bad weather. Will log debug messages approximately
+        every `status_interval` seconds, and will output status messages approximately
+        every `msg_interval` seconds.
 
         Args:
             events (list(`threading.Event`)): An Event or list of Events to wait on.
-            timeout (float): Timeout in seconds to wait for events.
+            timeout (float|`astropy.units.Quantity`): Timeout in seconds to wait for events.
             sleep_delay (float, optional): Time in seconds between event checks.
             status_interval (float, optional): Time in seconds between status checks of the system.
             msg_interval (float, optional): Time in seconds between sending of status messages.
@@ -464,13 +467,20 @@ class POCS(PanStateMachine, PanBase):
             error.Timeout: Raised if events have not all been set before `timeout` seconds.
         """
         events = listify(events)
-        timer = Timer(timeout)
+
+        if isinstance(timeout, u.Quantity):
+            timeout = timeout.to(u.second).value
+
+        if isinstance(sleep_delay, u.Quantity):
+            sleep_delay = sleep_delay.to(u.second).value
+
+        timer = CountdownTimer(timeout)
 
         start_time = current_time()
         next_status_time = start_time + status_interval
         next_msg_time = start_time + msg_interval
 
-        while not all([event.is_set() for event in events.values()]):
+        while not all([event.is_set() for event in events]):
             self.check_messages()
             if self.interrupted:
                 self.logger.info("Waiting for events has been interrupted")
@@ -494,7 +504,7 @@ class POCS(PanStateMachine, PanBase):
                 raise error.Timeout
 
             # Sleep for a little bit.
-            time.sleep(sleep_delay.value)
+            time.sleep(sleep_delay)
 
     def wait_until_safe(self):
         """ Waits until weather is safe.
