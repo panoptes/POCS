@@ -180,8 +180,7 @@ class AbstractFocuser(PanBase):
                   spline_smoothing=None,
                   coarse=False,
                   plots=True,
-                  blocking=False,
-                  *args, **kwargs):
+                  blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
         a coarse focus first before performing the default fine focus. The
@@ -216,8 +215,6 @@ class AbstractFocuser(PanBase):
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
-            *args: Optional arguments passed to focus procedure.
-            **kwargs: Optional keyword arguments passed to focus procedure.
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
