@@ -1,7 +1,7 @@
-from astropy import units as u
+from contextlib import suppress
 from pocs.images import Image
 
-MAX_EXTRA_TIME = 60 * u.second
+MAX_EXTRA_TIME = 60  # seconds
 
 
 def on_enter(event_data):
@@ -19,6 +19,11 @@ def on_enter(event_data):
     should_correct = pointing_config.get('auto_correct', False)
     pointing_threshold = pointing_config.get('threshold', 0.05)  # degrees
     exptime = pointing_config.get('exptime', 30)  # seconds
+
+    # Set up the maxium wait time.
+    with suppress(AttributeError):
+        exptime = exptime.value
+    maximum_duration = exptime + MAX_EXTRA_TIME
 
     try:
         pocs.say("Taking pointing picture.")
@@ -47,7 +52,8 @@ def on_enter(event_data):
             )
 
             # Wait for images to complete
-            maximum_duration = exptime + MAX_EXTRA_TIME
+            pocs.logger.debug('Waiting max {}s for pointing image: {}',
+                              maximum_duration, camera_event)
             pocs.wait_for_events(camera_event, maximum_duration, event_type='pointing')
 
             # Analyze pointing

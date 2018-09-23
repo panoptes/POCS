@@ -322,7 +322,7 @@ def fpack(fits_fname, unpack=False, verbose=False):
     return out_file
 
 
-def write_fits(data, header, filename, logger, exposure_event=None):
+def write_fits(data, header, filename, logger, exposure_event=None, overwrite=False):
     """
     Write FITS file to requested location
     """
@@ -333,7 +333,7 @@ def write_fits(data, header, filename, logger, exposure_event=None):
         os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
 
     try:
-        hdu.writeto(filename)
+        hdu.writeto(filename, overwrite=overwrite)
     except OSError as err:
         logger.error('Error writing image to {}!'.format(filename))
         logger.error(err)

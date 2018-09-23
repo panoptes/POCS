@@ -466,6 +466,8 @@ class POCS(PanStateMachine, PanBase):
         Raises:
             error.Timeout: Raised if events have not all been set before `timeout` seconds.
         """
+        self.logger.debug('Waiting for {} events: max={}s sleep={} status={} msg={}',
+                          event_type, timeout, sleep_delay, status_interval, msg_interval)
         events = listify(events)
 
         if isinstance(timeout, u.Quantity):
