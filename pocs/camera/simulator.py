@@ -83,7 +83,7 @@ class Camera(AbstractCamera):
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
-        file_path = os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'data', 'solved.fits')
+        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
         fake_data = fits.getdata(file_path)
 
         if header['IMAGETYP'] == 'Dark Frame':
@@ -92,9 +92,7 @@ class Camera(AbstractCamera):
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
 
-        # Fake exposures write to same filename.
-        fits_utils.write_fits(fake_data, header, filename, self.logger,
-                              exposure_event, overwrite=True)
+        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)

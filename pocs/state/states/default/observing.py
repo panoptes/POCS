@@ -1,7 +1,7 @@
-from contextlib import suppress
+from astropy import units as u
 from pocs import utils as pocs_utils
 
-MAX_EXTRA_TIME = 60  # seconds
+MAX_EXTRA_TIME = 60 * u.second
 
 
 def on_enter(event_data):
@@ -13,17 +13,11 @@ def on_enter(event_data):
     pocs.say("I'm finding exoplanets!")
     pocs.next_state = 'parking'
 
-    # Set up the maxium wait time.
-    exptime = pocs.observatory.current_observation.exp_time
-    with suppress(AttributeError):
-        exptime = exptime.value
-    maximum_duration = exptime + MAX_EXTRA_TIME
-
     try:
+        maximum_duration = pocs.observatory.current_observation.exp_time + MAX_EXTRA_TIME
+
         # Start the observing.
         camera_events = pocs.observatory.observe()
-        pocs.logger.debug('Waiting max {}s for pointing image: {}',
-                          maximum_duration, camera_events)
         pocs.wait_for_events(list(camera_events.values()),
                              maximum_duration, event_type='observing')
 
