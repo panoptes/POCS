@@ -2,7 +2,7 @@ import os
 
 from collections import OrderedDict
 from datetime import datetime
-
+import subprocess
 from glob import glob
 
 from astroplan import Observer
@@ -19,7 +19,6 @@ from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
@@ -199,17 +198,23 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self):
+    def cleanup_observations(self, timeout=600):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
         `observed_list` when done
 
+        Args:
+            timeout (int, optional): Timeout for each directory to upload files,
+                defaults to 600 seconds (10 minutes).
         """
         try:
             upload_images = self.config.get('panoptes_network', {})['image_storage']
         except KeyError:
             upload_images = False
+
+        process_script = 'upload_image_dir.py'
+        process_cmd = [os.path.join(os.environ['POCS'], 'scripts', process_script)]
 
         try:
             pan_id = self.config['pan_id']
@@ -220,22 +225,49 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
+            observation_dir = os.path.join(
+                self.config['directories']['images'],
+                'fields',
+                observation.field.field_name
+            )
+            self.logger.debug('Searching directory: {}', observation_dir)
+
             for cam_name, camera in self.cameras.items():
                 self.logger.debug('Cleanup for camera {} [{}]'.format(
                     cam_name, camera.uid))
 
-                dir_name = "{}/fields/{}/{}/{}/".format(
-                    self.config['directories']['images'],
-                    observation.field.field_name,
+                seq_dir = os.path.join(
+                    observation_dir,
                     camera.uid,
-                    seq_time,
+                    seq_time
                 )
+                self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                img_utils.clean_observation_dir(dir_name)
+                # Add directory to command
+                process_cmd.extend([
+                    '--directory', seq_dir,
+                ])
 
-                if upload_images is True:
-                    self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                # Add upload flag
+                if upload_images:
+                    process_cmd.append('--upload')
+
+                # Start the subprocess in background and collect proc object.
+                clean_proc = subprocess.Popen(process_cmd,
+                                              universal_newlines=True,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE
+                                              )
+                self.logger.info('Cleaning directory pid={}'.format(clean_proc.pid))
+
+                # Block and wait for directory to finish
+                try:
+                    outs, errs = clean_proc.communicate(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    clean_proc.kill()
+                    outs, errs = clean_proc.communicate(timeout=10)
+                    if errs is not None:
+                        self.logger.warning("Problem cleaning: {}".format(errs))
 
             self.logger.debug('Cleanup finished')
 
