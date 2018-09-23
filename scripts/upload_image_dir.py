@@ -2,30 +2,23 @@
 import os
 
 from warnings import warn
-from astropy import units as u
-from astropy.time import Time
-from astropy.utils import console
-from pprint import pprint
+from glob import glob
+from astropy.io import fits
 
-from pocs.utils.database import PanMongo
 from pocs.utils import current_time
 from pocs.utils.config import load_config
-from pocs.utils.images import upload_observation_dir
+from pocs.utils.images import clean_observation_dir
+from pocs.utils.google.storage import upload_observation_to_bucket
+from pocs.utils.db.postgres import add_header_to_db
 
 
-def main(date, auto_confirm=False, verbose=False):
-    """Upload images more recent than given date
+def main(directory, upload=True, remove_jpgs=False, send_headers=True, verbose=False, **kwargs):
+    """Upload images from the given directory. """
 
-    Args:
-        date (datetime): Images more recent than this date will be uploaded
-        auto_confirm (bool, optional): If upload should first be confirm. Default
-            to False.
-        verbose (bool, optional): Verbose output. Default False.
+    def _print(msg):
+        if verbose:
+            print(msg)
 
-    Returns:
-        int: Number of images uploaded
-    """
-    db = PanMongo()
     config = load_config()
     try:
         pan_id = config['pan_id']
@@ -33,65 +26,61 @@ def main(date, auto_confirm=False, verbose=False):
         warn("Can't upload without a valid pan_id in the config")
         return
 
-    def _print(msg):
-        if verbose:
-            print(msg)
+    _print("Cleaning observation directory: {}".format(directory))
+    try:
+        clean_observation_dir(directory, remove_jpgs=remove_jpgs, verbose=verbose, **kwargs)
+    except FileExistsError as e:
+        print(e)
 
-    img_dir = config['directories']['images']
-    fields_dir = os.path.join(img_dir, 'fields')
+    if upload:
+        _print("Uploading to storage bucket")
 
-    # Get all the sequences from previous day
-    seq_ids = db.observations.distinct(
-        'sequence_id', {'date': {'$gte': date}})
-    # Find all images corresponding to those sequences
-    imgs = [record['data']['file_path'] for record in db.observations.find(
-        {'sequence_id': {'$in': seq_ids}}, {'data.file_path': 1})]
+        uploaded_files_fn = os.path.join(directory, 'uploaded_files.txt')
 
-    # Get directory names without leading fields_dir and trailing image dir
-    dirs = sorted(set([img[0:img.rindex('/') - 1].replace(fields_dir, '') for img in imgs]))
+        if os.path.exists(uploaded_files_fn):
+            _print("Files have been uploaded already, skipping")
+        else:
+            file_search_path = upload_observation_to_bucket(
+                pan_id,
+                directory,
+                include_files='*',
+                verbose=verbose, **kwargs)
+            uploaded_files = sorted(glob(file_search_path))
+            with open(uploaded_files_fn, 'w') as f:
+                f.write('# Files uploaded on {}\n'.format(current_time(pretty=True)))
+                f.write('\n'.join(uploaded_files))
 
-    if auto_confirm is False:
-        _print("Found the following dirs for {}:".format(date))
-        pprint(dirs)
-        if input("Proceed (Y/n): ") == 'n':
-            return
+    if send_headers:
+        _print("Sending FITS headers to metadb")
+        for fn in glob(os.path.join(directory, '*.fz')):
+            h0 = fits.getheader(fn, ext=1)
+            add_header_to_db(h0)
 
-    if verbose:
-        dir_iterator = console.ProgressBar(dirs)
-    else:
-        dir_iterator = dirs
-
-    for d in dir_iterator:
-        dir_name = '{}/{}'.format(fields_dir, d)
-
-        upload_observation_dir(pan_id, dir_name)
-
-    return len(imgs)
+    return directory
 
 
 if __name__ == '__main__':
 
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Uploader for image directory")
-    parser.add_argument('--date', default=None,
-                        help='Export start date, e.g. 2016-01-01, defaults to yesterday')
-    parser.add_argument('--auto-confirm', action='store_true', default=False,
-                        help='Auto-confirm upload, implies verbose.')
-    parser.add_argument('--verbose', action='store_true', default=False,
-                        help='Verbose')
+    parser = argparse.ArgumentParser(description="Uploader for image directory")
+    parser.add_argument('--directory', default=None,
+                        help='Directory to be cleaned and uploaded')
+    parser.add_argument('--upload', default=False, action='store_true',
+                        help='If images should be uploaded, default False')
+    parser.add_argument('--send_headers', default=False, action='store_true',
+                        help='If FITS headers should be sent to metadb, default False')
+    parser.add_argument('--remove_jpgs', default=False, action='store_true',
+                        help='If images should be removed after making timelapse, default False')
+    parser.add_argument('--overwrite', action='store_true', default=False,
+                        help='Overwrite any existing files (such as the timelapse), default False')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose')
 
     args = parser.parse_args()
 
-    if args.date is None:
-        args.date = (current_time() - 1. * u.day).datetime
-    else:
-        args.date = Time(args.date).datetime
+    if not os.path.exists(args.directory):
+        print("Directory does not exist:", args.directory)
 
-    if args.auto_confirm is False:
-        args.verbose = True
-
-    num_uploads = main(**vars(args))
+    clean_dir = main(**vars(args))
     if args.verbose:
-        print("{} images uploaded".format(num_uploads))
+        print("Done cleaning for", clean_dir)
