@@ -82,7 +82,7 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
   - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
   - export COVERAGE_PROCESS_START=.coveragerc
-  - coverage run $(which pytest) -v --test-databases all
+  - coverage run $(which pytest) -v --test-databases=all --cov-config=.coveragerc
 cache:
   pip: true
   directories:
