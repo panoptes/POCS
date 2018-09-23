@@ -209,18 +209,14 @@ class Observatory(PanBase):
                 defaults to 600 seconds (10 minutes).
         """
         try:
-            upload_images = self.config.get('panoptes_network', {})['image_storage']
+            upload_images = self.config['panoptes_network']['image_storage']
+            upload_metadata = self.config['panoptes_network']['metadata_storage']
         except KeyError:
             upload_images = False
+            upload_metadata = False
 
         process_script = 'upload_image_dir.py'
         process_cmd = [os.path.join(os.environ['POCS'], 'scripts', process_script)]
-
-        try:
-            pan_id = self.config['pan_id']
-        except KeyError:
-            self.logger.warning("pan_id not set in config, can't upload images.")
-            upload_images = False
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -251,6 +247,9 @@ class Observatory(PanBase):
                 # Add upload flag
                 if upload_images:
                     process_cmd.append('--upload')
+
+                if upload_metadata:
+                    process_cmd.append('--send_headers')
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,

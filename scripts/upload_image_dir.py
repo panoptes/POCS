@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 import os
 
-from warnings import warn
 from glob import glob
 from astropy.io import fits
 
-from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.images import clean_observation_dir
 from pocs.utils.google.storage import upload_observation_to_bucket
 from pocs.utils.db.postgres import add_header_to_db
+from pocs.utils import error
 
 
-def main(directory, upload=True, remove_jpgs=False, send_headers=True, verbose=False, **kwargs):
+def main(directory, upload=False, remove_jpgs=False, send_headers=False, verbose=False, **kwargs):
     """Upload images from the given directory. """
 
     def _print(msg):
@@ -23,38 +22,31 @@ def main(directory, upload=True, remove_jpgs=False, send_headers=True, verbose=F
     try:
         pan_id = config['pan_id']
     except KeyError:
-        warn("Can't upload without a valid pan_id in the config")
-        return
+        raise error.GoogleCloudError("Can't upload without a valid pan_id in the config")
 
     _print("Cleaning observation directory: {}".format(directory))
     try:
         clean_observation_dir(directory, remove_jpgs=remove_jpgs, verbose=verbose, **kwargs)
-    except FileExistsError as e:
-        print(e)
+    except Exception as e:
+        raise error.PanError('Cannot clean observation dir: {}'.format(e))
 
     if upload:
         _print("Uploading to storage bucket")
 
-        uploaded_files_fn = os.path.join(directory, 'uploaded_files.txt')
-
-        if os.path.exists(uploaded_files_fn):
-            _print("Files have been uploaded already, skipping")
-        else:
-            file_search_path = upload_observation_to_bucket(
-                pan_id,
-                directory,
-                include_files='*',
-                verbose=verbose, **kwargs)
-            uploaded_files = sorted(glob(file_search_path))
-            with open(uploaded_files_fn, 'w') as f:
-                f.write('# Files uploaded on {}\n'.format(current_time(pretty=True)))
-                f.write('\n'.join(uploaded_files))
+        upload_observation_to_bucket(
+            pan_id,
+            directory,
+            include_files='*',
+            verbose=verbose, **kwargs)
 
     if send_headers:
-        _print("Sending FITS headers to metadb")
         for fn in glob(os.path.join(directory, '*.fz')):
+            _print("Sending FITS header: {}".format(fn))
             h0 = fits.getheader(fn, ext=1)
-            add_header_to_db(h0)
+            try:
+                add_header_to_db(h0)
+            except Exception as e:
+                _print("Problem with fits header: {}".format(e))
 
     return directory
 
