@@ -288,10 +288,6 @@ class Focuser(AbstractFocuser):
         Utility function that handles the common aspects of sending commands and
         parsing responses.
         """
-        name = self.port
-        if hasattr(self, '_focuser_config'):
-            name = self.uid
-
         # Make sure we start with a clean slate
         self._serial_port.reset_output_buffer()
         self._serial_port.reset_input_buffer()
@@ -299,14 +295,14 @@ class Focuser(AbstractFocuser):
         self._serial_port.write(command_str.encode('ascii'))
         response = str(self._serial_port.readline(), encoding='ascii').strip()
         if not response:
-            message = "No response to command '{}' from focuser {}".format(command_str, name)
+            message = "No response to command '{}' from focuser {}".format(command_str, self.uid)
             self.logger.error(message)
             raise RuntimeError(message)
 
         # Should always get '!' back unless there's an error
         if response != '!':
             message = "Error sending command '{}' to focuser {}: {}".format(
-                command_str, name, response)
+                command_str, self.uid, response)
             self.logger.error(message)
             raise RuntimeError(message)
 
@@ -314,7 +310,7 @@ class Focuser(AbstractFocuser):
         command_echo = str(self._serial_port.readline(), encoding='ascii').strip()
         if command_echo != expected_reply:
             message = "Expected reply '{}' from {}, got '{}'".format(
-                expected_reply, name, command_echo)
+                expected_reply, self.uid, command_echo)
             self.logger.error(message)
             raise RuntimeError(message)
 
