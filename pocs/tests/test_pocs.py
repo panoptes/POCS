@@ -8,13 +8,13 @@ from astropy import units as u
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
-from pocs.utils import Timeout
+from pocs.utils import Timer
 from pocs.utils.messaging import PanMessaging
 
 
 def wait_for_running(sub, max_duration=90):
     """Given a message subscriber, wait for a RUNNING message."""
-    timeout = Timeout(max_duration)
+    timeout = Timer(max_duration)
     while not timeout.expired():
         topic, msg_obj = sub.receive_message()
         if msg_obj and 'RUNNING' == msg_obj.get('message'):
@@ -24,7 +24,7 @@ def wait_for_running(sub, max_duration=90):
 
 def wait_for_state(sub, state, max_duration=90):
     """Given a message subscriber, wait for the specified state."""
-    timeout = Timeout(max_duration)
+    timeout = Timer(max_duration)
     while not timeout.expired():
         topic, msg_obj = sub.receive_message()
         if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:

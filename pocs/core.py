@@ -13,6 +13,9 @@ from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
 from pocs.utils import get_free_space
+from pocs.utils import Timer
+from pocs.utils import listify
+from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
@@ -433,6 +436,65 @@ class POCS(PanStateMachine, PanBase):
 
         if delay > 0.0:
             time.sleep(delay)
+
+    def wait_for_events(self,
+                        events,
+                        timeout,
+                        sleep_delay=1,
+                        status_interval=10,
+                        msg_interval=30,
+                        event_type='generic'):
+        """Wait for event(s) to be set.
+
+        This method will wait for a maximum of `timeout` seconds for all of the
+        `events` to complete. The loop will `check_messages` each time in case of
+        interrupt or bad weather and will also output status messages at periodic
+        intervals.
+
+        Args:
+            events (list(`threading.Event`)): An Event or list of Events to wait on.
+            timeout (float): Timeout in seconds to wait for events.
+            sleep_delay (float, optional): Time in seconds between event checks.
+            status_interval (float, optional): Time in seconds between status checks of the system.
+            msg_interval (float, optional): Time in seconds between sending of status messages.
+            event_type (str, optional): The type of event, used for outputting in log messages,
+                default 'generic'.
+
+        Raises:
+            error.Timeout: Raised if events have not all been set before `timeout` seconds.
+        """
+        events = listify(events)
+        timer = Timer(timeout)
+
+        start_time = current_time()
+        next_status_time = start_time + status_interval
+        next_msg_time = start_time + msg_interval
+
+        while not all([event.is_set() for event in events.values()]):
+            self.check_messages()
+            if self.interrupted:
+                self.logger.info("Waiting for events has been interrupted")
+                break
+
+            now = current_time()
+            if now >= next_msg_time:
+                elapsed_secs = (now - start_time).to(u.second).value
+                self.logger.debug('Waiting for {} events: {} seconds elapsed',
+                                  event_type,
+                                  round(elapsed_secs))
+                next_msg_time += msg_interval
+                now = current_time()
+
+            if now >= next_status_time:
+                self.status()
+                next_status_time += status_interval
+                now = current_time()
+
+            if timer.expired():
+                raise error.Timeout
+
+            # Sleep for a little bit.
+            time.sleep(sleep_delay.value)
 
     def wait_until_safe(self):
         """ Waits until weather is safe.
