@@ -82,11 +82,11 @@ panoptes_network:
     cloudsql_instances:
         meta:
             location: us-central1
-            database: panoptes-meta
+            instance: panoptes-meta
             local_port: 5432
         tess:
             location: us-central1
-            database: tess-catalog            
+            instance: tess-catalog
             local_port: 5433
         
 #Enable to output POCS messages to social accounts
