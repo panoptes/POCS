@@ -20,7 +20,10 @@ def main(directory,
          db_pass=None,
          verbose=False,
          **kwargs):
-    """Upload images from the given directory. """
+    """Upload images from the given directory.
+
+    See argparse help string below for details about parameters.
+    """
 
     def _print(msg):
         if verbose:

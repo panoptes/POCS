@@ -14,10 +14,11 @@ usage() {
 #
 # Note:
 # The SEARCH_PATH and DESTINATION are often similar. Normal invocation
-# is done via $POCS/scripts/upload_image_dir.py.
+# is done via $POCS/scripts/upload_image_dir.py. See also the utils in
+# $POCS/pocs/utils/google/storage.py.
 #
 # Note:
-# The prefix can be any pattern, e.g:
+# The SEARCH_PATH can be any pattern, e.g:
 #     - 'PAN006'  # All images for unit
 #     - 'Hd189733'  # All images for field
 #     - 'PAN006/Hd189733/7bab97' # All images for unit, field, camera
@@ -30,6 +31,8 @@ usage() {
   SEARCH_PATH     The string path to be searched.
   DESTINATION     Remote upload destination.
   MANIFEST_PATH   Path to manifest file for tracking uploads.
+
+ NOTE: $POCS/scripts/upload_image_dir.py may be more approrpriate.
 "
 }
 
