@@ -47,6 +47,6 @@ echo "DESTINATION = ${DESTINATION}"
 echo "MANIFEST_PATH = ${MANIFEST_PATH}"
 
 # Loops until all files are uploaded. See `gsutil cp` documentation.
-until gsutil cp -mq -c -L "${MANIFEST_PATH}" -r "${SEARCH_PATH}" "${DESTINATION}"; do
+until gsutil -mq cp -c -L "${MANIFEST_PATH}" -r "${SEARCH_PATH}" "${DESTINATION}"; do
   sleep 1
 done
