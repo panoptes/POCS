@@ -440,7 +440,7 @@ class Focuser(AbstractFocuser):
         if response[:4] != 'DONE':
             self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
         else:
-            r = response[0][4:].rstrip()
+            r = response[4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
             return int(r[:-2])
 
@@ -459,7 +459,7 @@ class Focuser(AbstractFocuser):
         if response[:4] != 'DONE':
             self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
         else:
-            r = response[0][4:].rstrip()
+            r = response[4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
             return int(r[:-2])
 
