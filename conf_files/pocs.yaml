@@ -74,8 +74,9 @@ messaging:
 # details about authentication.
 ################################################################################
 panoptes_network:
-    image_storage: True
-    metadata_storage: True
+    image_storage: False
+    metadata_storage: False
+    service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey

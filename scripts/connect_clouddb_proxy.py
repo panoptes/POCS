@@ -17,8 +17,6 @@ from pocs.utils.config import load_config
 
 
 def main(instances, key_file, verbose=False):
-    assert os.path.isfile(key_file)
-
     proxy_cmd = os.path.join(os.environ['POCS'], 'bin', 'cloud_sql_proxy')
     assert os.path.isfile(proxy_cmd)
 
@@ -51,8 +49,7 @@ if __name__ == '__main__':
                        help="Connect to all instances listed in the config file, default True.")
     group.add_argument('--database', default=None,
                        help="Connect to a specific database listed in the config.")
-    parser.add_argument('--key_file', default=None, required=True,
-                        help="JSON service account key location.")
+    parser.add_argument('--key_file', default=None, help="JSON service account key location.")
     parser.add_argument('--verbose', action='store_true', default=False,
                         help="Print results to stdout, default False.")
     args = parser.parse_args()
@@ -63,6 +60,19 @@ if __name__ == '__main__':
         if args.verbose:
             print("Found config:")
             pprint(network_config)
+    except KeyError as e:
+        print("Invalid configuration. Check panoptes_network config. {}".format(e))
+        sys.exit(1)
+
+    # Try to lookup service account key from config if none provided
+    key_file = args.key_file
+    if not key_file:
+        key_file = network_config['service_account_key']
+        if not key_file or not os.path.isfile(key_file):
+            print("Service account key not found in config, use --key_file.")
+            sys.exit(1)
+
+    try:
 
         project_id = network_config['project_id']
 
@@ -83,11 +93,10 @@ if __name__ == '__main__':
 
     except KeyError as e:
         print("Invalid configuration. Check panoptes_network config. {}".format(e))
-        print(e)
         sys.exit(1)
 
     if args.verbose:
         print("Connecting to the following instances:")
         pprint(connect_instances)
 
-    main(connect_instances, args.key_file, verbose=args.verbose)
+    main(connect_instances, key_file, verbose=args.verbose)
