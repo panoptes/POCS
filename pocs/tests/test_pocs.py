@@ -199,6 +199,7 @@ def test_is_weather_safe_simulator(pocs):
 
 
 def test_wait_for_events_timeout(pocs):
+    del os.environ['POCSTIME']
     test_event = threading.Event()
 
     # Test timeout
@@ -211,6 +212,7 @@ def test_wait_for_events_timeout(pocs):
 
 
 def test_wait_for_events(pocs):
+    del os.environ['POCSTIME']
     test_event = threading.Event()
 
     def set_event():
@@ -226,6 +228,7 @@ def test_wait_for_events(pocs):
 
 
 def test_wait_for_events_interrupt(pocs):
+    del os.environ['POCSTIME']
     test_event = threading.Event()
 
     def set_event():
@@ -239,13 +242,13 @@ def test_wait_for_events_interrupt(pocs):
     t = threading.Timer(60.0, set_event)
     t.start()
 
-    # Interrupt
-    t2 = threading.Timer(2.0, interrupt)
+    # Interrupt - Time to test status and messaging
+    t2 = threading.Timer(3.0, interrupt)
 
     # Wait for 60 seconds (should interrupt from above)
     start_time = current_time()
     t2.start()
-    pocs.wait_for_events(test_event, 60, sleep_delay=1.)
+    pocs.wait_for_events(test_event, 60, sleep_delay=1., status_interval=1, msg_interval=1)
     end_time = current_time()
     assert test_event.is_set() is False
     assert (end_time - start_time).sec < 10

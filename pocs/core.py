@@ -468,11 +468,19 @@ class POCS(PanStateMachine, PanBase):
         """
         events = listify(events)
 
+        # Remove units from these values.
         if isinstance(timeout, u.Quantity):
             timeout = timeout.to(u.second).value
 
         if isinstance(sleep_delay, u.Quantity):
             sleep_delay = sleep_delay.to(u.second).value
+
+        # ADD units to these values. Ugly.
+        if not isinstance(status_interval, u.Quantity):
+            status_interval = status_interval * u.second
+
+        if not isinstance(msg_interval, u.Quantity):
+            msg_interval = msg_interval * u.second
 
         timer = CountdownTimer(timeout)
 
@@ -496,6 +504,7 @@ class POCS(PanStateMachine, PanBase):
                 now = current_time()
 
             if now >= next_status_time:
+                self.logger.debug('Inside waiting for events, checking status')
                 self.status()
                 next_status_time += status_interval
                 now = current_time()
