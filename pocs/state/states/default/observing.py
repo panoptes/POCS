@@ -17,9 +17,9 @@ def on_enter(event_data):
         maximum_duration = pocs.observatory.current_observation.exp_time + MAX_EXTRA_TIME
 
         # Start the observing.
-        camera_events = pocs.observatory.observe()
-        pocs.wait_for_events(list(camera_events.values()),
-                             maximum_duration, event_type='observing')
+        camera_events_info = pocs.observatory.observe()
+        camera_events = list(camera_events_info.values())
+        pocs.wait_for_events(camera_events, maximum_duration, event_type='observing')
 
     except pocs_utils.error.Timeout:
         pocs.logger.warning(
