@@ -94,7 +94,7 @@ def meta_insert(table, conn=None, logger=None, **kwargs):
         conn.rollback()
         warn("Error on fetch: {}".format(e))
         if logger:
-            logger.log_text("Can't insert row: {}".format(e))
+            logger.info("Can't insert row: {}".format(e))
         return None
 
 
@@ -141,9 +141,9 @@ def add_header_to_db(header, conn=None, logger=None):
         'exp_time': header['EXPTIME'],
         'ra_rate': header['RA-RATE'],
         'pocs_version': header['CREATOR'],
-        'piaa_state': header['PSTATE'],
+        'piaa_state': header.get('PSTATE', None),
     }
-    logger.log_text("Inserting sequence: {}".format(seq_data))
+    logger.info("Inserting sequence: {}".format(seq_data))
     try:
         bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
         seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
@@ -151,15 +151,15 @@ def add_header_to_db(header, conn=None, logger=None):
             tr[0], tr[1]
         )
         meta_insert('sequences', conn=conn, logger=logger, **seq_data)
-        logger.log_text("Sequence inserted: {}".format(seq_id))
+        logger.info("Sequence inserted: {}".format(seq_id))
     except Exception as e:
-        logger.log_text("Can't get bounds: {}".format(e))
+        logger.info("Can't get bounds: {}".format(e))
         if 'coord_bounds' in seq_data:
             del seq_data['coord_bounds']
         try:
             meta_insert('sequences', conn=conn, logger=logger, **seq_data)
         except Exception as e:
-            logger.log_text("Can't insert sequence: {}".format(seq_id))
+            logger.info("Can't insert sequence: {}".format(seq_id))
             raise e
 
     image_data = {
@@ -181,7 +181,7 @@ def add_header_to_db(header, conn=None, logger=None):
         'cam_measrggb': header['MEASRGGB'],
         'cam_red_balance': header['REDBAL'],
         'cam_blue_balance': header['BLUEBAL'],
-        'file_path': header['FILEPATH']
+        'file_path': header.get('FILEPATH', None)
     }
 
     # Add plate-solved info.

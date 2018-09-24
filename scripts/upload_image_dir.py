@@ -16,6 +16,8 @@ from pocs.utils import error
 def main(directory,
          upload=False,
          remove_jpgs=False,
+         overwrite=False,
+         make_timelapse=False,
          send_headers=False,
          db_pass=None,
          verbose=False,
@@ -37,7 +39,8 @@ def main(directory,
 
     _print("Cleaning observation directory: {}".format(directory))
     try:
-        clean_observation_dir(directory, remove_jpgs=remove_jpgs, verbose=verbose, **kwargs)
+        clean_observation_dir(directory, remove_jpgs=remove_jpgs, include_timelapse=make_timelapse,
+                              timelapse_overwrite=overwrite, verbose=verbose, **kwargs)
     except Exception as e:
         raise error.PanError('Cannot clean observation dir: {}'.format(e))
 
@@ -70,17 +73,19 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Uploader for image directory")
     parser.add_argument('--directory', default=None,
-                        help='Directory to be cleaned and uploaded')
+                        help='Directory to be cleaned and uploaded.')
     parser.add_argument('--upload', default=False, action='store_true',
-                        help='If images should be uploaded, default False')
+                        help='If images should be uploaded, default False.')
     parser.add_argument('--send_headers', default=False, action='store_true',
-                        help='If FITS headers should be sent to metadb, default False')
+                        help='If FITS headers should be sent to metadb, default False.')
     parser.add_argument('--db_pass', help='Password for the metadb user')
     parser.add_argument('--remove_jpgs', default=False, action='store_true',
-                        help='If images should be removed after making timelapse, default False')
+                        help='If images should be removed after making timelapse, default False.')
+    parser.add_argument('--make_timelapse', action='store_true', default=True,
+                        help='Create a timelapse from the jpgs, default True.')
     parser.add_argument('--overwrite', action='store_true', default=False,
-                        help='Overwrite any existing files (such as the timelapse), default False')
-    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose')
+                        help='Overwrite any existing files (such as timelapse), default False.')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose.')
 
     args = parser.parse_args()
 

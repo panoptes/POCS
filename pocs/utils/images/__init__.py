@@ -315,7 +315,7 @@ def make_timelapse(
 def clean_observation_dir(dir_name,
                           remove_jpgs=False,
                           include_timelapse=True,
-                          timelapse_overwrite=True,
+                          timelapse_overwrite=False,
                           **kwargs):
     """Clean an observation directory.
 
@@ -331,7 +331,7 @@ def clean_observation_dir(dir_name,
             default False.
         include_timelapse (bool, optional): If a timelapse should be created, default True.
         timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
-            default True.
+            default False.
         **kwargs: Can include `verbose`.
 
     Deleted Parameters:
