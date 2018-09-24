@@ -85,7 +85,7 @@ if __name__ == '__main__':
         print("Directory does not exist:", args.directory)
 
     if args.send_headers and not args.db_pass:
-        print("No password set for the CloudSQL database, exiting.")
+        print("No password set for the CloudSQL database (METADB_PASS), exiting.")
         sys.exit(1)
 
     clean_dir = main(**vars(args))
