@@ -143,7 +143,9 @@ def add_header_to_db(header, conn=None, logger=None):
         'pocs_version': header['CREATOR'],
         'piaa_state': header.get('PSTATE', None),
     }
-    logger.info("Inserting sequence: {}".format(seq_data))
+    if logger:
+        logger.info("Inserting sequence: {}".format(seq_data))
+
     try:
         bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
         seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
@@ -151,15 +153,18 @@ def add_header_to_db(header, conn=None, logger=None):
             tr[0], tr[1]
         )
         meta_insert('sequences', conn=conn, logger=logger, **seq_data)
-        logger.info("Sequence inserted: {}".format(seq_id))
+        if logger:
+            logger.info("Sequence inserted: {}".format(seq_id))
     except Exception as e:
-        logger.info("Can't get bounds: {}".format(e))
+        if logger:
+            logger.info("Can't get bounds: {}".format(e))
         if 'coord_bounds' in seq_data:
             del seq_data['coord_bounds']
         try:
             meta_insert('sequences', conn=conn, logger=logger, **seq_data)
         except Exception as e:
-            logger.info("Can't insert sequence: {}".format(seq_id))
+            if logger:
+                logger.info("Can't insert sequence: {}".format(seq_id))
             raise e
 
     image_data = {
