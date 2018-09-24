@@ -249,7 +249,14 @@ class Observatory(PanBase):
                     process_cmd.append('--upload')
 
                 if upload_metadata:
-                    process_cmd.append('--send_headers')
+                    try:
+                        metadb_pass = os.environ['METADB_PASS']
+                    except KeyError:
+                        self.logger.warning(
+                            'METADB_PASS has not been set, cannot upload metadata.')
+                    else:
+                        process_cmd.append('--send_headers')
+                        process_cmd.extend(['--db_pass', metadb_pass])
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,
