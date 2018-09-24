@@ -90,7 +90,12 @@ class Focuser(AbstractFocuser):
         """
         The user set 'nickname' of the focuser. Must be <= 16 characters
         """
-        return self._focuser_config['Nickname']
+        try:
+            uid = self._focuser_config['Nickname']
+        except AttributeError:
+            uid = self.port
+
+        return uid
 
     @uid.setter
     def uid(self, nickname):
@@ -289,7 +294,6 @@ class Focuser(AbstractFocuser):
         Utility function that handles the common aspects of sending commands and
         parsing responses.
         """
-
         # Make sure we start with a clean slate
         self._serial_port.reset_output_buffer()
         self._serial_port.reset_input_buffer()
