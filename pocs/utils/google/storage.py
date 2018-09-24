@@ -325,7 +325,6 @@ def upload_observation_to_bucket(pan_id,
         if verbose:
             print(msg)
 
-    script_name = 'upload_files.sh'
     _print("Uploading {}".format(dir_name))
 
     file_search_path = os.path.join(dir_name, include_files)
@@ -339,6 +338,7 @@ def upload_observation_to_bucket(pan_id,
         ))
         destination = 'gs://{}/'.format(remote_path)
 
+        script_name = os.path.join(os.environ['POCS'], 'scripts', 'upload_files.sh')
         manifest_file = os.path.join(dir_name, 'upload_manifest.log')
         run_cmd = [script_name, file_search_path, destination, manifest_file]
         _print("Running: {}".format(run_cmd))
