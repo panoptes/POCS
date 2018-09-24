@@ -312,23 +312,31 @@ def make_timelapse(
     return fn_out
 
 
-def clean_observation_dir(dir_name, remove_jpgs=False, overwrite=False, *args, **kwargs):
+def clean_observation_dir(dir_name,
+                          remove_jpgs=False,
+                          include_timelapse=True,
+                          timelapse_overwrite=True,
+                          **kwargs):
     """Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
-        * Create timelapse from JPG files if present
+        * Create timelapse from JPG files if present (optional)
         * Remove JPG files (optional).
 
     Args:
         dir_name (str): Full path to observation directory
         remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
             default False.
+        include_timelapse (bool, optional): If a timelapse should be created, default True.
+        timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
+            default True.
+        **kwargs: Can include `verbose`.
+
+    Deleted Parameters:
         overwrite (bool, optional): If timelapse should overwrite existing file if it
             exists, default True.
-        *args: Description
-        **kwargs: Can include `verbose`
     """
     verbose = kwargs.get('verbose', False)
 
@@ -369,12 +377,13 @@ def clean_observation_dir(dir_name, remove_jpgs=False, overwrite=False, *args, *
         if len(jpg_list) > 0:
 
             # Create timelapse
-            try:
-                _print('Creating timelapse for {}'.format(dir_name))
-                video_file = make_timelapse(dir_name, overwrite=overwrite)
-                _print('Timelapse created: {}'.format(video_file))
-            except Exception as e:
-                _print("Problem creating timelapse: {}".format(e))
+            if include_timelapse:
+                try:
+                    _print('Creating timelapse for {}'.format(dir_name))
+                    video_file = make_timelapse(dir_name, overwrite=timelapse_overwrite)
+                    _print('Timelapse created: {}'.format(video_file))
+                except Exception as e:
+                    _print("Problem creating timelapse: {}".format(e))
 
             # Remove jpgs
             if remove_jpgs:
