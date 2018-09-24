@@ -199,6 +199,7 @@ class Focuser(AbstractFocuser):
             int: focuser position following the move. If blocking is True this will be the actual
                 focuser position, if False it will be the target position.
         """
+        position = int(position)
         if position < self._min_position:
             message = 'Requested position {} less than min position, moving to {}!'.format(position,
                                                                                            self._min_position)
@@ -282,7 +283,7 @@ class Focuser(AbstractFocuser):
     def _update_focuser_status(self):
         command_str = '<F{:1d}GETSTATUS>'.format(self._focuser_number)
         expected_reply = 'STATUS{:1d}'.format(self._focuser_number)
-        self._focuser_status = self._get_info(command_str, expected_reply)
+        self._focuser_status = self._send_command(command_str, expected_reply)
 
         self._position = int(self._focuser_status['Curr Pos'])
         self._target_position = int(self._focuser_status['Targ Pos'])
@@ -342,5 +343,5 @@ class Focuser(AbstractFocuser):
         header.set('FOC-ID', self.uid, 'Focuser nickname')
         header.set('FOC-HW', self.hardware_version, 'Focuser device type')
         header.set('FOC-FW', self.firmware_version, 'Focuser controller firmware version')
-        header.set('FOC-TEMP', self.temperature, 'Focuser temperature (deg C)')
+        header.set('FOC-TEMP', self.temperature.value, 'Focuser temperature (deg C)')
         return header
