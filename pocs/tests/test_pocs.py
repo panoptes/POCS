@@ -11,6 +11,7 @@ from pocs.observatory import Observatory
 from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
 from pocs.utils import error
+from pocs.utils import current_time
 
 
 def wait_for_running(sub, max_duration=90):
@@ -222,6 +223,35 @@ def test_wait_for_events(pocs):
     # Wait for 10 seconds (should trip in 1 second)
     pocs.wait_for_events(test_event, 10)
     assert test_event.is_set()
+
+
+def test_wait_for_events_interrupt(pocs):
+    test_event = threading.Event()
+
+    def set_event():
+        while test_event.is_set() is False:
+            time.sleep(1)
+
+    def interrupt():
+        pocs._interrupted = True
+
+    # Wait for 60 seconds (interrupts below)
+    t = threading.Timer(60.0, set_event)
+    t.start()
+
+    # Interrupt
+    t2 = threading.Timer(2.0, interrupt)
+
+    # Wait for 60 seconds (should interrupt from above)
+    start_time = current_time()
+    t2.start()
+    pocs.wait_for_events(test_event, 60, sleep_delay=1.)
+    end_time = current_time()
+    assert test_event.is_set() is False
+    assert (end_time - start_time).sec < 10
+    test_event.set()
+    t.cancel()
+    t2.cancel()
 
 
 def test_is_weather_safe_no_simulator(pocs):
