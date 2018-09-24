@@ -52,7 +52,7 @@ def main(directory,
 
     if send_headers:
         _print("Making connection to Meta DB")
-        metadb_conn = get_db_proxy_conn(db_pass=db_pass)
+        metadb_conn = get_db_proxy_conn(db_name='metadata', db_pass=db_pass)
         for fn in glob(os.path.join(directory, '*.fz')):
             _print("Sending FITS header: {}".format(fn))
             h0 = fits.getheader(fn, ext=1)
