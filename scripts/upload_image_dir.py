@@ -84,6 +84,12 @@ if __name__ == '__main__':
     if not os.path.exists(args.directory):
         print("Directory does not exist:", args.directory)
 
+    if not args.db_pass:
+        try:
+            args.db_pass = os.environ['METADB_PASS']
+        except KeyError:
+            pass
+
     if args.send_headers and not args.db_pass:
         print("No password set for the CloudSQL database (METADB_PASS), exiting.")
         sys.exit(1)
