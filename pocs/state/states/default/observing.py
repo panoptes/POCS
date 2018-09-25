@@ -1,7 +1,6 @@
-from astropy import units as u
 from pocs import utils as pocs_utils
 
-MAX_EXTRA_TIME = 60 * u.second
+MAX_EXTRA_TIME = 60  # seconds
 
 
 def on_enter(event_data):
