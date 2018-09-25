@@ -66,6 +66,22 @@ messaging:
     cmd_port: 6500
     msg_port: 6510
 
+########################## Observations ########################################
+# Observations consist of a sequence of images and are grouped together
+# according # to the time the sequence started and finish when the mount
+# slews to new coordinates. There will be one folder per camera per target
+# per observation. An example folder structure would be:
+#
+#   $PANDIR/images/fields/PAN001/Hd189733/14d3bd/20180901T120001/
+#
+# In this folder will be stored JPG and FITS images. A timelapse of the
+# observation can be made (on per camera) and the JPGs optionally removed
+# afterward.
+################################################################################
+observations:
+    make_timelapse: True
+    keep_jpgs: True
+    
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.

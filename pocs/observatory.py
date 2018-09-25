@@ -211,12 +211,14 @@ class Observatory(PanBase):
         try:
             upload_images = self.config['panoptes_network']['image_storage']
             upload_metadata = self.config['panoptes_network']['metadata_storage']
+            make_timelapse = self.config['observations']['make_timelapse']
+            keep_jpgs = self.config['observations']['keep_jpgs']
         except KeyError:
             upload_images = False
             upload_metadata = False
 
         process_script = 'upload_image_dir.py'
-        process_cmd = [os.path.join(os.environ['POCS'], 'scripts', process_script)]
+        process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -239,17 +241,23 @@ class Observatory(PanBase):
                 )
                 self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                # Add directory to command
-                process_cmd.extend([
+                process_cmd = [
+                    process_script_path,
                     '--directory', seq_dir,
-                ])
+                ]
 
-                # Add upload flag
                 if upload_images:
                     process_cmd.append('--upload')
 
+                if make_timelapse:
+                    process_cmd.append('--make_timelapse')
+
+                if keep_jpgs is False:
+                    process_cmd.append('--remove_jpgs')
+
                 if upload_metadata:
                     try:
+                        # TODO(wtgee) figure out best way to do passwords.
                         metadb_pass = os.environ['METADB_PASS']
                     except KeyError:
                         self.logger.warning(
