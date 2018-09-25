@@ -51,6 +51,7 @@ def main(directory,
             pan_id,
             directory,
             include_files='*',
+            exclude_files='upload_manifest.log',
             verbose=verbose, **kwargs)
 
     if send_headers:

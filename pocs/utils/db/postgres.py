@@ -141,18 +141,25 @@ def add_header_to_db(header, conn=None, logger=None):
         'exp_time': header['EXPTIME'],
         'ra_rate': header['RA-RATE'],
         'pocs_version': header['CREATOR'],
-        'piaa_state': header.get('PSTATE', None),
+        'piaa_state': header.get('PSTATE', 'initial'),
     }
-    if logger:
-        logger.info("Inserting sequence: {}".format(seq_data))
 
     try:
-        bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
-        seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
-            bl[0], bl[1],
-            tr[0], tr[1]
-        )
+        wcs = WCS(header)
+        if wcs.is_celestial:
+            bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
+            seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
+                bl[0], bl[1],
+                tr[0], tr[1]
+            )
+        else:
+            seq_data['piaa_state'] = 'unsolved'
+
+        if logger:
+            logger.info("Inserting sequence: {}".format(seq_data))
+
         meta_insert('sequences', conn=conn, logger=logger, **seq_data)
+
         if logger:
             logger.info("Sequence inserted: {}".format(seq_id))
     except Exception as e:
