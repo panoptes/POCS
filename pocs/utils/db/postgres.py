@@ -147,11 +147,12 @@ def add_header_to_db(header, conn=None, logger=None):
     try:
         wcs = WCS(header)
         if wcs.is_celestial:
-            bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
+            bl, tl, tr, br = wcs.calc_footprint()  # Corners
             seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
                 bl[0], bl[1],
                 tr[0], tr[1]
             )
+            seq_data['piaa_state'] = 'solved'
         else:
             seq_data['piaa_state'] = 'unsolved'
 
