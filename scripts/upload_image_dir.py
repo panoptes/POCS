@@ -82,8 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('--db_pass', help='Password for the metadb user')
     parser.add_argument('--remove_jpgs', default=False, action='store_true',
                         help='If images should be removed after making timelapse, default False.')
-    parser.add_argument('--make_timelapse', action='store_true', default=True,
-                        help='Create a timelapse from the jpgs, default True.')
+    parser.add_argument('--make_timelapse', action='store_true', default=False,
+                        help='Create a timelapse from the jpgs (requires ffmpeg), default False.')
     parser.add_argument('--overwrite', action='store_true', default=False,
                         help='Overwrite any existing files (such as timelapse), default False.')
     parser.add_argument('--verbose', action='store_true', default=False, help='Verbose.')
