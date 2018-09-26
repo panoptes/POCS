@@ -178,7 +178,7 @@ class AbstractFocuser(PanBase):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  plots=True,
+                  plots=False,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -210,7 +210,7 @@ class AbstractFocuser(PanBase):
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
-            plots (bool, optional: Whether to write focus plots to images folder, default True.
+            plots (bool, optional: Whether to write focus plots to images folder, default False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
