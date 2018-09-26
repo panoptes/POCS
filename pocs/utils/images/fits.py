@@ -48,9 +48,9 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             '--downsample', '4',
         ]
 
-        if kwargs.get('overwrite', True):
+        if kwargs.get('overwrite', False):
             options.append('--overwrite')
-        if kwargs.get('skip_solved', True):
+        if kwargs.get('skip_solved', False):
             options.append('--skip-solved')
 
         if 'ra' in kwargs:
@@ -63,9 +63,9 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
-        if fname.endswith('.fz'):
-            options.append('--extension')
-            options.append('1')
+    if fname.endswith('.fz'):
+        options.append('--extension')
+        options.append('1')
 
     cmd = [solve_field_script] + options + [fname]
     if verbose:
