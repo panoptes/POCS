@@ -409,7 +409,7 @@ class Observatory(PanBase):
 
         return headers
 
-    def autofocus_cameras(self, camera_list=None, coarse=None):
+    def autofocus_cameras(self, camera_list=None, **kwargs):
         """
         Perform autofocus on all cameras with focus capability, or a named subset
         of these. Optionally will perform a coarse autofocus first, otherwise will
@@ -417,8 +417,7 @@ class Observatory(PanBase):
 
         Args:
             camera_list (list, optional): list containing names of cameras to autofocus.
-            coarse (bool, optional): Whether to performan a coarse autofocus before
-            fine tuning, default False.
+            **kwargs: Options passed to the underlying `Focuser.autofocus` method.
 
         Returns:
             dict of str:threading_Event key:value pairs, containing camera names and
@@ -454,7 +453,7 @@ class Observatory(PanBase):
             else:
                 try:
                     # Start the autofocus
-                    autofocus_event = camera.autofocus(coarse=coarse)
+                    autofocus_event = camera.autofocus(**kwargs)
                 except Exception as e:
                     self.logger.error(
                         "Problem running autofocus: {}".format(e))
