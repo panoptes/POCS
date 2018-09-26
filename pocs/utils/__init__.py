@@ -47,7 +47,7 @@ def flatten_time(t):
 
 
 # This is a streamlined variant of PySerial's serialutil.Timeout.
-class Timeout(object):
+class CountdownTimer(object):
     """Simple timer object for tracking whether a time duration has elapsed.
 
     Attribute `is_non_blocking` is true IFF the duration is zero.
