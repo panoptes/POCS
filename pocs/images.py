@@ -103,7 +103,7 @@ class Image(PanBase):
                     header = fits.getheader(filename, ext=1)
                     w = wcs.WCS(header)
                 else:
-                    w = wcs.WCS(filename, naxis=0)
+                    w = wcs.WCS(filename)
                 assert w.is_celestial
 
                 self.wcs = w
