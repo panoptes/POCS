@@ -22,9 +22,12 @@ def main(instances, key_file, verbose=False):
 
     connection_str = ','.join(instances)
     instances_arg = '-instances={}'.format(connection_str)
-    credentials_arg = '-credential_file={}'.format(key_file)
 
-    run_proxy_cmd = [proxy_cmd, instances_arg, credentials_arg]
+    run_proxy_cmd = [proxy_cmd, instances_arg]
+
+    if key_file:
+        credentials_arg = '-credential_file={}'.format(key_file)
+        run_proxy_cmd.append(credentials_arg)
 
     if verbose:
         print("Running command: {}".format(run_proxy_cmd))
@@ -67,10 +70,13 @@ if __name__ == '__main__':
     # Try to lookup service account key from config if none provided
     key_file = args.key_file
     if not key_file:
-        key_file = network_config['service_account_key']
+        try:
+            key_file = network_config['service_account_key']
+        except KeyError:
+            pass
+
         if not key_file or not os.path.isfile(key_file):
             print("Service account key not found in config, use --key_file.")
-            sys.exit(1)
 
     try:
 
