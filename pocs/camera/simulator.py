@@ -86,7 +86,7 @@ class Camera(AbstractCamera):
         file_path = os.path.join(
             os.environ['POCS'],
             'pocs', 'tests', 'data',
-            'solved.fits.fz'
+            'unsolved.fits.fz'
         )
         fake_data = fits.getdata(file_path)
 
