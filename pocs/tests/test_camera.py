@@ -312,43 +312,43 @@ def test_observation(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(coarse=True)
+    autofocus_event = camera.autofocus(coarse=True, plots=True)
     autofocus_event.wait()
-    coarse_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_coarse.png')
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    coarse_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'coarse_focus.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
     counter['value'] = 1
     assert len(glob.glob(coarse_plot_pattern)) == 1
     assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
 def test_autofocus_fine(camera, images_dir, counter):
-    autofocus_event = camera.autofocus()
+    autofocus_event = camera.autofocus(plots=True)
     autofocus_event.wait()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
     assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
 def test_autofocus_fine_blocking(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(blocking=True)
+    autofocus_event = camera.autofocus(blocking=True, plots=True)
     assert autofocus_event.is_set()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
     assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
 def test_autofocus_no_plots(camera, images_dir, counter):
     autofocus_event = camera.autofocus(plots=False)
     autofocus_event.wait()
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
     assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
 def test_autofocus_keep_files(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(keep_files=True)
+    autofocus_event = camera.autofocus(keep_files=True, plots=True)
     autofocus_event.wait()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*_fine.png')
+    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
     assert len(glob.glob(fine_plot_pattern)) == counter['value']
 
 
