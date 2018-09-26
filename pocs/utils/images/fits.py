@@ -63,6 +63,10 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
+        if fname.endswith('.fz'):
+            options.append('--extension')
+            options.append('1')
+
     cmd = [solve_field_script] + options + [fname]
     if verbose:
         print("Cmd:", cmd)
@@ -103,18 +107,27 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         dict: Keyword information from the solved field
     """
     verbose = kwargs.get('verbose', False)
+    skip_solved = kwargs.get('skip_solved', True)
+
     out_dict = {}
     output = None
     errs = None
 
+    ext = 0
+    if fname.endswith('.fz'):
+        ext = 1
+
+    wcs = WCS(fname, naxis=ext)
+
     # Check for solved file
-    if kwargs.get('skip_solved', True) and \
-            (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
+    if skip_solved and wcs.is_celestial:
+
         if verbose:
             print("Solved file exists, skipping",
                   "(pass skip_solved=False to solve again):",
                   fname)
 
+        out_dict.update(fits.getheader(fname))
         out_dict['solved_fits_file'] = fname
         return out_dict
 
