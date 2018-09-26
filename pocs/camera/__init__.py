@@ -46,10 +46,6 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     Creates a camera for each camera item listed in the config. Ensures the
     appropriate camera module is loaded.
 
-    Note:
-        This does not actually make a connection to the camera. To do so,
-        call 'camera.connect()' explicitly on each camera.
-
     Args:
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
