@@ -6,6 +6,8 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from astropy.wcs import WCS
 
+from pocs.utils import error
+
 
 def get_db_proxy_conn(
         host='127.0.0.1',
@@ -42,7 +44,12 @@ def get_db_proxy_conn(
         'password': db_pass,
     }
 
-    conn = psycopg2.connect(**conn_params)
+    try:
+        conn = psycopg2.connect(**conn_params)
+    except psycopg2.OperationalError:
+        raise error.GoogleCloudError("Can't connect to cloud db"
+                                     "Make sure the cloud sql proxy is running.")
+
     return conn
 
 

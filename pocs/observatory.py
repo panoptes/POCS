@@ -256,15 +256,7 @@ class Observatory(PanBase):
                     process_cmd.append('--remove_jpgs')
 
                 if upload_metadata:
-                    try:
-                        # TODO(wtgee) figure out best way to do passwords.
-                        metadb_pass = os.environ['METADB_PASS']
-                    except KeyError:
-                        self.logger.warning(
-                            'METADB_PASS has not been set, cannot upload metadata.')
-                    else:
-                        process_cmd.append('--send_headers')
-                        process_cmd.extend(['--db_pass', metadb_pass])
+                    process_cmd.append('--send_headers')
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,

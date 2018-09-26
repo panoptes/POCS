@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 
 from glob import glob
 from astropy.io import fits
@@ -56,14 +55,19 @@ def main(directory,
 
     if send_headers:
         _print("Making connection to Meta DB")
-        metadb_conn = get_db_proxy_conn(db_name='metadata', db_pass=db_pass)
-        for fn in glob(os.path.join(directory, '*.fz')):
-            _print("Sending FITS header: {}".format(fn))
-            h0 = fits.getheader(fn, ext=1)
-            try:
-                add_header_to_db(h0, conn=metadb_conn)
-            except Exception as e:
-                _print("Problem with fits header: {}".format(e))
+
+        try:
+            metadb_conn = get_db_proxy_conn(db_name='metadata', db_pass=db_pass)
+        except error.GoogleCloudError:
+            _print("Can't make connection to Meta db, skipping headers")
+        else:
+            for fn in glob(os.path.join(directory, '*.fz')):
+                _print("Sending FITS header: {}".format(fn))
+                h0 = fits.getheader(fn, ext=1)
+                try:
+                    add_header_to_db(h0, conn=metadb_conn)
+                except Exception as e:
+                    _print("Problem with fits header: {}".format(e))
 
     return directory
 
@@ -79,7 +83,6 @@ if __name__ == '__main__':
                         help='If images should be uploaded, default False.')
     parser.add_argument('--send_headers', default=False, action='store_true',
                         help='If FITS headers should be sent to metadb, default False.')
-    parser.add_argument('--db_pass', help='Password for the metadb user')
     parser.add_argument('--remove_jpgs', default=False, action='store_true',
                         help='If images should be removed after making timelapse, default False.')
     parser.add_argument('--make_timelapse', action='store_true', default=False,
@@ -92,16 +95,6 @@ if __name__ == '__main__':
 
     if not os.path.exists(args.directory):
         print("Directory does not exist:", args.directory)
-
-    if not args.db_pass:
-        try:
-            args.db_pass = os.environ['METADB_PASS']
-        except KeyError:
-            pass
-
-    if args.send_headers and not args.db_pass:
-        print("No password set for the CloudSQL database (METADB_PASS), exiting.")
-        sys.exit(1)
 
     clean_dir = main(**vars(args))
     if args.verbose:
