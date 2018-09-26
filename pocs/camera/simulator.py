@@ -83,7 +83,11 @@ class Camera(AbstractCamera):
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
+        file_path = os.path.join(
+            os.environ['POCS'],
+            'pocs', 'tests', 'data',
+            'solved.fits.fz'
+        )
         fake_data = fits.getdata(file_path)
 
         if header['IMAGETYP'] == 'Dark Frame':
@@ -97,7 +101,7 @@ class Camera(AbstractCamera):
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
         self.logger.debug('Overriding mount coordinates for camera simulator')
-        solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
+        solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits.fz')
         solved_header = fits.getheader(solved_path)
         with fits.open(file_path, 'update') as f:
             hdu = f[0]

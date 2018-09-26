@@ -12,22 +12,22 @@ from astropy.coordinates import SkyCoord
 
 @pytest.fixture
 def unsolved_fits_file(data_dir):
-    return '{}/unsolved.fits'.format(data_dir)
+    return os.path.join(data_dir, 'unsolved.fits')
 
 
 @pytest.fixture
 def solved_fits_file(data_dir):
-    return '{}/solved.fits'.format(data_dir)
+    return os.path.join(data_dir, 'solved.fits.fz')
 
 
 @pytest.fixture
 def tiny_fits_file(data_dir):
-    return '{}/tiny.fits'.format(data_dir)
+    return os.path.join(data_dir, 'tiny.fits')
 
 
 @pytest.fixture
 def noheader_fits_file(data_dir):
-    return '{}/noheader.fits'.format(data_dir)
+    return os.path.join(data_dir, 'noheader.fits')
 
 
 def test_fits_exists(unsolved_fits_file):
@@ -37,7 +37,7 @@ def test_fits_exists(unsolved_fits_file):
 
 def test_fits_extension():
     with pytest.raises(AssertionError):
-        Image('{}/pocs/images.py'.format(os.getenv('POCS')))
+        Image(os.path.join(os.environ['POCS'], 'pocs', 'images.py'))
 
 
 def test_fits_noheader(noheader_fits_file):

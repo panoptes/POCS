@@ -28,10 +28,8 @@ class Image(PanBase):
         assert os.path.exists(fits_file), self.logger.warning(
             'File does not exist: {}'.format(fits_file))
 
-        if fits_file.endswith('.fz'):
-            fits_file = fits_utils.fpack(fits_file, unpack=True)
-
-        assert fits_file.lower().endswith(('.fits')), \
+        file_path, file_ext = os.path.splitext(fits_file)
+        assert file_ext in ['.fits', '.fz'], \
             self.logger.warning('File must end with .fits')
 
         self.wcs = None
@@ -43,8 +41,12 @@ class Image(PanBase):
         else:
             self.wcs_file = fits_file
 
+        header_ext = 0
+        if fits_file.endswith('.fz'):
+            header_ext = 1
+
         with fits.open(self.fits_file, 'readonly') as hdu:
-            self.header = hdu[0].header
+            self.header = hdu[header_ext].header
 
         assert 'DATE-OBS' in self.header, self.logger.warning(
             'FITS file must contain the DATE-OBS keyword')
@@ -97,7 +99,12 @@ class Image(PanBase):
     def wcs_file(self, filename):
         if filename is not None:
             try:
-                w = wcs.WCS(filename)
+                ext = 0
+                if filename.endswith('.fz'):
+                    header = fits.getheader(filename, ext=1)
+                    w = wcs.WCS(header)
+                else:
+                    w = wcs.WCS(filename, naxis=ext)
                 assert w.is_celestial
 
                 self.wcs = w

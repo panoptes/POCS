@@ -7,7 +7,7 @@ from pocs.utils.images import fits as fits_utils
 
 @pytest.fixture
 def solved_fits_file(data_dir):
-    return '{}/solved.fits'.format(data_dir)
+    return '{}/solved.fits.fz'.format(data_dir)
 
 
 def test_wcsinfo(solved_fits_file):
@@ -21,12 +21,11 @@ def test_fpack(solved_fits_file):
     info = os.stat(solved_fits_file)
     assert info.st_size > 0.
 
-    compressed = fits_utils.fpack(solved_fits_file, verbose=True)
+    uncompressed = fits_utils.fpack(solved_fits_file, unpack=True, verbose=True)
+    assert os.stat(uncompressed).st_size > info.st_size
 
-    assert os.stat(compressed).st_size < info.st_size
-
-    uncompressed = fits_utils.fpack(compressed, unpack=True, verbose=True)
-    assert os.stat(uncompressed).st_size == info.st_size
+    compressed = fits_utils.fpack(uncompressed, verbose=True)
+    assert os.stat(compressed).st_size == info.st_size
 
 
 def test_solve_field(solved_fits_file):

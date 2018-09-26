@@ -25,8 +25,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
     if verbose:
         print("Entering solve_field")
 
-    solve_field_script = "{}/scripts/solve_field.sh".format(
-        os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field_script = os.path.join(os.getenv('POCS'), 'scripts', 'solve_field.sh')
 
     if not os.path.exists(solve_field_script):  # pragma: no cover
         raise error.InvalidSystemCommand(
@@ -64,8 +63,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             options.append(str(kwargs.get('radius')))
 
     if fname.endswith('.fz'):
-        options.append('--extension')
-        options.append('1')
+        options.append('--extension=1')
 
     cmd = [solve_field_script] + options + [fname]
     if verbose:
@@ -113,11 +111,13 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     output = None
     errs = None
 
+    file_path, file_ext = os.path.splitext(fname)
     ext = 0
-    if fname.endswith('.fz'):
+    if file_ext == '.fz':
         ext = 1
 
-    wcs = WCS(fname, naxis=ext)
+    header = fits.getheader(fname, ext=ext)
+    wcs = WCS(header)
 
     # Check for solved file
     if skip_solved and wcs.is_celestial:
@@ -127,7 +127,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
                   "(pass skip_solved=False to solve again):",
                   fname)
 
-        out_dict.update(fits.getheader(fname))
+        out_dict.update(header)
         out_dict['solved_fits_file'] = fname
         return out_dict
 
@@ -152,15 +152,15 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         if proc.returncode == 3:
             raise error.SolveError('solve-field not found: {}'.format(output))
 
-        if not os.path.exists(fname.replace('.fits', '.solved')):
+        if not os.path.exists(fname.replace(file_ext, '.solved')):
             raise error.SolveError('File not solved')
 
         try:
             # Handle extra files created by astrometry.net
-            new = fname.replace('.fits', '.new')
-            rdls = fname.replace('.fits', '.rdls')
-            axy = fname.replace('.fits', '.axy')
-            xyls = fname.replace('.fits', '-indx.xyls')
+            new = fname.replace(file_ext, '.new')
+            rdls = fname.replace(file_ext, '.rdls')
+            axy = fname.replace(file_ext, '.axy')
+            xyls = fname.replace(file_ext, '-indx.xyls')
 
             if replace and os.path.exists(new):
                 # Remove converted fits
@@ -185,7 +185,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     else:
 
         try:
-            out_dict.update(fits.getheader(fname))
+            out_dict.update(fits.getheader(fname, ext=ext))
         except OSError:
             if verbose:
                 print("Can't read fits header for:", fname)
@@ -218,6 +218,10 @@ def get_wcsinfo(fits_fname, verbose=False):
         raise error.InvalidCommand('wcsinfo not found')
 
     run_cmd = [wcsinfo, fits_fname]
+
+    if fits_fname.endswith('.fz'):
+        run_cmd.append('-e')
+        run_cmd.append('1')
 
     if verbose:
         print("wcsinfo command: {}".format(run_cmd))
