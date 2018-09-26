@@ -301,7 +301,7 @@ class AbstractCamera(PanBase):
                   merit_function_kwargs={},
                   mask_dilations=None,
                   coarse=False,
-                  plots=True,
+                  plots=False,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -336,7 +336,7 @@ class AbstractCamera(PanBase):
             coarse (bool, optional): Whether to begin with coarse focusing,
                 default False
             plots (bool, optional: Whether to write focus plots to images folder,
-                default True.
+                default False.
             blocking (bool, optional): Whether to block until autofocus complete,
                 default False
 
