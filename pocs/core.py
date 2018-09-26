@@ -13,6 +13,9 @@ from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
 from pocs.utils import get_free_space
+from pocs.utils import CountdownTimer
+from pocs.utils import listify
+from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
@@ -167,38 +170,38 @@ class POCS(PanStateMachine, PanBase):
         except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get status: {}".format(e))
         else:
-            self.send_message(status, channel='STATUS')
+            self.send_message(status, topic='STATUS')
 
         return status
 
     def say(self, msg):
         """ PANOPTES Units like to talk!
 
-        Send a message. Message sent out through zmq has unit name as channel.
+        Send a message.
 
         Args:
-            msg(str): Message to be sent
+            msg(str): Message to be sent to topic PANCHAT.
         """
         if self.has_messaging is False:
             self.logger.info('Unit says: {}', msg)
-        self.send_message(msg, channel='PANCHAT')
+        self.send_message(msg, topic='PANCHAT')
 
-    def send_message(self, msg, channel='POCS'):
+    def send_message(self, msg, topic='POCS'):
         """ Send a message
 
         This will use the `self._msg_publisher` to send a message
 
         Note:
-            The `channel` and `msg` params are switched for convenience
+            The `topic` and `msg` params are switched for convenience
 
         Arguments:
             msg {str} -- Message to be sent
 
         Keyword Arguments:
-            channel {str} -- Channel to send message on (default: {'POCS'})
+            topic {str} -- Topic to send message on (default: {'POCS'})
         """
         if self.has_messaging:
-            self._msg_publisher.send_message(channel, msg)
+            self._msg_publisher.send_message(topic, msg)
 
     def check_messages(self):
         """ Check messages for the system
@@ -434,6 +437,84 @@ class POCS(PanStateMachine, PanBase):
         if delay > 0.0:
             time.sleep(delay)
 
+    def wait_for_events(self,
+                        events,
+                        timeout,
+                        sleep_delay=1 * u.second,
+                        status_interval=10 * u.second,
+                        msg_interval=30 * u.second,
+                        event_type='generic'):
+        """Wait for event(s) to be set.
+
+        This method will wait for a maximum of `timeout` seconds for all of the
+        `events` to complete.
+
+        Will check at least every `sleep_delay` seconds for the events to be done,
+        and also for interrupts and bad weather. Will log debug messages approximately
+        every `status_interval` seconds, and will output status messages approximately
+        every `msg_interval` seconds.
+
+        Args:
+            events (list(`threading.Event`)): An Event or list of Events to wait on.
+            timeout (float|`astropy.units.Quantity`): Timeout in seconds to wait for events.
+            sleep_delay (float, optional): Time in seconds between event checks.
+            status_interval (float, optional): Time in seconds between status checks of the system.
+            msg_interval (float, optional): Time in seconds between sending of status messages.
+            event_type (str, optional): The type of event, used for outputting in log messages,
+                default 'generic'.
+
+        Raises:
+            error.Timeout: Raised if events have not all been set before `timeout` seconds.
+        """
+        events = listify(events)
+
+        # Remove units from these values.
+        if isinstance(timeout, u.Quantity):
+            timeout = timeout.to(u.second).value
+
+        if isinstance(sleep_delay, u.Quantity):
+            sleep_delay = sleep_delay.to(u.second).value
+
+        # ADD units to these values. Ugly.
+        if not isinstance(status_interval, u.Quantity):
+            status_interval = status_interval * u.second
+
+        if not isinstance(msg_interval, u.Quantity):
+            msg_interval = msg_interval * u.second
+
+        timer = CountdownTimer(timeout)
+
+        start_time = current_time()
+        next_status_time = start_time + status_interval
+        next_msg_time = start_time + msg_interval
+
+        while not all([event.is_set() for event in events]):
+            self.check_messages()
+            if self.interrupted:
+                self.logger.info("Waiting for events has been interrupted")
+                break
+
+            now = current_time()
+            if now >= next_msg_time:
+                elapsed_secs = (now - start_time).to(u.second).value
+                self.logger.debug('Waiting for {} events: {} seconds elapsed',
+                                  event_type,
+                                  round(elapsed_secs))
+                next_msg_time += msg_interval
+                now = current_time()
+
+            if now >= next_status_time:
+                self.logger.debug('Inside waiting for events, checking status')
+                self.status()
+                next_status_time += status_interval
+                now = current_time()
+
+            if timer.expired():
+                raise error.Timeout
+
+            # Sleep for a little bit.
+            time.sleep(sleep_delay)
+
     def wait_until_safe(self):
         """ Waits until weather is safe.
 
@@ -556,10 +637,10 @@ class POCS(PanStateMachine, PanBase):
                     if cmd_subscriber.socket in sockets and \
                             sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
-                        msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                        topic, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
                         # Put the message in a queue to be processed
-                        if msg_type == 'POCS-CMD':
+                        if topic == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
 
                     time.sleep(1)

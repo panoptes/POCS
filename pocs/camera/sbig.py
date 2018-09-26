@@ -45,8 +45,12 @@ class Camera(AbstractCamera):
 
     @AbstractCamera.uid.getter
     def uid(self):
-        # Neet to overide this because the base class only returns the 1st 6 characters of the
-        # serial number, which is not a unique identifier for most of the camera types.
+        """Return unique identifier for camera.
+
+        Need to overide this because the base class only returns the 1st
+        6 characters of the serial number, which is not a unique identifier
+        for most of the camera types
+        """
         return self._serial_number
 
     @property

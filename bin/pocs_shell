@@ -455,12 +455,12 @@ Hardware names: {}   (or all for all hardware)'''.format(
                 if self.cmd_subscriber.socket in sockets and \
                         sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
-                    msg_type, msg_obj = self.cmd_subscriber.receive_message(
+                    topic, msg_obj = self.cmd_subscriber.receive_message(
                         flags=zmq.NOBLOCK)
-                    print_info("{} {}".format(msg_type, msg_obj))
+                    print_info("{} {}".format(topic, msg_obj))
 
                     # Put the message in a queue to be processed
-                    if msg_type == 'PAWS-CMD':
+                    if topic == 'PAWS-CMD':
                         try:
                             print_info("Command received: {}".format(
                                 msg_obj['message']))

@@ -110,8 +110,12 @@ class Camera(AbstractCamera):
 
     @AbstractCamera.uid.getter
     def uid(self):
-        # Neet to overide this because the base class only returns the 1st 6 characters of the
-        # serial number, which is not a unique identifier for most of the camera types.
+        """Return unique identifier for camera.
+
+        Need to overide this because the base class only returns the 1st
+        6 characters of the serial number, which is not a unique identifier
+        for most of the camera types
+        """
         return self._serial_number
 
     @property
@@ -215,10 +219,8 @@ class Camera(AbstractCamera):
             seconds = seconds * u.second
 
         if not self._exposure_lock.acquire(blocking=False):
-            message = 'Attempt to start exposure on {} ({})'.format(self.name, self.uid) + \
-                'while exposure in progress! Waiting...'
-            self.logger.warning(message)
-            warn(message)
+            self.logger.warning('Exposure started on {} ({}) while exposure in progress! Waiting.',
+                                self.name, self.uid)
             self._exposure_lock.acquire(blocking=True)
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
@@ -309,20 +311,27 @@ class Camera(AbstractCamera):
         return header
 
     def _get_camera_info(self):
-        self._info = {}
-        self._info['serial number'] = self._FLIDriver.FLIGetSerialString(self._handle)
-        self._info['camera model'] = self._FLIDriver.FLIGetModel(self._handle)
-        self._info['hardware version'] = self._FLIDriver.FLIGetHWRevision(self._handle)
-        self._info['firmware version'] = self._FLIDriver.FLIGetFWRevision(self._handle)
-        self._info['pixel width'], \
-            self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(self._handle)
-        self._info['array corners'] = self._FLIDriver.FLIGetArrayArea(self._handle)
-        self._info['array height'] = self._info['array corners'][1][1] - \
-            self._info['array corners'][0][1]
-        self._info['array width'] = self._info['array corners'][1][0] - \
-            self._info['array corners'][0][0]
-        self._info['visible corners'] = self._FLIDriver.FLIGetVisibleArea(self._handle)
-        self._info['visible height'] = self._info['visible corners'][1][1] - \
-            self._info['visible corners'][0][1]
-        self._info['visible width'] = self._info['visible corners'][1][0] - \
-            self._info['visible corners'][0][0]
+
+        serial_number = self._FLIDriver.FLIGetSerialString(self._handle),
+        camera_model = self._FLIDriver.FLIGetModel(self._handle)
+        hardware_version = self._FLIDriver.FLIGetHWRevision(self._handle)
+        firmware_version = self._FLIDriver.FLIGetFWRevision(self._handle)
+
+        pixel_width, pixel_height = self._FLIDriver.FLIGetPixelSize(self._handle)
+        ccd_corners = self._FLIDriver.FLIGetArrayArea(self._handle)
+        visible_corners = self._FLIDriver.FLIGetVisibleArea(self._handle)
+
+        self._info = {
+            'serial number': serial_number,
+            'camera model': camera_model,
+            'hardware version': hardware_version,
+            'firmware version': firmware_version,
+            'pixel width': pixel_width,
+            'pixel height': pixel_height,
+            'array corners': ccd_corners,
+            'array height': ccd_corners[1][1] - ccd_corners[0][1],
+            'array width': ccd_corners[1][0] - ccd_corners[0][0],
+            'visible corners': visible_corners,
+            'visible height': visible_corners[1][1] - visible_corners[0][1],
+            'visible width': visible_corners[1][0] - visible_corners[0][0]
+        }
