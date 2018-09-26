@@ -7,7 +7,7 @@ from pocs.utils.images import fits as fits_utils
 
 @pytest.fixture
 def solved_fits_file(data_dir):
-    return '{}/solved.fits.fz'.format(data_dir)
+    return os.path.join(data_dir, 'solved.fits.fz')
 
 
 def test_wcsinfo(solved_fits_file):
