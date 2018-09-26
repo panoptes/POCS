@@ -321,8 +321,7 @@ class Observatory(PanBase):
 
             try:
                 # Start the exposures
-                cam_event = camera.take_observation(
-                    self.current_observation, headers)
+                cam_event = camera.take_observation(self.current_observation, headers)
 
                 camera_events[cam_name] = cam_event
 
@@ -344,6 +343,8 @@ class Observatory(PanBase):
         self.current_offset_info = None
 
         pointing_image = self.current_observation.pointing_image
+        self.logger.debug(
+            "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
         try:
             # Get the image to compare
@@ -351,15 +352,13 @@ class Observatory(PanBase):
 
             current_image = Image(image_path, location=self.earth_location)
 
-            solve_info = current_image.solve_field()
+            solve_info = current_image.solve_field(skip_solved=False)
 
             self.logger.debug("Solve Info: {}".format(solve_info))
 
             # Get the offset between the two
-            self.current_offset_info = current_image.compute_offset(
-                pointing_image)
-            self.logger.debug('Offset Info: {}'.format(
-                self.current_offset_info))
+            self.current_offset_info = current_image.compute_offset(pointing_image)
+            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Store the offset information
             self.db.insert('offset_info', {
