@@ -41,12 +41,12 @@ class Image(PanBase):
         else:
             self.wcs_file = fits_file
 
-        header_ext = 0
+        self.header_ext = 0
         if fits_file.endswith('.fz'):
-            header_ext = 1
+            self.header_ext = 1
 
         with fits.open(self.fits_file, 'readonly') as hdu:
-            self.header = hdu[header_ext].header
+            self.header = hdu[self.header_ext].header
 
         assert 'DATE-OBS' in self.header, self.logger.warning(
             'FITS file must contain the DATE-OBS keyword')

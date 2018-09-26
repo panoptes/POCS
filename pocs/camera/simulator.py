@@ -101,7 +101,11 @@ class Camera(AbstractCamera):
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
         self.logger.debug('Overriding mount coordinates for camera simulator')
-        solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits.fz')
+        solved_path = os.path.join(
+            os.environ['POCS'],
+            'pocs', 'tests', 'data',
+            'solved.fits.fz'
+        )
         solved_header = fits.getheader(solved_path)
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
