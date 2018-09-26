@@ -28,6 +28,7 @@ class Focuser(AbstractFocuser):
     Additional positional and keyword arguments are passed to the base class, AbstractFocuser. See
     that class for a complete list.
     """
+
     def __init__(self,
                  port,
                  name='FocusLynx Focuser',
@@ -64,9 +65,8 @@ class Focuser(AbstractFocuser):
                 else:
                     raise ValueError('Max position must be greater than min position!')
             else:
-                message = "Specified max_position {} greater than focuser max {}!".format(max_position,
-                                                                                          self._max_position)
-                warn(message)
+                self.logger.warning("Specified max_position {} greater than focuser max {}!",
+                                    max_position, self._max_position)
 
         if initial_position is not None:
             self.position = initial_position
@@ -90,13 +90,18 @@ class Focuser(AbstractFocuser):
         """
         The user set 'nickname' of the focuser. Must be <= 16 characters
         """
-        return self._focuser_config['Nickname']
+        try:
+            uid = self._focuser_config['Nickname']
+        except AttributeError:
+            uid = self.port
+
+        return uid
 
     @uid.setter
     def uid(self, nickname):
         if len(nickname) > 16:
-            self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)'.format(nickname,
-                                                                                                nickname[:16]))
+            self.logger.warning('Truncated nickname {} to {} (must be <= 16 characters)',
+                                nickname, nickname[:16])
             nickname = nickname[:16]
         command_str = '<F{:1d}SCNN{}>'.format(self._focuser_number, nickname)
         self._send_command(command_str, expected_reply='SET')
@@ -199,32 +204,27 @@ class Focuser(AbstractFocuser):
             int: focuser position following the move. If blocking is True this will be the actual
                 focuser position, if False it will be the target position.
         """
+        position = int(position)
         if position < self._min_position:
-            message = 'Requested position {} less than min position, moving to {}!'.format(position,
-                                                                                           self._min_position)
-            self.logger.error(message)
-            warn(message)
+            self.logger.error('Requested position {} less than min position, moving to {}!',
+                              position, self._min_position)
             position = self._min_position
         elif position > self._max_position:
-            message = 'Requested position {} greater than max position, moving to {}!'.format(position,
-                                                                                              self._max_position)
-            self.logger.error(message)
-            warn(message)
+            self.logger.error('Requested position {} greater than max position, moving to {}!',
+                              position, self._max_position)
             position = self._max_position
 
         self.logger.debug('Moving focuser {} to {}'.format(self.uid, position))
         command_str = '<F{:1d}MA{:06d}>'.format(self._focuser_number, position)
         self._send_command(command_str, expected_reply='M')
+
         # Focuser move commands are non-blocking. Only option is polling is_moving
         if blocking:
             while self.is_moving:
                 time.sleep(1)
             if self.position != self._target_position:
-                message = "Focuser {} did not reach target position {}, now at {}!".format(self.uid,
-                                                                                           self._target_position,
-                                                                                           self._position)
-                self.logger.warning(message)
-                warn(message)
+                self.logger.warning("Focuser {} did not reach target position {}, now at {}!",
+                                    self.uid, self._target_position, self._position)
             return self._position
         else:
             return position
@@ -271,8 +271,8 @@ class Focuser(AbstractFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_hub_info(self):
-        self._hub_info = self._send_comman(command_str='<FHGETHUBINFO>',
-                                           expected_reply='HUB INFO')
+        self._hub_info = self._send_command(command_str='<FHGETHUBINFO>',
+                                            expected_reply='HUB INFO')
 
     def _get_focuser_config(self):
         command_str = '<F{:1d}GETCONFIG>'.format(self._focuser_number)
@@ -282,7 +282,7 @@ class Focuser(AbstractFocuser):
     def _update_focuser_status(self):
         command_str = '<F{:1d}GETSTATUS>'.format(self._focuser_number)
         expected_reply = 'STATUS{:1d}'.format(self._focuser_number)
-        self._focuser_status = self._get_info(command_str, expected_reply)
+        self._focuser_status = self._send_command(command_str, expected_reply)
 
         self._position = int(self._focuser_status['Curr Pos'])
         self._target_position = int(self._focuser_status['Targ Pos'])
@@ -299,14 +299,27 @@ class Focuser(AbstractFocuser):
         self._serial_port.reset_input_buffer()
         # Send command
         self._serial_port.write(command_str.encode('ascii'))
-        # Should always get '!' back unless there's an error
         response = str(self._serial_port.readline(), encoding='ascii').strip()
-        if response != '!':
-            message = "Error sending command '{}' to {}: {}".format(command_str, self.uid, response)
+        if not response:
+            message = "No response to command '{}' from focuser {}".format(command_str, self.uid)
             self.logger.error(message)
-            warn(message)
+            raise RuntimeError(message)
+
+        # Should always get '!' back unless there's an error
+        if response != '!':
+            message = "Error sending command '{}' to focuser {}: {}".format(
+                command_str, self.uid, response)
+            self.logger.error(message)
+            raise RuntimeError(message)
+
         # Next line identifies the command the focuser is replying to.
-        assert str(self._serial_port.readline(), encoding='ascii').strip() == expected_reply
+        command_echo = str(self._serial_port.readline(), encoding='ascii').strip()
+        if command_echo != expected_reply:
+            message = "Expected reply '{}' from {}, got '{}'".format(
+                expected_reply, self.uid, command_echo)
+            self.logger.error(message)
+            raise RuntimeError(message)
+
         # For get info type commands then get several lines of key = value, then 'END'
         if expected_reply in ('HUB INFO',
                               'CONFIG1',
@@ -327,5 +340,5 @@ class Focuser(AbstractFocuser):
         header.set('FOC-ID', self.uid, 'Focuser nickname')
         header.set('FOC-HW', self.hardware_version, 'Focuser device type')
         header.set('FOC-FW', self.firmware_version, 'Focuser controller firmware version')
-        header.set('FOC-TEMP', self.temperature, 'Focuser temperature (deg C)')
+        header.set('FOC-TEMP', self.temperature.value, 'Focuser temperature (deg C)')
         return header
