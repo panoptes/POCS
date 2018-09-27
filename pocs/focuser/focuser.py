@@ -182,11 +182,8 @@ class AbstractFocuser(PanBase):
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
-        a coarse focus first before performing the default fine focus. The
-        expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and
-        after updating the intial focus position in the config only fine focus will
-        be required.
+        a coarse focus to find the approximate position of infinity focus, which
+        should be followed by a fine focus before observing.
 
         Args:
             seconds (scalar, optional): Exposure time for focus exposures, if not
@@ -209,7 +206,8 @@ class AbstractFocuser(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            coarse (bool, optional): Whether to begin with coarse focusing, default False.
+            coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
+                a fine focus. Default False.
             plots (bool, optional: Whether to write focus plots to images folder, default False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
@@ -284,6 +282,7 @@ class AbstractFocuser(PanBase):
                 mask_dilations = 10
 
         # Set up the focus parameters
+        focus_event = Event()
         focus_params = {
             'seconds': seconds,
             'focus_range': focus_range,
@@ -294,35 +293,16 @@ class AbstractFocuser(PanBase):
             'merit_function': merit_function,
             'merit_function_kwargs': merit_function_kwargs,
             'mask_dilations': mask_dilations,
+            'coarse': coarse,
             'plots': plots,
-            'start_event': None,
-            'finished_event': None,
+            'focus_event': focus_event,
         }
-
-        # Coarse focus
-        if coarse:
-            coarse_event = Event()
-            focus_params['finished_event'] = coarse_event
-            focus_params['coarse'] = True
-
-            coarse_thread = Thread(target=self._autofocus, kwargs=focus_params)
-            coarse_thread.start()
-        else:
-            coarse_event = None
-
-        # Fine Focus - This will wait for the coarse_event to finish.
-        fine_event = Event()
-        focus_params['start_event'] = coarse_event
-        focus_params['finished_event'] = fine_event
-        focus_params['coarse'] = False
-
-        fine_thread = Thread(target=self._autofocus, kwargs=focus_params)
-        fine_thread.start()
-
+        focus_thread = Thread(target=self._autofocus, kwargs=focus_params)
+        focus_thread.start()
         if blocking:
-            fine_event.wait()
+            focus_event.wait()
 
-        return fine_event
+        return focus_event
 
     def _autofocus(self,
                    seconds,
@@ -336,20 +316,13 @@ class AbstractFocuser(PanBase):
                    mask_dilations,
                    plots,
                    coarse,
-                   start_event,
-                   finished_event,
+                   focus_event,
                    *args,
                    **kwargs):
         """Private helper method for calling autofocus in a Thread.
 
         See public `autofocus` for information about the parameters.
         """
-
-        # If passed a start_event wait until Event is set before proceeding
-        # (e.g. wait for coarse focus to finish before starting fine focus).
-        if start_event:
-            start_event.wait()
-
         focus_type = 'fine'
         if coarse:
             focus_type = 'coarse'
@@ -490,14 +463,13 @@ class AbstractFocuser(PanBase):
 
         final_focus = self.move_to(best_focus)
 
+        final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
+        file_path = os.path.join(file_path_root, final_fn)
+        final_thumbnail = self._camera.get_thumbnail(
+            seconds, file_path, thumbnail_size, keep_file=True)
+
         if plots:
             initial_thumbnail = focus_utils.mask_saturated(initial_thumbnail)
-
-            final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
-            file_path = os.path.join(file_path_root, final_fn)
-
-            final_thumbnail = self._camera.get_thumbnail(
-                seconds, file_path, thumbnail_size, keep_file=True)
             final_thumbnail = focus_utils.mask_saturated(final_thumbnail)
             if dark_thumb is not None:
                 initial_thumbnail = initial_thumbnail - dark_thumb
@@ -552,8 +524,8 @@ class AbstractFocuser(PanBase):
         self.logger.debug(
             'Autofocus of {} complete - final focus position: {}', self._camera, final_focus)
 
-        if finished_event:
-            finished_event.set()
+        if focus_event:
+            focus_event.set()
 
         return initial_focus, final_focus
 

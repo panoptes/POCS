@@ -305,22 +305,19 @@ class AbstractCamera(PanBase):
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the specified merit function. Optionally
-        performs a coarse focus first before performing the default fine focus.
-        The expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and
-        after updating the intial focus position in the config only fine focus
-        will be required.
+        Focuses the camera using the specified merit function. Optionally performs
+        a coarse focus to find the approximate position of infinity focus, which
+        should be followed by a fine focus before observing.
 
         Args:
-            seconds (optional): Exposure time for focus exposures, if not
+            seconds (scalar, optional): Exposure time for focus exposures, if not
                 specified will use value from config.
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (optional): Size of square central region of image to
-                use, default 500 x 500 pixels.
+            thumbnail_size (int, optional): Size of square central region of image
+                to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
                 first and last images from each focus run.
@@ -328,20 +325,21 @@ class AbstractCamera(PanBase):
                 before the focus run, and use it for dark subtraction and hot
                 pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
-                focus metric.
+                focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            coarse (bool, optional): Whether to begin with coarse focusing,
-                default False
-            plots (bool, optional: Whether to write focus plots to images folder,
-                default False.
-            blocking (bool, optional): Whether to block until autofocus complete,
-                default False
+            coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
+                a fine focus. Default False.
+            plots (bool, optional: Whether to write focus plots to images folder, default False.
+            blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
+
+        Raises:
+            ValueError: If invalid values are passed for any of the focus parameters.
         """
         if self.focuser is None:
             self.logger.error("Camera must have a focuser for autofocus!")
