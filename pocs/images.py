@@ -42,7 +42,7 @@ class Image(PanBase):
             self.wcs_file = fits_file
 
         self.header_ext = 0
-        if fits_file.endswith('.fz'):
+        if file_ext == '.fz':
             self.header_ext = 1
 
         with fits.open(self.fits_file, 'readonly') as hdu:
@@ -99,6 +99,7 @@ class Image(PanBase):
     def wcs_file(self, filename):
         if filename is not None:
             try:
+                # extension here is not necessarily the same as self.file_ext
                 if filename.endswith('.fz'):
                     header = fits.getheader(filename, ext=1)
                     w = wcs.WCS(header)
