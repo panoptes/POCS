@@ -13,6 +13,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
+from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath('../pocs'))
 
@@ -21,7 +22,7 @@ from pocs.version import __version__
 
 # -- Project information -----------------------------------------------------
 
-project = 'Project PANOPTES'
+project = 'POCS'
 copyright = '2018, PANOPTES Team'
 author = 'PANOPTES Team'
 
@@ -43,16 +44,22 @@ release = ''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
+    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.githubpages',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+
+source_parsers = {'.md': CommonMarkParser}
+
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -96,6 +103,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_logo = '_static/logo.png'
+
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
