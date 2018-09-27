@@ -1,12 +1,13 @@
 import os
 import pytest
 
+import time
 from datetime import datetime as dt
-
 
 from pocs.utils import current_time
 from pocs.utils import listify
 from pocs.utils import load_module
+from pocs.utils import CountdownTimer
 from pocs.utils.error import NotFound
 from pocs.camera import list_connected_cameras
 
@@ -51,3 +52,30 @@ def test_has_camera_ports():
 
     for port in ports:
         assert port.startswith('usb:')
+
+
+def test_countdown_timer_bad_input():
+    with pytest.raises(ValueError):
+        assert CountdownTimer('d')
+
+    with pytest.raises(ValueError):
+        assert CountdownTimer(current_time())
+
+    with pytest.raises(AssertionError):
+        assert CountdownTimer(-1)
+
+
+def test_countdown_timer_non_blocking():
+    timer = CountdownTimer(0)
+    assert timer.is_non_blocking
+    assert timer.time_left() == 0
+
+
+def test_countdown_timer():
+    timer = CountdownTimer(1)
+    assert timer.time_left() > 0
+    assert timer.expired() is False
+    assert timer.is_non_blocking is False
+    time.sleep(1)
+    assert timer.time_left() == 0
+    assert timer.expired() is True
