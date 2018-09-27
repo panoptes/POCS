@@ -1,31 +1,39 @@
-from pocs.base import PanBase
+import re
+import shutil
+import subprocess
+import yaml
+import os
+import copy
+from threading import Event
+from threading import Thread
 
+from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
+
+from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
-
 from pocs.focuser import AbstractFocuser
-
-from astropy.io import fits
-from astropy.time import Time
-import astropy.units as u
-
-import re
-import shutil
-import subprocess
-import yaml
-import os
-
-from threading import Event
-from threading import Thread
 
 
 class AbstractCamera(PanBase):
 
-    """ Base class for all cameras """
+    """Base class for all cameras.
+
+    Attributes:
+        filter_type (str): Type of filter attached to camera, default RGGB.
+        focuser (`pocs.cameras.focuser.Focuser`|None): Focuser for the camera, default None.
+        is_primary (bool): If this camera is the primary camera for the system, default False.
+        model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
+        name (str): Name of the camera, default 'Generic Camera'.
+        port (str): The port the camera is connected to, typically a usb device, default None.
+        properties (dict): A collection of camera properties as read from the camera.
+    """
 
     def __init__(self,
                  name='Generic Camera',
@@ -44,16 +52,15 @@ class AbstractCamera(PanBase):
         self.model = model
         self.port = port
         self.name = name
-
         self.is_primary = primary
+        self.properties = None
+
+        self.filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
-        self._serial_number = 'XXXXXX'
+        self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self.filter_type = 'RGGB'
-
-        self.properties = None
         self._current_observation = None
 
         if focuser:
@@ -68,8 +75,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self)
-                    self.logger.debug("Focuser created: {}".format(self.focuser))
+                    focuser_kwargs = copy.copy(focuser)
+                    focuser_kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**focuser_kwargs)
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
@@ -208,7 +216,8 @@ class AbstractCamera(PanBase):
             observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, observation_event, exposure_event))
+        t = Thread(target=self.process_exposure, args=(
+            metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -238,13 +247,19 @@ class AbstractCamera(PanBase):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        self.logger.debug("Processing {}".format(image_id))
+        exptime = info['exp_time']
+        field_name = info['field_name']
+
+        image_title = '{} [{}s] {} {}'.format(field_name,
+                                              exptime,
+                                              seq_id.replace('_', ' '),
+                                              current_time(pretty=True))
 
         try:
-            self.logger.debug("Extracting pretty image")
+            self.logger.debug("Processing {}".format(image_title))
             img_utils.make_pretty_image(file_path,
-                                        title=info['field_name'],
-                                        primary=info['is_primary'])
+                                        title=image_title,
+                                        link_latest=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
@@ -285,9 +300,8 @@ class AbstractCamera(PanBase):
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
-                  plots=True,
+                  plots=False,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -319,12 +333,10 @@ class AbstractCamera(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing,
                 default False
             plots (bool, optional: Whether to write focus plots to images folder,
-                default True.
+                default False.
             blocking (bool, optional): Whether to block until autofocus complete,
                 default False
 
@@ -344,7 +356,6 @@ class AbstractCamera(PanBase):
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
-                                      spline_smoothing=spline_smoothing,
                                       coarse=coarse,
                                       plots=plots,
                                       blocking=blocking,
@@ -434,15 +445,19 @@ class AbstractCamera(PanBase):
 
             file_path = filename
 
+        unit_id = self.config['pan_id']
+
+        # Make the image_id
         image_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             start_time
         )
         self.logger.debug("image_id: {}".format(image_id))
 
+        # Make the sequence_id
         sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             observation.seq_time
         )

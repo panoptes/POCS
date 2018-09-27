@@ -1,1 +1,1 @@
-from pocs.mount.mount import AbstractMount
+from pocs.mount.mount import AbstractMount  # pragma: no flakes

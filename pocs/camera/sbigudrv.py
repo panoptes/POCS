@@ -8,20 +8,15 @@ enums and structs defined in the library C-header to Python dicts and
 ctypes.Structures, plus a class (SBIGDriver) to load the library
 and call the single command function (SBIGDriver._send_command()).
 """
-import platform
 import ctypes
 from ctypes.util import find_library
 from warnings import warn
-import _ctypes
-import os
 import time
 from threading import Timer, Lock
 
 import numpy as np
 from numpy.ctypeslib import as_ctypes
 from astropy import units as u
-from astropy.io import fits
-from astropy.time import Time
 
 from pocs.base import PanBase
 from pocs.utils.images import fits as fits_utils
@@ -110,7 +105,7 @@ class SBIGDriver(PanBase):
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info('\t\t\t SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
+        self.logger.info('SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
 
     @property
     def retries(self):

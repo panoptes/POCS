@@ -5,17 +5,17 @@ services:
   - mongodb
 python:
   - "3.6"
-cache:
-  - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes ARDUINO_VERSION=1.8.1
+    - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
-    - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
-    - mkdir $PANDIR/logs
-    - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
-    - pip install coveralls
+    - mkdir -p $PANDIR/logs
+    - mkdir -p $PANDIR/astrometry/data
+    - ln -s $POCS $PANDIR/POCS
     - pip install -U pip
-    - cd $HOME
+    - pip install coveralls
+
+    # Install cfitsio
+    - cd $PANDIR
     - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
     - tar zxf cfitsio_latest.tar.gz
     - cd cfitsio
@@ -24,9 +24,9 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod -R 777 /var/panoptes/astrometry/
-    - cd $HOME
+
+    # Install arudino files
+    - cd $PANDIR
     - export DISPLAY=:1.0
     - export
     - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
@@ -37,26 +37,31 @@ addons:
   apt:
     packages:
     - gphoto2
-    - libcairo2-dev 
-    - libnetpbm10-dev 
+    - libcairo2-dev
+    - libnetpbm10-dev
     - netpbm
     - libpng12-dev
     - libjpeg-dev
     - python-numpy
     - python-pyfits
-    - python-dev 
-    - zlib1g-dev 
-    - libbz2-dev 
-    - swig 
+    - python-dev
+    - zlib1g-dev
+    - libbz2-dev
+    - swig
     - cfitsio-dev
 install:
+  - cd $PANDIR
+
+  # Install astrometry.net
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
   - tar zxvf astrometry.net-0.72.tar.gz
-  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=/var/panoptes/astrometry
-  - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /var/panoptes/astrometry/etc/astrometry.cfg
+  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
+  - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
+
+  # Install miniconda
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:/var/panoptes/astrometry/bin:$PATH"
+  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$PANDIR/astrometry/bin:$PATH"
   - hash -r
 
   - conda config --set always_yes yes --set changeps1 no
@@ -65,19 +70,23 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
-  - cd $TRAVIS_BUILD_DIR
+  # install POCS and requirements
+  - cd $POCS
   - pip install -r requirements.txt
   - python setup.py install
-  - python pocs/utils/data.py
+  - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
   - export BOARD="arduino:avr:micro"
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
-  - coverage run $(which pytest) -v
-  - coverage combine .coverage*
-
+  - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
+  - export COVERAGE_PROCESS_START=.coveragerc
+  - coverage run $(which pytest) -v --test-databases all
+  - coverage combine
+cache:
+  pip: true
+  directories:
+    - $PANDIR/astrometry/
 after_success:
-    - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
-          bash <(curl -s https://codecov.io/bash);
-      fi
+  - bash <(curl -s https://codecov.io/bash)

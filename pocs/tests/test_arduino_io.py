@@ -3,12 +3,9 @@
 import collections
 import datetime
 import pytest
-import queue as queue_module
 import serial
-import time
 
 from pocs.sensors import arduino_io
-from pocs.utils.database import AbstractPanDB
 import pocs.utils.error as error
 from pocs.utils.logger import get_root_logger
 from pocs.utils import rs232
@@ -171,8 +168,8 @@ def test_basic_arduino_io(serial_handlers, memory_db, msg_publisher, msg_subscri
         assert got_reading is True
 
     # Check that the reading was sent as a message.
-    msg_type, msg_obj = msg_subscriber.receive_message(blocking=False)
-    assert msg_type == board
+    topic, msg_obj = msg_subscriber.receive_message(blocking=False)
+    assert topic == board
     assert isinstance(msg_obj, dict)
     assert len(msg_obj) == 3
     assert isinstance(msg_obj.get('data'), dict)
@@ -189,16 +186,16 @@ def test_basic_arduino_io(serial_handlers, memory_db, msg_publisher, msg_subscri
     assert stored_reading['type'] == board
 
     # There should be no new messages because we haven't called read_and_record again.
-    msg_type, msg_obj = msg_subscriber.receive_message(blocking=False)
-    assert msg_type is None
+    topic, msg_obj = msg_subscriber.receive_message(blocking=False)
+    assert topic is None
     assert msg_obj is None
 
     # Send a command. For now, just a string to be sent.
     # TODO(jamessynge): Add named based setting of relays.
     # TODO(jamessynge): Add some validation of the effect of the command.
-    cmd_channel = board + ':commands'
-    assert cmd_channel == aio._cmd_channel
-    cmd_publisher.send_message(cmd_channel, dict(command='write_line', line='relay=on'))
+    cmd_topic = board + ':commands'
+    assert cmd_topic == aio._cmd_topic
+    cmd_publisher.send_message(cmd_topic, dict(command='write_line', line='relay=on'))
     aio.handle_commands()
 
     # Confirm that it checks the name of the board. If the reading contains
@@ -211,7 +208,7 @@ def test_basic_arduino_io(serial_handlers, memory_db, msg_publisher, msg_subscri
     # Ask it to stop working. Just records the request in a private variable,
     # but if we'd been running it in a separate process this is how we'd get it
     # to shutdown cleanly; the alternative would be to kill the process.
-    cmd_publisher.send_message(cmd_channel, dict(command='shutdown'))
+    cmd_publisher.send_message(cmd_topic, dict(command='shutdown'))
     assert aio._keep_running
     aio.handle_commands()
     assert not aio._keep_running
