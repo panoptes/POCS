@@ -4,30 +4,30 @@
    contain the root `toctree` directive.
 
 POCS: PANOPTES Observatory Control Software!
-----
+============================================
+
+Contents:
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+   :maxdepth: 2
+
+   source/pocs
 
 
-.. .. image:: logo.png
-.. 	:width: 200px
-.. 	:align: center
-.. 	:alt: PANOPTES Logo
+`PANOPTES <http://projectpanoptes.org>`_ is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the `project website <http://projectpanoptes.org/>`_ for an overview.
 
-`PANOPTES <http://projectpanoptes.org>`_ is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the `project overview <http://projectpanoptes.org/v1/overview/>`_.
+Here is more text.
 
 Project Links
-----
+-------------
 
 - PANOPTES Homepage: http://projectpanoptes.org
 - Forum: http://forum.projectpanoptes.org
-- Source Code: http://github.com/panoptes/POCS
 
 
 POCS Details
-----
+------------
+* Source Code: http://github.com/panoptes/POCS
 * Release History
 * Known Issues
 * Authors and Credits
@@ -35,7 +35,7 @@ POCS Details
 
 
 Index
-----
+-----
 
 * :ref:`genindex`
 * :ref:`modindex`
