@@ -21,13 +21,13 @@ from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
-from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
+from pocs.camera import AbstractCamera
 
 
 class Observatory(PanBase):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cameras=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -47,10 +47,15 @@ class Observatory(PanBase):
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\tSetting up cameras')
-        self.cameras = OrderedDict()
-        self._primary_camera = None
-        self._create_cameras(**kwargs)
+        if not cameras:
+            cameras = OrderedDict()
+
+        if cameras:
+            self.logger.info('Adding the cameras to the observatory')
+            self._primary_camera = None
+            self.cameras = cameras
+            for cam_name, camera in cameras.items():
+                self.add_camera(cam_name, camera)
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
@@ -87,7 +92,23 @@ class Observatory(PanBase):
         return self.observer.local_sidereal_time(current_time())
 
     @property
+    def has_cameras(self):
+        return len(self.cameras) > 0
+
+    @property
     def primary_camera(self):
+        """Return primary camera.
+
+        Note:
+            If no camera has been marked as primary this will set and return
+            the first camera in the OrderedDict as primary.
+
+        Returns:
+            `pocs.camera.Camera`: The primary camera.
+        """
+        if not self._primary_camera and self.has_cameras:
+            self._primary_camera = self.cameras[list(self.cameras.keys())[0]]
+
         return self._primary_camera
 
     @primary_camera.setter
@@ -106,6 +127,42 @@ class Observatory(PanBase):
     @property
     def has_dome(self):
         return self.dome is not None
+
+
+##########################################################################
+# Device Getters/Setters
+##########################################################################
+
+    def add_camera(self, cam_name, camera):
+        """Add camera to list of cameras as cam_name.
+
+        Args:
+            cam_name (str): The name to use for the camera, e.g. `Cam00`.
+            camera (`pocs.camera.camera.Camera`): An instance of the `~Camera` class.
+        """
+        assert isinstance(camera, AbstractCamera)
+        self.logger.debug('Adding {}: {}'.format(cam_name, camera))
+        if cam_name in self.cameras:
+            self.logger.debug('{} already exists, replacing existing camera under that name.')
+
+        self.cameras[cam_name] = camera
+        if camera.is_primary:
+            self.primary_camera = camera
+
+    def remove_camera(self, cam_name):
+        """Remove cam_name from list of attached cameras.
+
+        Note:
+            If you remove and then add a camera you will change the index order
+            of the camera. If you prefer to keep the same order then use `add_camera`
+            with the same name as an existing camera to to update the list and preserve
+            the order.
+
+        Args:
+            cam_name (str): Name of camera to remove.
+        """
+        self.logger.debug('Removing {}'.format(cam_name))
+        del self.cameras[cam_name]
 
 ##########################################################################
 # Methods
@@ -264,8 +321,7 @@ class Observatory(PanBase):
 
             try:
                 # Start the exposures
-                cam_event = camera.take_observation(
-                    self.current_observation, headers)
+                cam_event = camera.take_observation(self.current_observation, headers)
 
                 camera_events[cam_name] = cam_event
 
@@ -287,6 +343,8 @@ class Observatory(PanBase):
         self.current_offset_info = None
 
         pointing_image = self.current_observation.pointing_image
+        self.logger.debug(
+            "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
         try:
             # Get the image to compare
@@ -294,15 +352,13 @@ class Observatory(PanBase):
 
             current_image = Image(image_path, location=self.earth_location)
 
-            solve_info = current_image.solve_field()
+            solve_info = current_image.solve_field(skip_solved=False)
 
             self.logger.debug("Solve Info: {}".format(solve_info))
 
             # Get the offset between the two
-            self.current_offset_info = current_image.compute_offset(
-                pointing_image)
-            self.logger.debug('Offset Info: {}'.format(
-                self.current_offset_info))
+            self.current_offset_info = current_image.compute_offset(pointing_image)
+            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Store the offset information
             self.db.insert('offset_info', {
@@ -601,138 +657,6 @@ class Observatory(PanBase):
         self.mount = module.Mount(location=self.earth_location)
 
         self.logger.debug('Mount created')
-
-    def _create_cameras(self, **kwargs):
-        """Creates a camera object(s)
-
-        Loads the cameras via the configuration.
-
-        Creates a camera for each camera item listed in the config. Ensures the
-        appropriate camera module is loaded.
-
-        Note: We are currently only operating with one camera and the `take_pic.sh`
-            script automatically discovers the ports.
-
-        Note:
-            This does not actually make a usb connection to the camera. To do so,
-            call the 'camear.connect()' explicitly.
-
-        Args:
-            **kwargs (dict): Can pass a camera_config object that overrides the info in
-                the configuration file. Can also pass `auto_detect`(bool) to try and
-                automatically discover the ports.
-
-        Returns:
-            list: A list of created camera objects.
-
-        Raises:
-            error.CameraNotFound: Description
-            error.PanError: Description
-        """
-        if kwargs.get('camera_info') is None:
-            camera_info = self.config.get('cameras')
-
-        self.logger.debug("Camera config: \n {}".format(camera_info))
-
-        a_simulator = 'camera' in self.config.get('simulator', [])
-        if a_simulator:
-            self.logger.debug("Using simulator for camera")
-
-        ports = list()
-
-        # Lookup the connected ports if not using a simulator
-        auto_detect = kwargs.get(
-            'auto_detect', camera_info.get('auto_detect', False))
-        if not a_simulator and auto_detect:
-            self.logger.debug("Auto-detecting ports for cameras")
-            try:
-                ports = list_connected_cameras()
-            except Exception as e:
-                self.logger.warning(e)
-
-            if len(ports) == 0:
-                raise error.PanError(
-                    msg="No cameras detected. Use --simulator=camera for simulator.")
-            else:
-                self.logger.debug("Detected Ports: {}".format(ports))
-
-        for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
-            cam_name = 'Cam{:02d}'.format(cam_num)
-
-            if not a_simulator:
-                camera_model = camera_config.get('model')
-
-                # Assign an auto-detected port. If none are left, skip
-                if auto_detect:
-                    try:
-                        camera_port = ports.pop()
-                    except IndexError:
-                        self.logger.warning(
-                            "No ports left for {}, skipping.".format(cam_name))
-                        continue
-                else:
-                    try:
-                        camera_port = camera_config['port']
-                    except KeyError:
-                        raise error.CameraNotFound(
-                            msg="No port specified and auto_detect=False")
-
-                camera_focuser = camera_config.get('focuser', None)
-                camera_readout = camera_config.get('readout_time', 6.0)
-
-            else:
-                # Set up a simulated camera with fully configured simulated
-                # focuser
-                camera_model = 'simulator'
-                camera_port = '/dev/camera/simulator'
-                camera_focuser = {'model': 'simulator',
-                                  'focus_port': '/dev/ttyFAKE',
-                                  'initial_position': 20000,
-                                  'autofocus_range': (40, 80),
-                                  'autofocus_step': (10, 20),
-                                  'autofocus_seconds': 0.1,
-                                  'autofocus_size': 500}
-                camera_readout = 0.5
-
-            camera_set_point = camera_config.get('set_point', None)
-            camera_filter = camera_config.get('filter_type', None)
-
-            self.logger.debug('Creating camera: {}'.format(camera_model))
-
-            try:
-                module = load_module('pocs.camera.{}'.format(camera_model))
-                self.logger.debug('Camera module: {}'.format(module))
-            except ImportError:
-                raise error.CameraNotFound(msg=camera_model)
-            else:
-                # Create the camera object
-                cam = module.Camera(name=cam_name,
-                                    model=camera_model,
-                                    port=camera_port,
-                                    set_point=camera_set_point,
-                                    filter_type=camera_filter,
-                                    focuser=camera_focuser,
-                                    readout_time=camera_readout)
-
-                is_primary = ''
-                if camera_info.get('primary', '') == cam.uid:
-                    self.primary_camera = cam
-                    is_primary = ' [Primary]'
-
-                self.logger.debug("Camera created: {} {} {}".format(
-                    cam.name, cam.uid, is_primary))
-
-                self.cameras[cam_name] = cam
-
-        # If no camera was specified as primary use the first
-        if self.primary_camera is None:
-            self.primary_camera = self.cameras['Cam00']
-
-        if len(self.cameras) == 0:
-            raise error.CameraNotFound(
-                msg="No cameras available. Exiting.", exit=True)
-
-        self.logger.debug("Cameras created")
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
