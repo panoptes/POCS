@@ -146,4 +146,9 @@ def run_camera_server(ignore_local):
                                                             config['camera']['model']})
         print('Registered with name server as {}'.format(config['name']))
         print('Starting request loop... (Control-C/Command-C to exit)')
-        daemon.requestLoop()
+        try:
+            daemon.requestLoop()
+        finally:
+            print('\nShutting down...')
+            name_server.remove(name=config['name'])
+            print('Unregistered from name server')
