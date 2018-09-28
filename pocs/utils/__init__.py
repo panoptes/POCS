@@ -13,12 +13,34 @@ from astropy.utils import resolve_name
 def current_time(flatten=False, datetime=False, pretty=False):
     """ Convenience method to return the "current" time according to the system
 
-    If the system is running in a simulator mode this returns the "current" now for the
-    system, which does not necessarily reflect now in the real world. If not in a simulator
-    mode, this simply returns `current_time()`
+    Note:
+        If the ``$POCSTIME`` environment variable is set then this will return
+        the time given in the variable. This is used for setting specific times
+        during testing. Normal operating usage of POCS will clear the variable
+        before starting.
+
+    .. doctest::
+
+        >>> from pocs.utils import current_time()
+        >>> now = current_time()
+        >>> now
+        <Time object: scale='utc' format='datetime' value=...>
+
+        >>> now = current_time(datetime=True)
+        >>> now
+        datetime.datetime(...)
+
+        >>> now = current_time(pretty=True)  # doctest: +SKIP
+        >>> now
+        '2018-09-28 00:14:18'
+
+        >>> os.environ['POCSTIME'] = '1999-12-31 23:59:59'
+        >>> party_time = current_time(pretty=True)
+        >>> party_time
+        '1999-12-31 23:59:59'
 
     Returns:
-        (astropy.time.Time):    `Time` object representing now.
+        (`astropy.time.Time`): Object representing now.
     """
 
     pocs_time = os.getenv('POCSTIME')
@@ -109,6 +131,20 @@ def listify(obj):
 
 
 def get_free_space(dir=None):
+    """Return the amoung of freespace in gigabytes for given dir.
+
+    .. doctest::
+
+        >>> from pocs.utils import get_free_space  # doctest: +SKIP
+        >>> get_free_space()
+
+    Args:
+        dir (str, optional): Path to directory. If None defaults to $PANDIR.
+
+    Returns:
+        (astropy.units.Quantity): The number of gigabytes avialable in folder.
+
+    """
     if dir is None:
         dir = os.getenv('PANDIR')
 
@@ -118,10 +154,23 @@ def get_free_space(dir=None):
 
 
 def load_module(module_name):
-    """ Dynamically load a module
+    """Dynamically load a module
+
+    .. doctest::
+
+        >>> from pocs.utils import load_module
+        >>> camera = load_module('pocs.camera.simulator')
+        >>> camera.__package__
+        'pocs.camera'
+
+    Args:
+        module_name (str): Name of module to import.
 
     Returns:
         module: an imported module name
+
+    Raises:
+        error.NotFound: If module cannot be imported.
     """
     from pocs.utils import error
     try:

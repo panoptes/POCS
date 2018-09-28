@@ -1,7 +1,6 @@
-POCS
+PANOPTES Observatory Control System - 	POCS
 =====
 
-PANOPTES Observatory Control System
 
 .. toctree::
    :maxdepth: 2
