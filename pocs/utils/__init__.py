@@ -40,7 +40,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
         '1999-12-31 23:59:59'
 
     Returns:
-        (`astropy.time.Time`): Object representing now.
+        astropy.time.Time: Object representing now.
     """
 
     pocs_time = os.getenv('POCSTIME')
@@ -64,7 +64,25 @@ def current_time(flatten=False, datetime=False, pretty=False):
 
 
 def flatten_time(t):
-    """ Given an astropy Time, flatten to have no extra chars besides integers """
+    """Given an astropy time, flatten to have no extra chars besides integers
+
+    .. doctest::
+
+        >>> from astropy.time import Time
+        >>> from pocs.utils import flatten_time
+        >>> t0 = Time('1999-12-31 23:59:59')
+        >>> t0.isot
+        '1999-12-31T23:59:59.000'
+
+        >>> flatten_time(t0)
+        '19991231T235959'
+
+    Args:
+        t (astropy.time.Time): The time to be flattened.
+
+    Returns:
+        str: The flattened string representation of the time.
+    """
     return t.isot.replace('-', '').replace(':', '').split('.')[0]
 
 
@@ -72,32 +90,40 @@ def flatten_time(t):
 class CountdownTimer(object):
     """Simple timer object for tracking whether a time duration has elapsed.
 
-    Attribute `is_non_blocking` is true IFF the duration is zero.
+
+    Args:
+        duration (int or float or astropy.units.Quantity): Amount of time to before time expires.
+            May be numeric seconds or an Astropy time duration (e.g. 1 * u.minute).
     """
 
     def __init__(self, duration):
-        """Initialize a timeout with given duration.
-
-        Args:
-            duration: Amount of time to before time expires. May be numeric seconds
-                (int or float) or an Astropy time duration (e.g. 1 * u.minute).
-        """
         if isinstance(duration, u.Quantity):
             duration = duration.to(u.second).value
         elif not isinstance(duration, (int, float)):
             raise ValueError(
                 'duration (%r) is not a supported type: %s' % (duration, type(duration)))
         assert duration >= 0
+
+        #: bool: True IFF the duration is zero.
         self.is_non_blocking = (duration == 0)
+
         self.duration = duration
         self.restart()
 
     def expired(self):
-        """Return a boolean, telling if the timeout has expired."""
+        """Return a boolean, telling if the timeout has expired.
+
+        Returns:
+            bool: If timer has expired.
+        """
         return self.time_left() <= 0
 
     def time_left(self):
-        """Return how many seconds are left until the timeout expires."""
+        """Return how many seconds are left until the timeout expires.
+
+        Returns:
+            int: Number of seconds remaining in timer, zero if ``is_non_blocking=True``.
+        """
         if self.is_non_blocking:
             return 0
         else:
@@ -142,7 +168,7 @@ def get_free_space(dir=None):
         dir (str, optional): Path to directory. If None defaults to $PANDIR.
 
     Returns:
-        (astropy.units.Quantity): The number of gigabytes avialable in folder.
+        astropy.units.Quantity: The number of gigabytes avialable in folder.
 
     """
     if dir is None:
@@ -181,27 +207,26 @@ def load_module(module_name):
     return module
 
 
-def altaz_to_radec(alt=35, az=90, location=None, obstime=None, *args, **kwargs):
-    """ Convert alt/az degrees to RA/Dec SkyCoord
+def altaz_to_radec(alt=35, az=90, location=None, obstime=None, verbose=False):
+    """Convert alt/az degrees to RA/Dec SkyCoord
 
     Args:
         alt (int, optional): Altitude, defaults to 35
         az (int, optional): Azimute, defaults to 90 (east)
-        location (None, required): A ~astropy.coordinates.EarthLocation
-            location must be passed.
+        location (None|astropy.coordinates.EarthLocation, required): A valid location.
         obstime (None, optional): Time for object, defaults to `current_time`
+        verbose (bool, optional): Verbose, default False.
 
     Returns:
-        `astropy.coordinates.SkyCoord: FK5 SkyCoord
+        astropy.coordinates.SkyCoord: Coordinates corresponding to the AltAz.
     """
     assert location is not None
     if obstime is None:
         obstime = current_time()
 
-    verbose = kwargs.get('verbose', False)
-
     if verbose:
-        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(alt, az, location, obstime))
+        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(
+            alt, az, location, obstime))
 
     altaz = AltAz(obstime=obstime, location=location, alt=alt * u.deg, az=az * u.deg)
     return SkyCoord(altaz.transform_to(ICRS))
