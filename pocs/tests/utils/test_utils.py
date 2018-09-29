@@ -77,10 +77,17 @@ def test_countdown_timer_non_blocking():
 
 
 def test_countdown_timer():
-    timer = CountdownTimer(1)
+    count_time = 1
+    timer = CountdownTimer(count_time)
     assert timer.time_left() > 0
     assert timer.expired() is False
     assert timer.is_non_blocking is False
-    time.sleep(1)
+
+    counter = 0.
+    while timer.time_left() > 0:
+        time.sleep(0.1)
+        counter += 0.1
+
+    assert counter == pytest.approx(1)
     assert timer.time_left() == 0
     assert timer.expired() is True
