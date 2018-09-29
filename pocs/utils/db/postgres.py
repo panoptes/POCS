@@ -3,7 +3,7 @@ import os
 from warnings import warn
 
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import RealDictCursor
 from astropy.wcs import WCS
 
 from pocs.utils import error
@@ -63,7 +63,7 @@ def get_cursor(**kwargs):
         `psycopg2.Cursor`: Cursor object.
     """
     conn = get_db_proxy_conn(**kwargs)
-    cur = conn.cursor(cursor_factory=DictCursor)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     return cur
 
@@ -149,6 +149,7 @@ def add_header_to_db(header, conn=None, logger=None):
         'ra_rate': header['RA-RATE'],
         'pocs_version': header['CREATOR'],
         'piaa_state': header.get('PSTATE', 'initial'),
+        'field': header['FIELD'],
     }
 
     try:
