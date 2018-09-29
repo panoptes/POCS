@@ -48,7 +48,7 @@ if __name__ == '__main__':
     group.add_argument('--from_config', default=True, action='store_true',
                        help="Connect to all instances listed in the config file, default True.")
     group.add_argument('--database', default=None,
-                       help="Connect to a specific database listed in the config.")
+                       help="Connect to a specific database, otherwise connect to all in config.")
     parser.add_argument('--key_file', default=None, help="JSON service account key location.")
     parser.add_argument('--verbose', action='store_true', default=False,
                         help="Print results to stdout, default False.")

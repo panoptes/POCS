@@ -255,7 +255,7 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self, timeout=600):
+    def cleanup_observations(self, timeout=3600):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
@@ -263,7 +263,7 @@ class Observatory(PanBase):
 
         Args:
             timeout (int, optional): Timeout for each directory to upload files,
-                defaults to 600 seconds (10 minutes).
+                defaults to 3600 seconds (1 hour).
         """
         try:
             upload_images = self.config['panoptes_network']['image_storage']
@@ -306,14 +306,14 @@ class Observatory(PanBase):
                 if upload_images:
                     process_cmd.append('--upload')
 
+                if upload_metadata:
+                    process_cmd.append('--send_headers')
+
                 if make_timelapse:
                     process_cmd.append('--make_timelapse')
 
                 if keep_jpgs is False:
                     process_cmd.append('--remove_jpgs')
-
-                if upload_metadata:
-                    process_cmd.append('--send_headers')
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,

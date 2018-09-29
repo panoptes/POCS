@@ -67,12 +67,13 @@ messaging:
     msg_port: 6510
 
 ########################## Observations ########################################
-# Observations consist of a sequence of images and are grouped together
-# according # to the time the sequence started and finish when the mount
-# slews to new coordinates. There will be one folder per camera per target
-# per observation. An example folder structure would be:
+# An observation folder contains a contiguous sequence of images of a target/field
+# recorded by a single camera, with no slewing of the mount during the sequence; 
+# there may be tracking adjustments during the observation.
 #
-#   $PANDIR/images/fields/PAN001/Hd189733/14d3bd/20180901T120001/
+# An example folder structure would be:
+#
+#   $PANDIR/images/fields/Hd189733/14d3bd/20180901T120001/
 #
 # In this folder will be stored JPG and FITS images. A timelapse of the
 # observation can be made (on per camera) and the JPGs optionally removed
@@ -86,8 +87,12 @@ observations:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $POCS/pocs/utils/google/README.md for
-# details about authentication.
+# See $POCS/pocs/utils/google/README.md for details about authentication.
+#
+# Options to change:
+#   image_storage: If images should be uploaded to Google Cloud Storage.
+#   metadata_storage: If metadata should be sent to the Google CloudSQL instance.
+#   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
     image_storage: False
