@@ -105,7 +105,7 @@ class SBIGDriver(PanBase):
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info('\t\t\t SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
+        self.logger.info('SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
 
     @property
     def retries(self):
