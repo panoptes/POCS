@@ -418,6 +418,9 @@ class AbstractCamera(PanBase):
 
         start_time = headers.get('start_time', current_time(flatten=True))
 
+        if not observation.seq_time:
+            observation.seq_time = start_time
+
         # Get the filename
         image_dir = os.path.join(
             observation.directory,

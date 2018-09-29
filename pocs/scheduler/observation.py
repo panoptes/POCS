@@ -119,11 +119,13 @@ class Observation(PanBase):
         Returns:
             str: Full path to base directory.
         """
-        if not self._directory:
+        try:
+            return self._directory
+        except AttributeError:
             self._directory = os.path.join(self._image_dir,
                                            'fields',
                                            self.field.field_name)
-        return self._directory
+            return self._directory
 
     @property
     def first_exposure(self):
