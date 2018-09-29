@@ -3,6 +3,7 @@ import pytest
 
 import time
 from datetime import datetime as dt
+from astropy import units as u
 
 from pocs.utils import current_time
 from pocs.utils import listify
@@ -69,6 +70,10 @@ def test_countdown_timer_non_blocking():
     timer = CountdownTimer(0)
     assert timer.is_non_blocking
     assert timer.time_left() == 0
+
+    for arg, expected_duration in [(2, 2.0), (0.5, 0.5), (1 * u.second, 1.0)]:
+        timer = CountdownTimer(arg)
+        assert timer.duration == expected_duration
 
 
 def test_countdown_timer():
