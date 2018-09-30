@@ -493,14 +493,19 @@ class AbstractCamera(PanBase):
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {}".format(
+            s = "{} ({}) on {} with {}".format(
                 self.name,
                 self.uid,
                 self.port,
                 self.focuser.name
             )
         except AttributeError:
-            return "{} ({}) on {}".format(self.name, self.uid, self.port)
+            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+
+        if self.is_primary:
+            s += ' [Primary]'
+
+        return s
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover

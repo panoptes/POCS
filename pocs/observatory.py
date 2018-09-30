@@ -47,13 +47,11 @@ class Observatory(PanBase):
         self.mount = None
         self._create_mount()
 
-        if not cameras:
-            cameras = OrderedDict()
+        self.cameras = OrderedDict()
 
         if cameras:
-            self.logger.info('Adding the cameras to the observatory')
+            self.logger.info('Adding the cameras to the observatory: {}', cameras)
             self._primary_camera = None
-            self.cameras = cameras
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
@@ -143,7 +141,9 @@ class Observatory(PanBase):
         assert isinstance(camera, AbstractCamera)
         self.logger.debug('Adding {}: {}'.format(cam_name, camera))
         if cam_name in self.cameras:
-            self.logger.debug('{} already exists, replacing existing camera under that name.')
+            self.logger.debug(
+                '{} already exists, replacing existing camera under that name.',
+                cam_name)
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
