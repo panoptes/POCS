@@ -40,8 +40,8 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
-        self._fields_file = fields_file
         self._fields_list = fields_list
+        self._fields_file = fields_file
         self._observations = dict()
 
         self.observer = observer
@@ -265,6 +265,8 @@ class BaseScheduler(PanBase):
                     self.add_observation(field_config)
                 except AssertionError:
                     self.logger.debug("Skipping duplicate field.")
+                except Exception as e:
+                    self.logger.warning("Error adding field: {}", e)
 
 ##########################################################################
 # Utility Methods

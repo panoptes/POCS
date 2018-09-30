@@ -242,13 +242,14 @@ class Observatory(PanBase):
         self.logger.debug("Getting observation for observatory")
 
         # If observation list is empty or a reread is requested
+        reread_fields_file = False
         if (self.scheduler.has_valid_observations is False or
                 kwargs.get('reread_fields_file', False) or
                 self.config['scheduler'].get('check_file', False)):
-            self.scheduler.read_field_list()
+            reread_fields_file = True
 
         # This will set the `current_observation`
-        self.scheduler.get_observation(*args, **kwargs)
+        self.scheduler.get_observation(reread_fields_file=reread_fields_file, *args, **kwargs)
 
         if self.current_observation is None:
             self.scheduler.clear_available_observations()
