@@ -15,6 +15,9 @@ import os
 import sys
 from recommonmark.parser import CommonMarkParser
 
+# The docs are built on the ReadTheDocs website in a virtualenv
+# the we don't necessarily control. The below line is used to
+# add POCS to the path without installing or our usual env vars.
 sys.path.insert(0, os.path.abspath('../pocs'))
 
 from pocs.version import __version__
@@ -23,7 +26,7 @@ from pocs.version import __version__
 # -- Project information -----------------------------------------------------
 
 project = 'POCS'
-copyright = '2018, PANOPTES Team'
+copyright = '2018, Project PANOPTES Team'
 author = 'PANOPTES Team'
 
 # The short X.Y version
