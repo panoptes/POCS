@@ -11,7 +11,6 @@ from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
-from peas.webcam import Webcam
 
 from pocs.utils import current_time
 from pocs.utils.config import load_config
@@ -23,7 +22,6 @@ class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
     intro = 'Welcome to PEAS Shell! Type ? for help'
     prompt = 'PEAS > '
-    webcams = None
     environment = None
     weather = None
     active_sensors = dict()
@@ -49,7 +47,7 @@ class PanSensorShell(cmd.Cmd):
             console.color_print("{:>12s}: ".format('Loop Timer'),
                                 "default", "inactive", "yellow")
 
-        for sensor_name in ['environment', 'weather', 'webcams']:
+        for sensor_name in ['environment', 'weather']:
             if sensor_name in self.active_sensors:
                 console.color_print("{:>12s}: ".format(sensor_name.title()),
                                     "default", "active", "lightgreen")
@@ -106,7 +104,7 @@ class PanSensorShell(cmd.Cmd):
         """ Toggle DEBUG on/off for sensor
 
         Arguments:
-            sensor {str} -- environment, weather, webcams
+            sensor {str} -- environment, weather
         """
         # TODO(jamessynge): We currently use a single logger, not one per module or sensor.
         # Figure out whether to keep this code and make it work, or get rid of it.
@@ -141,34 +139,6 @@ class PanSensorShell(cmd.Cmd):
             return
         self.do_load_weather()
         self.do_load_environment()
-        # self.do_load_webcams()
-
-    def do_load_webcams(self, *arg):
-        """ Load the webcams """
-        if self._keep_looping:
-            print_error('The timer loop is already running.')
-            return
-        print("Loading webcams")
-
-        class WebCams(object):
-
-            def __init__(self, config):
-
-                self.webcams = list()
-                self.config = config
-
-                for webcam in self.config:
-                    # Create the webcam
-                    if os.path.exists(webcam.get('port')):
-                        self.webcams.append(Webcam(webcam))
-
-            def capture(self, **kwargs):
-                for wc in self.webcams:
-                    wc.capture()
-
-        self.webcams = WebCams(self.config.get('webcams', []))
-
-        self.do_enable_sensor('webcams')
 
     def do_load_environment(self, *arg):
         """ Load the arduino environment sensors """
