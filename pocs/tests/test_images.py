@@ -41,7 +41,7 @@ def test_fits_extension():
 
 
 def test_fits_noheader(noheader_fits_file):
-    with pytest.raises(AssertionError):
+    with pytest.raises(KeyError):
         Image(noheader_fits_file)
 
 

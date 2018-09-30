@@ -51,7 +51,7 @@ class Image(PanBase):
         required_headers = ['DATE-OBS', 'EXPTIME']
         for key in required_headers:
             if key not in self.header:
-                raise KeyError("Mising required FITS header: {}".format(key))
+                raise KeyError("Missing required FITS header: {}".format(key))
 
         # Location Information
         if location is None:
