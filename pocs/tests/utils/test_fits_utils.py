@@ -2,6 +2,8 @@ import os
 import pytest
 import subprocess
 
+from astropy.io.fits import Header
+
 from pocs.utils.images import fits as fits_utils
 
 
@@ -21,11 +23,17 @@ def test_fpack(solved_fits_file):
     info = os.stat(solved_fits_file)
     assert info.st_size > 0.
 
-    uncompressed = fits_utils.fpack(solved_fits_file, unpack=True, verbose=True)
+    uncompressed = fits_utils.funpack(solved_fits_file, verbose=True)
     assert os.stat(uncompressed).st_size > info.st_size
 
     compressed = fits_utils.fpack(uncompressed, verbose=True)
     assert os.stat(compressed).st_size == info.st_size
+
+
+def test_getheader(solved_fits_file):
+    header = fits_utils.getheader(solved_fits_file)
+    assert isinstance(header, Header)
+    assert header['IMAGEID'] == 'PAN001_XXXXXX_20160909T081152'
 
 
 def test_solve_field(solved_fits_file):

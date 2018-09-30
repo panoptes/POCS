@@ -48,10 +48,10 @@ class Image(PanBase):
         with fits.open(self.fits_file, 'readonly') as hdu:
             self.header = hdu[self.header_ext].header
 
-        assert 'DATE-OBS' in self.header, self.logger.warning(
-            'FITS file must contain the DATE-OBS keyword')
-        assert 'EXPTIME' in self.header, self.logger.warning(
-            'FITS file must contain the EXPTIME keyword')
+        required_headers = ['DATE-OBS', 'EXPTIME']
+        for key in required_headers:
+            if key not in self.header:
+                raise KeyError("Mising required FITS header: {}".format(key))
 
         # Location Information
         if location is None:

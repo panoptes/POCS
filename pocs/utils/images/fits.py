@@ -112,11 +112,8 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     errs = None
 
     file_path, file_ext = os.path.splitext(fname)
-    ext = 0
-    if file_ext == '.fz':
-        ext = 1
 
-    header = fits.getheader(fname, ext=ext)
+    header = getheader(fname)
     wcs = WCS(header)
 
     # Check for solved file
@@ -185,7 +182,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     else:
 
         try:
-            out_dict.update(fits.getheader(fname, ext=ext))
+            out_dict.update(getheader(fname))
         except OSError:
             if verbose:
                 print("Can't read fits header for:", fname)
@@ -290,22 +287,17 @@ def get_wcsinfo(fits_fname, verbose=False):
 
 
 def fpack(fits_fname, unpack=False, verbose=False):
-    """ Compress/Decompress a FITS file
+    """Compress/Decompress a FITS file
 
     Uses `fpack` (or `funpack` if `unpack=True`) to compress a FITS file
 
-    Parameters
-    ----------
-    fits_fname : {str}
-        Name of a FITS file that contains a WCS.
-    unpack : {bool}, optional
-        file should decompressed instead of compressed (default is False)
-    verbose : {bool}, optional
-        Verbose (the default is False)
-    Returns
-    -------
-    str
-        Filename of compressed/decompressed file
+    Args:
+        fits_fname ({str}): Name of a FITS file that contains a WCS.
+        unpack ({bool}, optional): file should decompressed instead of compressed, default False.
+        verbose ({bool}, optional): Verbose, default False.
+
+    Returns:
+        str: Filename of compressed/decompressed file.
     """
     assert os.path.exists(fits_fname), warn(
         "No file exists at: {}".format(fits_fname))
@@ -337,6 +329,24 @@ def fpack(fits_fname, unpack=False, verbose=False):
         output, errs = proc.communicate()
 
     return out_file
+
+
+def funpack(*args, **kwargs):
+    """Unpack a FITS file.
+
+    Note:
+        This is a thin-wrapper around the `fpack` function
+        with the `unpack=True` option specified. See `fpack`
+        documentation for details.
+
+    Args:
+        *args: Arguments passed to `fpack`.
+        **kwargs: Keyword arguments passed to `fpack`.
+
+    Returns:
+        str: Path to uncompressed FITS file.
+    """
+    return fpack(*args, unpack=True, **kwargs)
 
 
 def write_fits(data, header, filename, logger, exposure_event=None):
@@ -383,3 +393,23 @@ def update_headers(file_path, info):
         hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', info.get('origin', ''))
         hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+
+
+def getheader(fn):
+    """Get the FITS header.
+
+    Small wrapper around `astropy.io.fits.getheader` to auto-determine
+    the FITS extension. This will return the header associated with the
+    image. If you need the compression header information use the astropy
+    module directly.
+
+    Args:
+        fn (str): Path to FITS file.
+
+    Returns:
+        `astropy.io.fits.header.Header`: The FITS header for the data.
+    """
+    ext = 0
+    if fn.endswith('.fz'):
+        ext = 1
+    return fits.getheader(fn, ext=ext)
