@@ -493,7 +493,7 @@ class AbstractCamera(PanBase):
 
     def __str__(self):
         s = "{} ({}) on {}".format(self.name, self.uid, self.port)
-        if hasattr(self, 'focuser'):
+        if hasattr(self, 'focuser') and self.focuser is not None:
             s += ' with {}'.format(self.focuser.name)
 
         return s
