@@ -99,12 +99,8 @@ class Image(PanBase):
     def wcs_file(self, filename):
         if filename is not None:
             try:
-                # extension here is not necessarily the same as self.file_ext
-                if filename.endswith('.fz'):
-                    header = fits.getheader(filename, ext=1)
-                    w = wcs.WCS(header)
-                else:
-                    w = wcs.WCS(filename)
+                header = fits_utils.getheader(filename)
+                w = wcs.WCS(header)
                 assert w.is_celestial
 
                 self.wcs = w
