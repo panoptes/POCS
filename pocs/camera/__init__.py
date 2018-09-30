@@ -166,7 +166,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                 primary_camera = cam
                 is_primary = ' [Primary]'
 
-            logger.debug("Camera created: {} {} {}".format(
+            logger.debug("Camera created: {} {}{}".format(
                 cam.name, cam.uid, is_primary))
 
             cameras[cam_name] = cam
@@ -177,7 +177,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
-        cameras['Cam00'].is_primary = True
+        primary_camera = cameras['Cam00']
+        primary_camera.is_primary = True
 
     logger.debug("Primary camera: {}", primary_camera)
     logger.debug("{} cameras created", len(cameras))

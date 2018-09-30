@@ -492,18 +492,9 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        try:
-            s = "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
-        except AttributeError:
-            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
-
-        if self.is_primary:
-            s += ' [Primary]'
+        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        if hasattr(self, 'focuser'):
+            s += ' with {}'.format(self.focuser.name)
 
         return s
 
