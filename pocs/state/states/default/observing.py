@@ -13,7 +13,7 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     try:
-        maximum_duration = pocs.observatory.current_observation.exp_time + MAX_EXTRA_TIME
+        maximum_duration = pocs.observatory.current_observation.exp_time.value + MAX_EXTRA_TIME
 
         # Start the observing.
         camera_events_info = pocs.observatory.observe()
