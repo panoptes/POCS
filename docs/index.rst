@@ -17,7 +17,7 @@ PANOPTES Observatory Control System - 	POCS
 	itself. Normal operating usage of POCS doesn't require knowledge of the
 	documentation here. 
 
-	If you are intereted in how to operate a PANOPTES unit, please see the `User's Guide <https://projectpanoptes.org/instructions.html>`_.
+	If you are interested in how to operate a PANOPTES unit, please see the `User's Guide <https://projectpanoptes.org/instructions.html>`_.
 
 	.. todo:: User's guide?
 
