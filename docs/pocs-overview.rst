@@ -1,5 +1,6 @@
+*************
 POCS Overview
-=================
+*************
 
 The PANOPTES Observatory Control System (POCS) is the primary software responsible for running a PANOPTES unit. POCS is implemented as a finite state machine (described below) that has three primary responsibilities: 
 
@@ -17,6 +18,10 @@ POCS is implemented as four separate logical layers, where increasing levels of 
 
 	**POCS software layers** Diagram of POCS software layers. Note that the items in yellow (Dome, Guider, and TheSkyX) are not used by PANOPTES but are used by the `Huntsman Telescope <https://twitter.com/AstroHuntsman>`_, which also uses POCS for control. They are included in the diagram as a means of showing the flexibility of the Functional Layer to interact with components from the HAL.
 
+====================
+POCS Software Design
+====================
+
 Core Layer
 ----------
 
@@ -25,7 +30,8 @@ The Core Layer is the lowest level and is responsible for interacting directly w
 Hardware Abstraction Layer (HAL)
 --------------------------------
 
-The use of a HAL is widespread both in computing and robotics. In general, a HAL is meant to hide low-level hardware and device specific details from higher level programming [Elkady2012]_. Thus, while every camera ultimately needs to support, for instance, a take_exposure(seconds=120)} command, the details of how a specific camera model is programmed to achieve that may be very different. From the perspective of software at higher levels those details are not important, all that is important is that all attached cameras react appropriately to the take_exposure} command.
+The use of a HAL is widespread both in computing and robotics. In general, a HAL is meant to hide low-level hardware and device specific details from higher level programming [Elkady2012]_. Thus, while every camera ultimately needs to support, for instance, a ``take_exposure(seconds=120)`` command, the details of how a specific camera model is programmed to achieve that may be very different. From the perspective of software at higher levels those details are not important, all that is important is that all attached cameras react appropriately to the ``take_exposure`` command.
+
 
 While the Core Layer consists of one module per feature, the HAL implements a Template Pattern [Gamma1993]_ wherein a base class provides an interface to be used by higher levels and concrete classes are written for each specific device type. For example, a base Mount class dictates an interface that includes methods such as ``slew_to_home``, ``set_target_coordinates``, ``slew_to_target``, ``park``, etc. The concrete implementation for the iOptron mount then uses the Core Layer level RS-232 commands to issue the specific serial commands needed to perform those functions. Likewise, a Paramount ME II concrete implementation of the Mount class would use the Core Layer interface to `TheSkyX <http://www.bisque.com/sc/pages/TheSkyX-Professional-Edition.aspx>`_ to implement those same methods. Thus, higher levels of the software can make a call to ``mount.slew_to_target()`` and expect it to work regardless of the particular mount type attached. 
 
@@ -36,6 +42,7 @@ Functional Layer
 ----------------
 
 The Functional Layer is analogous to a traditional observatory: an Observatory has a location from which it operates, attached hardware which it uses to observe, a scheduler (a modified dispatch scheduler [Denny2004]_ in the case of PANOPTES) to select from the available target_list to form valid observations, etc.
+
 
 The Observatory (i.e. the Functional Layer) is thus where most of the operations associated with taking observations actually happen. When the software is used interactively (as opposed to the usual automatic mode) it is with the Observatory that an individual would overwhelmingly interact.
 
@@ -48,7 +55,13 @@ The Decision Layer is the highest level of the system and can be viewed as the "
 
 A state machine is a simple model of a system where that system can only exist in discrete conditions or modes. Those conditions or modes are called states. Typically states determine how the system reacts to input, either from a user or the environment. A state machine can exist solely in the software or the software can be representative of a physical model. For PANOPTES, the physical unit is the system and POCS models the condition of the hardware. The "finite" aspect refers to the fact that there are a limited and known number of states in which the system can exist.
 
-Examples of PANOPTES states include: sleeping, which occurs in daylight hours, the cameras are facing down, and the mount is unresponsive to slew commands; observing, where the cameras are exposing and the mount is tracking; scheduling, where the mount is unparked, not slewing or tracking, it is dark, and the software is running through the scheduler, etc. PANOPTES states are named with verbs to represent the action the physical unit is currently performing.
+Examples of PANOPTES states include: 
+
+* ``sleeping``:     Occurs in daylight hours, the cameras are facing down, and themount is unresponsive to slew commands.
+* ``observing``:    The cameras are exposing and the mount is tracking.
+* ``scheduling``:   The mount is unparked, not slewing or tracking, it is dark, and the software is running through the scheduler.
+
+PANOPTES states are named with verbs to represent the action the physical unit is currently performing.
 
 POCS is designed to have a configurable state machine, with the highest level logic written in each state definition file. State definition files are meant to be simple as most of the details of the logic should exist in the functional layer. Students using POCS for educational purposes will most likely start with the state files. 
 
@@ -59,5 +72,11 @@ State definitions and their transitions are defined external to POCS, allowing f
 
 POCS is responsible for determining operational safety via a query of the weather station, determination of sun position, etc. The transition for each state has a set of conditions that must be satisfied in order for a successful transition to a new state to be accomplished and a requisite check for operational safety occurs before all transitions. If the system is determined to be unsafe the machine either transitions to the parking state or remains in the sleeping or ready state.
 
+.. include:: pocs-alternatives.rst
+
 .. [1] Writing hardware simulators, while helpful for testing purposes, can also add significant overhead to a project. For major projects such as the LSST or TMT this is obviously a requirement. PANOPTES implements basic hardware simulators for the mount and camera but full-scale hardware simulation of specific components has not yet been achieved.
 .. [2] The Python FSM used by POCS is in fact called `transitions <https://github.com/tyarkoni/transitions>`_. 
+
+.. [Elkady2012]_ Stuff
+.. [Denny2004]_ Stuff
+.. [Lee2017]_ Stuff

@@ -1,14 +1,7 @@
 PANOPTES Observatory Control System - 	POCS
 =====
 
-
-.. toctree::
-   :maxdepth: 2
-
-   panoptes-overview
-   pocs-overview
-
-`PANOPTES <http://projectpanoptes.org>`_ is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the `project website <http://projectpanoptes.org/>`_ for an overview.
+`PANOPTES <http://projectpanoptes.org>`_ is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the `project website <http://projectpanoptes.org/>`_.
 
 .. seealso::
 
@@ -20,6 +13,13 @@ PANOPTES Observatory Control System - 	POCS
 	If you are interested in how to operate a PANOPTES unit, please see the `User's Guide <https://projectpanoptes.org/instructions.html>`_.
 
 	.. todo:: User's guide?
+
+.. toctree::
+   :maxdepth: 3
+
+   panoptes-overview
+   pocs-overview
+
 
 Project Links
 -------------
