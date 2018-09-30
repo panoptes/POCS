@@ -40,6 +40,8 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
+        # Settig the fields_list directly will clobber anything
+        # from the fields_file, so make sure it comes first.
         self._fields_list = fields_list
         self._fields_file = fields_file
         self._observations = dict()
@@ -51,7 +53,9 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        self.read_field_list()
+        if not self.config['scheduler']['check_file']:
+            self.logger.debug("Reading initial set of fields")
+            self.read_field_list()
 
 
 ##########################################################################
