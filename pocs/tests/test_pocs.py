@@ -37,6 +37,7 @@ def wait_for_state(sub, state, max_duration=90):
 
 @pytest.fixture(scope='function')
 def cameras(config):
+    """Get the default cameras from the config."""
     return create_cameras_from_config(config)
 
 
