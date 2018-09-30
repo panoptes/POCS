@@ -12,6 +12,7 @@ from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
 from pocs.utils import error
 from pocs.utils import current_time
+from pocs.camera import create_cameras_from_config
 
 
 def wait_for_running(sub, max_duration=90):
@@ -35,9 +36,15 @@ def wait_for_state(sub, state, max_duration=90):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type):
+def cameras(config):
+    return create_cameras_from_config(config)
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras):
     observatory = Observatory(
         config=config,
+        cameras=cameras,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
