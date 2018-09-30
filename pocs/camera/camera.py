@@ -492,15 +492,11 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        try:
-            return "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
-        except AttributeError:
-            return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        if hasattr(self, 'focuser') and self.focuser is not None:
+            s += ' with {}'.format(self.focuser.name)
+
+        return s
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover

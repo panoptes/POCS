@@ -162,10 +162,11 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
+                cam.is_primary = True
                 primary_camera = cam
                 is_primary = ' [Primary]'
 
-            logger.debug("Camera created: {} {} {}".format(
+            logger.debug("Camera created: {} {}{}".format(
                 cam.name, cam.uid, is_primary))
 
             cameras[cam_name] = cam
