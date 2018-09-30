@@ -65,7 +65,7 @@ class CountdownTimer(object):
         elif not isinstance(duration, (int, float)):
             raise ValueError(
                 'duration (%r) is not a supported type: %s' % (duration, type(duration)))
-        assert duration >= 0
+        assert duration >= 0, "Duration must be non-negative."
         self.is_non_blocking = (duration == 0)
         self.duration = duration
         self.restart()

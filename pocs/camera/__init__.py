@@ -80,7 +80,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     logger.debug("Camera config: {}".format(camera_info))
 
     a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
-    auto_detect = kwargs_or_config('auto_detect', default=False)
+    auto_detect = camera_info.get('auto_detect', False)
 
     ports = list()
 
