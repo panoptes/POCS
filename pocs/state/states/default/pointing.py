@@ -1,7 +1,6 @@
-from astropy import units as u
 from pocs.images import Image
 
-MAX_EXTRA_TIME = 60 * u.second
+MAX_EXTRA_TIME = 60  # second
 
 
 def on_enter(event_data):
