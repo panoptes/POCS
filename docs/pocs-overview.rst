@@ -25,10 +25,10 @@ and the high-level Decision Layer.
 	.. image:: _static/pocs-graph.png
 
 	**POCS software layers** Diagram of POCS software layers. Note that the
-	items in yellow (Dome, Guider, and TheSkyX) are not used by PANOPTES but 
-	are used by the `Huntsman Telescope <https://twitter.com/AstroHuntsman>`_, 
+	items in yellow (Dome, Guider, and TheSkyX) are not typically used by PANOPTES observatories (note: PAN006 is inside an astrohaven dome).
+	TheSkyX interface was added by the `Huntsman Telescope <https://twitter.com/AstroHuntsman>`_,
 	which also uses POCS for control. They are included in the diagram as a 
-	means of showing the flexibility of the Functional Layer to interact with 
+	means of showing the flexibility of the Functional Layer to interact with
 	components from the HAL.
 
 ====================
