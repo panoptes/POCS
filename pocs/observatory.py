@@ -266,8 +266,12 @@ class Observatory(PanBase):
         """
         try:
             upload_images = self.config.get('panoptes_network', {})['image_storage']
+            make_timelapse = self.config['observations']['make_timelapse']
+            keep_jpgs = self.config['observations']['keep_jpgs']
         except KeyError:
             upload_images = False
+            make_timelapse = False
+            keep_jpgs = False
 
         try:
             pan_id = self.config['pan_id']
@@ -278,22 +282,31 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
+            observation_dir = os.path.join(
+                self.config['directories']['images'],
+                'fields',
+                observation.field.field_name
+            )
+            self.logger.debug('Searching directory: {}', observation_dir)
+
             for cam_name, camera in self.cameras.items():
                 self.logger.debug('Cleanup for camera {} [{}]'.format(
                     cam_name, camera.uid))
 
-                dir_name = "{}/fields/{}/{}/{}/".format(
-                    self.config['directories']['images'],
-                    observation.field.field_name,
+                seq_dir = os.path.join(
+                    observation_dir,
                     camera.uid,
-                    seq_time,
+                    seq_time
                 )
+                self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                img_utils.clean_observation_dir(dir_name)
+                img_utils.clean_observation_dir(seq_dir,
+                                                make_timelapse=make_timelapse,
+                                                keep_jpgs=keep_jpgs)
 
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                    img_utils.upload_observation_dir(pan_id, seq_dir)
 
             self.logger.debug('Cleanup finished')
 
