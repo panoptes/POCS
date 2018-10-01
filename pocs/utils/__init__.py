@@ -11,7 +11,7 @@ from astropy.utils import resolve_name
 
 
 def current_time(flatten=False, datetime=False, pretty=False):
-    """ Convenience method to return the "current" time according to the system
+    """ Convenience method to return the "current" time according to the system.
 
     Note:
         If the ``$POCSTIME`` environment variable is set then this will return
@@ -21,10 +21,10 @@ def current_time(flatten=False, datetime=False, pretty=False):
 
     .. doctest::
 
-        >>> from pocs.utils import current_time()
+        >>> from pocs.utils import current_time
         >>> now = current_time()
         >>> now
-        <Time object: scale='utc' format='datetime' value=...>
+        <Time object: scale='utc' format='iso' value=...>
 
         >>> now = current_time(datetime=True)
         >>> now
@@ -64,7 +64,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
 
 
 def flatten_time(t):
-    """Given an astropy time, flatten to have no extra chars besides integers
+    """Given an astropy time, flatten to have no extra chars besides integers.
 
     .. doctest::
 
@@ -141,7 +141,7 @@ class CountdownTimer(object):
 
 
 def listify(obj):
-    """ Given an object, return a list
+    """ Given an object, return a list.
 
     Always returns a list. If obj is None, returns empty list,
     if obj is list, just returns obj, otherwise returns list with
@@ -161,8 +161,9 @@ def get_free_space(dir=None):
 
     .. doctest::
 
-        >>> from pocs.utils import get_free_space  # doctest: +SKIP
+        >>> from pocs.utils import get_free_space
         >>> get_free_space()
+        <Quantity ... Gbyte>
 
     Args:
         dir (str, optional): Path to directory. If None defaults to $PANDIR.
@@ -180,7 +181,7 @@ def get_free_space(dir=None):
 
 
 def load_module(module_name):
-    """Dynamically load a module
+    """Dynamically load a module.
 
     .. doctest::
 
@@ -208,7 +209,7 @@ def load_module(module_name):
 
 
 def altaz_to_radec(alt=35, az=90, location=None, obstime=None, verbose=False):
-    """Convert alt/az degrees to RA/Dec SkyCoord
+    """Convert alt/az degrees to RA/Dec SkyCoord.
 
     Args:
         alt (int, optional): Altitude, defaults to 35
