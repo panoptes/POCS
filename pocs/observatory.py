@@ -23,6 +23,7 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
 from pocs.camera import AbstractCamera
+from pocs.utils.google.storage import upload_observation_to_bucket
 
 
 class Observatory(PanBase):
@@ -293,7 +294,7 @@ class Observatory(PanBase):
 
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                    upload_observation_to_bucket(pan_id, dir_name)
 
             self.logger.debug('Cleanup finished')
 
