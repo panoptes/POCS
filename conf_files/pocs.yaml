@@ -76,8 +76,8 @@ messaging:
 #   metadata_storage: If metadata should be sent to the Google CloudSQL instance.
 ################################################################################
 panoptes_network:
-    image_storage: True
-    metadata_storage: True
+    image_storage: False
+    metadata_storage: False
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
