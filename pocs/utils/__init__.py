@@ -1,7 +1,5 @@
 import os
-import re
 import shutil
-import subprocess
 import time
 
 from astropy import units as u
@@ -49,7 +47,7 @@ def flatten_time(t):
 
 
 # This is a streamlined variant of PySerial's serialutil.Timeout.
-class Timeout(object):
+class CountdownTimer(object):
     """Simple timer object for tracking whether a time duration has elapsed.
 
     Attribute `is_non_blocking` is true IFF the duration is zero.
@@ -67,7 +65,7 @@ class Timeout(object):
         elif not isinstance(duration, (int, float)):
             raise ValueError(
                 'duration (%r) is not a supported type: %s' % (duration, type(duration)))
-        assert duration >= 0
+        assert duration >= 0, "Duration must be non-negative."
         self.is_non_blocking = (duration == 0)
         self.duration = duration
         self.restart()
@@ -117,29 +115,6 @@ def get_free_space(dir=None):
     _, _, free_space = shutil.disk_usage(dir)
     free_space = (free_space * u.byte).to(u.gigabyte)
     return free_space
-
-
-def list_connected_cameras():
-    """
-    Uses gphoto2 to try and detect which cameras are connected.
-    Cameras should be known and placed in config but this is a useful utility.
-    """
-
-    gphoto2 = shutil.which('gphoto2')
-    command = [gphoto2, '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
-
-    ports = []
-
-    for line in lines:
-        camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-        if camera_match:
-            # camera_name = camera_match.group(1).strip()
-            port = camera_match.group(2).strip()
-            ports.append(port)
-
-    return ports
 
 
 def load_module(module_name):

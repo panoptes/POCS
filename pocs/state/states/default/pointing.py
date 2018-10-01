@@ -1,10 +1,6 @@
-from time import sleep
-
 from pocs.images import Image
-from pocs.utils import error
 
-wait_interval = 3.
-timeout = 150.
+MAX_EXTRA_TIME = 60  # second
 
 
 def on_enter(event_data):
@@ -34,44 +30,24 @@ def on_enter(event_data):
         fits_headers['POINTING'] = 'True'
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
+        primary_camera = pocs.observatory.primary_camera
+
         # Loop over maximum number of pointing iterations
         for img_num in range(num_pointing_images):
-            camera_events = dict()
+            pocs.logger.debug("Taking pointing image {}/{} on: {}",
+                              img_num, num_pointing_images, primary_camera)
 
-            # Take pointing image with primary camera
-            for cam_name, camera in pocs.observatory.cameras.items():
-                if camera.is_primary:
-                    pocs.logger.debug("Exposing for camera: {}".format(cam_name))
-                    try:
-                        # Start the exposures
-                        camera_event = camera.take_observation(
-                            observation,
-                            fits_headers,
-                            exp_time=exptime,
-                            filename='pointing{:02d}'.format(img_num)
-                        )
-
-                        camera_events[cam_name] = camera_event
-
-                    except Exception as e:
-                        pocs.logger.error("Problem waiting for images: {}".format(e))
+            # Start the exposure
+            camera_event = primary_camera.take_observation(
+                observation,
+                fits_headers,
+                exp_time=exptime,
+                filename='pointing{:02d}'.format(img_num)
+            )
 
             # Wait for images to complete
-            wait_time = 0.
-            while not all([event.is_set() for event in camera_events.values()]):
-                pocs.check_messages()
-                if pocs.interrupted:
-                    pocs.say("Observation interrupted!")
-                    break
-
-                pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
-                pocs.status()
-
-                if wait_time > timeout:
-                    raise error.Timeout("Timeout waiting for pointing image")
-
-                sleep(wait_interval)
-                wait_time += wait_interval
+            maximum_duration = exptime + MAX_EXTRA_TIME
+            pocs.wait_for_events(camera_event, maximum_duration, event_type='pointing')
 
             # Analyze pointing
             if observation is not None:

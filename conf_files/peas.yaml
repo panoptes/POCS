@@ -1,13 +1,5 @@
-webcams:
-    -
-        name: 'cam_01'
-        port: '/dev/video0'
-    -
-        name: 'cam_02'
-        port: '/dev/video1'
 directories:
     images: '/var/panoptes/images'
-    webcam: '/var/panoptes/webcams'
     data: '/var/panoptes/data'
 environment:
     auto_detect: True

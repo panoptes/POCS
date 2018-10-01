@@ -1,59 +1,24 @@
-from astropy import units as u
-import time
-
 from pocs import utils as pocs_utils
 
-SLEEP_SECONDS = 1.0
-STATUS_INTERVAL = 10. * u.second
-WAITING_MSG_INTERVAL = 30. * u.second
-MAX_EXTRA_TIME = 60 * u.second
+MAX_EXTRA_TIME = 60  # seconds
 
 
 def on_enter(event_data):
-    """Wait for camera exposures to complete.
+    """Take an observation image.
 
-    Frequently check for the exposures to complete, the observation to be
-    interrupted, messages to be received. Periodically post to the STATUS
-    topic and to the debug log.
+    This state is responsible for taking the actual observation image.
      """
     pocs = event_data.model
     pocs.say("I'm finding exoplanets!")
     pocs.next_state = 'parking'
 
     try:
-        maximum_duration = pocs.observatory.current_observation.exp_time + MAX_EXTRA_TIME
+        maximum_duration = pocs.observatory.current_observation.exp_time.value + MAX_EXTRA_TIME
 
         # Start the observing.
-        start_time = pocs_utils.current_time()
-        camera_events = pocs.observatory.observe()
-
-        timeout = pocs_utils.Timeout(maximum_duration)
-        next_status_time = start_time + STATUS_INTERVAL
-        next_msg_time = start_time + WAITING_MSG_INTERVAL
-        while not all([event.is_set() for event in camera_events.values()]):
-            pocs.check_messages()
-            if pocs.interrupted:
-                pocs.say("Observation interrupted!")
-                break
-
-            now = pocs_utils.current_time()
-            if now >= next_msg_time:
-                elapsed_secs = (now - start_time).to(u.second).value
-                pocs.logger.debug(
-                    'Waiting for images: {} seconds elapsed'.format(round(elapsed_secs)))
-                next_msg_time += WAITING_MSG_INTERVAL
-                now = pocs_utils.current_time()
-
-            if now >= next_status_time:
-                pocs.status()
-                next_status_time += STATUS_INTERVAL
-                now = pocs_utils.current_time()
-
-            if timeout.expired():
-                raise pocs_utils.error.Timeout
-
-            # Sleep for a little bit.
-            time.sleep(SLEEP_SECONDS)
+        camera_events_info = pocs.observatory.observe()
+        camera_events = list(camera_events_info.values())
+        pocs.wait_for_events(camera_events, maximum_duration, event_type='observing')
 
     except pocs_utils.error.Timeout:
         pocs.logger.warning(

@@ -28,7 +28,6 @@ location:
 directories:
     base: /var/panoptes
     images: images
-    webcam: webcams
     data: data
     resources: POCS/resources/
     targets: POCS/resources/targets

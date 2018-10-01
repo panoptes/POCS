@@ -300,9 +300,8 @@ class AbstractCamera(PanBase):
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
-                  plots=True,
+                  plots=False,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -334,12 +333,10 @@ class AbstractCamera(PanBase):
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing,
                 default False
             plots (bool, optional: Whether to write focus plots to images folder,
-                default True.
+                default False.
             blocking (bool, optional): Whether to block until autofocus complete,
                 default False
 
@@ -359,7 +356,6 @@ class AbstractCamera(PanBase):
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
-                                      spline_smoothing=spline_smoothing,
                                       coarse=coarse,
                                       plots=plots,
                                       blocking=blocking,
@@ -496,15 +492,11 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        try:
-            return "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
-        except AttributeError:
-            return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        if hasattr(self, 'focuser') and self.focuser is not None:
+            s += ' with {}'.format(self.focuser.name)
+
+        return s
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover

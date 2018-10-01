@@ -77,23 +77,24 @@ class Scheduler(BaseScheduler):
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
 
-            top_obs = best_obs[0]
+            top_obs_name, top_obs_merit = best_obs[0]
 
             # Check new best against current_observation
             if self.current_observation is not None \
-                    and top_obs[0] != self.current_observation.name:
+                    and top_obs_name != self.current_observation.name:
 
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
                 if self.observation_available(self.current_observation, end_of_next_set):
 
                     # If current is better or equal to top, use it
-                    if self.current_observation.merit >= top_obs[1]:
-                        best_obs.insert(0, self.current_observation)
+                    if self.current_observation.merit >= top_obs_merit:
+                        best_obs.insert(0, (self.current_observation,
+                                            self.current_observation.merit))
 
             # Set the current
-            self.current_observation = self.observations[top_obs[0]]
-            self.current_observation.merit = top_obs[1]
+            self.current_observation = self.observations[top_obs_name]
+            self.current_observation.merit = top_obs_merit
         else:
             if self.current_observation is not None:
                 # Favor the current observation if still available
