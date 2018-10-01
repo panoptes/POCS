@@ -106,10 +106,12 @@ class Camera(AbstractCamera):
             'pocs', 'tests', 'data',
             'solved.fits.fz'
         )
-        solved_header = fits.getheader(solved_path)
+        solved_header = fits_utils.getheader(solved_path)
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             hdu.header.set('RA-MNT', solved_header['RA-MNT'], 'Degrees')
             hdu.header.set('HA-MNT', solved_header['HA-MNT'], 'Degrees')
             hdu.header.set('DEC-MNT', solved_header['DEC-MNT'], 'Degrees')
+
+        self.logger.debug("Headers updated for simulated image.")
         return file_path
