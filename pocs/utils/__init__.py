@@ -24,15 +24,15 @@ def current_time(flatten=False, datetime=False, pretty=False):
         >>> from pocs.utils import current_time
         >>> now = current_time()
         >>> now
-        <Time object: scale='utc' format='iso' value=...>
+        <Time object: scale='utc' format='datetime' value=...>
 
         >>> now = current_time(datetime=True)
         >>> now
         datetime.datetime(...)
 
-        >>> now = current_time(pretty=True)  # doctest: +SKIP
-        >>> now
-        '2018-09-28 00:14:18'
+        >>> now = current_time(pretty=True)
+        >>> now                               # doctest: +SKIP
+        2018-09-28 00:14:18
 
         >>> os.environ['POCSTIME'] = '1999-12-31 23:59:59'
         >>> party_time = current_time(pretty=True)
