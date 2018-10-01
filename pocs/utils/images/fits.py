@@ -395,7 +395,7 @@ def update_headers(file_path, info):
         hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
 
-def getheader(fn):
+def getheader(fn, *args, **kwargs):
     """Get the FITS header.
 
     Small wrapper around `astropy.io.fits.getheader` to auto-determine
@@ -405,6 +405,8 @@ def getheader(fn):
 
     Args:
         fn (str): Path to FITS file.
+        *args: Passed to `astropy.io.fits.getheader`.
+        **kwargs: Passed to `astropy.io.fits.getheader`.
 
     Returns:
         `astropy.io.fits.header.Header`: The FITS header for the data.
@@ -413,3 +415,23 @@ def getheader(fn):
     if fn.endswith('.fz'):
         ext = 1
     return fits.getheader(fn, ext=ext)
+
+
+def getval(fn, *args, **kwargs):
+    """Get a value from the FITS header.
+
+    Small wrapper around `astropy.io.fits.getval` to auto-determine
+    the FITS extension. This will return the value from the header
+    associated with the image (not the compression header). If you need
+    the compression header information use the astropy module directly.
+
+    Args:
+        fn (str): Path to FITS file.
+
+    Returns:
+        str or float: Value from header (with no type conversion).
+    """
+    ext = 0
+    if fn.endswith('.fz'):
+        ext = 1
+    return fits.getval(fn, *args, ext=ext, **kwargs)
