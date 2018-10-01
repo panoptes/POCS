@@ -317,6 +317,7 @@ def upload_observation_to_bucket(pan_id,
     """
     assert os.path.exists(dir_name)
     assert re.match(r'PAN\d\d\d', pan_id) is not None
+    assert shutil.which('gsutil') is not None
 
     verbose = kwargs.get('verbose', False)
 
@@ -325,9 +326,6 @@ def upload_observation_to_bucket(pan_id,
             print(msg)
 
     _print("Uploading {}".format(dir_name))
-
-    gsutil = shutil.which('gsutil')
-    assert gsutil is not None
 
     file_search_path = os.path.join(dir_name, include_files)
     if glob(file_search_path):
@@ -338,10 +336,11 @@ def upload_observation_to_bucket(pan_id,
             pan_id,
             field_dir
         ))
-
-        # normpath strips the trailing slash so add here so files go in directory
         destination = 'gs://{}/'.format(remote_path)
-        run_cmd = [gsutil, '-mq', 'cp', '-r', file_search_path, destination]
+
+        script_name = os.path.join(os.environ['POCS'], 'scripts', 'upload_files.sh')
+        manifest_file = os.path.join(dir_name, 'upload_manifest.log')
+        run_cmd = [script_name, file_search_path, destination, manifest_file]
         _print("Running: {}".format(run_cmd))
 
         try:

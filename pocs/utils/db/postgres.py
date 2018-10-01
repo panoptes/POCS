@@ -3,8 +3,10 @@ import os
 from warnings import warn
 
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import RealDictCursor
 from astropy.wcs import WCS
+
+from pocs.utils import error
 
 
 def get_db_proxy_conn(
@@ -42,7 +44,12 @@ def get_db_proxy_conn(
         'password': db_pass,
     }
 
-    conn = psycopg2.connect(**conn_params)
+    try:
+        conn = psycopg2.connect(**conn_params)
+    except psycopg2.OperationalError:
+        raise error.GoogleCloudError("Can't connect to cloud db"
+                                     "Make sure the cloud sql proxy is running.")
+
     return conn
 
 
@@ -56,7 +63,7 @@ def get_cursor(**kwargs):
         `psycopg2.Cursor`: Cursor object.
     """
     conn = get_db_proxy_conn(**kwargs)
-    cur = conn.cursor(cursor_factory=DictCursor)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     return cur
 
@@ -94,7 +101,7 @@ def meta_insert(table, conn=None, logger=None, **kwargs):
         conn.rollback()
         warn("Error on fetch: {}".format(e))
         if logger:
-            logger.log_text("Can't insert row: {}".format(e))
+            logger.info("Can't insert row: {}".format(e))
         return None
 
 
@@ -141,25 +148,39 @@ def add_header_to_db(header, conn=None, logger=None):
         'exp_time': header['EXPTIME'],
         'ra_rate': header['RA-RATE'],
         'pocs_version': header['CREATOR'],
-        'piaa_state': header['PSTATE'],
+        'piaa_state': header.get('PSTATE', 'initial'),
+        'field': header['FIELD'],
     }
-    logger.log_text("Inserting sequence: {}".format(seq_data))
+
     try:
-        bl, tl, tr, br = WCS(header).calc_footprint()  # Corners
-        seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
-            bl[0], bl[1],
-            tr[0], tr[1]
-        )
+        wcs = WCS(header)
+        if wcs.is_celestial:
+            bl, tl, tr, br = wcs.calc_footprint()  # Corners
+            seq_data['coord_bounds'] = '(({}, {}), ({}, {}))'.format(
+                bl[0], bl[1],
+                tr[0], tr[1]
+            )
+            seq_data['piaa_state'] = 'solved'
+        else:
+            seq_data['piaa_state'] = 'unsolved'
+
+        if logger:
+            logger.info("Inserting sequence: {}".format(seq_data))
+
         meta_insert('sequences', conn=conn, logger=logger, **seq_data)
-        logger.log_text("Sequence inserted: {}".format(seq_id))
+
+        if logger:
+            logger.info("Sequence inserted: {}".format(seq_id))
     except Exception as e:
-        logger.log_text("Can't get bounds: {}".format(e))
+        if logger:
+            logger.info("Can't get bounds: {}".format(e))
         if 'coord_bounds' in seq_data:
             del seq_data['coord_bounds']
         try:
             meta_insert('sequences', conn=conn, logger=logger, **seq_data)
         except Exception as e:
-            logger.log_text("Can't insert sequence: {}".format(seq_id))
+            if logger:
+                logger.info("Can't insert sequence: {}".format(seq_id))
             raise e
 
     image_data = {
@@ -181,7 +202,7 @@ def add_header_to_db(header, conn=None, logger=None):
         'cam_measrggb': header['MEASRGGB'],
         'cam_red_balance': header['REDBAL'],
         'cam_blue_balance': header['BLUEBAL'],
-        'file_path': header['FILEPATH']
+        'file_path': header.get('FILEPATH', None)
     }
 
     # Add plate-solved info.
