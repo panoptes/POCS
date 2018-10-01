@@ -89,7 +89,8 @@ class Scheduler(BaseScheduler):
 
                     # If current is better or equal to top, use it
                     if self.current_observation.merit >= top_obs_merit:
-                        best_obs.insert(0, self.current_observation)
+                        best_obs.insert(0, (self.current_observation,
+                                            self.current_observation.merit))
 
             # Set the current
             self.current_observation = self.observations[top_obs_name]

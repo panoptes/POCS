@@ -99,10 +99,6 @@ set -x
 # These provide connections between message publishers and subscribers.
 create_and_init_window msg_hub start_messaging_hub.sh
 
-# Create a window running the Google CloudSQL proxy script, connecting
-# to the meta database.
-create_and_init_window meta_db start_cloudsql_proxy.sh meta
-
 # Create a window running the social messaging program. It subscribes to
 # zeromq and posts some messages to Twitter or Slack, if
 # conf_files/pocs_local.yaml has the appropriate config values; if not,

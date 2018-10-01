@@ -44,11 +44,6 @@ class AbstractCamera(PanBase):
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        try:
-            self._image_dir = self.config['directories']['images']
-        except KeyError:
-            self.logger.error("No images directory. Set image_dir in config")
-
         self.model = model
         self.port = port
         self.name = name
@@ -423,17 +418,23 @@ class AbstractCamera(PanBase):
 
         start_time = headers.get('start_time', current_time(flatten=True))
 
+        if not observation.seq_time:
+            observation.seq_time = start_time
+
         # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
+        image_dir = os.path.join(
+            observation.directory,
             self.uid,
-            observation.seq_time,
+            observation.seq_time
         )
 
         # Get full file path
         if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
+            file_path = os.path.join(
+                image_dir,
+                '{}.{}'.format(start_time, self.file_extension)
+            )
+
         else:
             # Add extension
             if '.' not in filename:
@@ -441,7 +442,7 @@ class AbstractCamera(PanBase):
 
             # Add directory
             if '/' not in filename:
-                filename = '{}/{}'.format(image_dir, filename)
+                filename = os.path.join(image_dir, filename)
 
             file_path = filename
 
@@ -492,15 +493,11 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        try:
-            return "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
-        except AttributeError:
-            return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        if hasattr(self, 'focuser') and self.focuser is not None:
+            s += ' with {}'.format(self.focuser.name)
+
+        return s
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
