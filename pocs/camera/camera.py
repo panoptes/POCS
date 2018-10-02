@@ -296,7 +296,7 @@ class AbstractCamera(PanBase):
                   merit_function_kwargs={},
                   mask_dilations=None,
                   coarse=False,
-                  plots=False,
+                  make_plots=False,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -327,7 +327,8 @@ class AbstractCamera(PanBase):
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
-            plots (bool, optional: Whether to write focus plots to images folder, default False.
+            make_plots (bool, optional: Whether to write focus plots to images folder, default
+                False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -350,7 +351,7 @@ class AbstractCamera(PanBase):
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
                                       coarse=coarse,
-                                      plots=plots,
+                                      make_plots=make_plots,
                                       blocking=blocking,
                                       *args, **kwargs)
 

@@ -328,7 +328,7 @@ def test_autofocus_fine_blocking(camera, patterns, counter):
 
 
 def test_autofocus_with_plots(camera, patterns, counter):
-    autofocus_event = camera.autofocus(plots=True)
+    autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
@@ -336,7 +336,7 @@ def test_autofocus_with_plots(camera, patterns, counter):
 
 
 def test_autofocus_coarse_with_plots(camera, patterns, counter):
-    autofocus_event = camera.autofocus(coarse=True, plots=True)
+    autofocus_event = camera.autofocus(coarse=True, make_plots=True)
     autofocus_event.wait()
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']

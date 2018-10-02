@@ -178,7 +178,7 @@ class AbstractFocuser(PanBase):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  plots=False,
+                  make_plots=False,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -208,7 +208,8 @@ class AbstractFocuser(PanBase):
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
-            plots (bool, optional: Whether to write focus plots to images folder, default False.
+            make_plots (bool, optional: Whether to write focus plots to images folder, default
+                False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -294,7 +295,7 @@ class AbstractFocuser(PanBase):
             'merit_function_kwargs': merit_function_kwargs,
             'mask_dilations': mask_dilations,
             'coarse': coarse,
-            'plots': plots,
+            'make_plots': make_plots,
             'focus_event': focus_event,
         }
         focus_thread = Thread(target=self._autofocus, kwargs=focus_params)
@@ -314,7 +315,7 @@ class AbstractFocuser(PanBase):
                    merit_function,
                    merit_function_kwargs,
                    mask_dilations,
-                   plots,
+                   make_plots,
                    coarse,
                    focus_event,
                    *args,
@@ -474,7 +475,7 @@ class AbstractFocuser(PanBase):
         final_thumbnail = self._camera.get_thumbnail(
             seconds, file_path, thumbnail_size, keep_file=True)
 
-        if plots:
+        if make_plots:
             initial_thumbnail = focus_utils.mask_saturated(initial_thumbnail)
             final_thumbnail = focus_utils.mask_saturated(final_thumbnail)
             if dark_thumb is not None:
