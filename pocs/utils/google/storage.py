@@ -315,10 +315,12 @@ def upload_observation_to_bucket(pan_id,
     Returns:
         str: A string path used to search for files.
     """
-    assert os.path.exists(dir_name)
-    assert re.match(r'PAN\d\d\d', pan_id) is not None
+    if not re.match(r'PAN\d\d\d', pan_id):
+        raise Exception("Invalid PANID in config (must be of form PAN000): {}".format(pan_id))
+
     # Note: this just makes sure the command exists, it is called from bash file.
-    assert shutil.which('gsutil') is not None
+    if not shutil.which('gsutil'):
+        raise Exception("Cannot find gsutil command.")
 
     verbose = kwargs.get('verbose', False)
 
