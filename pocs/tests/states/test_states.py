@@ -1,4 +1,5 @@
 import os
+import pytest
 from pocs.utils.messaging import PanMessaging
 
 
@@ -38,10 +39,19 @@ def test_housekeeping(pocs):
     assert pocs.is_safe() is False
 
 
-def test_housekeeping_fail(pocs):
+# Test variations on the PANID.
+@pytest.fixture(scope='module', params=[None, 'INVALID', 'DELETEME', 'PAN000'])
+def pan_id(request):
+    return request.param
 
-    # Change the PANID so we fail
-    pocs.config['pan_id'] = 'INVALID'
+
+def test_housekeeping_panid_fail(pocs, pan_id):
+
+    if pan_id == 'DELETEME':
+        pocs.config['pan_id'] = pan_id
+    else:
+        del pocs.config['pan_id']
+
     pocs.config['panoptes_network']['image_storage'] = True
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
