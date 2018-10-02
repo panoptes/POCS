@@ -12,6 +12,7 @@ from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
 from pocs.utils import error
 from pocs.utils import current_time
+from pocs.camera import create_cameras_from_config
 
 
 def wait_for_running(sub, max_duration=90):
@@ -32,6 +33,49 @@ def wait_for_state(sub, state, max_duration=90):
         if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:
             return True
     return False
+
+
+@pytest.fixture(scope='function')
+def cameras(config):
+    """Get the default cameras from the config."""
+    return create_cameras_from_config(config)
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras):
+    observatory = Observatory(
+        config=config,
+        cameras=cameras,
+        simulator=['all'],
+        ignore_local_config=True,
+        db_type=db_type
+    )
+    return observatory
+
+
+@pytest.fixture(scope='function')
+def pocs(config, observatory):
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+
+    pocs = POCS(observatory,
+                run_once=True,
+                config=config,
+                ignore_local_config=True)
+
+    pocs.observatory.scheduler.fields_file = None
+    pocs.observatory.scheduler.fields_list = [
+        {'name': 'Wasp 33',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '100',
+         'exp_time': 2,
+         'min_nexp': 2,
+         'exp_set_size': 2,
+         },
+    ]
+
+    yield pocs
+
+    pocs.power_down()
 
 
 @pytest.fixture(scope='function')

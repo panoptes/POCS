@@ -69,15 +69,12 @@ messaging:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $POCS/pocs/utils/google/README.md for details about authentication.
-#
-# Options to change:
-#   image_storage: If images should be uploaded to Google Cloud Storage.
-#   metadata_storage: If metadata should be sent to the Google CloudSQL instance.
+# See $POCS/pocs/utils/google/README.md for
+# details about authentication.
 ################################################################################
 panoptes_network:
-    image_storage: False
-    metadata_storage: False
+    image_storage: True
+    metadata_storage: True
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
