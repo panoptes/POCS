@@ -1,22 +1,53 @@
-Welcome to POCS's documentation!
-================================
+PANOPTES Observatory Control System - 	POCS
+=====
 
-![PANOPTES prototype unit on Mauna Loa](http://projectpanoptes.org/v1/wp-content/uploads/2013/02/System_view21.png)
-
-   PANOPTES prototype unit on the summit of Mauna Loa.
-
-[PANOPTES](http://projectpanoptes.org) is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the [project overview](http://projectpanoptes.org/v1/overview/>).
+.. warning::
+	Documentation under construction.
 
 
-POCS (PANOPTES Observatory Control System) is the main software driver for the PANOPTES unit, responsible for high-level control of the unit.
+`PANOPTES <http://projectpanoptes.org>`_ is an open source citizen science
+project that is designed to find exoplanets with digital cameras. The goal of
+PANOPTES is to establish a global network of of robotic cameras run by amateur
+astronomers and schools in order to monitor, as continuously as possible, a
+very large number of stars. For more general information about the project,
+including the science case and resources for interested individuals, see the
+`project website <http://projectpanoptes.org/>`_.
+
+.. seealso::
+
+	This is the documentation for the software that controls a running 
+	PANOPTES robotic observatory. This will mostly be useful for developers 
+	working on the control software itself. Normal operating usage of POCS 
+	doesn't require knowledge of the documentation here.
+
+	If you are interested in how to operate a PANOPTES unit, please see the 
+	`User's Guide <https://projectpanoptes.org/instructions.html>`_.
+
+	.. todo:: User's guide?
+
+.. toctree::
+   :maxdepth: 3
+
+   panoptes-overview
+   pocs-overview
 
 
-Links
+Project Links
+-------------
+
+- PANOPTES Homepage: https://projectpanoptes.org
+- Forum: https://forum.projectpanoptes.org
+
+POCS Details
+------------
+* `Source Code <http://github.com/panoptes/POCS>`_
+* `Release History <https://github.com/panoptes/POCS/blob/develop/Changelog.md>`_
+* `Known Issues <https://github.com/panoptes/POCS/issues>`_
+* `License <https://github.com/panoptes/POCS/blob/develop/LICENSE.txt>`_
+
+Index
 -----
 
-- PANOPTES Homepage: [http://projectpanoptes.org](http://projectpanoptes.org)
-- Tutorials / Blog: [http://panoptes.github.io/POCS/](http://panoptes.github.io/POCS/)
-- Source Code: [http://github.com/panoptes/POCS](http://github.com/panoptes/POCS)
-
-	- PIAA : [https://github.com/panoptes/PIAA](https://github.com/panoptes/PIAA)
-	- PACE : [https://github.com/panoptes/PACE](https://github.com/panoptes/PACE)
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
