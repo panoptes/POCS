@@ -73,6 +73,7 @@ install:
   # install POCS and requirements
   - cd $POCS
   - pip install -r requirements.txt
+  - pip install -r docs/requirements.txt
   - pip install -e .
   - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
