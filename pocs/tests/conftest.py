@@ -27,6 +27,14 @@ def config():
     if not _one_time_config:
         _one_time_config = load_config(ignore_local=True, simulator=['all'])
         _one_time_config['db']['name'] = 'panoptes_testing'
+        _one_time_config['panoptes_network'] = {
+            "image_storage": False,
+            "metadata_storage": False,
+            "project_id": "panoptes-survey",
+            "buckets": {
+                "images": 'panoptes-test-bucket'  # Set test bucket
+            },
+        }
 
     return copy.deepcopy(_one_time_config)
 
