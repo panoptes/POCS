@@ -10,6 +10,7 @@ from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 
+import glob
 import os
 import time
 from ctypes.util import find_library
@@ -64,8 +65,24 @@ def camera(request, images_dir):
     camera.config['directories']['images'] = images_dir
     return camera
 
-# Hardware independent tests, mostly use simulator:
 
+@pytest.fixture(scope='module')
+def counter():
+    return {'value': 0}
+
+
+@pytest.fixture(scope='module')
+def patterns(camera, images_dir):
+    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                      ('*_final.' + camera.file_extension)),
+                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                          'fine_focus.png'),
+                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                            'coarse_focus.png')}
+    return patterns
+
+
+# Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
     sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
@@ -289,29 +306,49 @@ def test_observation(camera):
     time.sleep(7)
 
 
-def test_autofocus_coarse(camera):
+def test_autofocus_coarse(camera, patterns, counter):
     autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_fine(camera):
+def test_autofocus_fine(camera, patterns, counter):
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_fine_blocking(camera):
+def test_autofocus_fine_blocking(camera, patterns, counter):
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_no_plots(camera):
-    autofocus_event = camera.autofocus(plots=False)
+def test_autofocus_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
 
 
-def test_autofocus_keep_files(camera):
+def test_autofocus_coarse_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(coarse=True, make_plots=True)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
+    assert len(glob.glob(patterns['coarse_plot'])) == 1
+
+
+def test_autofocus_keep_files(camera, patterns, counter):
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
 def test_autofocus_no_size(camera):
