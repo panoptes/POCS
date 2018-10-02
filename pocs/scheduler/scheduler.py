@@ -40,8 +40,10 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
-        self._fields_file = fields_file
+        # Setting the fields_list directly will clobber anything
+        # from the fields_file, so make sure it comes first.
         self._fields_list = fields_list
+        self._fields_file = fields_file
         self._observations = dict()
 
         self.observer = observer
@@ -51,7 +53,9 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        self.read_field_list()
+        if not self.config['scheduler'].get('check_file', False):
+            self.logger.debug("Reading initial set of fields")
+            self.read_field_list()
 
 
 ##########################################################################
@@ -265,6 +269,8 @@ class BaseScheduler(PanBase):
                     self.add_observation(field_config)
                 except AssertionError:
                     self.logger.debug("Skipping duplicate field.")
+                except Exception as e:
+                    self.logger.warning("Error adding field: {}", e)
 
 ##########################################################################
 # Utility Methods

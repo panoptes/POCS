@@ -35,42 +35,6 @@ def wait_for_state(sub, state, max_duration=90):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type):
-    observatory = Observatory(
-        config=config,
-        simulator=['all'],
-        ignore_local_config=True,
-        db_type=db_type
-    )
-    return observatory
-
-
-@pytest.fixture(scope='function')
-def pocs(config, observatory):
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-
-    pocs = POCS(observatory,
-                run_once=True,
-                config=config,
-                ignore_local_config=True)
-
-    pocs.observatory.scheduler.fields_file = None
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
-
-    yield pocs
-
-    pocs.power_down()
-
-
-@pytest.fixture(scope='function')
 def pocs_with_dome(config_with_simulated_dome, db_type):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     simulator = hardware.get_all_names(without=['dome'])

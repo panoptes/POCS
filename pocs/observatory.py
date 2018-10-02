@@ -23,6 +23,7 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
 from pocs.camera import AbstractCamera
+from pocs.utils.google.storage import upload_observation_to_bucket
 
 
 class Observatory(PanBase):
@@ -47,13 +48,11 @@ class Observatory(PanBase):
         self.mount = None
         self._create_mount()
 
-        if not cameras:
-            cameras = OrderedDict()
+        self.cameras = OrderedDict()
 
         if cameras:
-            self.logger.info('Adding the cameras to the observatory')
+            self.logger.info('Adding the cameras to the observatory: {}', cameras)
             self._primary_camera = None
-            self.cameras = cameras
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
@@ -143,7 +142,9 @@ class Observatory(PanBase):
         assert isinstance(camera, AbstractCamera)
         self.logger.debug('Adding {}: {}'.format(cam_name, camera))
         if cam_name in self.cameras:
-            self.logger.debug('{} already exists, replacing existing camera under that name.')
+            self.logger.debug(
+                '{} already exists, replacing existing camera under that name.',
+                cam_name)
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
@@ -242,13 +243,14 @@ class Observatory(PanBase):
         self.logger.debug("Getting observation for observatory")
 
         # If observation list is empty or a reread is requested
-        if (self.scheduler.has_valid_observations is False or
-                kwargs.get('reread_fields_file', False) or
-                self.config['scheduler'].get('check_file', False)):
-            self.scheduler.read_field_list()
+        reread_fields_file = (
+            self.scheduler.has_valid_observations is False or
+            kwargs.get('reread_fields_file', False) or
+            self.config['scheduler'].get('check_file', False)
+        )
 
         # This will set the `current_observation`
-        self.scheduler.get_observation(*args, **kwargs)
+        self.scheduler.get_observation(reread_fields_file=reread_fields_file, *args, **kwargs)
 
         if self.current_observation is None:
             self.scheduler.clear_available_observations()
@@ -260,19 +262,28 @@ class Observatory(PanBase):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
-        `observed_list` when done
-
+        `observed_list` when done. Options for cleaning are set in the config
+        file.
         """
+        # Check if we should upload images
         try:
-            upload_images = self.config.get('panoptes_network', {})['image_storage']
+            upload_images = self.config['panoptes_network']['image_storage']
         except KeyError:
             upload_images = False
 
+        # Get the PANID - form is checked in script (why?)
         try:
             pan_id = self.config['pan_id']
+            self.logger.info("Using PANID: {}", pan_id)
         except KeyError:
             self.logger.warning("pan_id not set in config, can't upload images.")
             upload_images = False
+
+        try:
+            storage_bucket = self.config['panoptes_network']['buckets']['images']
+        except KeyError:
+            self.logger.warning("No image bucket set in config, can't upload images")
+            storage_bucket = False
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -292,7 +303,10 @@ class Observatory(PanBase):
 
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                    try:
+                        upload_observation_to_bucket(pan_id, dir_name, storage_bucket)
+                    except Exception as e:
+                        raise e
 
             self.logger.debug('Cleanup finished')
 

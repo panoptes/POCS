@@ -80,7 +80,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     logger.debug("Camera config: {}".format(camera_info))
 
     a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
-    auto_detect = kwargs_or_config('auto_detect', default=False)
+    auto_detect = camera_info.get('auto_detect', False)
 
     ports = list()
 
@@ -162,10 +162,11 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
+                cam.is_primary = True
                 primary_camera = cam
                 is_primary = ' [Primary]'
 
-            logger.debug("Camera created: {} {} {}".format(
+            logger.debug("Camera created: {} {}{}".format(
                 cam.name, cam.uid, is_primary))
 
             cameras[cam_name] = cam
