@@ -262,20 +262,28 @@ class Observatory(PanBase):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
-        `observed_list` when done
-
+        `observed_list` when done. Options for cleaning are set in the config
+        file.
         """
+        # Check if we should upload images
         try:
-            upload_images = self.config.get('panoptes_network', {})['image_storage']
+            upload_images = self.config['panoptes_network']['image_storage']
         except KeyError:
             upload_images = False
 
+        # Get the PANID - form is checked in script (why?)
         try:
             pan_id = self.config['pan_id']
             self.logger.info("Using PANID: {}", pan_id)
         except KeyError:
             self.logger.warning("pan_id not set in config, can't upload images.")
             upload_images = False
+
+        try:
+            storage_bucket = self.config['panoptes_network']['buckets']['images']
+        except KeyError:
+            self.logger.warning("No image bucket set in config, can't upload images")
+            storage_bucket = False
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -296,7 +304,7 @@ class Observatory(PanBase):
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
                     try:
-                        upload_observation_to_bucket(pan_id, dir_name)
+                        upload_observation_to_bucket(pan_id, dir_name, storage_bucket)
                     except Exception as e:
                         raise e
 

@@ -288,8 +288,8 @@ class PanStorage(object):
 
 def upload_observation_to_bucket(pan_id,
                                  dir_name,
+                                 bucket,
                                  include_files='*.fz',
-                                 bucket='panoptes-survey',
                                  **kwargs):
     """Upload an observation directory to google cloud storage.
 
@@ -298,22 +298,24 @@ def upload_observation_to_bucket(pan_id,
     and follow the normal naming convention for observations.
 
     Note:
-        This requires that the command line utility `gsutil` be installed
-        and that authentication has properly been set up.
+            This requires that the command line utility `gsutil` be installed
+            and that authentication has properly been set up.
 
-    TODO(wtgee): This could be merged into the PanStorage class.
+        TODO(wtgee): This could be merged into the PanStorage class.
 
     Args:
         pan_id (str): A string representing the unit id, e.g. PAN001.
         dir_name (str): Full path to directory.
+        bucket (str): The bucket to place the files in.
         include_files (str, optional): Filename filter, defaults to
             compressed FITS files '.fz'.
-        bucket (str, optional): The bucket to place the files in, defaults
-            to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
 
     Returns:
         str: A string path used to search for files.
+
+    Raises:
+        Exception: Raised if invalid pan_id or no gsutil program is found.
     """
     if not re.match(r'PAN\d\d\d', pan_id):
         raise Exception("Invalid PANID in config (must be of form PAN000): {}".format(pan_id))

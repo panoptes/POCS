@@ -47,10 +47,13 @@ def pan_id(request):
 
 def test_housekeeping_panid_fail(pocs, pan_id):
 
+    pocs.config['pan_id'] = pan_id
+
     if pan_id == 'DELETEME':
-        pocs.config['pan_id'] = pan_id
-    else:
         del pocs.config['pan_id']
+
+    if pan_id == 'NOBUCKET':
+        del pocs.config['panoptes_network']['buckets']['images']
 
     pocs.config['panoptes_network']['image_storage'] = True
 
