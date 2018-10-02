@@ -288,8 +288,8 @@ class PanStorage(object):
 
 def upload_observation_to_bucket(pan_id,
                                  dir_name,
+                                 bucket,
                                  include_files='*.fz',
-                                 bucket='panoptes-survey',
                                  **kwargs):
     """Upload an observation directory to google cloud storage.
 
@@ -298,25 +298,31 @@ def upload_observation_to_bucket(pan_id,
     and follow the normal naming convention for observations.
 
     Note:
-        This requires that the command line utility `gsutil` be installed
-        and that authentication has properly been set up.
+            This requires that the command line utility `gsutil` be installed
+            and that authentication has properly been set up.
 
-    TODO(wtgee): This could be merged into the PanStorage class.
+        TODO(wtgee): This could be merged into the PanStorage class.
 
     Args:
         pan_id (str): A string representing the unit id, e.g. PAN001.
         dir_name (str): Full path to directory.
+        bucket (str): The bucket to place the files in.
         include_files (str, optional): Filename filter, defaults to
             compressed FITS files '.fz'.
-        bucket (str, optional): The bucket to place the files in, defaults
-            to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
 
     Returns:
         str: A string path used to search for files.
+
+    Raises:
+        Exception: Raised if invalid pan_id or no gsutil program is found.
     """
-    assert os.path.exists(dir_name)
-    assert re.match(r'PAN\d\d\d', pan_id) is not None
+    if not re.match(r'PAN\d\d\d', pan_id):
+        raise Exception("Invalid PANID in config (must be of form PAN000): {}".format(pan_id))
+
+    # Note: this just makes sure the command exists, it is called from bash file.
+    if not shutil.which('gsutil'):
+        raise Exception("Cannot find gsutil command.")
 
     verbose = kwargs.get('verbose', False)
 
@@ -325,9 +331,6 @@ def upload_observation_to_bucket(pan_id,
             print(msg)
 
     _print("Uploading {}".format(dir_name))
-
-    gsutil = shutil.which('gsutil')
-    assert gsutil is not None
 
     file_search_path = os.path.join(dir_name, include_files)
     if glob(file_search_path):
@@ -339,9 +342,12 @@ def upload_observation_to_bucket(pan_id,
             field_dir
         ))
 
-        # normpath strips the trailing slash so add here so files go in directory
+        # Build the script command
         destination = 'gs://{}/'.format(remote_path)
-        run_cmd = [gsutil, '-mq', 'cp', '-r', file_search_path, destination]
+        script_name = os.path.join(os.environ['POCS'], 'scripts', 'upload_files_to_bucket.sh')
+        manifest_file = os.path.join(dir_name, 'upload_manifest.log')
+        run_cmd = [script_name, file_search_path, destination, manifest_file]
+
         _print("Running: {}".format(run_cmd))
 
         try:
