@@ -356,7 +356,10 @@ class AbstractFocuser(PanBase):
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        initial_fn = "{}_{}.{}".format(initial_focus, "initial", self._camera.file_extension)
+        initial_fn = "{}_{}_{}.{}".format(initial_focus,
+                                          focus_type,
+                                          "initial",
+                                          self._camera.file_extension)
         initial_path = os.path.join(file_path_root, initial_fn)
 
         initial_thumbnail = self._camera.get_thumbnail(
@@ -463,7 +466,10 @@ class AbstractFocuser(PanBase):
 
         final_focus = self.move_to(best_focus)
 
-        final_fn = "{}_{}.{}".format(final_focus, "final", self._camera.file_extension)
+        final_fn = "{}_{}_{}.{}".format(final_focus,
+                                        focus_type,
+                                        "final",
+                                        self._camera.file_extension)
         file_path = os.path.join(file_path_root, final_fn)
         final_thumbnail = self._camera.get_thumbnail(
             seconds, file_path, thumbnail_size, keep_file=True)
