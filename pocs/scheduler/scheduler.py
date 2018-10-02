@@ -53,7 +53,7 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        if not self.config['scheduler']['check_file']:
+        if not self.config['scheduler'].get('check_file', False):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
