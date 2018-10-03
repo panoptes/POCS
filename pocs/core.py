@@ -504,7 +504,6 @@ class POCS(PanStateMachine, PanBase):
                 now = current_time()
 
             if now >= next_status_time:
-                self.logger.debug('Inside waiting for events, checking status')
                 self.status()
                 next_status_time += status_interval
                 now = current_time()
