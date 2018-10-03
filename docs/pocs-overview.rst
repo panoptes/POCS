@@ -25,7 +25,9 @@ and the high-level Decision Layer.
 	.. image:: _static/pocs-graph.png
 
 	**POCS software layers** Diagram of POCS software layers. Note that the
-	items in yellow (Dome, Guider, and TheSkyX) are not typically used by PANOPTES observatories (note: PAN006 is inside an astrohaven dome).
+	items in yellow (Dome, Guider, and TheSkyX) are not typically used by PANOPTES
+	observatories (note: PAN006 is inside an astrohaven dome).
+	
 	TheSkyX interface was added by the `Huntsman Telescope <https://twitter.com/AstroHuntsman>`_,
 	which also uses POCS for control. They are included in the diagram as a 
 	means of showing the flexibility of the Functional Layer to interact with
@@ -144,13 +146,11 @@ State machines are responsible for mapping inputs (e.g. ``get_ready``,
 mapping depends on the current state [Lee2017]_. The mappings of input to 
 output are governed by transition events [2]_.
 
-
 State definitions and their transitions are defined external to POCS, 
 allowing for multiple possible state machines that are agnostic to the layers 
 below the Decision Layer. This external definition is similar to the 
 "Scheduler" in the Functional Layer and is represented similarly in the 
 figure above.
-
 
 POCS is responsible for determining operational safety via a query of the 
 weather station, determination of sun position, etc. The transition for each 
@@ -163,13 +163,15 @@ or remains in the sleeping or ready state.
 .. include:: pocs-alternatives.rst
 
 .. [1] Writing hardware simulators, while helpful for testing purposes, can 
-also add significant overhead to a project. For major projects such as the 
-LSST or TMT this is obviously a requirement. PANOPTES implements basic 
+also add significant overhead to a project. For major projects such as the
+LSST or TMT this is obviously a requirement. PANOPTES implements basic
 hardware simulators for the mount and camera but full-scale hardware 
 simulation of specific components has not yet been achieved.
 
 .. [2] The Python FSM used by POCS is in fact called `transitions <https://github.com/tyarkoni/transitions>`_. 
 
-.. [Elkady2012]_ Stuff
-.. [Denny2004]_ Stuff
-.. [Lee2017]_ Stuff
+
+.. [Elkady2012] Stuff
+.. [Denny2004] Stuff
+.. [Lee2017] Stuff
+.. [Gamma1993] Stuff

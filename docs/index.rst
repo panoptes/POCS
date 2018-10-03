@@ -1,5 +1,5 @@
 PANOPTES Observatory Control System - 	POCS
-=====
+============================================
 
 .. warning::
 	Documentation under construction.

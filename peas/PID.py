@@ -2,12 +2,11 @@ from datetime import datetime
 
 
 class PID:
-
-    '''
+    """
     Pseudocode from Wikipedia:
+        previous_error = 0
+        integral = 0
 
-    previous_error = 0
-    integral = 0
     start:
       error = setpoint - measured_value
       integral = integral + error*dt
@@ -16,7 +15,22 @@ class PID:
       previous_error = error
       wait(dt)
       goto start
-    '''
+
+    Attributes:
+        Dval (float): Description
+        history (list): Description
+        Ival (float): Description
+        Kd (TYPE): Description
+        Ki (TYPE): Description
+        Kp (TYPE): Description
+        last_interval (float): Description
+        last_recalc_time (TYPE): Description
+        max_age (TYPE): Description
+        output_limits (TYPE): Description
+        previous_error (TYPE): Description
+        Pval (TYPE): Description
+        set_point (TYPE): Description
+    """
 
     def __init__(self, Kp=2., Ki=0., Kd=1.,
                  set_point=None, output_limits=None,
