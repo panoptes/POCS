@@ -40,10 +40,11 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
-        # Setting the fields_list directly will clobber anything
-        # from the fields_file, so make sure it comes first.
-        self._fields_list = fields_list
         self._fields_file = fields_file
+        # Setting the fields_list directly will clobber anything
+        # from the fields_file. It comes second so we can speicfically
+        # clobber if passed.
+        self._fields_list = fields_list
         self._observations = dict()
 
         self.observer = observer

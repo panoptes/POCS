@@ -65,7 +65,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):
     """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
@@ -309,19 +309,27 @@ def make_timelapse(
     return fn_out
 
 
-def clean_observation_dir(dir_name, *args, **kwargs):
-    """ Clean an observation directory.
+def clean_observation_dir(dir_name,
+                          remove_jpgs=False,
+                          include_timelapse=True,
+                          timelapse_overwrite=False,
+                          **kwargs):
+    """Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
-        * Create timelapse from JPG files if present
-        * Remove JPG files
+        * Create timelapse from JPG files if present (optional, default True)
+        * Remove JPG files (optional, default False).
 
     Args:
-        dir_name (str): Full path to observation directory
-        *args: Description
-        **kwargs: Can include `verbose`
+        dir_name (str): Full path to observation directory.
+        remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
+            default False.
+        include_timelapse (bool, optional): If a timelapse should be created, default True.
+        timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
+            default False.
+        **kwargs: Can include `verbose`.
     """
     verbose = kwargs.get('verbose', False)
 
@@ -362,20 +370,23 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            try:
-                _print('Creating timelapse for {}'.format(dir_name))
-                video_file = make_timelapse(dir_name)
-                _print('Timelapse created: {}'.format(video_file))
-            except Exception as e:
-                _print("Problem creating timelapse: {}".format(e))
+            if include_timelapse:
+                try:
+                    _print('Creating timelapse for {}'.format(dir_name))
+                    video_file = make_timelapse(dir_name, overwrite=timelapse_overwrite)
+                    _print('Timelapse created: {}'.format(video_file))
+                except Exception as e:
+                    _print("Problem creating timelapse: {}".format(e))
 
             # Remove jpgs
-            _print('Removing jpgs')
-            for f in jpg_list:
-                try:
-                    os.remove(f)
-                except OSError as e:
-                    warn('Could not delete file: {!r}'.format(e))
+            if remove_jpgs:
+                _print('Removing jpgs')
+                for f in jpg_list:
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        warn('Could not delete file: {!r}'.format(e))
+
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
 
@@ -394,8 +405,11 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
             to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
     """
-    assert os.path.exists(dir_name)
-    assert re.match(r'PAN\d\d\d', pan_id) is not None
+    if os.path.exists(dir_name) is False:
+        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+
+    if re.match(r'PAN\d\d\d', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
 
     verbose = kwargs.get('verbose', False)
 
