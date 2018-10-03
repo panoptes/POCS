@@ -3,7 +3,7 @@ build:
   image: latest
 
 formats:
-  - html
+  - htmlzip
 
 requirements_file: docs/requirements.txt
 
