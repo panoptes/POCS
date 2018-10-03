@@ -6,3 +6,5 @@ pocs
 
    peas
    pocs
+   pocs.camera
+   pocs.mount
