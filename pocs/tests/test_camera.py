@@ -1,5 +1,12 @@
 import pytest
 
+import os
+import time
+import glob
+from ctypes.util import find_library
+
+import astropy.units as u
+
 from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.pyro import Camera as PyroCamera
 from pocs.camera.sbig import Camera as SBIGCamera
@@ -10,12 +17,8 @@ from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
+from pocs.utils.images import fits as fits_utils
 
-import os
-import glob
-import time
-
-from ctypes.util import find_library
 
 import astropy.units as u
 import astropy.io.fits as fits
@@ -78,8 +81,19 @@ def camera(request, images_dir, camera_server):
 def counter():
     return {'value': 0}
 
-# Hardware independent tests using simulator:
 
+@pytest.fixture(scope='module')
+def patterns(camera, images_dir):
+    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                      ('*_final.' + camera.file_extension)),
+                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                          'fine_focus.png'),
+                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                            'coarse_focus.png')}
+    return patterns
+
+
+# Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
     sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
@@ -231,7 +245,7 @@ def test_exposure(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -246,7 +260,7 @@ def test_exposure_blocking(camera, tmpdir):
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -260,7 +274,7 @@ def test_exposure_dark(camera, tmpdir):
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
 
@@ -281,8 +295,8 @@ def test_exposure_collision(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path_1)
     assert os.path.exists(fits_path_2)
-    assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
-    assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+    assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits_utils.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
 def test_exposure_no_filename(camera):
@@ -311,45 +325,49 @@ def test_observation(camera, images_dir):
     assert len(glob.glob(observation_pattern)) == 1
 
 
-def test_autofocus_coarse(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(coarse=True, plots=True)
-    autofocus_event.wait()
-    coarse_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'coarse_focus.png')
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
-    counter['value'] = 1
-    assert len(glob.glob(coarse_plot_pattern)) == 1
-    assert len(glob.glob(fine_plot_pattern)) == counter['value']
-
-
-def test_autofocus_fine(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(plots=True)
+def test_autofocus_coarse(camera, patterns, counter):
+    autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
-    assert len(glob.glob(fine_plot_pattern)) == counter['value']
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_fine_blocking(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(blocking=True, plots=True)
+def test_autofocus_fine(camera, patterns, counter):
+    autofocus_event = camera.autofocus()
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+
+
+def test_autofocus_fine_blocking(camera, patterns, counter):
+    autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
-    assert len(glob.glob(fine_plot_pattern)) == counter['value']
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_no_plots(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(plots=False)
-    autofocus_event.wait()
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
-    assert len(glob.glob(fine_plot_pattern)) == counter['value']
-
-
-def test_autofocus_keep_files(camera, images_dir, counter):
-    autofocus_event = camera.autofocus(keep_files=True, plots=True)
+def test_autofocus_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
     counter['value'] += 1
-    fine_plot_pattern = os.path.join(images_dir, 'focus', camera.uid, '*', 'fine_focus.png')
-    assert len(glob.glob(fine_plot_pattern)) == counter['value']
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
+
+
+def test_autofocus_coarse_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(coarse=True, make_plots=True)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
+    assert len(glob.glob(patterns['coarse_plot'])) == 1
+
+
+def test_autofocus_keep_files(camera, patterns, counter):
+    autofocus_event = camera.autofocus(keep_files=True)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
 def test_autofocus_no_size(camera):

@@ -77,7 +77,8 @@ install:
   # install POCS and requirements
   - cd $POCS
   - pip install -r requirements.txt
-  - python setup.py install
+  - pip install -r docs/requirements.txt
+  - pip install -e .
   - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
   - export BOARD="arduino:avr:micro"
