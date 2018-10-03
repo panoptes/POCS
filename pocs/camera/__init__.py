@@ -224,7 +224,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
-        camera_names = sorted(self.cameras.keys())
+        camera_names = sorted(cameras.keys())
         primary_camera = cameras[camera_names[0]]
         primary_camera.is_primary = True
 

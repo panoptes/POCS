@@ -162,8 +162,12 @@ def test_default_config(observatory):
 def test_pyro_camera(config, camera_server):
     conf = config.copy()
     conf['cameras'] = {'distributed_cameras': True}
+    cameras = create_cameras_from_config(conf)
     simulator = hardware.get_all_names(without=['camera'])
-    obs = Observatory(config=conf, simulator=simulator, ignore_local_config=True)
+    obs = Observatory(cameras=cameras,
+                      config=conf,
+                      simulator=simulator,
+                      ignore_local_config=True)
     assert len(obs.cameras) == 1
     assert 'camera.simulator.001' in obs.cameras
     assert isinstance(obs.cameras['camera.simulator.001'], PyroCamera)

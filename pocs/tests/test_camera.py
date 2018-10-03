@@ -76,7 +76,7 @@ def camera(request, images_dir, camera_server):
 
 
 @pytest.fixture(scope='module')
-def counter():
+def counter(camera):
     return {'value': 0}
 
 
