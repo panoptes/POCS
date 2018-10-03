@@ -256,17 +256,38 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self):
+    def cleanup_observations(self, upload_images=None, make_timelapse=None, keep_jpgs=None):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
-        `observed_list` when done
+        `observed_list` when done.
+
+        Args:
+            upload_images (None or bool, optional): If images should be uploaded to a Google
+                Storage bucket, default to config item `panoptes_network.image_storage` then False.
+            make_timelapse (None or bool, optional): If a timelapse should be created
+                (requires ffmpeg), default to config item `observations.make_timelapse` then True.
+            keep_jpgs (None or bool, optional): If JPG copies of observation images should be kept
+                on local hard drive, default to config item `observations.keep_jpgs` then True.
 
         """
-        try:
-            upload_images = self.config.get('panoptes_network', {})['image_storage']
-        except KeyError:
-            upload_images = False
+        if upload_images is None:
+            try:
+                upload_images = self.config.get('panoptes_network', {})['image_storage']
+            except KeyError:
+                upload_images = False
+
+        if make_timelapse is None:
+            try:
+                make_timelapse = self.config['observations']['make_timelapse']
+            except KeyError:
+                make_timelapse = True
+
+        if keep_jpgs is None:
+            try:
+                keep_jpgs = self.config['observations']['keep_jpgs']
+            except KeyError:
+                keep_jpgs = True
 
         try:
             pan_id = self.config['pan_id']
@@ -277,22 +298,31 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
+            observation_dir = os.path.join(
+                self.config['directories']['images'],
+                'fields',
+                observation.field.field_name
+            )
+            self.logger.debug('Searching directory: {}', observation_dir)
+
             for cam_name, camera in self.cameras.items():
                 self.logger.debug('Cleanup for camera {} [{}]'.format(
                     cam_name, camera.uid))
 
-                dir_name = "{}/fields/{}/{}/{}/".format(
-                    self.config['directories']['images'],
-                    observation.field.field_name,
+                seq_dir = os.path.join(
+                    observation_dir,
                     camera.uid,
-                    seq_time,
+                    seq_time
                 )
+                self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                img_utils.clean_observation_dir(dir_name)
+                img_utils.clean_observation_dir(seq_dir,
+                                                make_timelapse=make_timelapse,
+                                                keep_jpgs=keep_jpgs)
 
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, dir_name)
+                    img_utils.upload_observation_dir(pan_id, seq_dir)
 
             self.logger.debug('Cleanup finished')
 
