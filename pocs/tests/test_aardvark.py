@@ -41,7 +41,7 @@ def test_camera_server(camera_server):
 
 
 def test_camera_detection(camera_server):
-    ns = Pyro4.locateNS()
-    cameras = ns.list(metadata_all={'POCS', 'Camera'})
+    with Pyro4.locateNS() as ns:
+        cameras = ns.list(metadata_all={'POCS', 'Camera'})
     # Should be one distributed camera, a simulator with simulated focuser
     assert len(cameras) == 1

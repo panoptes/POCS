@@ -95,7 +95,7 @@ def name_server(request):
     request.addfinalizer(lambda: end_process(ns_proc))
     # Give name server time to start up
     waited = 0
-    while waited <= 10:
+    while waited <= 20:
         try:
             Pyro4.locateNS(host='localhost')
         except Pyro4.errors.NamingError:
@@ -114,5 +114,13 @@ def camera_server(name_server, request):
     cs_proc = subprocess.Popen(cs_cmds)
     request.addfinalizer(lambda: end_process(cs_proc))
     # Give camera server time to start up
-    time.sleep(3)
-    return cs_proc
+    waited = 0
+    while waited <= 20:
+        with Pyro4.locateNS(host='localhost') as ns:
+            cameras = ns.list(metadata_all={'POCS', 'Camera'})
+        if len(cameras) == 1:
+            return cs_proc
+        time.sleep(1)
+        waited += 1
+
+    raise TimeoutError("Timeout waiting for camera server to start")
