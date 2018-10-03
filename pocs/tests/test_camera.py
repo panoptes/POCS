@@ -6,6 +6,9 @@ import glob
 from ctypes.util import find_library
 
 import astropy.units as u
+import astropy.io.fits as fits
+
+import Pyro4
 
 from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.pyro import Camera as PyroCamera
@@ -18,11 +21,6 @@ from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 from pocs.utils.images import fits as fits_utils
-
-
-import astropy.units as u
-import astropy.io.fits as fits
-import Pyro4
 
 params = [SimCamera, PyroCamera, SBIGCamera, FLICamera]
 ids = ['simulator', 'pyro', 'sbig', 'fli']

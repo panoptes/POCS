@@ -9,7 +9,6 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
-import Pyro4
 
 from pocs.base import PanBase
 import pocs.dome
@@ -23,7 +22,6 @@ from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
 from pocs.camera import AbstractCamera
-from pocs.camera import pyro
 
 
 class Observatory(PanBase):
@@ -659,173 +657,6 @@ class Observatory(PanBase):
         self.mount = module.Mount(location=self.earth_location)
 
         self.logger.debug('Mount created')
-
-    def _create_cameras(self, **kwargs):
-        """Creates a camera object(s)
-
-        Loads the cameras via the configuration.
-
-        Creates a camera for each camera item listed in the config. Ensures the
-        appropriate camera module is loaded.
-
-        Note: We are currently only operating with one camera and the `take_pic.sh`
-            script automatically discovers the ports.
-
-        Note:
-            This does not actually make a usb connection to the camera. To do so,
-            call the 'camear.connect()' explicitly.
-
-        Args:
-            **kwargs (dict): Can pass a camera_config object that overrides the info in
-                the configuration file. Can also pass `auto_detect`(bool) to try and
-                automatically discover the ports.
-
-        Returns:
-            list: A list of created camera objects.
-
-        Raises:
-            error.CameraNotFound: Description
-            error.PanError: Description
-        """
-        if kwargs.get('camera_info') is None:
-            camera_info = self.config.get('cameras')
-
-        self.logger.debug("Camera config: \n {}".format(camera_info))
-
-        a_simulator = 'camera' in self.config.get('simulator', [])
-        if a_simulator:
-            self.logger.debug("Using simulator for camera")
-
-        ports = list()
-
-        # Lookup the connected ports if not using a simulator
-        auto_detect = kwargs.get(
-            'auto_detect', camera_info.get('auto_detect', False))
-        if not a_simulator and auto_detect:
-            self.logger.debug("Auto-detecting ports for cameras")
-            try:
-                ports = list_connected_cameras()
-            except Exception as e:
-                self.logger.warning(e)
-
-            if len(ports) == 0:
-                raise error.PanError(
-                    msg="No cameras detected. Use --simulator=camera for simulator.")
-            else:
-                self.logger.debug("Detected Ports: {}".format(ports))
-
-        for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
-            cam_name = 'Cam{:02d}'.format(cam_num)
-
-            if not a_simulator:
-                camera_model = camera_config.get('model')
-
-                # Assign an auto-detected port. If none are left, skip
-                if auto_detect:
-                    try:
-                        camera_port = ports.pop()
-                    except IndexError:
-                        self.logger.warning(
-                            "No ports left for {}, skipping.".format(cam_name))
-                        continue
-                else:
-                    try:
-                        camera_port = camera_config['port']
-                    except KeyError:
-                        raise error.CameraNotFound(
-                            msg="No port specified and auto_detect=False")
-
-                camera_focuser = camera_config.get('focuser', None)
-                camera_readout = camera_config.get('readout_time', 6.0)
-
-            else:
-                # Set up a simulated camera with fully configured simulated
-                # focuser
-                camera_model = 'simulator'
-                camera_port = '/dev/camera/simulator'
-                camera_focuser = {'model': 'simulator',
-                                  'focus_port': '/dev/ttyFAKE',
-                                  'initial_position': 20000,
-                                  'autofocus_range': (40, 80),
-                                  'autofocus_step': (10, 20),
-                                  'autofocus_seconds': 0.1,
-                                  'autofocus_size': 500}
-                camera_readout = 0.5
-
-            camera_set_point = camera_config.get('set_point', None)
-            camera_filter = camera_config.get('filter_type', None)
-
-            self.logger.debug('Creating camera: {}'.format(camera_model))
-
-            try:
-                module = load_module('pocs.camera.{}'.format(camera_model))
-                self.logger.debug('Camera module: {}'.format(module))
-            except ImportError:
-                raise error.CameraNotFound(msg=camera_model)
-            else:
-                # Create the camera object
-                cam = module.Camera(name=cam_name,
-                                    model=camera_model,
-                                    port=camera_port,
-                                    set_point=camera_set_point,
-                                    filter_type=camera_filter,
-                                    focuser=camera_focuser,
-                                    readout_time=camera_readout)
-
-                is_primary = ''
-                if camera_info.get('primary', '') == cam.uid:
-                    self.primary_camera = cam
-                    is_primary = ' [Primary]'
-
-                self.logger.debug("Camera created: {} {} {}".format(
-                    cam.name, cam.uid, is_primary))
-
-                self.cameras[cam_name] = cam
-
-        distributed_cameras = kwargs.get('distributed_cameras',
-                                         camera_info.get('distributed_cameras', False))
-        if not a_simulator and distributed_cameras:
-            self._create_distributed_cameras(camera_info)
-
-        # If no camera was specified as primary use the first
-        if self.primary_camera is None:
-            camera_names = sorted(self.cameras.keys())
-            self.primary_camera = self.cameras[camera_names[0]]
-
-        if len(self.cameras) == 0:
-            raise error.CameraNotFound(
-                msg="No cameras available. Exiting.", exit=True)
-
-        self.logger.debug("Cameras created")
-
-    def _create_distributed_cameras(self, camera_info):
-        # Enable local display of remote tracebacks
-        sys.excepthook = Pyro4.util.excepthook
-
-        # Get a proxy for the name server (will raise NamingError if not found)
-        try:
-            self._name_server = Pyro4.locateNS()
-        except Pyro4.errors.NamingError() as err:
-            msg = "Couldn't connect to Pyro name server: {}".format(err)
-            self.logger.error(msg)
-        else:
-            # Find all the registered cameras
-            camera_uris = self._name_server.list(metadata_all={'POCS', 'Camera'})
-            msg = "Found {} distributed cameras on name server".format(len(camera_uris))
-            self.logger.debug(msg)
-
-            # Create the camera objects.
-            # TODO: do this in parallel because initialising cameras can take a while.
-            for cam_name, cam_uri in camera_uris.items():
-                cam = pyro.Camera(name=cam_name, uri=cam_uri)
-                is_primary = ''
-                if camera_info.get('primary', '') == cam.uid:
-                    self.primary_camera = cam
-                    is_primary = ' [Primary]'
-
-                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
-
-                self.cameras[cam_name] = cam
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """

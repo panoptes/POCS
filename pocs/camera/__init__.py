@@ -3,6 +3,8 @@ import re
 import shutil
 import subprocess
 
+import Pyro4
+
 from pocs.utils import error
 from pocs.utils import load_module
 from pocs.utils.config import load_config
@@ -38,6 +40,44 @@ def list_connected_cameras():
             ports.append(port)
 
     return ports
+
+
+def list_distributed_cameras(ns_host=None, logger=None):
+    """Detect distributed cameras.
+
+    Looks for a Pyro name server and queries it for the list of registered cameras.
+
+    Args:
+        host (str, optional): hostname or IP address of the name server host. If not given
+            will attempt to locate the name server via UDP network broadcast.
+        logger (logging.Logger, optional): logger to use for messages, if not given will
+            ise the root logger.
+
+    Returns:
+        dict: Dictionary of distributed camera name, URI pairs
+    """
+    if not logger:
+        logger = logger_module.get_root_logger()
+
+    try:
+        # Get a proxy for the name server (will raise NamingError if not found)
+        with Pyro4.locateNS(host=ns_host) as name_server:
+            # Find all the registered POCS cameras
+            camera_uris = name_server.list(metadata_all={'POCS', 'Camera'})
+            camera_uris = OrderDict(sorted(camera_uris.items(), key=lambda t: t[0]))
+            n_cameras = len(camera_uris)
+            if n_cameras > 0:
+                msg = "Found {} distributed cameras on name server".format(n_cameras)
+                logger.debug(msg)
+            else:
+                msg = "Found name server but no distributed cameras"
+                logger.warning(msg)
+    except Pyro4.errors.NamingError() as err:
+        msg = "Couldn't connect to Pyro name server: {}".format(err)
+        logger.warning(msg)
+        camera_uris = OrderedDict()
+
+    return camera_uris
 
 
 def create_cameras_from_config(config=None, logger=None, **kwargs):
@@ -175,12 +215,63 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         raise error.CameraNotFound(
             msg="No cameras available. Exiting.", exit=True)
 
+    distributed_cameras = kwargs_or_config('distributed_cameras', default=False)
+    if not a_simulator and distributed_cameras:
+        dist_cams, dist_primary = create_distributed_cameras(camera_info, logger=logger)
+        cameras.update(dist_cams)
+        if dist_primary is not None:
+            primary_camera = dist_primary
+
     # If no camera was specified as primary use the first
     if primary_camera is None:
-        primary_camera = cameras['Cam00']
+        camera_names = sorted(self.cameras.keys())
+        primary_camera = cameras[camera_names[0]]
         primary_camera.is_primary = True
 
     logger.debug("Primary camera: {}", primary_camera)
     logger.debug("{} cameras created", len(cameras))
 
     return cameras
+
+
+def create_distributed_cameras(camera_info, logger=None):
+    """Create distributed camera object(s) based on detected cameras and config
+
+    Creates a pocs.camera.pyro.Camera object for each distributed camera detected.
+
+    Args:
+        camera_info: 'cameras' section from POCS config
+        logger (logging.Logger, optional): logger to use for messages, if not given will
+            use the root logger.
+
+    Returns:
+        OrderedDict: An ordered dictionary of created camera objects, with the
+            camera name as key and camera instance as value. Returns an empty
+            OrderedDict if no distributed cameras are found.
+    """
+    if not logger:
+        logger = logger_module.get_root_logger()
+
+    # Get all distributed cameras
+    camera_uris = list_distributed_cameras(ns_host=camera_info.get(name_server_host, None),
+                                           logger=logger)
+
+    # Create the camera objects.
+    # TODO: do this in parallel because initialising cameras can take a while.
+    cameras = OrderedDict()
+    primary_camera = None
+    primary_id = camera_info.get('primary')
+    for cam_name, cam_uri in camera_uris.items():
+        cam = pyro.Camera(name=cam_name, uri=cam_uri)
+        is_primary = ''
+        if primary_id == cam.uid or primary_id == cam.name:
+            cam.is_primary = True
+            primary_camera = cam
+            is_primary = ' [Primary]'
+
+        logger.debug("Camera created: {} {}{}".format(
+            cam.name, cam.uid, is_primary))
+
+        cameras[cam_name] = cam
+
+    return cameras, primary_camera
