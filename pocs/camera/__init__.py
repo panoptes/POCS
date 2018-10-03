@@ -64,7 +64,7 @@ def list_distributed_cameras(ns_host=None, logger=None):
         with Pyro4.locateNS(host=ns_host) as name_server:
             # Find all the registered POCS cameras
             camera_uris = name_server.list(metadata_all={'POCS', 'Camera'})
-            camera_uris = OrderDict(sorted(camera_uris.items(), key=lambda t: t[0]))
+            camera_uris = OrderedDict(sorted(camera_uris.items(), key=lambda t: t[0]))
             n_cameras = len(camera_uris)
             if n_cameras > 0:
                 msg = "Found {} distributed cameras on name server".format(n_cameras)
@@ -140,87 +140,94 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     primary_camera = None
 
-    device_info = camera_info['devices']
-    for cam_num, device_config in enumerate(device_info):
-        cam_name = 'Cam{:02d}'.format(cam_num)
+    try:
+        device_info = camera_info['devices']
+    except KeyError:
+        logger.debug("No local cameras in config")
+    else:
+        for cam_num, device_config in enumerate(device_info):
+            cam_name = 'Cam{:02d}'.format(cam_num)
 
-        if not a_simulator:
-            camera_model = device_config.get('model')
+            if not a_simulator:
+                camera_model = device_config.get('model')
 
-            # Assign an auto-detected port. If none are left, skip
-            if auto_detect:
-                try:
-                    camera_port = ports.pop()
-                except IndexError:
-                    logger.warning(
-                        "No ports left for {}, skipping.".format(cam_name))
-                    continue
+                # Assign an auto-detected port. If none are left, skip
+                if auto_detect:
+                    try:
+                        camera_port = ports.pop()
+                    except IndexError:
+                        logger.warning(
+                            "No ports left for {}, skipping.".format(cam_name))
+                        continue
+                else:
+                    try:
+                        camera_port = device_config['port']
+                    except KeyError:
+                        raise error.CameraNotFound(
+                            msg="No port specified and auto_detect=False")
+
+                camera_focuser = device_config.get('focuser', None)
+                camera_readout = device_config.get('readout_time', 6.0)
+
             else:
-                try:
-                    camera_port = device_config['port']
-                except KeyError:
-                    raise error.CameraNotFound(
-                        msg="No port specified and auto_detect=False")
+                logger.debug('Using camera simulator.')
+                # Set up a simulated camera with fully configured simulated
+                # focuser
+                camera_model = 'simulator'
+                camera_port = '/dev/camera/simulator'
+                camera_focuser = {'model': 'simulator',
+                                  'focus_port': '/dev/ttyFAKE',
+                                  'initial_position': 20000,
+                                  'autofocus_range': (40, 80),
+                                  'autofocus_step': (10, 20),
+                                  'autofocus_seconds': 0.1,
+                                  'autofocus_size': 500}
+                camera_readout = 0.5
 
-            camera_focuser = device_config.get('focuser', None)
-            camera_readout = device_config.get('readout_time', 6.0)
+            camera_set_point = device_config.get('set_point', None)
+            camera_filter = device_config.get('filter_type', None)
 
-        else:
-            logger.debug('Using camera simulator.')
-            # Set up a simulated camera with fully configured simulated
-            # focuser
-            camera_model = 'simulator'
-            camera_port = '/dev/camera/simulator'
-            camera_focuser = {'model': 'simulator',
-                              'focus_port': '/dev/ttyFAKE',
-                              'initial_position': 20000,
-                              'autofocus_range': (40, 80),
-                              'autofocus_step': (10, 20),
-                              'autofocus_seconds': 0.1,
-                              'autofocus_size': 500}
-            camera_readout = 0.5
+            logger.debug('Creating camera: {}'.format(camera_model))
 
-        camera_set_point = device_config.get('set_point', None)
-        camera_filter = device_config.get('filter_type', None)
+            try:
+                module = load_module('pocs.camera.{}'.format(camera_model))
+                logger.debug('Camera module: {}'.format(module))
+            except ImportError:
+                raise error.CameraNotFound(msg=camera_model)
+            else:
+                # Create the camera object
+                cam = module.Camera(name=cam_name,
+                                    model=camera_model,
+                                    port=camera_port,
+                                    set_point=camera_set_point,
+                                    filter_type=camera_filter,
+                                    focuser=camera_focuser,
+                                    readout_time=camera_readout)
 
-        logger.debug('Creating camera: {}'.format(camera_model))
+                is_primary = ''
+                if camera_info.get('primary', '') == cam.uid:
+                    cam.is_primary = True
+                    primary_camera = cam
+                    is_primary = ' [Primary]'
 
-        try:
-            module = load_module('pocs.camera.{}'.format(camera_model))
-            logger.debug('Camera module: {}'.format(module))
-        except ImportError:
-            raise error.CameraNotFound(msg=camera_model)
-        else:
-            # Create the camera object
-            cam = module.Camera(name=cam_name,
-                                model=camera_model,
-                                port=camera_port,
-                                set_point=camera_set_point,
-                                filter_type=camera_filter,
-                                focuser=camera_focuser,
-                                readout_time=camera_readout)
+                logger.debug("Camera created: {} {}{}".format(
+                    cam.name, cam.uid, is_primary))
 
-            is_primary = ''
-            if camera_info.get('primary', '') == cam.uid:
-                cam.is_primary = True
-                primary_camera = cam
-                is_primary = ' [Primary]'
+                cameras[cam_name] = cam
 
-            logger.debug("Camera created: {} {}{}".format(
-                cam.name, cam.uid, is_primary))
-
-            cameras[cam_name] = cam
-
-    if len(cameras) == 0:
-        raise error.CameraNotFound(
-            msg="No cameras available. Exiting.", exit=True)
-
-    distributed_cameras = kwargs_or_config('distributed_cameras', default=False)
+    # Distributed camera creation
+    distributed_cameras = kwargs.get('distributed_cameras',
+                                     camera_info.get('distributed_cameras', False))
     if not a_simulator and distributed_cameras:
+        logger.debug("Creating distributed cameras")
         dist_cams, dist_primary = create_distributed_cameras(camera_info, logger=logger)
         cameras.update(dist_cams)
         if dist_primary is not None:
             primary_camera = dist_primary
+
+    if len(cameras) == 0:
+        raise error.CameraNotFound(
+            msg="No cameras available. Exiting.", exit=True)
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
@@ -253,7 +260,7 @@ def create_distributed_cameras(camera_info, logger=None):
         logger = logger_module.get_root_logger()
 
     # Get all distributed cameras
-    camera_uris = list_distributed_cameras(ns_host=camera_info.get(name_server_host, None),
+    camera_uris = list_distributed_cameras(ns_host=camera_info.get('name_server_host', None),
                                            logger=logger)
 
     # Create the camera objects.
@@ -262,6 +269,7 @@ def create_distributed_cameras(camera_info, logger=None):
     primary_camera = None
     primary_id = camera_info.get('primary')
     for cam_name, cam_uri in camera_uris.items():
+        logger.debug('Creating camera: {}'.format(cam_name))
         cam = pyro.Camera(name=cam_name, uri=cam_uri)
         is_primary = ''
         if primary_id == cam.uid or primary_id == cam.name:

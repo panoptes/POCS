@@ -127,6 +127,22 @@ def test_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
+def test_pyro_camera(config, camera_server):
+    conf = config.copy()
+    conf['cameras'] = {'distributed_cameras': True}
+    simulator = hardware.get_all_names(without=['camera'])
+    conf['simulator'] = simulator
+    cameras = create_cameras_from_config(conf)
+    obs = Observatory(cameras=cameras,
+                      config=conf,
+                      simulator=simulator,
+                      ignore_local_config=True)
+    assert len(obs.cameras) == 1
+    assert 'camera.simulator.001' in obs.cameras
+    assert isinstance(obs.cameras['camera.simulator.001'], PyroCamera)
+    assert obs.cameras['camera.simulator.001'].is_connected
+
+
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     status = observatory.status()
@@ -157,21 +173,6 @@ def test_default_config(observatory):
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
-
-
-def test_pyro_camera(config, camera_server):
-    conf = config.copy()
-    conf['cameras'] = {'distributed_cameras': True}
-    cameras = create_cameras_from_config(conf)
-    simulator = hardware.get_all_names(without=['camera'])
-    obs = Observatory(cameras=cameras,
-                      config=conf,
-                      simulator=simulator,
-                      ignore_local_config=True)
-    assert len(obs.cameras) == 1
-    assert 'camera.simulator.001' in obs.cameras
-    assert isinstance(obs.cameras['camera.simulator.001'], PyroCamera)
-    assert obs.cameras['camera.simulator.001'].is_connected
 
 
 def test_is_dark(observatory):
