@@ -14,7 +14,6 @@
 import os
 import sys
 from recommonmark.parser import CommonMarkParser
-from mock import Mock as MagicMock
 
 # The docs are built on the ReadTheDocs website in a virtualenv
 # the we don't necessarily control. The below line is used to
@@ -23,15 +22,6 @@ sys.path.insert(0, os.path.abspath('../'))
 
 from pocs.version import __version__
 
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.linalg', 'scipy.signal']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # -- Project information -----------------------------------------------------
 
