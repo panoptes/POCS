@@ -30,7 +30,6 @@ including the science case and resources for interested individuals, see the
 
    panoptes-overview
    pocs-overview
-   modules
 
 
 Project Links
