@@ -510,7 +510,7 @@ class POCS(PanStateMachine, PanBase):
                 now = current_time()
 
             if timer.expired():
-                raise error.Timeout
+                raise error.Timeout("Timemout waiting for {} event".format(event_type))
 
             # Sleep for a little bit.
             time.sleep(sleep_delay)

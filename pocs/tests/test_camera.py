@@ -1,5 +1,12 @@
 import pytest
 
+import os
+import time
+import glob
+from ctypes.util import find_library
+
+import astropy.units as u
+
 from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
@@ -9,14 +16,8 @@ from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
+from pocs.utils.images import fits as fits_utils
 
-import glob
-import os
-import time
-from ctypes.util import find_library
-
-import astropy.units as u
-import astropy.io.fits as fits
 
 params = [SimCamera, SBIGCamera, FLICamera]
 ids = ['simulator', 'sbig', 'fli']
@@ -230,7 +231,7 @@ def test_exposure(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -245,7 +246,7 @@ def test_exposure_blocking(camera, tmpdir):
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -259,7 +260,7 @@ def test_exposure_dark(camera, tmpdir):
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
 
@@ -280,8 +281,8 @@ def test_exposure_collision(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path_1)
     assert os.path.exists(fits_path_2)
-    assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
-    assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+    assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits_utils.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
 def test_exposure_no_filename(camera):
