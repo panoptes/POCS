@@ -65,7 +65,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):  # pragma: no cover
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):
     """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
@@ -405,8 +405,11 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
             to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
     """
-    assert os.path.exists(dir_name)
-    assert re.match(r'PAN\d\d\d', pan_id) is not None
+    if os.path.exists(dir_name) is False:
+        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+
+    if re.match(r'PAN\d\d\d', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
 
     verbose = kwargs.get('verbose', False)
 
