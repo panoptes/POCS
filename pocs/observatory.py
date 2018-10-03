@@ -1,7 +1,8 @@
-import sys
 import os
+
 from collections import OrderedDict
 from datetime import datetime
+
 from glob import glob
 
 from astroplan import Observer
