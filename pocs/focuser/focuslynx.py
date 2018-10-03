@@ -294,10 +294,6 @@ class Focuser(AbstractFocuser):
         Utility function that handles the common aspects of sending commands and
         parsing responses.
         """
-        if hasattr(self, '_focuser_config'):
-            name = self.uid
-        else:
-            name = self.port
         # Make sure we start with a clean slate
         self._serial_port.reset_output_buffer()
         self._serial_port.reset_input_buffer()
