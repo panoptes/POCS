@@ -72,7 +72,7 @@ def list_distributed_cameras(ns_host=None, logger=None):
             else:
                 msg = "Found name server but no distributed cameras"
                 logger.warning(msg)
-    except Pyro4.errors.NamingError() as err:
+    except Pyro4.errors.NamingError as err:
         msg = "Couldn't connect to Pyro name server: {}".format(err)
         logger.warning(msg)
         camera_uris = OrderedDict()

@@ -1,3 +1,5 @@
+# Named after an African nocturnal insectivore because for mysterious reasons these
+# tests were failing if run towards the end of the test suite.
 import logging
 import os
 

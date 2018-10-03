@@ -11,6 +11,7 @@ import subprocess
 import time
 from warnings import warn
 import pytest
+import Pyro4
 
 import pocs.base
 from pocs.utils.config import load_config
@@ -93,8 +94,17 @@ def name_server(request):
     ns_proc = subprocess.Popen(ns_cmds)
     request.addfinalizer(lambda: end_process(ns_proc))
     # Give name server time to start up
-    time.sleep(5)
-    return ns_proc
+    waited = 0
+    while waited <= 10:
+        try:
+            Pyro4.locateNS(host='localhost')
+        except Pyro4.errors.NamingError:
+            time.sleep(1)
+            waited += 1
+        else:
+            return ns_proc
+
+    raise TimeoutError("Timeout waiting for name server to start")
 
 
 @pytest.fixture(scope='session')
