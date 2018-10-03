@@ -56,8 +56,6 @@ class Observation(PanBase):
 
         self.field = field
 
-        self.current_exp = 0
-
         self.exp_time = exp_time
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
@@ -128,6 +126,15 @@ class Observation(PanBase):
             return self._directory
 
     @property
+    def current_exp_num(self):
+        """ Return the current number of exposures.
+
+        Returns:
+            int: The size of `self.exposure_list`.
+        """
+        return len(self.exposure_list)
+
+    @property
     def first_exposure(self):
         """ Return the latest exposure information
 
@@ -157,10 +164,10 @@ class Observation(PanBase):
 ##################################################################################################
 
     def reset(self):
-        """Resets the exposure values for the observation """
+        """Resets the exposure information for the observation """
         self.logger.debug("Resetting observation {}".format(self))
 
-        self.current_exp = 0
+        self.exposure_list = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
 
@@ -179,7 +186,7 @@ class Observation(PanBase):
             equinox = 'J2000'
 
         status = {
-            'current_exp': self.current_exp,
+            'current_exp': self.current_exp_num,
             'dec_mnt': self.field.coord.dec.value,
             'equinox': equinox,
             'exp_set_size': self.exp_set_size,
