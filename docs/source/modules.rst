@@ -5,3 +5,4 @@ pocs
    :maxdepth: 4
 
    pocs
+   peas
