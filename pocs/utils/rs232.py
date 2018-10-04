@@ -6,7 +6,7 @@ import serial
 from serial.tools.list_ports import comports as get_comports
 import time
 
-from pocs.base import PanBase
+from pocs.utils.logger import get_root_logger
 from pocs.utils.error import BadSerialConnection
 
 
@@ -56,7 +56,9 @@ class SerialData(PanBase):
                  timeout=2.0,
                  open_delay=0.0,
                  retry_limit=5,
-                 retry_delay=0.5):
+                 retry_delay=0.5,
+                 logger=None,
+                 ):
         """Create a SerialData instance and attempt to open a connection.
 
         The device need not exist at the time this is called, in which case is_connected will
@@ -73,12 +75,15 @@ class SerialData(PanBase):
             open_delay: Seconds to wait after opening the port.
             retry_limit: Number of times to try readline() calls in read().
             retry_delay: Delay between readline() calls in read().
+            logger (`logging.logger` or None, optional): A logger instance. If left as None
+                then `pocs.utils.logger.get_root_logger` will be called.
 
         Raises:
             ValueError: If the serial parameters are invalid (e.g. a negative baudrate).
 
         """
-        PanBase.__init__(self)
+        if not logger:
+            logger = get_root_logger()
 
         if not port:
             raise ValueError('Must specify port for SerialData')
