@@ -307,7 +307,7 @@ def test_observation(camera, images_dir):
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exp_time=1.5 * u.second)
-    observation.seq_time = 'seq_time'
+    observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
     observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
