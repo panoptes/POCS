@@ -1,0 +1,12 @@
+# .readthedocs.yml
+build:
+  image: latest
+
+formats:
+  - htmlzip
+
+requirements_file: docs/requirements.txt
+
+python:
+  version: 3.6
+  setup_py_install: true

@@ -14,6 +14,7 @@ Subpackages
     pocs.sensors
     pocs.serial_handlers
     pocs.state
+    pocs.tests
     pocs.utils
 
 Submodules

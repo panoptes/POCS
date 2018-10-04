@@ -259,6 +259,7 @@ class AbstractCamera(PanBase):
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
         file_path = self._process_fits(file_path, info)
+        self.logger.debug("Finished processing FITS.")
         try:
             info['exp_time'] = info['exp_time'].value
         except Exception:

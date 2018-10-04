@@ -1,6 +1,7 @@
 import os
 import pytest
 
+import time
 from astropy import units as u
 from astropy.time import Time
 
@@ -222,7 +223,7 @@ def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
 
-    time = Time('2016-08-13 10:00:00')
+    t0 = Time('2016-08-13 10:00:00')
     observatory.scheduler.fields_list = [
         {'name': 'Kepler 1100',
          'priority': '100',
@@ -230,7 +231,7 @@ def test_observe(observatory):
          'exp_time': 10,
          },
     ]
-    observatory.get_observation(time=time)
+    observatory.get_observation(time=t0)
     assert observatory.current_observation is not None
 
     assert len(observatory.scheduler.observed_list) == 1
@@ -241,6 +242,48 @@ def test_observe(observatory):
 
     observatory.cleanup_observations()
     assert len(observatory.scheduler.observed_list) == 0
+
+
+def test_cleanup_fails(observatory):
+    t0 = Time('2016-08-13 10:00:00')
+    fields_list = [
+        {'name': 'Kepler 1100',
+         'priority': '100',
+         'position': '19h27m29.10s +44d05m15.00s',
+         'exp_time': 10,
+         },
+    ]
+    observatory.scheduler.fields_list = fields_list
+    observatory.get_observation(time=t0)
+    camera_events = observatory.observe()
+
+    while not all([event.is_set() for name, event in camera_events.items()]):
+        time.sleep(1)
+
+    observatory.cleanup_observations()
+    del observatory.config['panoptes_network']
+    observatory.cleanup_observations()
+
+    observatory.scheduler.fields_list = fields_list
+    observatory.get_observation(time=t0)
+
+    observatory.cleanup_observations()
+    del observatory.config['observations']['make_timelapse']
+    observatory.cleanup_observations()
+
+    observatory.scheduler.fields_list = fields_list
+    observatory.get_observation(time=t0)
+
+    observatory.cleanup_observations()
+    del observatory.config['observations']['keep_jpgs']
+    observatory.cleanup_observations()
+
+    observatory.scheduler.fields_list = fields_list
+    observatory.get_observation(time=t0)
+
+    observatory.cleanup_observations()
+    del observatory.config['pan_id']
+    observatory.cleanup_observations()
 
 
 def test_autofocus_disconnected(observatory):

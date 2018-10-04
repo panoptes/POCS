@@ -372,8 +372,10 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(
-                "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
+                              is_safe,
+                              age,
+                              timestamp)
 
         except (TypeError, KeyError) as e:
             self.logger.warning("No record found in DB: {}", e)
@@ -504,13 +506,12 @@ class POCS(PanStateMachine, PanBase):
                 now = current_time()
 
             if now >= next_status_time:
-                self.logger.debug('Inside waiting for events, checking status')
                 self.status()
                 next_status_time += status_interval
                 now = current_time()
 
             if timer.expired():
-                raise error.Timeout
+                raise error.Timeout("Timemout waiting for {} event".format(event_type))
 
             # Sleep for a little bit.
             time.sleep(sleep_delay)
