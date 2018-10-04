@@ -16,6 +16,11 @@ def test_missing_port():
         rs232.SerialData()
 
 
+def test_custom_logger(fake_logger):
+    s0 = rs232.SerialData(logger=fake_logger)
+    s0.debug('Testing logger')
+
+
 def test_non_existent_device():
     """Doesn't complain if it can't find the device."""
     port = '/dev/tty12345698765'
