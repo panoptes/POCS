@@ -39,7 +39,7 @@ class Camera(AbstractCamera):
                 self.ccd_cooling_enabled = True
             else:
                 self.ccd_cooling_enabled = False
-            self.logger.info('\t\t\t {} initialised'.format(self))
+            self.logger.info('{} initialised'.format(self))
 
 # Properties
 
