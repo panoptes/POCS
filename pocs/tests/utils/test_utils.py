@@ -24,6 +24,11 @@ def test_error():
 
     assert str(e_info.value) == 'PanError'
 
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(msg="Testing exit", exit=True)
+    assert e_info.type == SystemExit
+    assert str(e_info.value) == 'PanError: Testing exit'
+
 
 def test_bad_load_module():
     with pytest.raises(error.NotFound):
