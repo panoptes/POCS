@@ -1,10 +1,10 @@
 import socket
 
-from pocs.base import PanBase
 from pocs.utils import error
+from pocs.utils.logger import get_root_logger
 
 
-class TheSkyX(PanBase):
+class TheSkyX(object):
 
     """ A socket connection for communicating with TheSkyX
 
@@ -12,7 +12,8 @@ class TheSkyX(PanBase):
     """
 
     def __init__(self, host='localhost', port=3040, connect=True, *args, **kwargs):
-        super(TheSkyX, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self.logger = get_root_logger()
 
         self._host = host
         self._port = port
@@ -35,7 +36,7 @@ class TheSkyX(PanBase):
             try:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket.connect((self._host, self._port))
-            except ConnectionRefusedError:
+            except socket.ConnectionRefusedError:
                 self.logger.warning('Cannot create connection to TheSkyX')
             else:
                 self._is_connected = True
@@ -55,7 +56,7 @@ class TheSkyX(PanBase):
             err = None
 
             try:
-                response = self.socket.recv(4096).decode()
+                response = self.socket.recv(2048).decode()
                 if '|' in response:
                     response, err = response.split('|')
 
