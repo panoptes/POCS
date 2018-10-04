@@ -39,7 +39,7 @@ def get_serial_port_info():
     return sorted(get_comports(), key=operator.attrgetter('device'))
 
 
-class SerialData(PanBase):
+class SerialData(object):
     """SerialData wraps a PySerial instance for reading from and writing to a serial device.
 
     Because POCS is intended to be very long running, and hardware may be turned off when unused
@@ -84,6 +84,7 @@ class SerialData(PanBase):
         """
         if not logger:
             logger = get_root_logger()
+        self.logger = logger
 
         if not port:
             raise ValueError('Must specify port for SerialData')
