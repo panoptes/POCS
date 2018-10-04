@@ -23,6 +23,7 @@ def config():
     if not _one_time_config:
         _one_time_config = load_config(ignore_local=True, simulator=['all'])
         _one_time_config['db']['name'] = 'panoptes_testing'
+        _one_time_config['scheduler']['fields_file'] = 'simulator.yaml'
 
     return copy.deepcopy(_one_time_config)
 
