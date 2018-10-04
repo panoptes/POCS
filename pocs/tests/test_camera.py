@@ -136,7 +136,7 @@ def test_sim_readout_time():
     assert sim_camera.readout_time == 2.0
 
 
-# Hardware independent tests for SBIG camera.
+# Hardware independent tests for SBIG camera
 
 
 def test_sbig_driver_bad_path():
@@ -315,11 +315,11 @@ def test_observation(camera, images_dir):
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exp_time=1.5 * u.second)
-    observation.seq_time = 'seq_time'
+    observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
     observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
-                                       camera.uid, 'seq_time', '*.fits*')
+                                       camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -373,6 +373,7 @@ def test_autofocus_no_size(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     thumbnail_size = camera.focuser.autofocus_size
     camera.focuser.autofocus_size = None
     with pytest.raises(ValueError):
@@ -386,6 +387,7 @@ def test_autofocus_no_seconds(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     seconds = camera.focuser.autofocus_seconds
     camera.focuser.autofocus_seconds = None
     with pytest.raises(ValueError):
@@ -399,6 +401,7 @@ def test_autofocus_no_step(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     autofocus_step = camera.focuser.autofocus_step
     camera.focuser.autofocus_step = None
     with pytest.raises(ValueError):
@@ -412,6 +415,7 @@ def test_autofocus_no_range(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     autofocus_range = camera.focuser.autofocus_range
     camera.focuser.autofocus_range = None
     with pytest.raises(ValueError):
@@ -425,6 +429,7 @@ def test_autofocus_camera_disconnected(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     camera._connected = False
     with pytest.raises(AssertionError):
         camera.autofocus()
@@ -437,6 +442,7 @@ def test_autofocus_focuser_disconnected(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     camera.focuser._connected = False
     with pytest.raises(AssertionError):
         camera.autofocus()
@@ -449,6 +455,7 @@ def test_autofocus_no_focuser(camera):
         initial_focus = camera.focuser.position
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
+    initial_focus = camera.focuser.position
     focuser = camera.focuser
     camera.focuser = None
     with pytest.raises(AttributeError):
