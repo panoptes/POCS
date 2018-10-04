@@ -1,4 +1,5 @@
 import sys
+from contextlib import suppress
 
 from pocs.utils.logger import get_root_logger
 
@@ -25,7 +26,8 @@ class PanError(Exception):
     def __str__(self):
         error_str = 'PanError'
 
-        if hasattr(self, 'msg'):
+        # Add the custom message if we have one
+        with suppress(AttributeError):
             error_str += ': {}'.format(self.msg)
 
         return error_str
