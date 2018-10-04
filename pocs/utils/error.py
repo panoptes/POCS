@@ -1,21 +1,16 @@
 import sys
 
-from astropy.utils.exceptions import AstropyWarning
 
-from pocs.base import PanBase
-
-
-class PanError(AstropyWarning, PanBase):
+class PanError(Exception):
 
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
-        PanBase.__init__(self)
         if msg:
             if exit:
                 self.exit_program(msg)
             else:
-                self.logger.error('{}: {}'.format(self.__class__.__name__, msg))
+                print('{}: {}'.format(self.__class__.__name__, msg))
                 self.msg = msg
 
     def exit_program(self, msg='No reason specified'):
