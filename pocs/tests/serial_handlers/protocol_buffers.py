@@ -44,6 +44,7 @@ def GetWBufferValue():
 
 class BuffersSerial(NoOpSerial):
     def __init__(self, *args, **kwargs):
+        ResetBuffers(b'')
         super().__init__(*args, **kwargs)
 
     @property

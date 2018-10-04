@@ -47,6 +47,37 @@ class SerialData(object):
     serial device. Note that for most devices, is_connected will return true if the device is
     turned off/unplugged after a connection is opened; the code will only discover there is a
     problem when we attempt to interact with the device.
+
+    .. doctest::
+
+        >>> import serial
+        # Register our serial simulators
+        >>> serial.protocol_handler_packages.append('pocs.tests.serial_handlers')
+        # Create a fake device
+        >>> from pocs.tests.serial_handlers.protocol_buffers import SetRBufferValue as WriteFakeDevice
+        >>> from pocs.tests.serial_handlers.protocol_buffers import GetWBuffer as ReadFakeDevice
+
+        # Import our serial utils
+        >>> from pocs.utils.rs232 import SerialData
+
+        # Connect to our fake buffered device
+        >>> device_listener = SerialData(port='buffers://')
+        >>> device_listener.is_connected
+        True
+
+        >>> device.port
+        buffers://
+
+        # Device sends event
+        >>> WriteFakeDevice(b'emit event')
+
+        # Listen for event
+        >>> device_listener.read()
+        emit event
+
+        >>> device_listener.write(b'ack event')
+        >>> ReadFakeDevice()
+        ack event
     """
 
     def __init__(self,
