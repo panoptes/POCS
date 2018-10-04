@@ -36,7 +36,7 @@ class TheSkyX(object):
             try:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.socket.connect((self._host, self._port))
-            except socket.ConnectionRefusedError:
+            except ConnectionRefusedError:
                 self.logger.warning('Cannot create connection to TheSkyX')
             else:
                 self._is_connected = True
