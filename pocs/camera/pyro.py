@@ -375,11 +375,9 @@ class CameraServer(object):
         self.host = self.config.get('host')
         self.port = self.config.get('port')
         self.user = os.getenv('PANUSER', 'panoptes')
-        self.logger = get_root_logger(self.name)
 
         camera_config = self.config.get('camera')
         camera_config.update({'name': self.name,
-                              'logger': self.logger,
                               'config': self.config})
         module = load_module('pocs.camera.{}'.format(camera_config['model']))
         self._camera = module.Camera(**camera_config)
