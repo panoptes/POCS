@@ -17,12 +17,12 @@ def test_error():
     with pytest.raises(Exception) as e_info:
         raise error.PanError(msg='Testing message')
 
-    assert 'PanError: Testing message' == str(e_info.value)
+    assert str(e_info.value) == 'PanError: Testing message'
 
     with pytest.raises(Exception) as e_info:
         raise error.PanError()
 
-    assert 'Testing message' not in str(e_info.value)
+    assert str(e_info.value) == 'PanError'
 
 
 def test_bad_load_module():
