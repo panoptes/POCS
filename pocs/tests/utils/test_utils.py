@@ -9,12 +9,24 @@ from pocs.utils import current_time
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import CountdownTimer
-from pocs.utils.error import NotFound
+from pocs.utils import error
 from pocs.camera import list_connected_cameras
 
 
+def test_error():
+    with pytest.raises(Exception) as e_info:
+        raise error.PanError(msg='Testing message')
+
+    assert 'PanError: Testing message' == str(e_info.value)
+
+    with pytest.raises(Exception) as e_info:
+        raise error.PanError()
+
+    assert 'Testing message' not in str(e_info.value)
+
+
 def test_bad_load_module():
-    with pytest.raises(NotFound):
+    with pytest.raises(error.NotFound):
         load_module('FOOBAR')
 
 

@@ -22,6 +22,14 @@ class PanError(Exception):
         print("TERMINATING: {}".format(msg))
         sys.exit(1)
 
+    def __str__(self):
+        error_str = 'PanError'
+
+        if hasattr(self, 'msg'):
+            error_str += ': {}'.format(self.msg)
+
+        return error_str
+
 
 class InvalidSystemCommand(PanError):
 
