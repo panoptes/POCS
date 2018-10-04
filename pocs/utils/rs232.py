@@ -30,7 +30,7 @@ def _parse_json(line, logger, min_error_pos=0):
 
 # Note: get_serial_port_info is replaced by tests to override the normal
 # behavior, so don't change the name without fixing the tests.
-def get_serial_port_info():
+def get_serial_port_info():  # pragma: no cover
     """Returns the serial ports defined on the system.
 
     Returns: a list of PySerial's ListPortInfo objects. See:
