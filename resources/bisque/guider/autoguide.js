@@ -1,11 +1,4 @@
 /* Java Script */
-Out = JSON.stringify({
-        "success": true,
-        "msg": sky6Dome.slitState(),
-});    (huntsman-pocs-env)
-[/var/huntsman/POCS]
-(08:35:34)-(huntsman)-(540)-> cat resources/bisque/guider/autoguide.js 
-/* Java Script */
 var msg, success;
 if (ccdsoftCamera.Connect()) {
    msg = "DFError: Not connected";
