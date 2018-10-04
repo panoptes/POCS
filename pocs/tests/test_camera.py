@@ -311,7 +311,7 @@ def test_observation(camera, images_dir):
     camera.take_observation(observation, headers={})
     time.sleep(7)
     observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
-                                       camera.uid, 'seq_time', '*.fits*')
+                                       camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
 
 
