@@ -1,5 +1,9 @@
 import sys
 
+from pocs.utils.logger import get_root_logger
+
+logger = get_root_logger()
+
 
 class PanError(Exception):
 
@@ -10,7 +14,7 @@ class PanError(Exception):
             if exit:
                 self.exit_program(msg)
             else:
-                print('{}: {}'.format(self.__class__.__name__, msg))
+                logger.error('{}: {}'.format(self.__class__.__name__, msg))
                 self.msg = msg
 
     def exit_program(self, msg='No reason specified'):
