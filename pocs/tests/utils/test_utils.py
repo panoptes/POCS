@@ -13,7 +13,7 @@ from pocs.utils import error
 from pocs.camera import list_connected_cameras
 
 
-def test_error():
+def test_error(capsys):
     with pytest.raises(Exception) as e_info:
         raise error.PanError(msg='Testing message')
 
@@ -27,7 +27,12 @@ def test_error():
     with pytest.raises(SystemExit) as e_info:
         raise error.PanError(msg="Testing exit", exit=True)
     assert e_info.type == SystemExit
-    assert str(e_info.value) == 'PanError: Testing exit'
+    assert capsys.readouterr().out.strip() == 'TERMINATING: Testing exit'
+
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(exit=True)
+    assert e_info.type == SystemExit
+    assert capsys.readouterr().out.strip() == 'TERMINATING: No reason specified'
 
 
 def test_bad_load_module():

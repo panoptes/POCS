@@ -1,5 +1,4 @@
 import sys
-from contextlib import suppress
 
 from pocs.utils.logger import get_root_logger
 
@@ -12,14 +11,17 @@ class PanError(Exception):
 
     def __init__(self, msg=None, exit=False):
         if msg:
-            if exit:
-                self.exit_program(msg)
-            else:
-                logger.error('{}: {}'.format(self.__class__.__name__, msg))
-                self.msg = msg
+            logger.error('{}: {}'.format(self.__class__.__name__, msg))
 
-    def exit_program(self, msg='No reason specified'):
+        if exit:
+            self.exit_program(msg)
+
+        self.msg = msg
+
+    def exit_program(self, msg=None):
         """ Kills running program """
+        if not msg:
+            msg = 'No reason specified'
         print("TERMINATING: {}".format(msg))
         sys.exit(1)
 
@@ -27,7 +29,7 @@ class PanError(Exception):
         error_str = 'PanError'
 
         # Add the custom message if we have one
-        with suppress(AttributeError):
+        if self.msg:
             error_str += ': {}'.format(self.msg)
 
         return error_str
