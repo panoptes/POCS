@@ -455,7 +455,7 @@ class Focuser(AbstractFocuser):
             self.logger.error("{} got '{}', expected 'DONE:LA'!".format(self, response))
 
     def _move_inf(self):
-        response = self._send_command('mi', response_length=1).rstrip()
+        response = self._send_command('mi', response_length=1)[0].rstrip()
         if response[:4] != 'DONE':
             self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
         else:
