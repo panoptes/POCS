@@ -7,7 +7,7 @@ logger:
         datefmt: '%H:%M:%S'
       detail:
         style: '{'
-        format: '{levelname:.1s}{asctime}.{msecs:03.0f} {filename:>25s}:{lineno:03d} {message}'
+        format: '{levelname:.1s}{asctime}.{msecs:03.0f} {filename:>25s}:{lineno:03d}] {message}'
         datefmt: '%m%d %H:%M:%S'
     handlers:
       all:
