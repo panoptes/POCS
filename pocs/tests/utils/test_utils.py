@@ -14,12 +14,12 @@ from pocs.camera import list_connected_cameras
 
 
 def test_error(capsys):
-    with pytest.raises(Exception) as e_info:
+    with pytest.raises(error.PanError) as e_info:
         raise error.PanError(msg='Testing message')
 
     assert str(e_info.value) == 'PanError: Testing message'
 
-    with pytest.raises(Exception) as e_info:
+    with pytest.raises(error.PanError) as e_info:
         raise error.PanError()
 
     assert str(e_info.value) == 'PanError'

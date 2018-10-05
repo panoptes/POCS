@@ -10,27 +10,26 @@ class PanError(Exception):
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
-        if msg:
-            logger.error('{}: {}'.format(self.__class__.__name__, msg))
+        self.msg = msg
+
+        if self.msg:
+            logger.error(str(self))
 
         if exit:
             self.exit_program(msg)
 
-        self.msg = msg
-
     def exit_program(self, msg=None):
         """ Kills running program """
         if not msg:
-            msg = 'No reason specified'
-        print("TERMINATING: {}".format(msg))
+            self.msg = 'No reason specified'
+
+        print("TERMINATING: {}".format(self.msg))
         sys.exit(1)
 
     def __str__(self):
-        error_str = 'PanError'
-
-        # Add the custom message if we have one
+        error_str = str(self.__class__.__name__)
         if self.msg:
-            error_str += ': {}'.format(self.msg)
+            error_str += ': ' + self.msg
 
         return error_str
 
