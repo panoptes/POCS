@@ -28,5 +28,4 @@ def on_enter(event_data):
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
         pocs.logger.debug('Finished with observing, going to analyze')
-
         pocs.next_state = 'analyzing'
