@@ -7,8 +7,7 @@ logger:
         datefmt: '%H:%M:%S'
       detail:
         style: '{'
-        # See FilenameLineFilter in logger.py for fileline description
-        format: '{levelname:.1s}{asctime}.{msecs:03.0f} {fileline:20s} {message}'
+        format: '{levelname:.1s}{asctime}.{msecs:03.0f} {filename} {lineno} {message}'
         datefmt: '%m%d %H:%M:%S'
     handlers:
       all:
