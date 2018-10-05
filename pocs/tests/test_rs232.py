@@ -58,7 +58,7 @@ def test_detect_bogus_scheme(handler):
 
 def test_custom_logger(handler, fake_logger):
     s0 = rs232.SerialData(port='no_op://', logger=fake_logger)
-    s0.debug('Testing logger')
+    s0.logger.debug('Testing logger')
 
 
 def test_basic_no_op(handler):
