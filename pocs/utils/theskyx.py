@@ -12,7 +12,6 @@ class TheSkyX(object):
     """
 
     def __init__(self, host='localhost', port=3040, connect=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.logger = get_root_logger()
 
         self._host = host
