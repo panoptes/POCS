@@ -162,11 +162,12 @@ class Camera(AbstractCamera):
             seconds = seconds.value
         seconds = float(seconds)
 
+
+        if isinstance(timeout, u.Quantity):
+            timeout = timeout.to(u.second)
+            timeout = timeout.value
         if timeout is not None:
-            if isinstance(timeout, u.Quantity):
-                timeout = timeout.to(u.second)
-                timeout = timeout.value
-        timeout = float(timeout)
+            timeout = float(timeout)
 
         dir_name, base_name = os.path.split(filename)
         # Make sure dir_name has one and only one trailing slash, otherwise rsync may fail
@@ -287,10 +288,9 @@ class Camera(AbstractCamera):
         if make_plots is not None:
             make_plots = bool(make_plots)
 
-        if timeout is not None:
-            if isinstance(timeout, u.Quantity):
-                timeout = timeout.to(u.second)
-                timeout = timeout.value
+        if isinstance(timeout, u.Quantity):
+            timeout = timeout.to(u.second)
+            timeout = timeout.value
         if timeout is not None:
             timeout = float(timeout)
 
