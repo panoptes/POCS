@@ -11,6 +11,11 @@ from pocs.tests.serial_handlers import protocol_buffers
 from pocs.tests.serial_handlers import protocol_hooked
 
 
+def test_port_discovery():
+    ports = rs232.get_serial_port_info()
+    assert isinstance(ports, list)
+
+
 def test_missing_port():
     with pytest.raises(ValueError):
         rs232.SerialData()
