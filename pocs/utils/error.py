@@ -1,27 +1,37 @@
 import sys
 
-from astropy.utils.exceptions import AstropyWarning
+from pocs.utils.logger import get_root_logger
 
-from pocs.base import PanBase
+logger = get_root_logger()
 
 
-class PanError(AstropyWarning, PanBase):
+class PanError(Exception):
 
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
-        PanBase.__init__(self)
-        if msg:
-            if exit:
-                self.exit_program(msg)
-            else:
-                self.logger.error('{}: {}'.format(self.__class__.__name__, msg))
-                self.msg = msg
+        self.msg = msg
 
-    def exit_program(self, msg='No reason specified'):
+        if self.msg:
+            logger.error(str(self))
+
+        if exit:
+            self.exit_program(self.msg)
+
+    def exit_program(self, msg=None):
         """ Kills running program """
-        print("TERMINATING: {}".format(msg))
+        if not msg:
+            self.msg = 'No reason specified'
+
+        print("TERMINATING: {}".format(self.msg))
         sys.exit(1)
+
+    def __str__(self):
+        error_str = str(self.__class__.__name__)
+        if self.msg:
+            error_str += ': {}'.format(self.msg)
+
+        return error_str
 
 
 class InvalidSystemCommand(PanError):
@@ -99,7 +109,7 @@ class MountNotFound(NotFound):
     """ Mount cannot be import """
 
     def __init__(self, msg='Mount Not Found'):
-        self.exit_program(msg=msg)
+        super().__init__(msg, exit=True)
 
 
 class CameraNotFound(NotFound):
