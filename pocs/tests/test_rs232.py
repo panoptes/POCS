@@ -16,11 +16,6 @@ def test_missing_port():
         rs232.SerialData()
 
 
-def test_custom_logger(fake_logger):
-    s0 = rs232.SerialData(logger=fake_logger)
-    s0.debug('Testing logger')
-
-
 def test_non_existent_device():
     """Doesn't complain if it can't find the device."""
     port = '/dev/tty12345698765'
@@ -59,6 +54,11 @@ def test_detect_bogus_scheme(handler):
         # a string that can't be a module name.
         rs232.SerialData(port='# bogus #://')
     assert '# bogus #' in repr(excinfo.value)
+
+
+def test_custom_logger(handler, fake_logger):
+    s0 = rs232.SerialData(port='no_op://', logger=fake_logger)
+    s0.debug('Testing logger')
 
 
 def test_basic_no_op(handler):
