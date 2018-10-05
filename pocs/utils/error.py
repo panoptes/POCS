@@ -29,7 +29,7 @@ class PanError(Exception):
     def __str__(self):
         error_str = str(self.__class__.__name__)
         if self.msg:
-            error_str += ': ' + self.msg
+            error_str += ': {}'.format(self.msg)
 
         return error_str
 
