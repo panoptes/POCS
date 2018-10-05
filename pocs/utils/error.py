@@ -16,7 +16,7 @@ class PanError(Exception):
             logger.error(str(self))
 
         if exit:
-            self.exit_program(msg)
+            self.exit_program(self.msg)
 
     def exit_program(self, msg=None):
         """ Kills running program """
@@ -109,7 +109,7 @@ class MountNotFound(NotFound):
     """ Mount cannot be import """
 
     def __init__(self, msg='Mount Not Found'):
-        self.exit_program(msg=msg)
+        super().__init__(msg, exit=True)
 
 
 class CameraNotFound(NotFound):
