@@ -257,25 +257,56 @@ class Camera(AbstractCamera):
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second)
             seconds = seconds.value
-        seconds = float(seconds)
+        if seconds is not None:
+            seconds = float(seconds)
+
+        if focus_range is not None:
+            focus_range = (int(limit) for limit in focus_range)
+
+        if focus_step is not None:
+            focus_step = (int(step) for step in focus_step)
+
+        if keep_files is not None:
+            keep_files = bool(keep_files)
+
+        if take_dark is not None:
+            take_dark = bool(take_dark)
+
+        if thumbnail_size is not None:
+            thumbnail_size = int(thumbnail_size)
+
+        merit_function = str(merit_function)
+        merit_function_kwargs = dict(merit_function_kwargs)
+
+        if mask_dilations is not None:
+            mask_dilations = int(mask_dilations)
+
+        if coarse is not None:
+            coarse = bool(coarse)
+
+        if make_plots is not None:
+            make_plots = bool(make_plots)
 
         if timeout is not None:
             if isinstance(timeout, u.Quantity):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
-        timeout = float(timeout)
+        if timeout is not None:
+            timeout = float(timeout)
 
+        # Compile aruments into a dictionary
         autofocus_kwargs = {'seconds': seconds,
-                            'focus_range': (int(limit) for limit in focus_range),
-                            'focus_step': (int(step) for step in focus_step),
-                            'keep_files': bool(keep_files),
-                            'take_dark': bool(take_dark),
-                            'thumbnail_size': int(thumbnail_size),
-                            'merit_function': str(merit_function),
+                            'focus_range': focus_range,
+                            'focus_step': focus_step,
+                            'keep_files': keep_files,
+                            'take_dark': take_dark,
+                            'thumbnail_size': thumbnail_size,
+                            'merit_function': merit_function,
                             'merit_function_kwargs': merit_function_kwargs,
-                            'mask_dilations': int(mask_dilations),
-                            'coarse': bool(coarse),
-                            'make_plots': bool(make_plots)}
+                            'mask_dilations': mask_dilations,
+                            'coarse': coarse,
+                            'make_plots': make_plots}
+        autofocus_kwargs.update(kwargs)
 
         focus_dir = os.path.join(os.path.abspath(self.config['directories']['images']), 'focus/')
 
@@ -286,7 +317,7 @@ class Camera(AbstractCamera):
         autofocus_result = {}
         self.logger.debug('Starting autofocus on {}'.format(self.name))
         # Remote method call to start the autofocus
-        autofocus_result = self._proxy.autofocus(*args, **autofocus_kwargs, **kwargs)
+        autofocus_result = self._proxy.autofocus(*args, **autofocus_kwargs)
         # Tag the file transfer on the end.
         autofocus_result = autofocus_result.then(self._file_transfer, focus_dir)
         # Tag empty directory cleanup on the end & keep future result to check for completion
