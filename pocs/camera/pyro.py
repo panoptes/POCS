@@ -162,7 +162,6 @@ class Camera(AbstractCamera):
             seconds = seconds.value
         seconds = float(seconds)
 
-
         if isinstance(timeout, u.Quantity):
             timeout = timeout.to(u.second)
             timeout = timeout.value
