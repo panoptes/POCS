@@ -6,7 +6,7 @@ import serial
 from serial.tools.list_ports import comports as get_comports
 import time
 
-from pocs.base import PanBase
+from pocs.utils.logger import get_root_logger
 from pocs.utils.error import BadSerialConnection
 
 
@@ -39,7 +39,7 @@ def get_serial_port_info():
     return sorted(get_comports(), key=operator.attrgetter('device'))
 
 
-class SerialData(PanBase):
+class SerialData(object):
     """SerialData wraps a PySerial instance for reading from and writing to a serial device.
 
     Because POCS is intended to be very long running, and hardware may be turned off when unused
@@ -47,6 +47,37 @@ class SerialData(PanBase):
     serial device. Note that for most devices, is_connected will return true if the device is
     turned off/unplugged after a connection is opened; the code will only discover there is a
     problem when we attempt to interact with the device.
+
+    .. doctest::
+
+        >>> import serial
+        # Register our serial simulators
+        >>> serial.protocol_handler_packages.append('pocs.tests.serial_handlers')
+        # Create a fake device
+        >>> from pocs.tests.serial_handlers.protocol_buffers import SetRBufferValue as WriteFakeDevice
+        >>> from pocs.tests.serial_handlers.protocol_buffers import GetWBuffer as ReadFakeDevice
+
+        # Import our serial utils
+        >>> from pocs.utils.rs232 import SerialData
+
+        # Connect to our fake buffered device
+        >>> device_listener = SerialData(port='buffers://')
+        >>> device_listener.is_connected
+        True
+
+        >>> device.port
+        buffers://
+
+        # Device sends event
+        >>> WriteFakeDevice(b'emit event')
+
+        # Listen for event
+        >>> device_listener.read()
+        emit event
+
+        >>> device_listener.write(b'ack event')
+        >>> ReadFakeDevice()
+        ack event
     """
 
     def __init__(self,
@@ -56,7 +87,9 @@ class SerialData(PanBase):
                  timeout=2.0,
                  open_delay=0.0,
                  retry_limit=5,
-                 retry_delay=0.5):
+                 retry_delay=0.5,
+                 logger=None,
+                 ):
         """Create a SerialData instance and attempt to open a connection.
 
         The device need not exist at the time this is called, in which case is_connected will
@@ -73,12 +106,16 @@ class SerialData(PanBase):
             open_delay: Seconds to wait after opening the port.
             retry_limit: Number of times to try readline() calls in read().
             retry_delay: Delay between readline() calls in read().
+            logger (`logging.logger` or None, optional): A logger instance. If left as None
+                then `pocs.utils.logger.get_root_logger` will be called.
 
         Raises:
             ValueError: If the serial parameters are invalid (e.g. a negative baudrate).
 
         """
-        PanBase.__init__(self)
+        if not logger:
+            logger = get_root_logger()
+        self.logger = logger
 
         if not port:
             raise ValueError('Must specify port for SerialData')
