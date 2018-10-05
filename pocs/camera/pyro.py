@@ -67,7 +67,7 @@ class Camera(AbstractCamera):
     def ccd_set_point(self, set_point):
         if isinstance(set_point, u.Quantity):
             set_point = set_point.to(u.Celsius).value
-        self._proxy.ccd_set_point = set_point
+        self._proxy.ccd_set_point = float(set_point)
 
     @property
     def ccd_cooling_enabled(self):
@@ -160,11 +160,13 @@ class Camera(AbstractCamera):
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second)
             seconds = seconds.value
+        seconds = float(seconds)
 
         if timeout is not None:
             if isinstance(timeout, u.Quantity):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
+        timeout = float(timeout)
 
         dir_name, base_name = os.path.split(filename)
         # Make sure dir_name has one and only one trailing slash, otherwise rsync may fail
@@ -179,7 +181,7 @@ class Camera(AbstractCamera):
         # Remote method call to start the exposure
         exposure_result = self._proxy.take_exposure(seconds=seconds,
                                                     base_name=base_name,
-                                                    dark=dark,
+                                                    dark=bool(dark),
                                                     *args,
                                                     **kwargs)
         # Tag the file transfer on the end.
@@ -234,7 +236,7 @@ class Camera(AbstractCamera):
             take_dark (bool, optional): If True will attempt to take a dark frame
                 before the focus run, and use it for dark subtraction and hot
                 pixel masking, default True.
-            merit_function (str/callable, optional): Merit function to use as a
+            merit_function (str, optional): Merit function to use as a
                 focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
@@ -255,23 +257,25 @@ class Camera(AbstractCamera):
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second)
             seconds = seconds.value
+        seconds = float(seconds)
 
         if timeout is not None:
             if isinstance(timeout, u.Quantity):
                 timeout = timeout.to(u.second)
                 timeout = timeout.value
+        timeout = float(timeout)
 
         autofocus_kwargs = {'seconds': seconds,
-                            'focus_range': focus_range,
-                            'focus_step': focus_step,
-                            'keep_files': keep_files,
-                            'take_dark': take_dark,
-                            'thumbnail_size': thumbnail_size,
-                            'merit_function': merit_function,
+                            'focus_range': (int(limit) for limit in focus_range),
+                            'focus_step': (int(step) for step in focus_step),
+                            'keep_files': bool(keep_files),
+                            'take_dark': bool(take_dark),
+                            'thumbnail_size': int(thumbnail_size),
+                            'merit_function': str(merit_function),
                             'merit_function_kwargs': merit_function_kwargs,
-                            'mask_dilations': mask_dilations,
-                            'coarse': coarse,
-                            'make_plots': make_plots}
+                            'mask_dilations': int(mask_dilations),
+                            'coarse': bool(coarse),
+                            'make_plots': bool(make_plots)}
 
         focus_dir = os.path.join(os.path.abspath(self.config['directories']['images']), 'focus/')
 

@@ -11,6 +11,7 @@ from pocs.utils.config import load_config
 
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
+from pocs.camera.pyro import Camera as PyroCamera
 
 from pocs.utils import logger as logger_module
 
@@ -270,7 +271,7 @@ def create_distributed_cameras(camera_info, logger=None):
     primary_id = camera_info.get('primary')
     for cam_name, cam_uri in camera_uris.items():
         logger.debug('Creating camera: {}'.format(cam_name))
-        cam = pyro.Camera(name=cam_name, uri=cam_uri)
+        cam = PyroCamera(name=cam_name, uri=cam_uri)
         is_primary = ''
         if primary_id == cam.uid or primary_id == cam.name:
             cam.is_primary = True
