@@ -25,7 +25,7 @@ def simulator():
 
 
 @pytest.fixture
-def observatory(config, simulator):
+def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
     cameras = create_cameras_from_config(config)
     obs = Observatory(config=config,
@@ -33,12 +33,6 @@ def observatory(config, simulator):
                       cameras=cameras,
                       ignore_local_config=True)
     return obs
-
-
-@pytest.fixture(scope='module')
-def images_dir(tmpdir_factory):
-    directory = tmpdir_factory.mktemp('images')
-    return str(directory)
 
 
 def test_error_exit(config):
