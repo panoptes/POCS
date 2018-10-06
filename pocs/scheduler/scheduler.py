@@ -7,6 +7,7 @@ from astroplan import Observer
 from astropy import units as u
 
 from pocs.base import PanBase
+from pocs.utils import error
 from pocs.utils import current_time
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -231,9 +232,9 @@ class BaseScheduler(PanBase):
 
         try:
             obs = Observation(field, **field_config)
-        except Exception as e:
-            self.logger.warning("Skipping invalid field config: {}".format(field_config))
-            self.logger.warning(e)
+        except Exception:
+            raise error.InvalidObservation(
+                "Skipping invalid field config: {}".format(field_config))
         else:
             if field.name in self._observations:
                 self.logger.debug("Overriding existing entry for {}".format(field.name))

@@ -6,8 +6,8 @@ from astropy.coordinates import EarthLocation
 
 from astroplan import Observer
 
+from pocs.utils import error
 from pocs.scheduler import BaseScheduler as Scheduler
-
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
@@ -170,11 +170,13 @@ def test_scheduler_add_field(scheduler):
 def test_scheduler_add_bad_field(scheduler):
 
     orig_length = len(scheduler.observations)
-    scheduler.add_observation({
-        'name': 'Duplicate Field',
-        'position': '12h30m01s +08d08m08s',
-        'exp_time': -10
-    })
+    with pytest.raises(error.InvalidObservation):
+        scheduler.add_observation({
+            'name': 'Duplicate Field',
+            'position': '12h30m01s +08d08m08s',
+            'exp_time': -10
+        })
+
     assert orig_length == len(scheduler.observations)
 
 

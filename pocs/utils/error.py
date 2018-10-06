@@ -87,6 +87,11 @@ class InvalidMountCommand(PanError):
     pass
 
 
+class InvalidObservation(NotFound):
+    """PanError raised if a field is invalid."""
+    pass
+
+
 class BadConnection(PanError):
 
     """ PanError raised when a connection is bad """
