@@ -412,7 +412,7 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
 
     if pan_id == 'PAN000':
-        raise Exception("Refusing to upload for PA")
+        raise Exception("Refusing to upload for PAN000")
 
     verbose = kwargs.get('verbose', False)
 

@@ -92,8 +92,8 @@ observations:
 # details about authentication.
 ################################################################################
 panoptes_network:
-    image_storage: False
-    metadata_storage: False
+    image_storage: True
+    metadata_storage: True
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
