@@ -493,7 +493,12 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        name = self.name
+        if self.is_primary:
+            name += ' [Primary]'
+
+        s = "{} ({}) on {}".format(name, self.uid, self.port)
+
         if hasattr(self, 'focuser') and self.focuser is not None:
             s += ' with {}'.format(self.focuser.name)
 
