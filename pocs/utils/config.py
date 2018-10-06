@@ -131,7 +131,9 @@ def _parse_config(config):
         base_dir = os.getenv('PANDIR')
         for dir_name, rel_dir in config['directories'].items():
             if not rel_dir.startswith('/'):
-                config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
+                config['directories'][dir_name] = os.path.normpath(os.path.join(
+                    base_dir, rel_dir
+                ))
 
     return config
 
