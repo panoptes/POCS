@@ -73,17 +73,44 @@ def test_create_default_simulator(serial_handlers):
     """Defaults to creating telemetry_board messages."""
     ser = arduino_io.open_serial_device('arduinosimulator://')
     assert ser.is_connected is True
-    (ts, reading) = ser.get_and_parse_reading(retry_limit=2)
+    retry_limit = 2
+    (ts, reading) = ser.get_and_parse_reading(retry_limit=retry_limit)
     assert isinstance(reading, dict)
     assert reading['name'] == 'telemetry_board'
     report_num = reading['report_num']
     assert 1 <= report_num
-    assert report_num <= 2
+    assert report_num <= retry_limit
+    ser.disconnect()
+    assert ser.is_connected is False
+
+
+def test_create_simulator_small_read_buffer(serial_handlers):
+    """Force the communication to be difficult by making a very small buffer.
+
+    This should force more code paths to be covered.
+    """
+    ser = arduino_io.open_serial_device(
+        'arduinosimulator://?board=telemetry&read_buffer_size=1&chunk_size=1')
+    assert ser.is_connected is True
+    # Allow a lot of retries so that a busy machine still has a very good chance
+    # of succeeding in running this.
+    retry_limit = 2000
+    (ts, reading) = ser.get_and_parse_reading(retry_limit=retry_limit)
+    assert isinstance(reading, dict)
+    assert reading['name'] == 'telemetry_board'
+    report_num = reading['report_num']
+    assert 1 <= report_num
+    assert report_num <= retry_limit
     ser.disconnect()
     assert ser.is_connected is False
 
 
 # --------------------------------------------------------------------------------------------------
+
+
+def test_detect_board_on_port_invalid_port():
+    """detect_board_on_port will fail if the port is bogus."""
+    assert arduino_io.detect_board_on_port(' not a valid port ', logger=get_root_logger()) is None
 
 
 def test_detect_board_on_port_not_a_board():

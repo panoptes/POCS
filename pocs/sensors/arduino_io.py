@@ -75,7 +75,7 @@ def detect_board_on_port(port, logger=None):
                 return data['name']
             logger.warning('Unable to find board name in reading: {}', reading)
             return None
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error('Exception while auto-detecting port {}: {}', port, e)
     finally:
         if serial_reader:
