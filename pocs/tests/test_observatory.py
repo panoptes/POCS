@@ -27,11 +27,13 @@ def simulator():
 @pytest.fixture
 def observatory(config, simulator):
     """Return a valid Observatory instance with a specific config."""
-    cameras = create_cameras_from_config(config)
     obs = Observatory(config=config,
                       simulator=simulator,
-                      cameras=cameras,
                       ignore_local_config=True)
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
+
     return obs
 
 

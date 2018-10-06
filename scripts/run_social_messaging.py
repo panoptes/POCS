@@ -97,7 +97,7 @@ if __name__ == '__main__':
     # This is early in startup to ensure the PANOPTES logging code is
     # installed early. Unfortunately this doesn't (yet) prevent the
     # problem with our format keyword 'fileline' causing problems for
-    # other loggers.
+    # other loggers. See issue #393.
     pocs_config = load_config()
     the_root_logger = get_root_logger()
 
