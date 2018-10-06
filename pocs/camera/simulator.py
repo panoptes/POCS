@@ -34,9 +34,14 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        if exp_time > 2:
-            kwargs['exp_time'] = 2
-            self.logger.debug("Trimming camera simulator exposure to 2 s")
+        if exp_time > 1:
+            kwargs['exp_time'] = 1
+            self.logger.debug("Trimming camera simulator exposure to 1 s")
+
+        # If POCSTIME is set for testing then the simulator will generate
+        # duplicate filenames each time so we pass a filename here. Full path
+        # is added in `camera._setup_observation`.
+        filename = 'simulator_{:02d}.{}'.format(observation.current_exp, self.file_extension)
 
         return super().take_observation(observation,
                                         headers,
