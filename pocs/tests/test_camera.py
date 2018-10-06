@@ -6,8 +6,12 @@ import glob
 from ctypes.util import find_library
 
 import astropy.units as u
+import astropy.io.fits as fits
+
+import Pyro4
 
 from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.pyro import Camera as PyroCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -18,9 +22,8 @@ from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 from pocs.utils.images import fits as fits_utils
 
-
-params = [SimCamera, SBIGCamera, FLICamera]
-ids = ['simulator', 'sbig', 'fli']
+params = [SimCamera, PyroCamera, SBIGCamera, FLICamera]
+ids = ['simulator', 'pyro', 'sbig', 'fli']
 
 
 @pytest.fixture(scope='module')
@@ -31,7 +34,7 @@ def images_dir(tmpdir_factory):
 
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
-def camera(request, images_dir):
+def camera(request, images_dir, camera_server):
     if request.param[0] == SimCamera:
         camera = SimCamera(focuser={'model': 'simulator',
                                     'focus_port': '/dev/ttyFAKE',
@@ -41,6 +44,11 @@ def camera(request, images_dir):
                                     'autofocus_seconds': 0.1,
                                     'autofocus_size': 500,
                                     'autofocus_keep_files': False})
+    elif request.param[0] == PyroCamera:
+        ns = Pyro4.locateNS()
+        cameras = ns.list(metadata_all={'POCS', 'Camera'})
+        cam_name, cam_uri = cameras.popitem()
+        camera = PyroCamera(name=cam_name, uri=cam_uri)
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []

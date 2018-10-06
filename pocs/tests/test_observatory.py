@@ -11,6 +11,7 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.camera import create_cameras_from_config
+from pocs.camera.pyro import Camera as PyroCamera
 from pocs.utils import error
 
 
@@ -120,6 +121,22 @@ def test_camera(config):
 
 def test_primary_camera(observatory):
     assert observatory.primary_camera is not None
+
+
+def test_pyro_camera(config, camera_server):
+    conf = config.copy()
+    conf['cameras'] = {'distributed_cameras': True}
+    simulator = hardware.get_all_names(without=['camera'])
+    conf['simulator'] = simulator
+    cameras = create_cameras_from_config(conf)
+    obs = Observatory(cameras=cameras,
+                      config=conf,
+                      simulator=simulator,
+                      ignore_local_config=True)
+    assert len(obs.cameras) == 1
+    assert 'camera.simulator.001' in obs.cameras
+    assert isinstance(obs.cameras['camera.simulator.001'], PyroCamera)
+    assert obs.cameras['camera.simulator.001'].is_connected
 
 
 def test_status(observatory):
