@@ -41,7 +41,7 @@ class Camera(AbstractCamera):
         # If POCSTIME is set for testing then the simulator will generate
         # duplicate filenames each time so we pass a filename here. Full path
         # is added in `camera._setup_obseravtion`.
-        filename = 'simulator_{:02d}.{}'.format(self.file_extension)
+        filename = 'simulator_{:02d}.{}'.format(observation.current_exp, self.file_extension)
 
         return super().take_observation(observation,
                                         headers,
