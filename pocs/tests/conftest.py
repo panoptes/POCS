@@ -30,6 +30,7 @@ def config(images_dir):
         _one_time_config = load_config(ignore_local=True, simulator=['all'])
         _one_time_config['db']['name'] = 'panoptes_testing'
 
+    _one_time_config['name'] = 'PAN000'  # Make sure always testing with PAN000
     _one_time_config['directories']['images'] = images_dir
     _one_time_config['scheduler']['fields_file'] = 'simulator.yaml'
 
