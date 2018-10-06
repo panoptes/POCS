@@ -207,6 +207,7 @@ def test_sidereal_time(observatory):
 
 
 def test_get_observation(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     observation = observatory.get_observation()
     assert isinstance(observation, Observation)
 
@@ -218,14 +219,8 @@ def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
 
-    t0 = Time('2016-08-13 10:00:00')
-    observatory.scheduler.fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
-    ]
+    t0 = '2016-08-13 15:00:00'
+
     observatory.get_observation(time=t0)
     assert observatory.current_observation is not None
 
@@ -240,16 +235,9 @@ def test_observe(observatory):
 
 
 def test_cleanup_fails(observatory):
-    t0 = Time('2016-08-13 10:00:00')
-    fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
-    ]
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+
+    observatory.get_observation()
     camera_events = observatory.observe()
 
     while not all([event.is_set() for name, event in camera_events.items()]):
@@ -259,22 +247,19 @@ def test_cleanup_fails(observatory):
     del observatory.config['panoptes_network']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['observations']['make_timelapse']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['observations']['keep_jpgs']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['pan_id']
