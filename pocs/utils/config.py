@@ -130,10 +130,10 @@ def _parse_config(config):
     if 'directories' in config:
         base_dir = os.getenv('PANDIR')
         for dir_name, rel_dir in config['directories'].items():
-            if not rel_dir.startswith('/'):
-                config['directories'][dir_name] = os.path.normpath(os.path.join(
-                    base_dir, rel_dir
-                ))
+            abs_dir = os.path.normpath(os.path.join(base_dir, rel_dir))
+            if abs_dir != rel_dir:
+                logger.debug('Modified "%s" directory to: %s', dir_name, abs_path)
+                config['directories'][dir_name] = abs_dir
 
     return config
 
