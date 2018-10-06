@@ -19,7 +19,7 @@ def constraints():
 
 @pytest.fixture
 def simple_fields_file(config):
-    return config['directories']['targets'] + '/simple.yaml'
+    return config['directories']['targets'] + '/simulator.yaml'
 
 
 @pytest.fixture
