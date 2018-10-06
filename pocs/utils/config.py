@@ -132,7 +132,6 @@ def _parse_config(config):
         for dir_name, rel_dir in config['directories'].items():
             abs_dir = os.path.normpath(os.path.join(base_dir, rel_dir))
             if abs_dir != rel_dir:
-                logger.debug('Modified "%s" directory to: %s', dir_name, abs_path)
                 config['directories'][dir_name] = abs_dir
 
     return config
