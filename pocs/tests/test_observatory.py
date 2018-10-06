@@ -121,7 +121,7 @@ def test_primary_camera(observatory):
 
 
 def test_status(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()
     assert 'mount' not in status
     assert 'observation' not in status
