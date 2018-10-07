@@ -1,7 +1,6 @@
 import os
 import shutil
 import time
-from random import randint
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -49,7 +48,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
     pocs_time = os.getenv('POCSTIME')
 
     if pocs_time is not None and pocs_time > '':
-        _time = Time(os.getenv('POCSTIME')) + (randint(0, 10) * u.second)
+        _time = Time(os.getenv('POCSTIME'))
     else:
         _time = Time.now()
 
