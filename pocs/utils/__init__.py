@@ -16,8 +16,16 @@ def current_time(flatten=False, datetime=False, pretty=False):
     Note:
         If the ``$POCSTIME`` environment variable is set then this will return
         the time given in the variable. This is used for setting specific times
-        during testing. Normal operating usage of POCS will clear the variable
-        before starting.
+        during testing. After checking the value of POCSTIME the environment
+        variable will also be incremented by one second so that subsequent
+        calls to this function will generate monotonically increasing times.
+
+        Normal operating usage of POCS will clear the variable before starting.
+
+    Note:
+        The time returned from this function is **not** timezone aware. All times
+        are UTC.
+
 
     .. doctest::
 
@@ -26,19 +34,24 @@ def current_time(flatten=False, datetime=False, pretty=False):
         >>> party_time
         '1999-12-31 23:59:59'
 
+        # Next call is one second later
+        >>> y2k = current_time(pretty=True)
+        >>> y2k
+        '2000-01-01 00:00:00'
+
         >>> del os.environ['POCSTIME']
         >>> from pocs.utils import current_time
         >>> now = current_time()
-        >>> now
-        <Time object: scale='utc' format='datetime' value=...>
+        >>> now                               # doctest: +SKIP
+        <Time object: scale='utc' format='datetime' value=2018-10-07 22:29:03.009873>
 
         >>> now = current_time(datetime=True)
-        >>> now
-        datetime.datetime(...)
+        >>> now                               # doctest: +SKIP
+        datetime.datetime(2018, 10, 7, 22, 29, 26, 594368)
 
         >>> now = current_time(pretty=True)
         >>> now                               # doctest: +SKIP
-        2018-09-28 00:14:18
+        2018-10-07 22:29:51
 
 
     Returns:
@@ -49,6 +62,8 @@ def current_time(flatten=False, datetime=False, pretty=False):
 
     if pocs_time is not None and pocs_time > '':
         _time = Time(os.getenv('POCSTIME'))
+        # Increment POCSTIME
+        os.environ['POCSTIME'] = (_time + 1 * u.second).isot
     else:
         _time = Time.now()
 
