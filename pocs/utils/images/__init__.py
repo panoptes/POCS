@@ -343,15 +343,12 @@ def clean_observation_dir(dir_name,
     _print("Cleaning dir: {}".format(dir_name))
 
     # Pack the fits filts
-    try:
-        _print("Packing FITS files")
-        for f in _glob('*.fits'):
-            try:
-                fits_utils.fpack(f)
-            except Exception as e:  # pragma: no cover
-                warn('Could not compress fits file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup cleaning FITS: {!r}'.format(e))
+    _print("Packing FITS files")
+    for f in _glob('*.fits'):
+        try:
+            fits_utils.fpack(f)
+        except Exception as e:  # pragma: no cover
+            warn('Could not compress fits file: {!r}'.format(e))
 
     try:
         # Remove .solved files
