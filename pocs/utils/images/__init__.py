@@ -427,10 +427,11 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         bucket = 'gs://{}/'.format(bucket)
         # normpath strips the trailing slash so add here so we place in directory
         run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
-        _print("Running: {}".format(run_cmd))
 
         if pan_id == 'PAN000':
             run_cmd = [gsutil, 'PAN000 upload should fail']
+
+        _print("Running: {}".format(run_cmd))
 
         try:
             completed_process = subprocess.run(
