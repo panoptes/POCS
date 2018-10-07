@@ -411,9 +411,6 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
     if re.match(r'PAN\d\d\d', pan_id) is None:
         raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
 
-    if pan_id == 'PAN000':
-        raise Exception("Refusing to upload for PAN000")
-
     verbose = kwargs.get('verbose', False)
 
     def _print(msg):
@@ -436,10 +433,13 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         _print("Running: {}".format(run_cmd))
 
         try:
+            if pan_id == 'PAN000':
+                raise error.GoogleCloudError("Refusing to upload for PAN000")
+
             completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
 
             if completed_process.returncode != 0:
                 warn("Problem uploading")
                 warn(completed_process.stdout)
-        except Exception as e:
+        except error.GoogleCloudError as e:
             warn("Problem uploading: {}".format(e))
