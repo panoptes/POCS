@@ -429,14 +429,14 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
         _print("Running: {}".format(run_cmd))
 
-        try:
-            if pan_id == 'PAN000':
-                raise error.GoogleCloudError("Refusing to upload for PAN000")
-            else:  # pragma: no cover
-                completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
+        if pan_id == 'PAN000':
+            run_cmd = [gsutil, 'PAN000 upload should fail']
 
-                if completed_process.returncode != 0:
-                    warn("Problem uploading")
-                    warn(completed_process.stdout)
-        except error.GoogleCloudError as e:
-            warn("Problem uploading: {}".format(e))
+        try:
+            completed_process = subprocess.run(
+                run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            if completed_process.returncode != 0:
+                raise Exception(completed_process.stderr)
+        except Exception as e:
+            raise error.GoogleCloudError("Problem with upload: {}".format(e))
