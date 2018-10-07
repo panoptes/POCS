@@ -20,7 +20,8 @@ def current_time(flatten=False, datetime=False, pretty=False):
         variable will also be incremented by one second so that subsequent
         calls to this function will generate monotonically increasing times.
 
-        Normal operating usage of POCS will clear the variable before starting.
+        Operation of POCS from `$POCS/bin/pocs_shell` will clear the POCSTIME
+        variable.
 
     Note:
         The time returned from this function is **not** timezone aware. All times
