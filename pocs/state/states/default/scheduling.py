@@ -24,7 +24,7 @@ def on_enter(event_data):
         try:
             observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
-        except error.NoObservation as e:
+        except error.NoObservation:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
         except Exception as e:
             pocs.logger.warning("Error in scheduling: {}".format(e))
@@ -32,6 +32,9 @@ def on_enter(event_data):
 
             if existing_observation and observation.name == existing_observation.name:
                 pocs.say("I'm sticking with {}".format(observation.name))
+
+                # Make sure we are using existing observation (with pointing image)
+                pocs.observatory.current_observation = existing_observation
                 pocs.next_state = 'tracking'
             else:
                 pocs.say("Got it! I'm going to check out: {}".format(observation.name))

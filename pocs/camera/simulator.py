@@ -34,9 +34,14 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        if exp_time > 2:
-            kwargs['exp_time'] = 2
-            self.logger.debug("Trimming camera simulator exposure to 2 s")
+        if exp_time > 1:
+            kwargs['exp_time'] = 1
+            self.logger.debug("Trimming camera simulator exposure to 1 s")
+
+        # If POCSTIME is set for testing then the simulator will generate
+        # duplicate filenames each time so we pass a filename here. Full path
+        # is added in `camera._setup_observation`.
+        filename = 'simulator_{:02d}.{}'.format(observation.current_exp, self.file_extension)
 
         return super().take_observation(observation,
                                         headers,
@@ -83,7 +88,11 @@ class Camera(AbstractCamera):
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
+        file_path = os.path.join(
+            os.environ['POCS'],
+            'pocs', 'tests', 'data',
+            'unsolved.fits'
+        )
         fake_data = fits.getdata(file_path)
 
         if header['IMAGETYP'] == 'Dark Frame':
@@ -97,11 +106,17 @@ class Camera(AbstractCamera):
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
         self.logger.debug('Overriding mount coordinates for camera simulator')
-        solved_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'solved.fits')
-        solved_header = fits.getheader(solved_path)
+        solved_path = os.path.join(
+            os.environ['POCS'],
+            'pocs', 'tests', 'data',
+            'solved.fits.fz'
+        )
+        solved_header = fits_utils.getheader(solved_path)
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             hdu.header.set('RA-MNT', solved_header['RA-MNT'], 'Degrees')
             hdu.header.set('HA-MNT', solved_header['HA-MNT'], 'Degrees')
             hdu.header.set('DEC-MNT', solved_header['DEC-MNT'], 'Degrees')
+
+        self.logger.debug("Headers updated for simulated image.")
         return file_path

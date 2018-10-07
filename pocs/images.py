@@ -28,10 +28,8 @@ class Image(PanBase):
         assert os.path.exists(fits_file), self.logger.warning(
             'File does not exist: {}'.format(fits_file))
 
-        if fits_file.endswith('.fz'):
-            fits_file = fits_utils.fpack(fits_file, unpack=True)
-
-        assert fits_file.lower().endswith(('.fits')), \
+        file_path, file_ext = os.path.splitext(fits_file)
+        assert file_ext in ['.fits', '.fz'], \
             self.logger.warning('File must end with .fits')
 
         self.wcs = None
@@ -43,13 +41,17 @@ class Image(PanBase):
         else:
             self.wcs_file = fits_file
 
-        with fits.open(self.fits_file, 'readonly') as hdu:
-            self.header = hdu[0].header
+        self.header_ext = 0
+        if file_ext == '.fz':
+            self.header_ext = 1
 
-        assert 'DATE-OBS' in self.header, self.logger.warning(
-            'FITS file must contain the DATE-OBS keyword')
-        assert 'EXPTIME' in self.header, self.logger.warning(
-            'FITS file must contain the EXPTIME keyword')
+        with fits.open(self.fits_file, 'readonly') as hdu:
+            self.header = hdu[self.header_ext].header
+
+        required_headers = ['DATE-OBS', 'EXPTIME']
+        for key in required_headers:
+            if key not in self.header:
+                raise KeyError("Missing required FITS header: {}".format(key))
 
         # Location Information
         if location is None:
@@ -97,7 +99,8 @@ class Image(PanBase):
     def wcs_file(self, filename):
         if filename is not None:
             try:
-                w = wcs.WCS(filename)
+                header = fits_utils.getheader(filename)
+                w = wcs.WCS(header)
                 assert w.is_celestial
 
                 self.wcs = w
@@ -129,10 +132,10 @@ class Image(PanBase):
             d_ra = self.pointing.ra - self.header_pointing.ra
 
             self._pointing_error = OffsetError(
-                d_ra.to(
-                    u.arcsec), d_dec.to(
-                    u.arcsec), mag.to(
-                    u.arcsec))
+                d_ra.to(u.arcsec),
+                d_dec.to(u.arcsec),
+                mag.to(u.arcsec)
+            )
 
         return self._pointing_error
 
@@ -146,12 +149,19 @@ class Image(PanBase):
             self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
                                             dec=float(self.header['DEC-MNT']) * u.degree)
 
-            self.header_ra = self.header_pointing.ra.to(u.hourangle)
+            self.header_ra = self.header_pointing.ra.to(u.degree)
             self.header_dec = self.header_pointing.dec.to(u.degree)
 
-            # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.header_ha = self.header_pointing.transform_to(
-                self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            try:
+                self.header_ha = float(self.header['HA-MNT']) * u.hourangle
+            except KeyError:
+                # Compute the HA from the RA and sidereal time.
+                # Precess to the current equinox otherwise the
+                # RA - LST method will be off.
+                # NOTE(wtgee): This conversion doesn't seem to be correct.
+                self.header_ha = self.header_pointing.transform_to(
+                    self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+
         except Exception as e:
             self.logger.warning('Cannot get header pointing information: {}'.format(e))
 
@@ -167,11 +177,11 @@ class Image(PanBase):
 
             self.pointing = SkyCoord(ra=ra * u.degree, dec=dec * u.degree)
 
-            self.ra = self.pointing.ra.to(u.hourangle)
+            self.ra = self.pointing.ra.to(u.degree)
             self.dec = self.pointing.dec.to(u.degree)
 
             # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
     def solve_field(self, **kwargs):
         """ Solve field and populate WCS information

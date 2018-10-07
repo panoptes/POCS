@@ -11,12 +11,12 @@ from pprint import pprint
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
-from astropy.io import fits
 from astropy.utils import console
 
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
+from pocs.camera import create_cameras_from_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils import current_time
@@ -152,7 +152,8 @@ class PocsShell(Cmd):
             simulator = []
 
         try:
-            observatory = Observatory(simulator=simulator)
+            cameras = create_cameras_from_config()
+            observatory = Observatory(simulator=simulator, cameras=cameras)
             self.pocs = POCS(observatory, messaging=True)
             self.pocs.initialize()
         except error.PanError:
@@ -193,9 +194,12 @@ Hardware names: {}   (or all for all hardware)'''.format(
             try:
                 self.pocs.run()
             except KeyboardInterrupt:
-                print_warning('POCS interrupted, skipping states and parking')
-                self.pocs.observatory.mount.home_and_park()
-                self._running = False
+                print_warning('POCS interrupted, parking')
+                if self.pocs.state not in ['sleeping', 'housekeeping', 'parked', 'parking']:
+                    self.pocs.park()
+                else:
+                    self.pocs.observatory.mount.home_and_park()
+                self._obs_run_retries = 0  # Don't retry
             finally:
                 print_info('POCS stopped.')
         else:
@@ -452,12 +456,12 @@ Hardware names: {}   (or all for all hardware)'''.format(
                 if self.cmd_subscriber.socket in sockets and \
                         sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
-                    msg_type, msg_obj = self.cmd_subscriber.receive_message(
+                    topic, msg_obj = self.cmd_subscriber.receive_message(
                         flags=zmq.NOBLOCK)
-                    print_info("{} {}".format(msg_type, msg_obj))
+                    print_info("{} {}".format(topic, msg_obj))
 
                     # Put the message in a queue to be processed
-                    if msg_type == 'PAWS-CMD':
+                    if topic == 'PAWS-CMD':
                         try:
                             print_info("Command received: {}".format(
                                 msg_obj['message']))
@@ -805,7 +809,7 @@ def process_img(fn, start_time, remove_after=True):
         fits_utils.get_solve_field(fn)
 
         # Get header info
-        header = fits.getheader(fn)
+        header = fits_utils.getheader(fn)
 
         try:
             del header['COMMENT']

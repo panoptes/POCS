@@ -1,15 +1,19 @@
 import io
 import pytest
 import serial
+from serial import serialutil
 
 from pocs.utils import error
 from pocs.utils import rs232
-from pocs.utils.config import load_config
 
 from pocs.tests.serial_handlers import NoOpSerial
 from pocs.tests.serial_handlers import protocol_buffers
-from pocs.tests.serial_handlers import protocol_no_op
 from pocs.tests.serial_handlers import protocol_hooked
+
+
+def test_port_discovery():
+    ports = rs232.get_serial_port_info()
+    assert isinstance(ports, list)
 
 
 def test_missing_port():
@@ -55,6 +59,11 @@ def test_detect_bogus_scheme(handler):
         # a string that can't be a module name.
         rs232.SerialData(port='# bogus #://')
     assert '# bogus #' in repr(excinfo.value)
+
+
+def test_custom_logger(handler, fake_logger):
+    s0 = rs232.SerialData(port='no_op://', logger=fake_logger)
+    s0.logger.debug('Testing logger')
 
 
 def test_basic_no_op(handler):
@@ -174,7 +183,6 @@ class HookedSerialHandler(NoOpSerial):
         if not self.is_open:
             raise serialutil.portNotOpenError
         # If at end of the stream, reset the stream.
-        avail = self.in_waiting
         return self.r_buffer.read(min(size, self.in_waiting))
 
     def write(self, data):

@@ -1,5 +1,18 @@
 ---
+######################### PANOPTES UNIT ########################################
+# name:   Can be anything you want it to be. This name is displayed in several
+#         places and should be a "personal" name for the unit.
+#
+# pan_id: This is an identification number assigned by the PANOPTES team and is
+#         the official designator for your unit. This id is used to store image
+#         files and communicate with the Google Cloud network.
+#
+#         Leave the pan_id at `PAN000` for testing until you have been assigned
+#         an official id. Update pocs_local.yaml with offical name once received.
+################################################################################
 name: Generic PANOPTES Unit
+pan_id: PAN000   
+
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees
@@ -9,17 +22,15 @@ location:
     horizon: 30 # Degrees
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
-    gmt_offset: -600
+    gmt_offset: -600 # Offset in minutes from GMT during
+                     # standard time (not daylight saving)
 directories:
     base: /var/panoptes
     images: images
-    webcam: webcams
     data: data
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-panoptes_network:
-    image_storage: True
 db: 
     name: panoptes
     type: mongo
@@ -37,8 +48,9 @@ mount:
         baudrate: 9600
     non_sidereal_available: True
 pointing:
-    threshold: 0.05
-    exptime: 30
+    auto_correct: False
+    threshold: 500 # arcseconds ~ 50 pixels
+    exptime: 30 # seconds
     max_iterations: 3
 cameras:
     auto_detect: True
@@ -52,6 +64,40 @@ messaging:
     # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
+
+########################## Observations ########################################
+# An observation folder contains a contiguous sequence of images of a target/field
+# recorded by a single camera, with no slewing of the mount during the sequence; 
+# there may be tracking adjustments during the observation.
+#
+# An example folder structure would be:
+#
+#   $PANDIR/images/fields/Hd189733/14d3bd/20180901T120001/
+#
+# In this folder will be stored JPG and FITS images. A timelapse of the
+# observation can be made (one per camera) and the JPGs optionally removed
+# afterward.
+#
+# TODO: Add options for cleaning up old data (e.g. >30 days)
+################################################################################
+observations:
+    make_timelapse: True
+    keep_jpgs: True
+
+######################## Google Network ########################################
+# By default all images are stored on googlecloud servers and we also
+# use a few google services to store metadata, communicate with servers, etc.
+#
+# See $POCS/pocs/utils/google/README.md for
+# details about authentication.
+################################################################################
+panoptes_network:
+    image_storage: True
+    metadata_storage: True
+    project_id: panoptes-survey
+    buckets:
+        images: panoptes-survey
+        
 #Enable to output POCS messages to social accounts
 # social_accounts:
 #     twitter:

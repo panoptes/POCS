@@ -1,6 +1,7 @@
 import os
 import pytest
 
+import time
 from astropy import units as u
 from astropy.time import Time
 
@@ -9,6 +10,7 @@ import pocs.version
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+from pocs.camera import create_cameras_from_config
 from pocs.utils import error
 
 
@@ -23,16 +25,16 @@ def simulator():
 
 
 @pytest.fixture
-def observatory(config, simulator):
+def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
-    obs = Observatory(config=config, simulator=simulator, ignore_local_config=True)
+    obs = Observatory(config=config,
+                      simulator=simulator,
+                      ignore_local_config=True)
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
+
     return obs
-
-
-@pytest.fixture(scope='module')
-def images_dir(tmpdir_factory):
-    directory = tmpdir_factory.mktemp('images')
-    return str(directory)
 
 
 def test_error_exit(config):
@@ -83,41 +85,45 @@ def test_bad_scheduler_fields_file(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-@pytest.mark.without_camera
-def test_bad_camera(config):
+def test_camera_wrong_type(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
+
+    with pytest.raises(AttributeError):
+        Observatory(simulator=simulator,
+                    cameras=[Time.now()],
+                    config=conf,
+                    auto_detect=False,
+                    ignore_local_config=True
+                    )
+
+    with pytest.raises(AssertionError):
+        Observatory(simulator=simulator,
+                    cameras={'Cam00': Time.now()},
+                    config=conf,
+                    auto_detect=False,
+                    ignore_local_config=True
+                    )
 
 
-@pytest.mark.without_camera
-def test_camera_not_found(config):
+def test_camera(config):
     conf = config.copy()
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+    cameras = create_cameras_from_config(conf)
+    obs = Observatory(
+        cameras=cameras,
+        config=conf,
+        auto_detect=False,
+        ignore_local_config=True
+    )
+    assert obs.has_cameras
 
 
-def test_camera_port_error(config):
-    conf = config.copy()
-    conf['cameras']['devices'][0]['model'] = 'foobar'
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.CameraNotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
-
-
-def test_camera_import_error(config):
-    conf = config.copy()
-    conf['cameras']['devices'][0]['model'] = 'foobar'
-    conf['cameras']['devices'][0]['port'] = 'usb:001,002'
-    simulator = hardware.get_all_names(without=['camera'])
-    with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+def test_primary_camera(observatory):
+    assert observatory.primary_camera is not None
 
 
 def test_status(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()
     assert 'mount' not in status
     assert 'observation' not in status
@@ -159,6 +165,7 @@ def test_is_dark(observatory):
 def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
+    observatory.scheduler.fields_file = None
     observatory.scheduler.fields_list = [
         {'name': 'HAT-P-20',
          'priority': '100',
@@ -201,11 +208,8 @@ def test_sidereal_time(observatory):
     assert abs(st.value - 9.145547849536634) < 1e-4
 
 
-def test_primary_camera(observatory):
-    assert observatory.primary_camera is not None
-
-
 def test_get_observation(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     observation = observatory.get_observation()
     assert isinstance(observation, Observation)
 
@@ -217,15 +221,9 @@ def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
 
-    time = Time('2016-08-13 10:00:00')
-    observatory.scheduler.fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
-    ]
-    observatory.get_observation(time=time)
+    t0 = '2016-08-13 15:00:00'
+
+    observatory.get_observation(time=t0)
     assert observatory.current_observation is not None
 
     assert len(observatory.scheduler.observed_list) == 1
@@ -236,6 +234,38 @@ def test_observe(observatory):
 
     observatory.cleanup_observations()
     assert len(observatory.scheduler.observed_list) == 0
+
+
+def test_cleanup_fails(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+
+    observatory.get_observation()
+    camera_events = observatory.observe()
+
+    while not all([event.is_set() for name, event in camera_events.items()]):
+        time.sleep(1)
+
+    observatory.cleanup_observations()
+    del observatory.config['panoptes_network']
+    observatory.cleanup_observations()
+
+    observatory.get_observation()
+
+    observatory.cleanup_observations()
+    del observatory.config['observations']['make_timelapse']
+    observatory.cleanup_observations()
+
+    observatory.get_observation()
+
+    observatory.cleanup_observations()
+    del observatory.config['observations']['keep_jpgs']
+    observatory.cleanup_observations()
+
+    observatory.get_observation()
+
+    observatory.cleanup_observations()
+    del observatory.config['pan_id']
+    observatory.cleanup_observations()
 
 
 def test_autofocus_disconnected(observatory):

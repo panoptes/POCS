@@ -163,7 +163,7 @@ class Dome(pocs.dome.AbstractDome):
             response_obj = json.loads(response)
         except TypeError as e:
             self.logger.warning("Error: {}".format(e, response))
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             response_obj = {
                 "response": response,
                 "success": False,

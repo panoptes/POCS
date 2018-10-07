@@ -2,18 +2,18 @@ import os
 import subprocess
 import shutil
 import re
+from contextlib import suppress
 
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
-from ffmpy import FFmpeg
 from glob import glob
 from copy import copy
+from dateutil import parser as date_parser
 
 from pocs.utils import current_time
 from pocs.utils import error
@@ -65,55 +65,62 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
-    """ Make a pretty image
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):
+    """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
 
     Notes:
-        See `$POCS/scripts/cr2_to_jpg.sh` for CR2 process
+        See `$POCS/scripts/cr2_to_jpg.sh` for CR2 process.
 
     Arguments:
         fname {str} -- Name of image file, may be either .fits or .cr2
-        **kwargs {dict} -- Additional arguments to be passed to external script
-
-    Keyword Arguments:
-        timeout {number} -- Process timeout (default: {15})
+        title (None|str, optional): Title to be placed on image, default None.
+        timeout (int, optional): Timeout for conversion, default 15 seconds.
+        link_latest (bool, optional): If the pretty picture should be linked to
+            `$PANDIR/images/latest.jpg`, default False.
+        **kwargs {dict} -- Additional arguments to be passed to external script.
 
     Returns:
-        str -- Filename of image that was created
-
+        str -- Filename of image that was created.
     """
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     if fname.endswith('.cr2'):
-        pretty_path = _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+        pretty_path = _make_pretty_from_cr2(fname, title=title, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        pretty_path = _make_pretty_from_fits(fname, **kwargs)
+        pretty_path = _make_pretty_from_fits(fname, title=title, **kwargs)
     else:
         warn("File must be a Canon CR2 or FITS file.")
         return None
 
     # Symlink latest.jpg to the image; first remove the symlink if it already exists.
-    if os.path.exists(pretty_path) and pretty_path.endswith('.jpg'):
-        latest_path = '{}/images/latest.jpg'.format(os.getenv('PANDIR'))
-        try:
+    if link_latest and os.path.exists(pretty_path):
+        latest_path = os.path.join(
+            os.getenv('PANDIR'),
+            'images',
+            'latest.jpg'
+        )
+        with suppress(FileNotFoundError):
             os.remove(latest_path)
-        except FileNotFoundError:
-            pass
+
         try:
             os.symlink(pretty_path, latest_path)
         except Exception as e:
             warn("Can't link latest image: {}".format(e))
 
-        return pretty_path
-    else:
-        return None
+    return pretty_path
 
 
-def _make_pretty_from_fits(
-        fname=None, figsize=(10, 10 / 1.325), dpi=150, alpha=0.2, number=7, **kwargs):
+def _make_pretty_from_fits(fname=None,
+                           title=None,
+                           figsize=(10, 10 / 1.325),
+                           dpi=150,
+                           alpha=0.2,
+                           number_ticks=7,
+                           clip_percent=99.9,
+                           **kwargs):
 
     with open_fits(fname) as hdu:
         header = hdu[0].header
@@ -121,16 +128,27 @@ def _make_pretty_from_fits(
         data = focus_utils.mask_saturated(data)
         wcs = WCS(header)
 
-    title = kwargs.get('title', header.get('FIELD', 'Unknown'))
-    exp_time = header.get('EXPTIME', 'Unknown')
+    if not title:
+        field = header.get('FIELD', 'Unknown field')
+        exp_time = header.get('EXPTIME', 'Unknown exptime')
+        filter_type = header.get('FILTER', 'Unknown filter')
 
-    filter_type = header.get('FILTER', 'Unknown filter')
-    date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+        try:
+            date_time = header['DATE-OBS']
+        except KeyError:
+            # If we don't have DATE-OBS, check filename for date
+            try:
+                basename = os.path.splitext(os.path.basename(fname))[0]
+                date_time = date_parser.parse(basename).isoformat()
+            except Exception:
+                # Otherwise use now
+                date_time = current_time(pretty=True)
 
-    percent_value = kwargs.get('normalize_clip_percent', 99.9)
+        date_time = date_time.replace('T', ' ', 1)
 
-    title = '{} ({}s {}) {}'.format(title, exp_time, filter_type, date_time)
-    norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
+        title = '{} ({}s {}) {}'.format(field, exp_time, filter_type, date_time)
+
+    norm = ImageNormalize(interval=PercentileInterval(clip_percent), stretch=LogStretch())
 
     fig = plt.figure(figsize=figsize, dpi=dpi)
 
@@ -142,7 +160,7 @@ def _make_pretty_from_fits(
         ra_axis.set_axislabel('Right Ascension')
         ra_axis.set_major_formatter('hh:mm')
         ra_axis.set_ticks(
-            number=number,
+            number=number_ticks,
             color='white',
             exclude_overlapping=True
         )
@@ -151,7 +169,7 @@ def _make_pretty_from_fits(
         dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
         dec_axis.set_ticks(
-            number=number,
+            number=number_ticks,
             color='white',
             exclude_overlapping=True
         )
@@ -173,16 +191,14 @@ def _make_pretty_from_fits(
     return new_filename
 
 
-def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
+def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: no cover
     verbose = kwargs.get('verbose', False)
 
-    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+    script_name = os.path.join(os.getenv('POCS'), 'scripts', 'cr2_to_jpg.sh')
+    cmd = [script_name, fname]
 
-    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'))
-    cmd = [solve_field, fname, title]
-
-    if kwargs.get('primary', False):
-        cmd.append('link')
+    if title:
+        cmd.append(title)
 
     if verbose:
         print(cmd)
@@ -201,20 +217,34 @@ def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
-def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
-    """Create a timelapse
+def make_timelapse(
+        directory,
+        fn_out=None,
+        file_type='jpg',
+        overwrite=False,
+        timeout=60,
+        verbose=False,
+        **kwargs):
+    """Create a timelapse.
 
-    A timelapse is created from all the jpg images in a given `directory`
+    A timelapse is created from all the images in a given `directory`
 
     Args:
-        directory (str): Directory containing jpg files
+        directory (str): Directory containing image files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
         file_type (str, optional): Type of file to search for, default 'jpg'.
+        overwrite (bool, optional): Overwrite timelapse if exists, default False.
+        timeout (int): Timeout for making movie, default 60 seconds.
+        verbose (bool, optional): Show output, default False.
         **kwargs (dict): Valid keywords: verbose
 
     Returns:
         str: Name of output file
+
+    Raises:
+        error.InvalidSystemCommand: Raised if ffmpeg command is not found.
+        FileExistsError: Raised if fn_out already exists and overwrite=False.
     """
     if fn_out is None:
         head, tail = os.path.split(directory)
@@ -224,29 +254,54 @@ def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
         field_name = head.split('/')[-2]
         cam_name = head.split('/')[-1]
         fname = '{}_{}_{}.mp4'.format(field_name, cam_name, tail)
-        fn_out = os.path.join(os.getenv('PANDIR'), 'images', 'timelapse', fname)
+        fn_out = os.path.normpath(os.path.join(directory, fname))
 
-    fn_dir = os.path.dirname(fn_out)
-    os.makedirs(fn_dir, exist_ok=True)
+    if verbose:
+        print("Timelapse file: {}".format(fn_out))
+
+    if os.path.exists(fn_out) and not overwrite:
+        raise FileExistsError("Timelapse exists. Set overwrite=True if needed")
+
+    ffmpeg = shutil.which('ffmpeg')
+    if ffmpeg is None:
+        raise error.InvalidSystemCommand("ffmpeg not found, can't make timelapse")
+
     inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
 
     try:
-        ff = FFmpeg(
-            global_options='-r 3 -pattern_type glob',
-            inputs={inputs_glob: None},
-            outputs={
-                fn_out: '-s hd1080 -vcodec libx264'
-            })
+        ffmpeg_cmd = [
+            ffmpeg,
+            '-r', '3',
+            '-pattern_type', 'glob',
+            '-i', inputs_glob,
+            '-s', 'hd1080',
+            '-vcodec', 'libx264',
+        ]
 
-        if 'verbose' in kwargs:
-            out = None
-            err = None
-            print("Timelapse command: ", ff.cmd)
-        else:
-            out = open(os.devnull, 'w')
-            err = open(os.devnull, 'w')
+        if overwrite:
+            ffmpeg_cmd.append('-y')
 
-        ff.run(stdout=out, stderr=err)
+        ffmpeg_cmd.append(fn_out)
+
+        if verbose:
+            print(ffmpeg_cmd)
+
+        proc = subprocess.Popen(ffmpeg_cmd, universal_newlines=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            # Don't wait forever
+            outs, errs = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            outs, errs = proc.communicate()
+        finally:
+            if verbose:
+                print(outs)
+                print(errs)
+
+            # Double-check for file existence
+            if not os.path.exists(fn_out):
+                fn_out = None
     except Exception as e:
         warn("Problem creating timelapse in {}: {!r}".format(fn_out, e))
         fn_out = None
@@ -254,19 +309,27 @@ def create_timelapse(directory, fn_out=None, file_type='jpg', **kwargs):
     return fn_out
 
 
-def clean_observation_dir(dir_name, *args, **kwargs):
-    """ Clean an observation directory.
+def clean_observation_dir(dir_name,
+                          remove_jpgs=False,
+                          include_timelapse=True,
+                          timelapse_overwrite=False,
+                          **kwargs):
+    """Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
-        * Create timelapse from JPG files if present
-        * Remove JPG files
+        * Create timelapse from JPG files if present (optional, default True)
+        * Remove JPG files (optional, default False).
 
     Args:
-        dir_name (str): Full path to observation directory
-        *args: Description
-        **kwargs: Can include `verbose`
+        dir_name (str): Full path to observation directory.
+        remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
+            default False.
+        include_timelapse (bool, optional): If a timelapse should be created, default True.
+        timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
+            default False.
+        **kwargs: Can include `verbose`.
     """
     verbose = kwargs.get('verbose', False)
 
@@ -307,17 +370,23 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            _print('Creating timelapse for {}'.format(dir_name))
-            video_file = create_timelapse(dir_name)
-            _print('Timelapse created: {}'.format(video_file))
+            if include_timelapse:
+                try:
+                    _print('Creating timelapse for {}'.format(dir_name))
+                    video_file = make_timelapse(dir_name, overwrite=timelapse_overwrite)
+                    _print('Timelapse created: {}'.format(video_file))
+                except Exception as e:
+                    _print("Problem creating timelapse: {}".format(e))
 
             # Remove jpgs
-            _print('Removing jpgs')
-            for f in jpg_list:
-                try:
-                    os.remove(f)
-                except OSError as e:
-                    warn('Could not delete file: {!r}'.format(e))
+            if remove_jpgs:
+                _print('Removing jpgs')
+                for f in jpg_list:
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        warn('Could not delete file: {!r}'.format(e))
+
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
 
@@ -336,8 +405,11 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
             to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
     """
-    assert os.path.exists(dir_name)
-    assert re.match('PAN\d\d\d', pan_id) is not None
+    if os.path.exists(dir_name) is False:
+        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+
+    if re.match(r'PAN\d\d\d', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
 
     verbose = kwargs.get('verbose', False)
 

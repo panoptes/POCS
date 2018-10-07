@@ -1,3 +1,4 @@
+import os
 from astropy import units as u
 from collections import OrderedDict
 
@@ -69,6 +70,7 @@ class Observation(PanBase):
 
         self.pointing_image = None
 
+        self._image_dir = self.config['directories']['images']
         self._seq_time = None
 
         self.merit = 0.0
@@ -106,6 +108,24 @@ class Observation(PanBase):
     @seq_time.setter
     def seq_time(self, time):
         self._seq_time = time
+
+    @property
+    def directory(self):
+        """Return the directory for this Observation.
+
+        This return the base directory for the Observation. This does *not* include
+        the subfolders for each of the cameras.
+
+        Returns:
+            str: Full path to base directory.
+        """
+        try:
+            return self._directory
+        except AttributeError:
+            self._directory = os.path.join(self._image_dir,
+                                           'fields',
+                                           self.field.field_name)
+            return self._directory
 
     @property
     def first_exposure(self):
@@ -155,7 +175,7 @@ class Observation(PanBase):
             equinox = self.field.coord.equinox.value
         except AttributeError:
             equinox = self.field.coord.equinox
-        except Exception as e:
+        except Exception:
             equinox = 'J2000'
 
         status = {

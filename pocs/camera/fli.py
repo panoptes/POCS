@@ -1,5 +1,4 @@
 import time
-import os
 import re
 from warnings import warn
 from threading import Event
@@ -9,14 +8,14 @@ from threading import Lock
 import numpy as np
 
 from astropy import units as u
-from astropy.io import fits
 
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
+from pocs.camera import libfliconstants as c
 from pocs.utils.images import fits as fits_utils
 
 # FLI camera serial numbers have pairs of letters followed by a sequence of numbers
-serial_number_pattern = re.compile('^(ML|PL|KL|HP)\d+$')
+serial_number_pattern = re.compile(r'^(ML|PL|KL|HP)\d+$')
 
 
 class Camera(AbstractCamera):
@@ -32,6 +31,7 @@ class Camera(AbstractCamera):
                  name='FLI Camera',
                  set_point=25 * u.Celsius,
                  filter_type='M',
+                 library_path=False,
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
@@ -41,7 +41,7 @@ class Camera(AbstractCamera):
         self._exposure_lock = Lock()
 
         # Create an instance of the FLI Driver interface
-        self._FLIDriver = libfli.FLIDriver()
+        self._FLIDriver = libfli.FLIDriver(library_path)
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number instead of a device node
@@ -51,8 +51,8 @@ class Camera(AbstractCamera):
                 # No cached device nodes scanning results. 1st get list of all FLI cameras
                 self.logger.debug('Getting serial numbers for all connected FLI cameras')
                 Camera._fli_nodes = {}
-                device_list = self._FLIDriver.FLIList(interface_type=libfli.FLIDOMAIN_USB,
-                                                      device_type=libfli.FLIDEVICE_CAMERA)
+                device_list = self._FLIDriver.FLIList(interface_type=c.FLIDOMAIN_USB,
+                                                      device_type=c.FLIDEVICE_CAMERA)
                 if not device_list:
                     message = 'No FLI camera devices found!'
                     self.logger.error(message)
@@ -110,8 +110,12 @@ class Camera(AbstractCamera):
 
     @AbstractCamera.uid.getter
     def uid(self):
-        # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
-        # Need to use the whole thing.
+        """Return unique identifier for camera.
+
+        Need to overide this because the base class only returns the 1st
+        6 characters of the serial number, which is not a unique identifier
+        for most of the camera types
+        """
         return self._serial_number
 
     @property
@@ -173,7 +177,7 @@ class Camera(AbstractCamera):
 
         # Get handle from the SBIGDriver.
         self._handle = self._FLIDriver.FLIOpen(port=self.port)
-        if self._handle == libfli.FLI_INVALID_DEVICE:
+        if self._handle == c.FLI_INVALID_DEVICE:
             message = 'Could not connect to {} on {}!'.format(self.name, self.port)
             self.logger.error(message)
             warn(message)
@@ -215,9 +219,8 @@ class Camera(AbstractCamera):
             seconds = seconds * u.second
 
         if not self._exposure_lock.acquire(blocking=False):
-            message = 'Attempt to start exposure on {} ({}) while exposure in progress! Waiting...'.format(self.name, self.uid)
-            self.logger.warning(message)
-            warn(message)
+            self.logger.warning('Exposure started on {} ({}) while exposure in progress! Waiting.',
+                                self.name, self.uid)
             self._exposure_lock.acquire(blocking=True)
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
@@ -225,9 +228,9 @@ class Camera(AbstractCamera):
         self._FLIDriver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
         if dark:
-            frame_type = libfli.FLI_FRAME_TYPE_DARK
+            frame_type = c.FLI_FRAME_TYPE_DARK
         else:
-            frame_type = libfli.FLI_FRAME_TYPE_NORMAL
+            frame_type = c.FLI_FRAME_TYPE_NORMAL
         self._FLIDriver.FLISetFrameType(self._handle, frame_type)
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
@@ -308,15 +311,27 @@ class Camera(AbstractCamera):
         return header
 
     def _get_camera_info(self):
-        self._info = {}
-        self._info['serial number'] = self._FLIDriver.FLIGetSerialString(self._handle)
-        self._info['camera model'] = self._FLIDriver.FLIGetModel(self._handle)
-        self._info['hardware version'] = self._FLIDriver.FLIGetHWRevision(self._handle)
-        self._info['firmware version'] = self._FLIDriver.FLIGetFWRevision(self._handle)
-        self._info['pixel width'], self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(self._handle)
-        self._info['array corners'] = self._FLIDriver.FLIGetArrayArea(self._handle)
-        self._info['array height'] = self._info['array corners'][1][1] - self._info['array corners'][0][1]
-        self._info['array width'] = self._info['array corners'][1][0] - self._info['array corners'][0][0]
-        self._info['visible corners'] = self._FLIDriver.FLIGetVisibleArea(self._handle)
-        self._info['visible height'] = self._info['visible corners'][1][1] - self._info['visible corners'][0][1]
-        self._info['visible width'] = self._info['visible corners'][1][0] - self._info['visible corners'][0][0]
+
+        serial_number = self._FLIDriver.FLIGetSerialString(self._handle),
+        camera_model = self._FLIDriver.FLIGetModel(self._handle)
+        hardware_version = self._FLIDriver.FLIGetHWRevision(self._handle)
+        firmware_version = self._FLIDriver.FLIGetFWRevision(self._handle)
+
+        pixel_width, pixel_height = self._FLIDriver.FLIGetPixelSize(self._handle)
+        ccd_corners = self._FLIDriver.FLIGetArrayArea(self._handle)
+        visible_corners = self._FLIDriver.FLIGetVisibleArea(self._handle)
+
+        self._info = {
+            'serial number': serial_number,
+            'camera model': camera_model,
+            'hardware version': hardware_version,
+            'firmware version': firmware_version,
+            'pixel width': pixel_width,
+            'pixel height': pixel_height,
+            'array corners': ccd_corners,
+            'array height': ccd_corners[1][1] - ccd_corners[0][1],
+            'array width': ccd_corners[1][0] - ccd_corners[0][0],
+            'visible corners': visible_corners,
+            'visible height': visible_corners[1][1] - visible_corners[0][1],
+            'visible width': visible_corners[1][0] - visible_corners[0][0]
+        }

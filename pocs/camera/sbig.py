@@ -39,14 +39,18 @@ class Camera(AbstractCamera):
                 self.ccd_cooling_enabled = True
             else:
                 self.ccd_cooling_enabled = False
-            self.logger.info('\t\t\t {} initialised'.format(self))
+            self.logger.info('{} initialised'.format(self))
 
 # Properties
 
     @AbstractCamera.uid.getter
     def uid(self):
-        # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
-        # Need to use the whole thing.
+        """Return unique identifier for camera.
+
+        Need to overide this because the base class only returns the 1st
+        6 characters of the serial number, which is not a unique identifier
+        for most of the camera types
+        """
         return self._serial_number
 
     @property

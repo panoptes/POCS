@@ -72,8 +72,8 @@ class AbstractMount(PanBase):
         self._state = 'Parked'
 
         self.sidereal_rate = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
-        self.ra_guide_rate = 0.5  # Sidereal
-        self.dec_guide_rate = 0.5  # Sidereal
+        self.ra_guide_rate = 0.9  # Sidereal
+        self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
         self._movement_speed = ''
@@ -310,6 +310,125 @@ class AbstractMount(PanBase):
         self.logger.debug("Current separation from target: {}".format(separation))
 
         return separation
+
+    def get_tracking_correction(self, offset_info, pointing_ha):
+        """Determine the needed tracking corrections from current position.
+
+        This method will determine the direction and number of milliseconds to
+        correct the mount for each axis in order to correct for any tracking
+        drift. The Declination axis correction ('north' or 'south') depends on
+        the movement of the camera box with respect to the pier, which can be
+        determined from the Hour Angle (HA) of the pointing image in the sequence.
+
+        Note:
+            Correction values below 50ms will be skipped and values above 99999ms
+            will be clipped.
+
+        Args:
+            offset_info (`OffsetError`): A named tuple describing the offset
+                error. See `pocs.images.OffsetError`.
+            pointing_ha (float): The Hour Angle (HA) of the mount at the
+                beginning of the observation sequence in degrees. This affects
+                the direction of the Dec adjustment.
+
+        Returns:
+            dict: Offset corrections for each axis as needed ::
+
+                dict: {
+                    # axis: (arcsec, millisecond, direction)
+                    'ra': (float, float, str),
+                    'dec': (float, float, str),
+                }
+        """
+        pier_side = 'east'
+        if pointing_ha >= 0 and pointing_ha <= 12:
+            pier_side = 'west'
+
+        self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
+
+        axis_corrections = {
+            'dec': None,
+            'ra': None,
+        }
+
+        for axis in axis_corrections.keys():
+            # find the number of ms and direction for Dec axis
+            offset = getattr(offset_info, 'delta_{}'.format(axis))
+            offset_ms = self.get_ms_offset(offset, axis=axis)
+
+            if axis == 'dec':
+                # Determine which direction to move based on direction mount
+                # is moving (i.e. what side it started on).
+                if pier_side == 'east':
+                    if offset_ms >= 0:
+                        delta_direction = 'north'
+                    else:
+                        delta_direction = 'south'
+                else:
+                    if offset_ms >= 0:
+                        delta_direction = 'south'
+                    else:
+                        delta_direction = 'north'
+            else:
+                if offset_ms >= 0:
+                    delta_direction = 'west'
+                else:
+                    delta_direction = 'east'
+
+            offset_ms = abs(offset_ms.value)
+
+            # Skip short corrections
+            if offset_ms <= 50:
+                continue
+
+            # Ensure we don't try to move for too long
+            max_time = 99999
+
+            # Correct long offset
+            if offset_ms > max_time:
+                offset_ms = max_time
+
+            self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
+            axis_corrections[axis] = (offset, offset_ms, delta_direction)
+
+        return axis_corrections
+
+    def correct_tracking(self, correction_info, axis_timeout=30.):
+        """ Make tracking adjustment corrections.
+
+        Args:
+            correction_info (dict[tuple]): Correction info to be applied, see
+                `get_tracking_correction`.
+            axis_timeout (float, optional): Timeout for adjustment in each axis,
+                default 30 seconds.
+
+        Raises:
+            `error.Timeout`: Timeout error.
+        """
+        for axis, corrections in correction_info.items():
+            if not axis or not corrections:
+                continue
+
+            offset = corrections[0]
+            offset_ms = corrections[1]
+            delta_direction = corrections[2]
+
+            self.logger.info("Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
+                axis, delta_direction, offset_ms, offset))
+
+            self.query(
+                'move_ms_{}'.format(delta_direction),
+                '{:05.0f}'.format(offset_ms)
+            )
+
+            # Adjust tracking for `axis_timeout` seconds then fail if not done.
+            start_tracking_time = current_time()
+            while self.is_tracking is False:
+                if (current_time() - start_tracking_time).sec > axis_timeout:
+                    raise error.Timeout("Tracking adjustment timeout: {}".format(axis))
+
+                self.logger.debug("Waiting for {} tracking adjustment".format(axis))
+                time.sleep(0.5)
 
 
 ##################################################################################################

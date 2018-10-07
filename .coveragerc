@@ -1,11 +1,15 @@
 [run]
 branch = True
-concurrency = multiprocessing
+concurrency =
+    multiprocessing
+    threading
+    subprocess
 source =
     peas
     pocs
-omit = 
+omit =
 	pocs/utils/data.py
+parallel = True
 
 [report]
 exclude_lines =

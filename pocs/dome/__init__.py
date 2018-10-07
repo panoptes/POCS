@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-import pocs
+from pocs.base import PanBase
 import pocs.utils
 import pocs.utils.logger as logger_module
 
@@ -33,7 +33,7 @@ def create_dome_from_config(config, logger=None):
     return dome
 
 
-class AbstractDome(pocs.base.PanBase):
+class AbstractDome(PanBase):
     """Abstract base class for controlling a non-rotating dome.
 
     This assumes that the observatory 'dome' is not a classic rotating

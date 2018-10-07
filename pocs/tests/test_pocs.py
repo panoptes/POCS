@@ -8,15 +8,18 @@ from astropy import units as u
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
-from pocs.utils import Timeout
+from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
+from pocs.utils import error
+from pocs.utils import current_time
+from pocs.camera import create_cameras_from_config
 
 
 def wait_for_running(sub, max_duration=90):
     """Given a message subscriber, wait for a RUNNING message."""
-    timeout = Timeout(max_duration)
+    timeout = CountdownTimer(max_duration)
     while not timeout.expired():
-        msg_type, msg_obj = sub.receive_message()
+        topic, msg_obj = sub.receive_message()
         if msg_obj and 'RUNNING' == msg_obj.get('message'):
             return True
     return False
@@ -24,18 +27,25 @@ def wait_for_running(sub, max_duration=90):
 
 def wait_for_state(sub, state, max_duration=90):
     """Given a message subscriber, wait for the specified state."""
-    timeout = Timeout(max_duration)
+    timeout = CountdownTimer(max_duration)
     while not timeout.expired():
-        msg_type, msg_obj = sub.receive_message()
-        if msg_type == 'STATUS' and msg_obj and msg_obj.get('state') == state:
+        topic, msg_obj = sub.receive_message()
+        if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:
             return True
     return False
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type):
+def cameras(config):
+    """Get the default cameras from the config."""
+    return create_cameras_from_config(config)
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras):
     observatory = Observatory(
         config=config,
+        cameras=cameras,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
@@ -51,17 +61,6 @@ def pocs(config, observatory):
                 run_once=True,
                 config=config,
                 ignore_local_config=True)
-
-    pocs.observatory.scheduler.fields_file = None
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
 
     yield pocs
 
@@ -82,16 +81,6 @@ def pocs_with_dome(config_with_simulated_dome, db_type):
                 run_once=True,
                 config=config_with_simulated_dome,
                 ignore_local_config=True)
-
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
 
     yield pocs
 
@@ -131,22 +120,14 @@ def test_make_log_dir(pocs):
 def test_simple_simulator(pocs):
     assert isinstance(pocs, POCS)
 
-
-def test_not_initialized(pocs):
     assert pocs.is_initialized is not True
 
-
-def test_run_without_initialize(pocs):
     with pytest.raises(AssertionError):
         pocs.run()
 
-
-def test_initialization(pocs):
     pocs.initialize()
     assert pocs.is_initialized
 
-
-def test_default_lookup_trigger(pocs):
     pocs.state = 'parking'
     pocs.next_state = 'parking'
 
@@ -156,8 +137,6 @@ def test_default_lookup_trigger(pocs):
 
     assert pocs._lookup_trigger() == 'parking'
 
-
-def test_free_space(pocs):
     assert pocs.has_free_space() is True
 
     # Test something ridiculous
@@ -166,7 +145,7 @@ def test_free_space(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_dark_simulator(pocs):
+def test_is_weather_and_dark_simulator(pocs):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -175,25 +154,68 @@ def test_is_dark_simulator(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is True
 
-
-def test_is_dark_no_simulator_01(pocs):
-    pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
-
-def test_is_dark_no_simulator_02(pocs):
-    pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is False
 
-
-def test_is_weather_safe_simulator(pocs):
-    pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     assert pocs.is_weather_safe() is True
+
+
+def test_wait_for_events_timeout(pocs):
+    del os.environ['POCSTIME']
+    test_event = threading.Event()
+
+    # Test timeout
+    with pytest.raises(error.Timeout):
+        pocs.wait_for_events(test_event, 1)
+
+    # Test timeout
+    with pytest.raises(error.Timeout):
+        pocs.wait_for_events(test_event, 5 * u.second, sleep_delay=1)
+
+    test_event = threading.Event()
+
+    def set_event():
+        test_event.set()
+
+    # Mark as set in 1 second
+    t = threading.Timer(1.0, set_event)
+    t.start()
+
+    # Wait for 10 seconds (should trip in 1 second)
+    pocs.wait_for_events(test_event, 10)
+    assert test_event.is_set()
+
+    test_event = threading.Event()
+
+    def set_event():
+        while test_event.is_set() is False:
+            time.sleep(1)
+
+    def interrupt():
+        pocs._interrupted = True
+
+    # Wait for 60 seconds (interrupts below)
+    t = threading.Timer(60.0, set_event)
+    t.start()
+
+    # Interrupt - Time to test status and messaging
+    t2 = threading.Timer(3.0, interrupt)
+
+    # Wait for 60 seconds (should interrupt from above)
+    start_time = current_time()
+    t2.start()
+    pocs.wait_for_events(test_event, 60, sleep_delay=1., status_interval=1, msg_interval=1)
+    end_time = current_time()
+    assert test_event.is_set() is False
+    assert (end_time - start_time).sec < 10
+    test_event.set()
+    t.cancel()
+    t2.cancel()
 
 
 def test_is_weather_safe_no_simulator(pocs):
@@ -216,16 +238,16 @@ def wait_for_message(sub, type=None, attr=None, value=None):
     """Wait for a message of the specified type and contents."""
     assert (attr is None) == (value is None)
     while True:
-        msg_type, msg_obj = sub.receive_message()
+        topic, msg_obj = sub.receive_message()
         if not msg_obj:
             continue
-        if type and msg_type != type:
+        if type and topic != type:
             continue
         if not attr or attr not in msg_obj:
             continue
         if value and msg_obj[attr] != value:
             continue
-        return msg_type, msg_obj
+        return topic, msg_obj
 
 
 def test_run_wait_until_safe(observatory):
@@ -369,6 +391,8 @@ def test_run_complete(pocs):
 
 
 def test_run_power_down_interrupt(observatory):
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
         pocs = POCS(observatory, messaging=True)

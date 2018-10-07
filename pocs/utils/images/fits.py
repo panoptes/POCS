@@ -25,8 +25,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
     if verbose:
         print("Entering solve_field")
 
-    solve_field_script = "{}/scripts/solve_field.sh".format(
-        os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field_script = os.path.join(os.getenv('POCS'), 'scripts', 'solve_field.sh')
 
     if not os.path.exists(solve_field_script):  # pragma: no cover
         raise error.InvalidSystemCommand(
@@ -48,9 +47,9 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
             '--downsample', '4',
         ]
 
-        if kwargs.get('overwrite', True):
+        if kwargs.get('overwrite', False):
             options.append('--overwrite')
-        if kwargs.get('skip_solved', True):
+        if kwargs.get('skip_solved', False):
             options.append('--skip-solved')
 
         if 'ra' in kwargs:
@@ -62,6 +61,9 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
         if 'radius' in kwargs:
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
+
+    if fname.endswith('.fz'):
+        options.append('--extension=1')
 
     cmd = [solve_field_script] + options + [fname]
     if verbose:
@@ -103,18 +105,26 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         dict: Keyword information from the solved field
     """
     verbose = kwargs.get('verbose', False)
+    skip_solved = kwargs.get('skip_solved', True)
+
     out_dict = {}
     output = None
     errs = None
 
+    file_path, file_ext = os.path.splitext(fname)
+
+    header = getheader(fname)
+    wcs = WCS(header)
+
     # Check for solved file
-    if kwargs.get('skip_solved', True) and \
-            (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
+    if skip_solved and wcs.is_celestial:
+
         if verbose:
             print("Solved file exists, skipping",
                   "(pass skip_solved=False to solve again):",
                   fname)
 
+        out_dict.update(header)
         out_dict['solved_fits_file'] = fname
         return out_dict
 
@@ -139,15 +149,15 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         if proc.returncode == 3:
             raise error.SolveError('solve-field not found: {}'.format(output))
 
-        if not os.path.exists(fname.replace('.fits', '.solved')):
+        if not os.path.exists(fname.replace(file_ext, '.solved')):
             raise error.SolveError('File not solved')
 
         try:
             # Handle extra files created by astrometry.net
-            new = fname.replace('.fits', '.new')
-            rdls = fname.replace('.fits', '.rdls')
-            axy = fname.replace('.fits', '.axy')
-            xyls = fname.replace('.fits', '-indx.xyls')
+            new = fname.replace(file_ext, '.new')
+            rdls = fname.replace(file_ext, '.rdls')
+            axy = fname.replace(file_ext, '.axy')
+            xyls = fname.replace(file_ext, '-indx.xyls')
 
             if replace and os.path.exists(new):
                 # Remove converted fits
@@ -172,7 +182,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     else:
 
         try:
-            out_dict.update(fits.getheader(fname))
+            out_dict.update(getheader(fname))
         except OSError:
             if verbose:
                 print("Can't read fits header for:", fname)
@@ -205,6 +215,10 @@ def get_wcsinfo(fits_fname, verbose=False):
         raise error.InvalidCommand('wcsinfo not found')
 
     run_cmd = [wcsinfo, fits_fname]
+
+    if fits_fname.endswith('.fz'):
+        run_cmd.append('-e')
+        run_cmd.append('1')
 
     if verbose:
         print("wcsinfo command: {}".format(run_cmd))
@@ -273,22 +287,17 @@ def get_wcsinfo(fits_fname, verbose=False):
 
 
 def fpack(fits_fname, unpack=False, verbose=False):
-    """ Compress/Decompress a FITS file
+    """Compress/Decompress a FITS file
 
     Uses `fpack` (or `funpack` if `unpack=True`) to compress a FITS file
 
-    Parameters
-    ----------
-    fits_fname : {str}
-        Name of a FITS file that contains a WCS.
-    unpack : {bool}, optional
-        file should decompressed instead of compressed (default is False)
-    verbose : {bool}, optional
-        Verbose (the default is False)
-    Returns
-    -------
-    str
-        Filename of compressed/decompressed file
+    Args:
+        fits_fname ({str}): Name of a FITS file that contains a WCS.
+        unpack ({bool}, optional): file should decompressed instead of compressed, default False.
+        verbose ({bool}, optional): Verbose, default False.
+
+    Returns:
+        str: Filename of compressed/decompressed file.
     """
     assert os.path.exists(fits_fname), warn(
         "No file exists at: {}".format(fits_fname))
@@ -320,6 +329,24 @@ def fpack(fits_fname, unpack=False, verbose=False):
         output, errs = proc.communicate()
 
     return out_file
+
+
+def funpack(*args, **kwargs):
+    """Unpack a FITS file.
+
+    Note:
+        This is a thin-wrapper around the `fpack` function
+        with the `unpack=True` option specified. See `fpack`
+        documentation for details.
+
+    Args:
+        *args: Arguments passed to `fpack`.
+        **kwargs: Keyword arguments passed to `fpack`.
+
+    Returns:
+        str: Path to uncompressed FITS file.
+    """
+    return fpack(*args, unpack=True, **kwargs)
 
 
 def write_fits(data, header, filename, logger, exposure_event=None):
@@ -366,3 +393,45 @@ def update_headers(file_path, info):
         hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', info.get('origin', ''))
         hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+
+
+def getheader(fn, *args, **kwargs):
+    """Get the FITS header.
+
+    Small wrapper around `astropy.io.fits.getheader` to auto-determine
+    the FITS extension. This will return the header associated with the
+    image. If you need the compression header information use the astropy
+    module directly.
+
+    Args:
+        fn (str): Path to FITS file.
+        *args: Passed to `astropy.io.fits.getheader`.
+        **kwargs: Passed to `astropy.io.fits.getheader`.
+
+    Returns:
+        `astropy.io.fits.header.Header`: The FITS header for the data.
+    """
+    ext = 0
+    if fn.endswith('.fz'):
+        ext = 1
+    return fits.getheader(fn, ext=ext)
+
+
+def getval(fn, *args, **kwargs):
+    """Get a value from the FITS header.
+
+    Small wrapper around `astropy.io.fits.getval` to auto-determine
+    the FITS extension. This will return the value from the header
+    associated with the image (not the compression header). If you need
+    the compression header information use the astropy module directly.
+
+    Args:
+        fn (str): Path to FITS file.
+
+    Returns:
+        str or float: Value from header (with no type conversion).
+    """
+    ext = 0
+    if fn.endswith('.fz'):
+        ext = 1
+    return fits.getval(fn, *args, ext=ext, **kwargs)

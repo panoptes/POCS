@@ -1,18 +1,42 @@
 import os
 import pytest
 
+import time
 from datetime import datetime as dt
-
+from astropy import units as u
 
 from pocs.utils import current_time
-from pocs.utils import list_connected_cameras
 from pocs.utils import listify
 from pocs.utils import load_module
-from pocs.utils.error import NotFound
+from pocs.utils import CountdownTimer
+from pocs.utils import error
+from pocs.camera import list_connected_cameras
+
+
+def test_error(capsys):
+    with pytest.raises(error.PanError) as e_info:
+        raise error.PanError(msg='Testing message')
+
+    assert str(e_info.value) == 'PanError: Testing message'
+
+    with pytest.raises(error.PanError) as e_info:
+        raise error.PanError()
+
+    assert str(e_info.value) == 'PanError'
+
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(msg="Testing exit", exit=True)
+    assert e_info.type == SystemExit
+    assert capsys.readouterr().out.strip() == 'TERMINATING: Testing exit'
+
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(exit=True)
+    assert e_info.type == SystemExit
+    assert capsys.readouterr().out.strip() == 'TERMINATING: No reason specified'
 
 
 def test_bad_load_module():
-    with pytest.raises(NotFound):
+    with pytest.raises(error.NotFound):
         load_module('FOOBAR')
 
 
@@ -51,3 +75,41 @@ def test_has_camera_ports():
 
     for port in ports:
         assert port.startswith('usb:')
+
+
+def test_countdown_timer_bad_input():
+    with pytest.raises(ValueError):
+        assert CountdownTimer('d')
+
+    with pytest.raises(ValueError):
+        assert CountdownTimer(current_time())
+
+    with pytest.raises(AssertionError):
+        assert CountdownTimer(-1)
+
+
+def test_countdown_timer_non_blocking():
+    timer = CountdownTimer(0)
+    assert timer.is_non_blocking
+    assert timer.time_left() == 0
+
+    for arg, expected_duration in [(2, 2.0), (0.5, 0.5), (1 * u.second, 1.0)]:
+        timer = CountdownTimer(arg)
+        assert timer.duration == expected_duration
+
+
+def test_countdown_timer():
+    count_time = 1
+    timer = CountdownTimer(count_time)
+    assert timer.time_left() > 0
+    assert timer.expired() is False
+    assert timer.is_non_blocking is False
+
+    counter = 0.
+    while timer.time_left() > 0:
+        time.sleep(0.1)
+        counter += 0.1
+
+    assert counter == pytest.approx(1)
+    assert timer.time_left() == 0
+    assert timer.expired() is True

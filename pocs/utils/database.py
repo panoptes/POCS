@@ -366,7 +366,7 @@ class PanFileDB(AbstractPanDB):
 
         try:
             return json_util.loads_file(current_fn)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             self._warn("No record found for {}".format(collection))
             return None
 
@@ -387,7 +387,7 @@ class PanFileDB(AbstractPanDB):
         current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
         try:
             os.remove(current_f)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             pass
 
     def _get_file(self, collection, permanent=True):

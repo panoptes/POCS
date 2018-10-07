@@ -1,3 +1,5 @@
+import os
+
 import pycodestyle
 import pytest
 
@@ -9,7 +11,8 @@ def dirs_to_check(request):
 
 def test_conformance(dirs_to_check):
     """Test that we conform to PEP-8."""
-    style = pycodestyle.StyleGuide(quiet=False, ignore=['E501', 'E402'])
+    config_file = os.path.join(os.environ['POCS'], '.pycodestyle.cfg')
+    style = pycodestyle.StyleGuide(quiet=False, config_file=config_file)
 
     print(dirs_to_check)
     style.input_dir(dirs_to_check)

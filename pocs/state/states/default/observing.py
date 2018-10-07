@@ -1,37 +1,26 @@
-from pocs.utils import error
-from time import sleep
+from pocs import utils as pocs_utils
 
-wait_interval = 15.
-timeout = 150.
+MAX_EXTRA_TIME = 60  # seconds
 
 
 def on_enter(event_data):
-    """ """
+    """Take an observation image.
+
+    This state is responsible for taking the actual observation image.
+     """
     pocs = event_data.model
     pocs.say("I'm finding exoplanets!")
     pocs.next_state = 'parking'
 
     try:
-        # Start the observing
-        camera_events = pocs.observatory.observe()
+        maximum_duration = pocs.observatory.current_observation.exp_time.value + MAX_EXTRA_TIME
 
-        wait_time = 0.
-        while not all([event.is_set() for event in camera_events.values()]):
-            pocs.check_messages()
-            if pocs.interrupted:
-                pocs.say("Observation interrupted!")
-                break
+        # Start the observing.
+        camera_events_info = pocs.observatory.observe()
+        camera_events = list(camera_events_info.values())
+        pocs.wait_for_events(camera_events, maximum_duration, event_type='observing')
 
-            pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
-            pocs.status()
-
-            if wait_time > timeout:
-                raise error.Timeout
-
-            sleep(wait_interval)
-            wait_time += wait_interval
-
-    except error.Timeout as e:
+    except pocs_utils.error.Timeout:
         pocs.logger.warning(
             "Timeout while waiting for images. Something wrong with camera, going to park.")
     except Exception as e:

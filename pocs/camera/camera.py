@@ -1,31 +1,39 @@
-from pocs.base import PanBase
+import re
+import shutil
+import subprocess
+import yaml
+import os
+import copy
+from threading import Event
+from threading import Thread
 
+from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
+
+from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
-
 from pocs.focuser import AbstractFocuser
-
-from astropy.io import fits
-from astropy.time import Time
-import astropy.units as u
-
-import re
-import shutil
-import subprocess
-import yaml
-import os
-
-from threading import Event
-from threading import Thread
 
 
 class AbstractCamera(PanBase):
 
-    """ Base class for all cameras """
+    """Base class for all cameras.
+
+    Attributes:
+        filter_type (str): Type of filter attached to camera, default RGGB.
+        focuser (`pocs.cameras.focuser.Focuser`|None): Focuser for the camera, default None.
+        is_primary (bool): If this camera is the primary camera for the system, default False.
+        model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
+        name (str): Name of the camera, default 'Generic Camera'.
+        port (str): The port the camera is connected to, typically a usb device, default None.
+        properties (dict): A collection of camera properties as read from the camera.
+    """
 
     def __init__(self,
                  name='Generic Camera',
@@ -36,24 +44,18 @@ class AbstractCamera(PanBase):
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        try:
-            self._image_dir = self.config['directories']['images']
-        except KeyError:
-            self.logger.error("No images directory. Set image_dir in config")
-
         self.model = model
         self.port = port
         self.name = name
-
         self.is_primary = primary
+        self.properties = None
+
+        self.filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
-        self._serial_number = 'XXXXXX'
+        self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self.filter_type = 'RGGB'
-
-        self.properties = None
         self._current_observation = None
 
         if focuser:
@@ -68,8 +70,9 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(**focuser, camera=self)
-                    self.logger.debug("Focuser created: {}".format(self.focuser))
+                    focuser_kwargs = copy.copy(focuser)
+                    focuser_kwargs.update({'camera': self, 'config': self.config})
+                    self.focuser = module.Focuser(**focuser_kwargs)
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
@@ -208,7 +211,8 @@ class AbstractCamera(PanBase):
             observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, observation_event, exposure_event))
+        t = Thread(target=self.process_exposure, args=(
+            metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -238,17 +242,24 @@ class AbstractCamera(PanBase):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        self.logger.debug("Processing {}".format(image_id))
+        exptime = info['exp_time']
+        field_name = info['field_name']
+
+        image_title = '{} [{}s] {} {}'.format(field_name,
+                                              exptime,
+                                              seq_id.replace('_', ' '),
+                                              current_time(pretty=True))
 
         try:
-            self.logger.debug("Extracting pretty image")
+            self.logger.debug("Processing {}".format(image_title))
             img_utils.make_pretty_image(file_path,
-                                        title=info['field_name'],
-                                        primary=info['is_primary'])
+                                        title=image_title,
+                                        link_latest=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
         file_path = self._process_fits(file_path, info)
+        self.logger.debug("Finished processing FITS.")
         try:
             info['exp_time'] = info['exp_time'].value
         except Exception:
@@ -285,28 +296,24 @@ class AbstractCamera(PanBase):
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   mask_dilations=None,
-                  spline_smoothing=None,
                   coarse=False,
-                  plots=True,
+                  make_plots=False,
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the specified merit function. Optionally
-        performs a coarse focus first before performing the default fine focus.
-        The expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and
-        after updating the intial focus position in the config only fine focus
-        will be required.
+        Focuses the camera using the specified merit function. Optionally performs
+        a coarse focus to find the approximate position of infinity focus, which
+        should be followed by a fine focus before observing.
 
         Args:
-            seconds (optional): Exposure time for focus exposures, if not
+            seconds (scalar, optional): Exposure time for focus exposures, if not
                 specified will use value from config.
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (optional): Size of square central region of image to
-                use, default 500 x 500 pixels.
+            thumbnail_size (int, optional): Size of square central region of image
+                to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
                 first and last images from each focus run.
@@ -314,22 +321,22 @@ class AbstractCamera(PanBase):
                 before the focus run, and use it for dark subtraction and hot
                 pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
-                focus metric.
+                focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
-            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
-                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
-            coarse (bool, optional): Whether to begin with coarse focusing,
-                default False
-            plots (bool, optional: Whether to write focus plots to images folder,
-                default True.
-            blocking (bool, optional): Whether to block until autofocus complete,
-                default False
+            coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
+                a fine focus. Default False.
+            make_plots (bool, optional: Whether to write focus plots to images folder, default
+                False.
+            blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
+
+        Raises:
+            ValueError: If invalid values are passed for any of the focus parameters.
         """
         if self.focuser is None:
             self.logger.error("Camera must have a focuser for autofocus!")
@@ -344,9 +351,8 @@ class AbstractCamera(PanBase):
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
-                                      spline_smoothing=spline_smoothing,
                                       coarse=coarse,
-                                      plots=plots,
+                                      make_plots=make_plots,
                                       blocking=blocking,
                                       *args, **kwargs)
 
@@ -412,17 +418,23 @@ class AbstractCamera(PanBase):
 
         start_time = headers.get('start_time', current_time(flatten=True))
 
+        if not observation.seq_time:
+            observation.seq_time = start_time
+
         # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
+        image_dir = os.path.join(
+            observation.directory,
             self.uid,
-            observation.seq_time,
+            observation.seq_time
         )
 
         # Get full file path
         if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
+            file_path = os.path.join(
+                image_dir,
+                '{}.{}'.format(start_time, self.file_extension)
+            )
+
         else:
             # Add extension
             if '.' not in filename:
@@ -430,19 +442,23 @@ class AbstractCamera(PanBase):
 
             # Add directory
             if '/' not in filename:
-                filename = '{}/{}'.format(image_dir, filename)
+                filename = os.path.join(image_dir, filename)
 
             file_path = filename
 
+        unit_id = self.config['pan_id']
+
+        # Make the image_id
         image_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             start_time
         )
         self.logger.debug("image_id: {}".format(image_id))
 
+        # Make the sequence_id
         sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
+            unit_id,
             self.uid,
             observation.seq_time
         )
@@ -477,15 +493,11 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        try:
-            return "{} ({}) on {} with {}".format(
-                self.name,
-                self.uid,
-                self.port,
-                self.focuser.name
-            )
-        except AttributeError:
-            return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        if hasattr(self, 'focuser') and self.focuser is not None:
+            s += ' with {}'.format(self.focuser.name)
+
+        return s
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
