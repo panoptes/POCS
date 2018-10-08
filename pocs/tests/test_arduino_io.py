@@ -264,8 +264,8 @@ def test_arduino_io_auto_connect_to_read(serial_handlers, memory_db, msg_publish
     read_and_return(aio, memory_db)
 
 
-def test_arduino_io_board_name(serial_handlers, memory_db, msg_publisher, msg_subscriber, cmd_publisher,
-                          cmd_subscriber):
+def test_arduino_io_board_name(serial_handlers, memory_db, msg_publisher, msg_subscriber,
+                               cmd_publisher, cmd_subscriber):
     board = 'telemetry'
     ser = arduino_io.open_serial_device('arduinosimulator://?board=' + board)
     board = board + '_board'
@@ -279,8 +279,8 @@ def test_arduino_io_board_name(serial_handlers, memory_db, msg_publisher, msg_su
     aio.board = board
 
 
-def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subscriber, cmd_publisher,
-                          cmd_subscriber):
+def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subscriber,
+                             cmd_publisher, cmd_subscriber):
     """Confirm request to shutdown is recorded."""
     board = 'telemetry'
     ser = arduino_io.open_serial_device('arduinosimulator://?board=' + board)
@@ -303,8 +303,8 @@ def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subs
     #    assert not aio._keep_running
 
 
-def test_arduino_io_write_line(serial_handlers, memory_db, msg_publisher, msg_subscriber, cmd_publisher,
-                          cmd_subscriber):
+def test_arduino_io_write_line(serial_handlers, memory_db, msg_publisher, msg_subscriber,
+                               cmd_publisher, cmd_subscriber):
     """Confirm request to shutdown is recorded."""
     board = 'telemetry'
     ser = arduino_io.open_serial_device('arduinosimulator://?board=' + board)
@@ -321,4 +321,3 @@ def test_arduino_io_write_line(serial_handlers, memory_db, msg_publisher, msg_su
     aio.handle_commands()
     assert aio._keep_running
     # TODO(jamessynge): Come up with a way to validate the write_line is performed.
-
