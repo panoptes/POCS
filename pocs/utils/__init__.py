@@ -109,7 +109,7 @@ class CountdownTimer(object):
         assert duration >= 0, "Duration must be non-negative."
         self.is_non_blocking = (duration == 0)
 
-        self.duration = duration
+        self.duration = float(duration)
         self.restart()
 
     def expired(self):
@@ -135,11 +135,29 @@ class CountdownTimer(object):
                 self.restart()
                 return self.duration
             else:
-                return max(0, delta)
+                return max(0.0, delta)
 
     def restart(self):
         """Restart the timed duration."""
         self.target_time = time.monotonic() + self.duration
+
+    def sleep(self, max_sleep=None):
+        """Sleep until the timer expires, or for max_sleep, whichever is sooner.
+
+        Args:
+            max_sleep: Number of seconds to wait for, or None.
+        Returns:
+            True if slept for less than time_left(), False otherwise.
+        """
+        remaining = self.time_left()
+        if not remaining:
+            return False
+        if max_sleep and max_sleep < remaining:
+            assert max_sleep > 0
+            time.sleep(max_sleep)
+            return True
+        time.sleep(remaining)
+        return False
 
 
 def listify(obj):
