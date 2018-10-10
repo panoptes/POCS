@@ -92,6 +92,7 @@ def test_no_exposures(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     assert obs.first_exposure is None
     assert obs.last_exposure is None
+    assert obs.pointing_image is None
 
 
 def test_last_exposure_and_reset(field):

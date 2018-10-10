@@ -60,13 +60,12 @@ class Observation(PanBase):
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
+        self.pointing_images = OrderedDict()
 
         self.priority = float(priority)
 
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
-
-        self.pointing_images = OrderedDict()
 
         self._image_dir = self.config['directories']['images']
         self._seq_time = None
