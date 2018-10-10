@@ -208,7 +208,10 @@ class AbstractCamera(PanBase):
 
         # Add most recent exposure to list
         if self.is_primary:
-            observation.exposure_list[image_id] = file_path
+            if 'POINTING' in headers:
+                observation.pointing_images[image_id] = file_path
+            else:
+                observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
         t = Thread(target=self.process_exposure, args=(
@@ -493,7 +496,12 @@ class AbstractCamera(PanBase):
         return file_path
 
     def __str__(self):
-        s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        name = self.name
+        if self.is_primary:
+            name += ' [Primary]'
+
+        s = "{} ({}) on {}".format(name, self.uid, self.port)
+
         if hasattr(self, 'focuser') and self.focuser is not None:
             s += ' with {}'.format(self.focuser.name)
 

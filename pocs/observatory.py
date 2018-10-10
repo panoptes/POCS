@@ -376,7 +376,7 @@ class Observatory(PanBase):
         # Clear the offset info
         self.current_offset_info = None
 
-        pointing_image = self.current_observation.pointing_image
+        pointing_image_id, pointing_image = self.current_observation.pointing_image
         self.logger.debug(
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
@@ -430,7 +430,8 @@ class Observatory(PanBase):
             self.logger.debug("Updating the tracking")
 
             # Get the pier side of pointing image
-            pointing_ha = self.current_observation.pointing_image.header_ha
+            _, pointing_image = self.current_observation.pointing_image
+            pointing_ha = pointing_image.header_ha
 
             try:
                 pointing_ha = pointing_ha.value
