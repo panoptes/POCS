@@ -62,7 +62,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
     pocs_time = os.getenv('POCSTIME')
 
     if pocs_time is not None and pocs_time > '':
-        _time = Time(os.getenv('POCSTIME'))
+        _time = Time(pocs_time)
         # Increment POCSTIME
         os.environ['POCSTIME'] = (_time + 1 * u.second).isot
     else:
