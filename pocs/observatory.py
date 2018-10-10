@@ -323,7 +323,10 @@ class Observatory(PanBase):
 
                 if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
-                    img_utils.upload_observation_dir(pan_id, seq_dir)
+                    try:
+                        img_utils.upload_observation_dir(pan_id, seq_dir)
+                    except error.GoogleCloudError:
+                        self.logger.info("Failed to upload directory {}".format(seq_dir))
 
             self.logger.debug('Cleanup finished')
 

@@ -236,7 +236,7 @@ def test_observe(observatory):
     assert len(observatory.scheduler.observed_list) == 0
 
 
-def test_cleanup_fails(observatory):
+def test_cleanup_missing_config_keys(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
 
     observatory.get_observation()
