@@ -30,14 +30,17 @@ class ArduinoSimulator:
     at a rate similar to 9600 baud, the rate used by our Arduino sketches.
     """
 
-    def __init__(self, message, relay_queue, json_queue, stop, logger):
+    def __init__(self, message, relay_queue, json_queue, chunk_size, stop, logger):
         """
         Args:
             message: The message to be sent (millis and report_num will be added).
-            relay_queue: The queue.Queue instance from which replay command bytes are read
-                and acted upon. Elements are of type bytes.
-            json_queue: The queue.Queue instance to which json messages (serialized to bytes)
-                are written at ~9600 baud. Elements are of type bytes.
+            relay_queue: The queue.Queue instance from which relay command
+                bytes are read and acted upon. Elements are of type bytes.
+            json_queue: The queue.Queue instance to which json messages
+                (serialized to bytes) are written at ~9600 baud. Elements
+                are of type bytes (i.e. each element is a sequence of bytes of
+                length up to chunk_size).
+            chunk_size: The number of bytes to write to json_queue at a time.
             stop: a threading.Event which is checked to see if run should stop executing.
             logger: the Python logger to use for reporting messages.
         """
@@ -50,7 +53,7 @@ class ArduinoSimulator:
         self.message_delta = datetime.timedelta(seconds=2)
         self.next_message_time = None
         # Size of a chunk of bytes.
-        self.chunk_size = 20
+        self.chunk_size = chunk_size
         # Interval between outputing chunks of bytes.
         chunks_per_second = 1000.0 / self.chunk_size
         chunk_interval = 1.0 / chunks_per_second
@@ -65,7 +68,7 @@ class ArduinoSimulator:
         self.logger.info('ArduinoSimulator created')
 
     def __del__(self):
-        if not self.stop.is_set():
+        if not self.stop.is_set():  # pragma: no cover
             self.logger.critical('ArduinoSimulator.__del__ stop is NOT set')
 
     def run(self):
@@ -163,6 +166,8 @@ class ArduinoSimulator:
         self.message['millis'] = elapsed
         self.message['report_num'] = self.report_num
         s = json.dumps(self.message) + '\r\n'
+        s = s.replace('"Convert to NaN"', 'NaN', 1)
+        s = s.replace('"Convert to nan"', 'nan', 1)
         self.logger.debug('generate_next_message -> {!r}', s)
         b = s.encode(encoding='ascii')
         return b
@@ -173,17 +178,15 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         super().__init__(*args, **kwargs)
         self.logger = pocs.utils.logger.get_root_logger()
         self.simulator_thread = None
-        # The elements of these queues are of type bytes. This means we aren't fully controlling
-        # the baudrate, but that should be OK.
-        self.relay_queue = queue.Queue(maxsize=100)
-        self.json_queue = queue.Queue(maxsize=10000)
+        self.relay_queue = queue.Queue(maxsize=1)
+        self.json_queue = queue.Queue(maxsize=1)
         self.json_bytes = bytearray()
         self.stop = threading.Event()
         self.stop.set()
         self.device_simulator = None
 
     def __del__(self):
-        if self.simulator_thread:
+        if self.simulator_thread:  # pragma: no cover
             self.logger.critical('ArduinoSimulator.__del__ simulator_thread is still present')
             self.stop.set()
             self.simulator_thread.join(timeout=3.0)
@@ -244,7 +247,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 response.extend(b)
                 if size is not None and len(response) >= size:
                     break
-            else:
+            else:  # pragma: no cover
                 # The timeout expired while in _read1.
                 break
             if timeout_obj.expired():
@@ -407,14 +410,12 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
     # Internal (non-standard) methods.
 
     def _params_from_url(self, url):
-        """
-        extract host and port from an URL string, other settings are extracted
-        an stored in instance
-        """
+        """Extract various params from the URL."""
         expected = 'expected a string in the form "arduinosimulator://[?board=<name>]"'
         parts = urllib.parse.urlparse(url)
         if parts.scheme != "arduinosimulator":
             raise Exception(expected + ': got scheme {!r}'.format(parts.scheme))
+        int_param_names = {'chunk_size', 'read_buffer_size', 'write_buffer_size'}
         params = {}
         for option, values in urllib.parse.parse_qs(parts.query, True).items():
             if option == 'board' and len(values) == 1:
@@ -423,6 +424,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 # This makes it easier for tests to confirm the right serial device has
                 # been opened.
                 self.name = values[0]
+            elif option in int_param_names and len(values) == 1:
+                params[option] = int(values[0])
             else:
                 raise Exception(expected + ': unknown param {!r}'.format(option))
         return params
@@ -446,7 +449,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                     "amps": {"main":1083.60,"fan":50.40,"mount":61.20,"cameras":27.00},
                     "humidity":42.60,
                     "temp_00":15.50,
-                    "temperature":[13.00,12.81,19.75]
+                    "temperature":[13.00,12.81,19.75],
+                    "not_a_number":"Convert to nan"
                 }
                 """)
         elif board == 'camera':
@@ -457,7 +461,9 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                     "camera_00":1,
                     "camera_01":1,
                     "accelerometer": {"x":-7.02, "y":6.95, "z":1.70, "o": 6},
-                    "humidity":59.60, "temp_00":12.50
+                    "humidity":59.60,
+                    "temp_00":12.50,
+                    "Not_a_Number":"Convert to NaN"
                 }
                 """)
         elif board == 'json_object':
@@ -465,8 +471,15 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             message = {}
         else:
             raise Exception('Unknown board: {}'.format(board))
+
+        # The elements of these queues are of type bytes. This means we aren't fully controlling
+        # the baudrate unless the chunk_size is 1, but that should be OK.
+        chunk_size = params.get('chunk_size', 20)
+        self.json_queue = queue.Queue(maxsize=params.get('read_buffer_size', 10000))
+        self.relay_queue = queue.Queue(maxsize=params.get('write_buffer_size', 100))
+
         self.device_simulator = ArduinoSimulator(message, self.relay_queue, self.json_queue,
-                                                 self.stop, self.logger)
+                                                 chunk_size, self.stop, self.logger)
 
 
 Serial = FakeArduinoSerialHandler

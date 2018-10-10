@@ -27,7 +27,5 @@ def on_enter(event_data):
         pocs.logger.warning("Problem with imaging: {}".format(e))
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        pocs.observatory.current_observation.current_exp += 1
         pocs.logger.debug('Finished with observing, going to analyze')
-
         pocs.next_state = 'analyzing'

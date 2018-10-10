@@ -172,4 +172,4 @@ def test_location_positive_elevation(config):
 
 
 def test_directories(config):
-    assert config['directories']['data'] == '{}/data'.format(os.getenv('PANDIR'))
+    assert config['directories']['data'] == os.path.join(os.getenv('PANDIR'), 'data')

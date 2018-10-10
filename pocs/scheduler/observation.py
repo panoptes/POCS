@@ -56,24 +56,23 @@ class Observation(PanBase):
 
         self.field = field
 
-        self.current_exp = 0
-
         self.exp_time = exp_time
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
+        self.pointing_images = OrderedDict()
 
         self.priority = float(priority)
 
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
 
-        self.pointing_image = None
-
         self._image_dir = self.config['directories']['images']
         self._seq_time = None
 
         self.merit = 0.0
+
+        self.reset()
 
         self.logger.debug("Observation created: {}".format(self))
 
@@ -128,6 +127,15 @@ class Observation(PanBase):
             return self._directory
 
     @property
+    def current_exp_num(self):
+        """ Return the current number of exposures.
+
+        Returns:
+            int: The size of `self.exposure_list`.
+        """
+        return len(self.exposure_list)
+
+    @property
     def first_exposure(self):
         """ Return the latest exposure information
 
@@ -151,16 +159,29 @@ class Observation(PanBase):
         except IndexError:
             self.logger.warning("No exposure available")
 
+    @property
+    def pointing_image(self):
+        """Return the last pointing image.
+
+        Returns:
+            tuple: `image_id` and full path of most recent pointing image from
+                the primary camera.
+        """
+        try:
+            return list(self.pointing_images.items())[-1]
+        except IndexError:
+            self.logger.warning("No pointing image available")
+
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
     def reset(self):
-        """Resets the exposure values for the observation """
+        """Resets the exposure information for the observation """
         self.logger.debug("Resetting observation {}".format(self))
 
-        self.current_exp = 0
+        self.exposure_list = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
 
@@ -179,7 +200,7 @@ class Observation(PanBase):
             equinox = 'J2000'
 
         status = {
-            'current_exp': self.current_exp,
+            'current_exp': self.current_exp_num,
             'dec_mnt': self.field.coord.dec.value,
             'equinox': equinox,
             'exp_set_size': self.exp_set_size,

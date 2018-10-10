@@ -25,20 +25,16 @@ def simulator():
 
 
 @pytest.fixture
-def observatory(config, simulator):
+def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
-    cameras = create_cameras_from_config(config)
     obs = Observatory(config=config,
                       simulator=simulator,
-                      cameras=cameras,
                       ignore_local_config=True)
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
+
     return obs
-
-
-@pytest.fixture(scope='module')
-def images_dir(tmpdir_factory):
-    directory = tmpdir_factory.mktemp('images')
-    return str(directory)
 
 
 def test_error_exit(config):
@@ -127,7 +123,7 @@ def test_primary_camera(observatory):
 
 
 def test_status(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()
     assert 'mount' not in status
     assert 'observation' not in status
@@ -169,6 +165,7 @@ def test_is_dark(observatory):
 def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
+    observatory.scheduler.fields_file = None
     observatory.scheduler.fields_list = [
         {'name': 'HAT-P-20',
          'priority': '100',
@@ -187,14 +184,14 @@ def test_standard_headers(observatory):
         'latitude': 19.54,
         'longitude': -155.58,
         'moon_fraction': 0.7880103086091879,
-        'moon_separation': 156.1607340087774,
+        'moon_separation': 148.34401,
         'observer': 'Generic PANOPTES Unit',
         'origin': 'Project PANOPTES'}
 
-    assert (headers['airmass'] - test_headers['airmass']) < 1e-4
-    assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
-    assert (headers['moon_fraction'] - test_headers['moon_fraction']) < 1e-4
-    assert (headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
+    assert headers['airmass'] == pytest.approx(test_headers['airmass'], rel=1e-2)
+    assert headers['ha_mnt'] == pytest.approx(test_headers['ha_mnt'], rel=1e-2)
+    assert headers['moon_fraction'] == pytest.approx(test_headers['moon_fraction'], rel=1e-2)
+    assert headers['moon_separation'] == pytest.approx(test_headers['moon_separation'], rel=1e-2)
     assert headers['creator'] == test_headers['creator']
     assert headers['elevation'] == test_headers['elevation']
     assert headers['latitude'] == test_headers['latitude']
@@ -212,6 +209,7 @@ def test_sidereal_time(observatory):
 
 
 def test_get_observation(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     observation = observatory.get_observation()
     assert isinstance(observation, Observation)
 
@@ -223,38 +221,25 @@ def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
 
-    t0 = Time('2016-08-13 10:00:00')
-    observatory.scheduler.fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
-    ]
+    t0 = '2016-08-13 15:00:00'
+
     observatory.get_observation(time=t0)
     assert observatory.current_observation is not None
 
     assert len(observatory.scheduler.observed_list) == 1
 
-    assert observatory.current_observation.current_exp == 0
+    assert observatory.current_observation.current_exp_num == 0
     observatory.observe()
-    assert observatory.current_observation.current_exp == 1
+    assert observatory.current_observation.current_exp_num == 1
 
     observatory.cleanup_observations()
     assert len(observatory.scheduler.observed_list) == 0
 
 
-def test_cleanup_fails(observatory):
-    t0 = Time('2016-08-13 10:00:00')
-    fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
-    ]
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+def test_cleanup_missing_config_keys(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+
+    observatory.get_observation()
     camera_events = observatory.observe()
 
     while not all([event.is_set() for name, event in camera_events.items()]):
@@ -264,22 +249,19 @@ def test_cleanup_fails(observatory):
     del observatory.config['panoptes_network']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['observations']['make_timelapse']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['observations']['keep_jpgs']
     observatory.cleanup_observations()
 
-    observatory.scheduler.fields_list = fields_list
-    observatory.get_observation(time=t0)
+    observatory.get_observation()
 
     observatory.cleanup_observations()
     del observatory.config['pan_id']

@@ -67,8 +67,14 @@ def test_open_and_close_slit(dome):
     assert dome.status == 'Both sides open'
     assert dome.is_open is True
 
+    # Try to open shutter
+    assert dome.open() is True
+
     assert dome.close() is True
     assert dome.status == 'Both sides closed'
     assert dome.is_closed is True
+
+    # Try to close again
+    assert dome.close() is True
 
     dome.disconnect()

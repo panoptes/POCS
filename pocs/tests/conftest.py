@@ -15,14 +15,24 @@ from pocs.utils.config import load_config
 _one_time_config = None
 
 
+@pytest.fixture(scope='module')
+def images_dir(tmpdir_factory):
+    directory = tmpdir_factory.mktemp('images')
+    return str(directory)
+
+
 @pytest.fixture(scope='function')
-def config():
+def config(images_dir):
     pocs.base.reset_global_config()
 
     global _one_time_config
     if not _one_time_config:
         _one_time_config = load_config(ignore_local=True, simulator=['all'])
         _one_time_config['db']['name'] = 'panoptes_testing'
+        _one_time_config['name'] = 'PAN000'  # Make sure always testing with PAN000
+        _one_time_config['scheduler']['fields_file'] = 'simulator.yaml'
+
+    _one_time_config['directories']['images'] = images_dir
 
     return copy.deepcopy(_one_time_config)
 

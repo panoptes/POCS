@@ -343,26 +343,20 @@ def clean_observation_dir(dir_name,
     _print("Cleaning dir: {}".format(dir_name))
 
     # Pack the fits filts
-    try:
-        _print("Packing FITS files")
-        for f in _glob('*.fits'):
-            try:
-                fits_utils.fpack(f)
-            except Exception as e:  # pragma: no cover
-                warn('Could not compress fits file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup cleaning FITS: {!r}'.format(e))
+    _print("Packing FITS files")
+    for f in _glob('*.fits'):
+        try:
+            fits_utils.fpack(f)
+        except Exception as e:  # pragma: no cover
+            warn('Could not compress fits file: {!r}'.format(e))
 
-    try:
-        # Remove .solved files
-        _print('Removing .solved files')
-        for f in _glob('*.solved'):
-            try:
-                os.remove(f)
-            except OSError as e:  # pragma: no cover
-                warn('Could not delete file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup removing solved: {!r}'.format(e))
+    # Remove .solved files
+    _print('Removing .solved files')
+    for f in _glob('*.solved'):
+        try:
+            os.remove(f)
+        except OSError as e:  # pragma: no cover
+            warn('Could not delete file: {!r}'.format(e))
 
     try:
         jpg_list = _glob('*.jpg')
@@ -430,13 +424,17 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         bucket = 'gs://{}/'.format(bucket)
         # normpath strips the trailing slash so add here so we place in directory
         run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
+
+        if pan_id == 'PAN000':
+            run_cmd = [gsutil, 'PAN000 upload should fail']
+
         _print("Running: {}".format(run_cmd))
 
         try:
-            completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
+            completed_process = subprocess.run(
+                run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             if completed_process.returncode != 0:
-                warn("Problem uploading")
-                warn(completed_process.stdout)
+                raise Exception(completed_process.stderr)
         except Exception as e:
-            warn("Problem uploading: {}".format(e))
+            raise error.GoogleCloudError("Problem with upload: {}".format(e))

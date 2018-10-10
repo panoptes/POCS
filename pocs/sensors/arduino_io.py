@@ -7,11 +7,13 @@
 import collections
 import copy
 import serial
+import time
 from serial import serialutil
 import traceback
 
 from pocs.utils.error import ArduinoDataError
 from pocs.utils.logger import get_root_logger
+from pocs.utils import CountdownTimer
 from pocs.utils import rs232
 
 
@@ -75,7 +77,7 @@ def detect_board_on_port(port, logger=None):
                 return data['name']
             logger.warning('Unable to find board name in reading: {}', reading)
             return None
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error('Exception while auto-detecting port {}: {}', port, e)
     finally:
         if serial_reader:
@@ -143,6 +145,11 @@ class ArduinoIO(object):
         self._report_next_reading = True
         self._cmd_topic = "{}:commands".format(board)
         self._keep_running = True
+        self._logger.info('Created ArduinoIO instance for board {}', self.board)
+
+    def __del__(self):
+        if hasattr(self, '_logger'):
+            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
     def run(self):
         """Main loop for recording data and reading commands.
@@ -249,17 +256,17 @@ class ArduinoIO(object):
         Returns when there are no more commands available from the
         command subscriber, or when a second has passed.
         """
-        timeout_obj = serialutil.Timeout(1.0)
-        while not timeout_obj.expired():
+        timer = CountdownTimer(1.0)
+        while True:
             topic, msg_obj = self._sub.receive_message(blocking=False)
-            if topic is None or msg_obj is None:
-                break
-            if topic.lower() == self._cmd_topic:
+            if topic and topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:
                     self._logger.error('Exception while handling command: {}', e)
                     self._logger.error('msg_obj: {}', msg_obj)
+            if not timer.sleep(max_sleep=0.05):
+                return
 
     def handle_command(self, msg):
         """Handle one relay command.
