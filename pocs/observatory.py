@@ -376,7 +376,7 @@ class Observatory(PanBase):
         # Clear the offset info
         self.current_offset_info = None
 
-        pointing_image = self.current_observation.pointing_image
+        pointing_image_id, pointing_image = self.current_observation.pointing_image
         self.logger.debug(
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
