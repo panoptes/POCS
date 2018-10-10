@@ -51,7 +51,7 @@ def on_enter(event_data):
 
             # Analyze pointing
             if observation is not None:
-                pointing_id, pointing_path = observation.last_exposure
+                pointing_id, pointing_path = observation.pointing_image
                 pointing_image = Image(
                     pointing_path,
                     location=pocs.observatory.earth_location

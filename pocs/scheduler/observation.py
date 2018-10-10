@@ -66,7 +66,7 @@ class Observation(PanBase):
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
 
-        self.pointing_image = None
+        self.pointing_images = OrderedDict()
 
         self._image_dir = self.config['directories']['images']
         self._seq_time = None
@@ -159,6 +159,19 @@ class Observation(PanBase):
             return list(self.exposure_list.items())[-1]
         except IndexError:
             self.logger.warning("No exposure available")
+
+    @property
+    def pointing_image(self):
+        """Return the last pointing image.
+
+        Returns:
+            tuple: `image_id` and full path of most recent pointing image from
+                the primary camera.
+        """
+        try:
+            return list(self.pointing_images.items())[-1]
+        except IndexError:
+            self.logger.warning("No pointing image available")
 
 
 ##################################################################################################
