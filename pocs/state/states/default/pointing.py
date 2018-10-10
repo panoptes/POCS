@@ -56,13 +56,10 @@ def on_enter(event_data):
                     pointing_path,
                     location=pocs.observatory.earth_location
                 )
-                pointing_image.solve_field()
-
-                observation.pointing_image = pointing_image
-
                 pocs.logger.debug("Pointing file: {}".format(pointing_image))
 
                 pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
+                pointing_image.solve_field()
 
                 pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
                 pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
