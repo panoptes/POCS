@@ -56,12 +56,14 @@ def test_pretty_time():
     t1 = current_time(pretty=True)
     assert t1 == t0
 
+    # This will increment one second - see docs
     t2 = current_time(flatten=True)
     assert t2 != t0
-    assert t2 == '20160813T100000'
+    assert t2 == '20160813T100001'
 
+    # This will increment one second - see docs
     t3 = current_time(datetime=True)
-    assert t3 == dt(2016, 8, 13, 10, 0, 0)
+    assert t3 == dt(2016, 8, 13, 10, 0, 2)
 
 
 def test_list_connected_cameras():

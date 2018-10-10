@@ -184,14 +184,14 @@ def test_standard_headers(observatory):
         'latitude': 19.54,
         'longitude': -155.58,
         'moon_fraction': 0.7880103086091879,
-        'moon_separation': 156.1607340087774,
+        'moon_separation': 148.34401,
         'observer': 'Generic PANOPTES Unit',
         'origin': 'Project PANOPTES'}
 
-    assert (headers['airmass'] - test_headers['airmass']) < 1e-4
-    assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
-    assert (headers['moon_fraction'] - test_headers['moon_fraction']) < 1e-4
-    assert (headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
+    assert headers['airmass'] == pytest.approx(test_headers['airmass'], rel=1e-2)
+    assert headers['ha_mnt'] == pytest.approx(test_headers['ha_mnt'], rel=1e-2)
+    assert headers['moon_fraction'] == pytest.approx(test_headers['moon_fraction'], rel=1e-2)
+    assert headers['moon_separation'] == pytest.approx(test_headers['moon_separation'], rel=1e-2)
     assert headers['creator'] == test_headers['creator']
     assert headers['elevation'] == test_headers['elevation']
     assert headers['latitude'] == test_headers['latitude']
@@ -228,15 +228,15 @@ def test_observe(observatory):
 
     assert len(observatory.scheduler.observed_list) == 1
 
-    assert observatory.current_observation.current_exp == 0
+    assert observatory.current_observation.current_exp_num == 0
     observatory.observe()
-    assert observatory.current_observation.current_exp == 1
+    assert observatory.current_observation.current_exp_num == 1
 
     observatory.cleanup_observations()
     assert len(observatory.scheduler.observed_list) == 0
 
 
-def test_cleanup_fails(observatory):
+def test_cleanup_missing_config_keys(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
 
     observatory.get_observation()

@@ -92,34 +92,37 @@ def test_no_exposures(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     assert obs.first_exposure is None
     assert obs.last_exposure is None
+    assert obs.pointing_image is None
 
 
 def test_last_exposure_and_reset(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     status = obs.status()
-    assert status['current_exp'] == obs.current_exp
+    assert status['current_exp'] == obs.current_exp_num
 
     # Mimic taking exposures
     obs.merit = 112.5
 
     for i in range(5):
-        obs.current_exp += 1
         obs.exposure_list['image_{}'.format(i)] = 'full_image_path_{}'.format(i)
 
     last = obs.last_exposure
     assert isinstance(last, tuple)
     assert obs.merit > 0.0
-    assert obs.current_exp == 5
+    assert obs.current_exp_num == 5
 
     assert last[0] == 'image_4'
     assert last[1] == 'full_image_path_4'
+
+    assert isinstance(obs.first_exposure, tuple)
+    assert obs.first_exposure[0] == 'image_0'
+    assert obs.first_exposure[1] == 'full_image_path_0'
 
     obs.reset()
     status2 = obs.status()
 
     assert status2['current_exp'] == 0
     assert status2['merit'] == 0.0
-
-    assert isinstance(obs.first_exposure, tuple)
-    assert obs.first_exposure[0] == 'image_0'
-    assert obs.first_exposure[1] == 'full_image_path_0'
+    assert obs.first_exposure is None
+    assert obs.last_exposure is None
+    assert obs.seq_time is None
