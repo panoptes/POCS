@@ -350,16 +350,13 @@ def clean_observation_dir(dir_name,
         except Exception as e:  # pragma: no cover
             warn('Could not compress fits file: {!r}'.format(e))
 
-    try:
-        # Remove .solved files
-        _print('Removing .solved files')
-        for f in _glob('*.solved'):
-            try:
-                os.remove(f)
-            except OSError as e:  # pragma: no cover
-                warn('Could not delete file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup removing solved: {!r}'.format(e))
+    # Remove .solved files
+    _print('Removing .solved files')
+    for f in _glob('*.solved'):
+        try:
+            os.remove(f)
+        except OSError as e:  # pragma: no cover
+            warn('Could not delete file: {!r}'.format(e))
 
     try:
         jpg_list = _glob('*.jpg')
