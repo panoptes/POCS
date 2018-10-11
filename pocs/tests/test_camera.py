@@ -1,5 +1,12 @@
 import pytest
 
+import os
+import time
+import glob
+from ctypes.util import find_library
+
+import astropy.units as u
+
 from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
@@ -9,13 +16,8 @@ from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
+from pocs.utils.images import fits as fits_utils
 
-import os
-import time
-from ctypes.util import find_library
-
-import astropy.units as u
-import astropy.io.fits as fits
 
 params = [SimCamera, SBIGCamera, FLICamera]
 ids = ['simulator', 'sbig', 'fli']
@@ -31,14 +33,14 @@ def images_dir(tmpdir_factory):
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def camera(request, images_dir):
     if request.param[0] == SimCamera:
-        camera = request.param[0](focuser={'model': 'simulator',
-                                           'focus_port': '/dev/ttyFAKE',
-                                           'initial_position': 20000,
-                                           'autofocus_range': (40, 80),
-                                           'autofocus_step': (10, 20),
-                                           'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500,
-                                           'autofocus_keep_files': False})
+        camera = SimCamera(focuser={'model': 'simulator',
+                                    'focus_port': '/dev/ttyFAKE',
+                                    'initial_position': 20000,
+                                    'autofocus_range': (40, 80),
+                                    'autofocus_step': (10, 20),
+                                    'autofocus_seconds': 0.1,
+                                    'autofocus_size': 500,
+                                    'autofocus_keep_files': False})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -64,8 +66,24 @@ def camera(request, images_dir):
     camera.config['directories']['images'] = images_dir
     return camera
 
-# Hardware independent tests, mostly use simulator:
 
+@pytest.fixture(scope='module')
+def counter(camera):
+    return {'value': 0}
+
+
+@pytest.fixture(scope='module')
+def patterns(camera, images_dir):
+    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                      ('*_final.' + camera.file_extension)),
+                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                          'fine_focus.png'),
+                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                            'coarse_focus.png')}
+    return patterns
+
+
+# Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
     sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
@@ -110,6 +128,9 @@ def test_sim_readout_time():
     assert sim_camera.readout_time == 2.0
 
 
+# Hardware independent tests for SBIG camera
+
+
 def test_sbig_driver_bad_path():
     """
     Manually specify an incorrect path for the SBIG shared library. The
@@ -134,6 +155,7 @@ def test_sbig_bad_serial():
     assert camera._connected is False
     if isinstance(camera, SBIGCamera):
         assert camera._handle == INVALID_HANDLE_VALUE
+
 
 # *Potentially* hardware dependant tests:
 
@@ -213,7 +235,7 @@ def test_exposure(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -228,7 +250,7 @@ def test_exposure_blocking(camera, tmpdir):
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
@@ -242,7 +264,7 @@ def test_exposure_dark(camera, tmpdir):
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
-    header = fits.getheader(fits_path)
+    header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
 
@@ -263,8 +285,8 @@ def test_exposure_collision(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path_1)
     assert os.path.exists(fits_path_2)
-    assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
-    assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+    assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits_utils.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
 def test_exposure_no_filename(camera):
@@ -279,42 +301,70 @@ def test_exposure_not_connected(camera):
     camera._connected = True
 
 
-def test_observation(camera):
+def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exp_time=1.5 * u.second)
+    observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
+    observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
 
 
-def test_autofocus_coarse(camera):
+def test_autofocus_coarse(camera, patterns, counter):
     autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_fine(camera):
+def test_autofocus_fine(camera, patterns, counter):
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_fine_blocking(camera):
+def test_autofocus_fine_blocking(camera, patterns, counter):
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
-def test_autofocus_no_plots(camera):
-    autofocus_event = camera.autofocus(plots=False)
+def test_autofocus_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
 
 
-def test_autofocus_keep_files(camera):
+def test_autofocus_coarse_with_plots(camera, patterns, counter):
+    autofocus_event = camera.autofocus(coarse=True, make_plots=True)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+    assert len(glob.glob(patterns['fine_plot'])) == 1
+    assert len(glob.glob(patterns['coarse_plot'])) == 1
+
+
+def test_autofocus_keep_files(camera, patterns, counter):
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
 
 
 def test_autofocus_no_size(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     thumbnail_size = camera.focuser.autofocus_size
     camera.focuser.autofocus_size = None
@@ -325,6 +375,10 @@ def test_autofocus_no_size(camera):
 
 
 def test_autofocus_no_seconds(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     seconds = camera.focuser.autofocus_seconds
     camera.focuser.autofocus_seconds = None
@@ -335,6 +389,10 @@ def test_autofocus_no_seconds(camera):
 
 
 def test_autofocus_no_step(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     autofocus_step = camera.focuser.autofocus_step
     camera.focuser.autofocus_step = None
@@ -345,6 +403,10 @@ def test_autofocus_no_step(camera):
 
 
 def test_autofocus_no_range(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     autofocus_range = camera.focuser.autofocus_range
     camera.focuser.autofocus_range = None
@@ -355,6 +417,10 @@ def test_autofocus_no_range(camera):
 
 
 def test_autofocus_camera_disconnected(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     camera._connected = False
     with pytest.raises(AssertionError):
@@ -364,6 +430,10 @@ def test_autofocus_camera_disconnected(camera):
 
 
 def test_autofocus_focuser_disconnected(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     camera.focuser._connected = False
     with pytest.raises(AssertionError):
@@ -373,6 +443,10 @@ def test_autofocus_focuser_disconnected(camera):
 
 
 def test_autofocus_no_focuser(camera):
+    try:
+        initial_focus = camera.focuser.position
+    except AttributeError:
+        pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
     focuser = camera.focuser
     camera.focuser = None

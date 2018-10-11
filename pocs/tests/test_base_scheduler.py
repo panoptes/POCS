@@ -6,8 +6,8 @@ from astropy.coordinates import EarthLocation
 
 from astroplan import Observer
 
+from pocs.utils import error
 from pocs.scheduler import BaseScheduler as Scheduler
-
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
@@ -19,7 +19,7 @@ def constraints():
 
 @pytest.fixture
 def simple_fields_file(config):
-    return config['directories']['targets'] + '/simple.yaml'
+    return config['directories']['targets'] + '/simulator.yaml'
 
 
 @pytest.fixture
@@ -93,9 +93,31 @@ def test_bad_observer(simple_fields_file, constraints):
         Scheduler(fields_file=simple_fields_file, constraints=constraints)
 
 
-def test_loading_target_file(observer, simple_fields_file, constraints):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
-    assert scheduler.observations is not None
+def test_loading_target_file_check_file(observer, simple_fields_file, constraints):
+    scheduler = Scheduler(observer,
+                          fields_file=simple_fields_file,
+                          constraints=constraints,
+                          )
+    # Check the hidden property as the public one
+    # will populate if not found.
+    assert len(scheduler._observations)
+
+
+def test_loading_target_file_no_check_file(observer, simple_fields_file, constraints):
+    # If check_file is True then we will check the file
+    # before each call to `get_observation`, but *not*
+    # when the Scheduler is initialized.
+    config = {'scheduler': {
+        'check_file': True
+    }}
+    scheduler = Scheduler(observer,
+                          fields_file=simple_fields_file,
+                          constraints=constraints,
+                          config=config
+                          )
+    # Check the hidden property as the public one
+    # will populate if not found.
+    assert len(scheduler._observations) == 0
 
 
 def test_loading_target_file_via_property(simple_fields_file, observer, constraints):
@@ -148,11 +170,13 @@ def test_scheduler_add_field(scheduler):
 def test_scheduler_add_bad_field(scheduler):
 
     orig_length = len(scheduler.observations)
-    scheduler.add_observation({
-        'name': 'Duplicate Field',
-        'position': '12h30m01s +08d08m08s',
-        'exp_time': -10
-    })
+    with pytest.raises(error.InvalidObservation):
+        scheduler.add_observation({
+            'name': 'Duplicate Field',
+            'position': '12h30m01s +08d08m08s',
+            'exp_time': -10
+        })
+
     assert orig_length == len(scheduler.observations)
 
 

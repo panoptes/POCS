@@ -12,6 +12,7 @@ from pocs.utils import CountdownTimer
 from pocs.utils.messaging import PanMessaging
 from pocs.utils import error
 from pocs.utils import current_time
+from pocs.camera import create_cameras_from_config
 
 
 def wait_for_running(sub, max_duration=90):
@@ -35,9 +36,16 @@ def wait_for_state(sub, state, max_duration=90):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type):
+def cameras(config):
+    """Get the default cameras from the config."""
+    return create_cameras_from_config(config)
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras):
     observatory = Observatory(
         config=config,
+        cameras=cameras,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
@@ -53,17 +61,6 @@ def pocs(config, observatory):
                 run_once=True,
                 config=config,
                 ignore_local_config=True)
-
-    pocs.observatory.scheduler.fields_file = None
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
 
     yield pocs
 
@@ -84,16 +81,6 @@ def pocs_with_dome(config_with_simulated_dome, db_type):
                 run_once=True,
                 config=config_with_simulated_dome,
                 ignore_local_config=True)
-
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
 
     yield pocs
 
@@ -133,22 +120,14 @@ def test_make_log_dir(pocs):
 def test_simple_simulator(pocs):
     assert isinstance(pocs, POCS)
 
-
-def test_not_initialized(pocs):
     assert pocs.is_initialized is not True
 
-
-def test_run_without_initialize(pocs):
     with pytest.raises(AssertionError):
         pocs.run()
 
-
-def test_initialization(pocs):
     pocs.initialize()
     assert pocs.is_initialized
 
-
-def test_default_lookup_trigger(pocs):
     pocs.state = 'parking'
     pocs.next_state = 'parking'
 
@@ -158,8 +137,6 @@ def test_default_lookup_trigger(pocs):
 
     assert pocs._lookup_trigger() == 'parking'
 
-
-def test_free_space(pocs):
     assert pocs.has_free_space() is True
 
     # Test something ridiculous
@@ -168,7 +145,7 @@ def test_free_space(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_dark_simulator(pocs):
+def test_is_weather_and_dark_simulator(pocs):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -177,24 +154,14 @@ def test_is_dark_simulator(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is True
 
-
-def test_is_dark_no_simulator_01(pocs):
-    pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
-
-def test_is_dark_no_simulator_02(pocs):
-    pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is False
 
-
-def test_is_weather_safe_simulator(pocs):
-    pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     assert pocs.is_weather_safe() is True
 
 
@@ -210,9 +177,6 @@ def test_wait_for_events_timeout(pocs):
     with pytest.raises(error.Timeout):
         pocs.wait_for_events(test_event, 5 * u.second, sleep_delay=1)
 
-
-def test_wait_for_events(pocs):
-    del os.environ['POCSTIME']
     test_event = threading.Event()
 
     def set_event():
@@ -226,9 +190,6 @@ def test_wait_for_events(pocs):
     pocs.wait_for_events(test_event, 10)
     assert test_event.is_set()
 
-
-def test_wait_for_events_interrupt(pocs):
-    del os.environ['POCSTIME']
     test_event = threading.Event()
 
     def set_event():

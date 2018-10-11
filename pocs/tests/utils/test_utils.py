@@ -9,12 +9,34 @@ from pocs.utils import current_time
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import CountdownTimer
-from pocs.utils.error import NotFound
+from pocs.utils import error
 from pocs.camera import list_connected_cameras
 
 
+def test_error(capsys):
+    with pytest.raises(error.PanError) as e_info:
+        raise error.PanError(msg='Testing message')
+
+    assert str(e_info.value) == 'PanError: Testing message'
+
+    with pytest.raises(error.PanError) as e_info:
+        raise error.PanError()
+
+    assert str(e_info.value) == 'PanError'
+
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(msg="Testing exit", exit=True)
+    assert e_info.type == SystemExit
+    assert capsys.readouterr().out.strip() == 'TERMINATING: Testing exit'
+
+    with pytest.raises(SystemExit) as e_info:
+        raise error.PanError(exit=True)
+    assert e_info.type == SystemExit
+    assert capsys.readouterr().out.strip() == 'TERMINATING: No reason specified'
+
+
 def test_bad_load_module():
-    with pytest.raises(NotFound):
+    with pytest.raises(error.NotFound):
         load_module('FOOBAR')
 
 
@@ -34,12 +56,14 @@ def test_pretty_time():
     t1 = current_time(pretty=True)
     assert t1 == t0
 
+    # This will increment one second - see docs
     t2 = current_time(flatten=True)
     assert t2 != t0
-    assert t2 == '20160813T100000'
+    assert t2 == '20160813T100001'
 
+    # This will increment one second - see docs
     t3 = current_time(datetime=True)
-    assert t3 == dt(2016, 8, 13, 10, 0, 0)
+    assert t3 == dt(2016, 8, 13, 10, 0, 2)
 
 
 def test_list_connected_cameras():

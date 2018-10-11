@@ -7,6 +7,7 @@ from astroplan import Observer
 from astropy import units as u
 
 from pocs.base import PanBase
+from pocs.utils import error
 from pocs.utils import current_time
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -41,6 +42,9 @@ class BaseScheduler(PanBase):
         assert isinstance(observer, Observer)
 
         self._fields_file = fields_file
+        # Setting the fields_list directly will clobber anything
+        # from the fields_file. It comes second so we can speicfically
+        # clobber if passed.
         self._fields_list = fields_list
         self._observations = dict()
 
@@ -51,7 +55,9 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        self.read_field_list()
+        if not self.config['scheduler'].get('check_file', False):
+            self.logger.debug("Reading initial set of fields")
+            self.read_field_list()
 
 
 ##########################################################################
@@ -226,9 +232,9 @@ class BaseScheduler(PanBase):
 
         try:
             obs = Observation(field, **field_config)
-        except Exception as e:
-            self.logger.warning("Skipping invalid field config: {}".format(field_config))
-            self.logger.warning(e)
+        except Exception:
+            raise error.InvalidObservation(
+                "Skipping invalid field config: {}".format(field_config))
         else:
             if field.name in self._observations:
                 self.logger.debug("Overriding existing entry for {}".format(field.name))
@@ -265,6 +271,8 @@ class BaseScheduler(PanBase):
                     self.add_observation(field_config)
                 except AssertionError:
                     self.logger.debug("Skipping duplicate field.")
+                except Exception as e:
+                    self.logger.warning("Error adding field: {}", e)
 
 ##########################################################################
 # Utility Methods

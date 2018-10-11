@@ -64,11 +64,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def make_pretty_image(fname,
-                      title=None,
-                      timeout=15,
-                      link_latest=False,
-                      **kwargs):  # pragma: no cover
+def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs):
     """Make a pretty image.
 
     This will create a jpg file from either a CR2 (Canon) or FITS file.
@@ -322,21 +318,32 @@ def clean_observation_dir(dir_name,
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
+<<<<<<< HEAD
         * Create timelapse from JPG files if present (optional)
         * Remove JPG files (optional).
 
     Args:
         dir_name (str): Full path to observation directory
+=======
+        * Create timelapse from JPG files if present (optional, default True)
+        * Remove JPG files (optional, default False).
+
+    Args:
+        dir_name (str): Full path to observation directory.
+>>>>>>> 268110a89695453eeaae5ab4ffc394eca64abbae
         remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
             default False.
         include_timelapse (bool, optional): If a timelapse should be created, default True.
         timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
             default False.
         **kwargs: Can include `verbose`.
+<<<<<<< HEAD
 
     Deleted Parameters:
         overwrite (bool, optional): If timelapse should overwrite existing file if it
             exists, default True.
+=======
+>>>>>>> 268110a89695453eeaae5ab4ffc394eca64abbae
     """
     verbose = kwargs.get('verbose', False)
 
@@ -350,26 +357,20 @@ def clean_observation_dir(dir_name,
     _print("Cleaning dir: {}".format(dir_name))
 
     # Pack the fits filts
-    try:
-        _print("Packing FITS files")
-        for f in _glob('*.fits'):
-            try:
-                fits_utils.fpack(f)
-            except Exception as e:  # pragma: no cover
-                warn('Could not compress fits file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup cleaning FITS: {!r}'.format(e))
+    _print("Packing FITS files")
+    for f in _glob('*.fits'):
+        try:
+            fits_utils.fpack(f)
+        except Exception as e:  # pragma: no cover
+            warn('Could not compress fits file: {!r}'.format(e))
 
-    try:
-        # Remove .solved files
-        _print('Removing .solved files')
-        for f in _glob('*.solved'):
-            try:
-                os.remove(f)
-            except OSError as e:  # pragma: no cover
-                warn('Could not delete file: {!r}'.format(e))
-    except Exception as e:
-        warn('Problem with cleanup removing solved: {!r}'.format(e))
+    # Remove .solved files
+    _print('Removing .solved files')
+    for f in _glob('*.solved'):
+        try:
+            os.remove(f)
+        except OSError as e:  # pragma: no cover
+            warn('Could not delete file: {!r}'.format(e))
 
     try:
         jpg_list = _glob('*.jpg')

@@ -46,13 +46,11 @@ class Observatory(PanBase):
         self.mount = None
         self._create_mount()
 
-        if not cameras:
-            cameras = OrderedDict()
+        self.cameras = OrderedDict()
 
         if cameras:
-            self.logger.info('Adding the cameras to the observatory')
+            self.logger.info('Adding the cameras to the observatory: {}', cameras)
             self._primary_camera = None
-            self.cameras = cameras
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
@@ -142,7 +140,9 @@ class Observatory(PanBase):
         assert isinstance(camera, AbstractCamera)
         self.logger.debug('Adding {}: {}'.format(cam_name, camera))
         if cam_name in self.cameras:
-            self.logger.debug('{} already exists, replacing existing camera under that name.')
+            self.logger.debug(
+                '{} already exists, replacing existing camera under that name.',
+                cam_name)
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
@@ -241,13 +241,14 @@ class Observatory(PanBase):
         self.logger.debug("Getting observation for observatory")
 
         # If observation list is empty or a reread is requested
-        if (self.scheduler.has_valid_observations is False or
-                kwargs.get('reread_fields_file', False) or
-                self.config['scheduler'].get('check_file', False)):
-            self.scheduler.read_field_list()
+        reread_fields_file = (
+            self.scheduler.has_valid_observations is False or
+            kwargs.get('reread_fields_file', False) or
+            self.config['scheduler'].get('check_file', False)
+        )
 
         # This will set the `current_observation`
-        self.scheduler.get_observation(*args, **kwargs)
+        self.scheduler.get_observation(reread_fields_file=reread_fields_file, *args, **kwargs)
 
         if self.current_observation is None:
             self.scheduler.clear_available_observations()
@@ -255,24 +256,41 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self, timeout=3600):
+    def cleanup_observations(self, upload_images=None, make_timelapse=None, keep_jpgs=None):
         """Cleanup observation list
 
         Loops through the `observed_list` performing cleanup tasks. Resets
-        `observed_list` when done
+        `observed_list` when done.
+
+        Args:
+            upload_images (None or bool, optional): If images should be uploaded to a Google
+                Storage bucket, default to config item `panoptes_network.image_storage` then False.
+            make_timelapse (None or bool, optional): If a timelapse should be created
+                (requires ffmpeg), default to config item `observations.make_timelapse` then True.
+            keep_jpgs (None or bool, optional): If JPG copies of observation images should be kept
+                on local hard drive, default to config item `observations.keep_jpgs` then True.
 
         Args:
             timeout (int, optional): Timeout for each directory to upload files,
                 defaults to 3600 seconds (1 hour).
         """
-        try:
-            upload_images = self.config['panoptes_network']['image_storage']
-            upload_metadata = self.config['panoptes_network']['metadata_storage']
-            make_timelapse = self.config['observations']['make_timelapse']
-            keep_jpgs = self.config['observations']['keep_jpgs']
-        except KeyError:
-            upload_images = False
-            upload_metadata = False
+        if upload_images is None:
+            try:
+                upload_images = self.config.get('panoptes_network', {})['image_storage']
+            except KeyError:
+                upload_images = False
+
+        if make_timelapse is None:
+            try:
+                make_timelapse = self.config['observations']['make_timelapse']
+            except KeyError:
+                make_timelapse = True
+
+        if keep_jpgs is None:
+            try:
+                keep_jpgs = self.config['observations']['keep_jpgs']
+            except KeyError:
+                keep_jpgs = True
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -306,9 +324,6 @@ class Observatory(PanBase):
                 if upload_images:
                     process_cmd.append('--upload')
 
-                if upload_metadata:
-                    process_cmd.append('--send_headers')
-
                 if make_timelapse:
                     process_cmd.append('--make_timelapse')
 
@@ -325,7 +340,7 @@ class Observatory(PanBase):
 
                 # Block and wait for directory to finish
                 try:
-                    outs, errs = clean_proc.communicate(timeout=timeout)
+                    outs, errs = clean_proc.communicate(timeout=3600)  # one hour
                 except subprocess.TimeoutExpired:
                     clean_proc.kill()
                     outs, errs = clean_proc.communicate(timeout=10)
@@ -380,7 +395,7 @@ class Observatory(PanBase):
         # Clear the offset info
         self.current_offset_info = None
 
-        pointing_image = self.current_observation.pointing_image
+        pointing_image_id, pointing_image = self.current_observation.pointing_image
         self.logger.debug(
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
@@ -434,7 +449,8 @@ class Observatory(PanBase):
             self.logger.debug("Updating the tracking")
 
             # Get the pier side of pointing image
-            pointing_ha = self.current_observation.pointing_image.header_ha
+            _, pointing_image = self.current_observation.pointing_image
+            pointing_ha = pointing_image.header_ha
 
             try:
                 pointing_ha = pointing_ha.value
