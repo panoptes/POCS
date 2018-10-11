@@ -95,7 +95,7 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: False
+    image_storage: True
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
