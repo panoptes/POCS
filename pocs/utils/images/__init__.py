@@ -318,32 +318,17 @@ def clean_observation_dir(dir_name,
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files
-<<<<<<< HEAD
-        * Create timelapse from JPG files if present (optional)
-        * Remove JPG files (optional).
-
-    Args:
-        dir_name (str): Full path to observation directory
-=======
         * Create timelapse from JPG files if present (optional, default True)
         * Remove JPG files (optional, default False).
 
     Args:
         dir_name (str): Full path to observation directory.
->>>>>>> 268110a89695453eeaae5ab4ffc394eca64abbae
         remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
             default False.
         include_timelapse (bool, optional): If a timelapse should be created, default True.
         timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
             default False.
         **kwargs: Can include `verbose`.
-<<<<<<< HEAD
-
-    Deleted Parameters:
-        overwrite (bool, optional): If timelapse should overwrite existing file if it
-            exists, default True.
-=======
->>>>>>> 268110a89695453eeaae5ab4ffc394eca64abbae
     """
     verbose = kwargs.get('verbose', False)
 
@@ -356,7 +341,7 @@ def clean_observation_dir(dir_name,
 
     _print("Cleaning dir: {}".format(dir_name))
 
-    # Pack the fits filts
+    # Pack the fits files
     _print("Packing FITS files")
     for f in _glob('*.fits'):
         try:
