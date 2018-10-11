@@ -337,7 +337,7 @@ class Observatory(PanBase):
                 # Block and wait for directory to finish
                 try:
                     outs, errs = clean_proc.communicate(timeout=3600)  # one hour
-                except subprocess.TimeoutExpired:
+                except subprocess.TimeoutExpired:  # pragma: no cover
                     clean_proc.kill()
                     outs, errs = clean_proc.communicate(timeout=10)
                     if errs is not None:
