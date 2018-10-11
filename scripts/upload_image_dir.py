@@ -12,7 +12,6 @@ def main(directory,
          remove_jpgs=False,
          overwrite=False,
          make_timelapse=False,
-         db_pass=None,
          verbose=False,
          **kwargs):
     """Upload images from the given directory.
