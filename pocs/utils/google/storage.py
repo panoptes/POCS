@@ -315,9 +315,15 @@ def upload_observation_to_bucket(pan_id,
     Returns:
         str: A string path used to search for files.
     """
-    assert os.path.exists(dir_name)
-    assert re.match(r'PAN\d\d\d', pan_id) is not None
-    assert shutil.which('gsutil') is not None
+    if os.path.exists(dir_name) is False:
+        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+
+    if re.match(r'PAN\d\d\d', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
+
+    gsutil = shutil.which('gsutil')
+    if gsutil is None:
+        raise Exception('Cannot find gsutil, skipping upload')
 
     verbose = kwargs.get('verbose', False)
 
@@ -341,18 +347,22 @@ def upload_observation_to_bucket(pan_id,
         script_name = os.path.join(os.environ['POCS'], 'scripts', 'upload_files.sh')
         manifest_file = os.path.join(dir_name, 'upload_manifest.log')
         run_cmd = [script_name, file_search_path, destination, manifest_file]
+
+        if pan_id == 'PAN000':
+            run_cmd = [gsutil, 'PAN000 upload should fail']
+
         _print("Running: {}".format(run_cmd))
 
         try:
             completed_process = subprocess.run(
-                run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                run_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
 
             if completed_process.returncode != 0:
-                warn("Problem uploading")
-                warn(completed_process.stdout)
-            else:
-                return True
+                raise Exception(completed_process.stderr)
         except Exception as e:
-            warn("Problem uploading: {}".format(e))
+            raise error.GoogleCloudError("Problem with upload: {}".format(e))
 
     return file_search_path
