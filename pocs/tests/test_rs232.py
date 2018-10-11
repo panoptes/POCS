@@ -11,6 +11,11 @@ from pocs.tests.serial_handlers import protocol_buffers
 from pocs.tests.serial_handlers import protocol_hooked
 
 
+def test_port_discovery():
+    ports = rs232.get_serial_port_info()
+    assert isinstance(ports, list)
+
+
 def test_missing_port():
     with pytest.raises(ValueError):
         rs232.SerialData()
@@ -54,6 +59,11 @@ def test_detect_bogus_scheme(handler):
         # a string that can't be a module name.
         rs232.SerialData(port='# bogus #://')
     assert '# bogus #' in repr(excinfo.value)
+
+
+def test_custom_logger(handler, fake_logger):
+    s0 = rs232.SerialData(port='no_op://', logger=fake_logger)
+    s0.logger.debug('Testing logger')
 
 
 def test_basic_no_op(handler):

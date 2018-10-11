@@ -127,9 +127,6 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Set custom LogRecord
     logging.setLogRecordFactory(StrFormatLogRecord)
 
-    # Add a filter for better filename/lineno
-    logger.addFilter(FilenameLineFilter())
-
     logger.info('{:*^80}'.format(' Starting PanLogger '))
     # TODO(jamessynge) Output name of script, cmdline args, etc. And do son
     # when the log rotates too!
@@ -141,12 +138,3 @@ class _UTCFormatter(logging.Formatter):
 
     """ Simple class to convert times to UTC in the logger """
     converter = time.gmtime
-
-
-class FilenameLineFilter(logging.Filter):
-    """Adds a simple concatenation of filename and lineno for fixed length """
-
-    def filter(self, record):
-
-        record.fileline = '{}:{}'.format(record.filename, record.lineno)
-        return True

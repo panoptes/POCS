@@ -11,7 +11,6 @@ from pprint import pprint
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
-from astropy.io import fits
 from astropy.utils import console
 
 from pocs import hardware
@@ -148,6 +147,10 @@ class PocsShell(Cmd):
     def do_setup_pocs(self, *arg):
         """Setup and initialize a POCS instance."""
         simulator = listify(arg[0].split())
+
+        if 'POCSTIME' in os.environ:
+            print_warning("Clearing POCSTIME variable")
+            del os.environ['POCSTIME']
 
         if simulator is None:
             simulator = []
@@ -810,7 +813,7 @@ def process_img(fn, start_time, remove_after=True):
         fits_utils.get_solve_field(fn)
 
         # Get header info
-        header = fits.getheader(fn)
+        header = fits_utils.getheader(fn)
 
         try:
             del header['COMMENT']
