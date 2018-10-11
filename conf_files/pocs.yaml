@@ -92,7 +92,6 @@ observations:
 #
 # Options to change:
 #   image_storage: If images should be uploaded to Google Cloud Storage.
-#   metadata_storage: If metadata should be sent to the Google CloudSQL instance.
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
