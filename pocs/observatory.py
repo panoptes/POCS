@@ -269,10 +269,6 @@ class Observatory(PanBase):
                 (requires ffmpeg), default to config item `observations.make_timelapse` then True.
             keep_jpgs (None or bool, optional): If JPG copies of observation images should be kept
                 on local hard drive, default to config item `observations.keep_jpgs` then True.
-
-        Args:
-            timeout (int, optional): Timeout for each directory to upload files,
-                defaults to 3600 seconds (1 hour).
         """
         if upload_images is None:
             try:
