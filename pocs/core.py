@@ -324,7 +324,7 @@ class POCS(PanStateMachine, PanBase):
         """Is it dark.
 
         Checks whether it is dark at the location provided. This checks for the
-        config entry `location.flat_horizon` or 10° by default.
+        config entry `location.flat_horizon`.
 
         Args:
             horizon (str, optional): Which horizon to use, 'flat' or 'observe'.
