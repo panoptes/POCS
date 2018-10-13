@@ -85,3 +85,60 @@ def test_storage_id(pub_and_sub, config, db):
     assert '_id' in msg_obj
     assert isinstance(msg_obj['_id'], str)
     assert id0 == msg_obj['_id']
+
+
+################################################################################
+# Tests of the conftest.py messaging fixtures.
+
+
+def test_message_forwarder_exists(message_forwarder):
+    assert isinstance(message_forwarder, dict)
+    assert 'msg_ports' in message_forwarder
+
+    assert isinstance(message_forwarder['msg_ports'], tuple)
+    assert len(message_forwarder['msg_ports']) == 2
+    assert isinstance(message_forwarder['msg_ports'][0], int)
+    assert isinstance(message_forwarder['msg_ports'][1], int)
+
+    assert isinstance(message_forwarder['cmd_ports'], tuple)
+    assert len(message_forwarder['cmd_ports']) == 2
+    assert isinstance(message_forwarder['cmd_ports'][0], int)
+    assert isinstance(message_forwarder['cmd_ports'][1], int)
+
+    # The ports should be unique.
+    msg_ports = message_forwarder['msg_ports']
+    cmd_ports = message_forwarder['cmd_ports']
+
+    ports = set(list(msg_ports) + list(cmd_ports))
+    assert len(ports) == 4
+
+
+def assess_pub_sub(pub, sub):
+    """Helper method for testing a pub-sub pair."""
+
+    # Can not send a message using a subscriber
+    with pytest.raises(Exception):
+        sub.send_message('topic_name', 'a string')
+
+    # Can not receive a message using a publisher
+    assert (None, None) == pub.receive_message(blocking=True)
+
+    # At first, there is nothing available to receive.
+    assert (None, None) == sub.receive_message(blocking=True, timeout_ms=500)
+
+    pub.send_message('topic.name', 'a string')
+    topic, msg_obj = sub.receive_message()
+    assert isinstance(msg_obj, dict)
+    assert 'message' in msg_obj
+    assert msg_obj['message'] == 'a string'
+    assert 'timestamp' in msg_obj
+
+    # import pdb;pdb.set_trace()
+
+
+def test_msg_pub_sub(msg_publisher, msg_subscriber):
+    assess_pub_sub(msg_publisher, msg_subscriber)
+
+
+def test_cmd_pub_sub(cmd_publisher, cmd_subscriber):
+    assess_pub_sub(cmd_publisher, cmd_subscriber)
