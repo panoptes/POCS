@@ -40,7 +40,7 @@ def on_enter(event_data):
             # Start the exposure
             camera_event = primary_camera.take_observation(
                 observation,
-                fits_headers,
+                headers=fits_headers,
                 exp_time=exptime,
                 filename='pointing{:02d}'.format(img_num)
             )
