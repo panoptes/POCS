@@ -1,4 +1,9 @@
-"""Provides a simple simulator for telemetry_board.ino or camera_board.ino."""
+"""Provides a simple simulator for telemetry_board.ino or camera_board.ino.
+
+We use the pragma "no cover" in several places that happen to never be
+reached or that would only be reached if the code was called directly,
+i.e. in not in the way it is intended to be used.
+"""
 
 import copy
 import datetime
@@ -63,6 +68,7 @@ class ArduinoSimulator:
         self.next_chunk_time = None
         self.pending_json_bytes = bytearray()
         self.pending_relay_bytes = bytearray()
+        self.command_lines = []
         self.start_time = datetime.datetime.now()
         self.report_num = 0
         self.logger.info('ArduinoSimulator created')
@@ -82,11 +88,16 @@ class ArduinoSimulator:
         b = self.generate_next_message_bytes(now)
         cut = random.randrange(len(b))
         if cut > 0:
+            self.logger.info('Cutting off the leading {} bytes of the first message',
+                             cut)
             b = b[cut:]
         self.pending_json_bytes.extend(b)
         # Now two interleaved loops:
         # 1) Generate messages every self.message_delta
         # 2) Emit a chunk of bytes from pending_json_bytes every self.chunk_delta.
+        # Clearly we need to emit all the bytes from pending_json_bytes at least
+        # as fast as we append new messages to it, else we'll have a problem
+        # (i.e. the simulated baud rate will be too slow for the output rate).
         while True:
             if self.stop.is_set():
                 self.logger.info('Returning from ArduinoSimulator.run EXIT')
@@ -96,47 +107,47 @@ class ArduinoSimulator:
                 self.output_next_chunk(now)
             if now >= self.next_message_time:
                 self.generate_next_message(now)
-            self.read_and_handle_relay_queue()
             if self.pending_json_bytes and self.next_chunk_time < self.next_message_time:
                 next_time = self.next_chunk_time
             else:
                 next_time = self.next_message_time
             self.read_relay_queue_until(next_time)
 
-    def read_and_handle_relay_queue(self):
-        """Read all available entries in the relay queue, then handle any complete commands."""
-        while not self.relay_queue.empty():
-            b = self.relay_queue.get_nowait()
-            assert isinstance(b, (bytes, bytearray))
-            self.pending_relay_bytes.extend(b)
-        self.handle_pending_relay_bytes()
-
     def handle_pending_relay_bytes(self):
-        """Process complete relay commands. NOT YET IMPLEMENTED."""
-        if len(self.pending_relay_bytes):
-            self.logger.error('ArduinoSimulator.handle_pending_relay_bytes NOT YET IMPLEMENTED')
-            self.logger.error('Dropping bytes: {!r}', self.pending_relay_bytes)
-            self.pending_relay_bytes.clear()
-        pass
+        """Process complete relay commands."""
+        newline = b'\n'
+        while True:
+            index = self.pending_relay_bytes.find(newline)
+            if index < 0:
+                break
+            line = str(self.pending_relay_bytes[0:index], 'ascii')
+            self.logger.info(f'Received command: {line}')
+            del self.pending_relay_bytes[0:index + 1]
+            self.command_lines.append(line)
+        if self.pending_relay_bytes:
+            self.logger.info(f'Accumulated {len(self.pending_relay_bytes)} bytes.')
 
     def read_relay_queue_until(self, next_time):
-        """Wait for a little bit for relay input, not more than the time until the next action."""
-        now = datetime.datetime.now()
-        if now >= next_time:
-            # Already reached the time for the next main loop event,
-            # so return to repeat the main loop.
-            return
-        remaining = (next_time - now).total_seconds()
-        assert remaining > 0
-        self.logger.info('ArduinoSimulator.read_relay_queue_until remaining={}', remaining)
-        try:
-            b = self.relay_queue.get(block=True, timeout=remaining)
-        except queue.Empty:
-            return
-        if b:
-            assert isinstance(b, (bytes, bytearray))
-            self.pending_relay_bytes.extend(b)
-            self.handle_pending_relay_bytes()
+        """Read and process relay queue bytes until time for the next action."""
+        while True:
+            now = datetime.datetime.now()
+            if now >= next_time:
+                # Already reached the time for the next main loop event,
+                # so return to repeat the main loop.
+                return
+            remaining = (next_time - now).total_seconds()
+            assert remaining > 0
+            self.logger.info('ArduinoSimulator.read_relay_queue_until remaining={}', remaining)
+            try:
+                b = self.relay_queue.get(block=True, timeout=remaining)
+                assert isinstance(b, (bytes, bytearray))
+                self.pending_relay_bytes.extend(b)
+                self.handle_pending_relay_bytes()
+                # Fake a baud rate for reading by waiting based on the
+                # number of bytes we just read.
+                time.sleep(1.0 / 1000 * len(b))
+            except queue.Empty:
+                return
 
     def output_next_chunk(self, now):
         """Output one chunk of pending json bytes."""
@@ -165,7 +176,14 @@ class ArduinoSimulator:
         self.report_num += 1
         self.message['millis'] = elapsed
         self.message['report_num'] = self.report_num
+        if self.command_lines:
+            self.message['commands'] = self.command_lines
+            self.command_lines = []
+
         s = json.dumps(self.message) + '\r\n'
+        if 'commands' in self.message:
+            del self.message['commands']
+
         s = s.replace('"Convert to NaN"', 'NaN', 1)
         s = s.replace('"Convert to nan"', 'nan', 1)
         self.logger.debug('generate_next_message -> {!r}', s)
@@ -250,7 +268,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             else:  # pragma: no cover
                 # The timeout expired while in _read1.
                 break
-            if timeout_obj.expired():
+            if timeout_obj.expired():  # pragma: no cover
                 break
         response = bytes(response)
         return response
@@ -307,13 +325,15 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 the port and the time is exceeded.
         """
         if not isinstance(data, (bytes, bytearray)):
-            raise ValueError("write takes bytes")
+            raise ValueError('write takes bytes')  # pragma: no cover
         data = bytes(data)  # Make sure it can't change.
         self.logger.info('FakeArduinoSerialHandler.write({!r})', data)
         try:
-            self.relay_queue.put(data, block=True, timeout=self.write_timeout)
+            for n in range(len(data)):
+                one_byte = data[n:n + 1]
+                self.relay_queue.put(one_byte, block=True, timeout=self.write_timeout)
             return len(data)
-        except queue.Full:
+        except queue.Full:  # pragma: no cover
             # This exception is "lossy" in that the caller can't tell how much was written.
             raise serialutil.writeTimeoutError
 
@@ -325,14 +345,21 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         # The default Arduino data, parity and stop bits are: 8 data bits, no parity, one stop bit.
         v = (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
              self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
-        if not v:
+
+        # All existing tests ensure the config is OK, so we never log here.
+        if not v:  # pragma: no cover
             self.logger.critical('Serial config is not OK: {!r}', (self.get_settings(), ))
+
         return v
 
     def _read1(self, timeout_obj):
         """Read 1 byte of input, of type bytes."""
-        if not self.is_open:
+
+        # _read1 is currently called only from read(), which checks that the
+        # serial device is open, so is_open is always true.
+        if not self.is_open:  # pragma: no cover
             raise serialutil.portNotOpenError
+
         if not self.json_bytes:
             try:
                 entry = self.json_queue.get(block=True, timeout=timeout_obj.time_left())
@@ -340,8 +367,11 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 self.json_bytes.extend(entry)
             except queue.Empty:
                 return None
-        if not self.json_bytes:
+
+        # Unless something has gone wrong, json_bytes is always non-empty here.
+        if not self.json_bytes:  # pragma: no cover
             return None
+
         c = bytes(self.json_bytes[0:1])
         del self.json_bytes[0:1]
         return c
@@ -374,7 +404,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             self.simulator_thread.join(timeout=30.0)
             if self.simulator_thread.is_alive():
                 # Not a SerialException, but a test infrastructure error.
-                raise Exception(self.simulator_thread.name + " thread did not stop!")
+                raise Exception(self.simulator_thread.name + ' thread did not stop!')  # pragma: no cover
             self.simulator_thread = None
             self.device_simulator = None
             _drain_queue(self.relay_queue)
@@ -387,7 +417,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         "self.rts = value" has been executed, for some value. This may not
         have changed the value.
         """
-        pass
+        # We never set rts in our tests, so this doesn't get executed.
+        pass  # pragma: no cover
 
     def _update_dtr_state(self):
         """Handle dtr being set to some value.
@@ -395,7 +426,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         "self.dtr = value" has been executed, for some value. This may not
         have changed the value.
         """
-        pass
+        # We never set dtr in our tests, so this doesn't get executed.
+        pass  # pragma: no cover
 
     def _update_break_state(self):
         """Handle break_condition being set to some value.
@@ -404,7 +436,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         This may not have changed the value.
         Note that break_condition is set and then cleared by send_break().
         """
-        pass
+        # We never set break_condition in our tests, so this doesn't get executed.
+        pass  # pragma: no cover
 
     # --------------------------------------------------------------------------
     # Internal (non-standard) methods.
@@ -413,8 +446,11 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         """Extract various params from the URL."""
         expected = 'expected a string in the form "arduinosimulator://[?board=<name>]"'
         parts = urllib.parse.urlparse(url)
-        if parts.scheme != "arduinosimulator":
-            raise Exception(expected + ': got scheme {!r}'.format(parts.scheme))
+
+        # Unless we force things (break the normal protocol), scheme will always
+        # be 'arduinosimulator'.
+        if parts.scheme != 'arduinosimulator':
+            raise Exception(expected + ': got scheme {!r}'.format(parts.scheme))  # pragma: no cover
         int_param_names = {'chunk_size', 'read_buffer_size', 'write_buffer_size'}
         params = {}
         for option, values in urllib.parse.parse_qs(parts.query, True).items():
@@ -427,7 +463,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             elif option in int_param_names and len(values) == 1:
                 params[option] = int(values[0])
             else:
-                raise Exception(expected + ': unknown param {!r}'.format(option))
+                raise Exception(expected + ': unknown param {!r}'.format(option))  # pragma: no cover
         return params
 
     def _create_simulator(self, params):
@@ -470,7 +506,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             # Produce an output that is json, but not what we expect
             message = {}
         else:
-            raise Exception('Unknown board: {}'.format(board))
+            raise Exception('Unknown board: {}'.format(board))  # pragma: no cover
 
         # The elements of these queues are of type bytes. This means we aren't fully controlling
         # the baudrate unless the chunk_size is 1, but that should be OK.
