@@ -1,11 +1,10 @@
+import copy
+import os
 import re
 import shutil
 import subprocess
+import threading
 import yaml
-import os
-import copy
-from threading import Event
-from threading import Thread
 
 from astropy.io import fits
 from astropy.time import Time
@@ -196,7 +195,7 @@ class AbstractCamera(PanBase):
             threading.Event: An event to be set when the image is done processing
         """
         # To be used for marking when exposure is complete (see `process_exposure`)
-        observation_event = Event()
+        observation_event = threading.Event()
 
         exp_time, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
@@ -214,8 +213,10 @@ class AbstractCamera(PanBase):
                 observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(
-            metadata, observation_event, exposure_event))
+        t = threading.Thread(
+            target=self.process_exposure,
+            args=(metadata, observation_event, exposure_event),
+            daemon=True)
         t.name = '{}Thread'.format(self.name)
         t.start()
 
