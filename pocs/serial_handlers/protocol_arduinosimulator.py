@@ -397,7 +397,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             params = self._params_from_url(self.portstr)
             self._create_simulator(params)
             self.simulator_thread = threading.Thread(
-                name='Device Simulator', target=lambda: self.device_simulator.run())
+                name='Device Simulator', target=lambda: self.device_simulator.run(), daemon=True)
             self.simulator_thread.start()
         elif self.simulator_thread and not need_thread:
             self.stop.set()

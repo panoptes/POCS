@@ -264,8 +264,23 @@ def test_cleanup_missing_config_keys(observatory):
     observatory.get_observation()
 
     observatory.cleanup_observations()
+    observatory.config['pan_id'] = 'PAN99999999'
+    observatory.cleanup_observations()
+
+    observatory.get_observation()
+
+    observatory.cleanup_observations()
     del observatory.config['pan_id']
     observatory.cleanup_observations()
+
+    observatory.get_observation()
+
+    # Now use parameters
+    observatory.cleanup_observations(
+        upload_images=False,
+        make_timelapse=False,
+        keep_jpgs=True
+    )
 
 
 def test_autofocus_disconnected(observatory):
