@@ -130,8 +130,9 @@ def test_delay_of_sigterm_with_nosignal():
 def test_delay_of_sigterm_with_handled_signal():
     """Confirm that another type of signal can be handled.
 
-    In this test we'll send SIGCHLD, which should call the
-    handler the test installs immediately.
+    In this test we'll send SIGCHLD, which should immediately call the
+    signal_handler the test installs, demonstrating that only SIGTERM
+    is affected by this DelaySigTerm.
     """
     test_signal = signal.SIGCHLD
 
@@ -208,6 +209,9 @@ def test_delay_of_sigterm_with_raised_exception():
             # Send the test signal. It should immediately
             # call our handler.
             os.kill(os.getpid(), test_signal)
+            # Should not reach this point because signal_handler() should
+            # be called because we called:
+            #     signal.signal(other-handler, signal_handler)
             after_signal = True
             assert False, "Should not get here!"
     except UserWarning:
