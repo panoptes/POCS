@@ -322,7 +322,7 @@ def upload_observation_to_bucket(pan_id,
         raise Exception("Invalid PANID. Must be of the form 'PANnnn'. Got: {!r}".format(pan_id))
 
     gsutil = shutil.which('gsutil')
-    if gsutil is None:
+    if gsutil is None:  # pragma: no cover
         raise Exception('Cannot find gsutil, skipping upload')
 
     verbose = kwargs.get('verbose', False)
