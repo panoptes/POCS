@@ -156,12 +156,12 @@ class PocsShell(Cmd):
             simulator = []
 
         try:
-            cameras = create_cameras_from_config()
+            cameras = create_cameras_from_config(simulator=simulator)
             observatory = Observatory(simulator=simulator, cameras=cameras)
             self.pocs = POCS(observatory, messaging=True)
             self.pocs.initialize()
-        except error.PanError:
-            pass
+        except error.PanError as e:
+            print_warning('Problem setting up POCS: {}'.format(e))
 
     def help_setup_pocs(self):
         print('''Setup and initialize a POCS instance.
@@ -209,32 +209,16 @@ Hardware names: {}   (or all for all hardware)'''.format(
         else:
             print_warning('Please run `setup_pocs` before trying to run')
 
-    def do_collect_status(self, *arg):
-        """Just records the `status` for pocs.
-
-        This would mostly be used when you want to record information from
-        POCS but might be driving the system manually
-
-        """
-        if self.pocs is not None:
-            if self.msg_subscriber is None:
-                self.do_start_messaging()
-
-            print_info("Recording POCS status - Press Ctrl-c to interrupt")
-
-            _keep_going = True
-            while _keep_going:
-                try:
-                    status = self.pocs.status()
-                    pprint(status)
-                    print_info('*' * 80)
-                    self.pocs.db.insert_current('system', status, store_permanently=False)
-                    time.sleep(2)
-                except KeyboardInterrupt:
-                    print_warning('Stopping collection')
-                    _keep_going = False
-        else:
+    def do_status(self, *arg):
+        """Print the `status` for pocs."""
+        if self.pocs is None:
             print_warning('Please run `setup_pocs` before trying to run')
+            return
+        if self.msg_subscriber is None:
+            self.do_start_messaging()
+        status = self.pocs.status()
+        pprint(status)
+        print()
 
     def do_pocs_command(self, cmd):
         """Send a command to POCS instance.
@@ -640,7 +624,8 @@ class DriftShell(Cmd):
         try:
             self.pocs = POCS(simulator=simulator)
             self.pocs.initialize()
-        except error.PanError:
+        except error.PanError as e:
+
             pass
 
     def do_drift_test(self, *arg):

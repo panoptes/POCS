@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 
+from pocs import hardware
 from pocs.utils import error
 from pocs.utils import load_module
 from pocs.utils.config import load_config
@@ -64,6 +65,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     if not logger:
         logger = logger_module.get_root_logger()
 
+    logger.info(f'kwargs: {kwargs!r}')
+
     if not config:
         config = load_config(**kwargs)
 
@@ -79,7 +82,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     logger.debug("Camera config: {}".format(camera_info))
 
-    a_simulator = 'camera' in kwargs_or_config('simulator', default=list())
+    simulator_names = hardware.get_simulator_names(config=config, kwargs=kwargs)
+    logger.info(f'simulator_names = {", ".join(simulator_names)}')
+    a_simulator = 'camera' in simulator_names
     auto_detect = camera_info.get('auto_detect', False)
 
     ports = list()
@@ -94,7 +99,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
         if len(ports) == 0:
             raise error.PanError(
-                msg="No cameras detected. Use --simulator=camera for simulator.")
+                msg="No cameras detected. For testing, use camera simulator.")
         else:
             logger.debug("Detected Ports: {}".format(ports))
 
