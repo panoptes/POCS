@@ -99,7 +99,7 @@ def open_serial_device(*args, **kwargs):
 
 def test_create_camera_simulator(serial_handlers):
     """Test SerialData, FakeArduinoSerialHandler and ArduinoSimulator."""
-    port='arduinosimulator://?board=camera'
+    port = 'arduinosimulator://?board=camera'
     ser = rs232.SerialData(port=port, baudrate=9600, timeout=2.0)
     try:
         assert ser.is_connected is True
