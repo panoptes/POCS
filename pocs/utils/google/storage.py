@@ -318,8 +318,8 @@ def upload_observation_to_bucket(pan_id,
     if os.path.exists(dir_name) is False:
         raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
 
-    if re.match(r'PAN\d\d\d', pan_id) is None:
-        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
+    if re.match(r'PAN\d\d\d$', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANnnn'. Got: {!r}".format(pan_id))
 
     gsutil = shutil.which('gsutil')
     if gsutil is None:
