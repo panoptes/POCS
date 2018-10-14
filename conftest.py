@@ -9,6 +9,7 @@
 import os
 import pytest
 import subprocess
+import time
 
 from pocs import hardware
 from pocs.utils.database import PanDB
@@ -17,17 +18,18 @@ from pocs.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
+_all_databases = ['mongo', 'file', 'memory']
 
 
 def pytest_addoption(parser):
     hw_names = ",".join(hardware.get_all_names()) + ' (or all for all hardware)'
+    db_names = ",".join(_all_databases) + ' (or all for all databases)'
     group = parser.getgroup("PANOPTES pytest options")
     group.addoption(
         "--with-hardware",
         nargs='+',
         default=[],
-        help=("A comma separated list of hardware to test. " + "List items can include: " +
-              hw_names))
+        help=("A comma separated list of hardware to test. List items can include: " + hw_names))
     group.addoption(
         "--without-hardware",
         nargs='+',
@@ -50,7 +52,8 @@ def pytest_addoption(parser):
         "--test-databases",
         nargs="+",
         default=['mongo'],
-        help="Test databases in the list. Note that travis-ci will test all of them by default.")
+        help=("Test databases in the list. List items can include: " + db_names +
+              ". Note that travis-ci will test all of them by default."))
 
 
 def pytest_collection_modifyitems(config, items):
@@ -217,7 +220,7 @@ def can_connect_to_mongo():
     return _can_connect_to_mongo
 
 
-@pytest.fixture(scope='function', params=['mongo', 'file', 'memory'])
+@pytest.fixture(scope='function', params=_all_databases)
 def db_type(request):
 
     db_list = pytest.config.option.test_databases
@@ -267,6 +270,9 @@ def message_forwarder(messaging_ports):
         args.append(str(pub))
 
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # It takes a while for the forwarder to start, so allow for that.
+    # TODO(jamessynge): Come up with a way to speed up these fixtures.
+    time.sleep(3)
     yield messaging_ports
     proc.terminate()
 

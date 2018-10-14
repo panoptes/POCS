@@ -4,8 +4,6 @@ import collections
 import datetime
 import pytest
 import serial
-from serial import serialutil
-import time
 
 from pocs.sensors import arduino_io
 import pocs.utils.error as error
