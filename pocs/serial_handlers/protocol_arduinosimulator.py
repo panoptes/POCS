@@ -2,7 +2,7 @@
 
 We use the pragma "no cover" in several places that happen to never be
 reached or that would only be reached if the code was called directly,
-i.e. in not in the way it is intended to be used.
+i.e. not in the way it is intended to be used.
 """
 
 import copy
