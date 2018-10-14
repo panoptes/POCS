@@ -213,7 +213,11 @@ class PanMessaging(object):
         `flags=zmq.NOBLOCK` for non-blocking.
 
         Args:
+            blocking (bool, optional): If True, blocks until message
+                received or timeout__ms elapsed (if timeout_ms > 0).
             flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
+            timeout_ms (int, optional): Time in milliseconds to wait for
+                a message to arrive. Only applies if blocking is True.
 
         Returns:
             tuple(str, dict): Tuple containing the topic and a dict
