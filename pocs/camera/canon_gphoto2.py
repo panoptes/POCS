@@ -101,7 +101,10 @@ class Camera(AbstractGPhotoCamera):
 
         # Add most recent exposure to list
         if self.is_primary:
-            observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+            if 'POINTING' in headers:
+                observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
+            else:
+                observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
