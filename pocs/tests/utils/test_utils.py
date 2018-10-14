@@ -1,11 +1,12 @@
 import os
 import pytest
-
+import signal
 import time
 from datetime import datetime as dt
 from astropy import units as u
 
 from pocs.utils import current_time
+from pocs.utils import DelaySigTerm
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import CountdownTimer
@@ -115,3 +116,153 @@ def test_countdown_timer():
     assert counter == pytest.approx(1)
     assert timer.time_left() == 0
     assert timer.expired() is True
+
+
+def test_delay_of_sigterm_with_nosignal():
+    orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+
+    with DelaySigTerm():
+        assert signal.getsignal(signal.SIGTERM) != orig_sigterm_handler
+
+    assert signal.getsignal(signal.SIGTERM) == orig_sigterm_handler
+
+
+def test_delay_of_sigterm_with_handled_signal():
+    """Confirm that another type of signal can be handled.
+
+    In this test we'll send SIGCHLD, which should immediately call the
+    signal_handler the test installs, demonstrating that only SIGTERM
+    is affected by this DelaySigTerm.
+    """
+    test_signal = signal.SIGCHLD
+
+    # Booleans to keep track of how far we've gotten.
+    before_signal = False
+    after_signal = False
+    signal_handled = False
+    after_with = False
+
+    def signal_handler(signum, frame):
+        assert before_signal
+
+        nonlocal signal_handled
+        assert not signal_handled
+        signal_handled = True
+
+        assert not after_signal
+
+    old_test_signal_handler = signal.getsignal(test_signal)
+    orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+    try:
+        # Install our handler.
+        signal.signal(test_signal, signal_handler)
+
+        with DelaySigTerm():
+            assert signal.getsignal(signal.SIGTERM) != orig_sigterm_handler
+            before_signal = True
+            # Send the test signal. It should immediately
+            # call our handler.
+            os.kill(os.getpid(), test_signal)
+            assert signal_handled
+            after_signal = True
+
+        after_with = True
+        assert signal.getsignal(signal.SIGTERM) == orig_sigterm_handler
+    finally:
+        assert before_signal
+        assert signal_handled
+        assert after_signal
+        assert after_with
+        assert signal.getsignal(signal.SIGTERM) == orig_sigterm_handler
+        signal.signal(test_signal, old_test_signal_handler)
+
+
+def test_delay_of_sigterm_with_raised_exception():
+    """Confirm that raising an exception inside the handler is OK."""
+    test_signal = signal.SIGCHLD
+
+    # Booleans to keep track of how far we've gotten.
+    before_signal = False
+    after_signal = False
+    signal_handled = False
+    exception_caught = False
+
+    def signal_handler(signum, frame):
+        assert before_signal
+
+        nonlocal signal_handled
+        assert not signal_handled
+        signal_handled = True
+
+        assert not after_signal
+        raise UserWarning()
+
+    old_test_signal_handler = signal.getsignal(test_signal)
+    orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+    try:
+        # Install our handler.
+        signal.signal(test_signal, signal_handler)
+
+        with DelaySigTerm():
+            assert signal.getsignal(signal.SIGTERM) != orig_sigterm_handler
+            before_signal = True
+            # Send the test signal. It should immediately
+            # call our handler.
+            os.kill(os.getpid(), test_signal)
+            # Should not reach this point because signal_handler() should
+            # be called because we called:
+            #     signal.signal(other-handler, signal_handler)
+            after_signal = True
+            assert False, "Should not get here!"
+    except UserWarning:
+        assert before_signal
+        assert signal_handled
+        assert not after_signal
+        assert not exception_caught
+        assert signal.getsignal(signal.SIGTERM) == orig_sigterm_handler
+        exception_caught = True
+    finally:
+        # Restore old handler before asserts.
+        signal.signal(test_signal, old_test_signal_handler)
+
+        assert before_signal
+        assert signal_handled
+        assert not after_signal
+        assert exception_caught
+        assert signal.getsignal(signal.SIGTERM) == orig_sigterm_handler
+
+
+def test_delay_of_sigterm_with_sigterm():
+    """Confirm that SIGTERM is in fact delayed."""
+
+    # Booleans to keep track of how far we've gotten.
+    before_signal = False
+    after_signal = False
+    signal_handled = False
+
+    def signal_handler(signum, frame):
+        assert before_signal
+        assert after_signal
+
+        nonlocal signal_handled
+        assert not signal_handled
+        signal_handled = True
+
+    orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+    try:
+        # Install our handler.
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        with DelaySigTerm():
+            before_signal = True
+            # Send SIGTERM. It should not call the handler yet.
+            os.kill(os.getpid(), signal.SIGTERM)
+            assert not signal_handled
+            after_signal = True
+
+        assert signal.getsignal(signal.SIGTERM) == signal_handler
+        assert before_signal
+        assert after_signal
+        assert signal_handled
+    finally:
+        signal.signal(signal.SIGTERM, orig_sigterm_handler)
