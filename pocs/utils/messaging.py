@@ -228,6 +228,8 @@ class PanMessaging(object):
             flags = flags | zmq.NOBLOCK
         elif timeout_ms > 0:
             # Wait until a message is available or the timeout expires.
+            # TODO(jamessynge): Remove flags=..., confirm that works with
+            # the default flags value of zmq.POLLIN.
             self.socket.poll(timeout=timeout_ms, flags=(zmq.POLLIN | zmq.POLLOUT))
             # Don't block at this point, because we will have waited as long
             # as necessary.

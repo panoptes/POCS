@@ -285,7 +285,7 @@ def test_run_wait_until_safe(observatory):
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
     try:
@@ -410,7 +410,7 @@ def test_run_power_down_interrupt(observatory):
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 
-    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
     pub = PanMessaging.create_publisher(6500)

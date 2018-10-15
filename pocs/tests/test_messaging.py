@@ -90,7 +90,6 @@ def test_storage_id(pub_and_sub, config, db):
 ################################################################################
 # Tests of the conftest.py messaging fixtures.
 
-
 def test_message_forwarder_exists(message_forwarder):
     assert isinstance(message_forwarder, dict)
     assert 'msg_ports' in message_forwarder
@@ -132,8 +131,6 @@ def assess_pub_sub(pub, sub):
     assert 'message' in msg_obj
     assert msg_obj['message'] == 'a string'
     assert 'timestamp' in msg_obj
-
-    # import pdb;pdb.set_trace()
 
 
 def test_msg_pub_sub(msg_publisher, msg_subscriber):

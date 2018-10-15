@@ -151,6 +151,10 @@ class ArduinoIO(object):
         if hasattr(self, '_logger'):
             self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
+    def __del__(self):
+        if hasattr(self, '_logger'):
+            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
+
     def run(self):
         """Main loop for recording data and reading commands.
 
@@ -255,18 +259,24 @@ class ArduinoIO(object):
 
         Returns when there are no more commands available from the
         command subscriber, or when a second has passed.
+        The interval is 1 second because we expect at least 2 seconds
+        between reports, and also expect that it probably doesn't take
+        more than 1 second for each report to be read. We could make
+        this configurable, or could dynamically adjust, such as by
+        polling for input.
         """
         timer = CountdownTimer(1.0)
-        while True:
-            topic, msg_obj = self._sub.receive_message(blocking=False)
-            if topic and topic.lower() == self._cmd_topic:
+        while not timer.expired():
+            topic, msg_obj = self._sub.receive_message(blocking=True, timeout_ms=0.05)
+            if not topic:
+                continue
+            self._logger.debug('Received a message for topic {}', topic)
+            if topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:
                     self._logger.error('Exception while handling command: {}', e)
                     self._logger.error('msg_obj: {}', msg_obj)
-            if not timer.sleep(max_sleep=0.05):
-                return
 
     def handle_command(self, msg):
         """Handle one relay command.
