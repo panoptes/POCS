@@ -30,8 +30,10 @@ class Camera(AbstractGPhotoCamera):
 
         # Get serial number
         _serial_number = self.get_property('serialnumber')
-        if _serial_number > '':
-            self._serial_number = _serial_number
+        if not _serial_number:
+            raise error.CameraNotFound("Camera not responding: {}".format(self))
+
+        self._serial_number = _serial_number
 
         # Properties to be set upon init.
         prop2index = {
