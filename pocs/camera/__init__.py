@@ -65,8 +65,6 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     if not logger:
         logger = logger_module.get_root_logger()
 
-    logger.info(f'kwargs: {kwargs!r}')
-
     if not config:
         config = load_config(**kwargs)
 
@@ -83,7 +81,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
     logger.debug("Camera config: {}".format(camera_info))
 
     simulator_names = hardware.get_simulator_names(config=config, kwargs=kwargs)
-    logger.info(f'simulator_names = {", ".join(simulator_names)}')
+    logger.debug(f'simulator_names = {", ".join(simulator_names)}')
     a_simulator = 'camera' in simulator_names
     auto_detect = camera_info.get('auto_detect', False)
 

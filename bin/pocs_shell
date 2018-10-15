@@ -217,6 +217,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         if self.msg_subscriber is None:
             self.do_start_messaging()
         status = self.pocs.status()
+        print()
         pprint(status)
         print()
 
