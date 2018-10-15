@@ -159,12 +159,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                 filter_type=camera_filter,
                                 focuser=camera_focuser,
                                 readout_time=camera_readout)
-        except ImportError:
-            # Raise errors if bad module
-            raise error.CameraNotFound(msg=camera_model)
-        except error.CameraNotFound as e:
+        except Exception as e:
             # Warn if bad camera but keep trying other cameras
-            logger.warning(e)
+            logger.error(msg="Cannot find camera type: {} {}".format(camera_model, e))
         else:
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
