@@ -151,9 +151,6 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         try:
             module = load_module('pocs.camera.{}'.format(camera_model))
             logger.debug('Camera module: {}'.format(module))
-        except ImportError:
-            raise error.CameraNotFound(msg=camera_model)
-        else:
             # Create the camera object
             cam = module.Camera(name=cam_name,
                                 model=camera_model,
@@ -162,7 +159,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                 filter_type=camera_filter,
                                 focuser=camera_focuser,
                                 readout_time=camera_readout)
-
+        except Exception as e:
+            # Warn if bad camera but keep trying other cameras
+            logger.error(msg="Cannot find camera type: {} {}".format(camera_model, e))
+        else:
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
                 cam.is_primary = True
@@ -180,7 +180,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
-        primary_camera = cameras['Cam00']
+        primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 
     logger.debug("Primary camera: {}", primary_camera)
