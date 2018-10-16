@@ -147,7 +147,9 @@ class ArduinoSimulator:
                 # number of bytes we just read.
                 time.sleep(1.0 / 1000 * len(b))
             except queue.Empty:
-                return
+                # Not returning here so that the return above is will be
+                # hit every time this method executes.
+                pass
 
     def output_next_chunk(self, now):
         """Output one chunk of pending json bytes."""
