@@ -372,7 +372,6 @@ def test_autofocus_coarse_with_plots(camera, patterns, counter):
     autofocus_event.wait()
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
-    assert len(glob.glob(patterns['fine_plot'])) == 1
     assert len(glob.glob(patterns['coarse_plot'])) == 1
 
 
