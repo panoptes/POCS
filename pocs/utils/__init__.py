@@ -283,12 +283,25 @@ class DelaySigTerm(contextlib.ContextDecorator):
             db.WriteCurrentRecord(record)
     """
     # TODO(jamessynge): Consider generalizing as DelaySignal(signum).
-    def __enter__(self):
+    def __enter__(self, callback=None):
+        """
+        Args:
+            callback: If not None, called when SIGTERM is handled,
+                with kwargs previously_caught and frame.
+        """
         self.caught = False
         self.old_handler = signal.getsignal(signal.SIGTERM)
+        if callback:
+            assert callable(callback)
+            self.callback = callback
+        else:
+            self.callback = None
 
         def handler(signum, frame):
+            previously_caught = self.caught
             self.caught = True
+            if self.callback:
+                self.callback(previously_caught=previously_caught, frame=frame)
 
         signal.signal(signal.SIGTERM, handler)
         return self
