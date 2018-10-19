@@ -161,20 +161,7 @@ class PanDB(object):
         if not isinstance(db_type, str) and db_type:
             raise ValueError('db_type, a string, must be provided and not empty')
 
-        # Pre-defined list of collections that are valid.
-        collection_names = [
-            'camera_board',
-            'config',
-            'current',
-            'drift_align',
-            'environment',
-            'mount',
-            'observations',
-            'offset_info',
-            'state',
-            'telemetry_board',
-            'weather',
-        ]
+        collection_names = PanDB.collection_names()
 
         if db_type == 'mongo':
             try:
@@ -189,8 +176,25 @@ class PanDB(object):
         else:
             raise Exception('Unsupported database type: {}', db_type)
 
+    @staticmethod
+    def collection_names():
+        """The pre-defined list of collections that are valid."""
+        return [
+            'camera_board',
+            'config',
+            'current',
+            'drift_align',
+            'environment',
+            'mount',
+            'observations',
+            'offset_info',
+            'state',
+            'telemetry_board',
+            'weather',
+        ]
+
     @classmethod
-    def permanently_erase_database(cls, db_type, db_name, really=False, dangerous=False):
+    def permanently_erase_database(cls, db_type, db_name, really=False, dangerous=False, *args, **kwargs):
         """Permanently delete the contents of the identified database."""
         if not isinstance(db_type, str) and db_type:
             raise ValueError('db_type, a string, must be provided and not empty; was {!r}',
@@ -201,11 +205,11 @@ class PanDB(object):
         if really != 'Yes' or dangerous != 'Totally':
             raise Exception('PanDB.permanently_erase_database called with invalid args!')
         if db_type == 'mongo':
-            PanMongoDB.permanently_erase_database(db_name)
+            PanMongoDB.permanently_erase_database(db_name, *args, **kwargs)
         elif db_type == 'file':
-            PanFileDB.permanently_erase_database(db_name)
+            PanFileDB.permanently_erase_database(db_name, *args, **kwargs)
         elif db_type == 'memory':
-            PanMemoryDB.permanently_erase_database(db_name)
+            PanMemoryDB.permanently_erase_database(db_name, *args, **kwargs)
         else:
             raise Exception('Unsupported database type: {}', db_type)
 
@@ -295,12 +299,22 @@ class PanMongoDB(AbstractPanDB):
         return collection.find_one({'_id': obj_id})
 
     def clear_current(self, type):
-        self.current.remove({'type': type})
+        self.current.delete_one({'type': type})
 
     @classmethod
     def permanently_erase_database(self, db_name):
-        # TODO(jamessynge): Clear the known collections?
-        pass
+        # Create an instance of PanMongoDb in order to get access to
+        # the relevant client.
+        db = PanDB(db_type='mongo', db_name=db_name)
+        for collection_name in db.collection_names:
+            if not hasattr(db, collection_name):
+                db._warn(f'Unable to locate collection {collection_name!r} to erase it.')
+                continue
+            try:
+                collection = getattr(db, collection_name)
+                collection.drop()
+            except Exception as e:
+                db._warn(f'Unable to drop collection {collection_name!r}; exception: {e}.')
 
 
 class PanFileDB(AbstractPanDB):
