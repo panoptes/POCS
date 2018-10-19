@@ -250,7 +250,7 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return topic, msg_obj
 
 
-def test_run_wait_until_safe(observatory):
+def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     # Make sure DB is clear for current weather
@@ -282,23 +282,20 @@ def test_run_wait_until_safe(observatory):
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 
-    pub = PanMessaging.create_publisher(6500)
-    sub = PanMessaging.create_subscriber(6511)
-
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
     try:
         # Wait for the RUNNING message,
-        assert wait_for_running(sub)
+        assert wait_for_running(msg_subscriber)
 
         time.sleep(2)
         # Insert a dummy weather record to break wait
         observatory.db.insert_current('weather', {'safe': True})
 
-        assert wait_for_state(sub, 'scheduling')
+        assert wait_for_state(msg_subscriber, 'scheduling')
     finally:
-        pub.send_message('POCS-CMD', 'shutdown')
+        cmd_publisher.send_message('POCS-CMD', 'shutdown')
         pocs_thread.join(timeout=30)
 
     assert pocs_thread.is_alive() is False
@@ -390,7 +387,7 @@ def test_run_complete(pocs):
     pocs.power_down()
 
 
-def test_run_power_down_interrupt(observatory):
+def test_run_power_down_interrupt(observatory, cmd_publisher, msg_subscriber):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     def start_pocs():
@@ -413,13 +410,10 @@ def test_run_power_down_interrupt(observatory):
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    pub = PanMessaging.create_publisher(6500)
-    sub = PanMessaging.create_subscriber(6511)
-
     try:
-        assert wait_for_state(sub, 'scheduling')
+        assert wait_for_state(msg_subscriber, 'scheduling')
     finally:
-        pub.send_message('POCS-CMD', 'shutdown')
+        cmd_publisher.send_message('POCS-CMD', 'shutdown')
         pocs_thread.join(timeout=30)
 
     assert pocs_thread.is_alive() is False
