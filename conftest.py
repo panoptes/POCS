@@ -257,13 +257,19 @@ def memory_db():
 
 @pytest.fixture(scope='module')
 def messaging_ports():
-    return dict(msg_ports=(43001, 43101), cmd_ports=(44001, 44101))
+    # Some code (e.g. POCS._setup_messaging) assumes that sub and pub ports
+    # are sequential so these need to match that assumption for now.
+    return dict(msg_ports=(43001, 43002), cmd_ports=(44001, 44002))
 
 
 @pytest.fixture(scope='function')
 def message_forwarder(messaging_ports):
     cmd = os.path.join(os.getenv('POCS'), 'scripts', 'run_messaging_hub.py')
     args = [cmd]
+    # Note that the other programs using these port pairs consider
+    # them to be pub and sub, in that order, but the forwarder sees things
+    # in reverse: it subscribes to the port that others publish to,
+    # and it publishes to the port that others subscribe to.
     for _, (sub, pub) in messaging_ports.items():
         args.append('--pair')
         args.append(str(sub))
