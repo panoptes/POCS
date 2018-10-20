@@ -1,11 +1,15 @@
-import json
-import os
-import sys
-import time
+import collections
 import datetime
+import json
 import logging
 import logging.config
+import os
+import re
+import string
+import sys
 from tempfile import gettempdir
+import time
+from warnings import warn
 
 from pocs.utils.config import load_config
 
@@ -15,30 +19,153 @@ from pocs.utils.config import load_config
 all_loggers = {}
 
 
+def field_name_to_key(field_name):
+    """Given a field_name from Formatter.parse(), extract the argument key."""
+    assert isinstance(field_name, str)
+    assert len(field_name)
+    m = re.match(r'^([^.[]+)', field_name)
+    if not m:
+        return None
+    arg_name = m.group(1)
+    if arg_name.isdigit():
+        pos = int(arg_name)
+        return int(arg_name)
+    else:
+        return arg_name
+
+
+def format_references_keys(fmt, args):
+    assert isinstance(args, dict)
+    try:
+        for literal_text, field_name, format_spec, conversion in string.Formatter().parse(fmt):
+            if field_name:
+                key = field_name_to_key(field_name)
+                if isinstance(key, str) and key in args:
+                    return True
+    except:
+        pass
+    return False
+
+
+def format_has_legacy_style(fmt):
+    fmt = fmt.replace('%%', '')
+    return '%' in fmt
+
+
+formatting_methods = dict(
+    legacy_direct=lambda fmt, args: fmt % args,
+    legacy_tuple=lambda fmt, args: fmt % (args, ),
+    modern_direct=lambda fmt, args: fmt.format(args),
+    modern_args=lambda fmt, args: fmt.format(*args),
+    modern_kwargs=lambda fmt, args: fmt.format(**args),
+)
+
+
+def logger_msg_formatter(fmt, args, debug=False):
+    """Returns the formatted logger message.
+
+    Python's logger package uses the old printf style formatting
+    strings, rather than the newer PEP-3101 "Advanced String Formatting"
+    style of formatting strings.
+
+    This function supports using either style, though not both in one
+    string. It examines msg to look for which style is in use,
+    and is exposed as a function for easier testing.
+
+    The logging package assumes that if the sole argument to the logger
+    call is a dict, that the caller intends to use that dict as a source
+    for mapping key substitutions in the formatting operation, so
+    discards the sequence that surrounded the dict (as part of *args),
+    keeping only the dict as the value of logging.LogRecord.args here.
+    It happens that the old style formatting operator '%' would detect
+    whether the string included keys mapping into the dict on the right
+    hand side of the % operator, and if so would look them up; however,
+    if the formatting string didn't include mapping keys, then a sole
+    dict arg was treated as a single value, thus permitting a single
+    substitution (e.g. 'This is the result: %r' % some_dict).
+
+    The .format() method of strings doesn't have the described behavior,
+    so this formatter class attempts to provide it.
+    """
+    if not args:
+        return fmt
+
+    # There are args, so fmt must be a format string. Select the
+    # formatting methods to try based on the contents.
+    method_names = []
+    may_have_legacy_subst = format_has_legacy_style(fmt)
+    args_are_mapping = isinstance(args, collections.Mapping)
+    if '{' in fmt:
+        # Looks modern.
+        if args_are_mapping:
+            if format_references_keys(fmt, args):
+                method_names.append('modern_kwargs')
+            else:
+                method_names.append('modern_direct')
+        else:
+            method_names.append('modern_args')
+    if may_have_legacy_subst:
+        # Looks old school.
+        method_names.append('legacy_direct')
+
+    # First try with the selected method names.
+
+    for method_name in method_names:
+        try:
+            method = formatting_methods[method_name]
+            msg = method(fmt, args)
+            if debug:
+                print(f'Method {method_name!r} worked for {fmt!r}')
+            return msg
+        except:
+            if debug:
+                print(f'Method {method_name!r} Failed for {fmt!r}')
+
+    # Didn't succeed. Select fallback methods, again based on content.
+    fallback_names = []
+    if '{' in fmt:
+        fallback_names.append('modern_direct')
+    if may_have_legacy_subst:
+        fallback_names.append('legacy_tuple')
+    elif '%' in fmt:
+        fallback_names.append('legacy_direct')
+    method_names = [n for n in fallback_names if n not in method_names]
+
+    for method_name in method_names:
+        try:
+            method = formatting_methods[method_name]
+            msg = method(fmt, args)
+            if debug:
+                print(f'Method {method_name!r} worked for {fmt!r}')
+            return msg
+        except:
+            if debug:
+                print(f'Method {method_name!r} Failed for {fmt!r}')
+
+    warn(f'Unable to format log.')
+    warn(f'Log message (format string): {fmt!r}')
+    warn('Log args type: %s' % type(args))
+    try:
+        warn(f'Log args: {args!r}')
+    except:
+        warn('Unable to represent log args in string form.')
+    return fmt
+
+
 class StrFormatLogRecord(logging.LogRecord):
-    """ Allow for `str.format` style log messages
+    """Allow for `str.format` style log messages
 
     Even though you can select '{' as the style for the formatter class,
     you still can't use {} formatting for your message. The custom
     `getMessage` tries new format, then falls back to legacy format.
 
-    From: https://goo.gl/Cyt5NH
+    Originally inspired by https://goo.gl/Cyt5NH but much changed since
+    then.
     """
 
     def getMessage(self):
         msg = str(self.msg)
-        if self.args:
-            if '{' in msg:
-                try:
-                    msg = msg.format(*self.args)
-                except (TypeError, ValueError):
-                    msg = msg % self.args
-            else:
-                try:
-                    msg = msg % self.args
-                except (TypeError, ValueError):
-                    msg = msg.format(*self.args)
-        return msg
+        return logger_msg_formatter(msg, self.args)
 
 
 def get_root_logger(profile='panoptes', log_config=None):
@@ -72,9 +199,9 @@ def get_root_logger(profile='panoptes', log_config=None):
         # missing from the log_config. It is hard to understand how
         # this could occur given that none of the callers of
         # get_root_logger pass in their own log_config.
-        if 'formatters' not in log_config and sys.stdout.isatty():
-            import pdb
-            pdb.set_trace()
+        if 'formatters' not in log_config:
+            warn('formatters is missing from log_config!')
+            warn(f'log_config: {log_config!r}')
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
@@ -135,6 +262,5 @@ def get_root_logger(profile='panoptes', log_config=None):
 
 
 class _UTCFormatter(logging.Formatter):
-
     """ Simple class to convert times to UTC in the logger """
     converter = time.gmtime
