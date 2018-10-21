@@ -199,7 +199,7 @@ def get_root_logger(profile='panoptes', log_config=None):
         # missing from the log_config. It is hard to understand how
         # this could occur given that none of the callers of
         # get_root_logger pass in their own log_config.
-        if 'formatters' not in log_config:
+        if 'formatters' not in log_config:  # pragma: no cover
             warn('formatters is missing from log_config!')
             warn(f'log_config: {log_config!r}')
         for name, formatter in log_config['formatters'].items():

@@ -14,21 +14,6 @@ def test_field_name_to_key():
     assert field_name_to_key('abc[1].def') == 'abc'
 
 
-# def test_format_references_keys():
-#     assert not format_string_has_replacement_fields('Some }} text {{')
-#     assert not format_string_has_replacement_fields('Some {{}} text')
-
-#     assert format_string_has_replacement_fields('Some {} text')
-#     assert format_string_has_replacement_fields('{!r}')
-#     assert format_string_has_replacement_fields('{!s:3}')
-#     assert format_string_has_replacement_fields('{abc!r}')
-#     assert format_string_has_replacement_fields('{abc}')
-
-#     assert not format_string_has_replacement_fields('%s')
-#     assert not format_string_has_replacement_fields('%(0)s')
-#     assert not format_string_has_replacement_fields('%(abc)s')
-
-
 def test_logger_msg_formatter_1_dict():
     d = dict(abc='def', xyz=123)
 
@@ -55,6 +40,7 @@ def test_logger_msg_formatter_1_dict():
 
     for fmt, msg in tests:
         assert logger_msg_formatter(fmt, d, debug=True) == msg, fmt
+        assert logger_msg_formatter(fmt, d, debug=False) == msg, fmt
 
     # Now tests with entirely invalid formats, so warnings should be issued.
     tests = [
@@ -96,6 +82,7 @@ def test_logger_msg_formatter_1_non_dict():
     ]
 
     for fmt, msg in tests:
+        assert logger_msg_formatter(fmt, d, debug=False) == msg, fmt
         assert logger_msg_formatter(fmt, d, debug=True) == msg, fmt
 
     # Now tests with entirely invalid formats, so warnings should be issued.
