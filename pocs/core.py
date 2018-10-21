@@ -298,12 +298,20 @@ class POCS(PanStateMachine, PanBase):
 
         is_safe_values = dict()
 
+        # Check if AC power connected and return immediately if not
+        has_power = self.has_ac_power()
+        if not has_power:
+            return False
+
+        is_safe_values['ac_power'] = has_power
+
         # Check if night time
         is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
 
+        # Hard-drive space
         is_safe_values['free_space'] = self.has_free_space()
 
         safe = all(is_safe_values.values())
@@ -402,6 +410,15 @@ class POCS(PanStateMachine, PanBase):
         """
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
+
+    def has_ac_power(self):
+        """Check for system AC power as detected by the arduino.
+
+        Returns:
+            bool: True if system AC power is present.
+        """
+        # TODO(wtgee) Make this real
+        return True
 
 ##################################################################################################
 # Convenience Methods
