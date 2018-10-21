@@ -42,7 +42,7 @@ def format_references_keys(fmt, args):
                 key = field_name_to_key(field_name)
                 if isinstance(key, str) and key in args:
                     return True
-    except:
+    except Exception:
         pass
     return False
 
@@ -117,7 +117,7 @@ def logger_msg_formatter(fmt, args, debug=False):
             if debug:
                 print(f'Method {method_name!r} worked for {fmt!r}')
             return msg
-        except:
+        except Exception:
             if debug:
                 print(f'Method {method_name!r} Failed for {fmt!r}')
 
@@ -138,7 +138,7 @@ def logger_msg_formatter(fmt, args, debug=False):
             if debug:
                 print(f'Method {method_name!r} worked for {fmt!r}')
             return msg
-        except:
+        except Exception:
             if debug:
                 print(f'Method {method_name!r} Failed for {fmt!r}')
 
@@ -147,7 +147,7 @@ def logger_msg_formatter(fmt, args, debug=False):
     warn('Log args type: %s' % type(args))
     try:
         warn(f'Log args: {args!r}')
-    except:
+    except Exception:
         warn('Unable to represent log args in string form.')
     return fmt
 
