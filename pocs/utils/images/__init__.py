@@ -25,6 +25,17 @@ palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
 
 
+def make_images_dir():
+    images_dir = os.path.join(os.getenv('PANDIR'), 'images')
+    try:
+        os.makedirs(images_dir, exist_ok=True)
+        return images_dir
+    except Exception as e:
+        warn(f'Unable to create the images directory: {images_dir}')
+        warn(f'Exception during os.makedirs: {e}')
+        return None
+
+
 def crop_data(data, box_width=200, center=None, verbose=False):
     """ Return a cropped portion of the image
 
@@ -83,10 +94,10 @@ def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs
     Returns:
         str -- Filename of image that was created.
     """
-    assert os.path.exists(fname),\
+    if not os.path.exists(fname):
         warn("File doesn't exist, can't make pretty: {}".format(fname))
-
-    if fname.endswith('.cr2'):
+        return None
+    elif fname.endswith('.cr2'):
         pretty_path = _make_pretty_from_cr2(fname, title=title, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
         pretty_path = _make_pretty_from_fits(fname, title=title, **kwargs)
@@ -94,16 +105,17 @@ def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs
         warn("File must be a Canon CR2 or FITS file.")
         return None
 
+    if not link_latest or not os.path.exists(pretty_path):
+        return pretty_path
+
     # Symlink latest.jpg to the image; first remove the symlink if it already exists.
-    if link_latest and os.path.exists(pretty_path):
-        latest_path = os.path.join(
-            os.getenv('PANDIR'),
-            'images',
-            'latest.jpg'
-        )
+    images_dir = make_images_dir()
+    if not images_dir:
+        warn(f"Can't link latest.jpg to {pretty_path}")
+    else:
+        latest_path = os.path.join(images_dir, 'latest.jpg')
         with suppress(FileNotFoundError):
             os.remove(latest_path)
-
         try:
             os.symlink(pretty_path, latest_path)
         except Exception as e:

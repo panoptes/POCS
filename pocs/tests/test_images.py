@@ -10,26 +10,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 
-@pytest.fixture
-def unsolved_fits_file(data_dir):
-    return os.path.join(data_dir, 'unsolved.fits')
-
-
-@pytest.fixture
-def solved_fits_file(data_dir):
-    return os.path.join(data_dir, 'solved.fits.fz')
-
-
-@pytest.fixture
-def tiny_fits_file(data_dir):
-    return os.path.join(data_dir, 'tiny.fits')
-
-
-@pytest.fixture
-def noheader_fits_file(data_dir):
-    return os.path.join(data_dir, 'noheader.fits')
-
-
 def test_fits_exists(unsolved_fits_file):
     with pytest.raises(AssertionError):
         Image(unsolved_fits_file.replace('.fits', '.fit'))
@@ -132,14 +112,16 @@ def test_pointing_error(solved_fits_file):
     assert (perr.magnitude.to(u.degree).value - 1.9445870862060288) < 1e-5
 
 
-# def test_compute_offset_arcsec(solved_fits_file, unsolved_fits_file):
-#     img0 = Image(solved_fits_file)
-#     img1 = Image(unsolved_fits_file)
+def test_compute_offset_arcsec(solved_fits_file, unsolved_fits_file):
+    img0 = Image(solved_fits_file)
+    img1 = Image(solved_fits_file)
 
-#     offset_info = img0.compute_offset(img1)
+    offset_info = img0.compute_offset(img1)
+    print('offset_info:', offset_info)
 
-#     assert offset_info['offsetX'] - 3.9686712667745043 < 1e-5
-#     assert offset_info['offsetY'] - 17.585827075244445 < 1e-5
+    assert offset_info.delta_ra == 0
+    assert offset_info.delta_dec == 0
+    assert offset_info.magnitude == 0
 
 
 # def test_compute_offset_pixel(solved_fits_file, unsolved_fits_file):

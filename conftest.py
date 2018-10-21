@@ -6,6 +6,7 @@
 # In addition, there are fixtures defined here that are available to
 # all tests, not just those in pocs/tests.
 
+import copy
 import os
 import pytest
 import subprocess
@@ -314,3 +315,35 @@ def cmd_subscriber(message_forwarder):
     subscriber = PanMessaging.create_subscriber(port)
     yield subscriber
     subscriber.close()
+
+
+@pytest.fixture(scope='function')
+def save_environ():
+    old_env = copy.deepcopy(os.environ)
+    yield
+    os.environ = old_env
+
+
+@pytest.fixture
+def data_dir():
+    return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'data')
+
+
+@pytest.fixture
+def unsolved_fits_file(data_dir):
+    return os.path.join(data_dir, 'unsolved.fits')
+
+
+@pytest.fixture
+def solved_fits_file(data_dir):
+    return os.path.join(data_dir, 'solved.fits.fz')
+
+
+@pytest.fixture
+def tiny_fits_file(data_dir):
+    return os.path.join(data_dir, 'tiny.fits')
+
+
+@pytest.fixture
+def noheader_fits_file(data_dir):
+    return os.path.join(data_dir, 'noheader.fits')
