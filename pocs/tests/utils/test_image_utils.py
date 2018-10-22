@@ -1,12 +1,12 @@
 import os
 import numpy as np
 import pytest
-import tempfile
 import shutil
-
+import tempfile
 from glob import glob
 
 from pocs.utils import images as img_utils
+from pocs.utils import error
 
 
 def test_make_images_dir(save_environ):
@@ -40,16 +40,18 @@ def test_crop_data():
 
 
 def test_make_pretty_image(solved_fits_file, tiny_fits_file, save_environ):
-    # First make a dir and put the files in it
+    # Not a valid file type (can't automatically handle .fits.fz files).
+    with pytest.warns(UserWarning, match='File must be'):
+        assert not img_utils.make_pretty_image(solved_fits_file)
+
+    # Make a dir and put test image files in it.
     with tempfile.TemporaryDirectory() as tmpdir:
         fz_file = os.path.join(tmpdir, os.path.basename(solved_fits_file))
         fits_file = os.path.join(tmpdir, os.path.basename(tiny_fits_file))
         # TODO Add a small CR2 file to our sample image files.
 
-        # Can't operate on non-existent files.
-        with pytest.warns(UserWarning):
-            assert not img_utils.make_pretty_image(fz_file)
-        with pytest.warns(UserWarning):
+        # Can't operate on a non-existent files.
+        with pytest.warns(UserWarning, match="File doesn't exist"):
             assert not img_utils.make_pretty_image(fits_file)
 
         # Copy the files.
@@ -76,10 +78,21 @@ def test_make_pretty_image(solved_fits_file, tiny_fits_file, save_environ):
         os.rmdir(imgdir)
 
         # Try again, but without link_latest.
-        pretty = img_utils.make_pretty_image(fits_file)
+        pretty = img_utils.make_pretty_image(fits_file, title='some text')
         assert pretty
         assert os.path.isfile(pretty)
         assert not os.path.isdir(imgdir)
+
+
+def test_make_pretty_image_cr2_fail():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpfile = os.path.join(tmpdir, 'bad.cr2')
+        with open(tmpfile, 'w') as f:
+            f.write('not an image file')
+        with pytest.raises(error.InvalidCommand):
+            img_utils.make_pretty_image(tmpfile, title='some text', link_latest=False)
+        with pytest.raises(error.InvalidCommand):
+            img_utils.make_pretty_image(tmpfile, verbose=True)
 
 
 def test_clean_observation_dir(data_dir):

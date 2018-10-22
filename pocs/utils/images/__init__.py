@@ -26,6 +26,7 @@ palette.set_bad('g', 1.0)
 
 
 def make_images_dir():
+    """Return the path of the PANDIR/images directory, creating it if necessary."""
     images_dir = os.path.join(os.getenv('PANDIR'), 'images')
     try:
         os.makedirs(images_dir, exist_ok=True)
@@ -202,7 +203,7 @@ def _make_pretty_from_fits(fname=None,
     return new_filename
 
 
-def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: no cover
+def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     script_name = os.path.join(os.getenv('POCS'), 'scripts', 'cr2_to_jpg.sh')
@@ -215,15 +216,11 @@ def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: n
         print(cmd)
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         if verbose:
-            print(proc)
-    except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2. {!r} \t {}".format(e, cmd))
-    except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2. {!r} \t {}".format(e, cmd))
+            print(output)
     except Exception as e:
-        raise error.PanError("Timeout on plate solving: {!r}".format(e))
+        raise error.InvalidCommand("Error executing gphoto2: {!r}\nCommand: {}".format(e, cmd))
 
     return fname.replace('cr2', 'jpg')
 

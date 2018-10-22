@@ -324,26 +324,26 @@ def save_environ():
     os.environ = old_env
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def data_dir():
     return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'data')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def unsolved_fits_file(data_dir):
     return os.path.join(data_dir, 'unsolved.fits')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def solved_fits_file(data_dir):
     return os.path.join(data_dir, 'solved.fits.fz')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def tiny_fits_file(data_dir):
     return os.path.join(data_dir, 'tiny.fits')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def noheader_fits_file(data_dir):
     return os.path.join(data_dir, 'noheader.fits')
