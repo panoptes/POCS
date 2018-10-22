@@ -313,7 +313,7 @@ def test_unsafe_park(pocs):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'power']
     assert pocs.is_safe() is False
 
     assert pocs.state == 'parking'
@@ -358,7 +358,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 
     pocs.initialize()
@@ -370,7 +370,7 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
