@@ -435,13 +435,13 @@ class POCS(PanStateMachine, PanBase):
         # Get current power readings from database
         try:
             record = self.db.get_current('power')
-            is_safe = record['data'].get('mains', False)
+            has_power = record['data'].get('main', False)
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
-                              is_safe,
+            self.logger.debug("Power Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
+                              has_power,
                               age,
                               timestamp)
 
@@ -452,7 +452,7 @@ class POCS(PanStateMachine, PanBase):
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
-                is_safe = False
+                has_power = False
 
         if not has_power:
             self.logger.critical('AC power not connected.')

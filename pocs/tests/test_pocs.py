@@ -324,8 +324,34 @@ def test_unsafe_park(pocs):
     pocs.power_down()
 
 
-def tests_no_ac_power(pocs):
+def test_no_ac_power(pocs):
+    # Simulator makes AC power safe
+    assert pocs.has_ac_power() is True
+
+    # Remove 'power' from simulator
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.initialize()
+
+    # With simulator remove the power should fail
+    assert pocs.has_ac_power() is False
+
+    # Add a fake power entry in data base
+    pocs.db.insert_current('power', {'main': True})
+
+    # Check for safe entry in database
     assert pocs.has_ac_power()
+    assert pocs.is_safe()
+
+    # Check for stale entry in database
+    assert pocs.has_ac_power(stale=0.1) is False
+
+    # But double check it's safe with longer entry
+    assert pocs.has_ac_power()
+
+    # Remove entry and try agian
+    pocs.db.current.remove({'type': 'power'})
+
+    assert pocs.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):
