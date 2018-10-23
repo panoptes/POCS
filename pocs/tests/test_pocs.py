@@ -335,22 +335,25 @@ def test_no_ac_power(pocs):
     # With simulator removed the power should fail
     assert pocs.has_ac_power() is False
 
-    # Add a fake power entry in data base
-    pocs.db.insert_current('power', {'main': True})
+    for v in [True, 12.4, 0., False]:
+        has_power = bool(v)
 
-    # Check for safe entry in database
-    assert pocs.has_ac_power()
-    assert pocs.is_safe()
+        # Add a fake power entry in data base
+        pocs.db.insert_current('power', {'main': v})
 
-    # Check for stale entry in database
-    assert pocs.has_ac_power(stale=0.1) is False
+        # Check for safe entry in database
+        assert pocs.has_ac_power() == has_power
+        assert pocs.is_safe() == has_power
 
-    # But double check it's safe with longer entry
-    assert pocs.has_ac_power()
+        # Check for stale entry in database
+        assert pocs.has_ac_power(stale=0.1) is False
 
-    # Remove entry and try agian
-    pocs.db.current.remove({'type': 'power'})
-    assert pocs.has_ac_power() is False
+        # But double check it still matches longer entry
+        assert pocs.has_ac_power() == has_power
+
+        # Remove entry and try again
+        pocs.db.current.remove({'type': 'power'})
+        assert pocs.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):

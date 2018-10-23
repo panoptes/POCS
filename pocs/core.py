@@ -435,7 +435,7 @@ class POCS(PanStateMachine, PanBase):
         # Get current power readings from database
         try:
             record = self.db.get_current('power')
-            has_power = record['data'].get('main', False)
+            has_power = bool(record['data'].get('main', False))
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
