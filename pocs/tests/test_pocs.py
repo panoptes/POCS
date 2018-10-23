@@ -332,7 +332,7 @@ def test_no_ac_power(pocs):
     pocs.config['simulator'] = ['camera', 'mount', 'weather']
     pocs.initialize()
 
-    # With simulator remove the power should fail
+    # With simulator removed the power should fail
     assert pocs.has_ac_power() is False
 
     # Add a fake power entry in data base
@@ -350,7 +350,6 @@ def test_no_ac_power(pocs):
 
     # Remove entry and try agian
     pocs.db.current.remove({'type': 'power'})
-
     assert pocs.has_ac_power() is False
 
 

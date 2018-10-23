@@ -407,10 +407,10 @@ class POCS(PanStateMachine, PanBase):
         return free_space.value >= required_space.to(u.gigabyte).value
 
     def has_ac_power(self, stale=90):
-        """Check for system AC power.is_safe
+        """Check for system AC power.
 
         Power readings are done by the arduino and are placed in the metadata
-        database. This method looks for entries saved under the `power.mains`
+        database. This method looks for entries saved under the `power.main`
         key. The method will also return False if the record is older than
         `stale` seconds.
 
@@ -451,11 +451,11 @@ class POCS(PanStateMachine, PanBase):
             self.logger.error("Error checking weather: {}", e)
         else:
             if age > stale:
-                self.logger.warning("Weather record looks stale, marking unsafe.")
+                self.logger.warning("Power record looks stale, marking unsafe.")
                 has_power = False
 
         if not has_power:
-            self.logger.critical('AC power not connected.')
+            self.logger.critical('AC power not detected.')
 
         return has_power
 
