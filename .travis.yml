@@ -50,7 +50,7 @@ addons:
     - libbz2-dev
     - swig
     - cfitsio-dev
-    - cfitsio-bin
+    - cfitsio
     - cfitsio*
 install:
   - cd $PANDIR
