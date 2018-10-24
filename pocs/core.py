@@ -410,8 +410,8 @@ class POCS(PanStateMachine, PanBase):
         """Check for system AC power.
 
         Power readings are done by the arduino and are placed in the metadata
-        database. This method looks for entries saved under the `power.main`
-        key in the `current` collection. The method will also return False if
+        database. This method looks for entries saved with type `power` and key
+        `main` the `current` collection. The method will also return False if
         the record is older than `stale` seconds.
 
         Args:

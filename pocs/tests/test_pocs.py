@@ -329,7 +329,7 @@ def test_no_ac_power(pocs):
     assert pocs.has_ac_power() is True
 
     # Remove 'power' from simulator
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'].remove('power')
     pocs.initialize()
 
     # With simulator removed the power should fail
