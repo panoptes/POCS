@@ -8,8 +8,9 @@ python:
 env:
     - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
 before_install:
+    - pwd
+    - echo PATH=$PATH
     - mkdir -p $PANDIR/logs
-    - mkdir -p $PANDIR/astrometry/data
     - ln -s $POCS $PANDIR/POCS
     - pip install -U pip
     - pip install coveralls
@@ -49,13 +50,22 @@ addons:
     - libbz2-dev
     - swig
     - cfitsio-dev
+    - libcfitsio-bin
+    - libcfitsio-dev
+    - libcfitsio5
 install:
   - cd $PANDIR
 
   # Install astrometry.net
-  - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
-  - tar zxvf astrometry.net-0.72.tar.gz
-  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
+  - if [ ! -d $PANDIR/astrometry/bin || ! -d $PANDIR/astrometry/data ] ; then \
+      mkdir -p $PANDIR/astrometry/data && \
+      wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz && \
+      tar zxvf astrometry.net-0.72.tar.gz && \
+      cd astrometry.net-0.72 && \
+      make && \
+      make py && \
+      make install INSTALL_DIR=$PANDIR/astrometry && \
+    fi
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 
   # Install miniconda
