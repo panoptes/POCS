@@ -18,18 +18,20 @@ before_install:
     # Install cfitsio
     - cd $PANDIR
     - if [ -d $PANDIR/cfitsio ] ; then
-        echo "Reusing $PANDIR/cfitsio" ;
-        cd $PANDIR/cfitsio ;
-      else
-        echo "Fetching and building cfitsio" ;
-        wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz ;
-        tar zxf cfitsio_latest.tar.gz ;
-        cd cfitsio ;
-        ./configure ;
-        make ;
-        make fpack ;
-        make funpack ;
+        echo "Should reuse $PANDIR/cfitsio"
+        cd $PANDIR/cfitsio
+        ls 
       fi
+
+    - cd $PANDIR
+    - echo "Fetching and building cfitsio"
+      wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
+      tar zxf cfitsio_latest.tar.gz
+      cd $PANDIR/cfitsio
+      ./configure
+      make
+      make fpack
+      make funpack
     - sudo make install
 
     # Install arudino files
