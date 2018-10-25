@@ -17,13 +17,15 @@ before_install:
 
     # Install cfitsio
     - cd $PANDIR
-    - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-    - tar zxf cfitsio_latest.tar.gz
-    - cd cfitsio
-    - ./configure
-    - make
-    - make fpack
-    - make funpack
+    - if [ ! -d $PANDIR/cfitsio ] ; then \
+        wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz && \
+        tar zxf cfitsio_latest.tar.gz && \
+        cd cfitsio && \
+        ./configure && \
+        make && \
+        make fpack && \
+        make funpack ; \
+      fi
     - sudo make install
 
     # Install arudino files
@@ -50,8 +52,6 @@ addons:
     - libbz2-dev
     - swig
     - cfitsio-dev
-    - cfitsio
-    - cfitsio*
 install:
   - cd $PANDIR
 
@@ -63,7 +63,7 @@ install:
       cd astrometry.net-0.72 && \
       make && \
       make py && \
-      make install INSTALL_DIR=$PANDIR/astrometry && \
+      make install INSTALL_DIR=$PANDIR/astrometry ; \
     fi
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 
@@ -98,5 +98,6 @@ cache:
   pip: true
   directories:
     - $PANDIR/astrometry/
+    - $PANDIR/cfitsio/
 after_success:
   - bash <(curl -s https://codecov.io/bash)
