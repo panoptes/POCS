@@ -125,7 +125,7 @@ install:
   - pip install -r requirements.txt
   - pip install -r docs/requirements.txt
   - pip install -e .
-  - python pocs/utils/data.py --folder $PANDIR/astrometry/data || \
+  - python pocs/utils/data.py --folder $PANDIR/astrometry/data ||
     /bin/echo "Warning, data file download failed! This may impact tests."
 script:
   - export BOARD="arduino:avr:micro"
