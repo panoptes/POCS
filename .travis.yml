@@ -1,12 +1,46 @@
 dist: trusty
 sudo: required
 language: python
+
+# apt-get runs first during build.
+addons:
+  apt:
+    packages:
+    - gphoto2
+    - libcairo2-dev
+    - libnetpbm10-dev
+    - netpbm
+    - libpng12-dev
+    - libjpeg-dev
+    - python-numpy
+    - python-pyfits
+    - python-dev
+    - zlib1g-dev
+    - libbz2-dev
+    - swig
+    - cfitsio-dev
+
+# Services are started second.
 services:
   - mongodb
+
+# After services are started, the git repo is cloned.
+
 python:
   - "3.6"
+  
+# Environment variables from the Travis repo config, then from .travis.yml, are exported.
 env:
     - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
+
+# Caches are restored next, if they are available.
+cache:
+  pip: true
+  directories:
+    - $PANDIR/astrometry/
+    - $PANDIR/cfitsio/
+
+# Before_install commands run after caches have been restored.
 before_install:
     - pwd
     - echo PATH=$PATH
@@ -45,22 +79,6 @@ before_install:
     - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
     - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
     - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
-addons:
-  apt:
-    packages:
-    - gphoto2
-    - libcairo2-dev
-    - libnetpbm10-dev
-    - netpbm
-    - libpng12-dev
-    - libjpeg-dev
-    - python-numpy
-    - python-pyfits
-    - python-dev
-    - zlib1g-dev
-    - libbz2-dev
-    - swig
-    - cfitsio-dev
 install:
   - cd $PANDIR
 
@@ -82,6 +100,13 @@ install:
     fi
   # WHY DOES THIS USE sudo?
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
+
+  - |
+    if [ -d $PANDIR/astrometry/data ] ; then
+      ls -l $PANDIR/astrometry/data
+    else
+      echo "Astrometry data is missing."
+    fi
 
   # Install miniconda
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -110,10 +135,5 @@ script:
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v --test-databases all
   - coverage combine
-cache:
-  pip: true
-  directories:
-    - $PANDIR/astrometry/
-    - $PANDIR/cfitsio/
 after_success:
   - bash <(curl -s https://codecov.io/bash)
