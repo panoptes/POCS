@@ -18,24 +18,24 @@ before_install:
     # Install cfitsio
     - cd $PANDIR
     - |
-      if [ -d $PANDIR/cfitsio ] ; then
-        echo "Should reuse $PANDIR/cfitsio"
+      if [ -x $PANDIR/cfitsio/bin/fpack ] && [ -x $PANDIR/cfitsio/bin/funpack ] ; then
+        echo "Can reuse built cfitsio"
+      else
+        echo "Fetching and building cfitsio"
+        wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
+        tar zxf cfitsio_latest.tar.gz
         cd $PANDIR/cfitsio
-        ls 
+        ./configure
+        make
+        make fpack
+        make funpack
       fi
-
-    - cd $PANDIR
     - |
-      echo "Fetching and building cfitsio"
-      wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-      tar zxf cfitsio_latest.tar.gz
+      echo "Installing cfitsio (skipping sudo for Travis)"
       cd $PANDIR/cfitsio
-      ./configure
-      make
-      make fpack
-      make funpack
       find . -type f -executable -ls
-    - sudo make install
+      make install
+      find . -type f -executable -ls
 
     # Install arudino files
     - cd $PANDIR
@@ -64,9 +64,12 @@ addons:
 install:
   - cd $PANDIR
 
-  # Install astrometry.net
+  # Install astrometry.net software.
   - |
-    if [ ! -d $PANDIR/astrometry/bin || ! -d $PANDIR/astrometry/data ] ; then
+    if [ -d $PANDIR/astrometry/bin ] ; then
+      echo "Astrometry has been cached, woohoo!"
+      find $PANDIR/astrometry -type f -executable -ls
+    else
       mkdir -p $PANDIR/astrometry/data
       wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
       tar zxvf astrometry.net-0.72.tar.gz
@@ -77,6 +80,7 @@ install:
       make install INSTALL_DIR=$PANDIR/astrometry
       find . -type f -executable -ls
     fi
+  # WHY DOES THIS USE sudo?
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 
   # Install miniconda
