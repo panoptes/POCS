@@ -34,6 +34,7 @@ before_install:
       make
       make fpack
       make funpack
+      find . -type f -executable -ls
     - sudo make install
 
     # Install arudino files
@@ -64,14 +65,17 @@ install:
   - cd $PANDIR
 
   # Install astrometry.net
-  - if [ ! -d $PANDIR/astrometry/bin || ! -d $PANDIR/astrometry/data ] ; then \
-      mkdir -p $PANDIR/astrometry/data && \
-      wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz && \
-      tar zxvf astrometry.net-0.72.tar.gz && \
-      cd astrometry.net-0.72 && \
-      make && \
-      make py && \
-      make install INSTALL_DIR=$PANDIR/astrometry ; \
+  - |
+    if [ ! -d $PANDIR/astrometry/bin || ! -d $PANDIR/astrometry/data ] ; then
+      mkdir -p $PANDIR/astrometry/data
+      wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
+      tar zxvf astrometry.net-0.72.tar.gz
+      cd astrometry.net-0.72
+      make
+      make py
+      find . -type f -executable -ls
+      make install INSTALL_DIR=$PANDIR/astrometry
+      find . -type f -executable -ls
     fi
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 
