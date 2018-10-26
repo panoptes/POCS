@@ -6,10 +6,12 @@
 # In addition, there are fixtures defined here that are available to
 # all tests, not just those in pocs/tests.
 
+import copy
 import os
 import pytest
 import subprocess
 import time
+import warnings
 
 from pocs import hardware
 from pocs.utils.database import PanDB
@@ -102,6 +104,21 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if keyword in item.keywords:
                 item.add_marker(skip)
+
+
+def pytest_runtestloop(session):
+    """Called for performing the main runtest loop (after collection finished).
+
+    :param _pytest.main.Session session: the pytest session object
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='Your version of the IERS Bulletin A')
+        from astroplan import utils as astroplan_utils
+    astroplan_utils.get_IERS_A_or_workaround()
+    if not astroplan_utils.IERS_A_in_cache():
+        warn('IERS Bulletin A is not cached, low-resolution workaround monkey patched in.')
+    else:
+        print('IERS Bulletin A is cached.')
 
 
 def pytest_runtest_logstart(nodeid, location):
@@ -314,3 +331,35 @@ def cmd_subscriber(message_forwarder):
     subscriber = PanMessaging.create_subscriber(port)
     yield subscriber
     subscriber.close()
+
+
+@pytest.fixture(scope='function')
+def save_environ():
+    old_env = copy.deepcopy(os.environ)
+    yield
+    os.environ = old_env
+
+
+@pytest.fixture(scope='session')
+def data_dir():
+    return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'data')
+
+
+@pytest.fixture(scope='session')
+def unsolved_fits_file(data_dir):
+    return os.path.join(data_dir, 'unsolved.fits')
+
+
+@pytest.fixture(scope='session')
+def solved_fits_file(data_dir):
+    return os.path.join(data_dir, 'solved.fits.fz')
+
+
+@pytest.fixture(scope='session')
+def tiny_fits_file(data_dir):
+    return os.path.join(data_dir, 'tiny.fits')
+
+
+@pytest.fixture(scope='session')
+def noheader_fits_file(data_dir):
+    return os.path.join(data_dir, 'noheader.fits')
