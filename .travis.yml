@@ -1,5 +1,30 @@
+# Style note: we are using YAML's "literal style" block scalars for
+# commands that require multiple lines, such as if-then-else-fi
+# statements. For example:
+#
+#   - |
+#     if condition-1 ; then
+#       stmt-1
+#       stmt-2 || alt-stmt-2
+#     elif condition-2
+#     then
+#       stmt-3 && stmt-4
+#     fi
+#
+# For commands that don't require multiple lines, just use the single
+# line literal form, such as:
+#
+#   - install-some-software
+#   - PATH="$PWD/some-software/bin:$PATH"
+#
+# When debugging errors, it is easier to determine which line was
+# the source if Travis is executing them one at a time.
+
 dist: trusty
-# sudo: required
+
+# TODO Does it matter which language we're using?
+# Can we use no language at all since we are installing
+# miniconda to get our choice of python version?
 language: python
 
 # apt-get runs first during build.
@@ -33,55 +58,75 @@ python:
 env:
     - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
 
-# Caches are restored next, if they are available.
+# Caches are restored next, if they are available. Note that it is
+# important to avoid modifying the cached directories during most
+# builds, else caching the directory is possibly a loss because we
+# have to restore it from cache at the beginning, possibly rebuild
+# it, then save it at the end.
+# For example, a problem with astroplan's caching of the IERS Bulletin A
+# is that it does so under conda's site-packages directory, so caching of
+# the miniconda directory is more expensive than it should be.
+
 cache:
   pip: true
   directories:
+    - $PANDIR/arduino/
     - $PANDIR/astrometry/
     - $PANDIR/cfitsio/
 
 # Before_install commands run after caches have been restored.
 before_install:
-    - mkdir -p $PANDIR/logs
-    - ln -s $POCS $PANDIR/POCS
-    - pip install -U pip
-    - pip install coveralls
+  - mkdir -p $PANDIR/logs
+  - ln -s $POCS $PANDIR/POCS
 
-    # Install cfitsio
-    - cd $PANDIR
-    - |
-      if [ -x $PANDIR/cfitsio/bin/fpack ] && [ -x $PANDIR/cfitsio/bin/funpack ] ; then
-        echo "Can reuse built cfitsio"
-      else
-        echo "Fetching and building cfitsio"
-        wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-        tar zxf cfitsio_latest.tar.gz
-        cd $PANDIR/cfitsio
-        ./configure
-        make
-        make fpack
-        make funpack
-      fi
-    - |
-      echo "Installing cfitsio (skipping sudo for Travis)"
-      cd $PANDIR/cfitsio
-      find . -type f -executable -ls
-      make install
-      find . -type f -executable -ls
-      PATH="$PANDIR/cfitsio:$PATH"
+  # TODO Why install (with) pip when we're going to use Anaconda later?
 
-    # Install arudino files
-    - cd $PANDIR
-    - export DISPLAY=:1.0
-    - export
-    - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
-    - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
-    - PATH="$PANDIR/arduino-${ARDUINO_VERSION}:$PATH"
-    - #sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
-    - #sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+  - pip install -U pip
+  - pip install coveralls
 
 install:
   - cd $PANDIR
+
+  # Install cfitsio, if not already cached.
+  # TODO Install a specific version so that we can better handle
+  # version changes.
+  - |
+    if [ -x $PANDIR/cfitsio/bin/fpack ] && [ -x $PANDIR/cfitsio/bin/funpack ] ; then
+      echo "Can reuse built cfitsio"
+    else
+      echo "Fetching and building cfitsio"
+      cd $PANDIR
+      wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
+      tar zxf cfitsio_latest.tar.gz
+      cd $PANDIR/cfitsio
+      ./configure
+      make
+      make fpack
+      make funpack
+      make install
+    fi
+  - find $PANDIR/cfitsio/bin -type f -executable -ls
+  - PATH="$PANDIR/cfitsio/bin:$PATH"
+  - cd $HOME
+  - which fpack
+  - which funpack
+
+  # Install Arduino tools, if not already cached.
+  - |
+    if [ -x $PANDIR/arduino/arduino-${ARDUINO_VERSION}/arduino ] ; then
+      echo "Can reuse cached arduino version."
+    else
+      echo "Removing any other cached arduino versions."
+      find $PANDIR/arduino -delete || /bin/true
+      mkdir -p $PANDIR/arduino
+      cd $PANDIR
+      wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
+      tar -xf arduino-${ARDUINO_VERSION}-linux64.tar.xz -C $PANDIR/arduino
+    fi
+  - export DISPLAY=:1.0
+  - PATH="$PANDIR/arduino/arduino-${ARDUINO_VERSION}:$PATH"
+  - which arduino
+  - arduino --version
 
   # Install astrometry.net software.
   - |
@@ -98,17 +143,14 @@ install:
       find . -type f -executable -ls
       make install INSTALL_DIR=$PANDIR/astrometry
       find . -type f -executable -ls
+      echo 'add_path $PANDIR/astrometry/data' >> $PANDIR/astrometry/etc/astrometry.cfg
     fi
-    PATH="$PANDIR/astrometry/bin:$PATH"
-  # WHY DOES THIS USE sudo?
-  # - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
-  - echo 'add_path $PANDIR/astrometry/data' >> $PANDIR/astrometry/etc/astrometry.cfg
-
+  - PATH="$PANDIR/astrometry/bin:$PATH"
   - |
     if [ -d $PANDIR/astrometry/data ] ; then
       ls -l $PANDIR/astrometry/data
     else
-      echo "Astrometry data is missing."
+      echo "Astrometry data is missing and will need to be fetched."
     fi
 
   # Install miniconda
@@ -126,7 +168,6 @@ install:
   # install POCS and requirements
   - cd $POCS
   - pip install -r requirements.txt
-  # - pip install -r docs/requirements.txt
   - pip install -e .
   - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 
@@ -140,5 +181,10 @@ script:
   - coverage run $(which pytest) -v --test-databases all
   - coverage combine
 
+# Travis detects whether any cached files changed, and if so packs them
+# up into a new archive for use in a future build.
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  # lscpu just for information about the executor.
+  - lscpu
