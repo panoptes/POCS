@@ -1,5 +1,5 @@
 dist: trusty
-sudo: required
+# sudo: required
 language: python
 
 # apt-get runs first during build.
@@ -28,7 +28,7 @@ services:
 
 python:
   - "3.6"
-  
+
 # Environment variables from the Travis repo config, then from .travis.yml, are exported.
 env:
     - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
@@ -42,8 +42,6 @@ cache:
 
 # Before_install commands run after caches have been restored.
 before_install:
-    - pwd
-    - echo PATH=$PATH
     - mkdir -p $PANDIR/logs
     - ln -s $POCS $PANDIR/POCS
     - pip install -U pip
@@ -70,6 +68,7 @@ before_install:
       find . -type f -executable -ls
       make install
       find . -type f -executable -ls
+      PATH="$PANDIR/cfitsio:$PATH"
 
     # Install arudino files
     - cd $PANDIR
@@ -77,8 +76,10 @@ before_install:
     - export
     - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
     - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
-    - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
-    - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+    - PATH="$PANDIR/arduino-${ARDUINO_VERSION}:$PATH"
+    - #sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
+    - #sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+
 install:
   - cd $PANDIR
 
@@ -98,8 +99,10 @@ install:
       make install INSTALL_DIR=$PANDIR/astrometry
       find . -type f -executable -ls
     fi
+    PATH="$PANDIR/astrometry/bin:$PATH"
   # WHY DOES THIS USE sudo?
-  - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
+  # - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
+  - echo 'add_path $PANDIR/astrometry/data' >> $PANDIR/astrometry/etc/astrometry.cfg
 
   - |
     if [ -d $PANDIR/astrometry/data ] ; then
@@ -111,7 +114,7 @@ install:
   # Install miniconda
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$PANDIR/astrometry/bin:$PATH"
+  - PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
 
   - conda config --set always_yes yes --set changeps1 no
@@ -123,10 +126,10 @@ install:
   # install POCS and requirements
   - cd $POCS
   - pip install -r requirements.txt
-  - pip install -r docs/requirements.txt
+  # - pip install -r docs/requirements.txt
   - pip install -e .
-  - python pocs/utils/data.py --folder $PANDIR/astrometry/data ||
-    /bin/echo "Warning, data file download failed! This may impact tests."
+  - python pocs/utils/data.py --folder $PANDIR/astrometry/data
+
 script:
   - export BOARD="arduino:avr:micro"
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
@@ -136,5 +139,6 @@ script:
   - export COVERAGE_PROCESS_START=.coveragerc
   - coverage run $(which pytest) -v --test-databases all
   - coverage combine
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
