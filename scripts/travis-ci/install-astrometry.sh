@@ -1,13 +1,15 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 ASTROMETRY_VERSION="${ASTROMETRY_VERSION:-0.72}"
 ASTROMETRY_DIR="astrometry.net-${ASTROMETRY_VERSION}"
 
 TAR_NAME="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
-TAR_URL="http://astrometry.net/downloads/${ARCHIVE}"
+TAR_URL="http://astrometry.net/downloads/${TAR_NAME}"
 
 ZIP_NAME="astrometry.net-${ASTROMETRY_VERSION}.zip"
 ZIP_URL="https://github.com/dstndstn/astrometry.net/archive/${ASTROMETRY_VERSION}.zip"
+
+DO_WGET="wget --dns-timeout=30 --connect-timeout=30 --read-timeout=60 --tries=1"
 
 if [ -x $PANDIR/astrometry/bin/solve-field ] ; then
   echo "Astrometry has been cached:"
@@ -16,16 +18,17 @@ if [ -x $PANDIR/astrometry/bin/solve-field ] ; then
 fi
 
 cd $PANDIR
-echo "Downloading tar from astrometry.net..."
-wget --tries=2 --output-document="${TAR_NAME}" "${TAR_URL}" || /bin/true
+echo "Downloading ${TAR_URL} ..."
+$DO_WGET "${TAR_URL}" || /bin/true
 if [ -f "${TAR_NAME}" ] ; then
-  echo "Unpacking ${TAR_NAME}"
-  tar zxvf "${TAR_NAME}" -C "${ASTROMETRY_DIR}"
+  echo "Unpacking ${TAR_NAME} ..."
+  tar zxf "${TAR_NAME}"
 else
-  echo "Unable to download ${ARCHIVE_URL}. Trying to download the zip from github..."
-  wget --tries=2 --output-document="${ZIP_NAME}" "${ZIP_URL}"
-  echo "Unpacking ${ZIP_NAME}"
-  unzip "${ZIP_NAME}" -d "${ASTROMETRY_DIR}"
+  echo "Unable to download ${TAR_URL}"
+  echo "Downloading ${ZIP_URL} ..."
+  $DO_WGET --output-document="${ZIP_NAME}" "${ZIP_URL}"
+  echo "Unpacking ${ZIP_NAME} ..."
+  unzip "${ZIP_NAME}"
 fi
 
 echo "Building astrometry in ${ASTROMETRY_DIR}..."
