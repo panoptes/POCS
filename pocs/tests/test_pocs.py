@@ -352,7 +352,7 @@ def test_no_ac_power(pocs):
         assert pocs.has_ac_power() == has_power
 
         # Remove entry and try again
-        pocs.db.current.remove({'type': 'power'})
+        pocs.db.clear_current('power')
         assert pocs.has_ac_power() is False
 
 
