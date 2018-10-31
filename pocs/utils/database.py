@@ -498,10 +498,10 @@ class PanMemoryDB(AbstractPanDB):
             obj = json_util.loads(obj)
         return obj
 
-    def clear_current(self, type):
+    def clear_current(self, entry_type):
         try:
-            del self.current['type']
-        except KeyError:
+            del self.current[entry_type]
+        except KeyError as e:
             pass
 
     @classmethod
