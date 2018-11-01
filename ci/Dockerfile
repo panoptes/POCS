@@ -17,7 +17,15 @@ ENV SOLVE_FIELD=/usr/bin/solve-field
 
 # Use "bash" as replacement for "sh"
 # Note: I don't think this is the preferred way to do this anymore
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
+RUN echo pan_dir=$pan_dir && \
+    echo SHELL=$SHELL && \
+    echo PANDIR=$PANDIR && \
+    echo POCS=$POCS && \
+    echo PAWS=$PAWS && \
+    echo PANUSER=$PANUSER && \
+    echo SOLVE_FIELD=$SOLVE_FIELD && \
+    export PANDIR POCS PAWS PANUSER SOLVE_FIELD && \
+    rm /bin/sh && ln -s /bin/bash /bin/sh \
     && apt-get update --fix-missing \
     && apt-get -y full-upgrade \
     && apt-get -y install wget build-essential zlib1g-dev bzip2 ca-certificates astrometry.net git \

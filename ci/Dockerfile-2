@@ -1,0 +1,35 @@
+# PANOPTES development container
+# Build with:
+#
+#         docker build --file $POCS/ci/Dockerfile-2 $POCS
+#
+# This makes $POCS the "context" for the build, i.e. the root folder
+# from where files such as requirements.txt may be copied.
+
+FROM ubuntu as build-env
+MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
+
+ARG pan_dir=/var/panoptes
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV ENV /root/.bashrc
+ENV SHELL /bin/bash
+ENV PANDIR $pan_dir
+ENV PANLOG $PANDIR/logs 
+ENV POCS $PANDIR/POCS  
+ENV PAWS $PANDIR/PAWS  
+ENV PANUSER root
+ENV SOLVE_FIELD=/usr/bin/solve-field
+
+# Copy files relative to $POCS on the build machine into the 
+COPY requirements.txt /
+COPY scripts/install/apt-packages-list.txt /
+COPY scripts/install/conda-packages-list.txt /
+COPY scripts/install/default-env-vars.sh /
+COPY scripts/install/install-dependencies.sh /
+RUN /bin/ls /
+
+# Create environment for 
+RUN mkdir -p $PANDIR
+
+

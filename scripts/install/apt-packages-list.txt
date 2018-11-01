@@ -78,3 +78,5 @@ coreutils
 # includes this file).
 git
 
+# Used for unpacking things
+unzip

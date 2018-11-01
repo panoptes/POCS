@@ -1,0 +1,13 @@
+# PANOPTES development container
+# Build with:
+#
+#         docker build --file $POCS/ci/Dockerfile-2 $POCS
+#
+# This makes $POCS the "context" for the build, i.e. the root folder
+# from where files such as requirements.txt may be copied.
+
+FROM ubuntu:bionic as build-env
+MAINTAINER Developers for Project PANOPTES <https://github.com/panoptes/POCS>
+
+RUN echo "TERM=$TERM"
+RUN grep VERSION_CODENAME= /etc/os-release | cut -d= -f2

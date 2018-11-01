@@ -15,7 +15,7 @@ if [[ -z "${PANDIR}" ]] ; then
     PANDIR=/var/panoptes
     GUESSED_A_VAR=1
   else
-    echo "Unable to find the PANOPTES directory; usually /var/panoptes."
+    echo "PANDIR variable not set to a directory; usually /var/panoptes."
     VARS_ARE_OK=0
   fi
 elif [[ -e "${PANDIR}" && ! -d "${PANDIR}" ]] ; then
@@ -28,7 +28,7 @@ if [[ -z "${POCS}" && ! -z "${PANDIR}" ]] ; then
   GUESSED_A_VAR=1
 fi
 if [[ -z "${POCS}" ]] ; then
-  echo "Unable to find the POCS directory; usually /var/panoptes/POCS."
+  echo "POCS variable not set to a directory; usually /var/panoptes/POCS."
   VARS_ARE_OK=0
 elif [[ ! -d "${POCS}" ]] ; then
   echo '$'"POCS (${POCS}) is not a directory."
@@ -40,7 +40,7 @@ if [[ -z "${PAWS}" && ! -z "${PANDIR}" ]] ; then
   GUESSED_A_VAR=1
 fi
 if [[ -z "${PAWS}" ]] ; then
-  echo "Unable to find the PAWS directory; usually /var/panoptes/PAWS."
+  echo "PAWS variable not set to a directory; usually /var/panoptes/PAWS."
   VARS_ARE_OK=0
 elif [[ ! -d "${PAWS}" ]] ; then
   echo '$'"PAWS (${PAWS}) is not a directory."
@@ -52,7 +52,7 @@ if [[ -z "${PANLOG}" && ! -z "${PANDIR}" ]] ; then
   GUESSED_A_VAR=1
 fi
 if [[ -z "${PANLOG}" ]] ; then
-  echo "Unable to find the PANLOG directory; usually /var/panoptes/logs."
+  echo "PANLOG variable not set to a directory; usually /var/panoptes/logs."
   VARS_ARE_OK=0
 elif [[ -e "${PANLOG}" && ! -d "${PANLOG}" ]] ; then
   echo '$'"PANLOG (${PANLOG}) is not a directory."
@@ -204,6 +204,22 @@ function echo_bar() {
     terminal_width="$(stty size | cut '-d ' -f2)"
   fi
   printf "%${terminal_width:-80}s\n" | tr ' ' '#'
+}
+
+function echo_running_sudo() {
+  if [ "$(whoami)" == "root" ] ; then
+    echo "Running $1"
+  else
+    echo "Running sudo $1; you may be prompted for your password."
+  fi
+}
+
+function my_sudo() {
+  if [ "$(whoami)" == "root" ] ; then
+    "$@"
+  else
+    (set -x ; sudo "$@")
+  fi
 }
 
 #-------------------------------------------------------------------------------
@@ -370,19 +386,8 @@ function extract_version_from_pkg_config() {
 
 # Install all of the packages specified in the apt-packages-list file.
 function install_apt_packages() {
-  echo
-  echo "Running sudo apt-get update, you may be prompted for your password."
-  echo
-  (set -x ; sudo apt-get update)
-  # Remove all the comments from the package list and install the packages whose
-  # names are left.
-  APT_PKGS="$(cut '-d#' -f1 "${THIS_DIR}/apt-packages-list.txt" | sort | uniq)"
-  echo
-  echo "Running sudo apt-get install, you may be prompted for your password."
-  echo
-  (set -x ; sudo apt-get install --yes ${APT_PKGS})
+  "${THIS_DIR}/install-apt-packages.sh"
 }
-
 
 function install_mongodb() {
   # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
@@ -394,7 +399,12 @@ function install_mongodb() {
   local MONGO_VERSION=""
   local MONGO_SOURCE_PATH=""
   local LSB_RELEASE=""
-  if [[ -n "$(safe_which lsb_release)" ]] ; then
+  # lsb_release is deprecated, removed from many debian distributions,
+  # and not present in the official Ubuntu docker images. /etc/os-release
+  # is recommended instead.
+  if [ -f /etc/os-release ] ; then
+    LSB_RELEASE="$(grep VERSION_CODENAME= /etc/os-release | cut -d= -f2)"
+  elif [[ -n "$(safe_which lsb_release)" ]] ; then
     LSB_RELEASE="$(lsb_release -sc)"
   fi
   if [[ "${LSB_RELEASE}" = "xenial" ]] ; then
@@ -415,14 +425,14 @@ Installing MongoDB ${MONGO_VERSION}, for which several commands require sudo,
 so you may be prompted for you password. Starting by telling APT where to find
 the MongoDB packages.
 "
-  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv ${MONGO_KEY}
-  echo "deb ${MONGO_URL} multiverse" | sudo tee "${MONGO_SOURCE_PATH}"
+  my_sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv ${MONGO_KEY}
+  echo "deb ${MONGO_URL} multiverse" | my_sudo tee "${MONGO_SOURCE_PATH}"
   echo "
 Updating the list of packages so APT finds the MongoDB packages,
 then installing MongoDB.
 "
-  sudo apt-get update
-  sudo apt-get install -y mongodb-org
+  my_sudo apt-get update
+  my_sudo apt-get install -y mongodb-org
   echo "
 MongoDB is installed, now updating the config and starting mongod.
 "
@@ -437,11 +447,11 @@ Group=mongodb
 ExecStart=/usr/bin/mongod --quiet --config /etc/mongod.conf
 
 [Install]
-WantedBy=multi-user.target" | sudo tee /lib/systemd/system/mongod.service
+WantedBy=multi-user.target" | my_sudo tee /lib/systemd/system/mongod.service
 
-  sudo systemctl daemon-reload
-  sudo systemctl start mongod
-  sudo systemctl enable mongod
+  my_sudo systemctl daemon-reload
+  my_sudo systemctl start mongod
+  my_sudo systemctl enable mongod
 }
 
 function maybe_install_mongodb() {
@@ -625,7 +635,7 @@ function prepare_panoptes_conda_env() {
 # 4.4, conda's bin directory is not on the path, so 'which conda'
 # can't be used to determine if it is present.
 #
-# TODO(jamessynge): Stopy allowing for an existing conda to be
+# TODO(jamessynge): Stop allowing for an existing conda to be
 # located elsewhere.
 function maybe_install_conda() {
   # Just in case conda isn't setup, but exists...
@@ -669,6 +679,11 @@ function test_installed_astrometry_version() {
 # then builds and installs into ${ASTROMETRY_DIR}. Skips as much as
 # possible if able to determine that the version hasn't changed.
 function install_astrometry() {
+  ASTROMETRY_VERSION="${ASTROMETRY_VERSION}" "${THIS_DIR}/install-astrometry.sh"
+  return
+
+
+
   local -r FN="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
   local -r URL="http://astrometry.net/downloads/${FN}"
   local -r SCRATCH_DIR="$(mktemp -d "${PANDIR}/tmp/install-astrometry.XXXXXXXXXXXX")"
