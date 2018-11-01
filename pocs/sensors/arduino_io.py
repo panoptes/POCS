@@ -9,6 +9,7 @@ import copy
 import serial
 import time
 from serial import serialutil
+import threading
 import traceback
 
 from pocs.utils.error import ArduinoDataError
@@ -144,7 +145,9 @@ class ArduinoIO(object):
         self._last_reading = None
         self._report_next_reading = True
         self._cmd_topic = "{}:commands".format(board)
-        self._keep_running = True
+        # Using threading.Event rather than just a boolean field so that any thread
+        # can get and set the stop_running property.
+        self._stop_running = threading.Event()
         self._logger.info('Created ArduinoIO instance for board {}', self.board)
 
     def __del__(self):
@@ -155,6 +158,18 @@ class ArduinoIO(object):
         if hasattr(self, '_logger'):
             self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
+    @property
+    def stop_running(self):
+        return self._stop_running.is_set()
+
+    @stop_running.setter
+    def stop_running(self, value):
+        if value:
+            self._stop_running.set()
+        else:
+            self._stop_running.clear()
+        self._logger.info('Updated ArduinoIO.stop_running to {!r}', self.stop_running)
+
     def run(self):
         """Main loop for recording data and reading commands.
 
@@ -163,7 +178,7 @@ class ArduinoIO(object):
         SerialData.get_and_parse_reading() in the event that the device
         disconnects from USB.
         """
-        while self._keep_running:
+        while not self.stop_running:
             self.read_and_record()
             self.handle_commands()
 
@@ -287,7 +302,7 @@ class ArduinoIO(object):
         """
         if msg['command'] == 'shutdown':
             self._logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
-            self._keep_running = False
+            self.stop_running = True
         elif msg['command'] == 'write_line':
             line = msg['line'].rstrip('\r\n')
             self._logger.debug('Sending line to board {}: {}', self.board, line)

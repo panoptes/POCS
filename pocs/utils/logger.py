@@ -20,7 +20,7 @@ class StrFormatLogRecord(logging.LogRecord):
 
     Even though you can select '{' as the style for the formatter class,
     you still can't use {} formatting for your message. The custom
-    `getMessage` tries legacy format and then tries new format.
+    `getMessage` tries new format, then falls back to legacy format.
 
     From: https://goo.gl/Cyt5NH
     """

@@ -250,7 +250,7 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return topic, msg_obj
 
 
-def test_run_wait_until_safe(observatory):
+def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     # Make sure DB is clear for current weather
@@ -282,23 +282,20 @@ def test_run_wait_until_safe(observatory):
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 
-    pub = PanMessaging.create_publisher(6500)
-    sub = PanMessaging.create_subscriber(6511)
-
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
     try:
         # Wait for the RUNNING message,
-        assert wait_for_running(sub)
+        assert wait_for_running(msg_subscriber)
 
         time.sleep(2)
         # Insert a dummy weather record to break wait
         observatory.db.insert_current('weather', {'safe': True})
 
-        assert wait_for_state(sub, 'scheduling')
+        assert wait_for_state(msg_subscriber, 'scheduling')
     finally:
-        pub.send_message('POCS-CMD', 'shutdown')
+        cmd_publisher.send_message('POCS-CMD', 'shutdown')
         pocs_thread.join(timeout=30)
 
     assert pocs_thread.is_alive() is False
@@ -316,7 +313,7 @@ def test_unsafe_park(pocs):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'power']
     assert pocs.is_safe() is False
 
     assert pocs.state == 'parking'
@@ -325,6 +322,38 @@ def test_unsafe_park(pocs):
     pocs.goto_sleep()
     assert pocs.state == 'sleeping'
     pocs.power_down()
+
+
+def test_no_ac_power(pocs):
+    # Simulator makes AC power safe
+    assert pocs.has_ac_power() is True
+
+    # Remove 'power' from simulator
+    pocs.config['simulator'].remove('power')
+    pocs.initialize()
+
+    # With simulator removed the power should fail
+    assert pocs.has_ac_power() is False
+
+    for v in [True, 12.4, 0., False]:
+        has_power = bool(v)
+
+        # Add a fake power entry in data base
+        pocs.db.insert_current('power', {'main': v})
+
+        # Check for safe entry in database
+        assert pocs.has_ac_power() == has_power
+        assert pocs.is_safe() == has_power
+
+        # Check for stale entry in database
+        assert pocs.has_ac_power(stale=0.1) is False
+
+        # But double check it still matches longer entry
+        assert pocs.has_ac_power() == has_power
+
+        # Remove entry and try again
+        pocs.db.clear_current('power')
+        assert pocs.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):
@@ -357,7 +386,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 
     pocs.initialize()
@@ -369,7 +398,7 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
@@ -390,7 +419,7 @@ def test_run_complete(pocs):
     pocs.power_down()
 
 
-def test_run_power_down_interrupt(observatory):
+def test_run_power_down_interrupt(observatory, cmd_publisher, msg_subscriber):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     def start_pocs():
@@ -413,13 +442,10 @@ def test_run_power_down_interrupt(observatory):
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    pub = PanMessaging.create_publisher(6500)
-    sub = PanMessaging.create_subscriber(6511)
-
     try:
-        assert wait_for_state(sub, 'scheduling')
+        assert wait_for_state(msg_subscriber, 'scheduling')
     finally:
-        pub.send_message('POCS-CMD', 'shutdown')
+        cmd_publisher.send_message('POCS-CMD', 'shutdown')
         pocs_thread.join(timeout=30)
 
     assert pocs_thread.is_alive() is False
