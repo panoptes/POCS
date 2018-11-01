@@ -38,7 +38,8 @@ def test_clear_current(db):
 
 def test_simple_insert(db):
     rec = {'test': 'insert'}
-    id0 = db.insert_current('config', rec)
+    # Use `insert` here, which returns an `ObjectId`
+    id0 = db.insert('config', rec)
 
     record = db.find('config', id0)
     assert record['data']['test'] == rec['test']

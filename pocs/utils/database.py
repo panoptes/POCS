@@ -297,6 +297,8 @@ class PanMongoDB(AbstractPanDB):
 
     def find(self, collection, obj_id):
         collection = getattr(self, collection)
+        if isinstance(obj_id, str):
+            obj_id = ObjectId(obj_id)
         return collection.find_one({'_id': ObjectId(obj_id)})
 
     def clear_current(self, type):
