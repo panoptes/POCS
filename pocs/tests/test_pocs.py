@@ -313,7 +313,7 @@ def test_unsafe_park(pocs):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'power']
     assert pocs.is_safe() is False
 
     assert pocs.state == 'parking'
@@ -322,6 +322,38 @@ def test_unsafe_park(pocs):
     pocs.goto_sleep()
     assert pocs.state == 'sleeping'
     pocs.power_down()
+
+
+def test_no_ac_power(pocs):
+    # Simulator makes AC power safe
+    assert pocs.has_ac_power() is True
+
+    # Remove 'power' from simulator
+    pocs.config['simulator'].remove('power')
+    pocs.initialize()
+
+    # With simulator removed the power should fail
+    assert pocs.has_ac_power() is False
+
+    for v in [True, 12.4, 0., False]:
+        has_power = bool(v)
+
+        # Add a fake power entry in data base
+        pocs.db.insert_current('power', {'main': v})
+
+        # Check for safe entry in database
+        assert pocs.has_ac_power() == has_power
+        assert pocs.is_safe() == has_power
+
+        # Check for stale entry in database
+        assert pocs.has_ac_power(stale=0.1) is False
+
+        # But double check it still matches longer entry
+        assert pocs.has_ac_power() == has_power
+
+        # Remove entry and try again
+        pocs.db.clear_current('power')
+        assert pocs.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):
@@ -354,7 +386,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 
     pocs.initialize()
@@ -366,7 +398,7 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
