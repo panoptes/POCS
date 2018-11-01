@@ -5,6 +5,7 @@ import time
 import warnings
 import multiprocessing
 import zmq
+from contextlib import suppress
 
 from astropy import units as u
 
@@ -72,7 +73,6 @@ class POCS(PanStateMachine, PanBase):
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
-        self._is_safe = False
 
         if state_machine_file is None:
             state_machine_file = self.config.get('state_machine', 'simple_state_table')
@@ -298,12 +298,20 @@ class POCS(PanStateMachine, PanBase):
 
         is_safe_values = dict()
 
+        # Check if AC power connected and return immediately if not
+        has_power = self.has_ac_power()
+        if not has_power:
+            return False
+
+        is_safe_values['ac_power'] = has_power
+
         # Check if night time
         is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
 
+        # Hard-drive space
         is_safe_values['free_space'] = self.has_free_space()
 
         safe = all(is_safe_values.values())
@@ -328,15 +336,14 @@ class POCS(PanStateMachine, PanBase):
             bool: Is night at location
 
         """
-        # See if dark
+        # See if dark - we check this first because we want to know
+        # the sun position even if using a simulator.
         is_dark = self.observatory.is_dark
 
         # Check simulator
-        try:
+        with suppress(KeyError):
             if 'night' in self.config['simulator']:
                 is_dark = True
-        except KeyError:
-            pass
 
         self.logger.debug("Dark Check: {}".format(is_dark))
         return is_dark
@@ -355,20 +362,18 @@ class POCS(PanStateMachine, PanBase):
         # Always assume False
         self.logger.debug("Checking weather safety")
         is_safe = False
-        record = {'safe': False}
 
-        try:
+        # Check if we are using weather simulator
+        with suppress(KeyError):
             if 'weather' in self.config['simulator']:
-                is_safe = True
                 self.logger.debug("Weather simulator always safe")
-                return is_safe
-        except KeyError:
-            pass
+                return True
 
+        # Get current weather readings from database
         try:
             record = self.db.get_current('weather')
-
             is_safe = record['data'].get('safe', False)
+
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
@@ -379,16 +384,14 @@ class POCS(PanStateMachine, PanBase):
 
         except (TypeError, KeyError) as e:
             self.logger.warning("No record found in DB: {}", e)
-        except BaseException as e:
+        except Exception as e:  # pragma: no cover
             self.logger.error("Error checking weather: {}", e)
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
                 is_safe = False
 
-        self._is_safe = is_safe
-
-        return self._is_safe
+        return is_safe
 
     def has_free_space(self, required_space=0.25 * u.gigabyte):
         """Does hard drive have disk space (>= 0.5 GB)
@@ -402,6 +405,60 @@ class POCS(PanStateMachine, PanBase):
         """
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
+
+    def has_ac_power(self, stale=90):
+        """Check for system AC power.
+
+        Power readings are done by the arduino and are placed in the metadata
+        database. This method looks for entries saved with type `power` and key
+        `main` the `current` collection. The method will also return False if
+        the record is older than `stale` seconds.
+
+        Args:
+            stale (int, optional): Number of seconds before record is stale,
+                defaults to 90 seconds.
+
+        Returns:
+            bool: True if system AC power is present.
+        """
+        # Always assume False
+        self.logger.debug("Checking for AC power")
+        has_power = False
+
+        # TODO(wtgee): figure out if we really want to simulate no power
+        # Check if we are using power simulator
+        with suppress(KeyError):
+            if 'power' in self.config['simulator']:
+                self.logger.debug("AC power simulator always safe")
+                return True
+
+        # Get current power readings from database
+        try:
+            record = self.db.get_current('power')
+            has_power = bool(record['data'].get('main', False))
+
+            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
+            age = (current_time().datetime - timestamp).total_seconds()
+
+            self.logger.debug("Power Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
+                              has_power,
+                              age,
+                              timestamp)
+
+        except (TypeError, KeyError) as e:
+            self.logger.warning("No record found in DB: {}", e)
+        except Exception as e:  # pragma: no cover
+            self.logger.error("Error checking weather: {}", e)
+        else:
+            if age > stale:
+                self.logger.warning("Power record looks stale, marking unsafe.")
+                has_power = False
+
+        if not has_power:
+            self.logger.critical('AC power not detected.')
+
+        return has_power
+
 
 ##################################################################################################
 # Convenience Methods
