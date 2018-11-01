@@ -6,6 +6,7 @@ import weakref
 from warnings import warn
 from uuid import uuid4
 from glob import glob
+from bson.objectid import ObjectId
 
 from pocs.utils import current_time
 from pocs.utils import serializers as json_util
@@ -297,6 +298,8 @@ class PanMongoDB(AbstractPanDB):
 
     def find(self, collection, obj_id):
         collection = getattr(self, collection)
+        if isinstance(obj_id, str):
+            obj_id = ObjectId(obj_id)
         return collection.find_one({'_id': obj_id})
 
     def clear_current(self, type):
