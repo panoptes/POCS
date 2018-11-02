@@ -35,6 +35,6 @@ should have all the answers you need.
 Execute this command:
 
 ```
-docker build --tag panoptes/build --file $POCS/ci/Dockerfile -- $POCS
+docker build --tag panoptes/build --file $POCS/ci/full-dependencies/Dockerfile -- $POCS
 ```
 
