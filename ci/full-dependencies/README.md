@@ -1,7 +1,17 @@
-POCS Continuous Integration
-================================
+POCS Continuous Integration Dependencies
+========================================
+
+This directory has tools for building a docker image with the dependencies needed
+to run the POCS tests. It is not for running POCS on a scope, nor directly for
+development.
 
 ## Setup
+
+### Clone and install POCS
+
+The following assumes you have a clone of the POCS git repo on your machine,
+with the $POCS environment variable set to the location of the clone on
+your machine (e.g. /var/panoptes/POCS).
 
 ### Docker
 
@@ -20,47 +30,11 @@ Depending on what operating system you are using there are different ways of get
 Docker on your system. The Docker [installation page](https://www.docker.com/community-edition) 
 should have all the answers you need.
 
-#### Install gcloud
+## Build the image
 
-`gcloud` is a command line utility that lets you interact with many of the Google
-cloud services. We will primarily use this to authenticate your account but this
-is also used, for example, to upload images your PANOPTES unit takes.
-
-See the gcloud [installation page](https://cloud.google.com/sdk/docs/#install_the_latest_cloud_tools_version_cloudsdk_current_version)
-for easy install instructions.
-
-#### Let Docker use gcloud
-
-Docker needs to be able to use your `gcloud` login to pull the PANOPTES images. There
-are some helper scripts to make this easier (from [here](https://cloud.google.com/container-registry/docs/advanced-authentication)):
+Execute this command:
 
 ```
-gcloud auth configure-docker
+docker build --tag panoptes/build --file $POCS/ci/Dockerfile-3 -- $POCS
 ```
 
-#### Pull POCS container
-
-```
- docker pull gcr.io/panoptes-survey/pocs:latest
-```
-
-#### Start the POCS image
-
-```
-docker run -it --name pocs gcr.io/panoptes-survey/pocs
-```
-
-The container will just run the bash shell, allowing you to work with POCS and all its dependencies. 
-
-Note that all changes inside the container started by this command will disappear after
-the container exits. Further examples will be added with persistent state.
-
-## Test POCS
-
-POCS comes with a testing suite that allows it to test that all of the software 
-works and is installed correctly. Running the test suite by default will use simulators 
-for all of the hardware and is meant to test that the software works correctly. 
-Additionally, the testing suite can be run with various flags to test that attached 
-hardware is working properly.
-
-The tests live in `$POCS/pocs/tests` and `$POCS/peas/tests`.
