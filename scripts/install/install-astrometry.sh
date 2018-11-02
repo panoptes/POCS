@@ -4,7 +4,7 @@ ASTROMETRY_VERSION="${ASTROMETRY_VERSION:-0.72}"
 ASTROMETRY_DIR="astrometry.net-${ASTROMETRY_VERSION}"
 
 TAR_NAME="astrometry.net-${ASTROMETRY_VERSION}.tar.gz"
-TAR_URL="http://astrometry.net/downloads/${TAR_NAME}"
+TAR_URL="https://github.com/dstndstn/astrometry.net/releases/download/${ASTROMETRY_VERSION}/${TAR_NAME}"
 
 ZIP_NAME="astrometry.net-${ASTROMETRY_VERSION}.zip"
 ZIP_URL="https://github.com/dstndstn/astrometry.net/archive/${ASTROMETRY_VERSION}.zip"
