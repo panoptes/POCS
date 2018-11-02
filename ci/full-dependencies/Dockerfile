@@ -30,17 +30,23 @@ ENV SOLVE_FIELD=/usr/bin/solve-field
 # time when iterating on the Panoptes specific steps (i.e. instead of executing
 # these, the cached image layer is used).
 
-# Update the information we know about package versions.
-RUN apt-get update --fix-missing
+RUN \
+    # Suppress prompting for input during package processing.
+    export DEBIAN_FRONTEND=noninteractive && \
 
-# Install the tzdata package now with interactive prompting disabled.
-# Conveniently, the default timezone is UTC.
-RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --quiet tzdata < /dev/null
+    # Update the information we know about package versions.
+    apt-get update --fix-missing && \
 
-# Upgrade other packages.
-RUN DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes --quiet < /dev/null
+    # apt-utils is used later when we install some other packages, so
+    # streamline those installs by installing it early.
+    apt-get install --yes apt-utils && \
 
+    # Install the tzdata package now with interactive prompting disabled.
+    # Conveniently, the default timezone is UTC.
+    apt-get install --yes tzdata && \
 
+    # Upgrade other packages.
+    apt-get upgrade --yes
 
 ################################################################################
 # DO NOT KEEP THIS LONG TERM!
@@ -48,7 +54,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes --quiet < /dev/null
 
 WORKDIR $POCS/scripts
 COPY scripts/install install
-RUN install/install-apt-packages.sh
+RUN install/install-apt-packages.sh install/apt-packages-list.for-ci.txt
 WORKDIR $POCS
 RUN rm -rf scripts
 

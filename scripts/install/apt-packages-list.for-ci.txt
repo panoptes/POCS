@@ -1,8 +1,15 @@
-# This file contains a list of apt packages to install.
+# This file contains a list of apt packages to install in support
+# of continuous integration testing, and all dependencies referred to
+# directly by the POCS source code. Does not include packages
+# that are required to interface with hardware, but which are
+# not imported or accessed during testing, nor packages which
+# aid in development.
+#
 # Lines starting with # are comments as are blank lines,
 # and # starts trailing comments.
 
 # dcraw decodes Canon raw images
+# TODO: Determine if can move to production file (i.e. apt-packages-list.for-other.txt).
 dcraw
 
 # gphoto2 enables remote control of cameras, including the Canon DSLRs that
@@ -11,6 +18,7 @@ dcraw
 # old relative to the latest stable version. gphoto2-updater is an install
 # script that we might want to use if we need a newer version. For more info,
 # see: https://github.com/gonzalo/gphoto2-updater
+# TODO: Determine if can move to production file (i.e. apt-packages-list.for-other.txt).
 gphoto2
 
 # Packages needed according to http://astrometry.net/doc/build.html
@@ -29,19 +37,16 @@ zlib1g-dev
 
 # Cairo is a graphics library, and matplotlib can use it as a backend
 # for rendering.
+# TODO: Determine if can move to production file (i.e. apt-packages-list.for-other.txt).
 libcairo2-dev 
 
 # exiftool is used in a couple of places to extract info from the .cr2 file
+# TODO: Determine if can move to production file (i.e. apt-packages-list.for-other.txt).
 exiftool 
 
 # We use cfitsio command line tools (e.g. fpack) from POCS, in addition to the
 # uses of the cfitsio libraries by astrometry above.
 libcfitsio-bin
-
-# These are used if you want to setup SSH access into the computer (pretty
-# darn likely).
-openssh-client
-openssh-server
 
 # Graphviz is used for rendering the state machine of POCS.
 graphviz
@@ -53,30 +58,12 @@ pkg-config
 # Improves interaction with pocs_shell (via readline).
 libncurses5-dev
 
-# These support the Python package "Shapely", used in PIAA (called from POCS).
-libgeos-3.*
-libgeos-c1v5
-libgeos-dev
-
-# byobu and tmux provide a means to run multiple interactive shells in a way
-# that survives disconnection.
-byobu
-tmux
-
-# Used for creating a timelapse.
-ffmpeg
-
-# Used for colorizing log files.
-grc
-
 # GNU coreutils provides basic commands that we depend on (echo, ls), and is
 # almost certainly already installed, but let's make sure.
 coreutils
 
-# Want git for upgrading to the latest version. Probably already installed
-# but not necessarily (i.e. it is possible to download a zip of POCS, which
-# includes this file).
-git
-
-# Used for unpacking things
+# Used for unpacking things (e.g. astrometry).
+# TODO: Remove if we switch to just downloading the astrometry
+# tarball directly from github, with no fallback to a zip.
 unzip
+

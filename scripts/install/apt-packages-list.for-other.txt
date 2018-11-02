@@ -1,0 +1,34 @@
+# This file contains a list of apt packages to install in support of development
+# of POCS, and in support of executing POCS on a PANOPTES unit. The core apt
+# dependencies for POCS, required for executing pytest, are in
+# apt-packages-list.for-ci.txt.
+#
+# Lines starting with # are comments as are blank lines,
+# and # starts trailing comments.
+
+# These are used if you want to setup SSH access into the computer (pretty
+# darn likely).
+openssh-client
+openssh-server
+
+# These support the Python package "Shapely", used in PIAA (called from POCS).
+libgeos-3.*
+libgeos-c1v5
+libgeos-dev
+
+# byobu and tmux provide a means to run multiple interactive shells in a way
+# that survives disconnection.
+byobu
+tmux
+
+# Used for creating a timelapse.
+ffmpeg
+
+# Used for colorizing log files.
+grc
+
+# Want git for upgrading to the latest version. Probably already installed
+# but not necessarily (i.e. it is possible to download a zip of POCS, which
+# includes this file).
+git
+
