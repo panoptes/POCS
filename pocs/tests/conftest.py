@@ -66,8 +66,3 @@ def config_with_simulated_dome(config):
         },
     })
     return config
-
-
-@pytest.fixture
-def data_dir():
-    return '{}/pocs/tests/data'.format(os.getenv('POCS'))
