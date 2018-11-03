@@ -103,7 +103,8 @@ COPY scripts scripts
 # Create the directories that the installer expects to be there.
 RUN $POCS/scripts/install/create-core-panoptes-directories.sh
 
-# Now the biggest step, installing the dependencies.
+# Now the biggest step, installing the dependencies, which here primarily means
+# the Anaconda installation (i.e. for python related deps).
 RUN DEBIAN_FRONTEND=noninteractive \
     $POCS/scripts/install/install-dependencies.sh \
-        --no-mongodb --no-astrometry-indices
+        --no-apt-get --no-mongodb --no-astrometry-indices

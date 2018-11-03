@@ -23,7 +23,6 @@ gphoto2
 
 # Packages needed according to http://astrometry.net/doc/build.html
 libbz2-dev
-libbz2-dev
 libcfitsio-dev
 libjpeg-dev
 libnetpbm10-dev
