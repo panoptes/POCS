@@ -9,10 +9,10 @@ DO_REBUILD_CONDA_ENV="${DO_REBUILD_CONDA_ENV:-0}"
 DO_INSTALL_CONDA_PACKAGES="${DO_INSTALL_CONDA_PACKAGES:-1}"
 DO_PIP_REQUIREMENTS="${DO_PIP_REQUIREMENTS:-1}"
 
-if [ -n "${REQUIREMENTS_PATH}" ] ; then
-  if [ -n "${POCS}" ] ; then
+if [ -z "${REQUIREMENTS_PATH}" ] ; then
+  if [ -n "${POCS}" -a -f "${POCS}/requirements.txt" ] ; then
     REQUIREMENTS_PATH="${POCS}/requirements.txt"
-  else
+  elif [ -f "${THIS_DIR}/requirements.txt" ] ; then
     REQUIREMENTS_PATH="${THIS_DIR}/requirements.txt"
   fi
 fi
@@ -57,5 +57,13 @@ if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo_bar
   echo
   echo "Installing python packages using pip."
-  pip install --quiet --requirement "${REQUIREMENTS_PATH}"
+
+
+#  pip install --quiet --requirement "${REQUIREMENTS_PATH}"
+
+
+  pip install --requirement "${REQUIREMENTS_PATH}"
+
+
+
 fi

@@ -1,0 +1,7 @@
+# Packages available from the astropy channel of anaconda.
+
+astroplan
+astropy >= 3.0.0
+astroscrappy
+ccdproc
+wcsaxes

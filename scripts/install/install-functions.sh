@@ -15,7 +15,7 @@ ASTROMETRY_DIR="${PANDIR}/astrometry"
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width
-  if [ -n "${TERM}" ] ; then
+  if [ -n "${TERM}" -a -t 0 ] ; then
     if [[ -n "$(which resize)" ]] ; then
       terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
     elif [[ -n "$(which stty)" ]] ; then
@@ -157,16 +157,6 @@ function get_panoptes_env_location() {
   echo "${panoptes_env}" | sed 's_.* /_/_'
 }
 
-# Checksum the contents of the panoptes env, allowing us to determine
-# if it changed. This is useful for upgrades, not the first install.
-# For speed and simplicity, we actually just checksum the listing.
-function checksum_panoptes_env() {
-  local -r location="$(get_panoptes_env_location)"
-  if [[ -n "${location}" ]] ; then
-    (cd "${location}" ; find . -type f -ls) | md5sum
-  fi
-}
-
 # Install latest version of Miniconda (Anaconda with very few packages; any that
 # are needed can then be installed).
 function install_conda() {
@@ -244,10 +234,13 @@ function prepare_panoptes_conda_env() {
   fi
 
   if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
-    echo_bar
-    echo
-    echo "Installing panoptes-env packages."
-    conda install -n panoptes-env --yes --quiet "--file=${THIS_DIR}/conda-packages-list.txt"
+    for CHANNEL in anaconda conda-forge astropy ; do
+      echo_bar
+      echo
+      echo "Installing ${CHANNEL} packages into panoptes-env."
+      conda install -n panoptes-env --channel "${CHANNEL}" --yes --quiet \
+            "--file=${THIS_DIR}/${CHANNEL}.conda-channel-packages.txt"
+    done
 
     echo_bar
     echo

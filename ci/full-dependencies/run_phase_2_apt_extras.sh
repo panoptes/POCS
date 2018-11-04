@@ -4,7 +4,10 @@
 # might want to change the package spec for more often. 
 
 declare -a PACKAGES=(
-  # Package description
+  # Package description...
+
+  # Apparently needed for cython
+
 )
 
 if [ ${#PACKAGES[@]} -ne 0 ] ; then

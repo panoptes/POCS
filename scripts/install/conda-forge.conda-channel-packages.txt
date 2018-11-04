@@ -1,0 +1,9 @@
+# Packages available from the conda-forge channel of Anaconda.
+# I'm less clear whether this channel should be trusted.
+# The alternative is to trust that pip will install it from a good location.
+
+codecov
+coveralls
+dateparser
+matplotlib >= 2.0.0,<3.0.0
+tweepy
