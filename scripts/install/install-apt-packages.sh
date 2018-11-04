@@ -22,8 +22,10 @@ function install_apt_packages() {
   done
 }
 
+cd "${THIS_DIR}"
+
 if [ $# -eq 0 ] ; then
-  install_apt_packages "${THIS_DIR}"/apt-packages-list.for-*.txt
+  install_apt_packages apt-packages-list.for-*.txt
 else  
   install_apt_packages "$@"
 fi

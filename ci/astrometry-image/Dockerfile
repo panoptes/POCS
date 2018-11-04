@@ -37,9 +37,13 @@ RUN which bash
 RUN /tmp/prepare-apt.sh
 
 ################################################################################
-# Install the dependencies needed for building 
+# Install the dependencies needed for downloading and building astrometry.
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install --yes \
+        libcairo2-dev libnetpbm10-dev netpbm libpng-dev libjpeg-dev \
+        python-numpy python-pyfits python-dev zlib1g-dev libbz2-dev swig \
+        libcfitsio-dev 
+
         libbz2-dev
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install --yes \
@@ -100,6 +104,11 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         libbz2-dev libcfitsio-dev libjpeg-dev libnetpbm10-dev libpng-dev \
         netpbm zlib1g-dev libcairo2-dev wget make gcc unzip python-dev \
         python-numpy python-pyfits swig
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install --yes \
+        libbz2-dev libcfitsio-dev libjpeg-dev libnetpbm10-dev libpng-dev \
+        netpbm zlib1g-dev libcairo2-dev wget make gcc unzip python-dev \
+        python-numpy python-pyfits swig libbz2
 
 ################################################################################
 # Fetch and build astrometry in /astrometry.net-${astrometry_version}, then

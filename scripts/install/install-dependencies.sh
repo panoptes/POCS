@@ -6,6 +6,7 @@
 THIS_DIR="$(dirname "$(readlink -f "${0}")")"
 THIS_PROGRAM="$(basename "${0}")"
 
+
 # We try to figure out where things are so that minimal work is required
 # by the user.
 VARS_ARE_OK=1
@@ -84,13 +85,8 @@ if [[ "${GUESSED_A_VAR}" == "1" ]] ; then
 "
 fi
 
-# Python 3.6 works around a problem building astroscrappy in 3.7.
-PYTHON_VERSION="3.6"
-ASTROMETRY_VERSION="0.76"
-INSTALL_PREFIX="/usr/local"
-ASTROMETRY_DIR="${PANDIR}/astrometry"
-CONDA_INSTALL_DIR="${PANDIR}/miniconda"
-CONDA_SH="${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh"
+source "${THIS_DIR}/install-functions.sh"
+
 TIMESTAMP="$(date "+%Y%m%d.%H%M%S")"
 INSTALL_LOGS_DIR="${PANDIR}/logs/install/${TIMESTAMP}"
 # To which shell file do we need to prepend our additions?
@@ -126,7 +122,6 @@ options:
 --no-astrometry            don't install astrometry.net software
 --no-astrometry-indices    don't install astrometry.net indices
 --no-pip-requirements      don't install python packages
---conda-install-dir <dir>  override default of ${CONDA_INSTALL_DIR}
 "
 }
 
@@ -419,201 +414,6 @@ function maybe_install_mongodb() {
   fi
 }
 
-# Did the user source conda's etc/profile.d/conda.sh?
-function conda_is_present() {
-  if [[ -z "${CONDA_SHLVL}" ]] ; then
-    return 1  # No
-  fi
-  return 0  # Probably
-}
-
-function is_panoptes_env_activated() {
-  if ! conda_is_present ; then
-    return 1  # No
-  fi
-  # Do we have a conda executable? If not, then no environment has
-  # been activated so far.
-  if [[ -z "${CONDA_EXE}" || ! -x "${CONDA_EXE}" ]] ; then
-    return 1  # No
-  fi
-  # Does it work?
-  local -r conda_info="$("${CONDA_EXE}" info 2>/dev/null || /bin/true)"
-  if [[ -z "${conda_info}" ]] ; then
-    return 1  # No
-  fi
-  # Is the panoptes-env activated?
-  if ! (echo "${conda_info}" | grep -q -E 'active environment.*:.*panoptes-env$') ; then
-    return 1  # No
-  fi
-  # Does the env have a valid location?
-  local -r env_location="$(echo "${conda_info}" | \
-                           (grep -E 'active env location :' || /bin/true) | \
-                           cut -d: -f2 | xargs)"
-  if [[ -z "${env_location}" ]] ; then
-    return 1  # No
-  fi
-  if [[ ! -d "${env_location}" ]] ; then
-    return 1  # No
-  fi
-  # Is python in that location?
-  local -r python_location="$(safe_which python)"
-  if ! beginswith "${python_location}" "${env_location}" ; then
-    return 1  # No
-  fi
-  # Looks good.
-  return 0
-}
-
-# Get the location of the panoptes environment.
-function get_panoptes_env_location() {
-  if ! conda_is_present ; then
-    return
-  fi
-  # Do we have a conda executable? We don't require CONDA_EXE to already be set
-  # because conda doesn't set it  until the first environment is activated.
-  local -r conda_exe="${CONDA_EXE:-${CONDA_INSTALL_DIR}/bin/conda}"
-  if [[ -z "${conda_exe}" || ! -x "${conda_exe}" ]] ; then
-    return  # No
-  fi
-  # Get the list of environments.
-  local -r conda_envs="$("${conda_exe}" info --envs 2>/dev/null || /bin/true)"
-  if [[ -z "${conda_envs}" ]] ; then
-    return  # Cound't find any environments
-  fi
-  # Is there a panoptes-env?
-  local -r panoptes_env="$(
-      echo "${conda_envs}" |
-      (grep -E '^panoptes-env[[:space:]]' || /bin/true))"
-  if [[ -z "${panoptes_env}" ]] ; then
-    return  # No panoptes environment.
-  fi
-  # Extract the panoptes-env line and print the path that comes at
-  # the end of that line.
-  echo "${panoptes_env}" | sed 's_.* /_/_'
-}
-
-# Checksum the contents of the panoptes env, allowing us to determine
-# if it changed. This is useful for upgrades, not the first install.
-# For speed and simplicity, we actually just checksum the listing.
-function checksum_panoptes_env() {
-  local -r location="$(get_panoptes_env_location)"
-  if [[ -n "${location}" ]] ; then
-    (cd "${location}" ; find . -type f -ls) | md5sum
-  fi
-}
-
-# Install latest version of Miniconda (Anaconda with very few packages; any that
-# are needed can then be installed).
-function install_conda() {
-  if [[ -d "${CONDA_INSTALL_DIR}" ]] ; then
-    echo_bar
-    echo
-    echo "Removing previous miniconda installation from ${CONDA_INSTALL_DIR}"
-    rm -rf "${CONDA_INSTALL_DIR}"
-  fi
-
-  echo_bar
-  echo
-  echo "Installing miniconda. License at: https://conda.io/docs/license.html"
-  local -r the_script="${PANDIR}/tmp/miniconda.sh"
-  wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-       -O "${the_script}"
-  bash "${the_script}" -b -p "${CONDA_INSTALL_DIR}"
-  rm "${the_script}"
-
-  # As per the Anaconda 4.4 release notes, one is supposed to add the following
-  # to .bash_profile, .bashrc or wherever is appropriate:
-  #    . $CONDA_INSTALL_DIR/etc/profile.d/conda.sh
-  #    conda activate <name-of-desired-environment>
-  # Where CONDA_INSTALL_DIR is where Anaconda or miniconda was installed.
-  # We do the first step here. Later we'll activate the PANOPTES environment.
-
-  . "${CONDA_SH}"
-}
-
-# Add additional repositories in which conda should search for packages.
-function add_conda_channels() {
-  # Add the astropy channel, i.e. an additional repository in which to
-  # look for packages. With conda 4.1.0 and later, by default the highest
-  # priority repository that contains a package is used as the source for
-  # that package, even if there is a newer version in a lower priority
-  # package. And by default the most recently added repository is treated
-  # as the highest priority repository. Here we use prepend to be clear
-  # that we want astropy to be highest priority.
-  . "${CONDA_SH}"
-  if (conda config --show channels | grep -F -q astropy) ; then
-    conda config --remove channels astropy
-  fi
-  conda config --prepend channels astropy
-
-  # And put conda-forge at the back of the line.
-  if (conda config --show channels | grep -F -q conda-forge) ; then
-    conda config --remove channels conda-forge
-  fi
-  conda config --append channels conda-forge
-}
-
-# Prepare the conda environment for PANOPTES.
-function prepare_panoptes_conda_env() {
-  # Use the base Anaconda environment until we're ready to
-  # work with the PANOPTES environment.
-  . "${CONDA_SH}"
-  conda activate base
-
-  # Determine if the PANOPTES environment already exists.
-  local do_create_conda_env=0
-  if ! (conda info --envs | grep -q panoptes-env) ; then
-    do_create_conda_env=1
-  elif [[ "${DO_REBUILD_CONDA_ENV}" -eq 1 ]] ; then
-    conda remove --all --yes --quiet -n panoptes-env
-    do_create_conda_env=1
-  fi
-
-  # Create the PANOPTES environment if necessary.
-  if [[ "${do_create_conda_env}" -eq 1 ]] ; then
-    echo_bar
-    echo
-    echo "Creating conda environment 'panoptes-env' with Python ${PYTHON_VERSION}"
-    conda create -n panoptes-env --yes --quiet "python=${PYTHON_VERSION}"
-  fi
-
-  if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
-    echo_bar
-    echo
-    echo "Installing panoptes-env packages."
-    conda install -n panoptes-env --yes --quiet "--file=${THIS_DIR}/conda-packages-list.txt"
-
-    echo_bar
-    echo
-    echo "Updating all panoptes-env packages."
-    conda update -n panoptes-env --yes --quiet --all
-  fi
-}
-
-# Install conda if we can't find it. Note that starting with version
-# 4.4, conda's bin directory is not on the path, so 'which conda'
-# can't be used to determine if it is present.
-#
-# TODO(jamessynge): Stop allowing for an existing conda to be
-# located elsewhere.
-function maybe_install_conda() {
-  # Just in case conda isn't setup, but exists...
-  if [[ -z "$(safe_type conda)" && -f "${CONDA_SH}" ]] ; then
-    . "${CONDA_SH}"
-  fi
-  if [[ -z "$(safe_type conda)" ]] ; then
-    install_conda
-  else
-    echo_bar
-    echo
-    echo "Reusing existing conda installation ($(conda --version)):" "${_CONDA_ROOT}"
-  fi
-  echo_bar
-  echo
-  echo "Updating base conda."
-  conda update -n base --yes --quiet conda
-}
-
 function get_installed_astrometry_version() {
   local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
   if [[ -x "${solve_field}" ]] ; then
@@ -783,60 +583,6 @@ fi
 # metadata and the environment readings from which weather plots are generated.
 if [[ "${DO_MONGODB}" -eq 1 ]] ; then
   maybe_install_mongodb
-fi
-
-# Before installing conda, checksum the environment so we can easily tell
-# if it changed.
-orig_panoptes_env_checksum="$(checksum_panoptes_env)"
-
-# Before installing conda, figure out if the calling shell had the correct
-# environment setup.
-had_activated_panoptes_env=0
-if is_panoptes_env_activated ; then
-  had_activated_panoptes_env=1
-fi
-
-# Install Conda, a Python package manager from Anaconda, Inc. Supports both
-# pure Python packages (just as pip does) and packages with non-Python parts
-# (e.g. native libraries).
-if [[ "${DO_CONDA}" -eq 1 ]] ; then
-  maybe_install_conda
-fi
-
-if [[ -f "${CONDA_SH}" ]] ; then
-  . "${CONDA_SH}"
-else
-  echo_bar
-  echo "
-Error: conda is not installed, but remaining installation steps make
-use of the conda environment for PANOPTES (panoptes-env).
-"
-  exit 1
-fi
-
-if [[ "${DO_CONDA}" -eq 1 || \
-      "${DO_REBUILD_CONDA_ENV}" -eq 1 || \
-      "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
-  prepare_panoptes_conda_env
-fi
-
-# Activate the PANOPTES environment in this shell.
-conda activate panoptes-env
-
-# Install pure Python packages using pip; note that we prefer to
-# install these with conda if they are available that way, as we
-# try to reduce the number of package managers and repositories
-# we have to deal with.
-if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
-  echo_bar
-  echo
-  echo "Upgrading pip before installing other python packages."
-  pip install --quiet --upgrade pip
-
-  echo_bar
-  echo
-  echo "Installing python packages using pip."
-  pip install --quiet --requirement "${POCS}/requirements.txt"
 fi
 
 # Install the astrometry.net software package, enabling plate-solving
