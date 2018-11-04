@@ -242,10 +242,10 @@ function prepare_panoptes_conda_env() {
             "--file=${THIS_DIR}/${CHANNEL}.conda-channel-packages.txt"
     done
 
-    echo_bar
-    echo
-    echo "Updating all panoptes-env packages."
-    conda update -n panoptes-env --yes --quiet --all
+    # echo_bar
+    # echo
+    # echo "Updating all panoptes-env packages."
+    # conda update -n panoptes-env --yes --quiet --all
   fi
 }
 

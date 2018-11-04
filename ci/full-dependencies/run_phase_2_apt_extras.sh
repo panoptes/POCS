@@ -6,8 +6,8 @@
 declare -a PACKAGES=(
   # Package description...
 
-  # Apparently needed for cython
-
+  # Useful for cloning POCS.
+  git
 )
 
 if [ ${#PACKAGES[@]} -ne 0 ] ; then
