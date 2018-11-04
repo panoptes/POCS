@@ -1,11 +1,11 @@
-# PANOPTES development container
+# PANOPTES Test Dependencies Container
 # Build with:
 #
 #         $POCS/ci/full-dependencies/docker-build.sh
 
 FROM debian:stable-slim as build-env
 
-LABEL description="PANOPTES Dependencies Container"
+LABEL description="PANOPTES Test Dependencies Container"
 LABEL author="Developers for PANOPTES project"
 LABEL url="https://github.com/panoptes/POCS"
 
@@ -14,88 +14,46 @@ ARG pan_dir=/var/panoptes
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV ENV /root/.bashrc
 ENV SHELL /bin/bash
-ENV PANDIR $pan_dir
-ENV PANLOG $PANDIR/logs
-ENV POCS $PANDIR/POCS
-ENV PAWS $PANDIR/PAWS
-ENV PANUSER root
-ENV SOLVE_FIELD=/usr/bin/solve-field
+#ENV PANDIR $pan_dir
+#ENV PANLOG $PANDIR/logs
+#ENV POCS $PANDIR/POCS
+#ENV PAWS $PANDIR/PAWS
+#ENV PANUSER root
+#ENV SOLVE_FIELD=/usr/bin/solve-field
+
+COPY run_phase_0_test.sh .
+RUN ./run_phase_0_test.sh && rm run_phase_0_test.sh
+
+RUN exit 1
+
+# Set the WORKDIR to a directory we can blow away at the end.
+WORKDIR /workdir
+
+# Copy in all the files from the context, which should be small in total size.
+#COPY * /workdir/
+#WORKDIR /workdir/
 
 ################################################################################
-# Several apt steps before our custom commands. By rarely changing these
-# commands, we allow the caching that 'docker build' performs to save us some
-# time when iterating on the Panoptes specific steps (i.e. instead of executing
-# these, the cached image layer is used).
+# Install well established, relatively stable dependencies first so that docker
+# build caching will create a later with these items.
 
-COPY run_phase_*.sh /tmp/
-RUN /tmp/run_phase_1.sh
+COPY run_phase_1_apt_core.sh .
+RUN ./run_phase_1_apt_core.sh && rm run_phase_1_apt_core.sh
 
 ################################################################################
 # Now install dependencies related specifically to POCS.
 
-RUN \
-  #
-  # Suppress prompting for input during package processing.
-  #
-  export DEBIAN_FRONTEND=noninteractive && \
-  #
-  # Update the information we know about package versions.
-  #
-  apt-get update --fix-missing && \
-  #
-  # Install packages we need...
-  #
-  apt-get install --no-install-recommends --yes \
-    #
-    # Astrometry and cfitsio.
-    # Not sure if libcfitsio-dev is directly needed.
-    #
-    astrometry.net "astrometry-data-*" libcfitsio-bin libcfitsio-dev \
-    #
-    # Not sure if these are needed for testing POCS, or just for running.
-    #
-    dcraw gphoto2 exiftool \
-    #
-    # Cairo is a graphics library, and matplotlib can use it as a backend
-    # for rendering.
-    #
-    libcairo2-dev \
-    #
-    # Graphviz is used for rendering the state machine of POCS.
-    # Not sure if these are needed for testing POCS, or just for running.
-    #
-    graphviz libgraphviz-dev \
-    #
-    # Improves interaction with pocs_shell (via readline).
-    #
-    libncurses5-dev \
-    #
-    # Tools needed for installing miniconda.
-    #
-    wget \
-    #
-    # END OF LIST OF PACKAGES
-    #
-    && \
-  #
-  # Docker best practices calls for cleaning the apt cache before the end
-  # of this RUN so that it is not stored in the image.
-  #
-  rm -rf /var/lib/apt/lists/*
+COPY run_phase_2_apt_extras.sh .
+RUN ./run_phase_2_apt_extras.sh && rm run_phase_2_apt_extras.sh
+
+################################################################################
+# Copy in all the files from the context, which should be small in total size.
+COPY * ./
 
 ################################################################################
 # Install miniconda and create the panoptes environment.
 
-WORKDIR $POCS/scripts
-COPY scripts/install install
-RUN install/install-miniconda.sh
-
-
-RUN source scripts/install/install-functions.sh && \
-    install_conda
-
-
-
+RUN ./install-miniconda.sh
 
 RUN exit 1
 

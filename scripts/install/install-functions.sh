@@ -15,10 +15,12 @@ ASTROMETRY_DIR="${PANDIR}/astrometry"
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width
-  if [[ -n "$(which resize)" ]] ; then
-    terminal_width="$(resize|grep COLUMNS=|cut -d= -f2)"
-  elif [[ -n "$(which stty)" ]] ; then
-    terminal_width="$(stty size | cut '-d ' -f2)"
+  if [ -n "${TERM}" ] ; then
+    if [[ -n "$(which resize)" ]] ; then
+      terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
+    elif [[ -n "$(which stty)" ]] ; then
+      terminal_width="$(stty size 2>/dev/null | cut '-d ' -f2)"
+    fi
   fi
   printf "%${terminal_width:-80}s\n" | tr ' ' '#'
 }

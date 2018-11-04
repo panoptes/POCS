@@ -4,10 +4,18 @@ THIS_DIR="$(dirname "$(readlink -f "${0}")")"
 
 source "${THIS_DIR}/install-functions.sh"
 
-DO_CONDA=1
-DO_REBUILD_CONDA_ENV=0
-DO_INSTALL_CONDA_PACKAGES=1
-DO_PIP_REQUIREMENTS=1
+DO_CONDA="${DO_CONDA:-1}"
+DO_REBUILD_CONDA_ENV="${DO_REBUILD_CONDA_ENV:-0}"
+DO_INSTALL_CONDA_PACKAGES="${DO_INSTALL_CONDA_PACKAGES:-1}"
+DO_PIP_REQUIREMENTS="${DO_PIP_REQUIREMENTS:-1}"
+
+if [ -n "${REQUIREMENTS_PATH}" ] ; then
+  if [ -n "${POCS}" ] ; then
+    REQUIREMENTS_PATH="${POCS}/requirements.txt"
+  else
+    REQUIREMENTS_PATH="${THIS_DIR}/requirements.txt"
+  fi
+fi
 
 # Install Conda, a Python package manager from Anaconda, Inc. Supports both
 # pure Python packages (just as pip does) and packages with non-Python parts
@@ -49,5 +57,5 @@ if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   echo_bar
   echo
   echo "Installing python packages using pip."
-  pip install --quiet --requirement "${POCS}/requirements.txt"
+  pip install --quiet --requirement "${REQUIREMENTS_PATH}"
 fi

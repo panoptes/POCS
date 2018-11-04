@@ -2,12 +2,16 @@
 
 # Explanation of docker run flags:
 #   --rm    Automatically remove the container when it exits.
-#
+#   --env   Export an environment variable to the program running in the container.
+#   --volume  Bind mount a volume 
+
+IMAGE_TO_RUN=panoptes/full-dependencies
 
 docker run --rm \
-  --env "PANDIR=${PANDIR}" \
+  --env "PANDIR=/var/panoptes" \
   --env "POCS=${POCS}" \
-  
+  --volume "${POCS}:/var/panoptes/POCS" \
+  $IMAGE_TO_RUN
 
 
 
