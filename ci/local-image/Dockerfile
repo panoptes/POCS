@@ -1,27 +1,17 @@
-#!/bin/bash -ex
+# Creates a docker image for running or testing PANOPTES as a specified user.
 
-# Explanation of docker run flags:
-#   --rm    Automatically remove the container when it exits.
-#   --env   Export an environment variable to the program running in the container.
-#   --volume  Bind mount a volume 
+FROM panoptes/full-dependencies
 
-IMAGE_TO_RUN="panoptes/full-dependencies"
+ARG user_name=
+ARG user_id=
+ARG group_name=
+ARG group_id=
 
-# We run as root and later drop permissions. This is required to setup the USER
-# in useradd below, which is need for correct Python execution in the Docker
-# environment.
+RUN env
 
-MY_UID=$(id -u)
-MY_GID=$(id -g)
+RUN exit 1
 
-
-
-docker run -it \
-  --volume "${POCS}:/var/panoptes/POCS" \
-  "${IMAGE_TO_RUN}"
-
-
-
+RUN groupadd -g $group_id $group_name && useradd -g $group_id --skel $HOME
 
 # # We run as root and later drop permissions. This is required to setup the USER
 # # in useradd below, which is need for correct Python execution in the Docker

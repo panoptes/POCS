@@ -66,6 +66,12 @@ RUN DO_INSTALL_CONDA_PACKAGES=0 DO_PIP_REQUIREMENTS=1 \
     ./install-miniconda.sh
 
 ################################################################################
+# Copy the astrometry indices into place.
+
+RUN rm -rf /usr/share/astrometry
+COPY --from=panoptes/astrometry-indices /var/panoptes/astrometry/data/* /usr/share/astrometry/
+
+################################################################################
 # Create the directories that the installer expects to be there.
 RUN ./create-core-panoptes-directories.sh
 
@@ -73,5 +79,7 @@ RUN ./create-core-panoptes-directories.sh
 RUN ./install-dependencies.sh \
         --no-apt-get --no-mongodb --no-conda --no-conda-packages \
         --no-astrometry --no-astrometry-indices --no-pip-requirements
+
+WORKDIR $POCS
 
 CMD ["/bin/bash"]
