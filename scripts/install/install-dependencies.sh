@@ -306,7 +306,7 @@ END_OF_FILE
 # when the rc file of the user's shell is executed.
 function update_shell_rc_file() {
   if [[ ! -f "${SHELL_RC}" ]] ; then
-    cat >"${PANOPTES_ENV_SH}" <<END_OF_FILE
+    cat >"${SHELL_RC}" <<END_OF_FILE
 # File created by PANOPTES install-dependencies.sh
 source ${PANOPTES_ENV_SH}
 END_OF_FILE

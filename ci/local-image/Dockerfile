@@ -7,28 +7,31 @@ ARG user_id=
 ARG group_name=
 ARG group_id=
 
-RUN env
+RUN groupadd -g $group_id $group_name && \
+    useradd -u $user_id -g $group_id -d /home/$user_name $user_name && \
+    echo "Changing ownership of $PANDIR from root to $user_name, which is REALLY slow."
+# James measured this as 38 minutes on his laptop.
+# This makes it likely that we need some ability to choose the user and
+# group that execute the miniconda install.
+RUN date && chown -R $user_id:$group_id $PANDIR && date
 
-RUN exit 1
+USER $user_id:$group_id
 
-RUN groupadd -g $group_id $group_name && useradd -g $group_id --skel $HOME
+WORKDIR /home/$user_name
 
-# # We run as root and later drop permissions. This is required to setup the USER
-# # in useradd below, which is need for correct Python execution in the Docker
-# # environment.
-# USER=root
-# USER_GROUP=root
+# Make sure expected files exist.
+RUN [ -f .bashrc ]
+RUN [ -f "${PANDIR}/set-panoptes-env.sh" ]
 
-# [[ -z "${IMAGE_NAME}" ]] && IMAGE_NAME="envoyproxy/envoy-build-ubuntu"
-# # The IMAGE_ID defaults to the CI hash but can be set to an arbitrary image ID (found with 'docker
-# # images').
-# [[ -z "${IMAGE_ID}" ]] && IMAGE_ID="${ENVOY_BUILD_SHA}"
-# [[ -z "${ENVOY_DOCKER_BUILD_DIR}" ]] && ENVOY_DOCKER_BUILD_DIR=/tmp/envoy-docker-build
+# Create the new .bashrc for the user.
+RUN echo "# Added by PANOPTES install-dependencies.sh" > new.bashrc && \
+    echo "source ${PANDIR}/set-panoptes-env.sh" >> new.bashrc && \
+    cat .bashrc >> new.bashrc
 
-# mkdir -p "${ENVOY_DOCKER_BUILD_DIR}"
-# # Since we specify an explicit hash, docker-run will pull from the remote repo if missing.
-# docker run --rm -t -i -e HTTP_PROXY=${http_proxy} -e HTTPS_PROXY=${https_proxy} \
-#   -u "${USER}":"${USER_GROUP}" -v "${ENVOY_DOCKER_BUILD_DIR}":/build \
-#   -v "$PWD":/source -e NUM_CPUS --cap-add SYS_PTRACE --cap-add NET_RAW --cap-add NET_ADMIN "${IMAGE_NAME}":"${IMAGE_ID}" \
-#   /bin/bash -lc "groupadd --gid $(id -g) -f envoygroup && useradd -o --uid $(id -u) --gid $(id -g) --no-create-home \
-#   --home-dir /source envoybuild && usermod -a -G pcap envoybuild && su envoybuild -c \"cd source && $*\""
+RUN echo "Created new.bashrc:"
+RUN cat new.bashrc
+RUN rm .bashrc && mv new.bashrc .bashrc
+
+WORKDIR $POCS
+
+CMD ["/bin/bash"]

@@ -12,4 +12,4 @@ docker build \
   --build-arg group_name=$(id -g -n) \
   --build-arg group_id=$(id -g) \
   --tag "${IMAGE_NAME}" \
-  --file $THIS_DIR/Dockerfile -- "${THIS_DIR}"
+  --file "${THIS_DIR}/Dockerfile" -- "${THIS_DIR}"

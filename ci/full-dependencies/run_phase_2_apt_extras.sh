@@ -5,9 +5,6 @@
 
 declare -a PACKAGES=(
   # Package description...
-
-  # Useful for cloning POCS.
-  git
 )
 
 if [ ${#PACKAGES[@]} -ne 0 ] ; then
