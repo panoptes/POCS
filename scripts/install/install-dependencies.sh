@@ -15,7 +15,7 @@ if [[ -z "${PANDIR}" ]] ; then
     PANDIR=/var/panoptes
     GUESSED_A_VAR=1
   else
-    echo "Unable to find the PANOPTES directory; usually /var/panoptes."
+    echo "PANDIR variable not set to a directory; usually /var/panoptes."
     VARS_ARE_OK=0
   fi
 elif [[ -e "${PANDIR}" && ! -d "${PANDIR}" ]] ; then
@@ -80,7 +80,7 @@ if [[ "${GUESSED_A_VAR}" == "1" ]] ; then
        POCS = ${POCS}
        PAWS = ${PAWS}
      PANLOG = ${PANLOG}
-    PANUSER = ${USER}
+    PANUSER = ${PANUSER}
 "
 fi
 
@@ -97,14 +97,18 @@ INSTALL_LOGS_DIR="${PANDIR}/logs/install/${TIMESTAMP}"
 SHELL_RC="${HOME}/.bashrc"
 PANOPTES_ENV_SH="${PANDIR}/set-panoptes-env.sh"
 
-DO_APT_GET=1
-DO_MONGODB=1
-DO_CONDA=1
-DO_REBUILD_CONDA_ENV=0
-DO_INSTALL_CONDA_PACKAGES=1
-DO_ASTROMETRY=1
-DO_ASTROMETRY_INDICES=1
-DO_PIP_REQUIREMENTS=1
+# Export these so they can be accessed in by install scripts executed
+# by this script.
+export PANDIR POCS PAWS PANLOG PANUSER
+export DO_APT_GET=1
+export DO_MONGODB=1
+export DO_CONDA=1
+export DO_REBUILD_CONDA_ENV=0
+export DO_INSTALL_CONDA_PACKAGES=1
+export DO_ASTROMETRY=1
+export DO_ASTROMETRY_INDICES=1
+export DO_PIP_REQUIREMENTS=1
+
 DO_RUN_ONE_FUNCTION=""
 
 #-------------------------------------------------------------------------------
@@ -126,7 +130,6 @@ options:
 --no-astrometry            don't install astrometry.net software
 --no-astrometry-indices    don't install astrometry.net indices
 --no-pip-requirements      don't install python packages
---conda-install-dir <dir>  override default of ${CONDA_INSTALL_DIR}
 "
 }
 
@@ -332,7 +335,7 @@ END_OF_FILE
 # when the rc file of the user's shell is executed.
 function update_shell_rc_file() {
   if [[ ! -f "${SHELL_RC}" ]] ; then
-    cat >"${PANOPTES_ENV_SH}" <<END_OF_FILE
+    cat >"${SHELL_RC}" <<END_OF_FILE
 # File created by PANOPTES install-dependencies.sh
 source ${PANOPTES_ENV_SH}
 END_OF_FILE
@@ -383,7 +386,6 @@ function install_apt_packages() {
   (set -x ; sudo apt-get install --yes ${APT_PKGS})
 }
 
-
 function install_mongodb() {
   # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
   # Note this function does not configure mongodb itself, i.e. no users or
@@ -394,7 +396,12 @@ function install_mongodb() {
   local MONGO_VERSION=""
   local MONGO_SOURCE_PATH=""
   local LSB_RELEASE=""
-  if [[ -n "$(safe_which lsb_release)" ]] ; then
+  # lsb_release is deprecated, removed from many debian distributions,
+  # and not present in the official Ubuntu docker images. /etc/os-release
+  # is recommended instead.
+  if [ -f /etc/os-release ] ; then
+    LSB_RELEASE="$(grep VERSION_CODENAME= /etc/os-release | cut -d= -f2)"
+  elif [[ -n "$(safe_which lsb_release)" ]] ; then
     LSB_RELEASE="$(lsb_release -sc)"
   fi
   if [[ "${LSB_RELEASE}" = "xenial" ]] ; then
