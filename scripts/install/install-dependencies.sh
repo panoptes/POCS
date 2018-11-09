@@ -196,22 +196,6 @@ while test ${#} -gt 0; do
 done
 
 #-------------------------------------------------------------------------------
-# Logging support (nascent; I want to add more control and a log file).
-
-# Print a separator bar of # characters.
-function echo_bar() {
-  local terminal_width
-  if [[ -n "$(which resize)" ]] ; then
-    terminal_width="$(resize|grep COLUMNS=|cut -d= -f2)"
-  elif [[ -n "$(which stty)" ]] ; then
-    terminal_width="$(stty size | cut '-d ' -f2)"
-  fi
-  printf "%${terminal_width:-80}s\n" | tr ' ' '#'
-}
-
-#-------------------------------------------------------------------------------
-# Misc helper functions.
-
 # Get the type of the first arg, i.e. shell function, executable, etc.
 # For more info: https://ss64.com/bash/type.html
 #            or: https://bash.cyberciti.biz/guide/Type_command
@@ -219,10 +203,29 @@ function safe_type() {
   type -t "${1}" || /bin/true
 }
 
-# Print the disk location of the first arg.
+# Get the disk location of the first arg.
 function safe_which() {
   type -p "${1}" || /bin/true
 }
+
+#-------------------------------------------------------------------------------
+# Logging support (nascent; I want to add more control and a log file).
+
+# Print a separator bar of # characters.
+function echo_bar() {
+  local terminal_width
+  if [ -n "${TERM}" -a -t 0 ] ; then
+    if [[ -n "$(which resize)" ]] ; then
+      terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
+    elif [[ -n "$(which stty)" ]] ; then
+      terminal_width="$(stty size 2>/dev/null | cut '-d ' -f2)"
+    fi
+  fi
+  printf "%${terminal_width:-80}s\n" | tr ' ' '#'
+}
+
+#-------------------------------------------------------------------------------
+# Misc helper functions.
 
 # Does the first arg start with the second arg?
 function beginswith() { case "${1}" in "${2}"*) true;; *) false;; esac; }
@@ -457,6 +460,9 @@ function maybe_install_mongodb() {
   fi
 }
 
+#-------------------------------------------------------------------------------
+# Anaconda (miniconda) support.
+
 # Did the user source conda's etc/profile.d/conda.sh?
 function conda_is_present() {
   if [[ -z "${CONDA_SHLVL}" ]] ; then
@@ -530,16 +536,6 @@ function get_panoptes_env_location() {
   echo "${panoptes_env}" | sed 's_.* /_/_'
 }
 
-# Checksum the contents of the panoptes env, allowing us to determine
-# if it changed. This is useful for upgrades, not the first install.
-# For speed and simplicity, we actually just checksum the listing.
-function checksum_panoptes_env() {
-  local -r location="$(get_panoptes_env_location)"
-  if [[ -n "${location}" ]] ; then
-    (cd "${location}" ; find . -type f -ls) | md5sum
-  fi
-}
-
 # Install latest version of Miniconda (Anaconda with very few packages; any that
 # are needed can then be installed).
 function install_conda() {
@@ -554,6 +550,7 @@ function install_conda() {
   echo
   echo "Installing miniconda. License at: https://conda.io/docs/license.html"
   local -r the_script="${PANDIR}/tmp/miniconda.sh"
+  mkdir -p "$(dirname "${the_script}")"
   wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
        -O "${the_script}"
   bash "${the_script}" -b -p "${CONDA_INSTALL_DIR}"
@@ -632,7 +629,7 @@ function prepare_panoptes_conda_env() {
 # 4.4, conda's bin directory is not on the path, so 'which conda'
 # can't be used to determine if it is present.
 #
-# TODO(jamessynge): Stopy allowing for an existing conda to be
+# TODO(jamessynge): Stop allowing for an existing conda to be
 # located elsewhere.
 function maybe_install_conda() {
   # Just in case conda isn't setup, but exists...
@@ -817,10 +814,6 @@ fi
 if [[ "${DO_MONGODB}" -eq 1 ]] ; then
   maybe_install_mongodb
 fi
-
-# Before installing conda, checksum the environment so we can easily tell
-# if it changed.
-orig_panoptes_env_checksum="$(checksum_panoptes_env)"
 
 # Before installing conda, figure out if the calling shell had the correct
 # environment setup.
