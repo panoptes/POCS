@@ -6,9 +6,11 @@
 # In addition, there are fixtures defined here that are available to
 # all tests, not just those in pocs/tests.
 
+import copy
 import os
 import pytest
 import subprocess
+import time
 
 from pocs import hardware
 from pocs.utils.database import PanDB
@@ -17,17 +19,18 @@ from pocs.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
+_all_databases = ['mongo', 'file', 'memory']
 
 
 def pytest_addoption(parser):
     hw_names = ",".join(hardware.get_all_names()) + ' (or all for all hardware)'
+    db_names = ",".join(_all_databases) + ' (or all for all databases)'
     group = parser.getgroup("PANOPTES pytest options")
     group.addoption(
         "--with-hardware",
         nargs='+',
         default=[],
-        help=("A comma separated list of hardware to test. " + "List items can include: " +
-              hw_names))
+        help=("A comma separated list of hardware to test. List items can include: " + hw_names))
     group.addoption(
         "--without-hardware",
         nargs='+',
@@ -50,7 +53,8 @@ def pytest_addoption(parser):
         "--test-databases",
         nargs="+",
         default=['mongo'],
-        help="Test databases in the list. Note that travis-ci will test all of them by default.")
+        help=("Test databases in the list. List items can include: " + db_names +
+              ". Note that travis-ci will test all of them by default."))
 
 
 def pytest_collection_modifyitems(config, items):
@@ -217,7 +221,7 @@ def can_connect_to_mongo():
     return _can_connect_to_mongo
 
 
-@pytest.fixture(scope='function', params=['mongo', 'file', 'memory'])
+@pytest.fixture(scope='function', params=_all_databases)
 def db_type(request):
 
     db_list = pytest.config.option.test_databases
@@ -254,19 +258,29 @@ def memory_db():
 
 @pytest.fixture(scope='module')
 def messaging_ports():
-    return dict(msg_ports=(43001, 43101), cmd_ports=(44001, 44101))
+    # Some code (e.g. POCS._setup_messaging) assumes that sub and pub ports
+    # are sequential so these need to match that assumption for now.
+    return dict(msg_ports=(43001, 43002), cmd_ports=(44001, 44002))
 
 
 @pytest.fixture(scope='function')
 def message_forwarder(messaging_ports):
     cmd = os.path.join(os.getenv('POCS'), 'scripts', 'run_messaging_hub.py')
     args = [cmd]
+    # Note that the other programs using these port pairs consider
+    # them to be pub and sub, in that order, but the forwarder sees things
+    # in reverse: it subscribes to the port that others publish to,
+    # and it publishes to the port that others subscribe to.
     for _, (sub, pub) in messaging_ports.items():
         args.append('--pair')
         args.append(str(sub))
         args.append(str(pub))
 
+    get_root_logger().info('message_forwarder fixture starting: {}', args)
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # It takes a while for the forwarder to start, so allow for that.
+    # TODO(jamessynge): Come up with a way to speed up these fixtures.
+    time.sleep(3)
     yield messaging_ports
     proc.terminate()
 
@@ -301,3 +315,35 @@ def cmd_subscriber(message_forwarder):
     subscriber = PanMessaging.create_subscriber(port)
     yield subscriber
     subscriber.close()
+
+
+@pytest.fixture(scope='function')
+def save_environ():
+    old_env = copy.deepcopy(os.environ)
+    yield
+    os.environ = old_env
+
+
+@pytest.fixture(scope='session')
+def data_dir():
+    return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'data')
+
+
+@pytest.fixture(scope='session')
+def unsolved_fits_file(data_dir):
+    return os.path.join(data_dir, 'unsolved.fits')
+
+
+@pytest.fixture(scope='session')
+def solved_fits_file(data_dir):
+    return os.path.join(data_dir, 'solved.fits.fz')
+
+
+@pytest.fixture(scope='session')
+def tiny_fits_file(data_dir):
+    return os.path.join(data_dir, 'tiny.fits')
+
+
+@pytest.fixture(scope='session')
+def noheader_fits_file(data_dir):
+    return os.path.join(data_dir, 'noheader.fits')

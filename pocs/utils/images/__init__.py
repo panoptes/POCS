@@ -1,7 +1,6 @@
 import os
 import subprocess
 import shutil
-import re
 from contextlib import suppress
 
 from matplotlib import pyplot as plt
@@ -24,6 +23,18 @@ palette = copy(plt.cm.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
+
+
+def make_images_dir():
+    """Return the path of the PANDIR/images directory, creating it if necessary."""
+    images_dir = os.path.join(os.getenv('PANDIR'), 'images')
+    try:
+        os.makedirs(images_dir, exist_ok=True)
+        return images_dir
+    except Exception as e:
+        warn(f'Unable to create the images directory: {images_dir}')
+        warn(f'Exception during os.makedirs: {e}')
+        return None
 
 
 def crop_data(data, box_width=200, center=None, verbose=False):
@@ -84,10 +95,10 @@ def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs
     Returns:
         str -- Filename of image that was created.
     """
-    assert os.path.exists(fname),\
+    if not os.path.exists(fname):
         warn("File doesn't exist, can't make pretty: {}".format(fname))
-
-    if fname.endswith('.cr2'):
+        return None
+    elif fname.endswith('.cr2'):
         pretty_path = _make_pretty_from_cr2(fname, title=title, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
         pretty_path = _make_pretty_from_fits(fname, title=title, **kwargs)
@@ -95,16 +106,17 @@ def make_pretty_image(fname, title=None, timeout=15, link_latest=False, **kwargs
         warn("File must be a Canon CR2 or FITS file.")
         return None
 
+    if not link_latest or not os.path.exists(pretty_path):
+        return pretty_path
+
     # Symlink latest.jpg to the image; first remove the symlink if it already exists.
-    if link_latest and os.path.exists(pretty_path):
-        latest_path = os.path.join(
-            os.getenv('PANDIR'),
-            'images',
-            'latest.jpg'
-        )
+    images_dir = make_images_dir()
+    if not images_dir:
+        warn(f"Can't link latest.jpg to {pretty_path}")
+    else:
+        latest_path = os.path.join(images_dir, 'latest.jpg')
         with suppress(FileNotFoundError):
             os.remove(latest_path)
-
         try:
             os.symlink(pretty_path, latest_path)
         except Exception as e:
@@ -191,7 +203,7 @@ def _make_pretty_from_fits(fname=None,
     return new_filename
 
 
-def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: no cover
+def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     script_name = os.path.join(os.getenv('POCS'), 'scripts', 'cr2_to_jpg.sh')
@@ -204,15 +216,11 @@ def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):  # pragma: n
         print(cmd)
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         if verbose:
-            print(proc)
-    except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2. {!r} \t {}".format(e, cmd))
-    except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2. {!r} \t {}".format(e, cmd))
+            print(output)
     except Exception as e:
-        raise error.PanError("Timeout on plate solving: {!r}".format(e))
+        raise error.InvalidCommand("Error executing gphoto2: {!r}\nCommand: {}".format(e, cmd))
 
     return fname.replace('cr2', 'jpg')
 
@@ -342,7 +350,7 @@ def clean_observation_dir(dir_name,
 
     _print("Cleaning dir: {}".format(dir_name))
 
-    # Pack the fits filts
+    # Pack the fits files
     _print("Packing FITS files")
     for f in _glob('*.fits'):
         try:
@@ -380,61 +388,5 @@ def clean_observation_dir(dir_name,
                         os.remove(f)
                     except OSError as e:
                         warn('Could not delete file: {!r}'.format(e))
-
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
-
-
-def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs):
-    """Upload an observation directory to google cloud storage.
-
-    Note:
-        This requires that the command line utility `gsutil` be installed
-        and that authentication has properly been set up.
-
-    Args:
-        pan_id (str): A string representing the unit id, e.g. PAN001.
-        dir_name (str): Full path to observation directory.
-        bucket (str, optional): The bucket to place the images in, defaults
-            to 'panoptes-survey'.
-        **kwargs: Optional keywords: verbose
-    """
-    if os.path.exists(dir_name) is False:
-        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
-
-    if re.match(r'PAN\d\d\d', pan_id) is None:
-        raise Exception("Invalid PANID. Must be of the form 'PANXXX'. Got: {!r}".format(pan_id))
-
-    verbose = kwargs.get('verbose', False)
-
-    def _print(msg):
-        if verbose:
-            print(msg)
-
-    dir_name = dir_name.replace('//', '/')
-    _print("Uploading {}".format(dir_name))
-
-    gsutil = shutil.which('gsutil')
-
-    img_path = os.path.join(dir_name, '*.fz')
-    if glob(img_path):
-        field_dir = dir_name.split('/fields/')[-1]
-        remote_path = os.path.normpath(os.path.join(pan_id, field_dir))
-
-        bucket = 'gs://{}/'.format(bucket)
-        # normpath strips the trailing slash so add here so we place in directory
-        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
-
-        if pan_id == 'PAN000':
-            run_cmd = [gsutil, 'PAN000 upload should fail']
-
-        _print("Running: {}".format(run_cmd))
-
-        try:
-            completed_process = subprocess.run(
-                run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            if completed_process.returncode != 0:
-                raise Exception(completed_process.stderr)
-        except Exception as e:
-            raise error.GoogleCloudError("Problem with upload: {}".format(e))

@@ -90,10 +90,14 @@ observations:
 # use a few google services to store metadata, communicate with servers, etc.
 #
 # See $POCS/pocs/utils/google/README.md for details about authentication.
+#
+# Options to change:
+#   image_storage: If images should be uploaded to Google Cloud Storage.
+#   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
     image_storage: True
-    metadata_storage: True
+    service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey

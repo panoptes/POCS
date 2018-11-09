@@ -3,7 +3,7 @@ import time
 
 from collections import OrderedDict
 from datetime import datetime
-
+import subprocess
 from glob import glob
 
 from astroplan import Observer
@@ -24,7 +24,6 @@ from pocs.scheduler.field import Field
 from pocs import utils
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import images as img_utils
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
 from pocs.camera import AbstractCamera
@@ -355,7 +354,6 @@ class Observatory(PanBase):
                 (requires ffmpeg), default to config item `observations.make_timelapse` then True.
             keep_jpgs (None or bool, optional): If JPG copies of observation images should be kept
                 on local hard drive, default to config item `observations.keep_jpgs` then True.
-
         """
         if upload_images is None:
             try:
@@ -375,11 +373,8 @@ class Observatory(PanBase):
             except KeyError:
                 keep_jpgs = True
 
-        try:
-            pan_id = self.config['pan_id']
-        except KeyError:
-            self.logger.warning("pan_id not set in config, can't upload images.")
-            upload_images = False
+        process_script = 'upload_image_dir.py'
+        process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -402,16 +397,36 @@ class Observatory(PanBase):
                 )
                 self.logger.info('Cleaning directory {}'.format(seq_dir))
 
-                img_utils.clean_observation_dir(seq_dir,
-                                                make_timelapse=make_timelapse,
-                                                keep_jpgs=keep_jpgs)
+                process_cmd = [
+                    process_script_path,
+                    '--directory', seq_dir,
+                ]
 
-                if upload_images is True:
-                    self.logger.debug("Uploading directory to google cloud storage")
-                    try:
-                        img_utils.upload_observation_dir(pan_id, seq_dir)
-                    except error.GoogleCloudError:
-                        self.logger.info("Failed to upload directory {}".format(seq_dir))
+                if upload_images:
+                    process_cmd.append('--upload')
+
+                if make_timelapse:
+                    process_cmd.append('--make_timelapse')
+
+                if keep_jpgs is False:
+                    process_cmd.append('--remove_jpgs')
+
+                # Start the subprocess in background and collect proc object.
+                clean_proc = subprocess.Popen(process_cmd,
+                                              universal_newlines=True,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE
+                                              )
+                self.logger.info('Cleaning directory pid={}'.format(clean_proc.pid))
+
+                # Block and wait for directory to finish
+                try:
+                    outs, errs = clean_proc.communicate(timeout=3600)  # one hour
+                except subprocess.TimeoutExpired:  # pragma: no cover
+                    clean_proc.kill()
+                    outs, errs = clean_proc.communicate(timeout=10)
+                    if errs is not None:
+                        self.logger.warning("Problem cleaning: {}".format(errs))
 
             self.logger.debug('Cleanup finished')
 

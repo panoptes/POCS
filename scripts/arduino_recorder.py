@@ -7,6 +7,7 @@ import serial
 import sys
 
 from pocs.sensors import arduino_io
+from pocs.utils import DelaySigTerm
 from pocs.utils.config import load_config
 from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
@@ -22,7 +23,10 @@ def main(board, port, cmd_port, msg_port, db_type, db_name):
     sub = PanMessaging.create_subscriber(cmd_port)
     pub = PanMessaging.create_publisher(msg_port)
     aio = arduino_io.ArduinoIO(board, serial_data, db, pub, sub)
-    aio.run()
+    def request_to_stop_running(**kwargs):
+        aio.stop_running = True
+    with DelaySigTerm(callback=request_to_stop_running):
+        aio.run()
 
 
 if __name__ == '__main__':
@@ -80,10 +84,10 @@ if __name__ == '__main__':
     print('args: {!r}'.format(args))
     print('board:', board)
     print('port:', port)
-    # sys.exit(1)
 
     # To provide distinct log file names for each board, change argv
-    # so that the board name is used as the invocation name.
+    # so that the board name is used as the invocation name. This may not
+    # work if the logger has already been started.
     sys.argv[0] = board
 
     main(board, port, args.cmd_port, args.msg_port, args.db_type, args.db_name)

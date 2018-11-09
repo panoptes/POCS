@@ -11,6 +11,7 @@ from json import dumps
 from json import loads
 
 from pocs.utils import current_time
+from pocs.utils import CountdownTimer
 from pocs.utils.logger import get_root_logger
 
 
@@ -94,15 +95,18 @@ class PanMessaging(object):
 
     @classmethod
     def create_forwarder_sockets(cls, sub_port, pub_port):
+        cls.logger.info('Creating forwarder sockets for {} -> {}', sub_port, pub_port)
         subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
         publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
         return subscriber, publisher
 
     @classmethod
     def run_forwarder(cls, subscriber, publisher, ready_fn=None, done_fn=None):
+        publisher.logger.info('run_forwarder')
         try:
             if ready_fn:
                 ready_fn()
+            publisher.logger.info('run_forwarder calling zmq.device')
             zmq.device(zmq.FORWARDER, subscriber.socket, publisher.socket)
         except KeyboardInterrupt:
             pass
@@ -110,6 +114,7 @@ class PanMessaging(object):
             publisher.logger.warning(e)
             publisher.logger.warning("bringing down zmq device")
         finally:
+            publisher.logger.info('run_forwarder closing publisher and subscriber')
             publisher.close()
             subscriber.close()
             if done_fn:
@@ -201,14 +206,18 @@ class PanMessaging(object):
         # Send the message
         self.socket.send_string(full_message, flags=zmq.NOBLOCK)
 
-    def receive_message(self, blocking=True, flags=0):
+    def receive_message(self, blocking=True, flags=0, timeout_ms=0):
         """Receive a message
 
         Receives a message for the current subscriber. Blocks by default, pass
         `flags=zmq.NOBLOCK` for non-blocking.
 
         Args:
+            blocking (bool, optional): If True, blocks until message
+                received or timeout__ms elapsed (if timeout_ms > 0).
             flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
+            timeout_ms (int, optional): Time in milliseconds to wait for
+                a message to arrive. Only applies if blocking is True.
 
         Returns:
             tuple(str, dict): Tuple containing the topic and a dict
@@ -217,9 +226,17 @@ class PanMessaging(object):
         msg_obj = None
         if not blocking:
             flags = flags | zmq.NOBLOCK
+        elif timeout_ms > 0:
+            # Wait until a message is available or the timeout expires.
+            # TODO(jamessynge): Remove flags=..., confirm that works with
+            # the default flags value of zmq.POLLIN.
+            self.socket.poll(timeout=timeout_ms, flags=(zmq.POLLIN | zmq.POLLOUT))
+            # Don't block at this point, because we will have waited as long
+            # as necessary.
+            flags = flags | zmq.NOBLOCK
         try:
             message = self.socket.recv_string(flags=flags)
-        except Exception:
+        except Exception as e:
             pass
         else:
             topic, msg = message.split(' ', maxsplit=1)

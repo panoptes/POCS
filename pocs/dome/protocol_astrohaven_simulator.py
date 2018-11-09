@@ -357,7 +357,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             _drain_queue(self.status_queue)
             self.stop.clear()
             self.plc_thread = threading.Thread(
-                name='Astrohaven PLC Simulator', target=lambda: self.plc.run())
+                name='Astrohaven PLC Simulator', target=lambda: self.plc.run(), daemon=True)
             self.plc_thread.start()
         elif self.plc_thread and not need_thread:
             self.stop.set()

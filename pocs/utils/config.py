@@ -42,7 +42,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
             used as a simulator.
         parse (bool, optional): If the config file should attempt to create
             objects such as dates, astropy units, etc.
-        ignore_local (bool, optional): If local files should be ignore, see
+        ignore_local (bool, optional): If local files should be ignored, see
             Notes for details.
 
     Returns:

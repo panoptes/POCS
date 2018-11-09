@@ -44,6 +44,8 @@ See below for more details.
 
 ## Setup
 
+### Manual install
+
 * [Computer setup](https://github.com/panoptes/POCS/wiki/Panoptes-Computer-Setup)
 * While logged in as user panoptes:
    * Create /var/panoptes, owned by user panoptes (for a computer that will be
@@ -89,6 +91,59 @@ See below for more details.
         python ${POCS}/setup.py install
         python ${PIAA}/setup.py install
         ```
+
+### Docker
+
+[Docker](https://www.docker.com/what-docker) is an application that lets you run existing
+services, in this case POCS, on a kind of virtual machine. By running via Docker you
+are guranteeing you are using a setup that works, saving you time on setup and 
+other issues that you might run into doing a manual install.
+
+Of course, this also means that you need to set up Docker. Additionally, you will
+need to be able to log into our Google Docker container storage area so you can pull
+down the existing image. The steps below should help you to get going.
+
+#### Install Docker
+
+Depending on what operating system you are using there are different ways of getting
+Docker on your system. The Docker [installation page](https://www.docker.com/community-edition) 
+should have all the answers you need.
+
+#### Install gcloud
+
+`gcloud` is a command line utility that lets you interact with many of the Google
+cloud services. We will primarily use this to authenticate your account but this
+is also used, for example, to upload images your PANOPTES unit takes.
+
+See the gcloud [installation page](https://cloud.google.com/sdk/docs/#install_the_latest_cloud_tools_version_cloudsdk_current_version)
+for easy install instructions.
+
+#### Let Docker use gcloud
+
+Docker needs to be able to use your `gcloud` login to pull the PANOPTES images. There
+are some helper scripts to make this easier (from [here](https://cloud.google.com/container-registry/docs/advanced-authentication)):
+
+```
+gcloud components install docker-credential-gcr
+docker-credential-gcr configure-docker
+docker-credential-gcr gcr-login
+```
+
+#### Pull POCS container
+
+```
+ docker pull gcr.io/panoptes-survey/pocs:latest
+```
+
+#### Start the POCS image
+
+```
+docker run -it -p 9000:9000 --name pocs gcr.io/panoptes-survey/pocs
+```
+
+The POCS image will automatically start [Jupyter Lab](https://jupyter.org/) running
+on port 9000 of your local browser. The above command should display a link that you
+copy and paste into your browser to get you started.
 
 ## Test POCS
 

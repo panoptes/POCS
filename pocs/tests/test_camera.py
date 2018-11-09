@@ -11,12 +11,15 @@ from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
+from pocs.camera import create_cameras_from_config
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils.config import load_config
 from pocs.utils.error import NotFound
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import error
+from pocs import hardware
 
 
 params = [SimCamera, SBIGCamera, FLICamera]
@@ -81,6 +84,26 @@ def patterns(camera, images_dir):
                 'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
                                             'coarse_focus.png')}
     return patterns
+
+
+def test_create_cameras_from_config(config):
+    cameras = create_cameras_from_config(config)
+    assert len(cameras) == 2
+
+
+def test_create_cameras_from_config_fail(config):
+    cameras = create_cameras_from_config(config)
+    assert len(cameras) == 2
+    simulator = hardware.get_all_names(without=['camera'])
+
+    config['cameras']['auto_detect'] = False
+    config['cameras']['devices'][0] = {
+        'port': '/dev/foobar',
+        'model': 'foobar'
+    }
+
+    with pytest.raises(error.PanError):
+        create_cameras_from_config(config, simulator=simulator)
 
 
 # Hardware independent tests, mostly use simulator:
@@ -349,7 +372,6 @@ def test_autofocus_coarse_with_plots(camera, patterns, counter):
     autofocus_event.wait()
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
-    assert len(glob.glob(patterns['fine_plot'])) == 1
     assert len(glob.glob(patterns['coarse_plot'])) == 1
 
 

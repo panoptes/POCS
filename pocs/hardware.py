@@ -1,6 +1,14 @@
 """Information about hardware supported by Panoptes."""
 
-ALL_NAMES = sorted(['camera', 'dome', 'mount', 'night', 'weather', 'theskyx'])
+ALL_NAMES = sorted([
+    'camera',
+    'dome',
+    'mount',
+    'night',
+    'power',
+    'theskyx',
+    'weather',
+])
 
 
 def get_all_names(all_names=ALL_NAMES, without=list()):
@@ -23,7 +31,7 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     of type 'X'; that is up to the code working with the config to create drivers for real or
     simulated hardware.
 
-    This funciton is intended to be called from PanBase or similar, which receives kwargs that
+    This function is intended to be called from PanBase or similar, which receives kwargs that
     may include simulator, config or both. For example:
            get_simulator_names(config=self.config, kwargs=kwargs)
     Or:

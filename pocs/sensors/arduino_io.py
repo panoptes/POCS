@@ -9,6 +9,7 @@ import copy
 import serial
 import time
 from serial import serialutil
+import threading
 import traceback
 
 from pocs.utils.error import ArduinoDataError
@@ -144,12 +145,30 @@ class ArduinoIO(object):
         self._last_reading = None
         self._report_next_reading = True
         self._cmd_topic = "{}:commands".format(board)
-        self._keep_running = True
+        # Using threading.Event rather than just a boolean field so that any thread
+        # can get and set the stop_running property.
+        self._stop_running = threading.Event()
         self._logger.info('Created ArduinoIO instance for board {}', self.board)
 
     def __del__(self):
         if hasattr(self, '_logger'):
             self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
+
+    def __del__(self):
+        if hasattr(self, '_logger'):
+            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
+
+    @property
+    def stop_running(self):
+        return self._stop_running.is_set()
+
+    @stop_running.setter
+    def stop_running(self, value):
+        if value:
+            self._stop_running.set()
+        else:
+            self._stop_running.clear()
+        self._logger.info('Updated ArduinoIO.stop_running to {!r}', self.stop_running)
 
     def run(self):
         """Main loop for recording data and reading commands.
@@ -159,7 +178,7 @@ class ArduinoIO(object):
         SerialData.get_and_parse_reading() in the event that the device
         disconnects from USB.
         """
-        while self._keep_running:
+        while not self.stop_running:
             self.read_and_record()
             self.handle_commands()
 
@@ -255,18 +274,24 @@ class ArduinoIO(object):
 
         Returns when there are no more commands available from the
         command subscriber, or when a second has passed.
+        The interval is 1 second because we expect at least 2 seconds
+        between reports, and also expect that it probably doesn't take
+        more than 1 second for each report to be read. We could make
+        this configurable, or could dynamically adjust, such as by
+        polling for input.
         """
         timer = CountdownTimer(1.0)
-        while True:
-            topic, msg_obj = self._sub.receive_message(blocking=False)
-            if topic and topic.lower() == self._cmd_topic:
+        while not timer.expired():
+            topic, msg_obj = self._sub.receive_message(blocking=True, timeout_ms=0.05)
+            if not topic:
+                continue
+            self._logger.debug('Received a message for topic {}', topic)
+            if topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:
                     self._logger.error('Exception while handling command: {}', e)
                     self._logger.error('msg_obj: {}', msg_obj)
-            if not timer.sleep(max_sleep=0.05):
-                return
 
     def handle_command(self, msg):
         """Handle one relay command.
@@ -277,7 +302,7 @@ class ArduinoIO(object):
         """
         if msg['command'] == 'shutdown':
             self._logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
-            self._keep_running = False
+            self.stop_running = True
         elif msg['command'] == 'write_line':
             line = msg['line'].rstrip('\r\n')
             self._logger.debug('Sending line to board {}: {}', self.board, line)
