@@ -86,7 +86,7 @@ def test_make_pretty_image(solved_fits_file, tiny_fits_file, save_environ):
 
 @pytest.mark.skipif(
     "TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
-    "Skipping this test on Travis CI.")
+    reason="Skipping this test on Travis CI.")
 def test_make_pretty_image_cr2_fail():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpfile = os.path.join(tmpdir, 'bad.cr2')
