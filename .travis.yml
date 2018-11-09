@@ -53,7 +53,7 @@ install:
   - cd $PANDIR
 
   # Install astrometry.net
-  - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
+  - wget https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz
   - tar zxvf astrometry.net-0.72.tar.gz
   - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg

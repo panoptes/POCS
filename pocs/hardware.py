@@ -1,6 +1,14 @@
 """Information about hardware supported by Panoptes."""
 
-ALL_NAMES = sorted(['camera', 'dome', 'mount', 'night', 'weather', 'theskyx'])
+ALL_NAMES = sorted([
+    'camera',
+    'dome',
+    'mount',
+    'night',
+    'power',
+    'theskyx',
+    'weather',
+])
 
 
 def get_all_names(all_names=ALL_NAMES, without=list()):
