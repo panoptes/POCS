@@ -1,7 +1,7 @@
 import pytest
 
 from pocs.utils.logger import field_name_to_key
-from pocs.utils.logger import format_references_keys
+from pocs.utils.logger import format_has_reference_keys
 from pocs.utils.logger import logger_msg_formatter
 
 
@@ -39,8 +39,7 @@ def test_logger_msg_formatter_1_dict():
     ]
 
     for fmt, msg in tests:
-        assert logger_msg_formatter(fmt, d, debug=True) == msg, fmt
-        assert logger_msg_formatter(fmt, d, debug=False) == msg, fmt
+        assert logger_msg_formatter(fmt, d) == msg, fmt
 
     # Now tests with entirely invalid formats, so warnings should be issued.
     tests = [
@@ -55,7 +54,7 @@ def test_logger_msg_formatter_1_dict():
 
     for fmt in tests:
         with pytest.warns(UserWarning):
-            assert logger_msg_formatter(fmt, d, debug=True) == fmt
+            assert logger_msg_formatter(fmt, d) == fmt
 
 
 def test_logger_msg_formatter_1_non_dict():
@@ -82,8 +81,7 @@ def test_logger_msg_formatter_1_non_dict():
     ]
 
     for fmt, msg in tests:
-        assert logger_msg_formatter(fmt, d, debug=False) == msg, fmt
-        assert logger_msg_formatter(fmt, d, debug=True) == msg, fmt
+        assert logger_msg_formatter(fmt, d) == msg, fmt
 
     # Now tests with entirely invalid formats, so warnings should be issued.
     tests = [
@@ -104,4 +102,4 @@ def test_logger_msg_formatter_1_non_dict():
 
     for fmt in tests:
         with pytest.warns(UserWarning):
-            assert logger_msg_formatter(fmt, d, debug=True) == fmt
+            assert logger_msg_formatter(fmt, d) == fmt

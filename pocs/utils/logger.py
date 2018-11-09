@@ -20,7 +20,15 @@ all_loggers = {}
 
 
 def field_name_to_key(field_name):
-    """Given a field_name from Formatter.parse(), extract the argument key."""
+    """Given a field_name from Formatter.parse(), extract the argument key.
+
+    Args:
+        field_name: expression used to identify the source of the value for
+            a field. See string.Formatter.parse for more info.
+
+    Returns:
+        The name or index at the start of the field_name.
+    """
     assert isinstance(field_name, str)
     assert len(field_name)
     m = re.match(r'^([^.[]+)', field_name)
@@ -28,13 +36,23 @@ def field_name_to_key(field_name):
         return None
     arg_name = m.group(1)
     if arg_name.isdigit():
-        pos = int(arg_name)
         return int(arg_name)
     else:
         return arg_name
 
 
-def format_references_keys(fmt, args):
+def format_has_reference_keys(fmt, args):
+    """Does fmt have named references in it?
+
+    Args:
+        fmt: A format string of the type supported by string.Formatter.
+        args: A dictionary which *may* be providing values to be formatted
+            according to the format fmt.
+
+    Returns:
+        True if fmt has any format substitution field that references an
+        entry in args by a string key. False otherwise.
+    """
     assert isinstance(args, dict)
     try:
         for literal_text, field_name, format_spec, conversion in string.Formatter().parse(fmt):
@@ -48,10 +66,19 @@ def format_references_keys(fmt, args):
 
 
 def format_has_legacy_style(fmt):
+    """Does fmt have a % in it? I.e. is it a legacy style?
+
+    We replace two %%'s in a row with nothing, see if any percents are
+    left.
+    """
     fmt = fmt.replace('%%', '')
     return '%' in fmt
 
 
+# formatting_methods encapsulates the different ways that we can apply
+# a format string to a dictionary of args. Those starting with legacy_
+# use the original printf style operator '%'. Those starting with
+# modern_ use the Advanced String Formatting method defined in PEP 3101.
 formatting_methods = dict(
     legacy_direct=lambda fmt, args: fmt % args,
     legacy_tuple=lambda fmt, args: fmt % (args, ),
@@ -61,7 +88,7 @@ formatting_methods = dict(
 )
 
 
-def logger_msg_formatter(fmt, args, debug=False):
+def logger_msg_formatter(fmt, args):
     """Returns the formatted logger message.
 
     Python's logger package uses the old printf style formatting
@@ -98,7 +125,7 @@ def logger_msg_formatter(fmt, args, debug=False):
     if '{' in fmt:
         # Looks modern.
         if args_are_mapping:
-            if format_references_keys(fmt, args):
+            if format_has_reference_keys(fmt, args):
                 method_names.append('modern_kwargs')
             else:
                 method_names.append('modern_direct')
@@ -108,46 +135,31 @@ def logger_msg_formatter(fmt, args, debug=False):
         # Looks old school.
         method_names.append('legacy_direct')
 
-    # First try with the selected method names.
-
-    for method_name in method_names:
-        try:
-            method = formatting_methods[method_name]
-            msg = method(fmt, args)
-            if debug:
-                print(f'Method {method_name!r} worked for {fmt!r}')
-            return msg
-        except Exception:
-            if debug:
-                print(f'Method {method_name!r} Failed for {fmt!r}')
-
-    # Didn't succeed. Select fallback methods, again based on content.
-    fallback_names = []
+    # Add fallback methods.
+    def add_fallback(name):
+        if name not in method_names:
+            method_names.append(name)
     if '{' in fmt:
-        fallback_names.append('modern_direct')
+        add_fallback('modern_direct')
     if may_have_legacy_subst:
-        fallback_names.append('legacy_tuple')
+        add_fallback('legacy_tuple')
     elif '%' in fmt:
-        fallback_names.append('legacy_direct')
-    method_names = [n for n in fallback_names if n not in method_names]
+        add_fallback('legacy_direct')
 
+    # Now try to format:
     for method_name in method_names:
         try:
             method = formatting_methods[method_name]
-            msg = method(fmt, args)
-            if debug:
-                print(f'Method {method_name!r} worked for {fmt!r}')
-            return msg
+            return method(fmt, args)
         except Exception:
-            if debug:
-                print(f'Method {method_name!r} Failed for {fmt!r}')
+            pass
 
     warn(f'Unable to format log.')
     warn(f'Log message (format string): {fmt!r}')
     warn('Log args type: %s' % type(args))
     try:
         warn(f'Log args: {args!r}')
-    except Exception:
+    except Exception:  # pragma: no cover
         warn('Unable to represent log args in string form.')
     return fmt
 
@@ -200,6 +212,9 @@ def get_root_logger(profile='panoptes', log_config=None):
         # this could occur given that none of the callers of
         # get_root_logger pass in their own log_config.
         if 'formatters' not in log_config:  # pragma: no cover
+            # TODO(jamessynge): Raise a custom exception in this case instead
+            # of issuing a warning; after all, a standard dict will throw a
+            # KeyError in the for loop below if 'formatters' is missing.
             warn('formatters is missing from log_config!')
             warn(f'log_config: {log_config!r}')
         for name, formatter in log_config['formatters'].items():
