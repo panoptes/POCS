@@ -125,8 +125,7 @@ def _parse_config(config):
             'longitude',
             'horizon',
             'flat_horizon',
-            'observe_horizon',
-            'twilight_horizon'
+            'observe_horizon'
         ]:
             if angle in loc:
                 loc[angle] = loc[angle] * u.degree

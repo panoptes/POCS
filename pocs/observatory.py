@@ -83,17 +83,14 @@ class Observatory(PanBase):
         try:
             horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
         except KeyError:
-            self.logger.info("Can't find twilight_horizon, using -18°")
+            self.logger.info(f"Can't find {horizon}_horizon, using -18°")
             horizon_deg = -18 * u.degree
-
-        if not isinstance(horizon_deg, u.Quantity):
-            horizon_deg *= u.degree
 
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
             sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
-            self.logger.debug("Sun {:.02f}° > {}° [{}]".format(
+            self.logger.debug("Sun {:.02f} > {} [{}]".format(
                 sun_pos, horizon_deg, horizon))
 
         return is_dark
