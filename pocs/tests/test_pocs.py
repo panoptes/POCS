@@ -276,9 +276,7 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.observatory.is_dark(horizon='flat') is False
-        pocs.logger.info('Sending RUNNING command')
         pocs.send_message('RUNNING')
-        pocs.logger.info('RUNNING command sent')
         pocs.run(run_once=True, exit_when_done=True)
         pocs.logger.info("Check it's dark once we are done")
         assert pocs.observatory.is_dark(horizon='flat') is True
@@ -290,9 +288,7 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
 
     try:
         # Wait for the RUNNING message,
-        observatory.logger.info('About to wait for running')
         assert wait_for_running(msg_subscriber)
-        observatory.logger.info('Done waiting for running')
 
         time.sleep(2)
         # Insert a dummy weather record to break wait
@@ -301,9 +297,7 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
         assert wait_for_state(msg_subscriber, 'scheduling')
     finally:
         cmd_publisher.send_message('POCS-CMD', 'shutdown')
-        observatory.logger.info('Before thread join')
         pocs_thread.join(timeout=30)
-        observatory.logger.info('After thread join')
 
     assert pocs_thread.is_alive() is False
 
