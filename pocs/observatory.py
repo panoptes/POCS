@@ -72,7 +72,6 @@ class Observatory(PanBase):
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
-
 ##########################################################################
 # Helper Methods
 ##########################################################################
@@ -98,75 +97,6 @@ class Observatory(PanBase):
                 sun_pos, horizon_deg, horizon))
 
         return is_dark
-
-    def is_morning(self, at_time=None):
-        """Small convenience method to determine if morning at time.
-
-        Args:
-            at_time (`astropy.time.Time`, optional): Time, default now.
-
-        Returns:
-            bool: If sun is in range Alt=(0°, 180°) and Az=(0°, -18°)
-        """
-        alt_limits = (0, -18)
-        az_limits = (0, 180)  # Could be smarter
-        return self.is_sun_between(alt_limits, az_limits, at_time=at_time)
-
-    def is_evening(self, at_time=None):
-        """Small convenience method to determine if evening at time.
-
-        Args:
-            at_time (`astropy.time.Time`, optional): Time, default now.
-
-        Returns:
-            bool: If sun is in range Alt=(180°, 360°) and Az=(0°, -18°)
-        """
-        alt_limits = (0, -18)
-        az_limits = (180, 360)  # Could be smarter
-        return self.is_sun_between(alt_limits, az_limits, at_time=at_time)
-
-    def is_sun_between(self, alt_limits, az_limits, at_time=None):
-        """Small convenience method to determine if sun is within certain position.
-
-        This is mostly used to determine if it is currently evening or morning
-        twilight.
-
-        Example:
-
-            alt_limits = (0, -18) # Twilight
-            az_limits = (0, 180) # Morning
-
-            if self.is_sun_between(alt_limits, az_limits):
-                self.take_flats(which='morning')
-
-        Args:
-            alt_limits (tuple(float, float)): Upper and lower limits for the altitude.
-            az_limits (tuple(float, float)): Upper and lower limits for the azimuth.
-            at_time (`astropy.time.Time`, optional): Time, default now.
-
-        Returns:
-            bool: If sun is between limits.
-        """
-        assert len(alt_limits) == 2
-        assert len(az_limits) == 2
-
-        in_range = False
-
-        # Get the current time to determine if evening
-        if at_time is None:
-            at_time = current_time()
-
-        sun_pos = self.observer.sun_altaz(at_time)
-        sun_alt = sun_pos.alt.value
-        sun_az = sun_pos.az.value
-
-        # First check altitude
-        if sun_alt < alt_limits[0] and sun_alt > alt_limits[1]:
-            # Then check azimuth
-            if sun_az >= az_limits[0] and sun_az <= az_limits[1]:
-                in_range = True
-
-        return in_range
 
 ##########################################################################
 # Properties
@@ -212,7 +142,6 @@ class Observatory(PanBase):
     @property
     def has_dome(self):
         return self.dome is not None
-
 
 ##########################################################################
 # Device Getters/Setters
@@ -962,6 +891,7 @@ class Observatory(PanBase):
 ##########################################################################
 # Private Methods
 ##########################################################################
+
 
     def _setup_location(self):
         """

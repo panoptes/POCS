@@ -235,14 +235,6 @@ class PanStateMachine(Machine):
 
         return is_safe
 
-    def is_twilight(self, event_data):
-        """Convenience method to check if twilight (morning or evening).
-
-        This is used as a conditional check when transitioning to states that
-        should only occur during twilight.
-        """
-        return self.observatory.is_morning() or self.observatory.is_evening()
-
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.
 
