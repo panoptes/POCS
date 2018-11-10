@@ -4,6 +4,7 @@ import time
 from collections import OrderedDict
 from datetime import datetime
 import subprocess
+from contextlib import suppress
 from glob import glob
 
 from astroplan import Observer
@@ -610,43 +611,23 @@ class Observatory(PanBase):
             self.logger.info('Closed dome')
         return self.dome.close()
 
-    def should_take_flats(self, at_time=None, which=None):
-        """Determine if flats should be taken for given time.
+    def should_take_flats(self, which='evening'):
+        """Check the config file to determine if flats should be taken for given time.
 
         Args:
-            at_time(`astropy.time.Time`, optional): The time at which to
-                check if flats are valid, defaults to now.
             which(str, optional): Only check for 'evening' or 'morning',
-                default None will search both.
+                default 'evening'.
 
         Returns:
             bool: If flats should be taken.
         """
-        # TODO(wtgee) Cleanup all of this.
         take_flats = False  # Assume not
 
-        # Get the current time to determine if evening or morning
-        if at_time is None:
-            at_time = current_time()
+        self.logger.debug(f"Checking if we should take {which} flats")
+        with suppress(KeyError):
+            take_flats = self.config['flat_field'][f'take_{which}_flats']
 
-        self.logger.debug("Checking if we should take flats at {}".format(at_time))
-
-        # Check the config for flats
-        flat_field_config = self.config['flat_field']
-
-        if which is 'evening' or which is None:
-            self.logger.debug("Checking for evening twilight")
-            if flat_field_config['take_evening_flats']:
-                take_flats = True
-
-            self.logger.debug("Ok to take evening flats: {}".format(take_flats))
-
-        if which is 'morning' or which is None:
-            self.logger.debug("Checking for morning twilight")
-            if flat_field_config['take_morning_flats']:
-                take_flats = True
-
-            self.logger.debug("Ok to take morning flats: {}".format(take_flats))
+        self.logger.debug(f"Ok to take {which} flats: {take_flats}")
 
         return take_flats
 
@@ -807,12 +788,6 @@ class Observatory(PanBase):
                 self.logger.debug("Suggested exp_time for {}: {:.02f}".format(cam_name, exp_time))
                 exp_times[cam_name].append(exp_time * u.second)
 
-            self.logger.debug("Checking for long exposures")
-            # Stop flats if any time is greater than max
-            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
-                self.logger.debug("Exposure times greater than max, stopping flat fields")
-                break
-
             self.logger.debug("Checking for too many exposures")
             # Stop flats if we are going on too long
             if any([len(t) >= max_num_exposures for t in exp_times.values()]):
@@ -822,9 +797,15 @@ class Observatory(PanBase):
             self.logger.debug("Checking for saturation on short exposure")
             if is_saturated and exp_times[cam_name][-1].value <= 2:
                 self.logger.debug(
-                    "Saturated with short exposure, waiting 30 seconds before next exposure")
+                    "Saturated with short exposure, waiting 60 seconds before next exposure")
                 max_num_exposures += 1
                 time.sleep(60)
+                break
+
+            self.logger.debug("Checking for long exposures")
+            # Stop flats if any time is greater than max
+            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
+                self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
 
             self.logger.debug("Incrementing exposure count")
