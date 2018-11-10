@@ -384,7 +384,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 
 def test_run_no_targets_and_exit(pocs):
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2016-09-09 06:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 

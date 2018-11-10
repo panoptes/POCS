@@ -87,6 +87,9 @@ class Observatory(PanBase):
             self.logger.info("Can't find twilight_horizon, using -18°")
             horizon_deg = -18 * u.degree
 
+        if not isinstance(horizon_deg, u.Quantity):
+            horizon_deg *= u.degree
+
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
