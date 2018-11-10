@@ -631,19 +631,20 @@ class Observatory(PanBase):
 
         return take_flats
 
-    def take_evening_flats(self,
-                           alt=None,
-                           az=None,
-                           min_counts=1000,
-                           max_counts=12000,
-                           target_adu_percentage=0.5,
-                           initial_exptime=3.,
-                           max_exptime=60.,
-                           camera_list=None,
-                           bias=2048,
-                           max_num_exposures=10,
-                           take_darks=False,
-                           ):
+    def take_flat_fields(self,
+                         which='evening',
+                         alt=None,
+                         az=None,
+                         min_counts=1000,
+                         max_counts=12000,
+                         target_adu_percentage=0.5,
+                         initial_exptime=3.,
+                         max_exptime=60.,
+                         camera_list=None,
+                         bias=2048,
+                         max_num_exposures=10,
+                         take_darks=False,
+                         ):
         """Take flat fields.
 
         This method will slew the mount to the given AltAz coordinates(which
@@ -667,20 +668,22 @@ class Observatory(PanBase):
             time to each flat-field image.
 
         Args:
-            alt(float, optional): Altitude for flats
-            az(float, optional): Azimuth for flats
-            min_counts(int, optional): Minimum ADU count
-            max_counts(int, optional): Maximum ADU count
-            target_adu_percentage(float, optional): Exposure time will be adjust so
+            which (str, optional): Specify either 'evening' or 'morning' to lookup coordinates
+                in config, default 'evening'.
+            alt (float, optional): Altitude for flats, default None.
+            az (float, optional): Azimuth for flats, default None.
+            min_counts (int, optional): Minimum ADU count.
+            max_counts (int, optional): Maximum ADU count.
+            target_adu_percentage (float, optional): Exposure time will be adjust so
                 that counts are close to: target * (`min_counts` + `max_counts`). Defaults
-                to 0.5
-            initial_exptime(float, optional): Start the flat fields with this exposure
-                time, default 1 second
-            max_exptime(float, optional): Maximum exposure time before stopping
-            camera_list(list, optional): List of cameras to use for flat-fielding
-            bias(int, optional): Default bias for the cameras
-            max_num_exposures(int, optional): Maximum number of flats to take
-            take_darks(bool, optional): If dark fields matching flat fields should be
+                to 0.5.
+            initial_exptime (float, optional): Start the flat fields with this exposure
+                time, default 1 second.
+            max_exptime (float, optional): Maximum exposure time before stopping.
+            camera_list (list, optional): List of cameras to use for flat-fielding.
+            bias (int, optional): Default bias for the cameras.
+            max_num_exposures (int, optional): Maximum number of flats to take.
+            take_darks (bool, optional): If dark fields matching flat fields should be
                 taken, default False.
         """
         target_adu = target_adu_percentage * (min_counts + max_counts)
@@ -688,14 +691,15 @@ class Observatory(PanBase):
         image_dir = self.config['directories']['images']
 
         flat_obs = self._create_flat_field_observation(
-            alt=alt, az=az, initial_exptime=initial_exptime)
+            which=which, alt=alt, az=az,
+            initial_exptime=initial_exptime
+        )
 
         if camera_list is None:
             camera_list = list(self.cameras.keys())
 
-        # Start with 1 second exposures for each camera
-        exp_times = {cam_name: [initial_exptime * u.second]
-                     for cam_name in camera_list}
+        # Setup initial exposure times
+        exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
 
         # Loop until conditions are met for flat-fielding
         while True:
@@ -722,12 +726,12 @@ class Observatory(PanBase):
                 camera = self.cameras[cam_name]
                 exp_time = exp_times[cam_name][-1].value
 
-                filename = "{}/flats/{}/{}/flat_{:02d}.{}".format(
-                    image_dir,
+                filename = os.path.normpath(os.path.join(
+                    flat_obs.directory,
                     camera.uid,
                     flat_obs.seq_time,
-                    flat_obs.current_exp_num,
-                    camera.file_extension)
+                    f'flat_{flat_obs.current_exp_num:02d}.{camera.file_extension}'
+                ))
 
                 # Take picture and get event
                 camera_event = camera.take_observation(
@@ -750,32 +754,32 @@ class Observatory(PanBase):
             # Check the counts for each image
             is_saturated = False
             for cam_name, info in camera_events.items():
+
                 img_file = info['filename'].replace('.cr2', '.fits')
+                if not os.path.exists(img_file):
+                    img_file = img_file.replace('.fits', '.fits.fz')
+                    if not os.path.exists(img_file):
+                        self.logger.warning(f"No flat file {img_file} found, skipping")
+                        continue
+
                 self.logger.debug("Checking counts for {}".format(img_file))
 
-                try:
-                    data = fits.getdata(img_file)
-                except FileNotFoundError:
-                    data = fits.getdata(img_file.replace('.fits', '.fits.fz'))
+                # Get the bias subtracted data
+                data = fits.getdata(img_file) - bias
 
-                # Simple mean works just as well and is quicker
-                mean = data.mean()
-
-                counts = mean - bias
-
-                # Don't deal with negative values
-                if counts <= 0:
-                    counts = 10
-
+                # Simple mean works just as well as sigma_clipping and is quicker for RGB
+                counts = data.mean()
                 self.logger.debug("Counts: {:.02f}".format(counts))
+
+                if counts < min_counts:
+                    self.logger.debug("Counts are too low, flat should be discarded")
+                    # TODO(wtgee) Mark in headers? Skip rest of loop?
 
                 # If we are saturating then wait a bit and redo
                 if counts >= max_counts:
                     self.logger.debug("Image is saturated")
                     is_saturated = True
-
-                if counts < min_counts:
-                    self.logger.debug("Counts are too low, flat should be discarded")
+                    # TODO(wtgee) Mark in headers? Skip rest of loop?
 
                 elapsed_time = (current_time() - start_time).sec
                 self.logger.debug("Elapsed time: {:.02f}".format(elapsed_time))
@@ -783,21 +787,21 @@ class Observatory(PanBase):
                 # Get suggested exposure time
                 previous_exp_time = exp_times[cam_name][-1].value
 
-                exp_time = int(previous_exp_time * (target_adu / counts) *
-                               (2.0 ** (elapsed_time / 180.0)) + 0.5)
-                self.logger.debug("Suggested exp_time for {}: {:.02f}".format(cam_name, exp_time))
-                exp_times[cam_name].append(exp_time * u.second)
+                # TODO(wtgee) Document this better
+                exptime = int(previous_exp_time * (target_adu / counts) *
+                              (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                self.logger.debug(f"Suggested exp_time for {cam_name}: {exptime:.02f}")
+                exp_times[cam_name].append(exptime * u.second)
 
             self.logger.debug("Checking for too many exposures")
             # Stop flats if we are going on too long
-            if any([len(t) >= max_num_exposures for t in exp_times.values()]):
-                self.logger.debug("Too many flats, quitting")
+            if any([len(t) - 1 >= max_num_exposures for t in exp_times.values()]):
+                self.logger.debug(f"Have max exposures ({max_num_exposures}), stopping.")
                 break
 
             self.logger.debug("Checking for saturation on short exposure")
             if is_saturated and exp_times[cam_name][-1].value <= 2:
-                self.logger.debug(
-                    "Saturated with short exposure, waiting 60 seconds before next exposure")
+                self.logger.debug("Saturated short exposure, waiting 60 seconds")
                 max_num_exposures += 1
                 time.sleep(60)
                 break
@@ -1026,19 +1030,22 @@ class Observatory(PanBase):
                                        which='evening',
                                        alt=None,
                                        az=None,
+                                       field_name='Evening Flat',
                                        flat_time=None,
                                        initial_exptime=5):
         """Small convenince wrapper.
 
         Args:
-            which(str, optional): Which flat field to take, 'evening' or
+            which (str, optional): Which flat field to take, 'evening' or
                 'morning'. Will look up flat-field information from config file.
                 If `alt` and `az` are specified than the config entry is ignored.
-            alt(float, optional): Altitude desired, in degrees.
-            az(float, optional): Azimuth desired, in degrees.
-            flat_time(`astropy.time.Time`, optional): The time at which the flats
+            alt (float, optional): Altitude desired, in degrees.
+            az (float, optional): Azimuth desired, in degrees.
+            field_name (str, optional): Name of the field, which will also be directory
+                name. Note that it is probably best to pass the camera.uid as name.
+            flat_time (`astropy.time.Time`, optional): The time at which the flats
                 will be taken, default `now`.
-            initial_exptime(int, optional): Initial exptime in seconds, default 5
+            initial_exptime (int, optional): Initial exptime in seconds, default 5.
 
         Returns:
             `pocs.scheduler.Observation`: Information about the flat-field.
@@ -1046,10 +1053,10 @@ class Observatory(PanBase):
         self.logger.debug("Creating flat-field observation")
 
         # Get an Alt and Az from the config
-        if alt is None and az is None:
+        if alt is None or az is None:
             flat_config = self.config['flat_field'][which]
-            alt = flat_config['alt']
-            az = flat_config['az']
+            alt = alt or flat_config['alt']
+            az = az or flat_config['az']
 
         if flat_time is None:
             flat_time = current_time()
@@ -1061,11 +1068,17 @@ class Observatory(PanBase):
             location=self.earth_location,
             obstime=flat_time)
 
-        field = Field('Evening Flats', flat_coords.to_string('hmsdms'))
+        field = Field(field_name, flat_coords)
         flat_obs = Observation(field, exp_time=initial_exptime * u.second)
 
         # Note different 'flat' concepts
         flat_obs.seq_time = utils.flatten_time(flat_time)
+
+        # Setup the directory to store images
+        flat_obs._directory = os.path.join(
+            self.config['directories']['images'],
+            'flats',
+        )
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
 

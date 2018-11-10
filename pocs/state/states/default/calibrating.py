@@ -14,7 +14,7 @@ def on_enter(event_data):
         # Take the flats
         if pocs.observatory.should_take_flats(which='evening'):
             pocs.say("Taking some flat fields to start the night")
-            pocs.observatory.take_evening_flats(initial_exptime=5)
+            pocs.observatory.take_flat_fields(which='evening', initial_exptime=5)
             pocs.say("Done taking flat fields.")
 
         # Wait until dark enough to observe (will send to Home)
