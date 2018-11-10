@@ -127,7 +127,7 @@ state_machine: simple_state_table
 # morning:            The coordinates should be roughly opposite the sun.
 ################################################################################
 flat_field:
-    take_evening_flats: False
+    take_evening_flats: True
     take_morning_flats: False
     evening:
         alt: 70  # degrees

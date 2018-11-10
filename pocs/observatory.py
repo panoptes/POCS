@@ -91,8 +91,8 @@ class Observatory(PanBase):
 
         if not is_dark:
             sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
-            self.logger.debug("Sun {:.02f}° > {}° [{}°]".format(
-                sun_pos, horizon, horizon_deg))
+            self.logger.debug("Sun {:.02f}° > {}° [{}]".format(
+                sun_pos, horizon_deg, horizon))
 
         return is_dark
 
@@ -816,7 +816,7 @@ class Observatory(PanBase):
                     image_dir,
                     camera.uid,
                     flat_obs.seq_time,
-                    flat_obs.current_exp,
+                    flat_obs.current_exp_num,
                     camera.file_extension)
 
                 # Take picture and get event

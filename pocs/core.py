@@ -595,7 +595,7 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning("Sending mount to home to wait for dark")
                 self.observatory.mount.slew_to_home()
 
-            self.logger.warning("Waiting until evening")
+            self.logger.warning(f"Waiting for {horizon} horizon")
             self.sleep(delay=self._safe_delay)
 
             # Check weather
