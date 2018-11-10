@@ -18,8 +18,11 @@ def on_enter(event_data):
         # determine if we should take flats.
         if pocs.observatory.should_take_flats(which='evening'):
             pocs.next_state = 'calibrating'
-            if pocs.observatory.is_dark(horizon='flat') is False:
-                pocs.say("Not dark enough for flats yet, going to wait a little while.")
-                pocs.wait_until_dark(horizon='flat')
+            horizon = 'flat'
         else:
             pocs.next_state = 'scheduling'
+            horizon = 'observe'
+
+        if pocs.observatory.is_dark(horizon=horizon) is False:
+            pocs.say("Not dark enough yet, going to wait a little while.")
+            pocs.wait_until_dark(horizon=horizon)

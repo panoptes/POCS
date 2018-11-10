@@ -408,11 +408,14 @@ class PanStateMachine(Machine):
         self.logger.debug("Loading transition: {}".format(transition))
 
         # Add `check_safety` as the first transition for all states
-        conditions = listify(transition.get('conditions', []))
+        conditions = listify(transition.get('conditions', '').split(' '))
+        conditions = [c for c in conditions if c > '']
 
         # Add a safety check unless marked as always safe.
         if 'always_safe' not in conditions:
             conditions.insert(0, 'check_safety')
+        else:
+            conditions.remove('always_safe')
 
         transition['conditions'] = conditions
 

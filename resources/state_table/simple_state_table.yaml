@@ -52,7 +52,7 @@ transitions:
         source: sleeping
         dest: ready
         trigger: get_ready
-        conditions: mount_is_initialized
+        conditions: mount_is_initialized always_safe
     -
         source: ready
         dest: calibrating
