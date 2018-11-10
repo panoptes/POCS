@@ -461,6 +461,9 @@ def test_pocs_park_to_ready_with_observations(pocs):
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
     assert pocs.goto_next_state()
+    if pocs.state != 'scheduling':
+        assert pocs.state == 'calibrating'
+        assert pocs.goto_next_state()
     assert pocs.observatory.current_observation is not None
     pocs.next_state = 'parking'
     assert pocs.goto_next_state()
@@ -488,6 +491,9 @@ def test_pocs_park_to_ready_without_observations(pocs):
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
     assert pocs.goto_next_state()
+    if pocs.state != 'scheduling':
+        assert pocs.state == 'calibrating'
+        assert pocs.goto_next_state()
     assert pocs.observatory.current_observation is not None
     pocs.next_state = 'parking'
     assert pocs.goto_next_state()
