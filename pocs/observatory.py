@@ -91,7 +91,7 @@ class Observatory(PanBase):
 
         if not is_dark:
             sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
-            self.logger.debug("Sun {:.02f} > {} [{}]".format(
+            self.logger.debug("Sun {:.02f}° > {}° [{}°]".format(
                 sun_pos, horizon, horizon_deg))
 
         return is_dark
@@ -733,14 +733,13 @@ class Observatory(PanBase):
                            bias=2048,
                            max_num_exposures=10,
                            take_darks=False,
-                           *args, **kwargs
                            ):
         """Take flat fields.
 
         This method will slew the mount to the given AltAz coordinates(which
         should be roughly opposite of the setting sun) and then begin the flat-field
         procedure. The first image starts with a simple 1 second exposure and
-        after each image is taken the average counts are anazlyzed and the exposure
+        after each image is taken the average counts are analyzed and the exposure
         time is adjusted to try to keep the counts close to `target_adu_percentage`
         of the `(max_counts + min_counts) - bias`.
 
@@ -763,7 +762,7 @@ class Observatory(PanBase):
             min_counts(int, optional): Minimum ADU count
             max_counts(int, optional): Maximum ADU count
             target_adu_percentage(float, optional): Exposure time will be adjust so
-                that counts are close to: target * (`min_counts` + `max_counts`). Default
+                that counts are close to: target * (`min_counts` + `max_counts`). Defaults
                 to 0.5
             initial_exptime(float, optional): Start the flat fields with this exposure
                 time, default 1 second
@@ -773,8 +772,6 @@ class Observatory(PanBase):
             max_num_exposures(int, optional): Maximum number of flats to take
             take_darks(bool, optional): If dark fields matching flat fields should be
                 taken, default False.
-            *args(TYPE): Description
-            **kwargs(TYPE): Description
         """
         target_adu = target_adu_percentage * (min_counts + max_counts)
 

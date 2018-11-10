@@ -27,18 +27,22 @@ transitions:
             - analyzing
         dest: parking
         trigger: park
+        conditions: always_safe
     -
         source: parking
         dest: parked
         trigger: set_park
+        conditions: always_safe
     -
         source: parked
         dest: housekeeping
         trigger: clean_up
+        conditions: always_safe
     -
         source: housekeeping
         dest: sleeping
         trigger: goto_sleep
+        conditions: always_safe
     -
         source: parked
         dest: ready

@@ -223,30 +223,25 @@ class PanStateMachine(Machine):
 
         self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
-        always_safe = [
-            'park',
-            'set_park',
-            'clean_up',
-            'goto_sleep',
-            'get_ready',
-        ]
-
-        safe_when_dark = [
+        safe_at_twilight = [
             'calibrate'
         ]
 
-        try:
-            if event_data.event.name in always_safe:
-                self.logger.debug("Always safe to move to {}".format(event_data.event.name))
-                is_safe = True
-            elif event_data.event.name in safe_when_dark:
-                is_safe = self.is_dark(horizon='flat') and self.has_free_space()
-            else:
-                is_safe = self.is_safe()
-        except Exception as e:
-            is_safe = self.is_safe()
+        horizon = 'observe'
+        if event_data.event.name in safe_at_twilight:
+            horizon = 'flat'
+
+        is_safe = self.is_safe(horizon=horizon)
 
         return is_safe
+
+    def is_twilight(self, event_data):
+        """Convenience method to check if twilight (morning or evening).
+
+        This is used as a conditional check when transitioning to states that
+        should only occur during twilight.
+        """
+        return self.observatory.is_morning() or self.observatory.is_evening()
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.
@@ -415,7 +410,10 @@ class PanStateMachine(Machine):
         # Add `check_safety` as the first transition for all states
         conditions = listify(transition.get('conditions', []))
 
-        conditions.insert(0, 'check_safety')
+        # Add a safety check unless marked as always safe.
+        if 'always_safe' not in conditions:
+            conditions.insert(0, 'check_safety')
+
         transition['conditions'] = conditions
 
         self.logger.debug("Returning transition: {}".format(transition))

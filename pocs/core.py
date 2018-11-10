@@ -353,7 +353,7 @@ class POCS(PanStateMachine, PanBase):
         return is_dark
 
     def is_weather_safe(self, stale=180):
-        """Determines whether current weather conditions are safe or not
+        """Determines whether current weather conditions are safe or not.
 
         Args:
             stale (int, optional): Number of seconds before record is stale, defaults to 180
@@ -580,8 +580,9 @@ class POCS(PanStateMachine, PanBase):
     def wait_until_dark(self, horizon='observe'):
         """Waits until sun is below the given horizon.
 
-        This will wait until a True value is returned from the safety check,
-        blocking until then.
+        Sends the mount to the home position and waits for a True value to be
+        returned from the safety check. Also performs a weather check and sends
+        to parking if weather becomes bad.
 
         Args:
             horizon (str, optional): Which horizon to check, either
@@ -594,12 +595,18 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning("Sending mount to home to wait for dark")
                 self.observatory.mount.slew_to_home()
 
-            self.logger.warning("Still waiting until evening")
+            self.logger.warning("Waiting until evening")
             self.sleep(delay=self._safe_delay)
 
             # Check weather
             if not self.is_weather_safe():
                 self.logger.warning("Weather is no longer safe, parking")
+                self.next_state = 'parking'
+                return
+
+            # Check weather
+            if not self.has_ac_power():
+                self.logger.warning("AC power not detected")
                 self.next_state = 'parking'
                 return
 
