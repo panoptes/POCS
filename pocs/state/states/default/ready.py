@@ -14,15 +14,8 @@ def on_enter(event_data):
     else:
         pocs.observatory.mount.unpark()
 
-        # This will check the config settings and current time to
-        # determine if we should take flats.
-        if pocs.observatory.should_take_flats(which='evening'):
-            pocs.next_state = 'calibrating'
-            horizon = 'flat'
-        else:
-            pocs.next_state = 'scheduling'
-            horizon = 'observe'
-
-        if pocs.observatory.is_dark(horizon=horizon) is False:
+        if pocs.observatory.is_dark(horizon='flat') is False:
             pocs.say("Not dark enough yet, going to wait a little while.")
-            pocs.wait_until_dark(horizon=horizon)
+            pocs.wait_until_dark(horizon='flat')
+
+        pocs.next_state = 'calibrating'

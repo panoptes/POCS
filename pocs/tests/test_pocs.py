@@ -201,6 +201,8 @@ def test_wait_until_dark(pocs):
     pocs.wait_until_dark()
     assert pocs.has_ac_power() is False
 
+    pocs.db.clear_current('power')
+
 
 def test_wait_for_events_timeout(pocs):
     del os.environ['POCSTIME']
