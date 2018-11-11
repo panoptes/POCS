@@ -355,5 +355,16 @@ def test_operate_dome(config_with_simulated_dome):
     assert observatory.has_dome
     assert observatory.open_dome()
     assert observatory.dome.is_open
+    assert not observatory.dome.is_closed
+    assert observatory.open_dome()
+    assert observatory.dome.is_open
+    assert not observatory.dome.is_closed
     assert observatory.close_dome()
     assert observatory.dome.is_closed
+    assert not observatory.dome.is_open
+    assert observatory.close_dome()
+    assert observatory.dome.is_closed
+    assert not observatory.dome.is_open
+    assert observatory.open_dome()
+    assert observatory.dome.is_open
+    assert not observatory.dome.is_closed
