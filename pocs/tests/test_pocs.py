@@ -165,6 +165,43 @@ def test_is_weather_and_dark_simulator(pocs):
     assert pocs.is_weather_safe() is True
 
 
+def test_wait_until_dark(pocs):
+    pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'power']
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    assert pocs.is_dark() is False
+
+    # Insert a dummy weather record
+    pocs.db.insert_current('weather', {'safe': True})
+    assert pocs.is_weather_safe() is True
+
+    # Set a time 175 seconds later
+    os.environ['POCSTIME'] = '2016-08-13 23:02:58'
+    assert pocs.is_weather_safe() is True  # Weather still safe
+
+    # Bad weather should exit
+    pocs._safe_delay = 5
+    pocs.wait_until_dark()
+    assert pocs.next_state == 'parking'
+    assert pocs.is_weather_safe() is False
+
+    # Test Power failure
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+
+    # Insert a dummy power record
+    pocs.db.insert_current('power', {'main': True})
+    assert pocs.has_ac_power() is True
+
+    # Set a time 85 seconds later
+    os.environ['POCSTIME'] = '2016-08-13 23:01:25'
+    assert pocs.has_ac_power() is True  # Power still safe
+
+    # Bad power reading should cause fail
+    pocs.wait_until_dark()
+    assert pocs.has_ac_power() is False
+
+
 def test_wait_for_events_timeout(pocs):
     del os.environ['POCSTIME']
     test_event = threading.Event()

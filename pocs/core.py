@@ -598,17 +598,18 @@ class POCS(PanStateMachine, PanBase):
             self.logger.warning(f"Waiting for {horizon} horizon")
             self.sleep(delay=self._safe_delay)
 
+            # Check power
+            if not self.has_ac_power():
+                self.logger.warning("AC power not detected")
+                self.next_state = 'parking'
+                return
+
             # Check weather
             if not self.is_weather_safe():
                 self.logger.warning("Weather is no longer safe, parking")
                 self.next_state = 'parking'
                 return
 
-            # Check weather
-            if not self.has_ac_power():
-                self.logger.warning("AC power not detected")
-                self.next_state = 'parking'
-                return
 
 ##################################################################################################
 # Class Methods

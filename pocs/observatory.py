@@ -758,7 +758,7 @@ class Observatory(PanBase):
                 img_file = info['filename'].replace('.cr2', '.fits')
                 if not os.path.exists(img_file):
                     img_file = img_file.replace('.fits', '.fits.fz')
-                    if not os.path.exists(img_file):
+                    if not os.path.exists(img_file):  # pragma: no cover
                         self.logger.warning(f"No flat file {img_file} found, skipping")
                         continue
 
