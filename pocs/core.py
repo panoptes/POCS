@@ -125,7 +125,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def should_retry(self):
-        return self._obs_run_retries >= 0
+        return self._obs_run_retries > 0
 
 ##################################################################################################
 # Methods

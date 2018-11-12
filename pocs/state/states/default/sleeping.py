@@ -2,7 +2,9 @@ def on_enter(event_data):
     """ """
     pocs = event_data.model
 
-    if pocs.is_safe() and pocs.should_retry is False:
+    if pocs.run_once:
+        pocs.say('Only wanted to run once, shuttting down')
+    elif pocs.is_safe() and pocs.should_retry is False:
         pocs.say("Weather is good and it is dark. Something must have gone wrong. " +
                  "Stopping loop.")
         pocs.stop_states()
@@ -15,6 +17,6 @@ def on_enter(event_data):
         pocs.say("Another successful night!")
 
         # Sleep until dark.
-        if (pocs.observatory.is_dark(horizon='flat') is False and pocs.run_once is False):
+        if (pocs.observatory.is_dark(horizon='flat') is False):
             pocs.logger.warning("Waiting until flat twilight")
             pocs.wait_until_dark(horizon='flat')
