@@ -643,7 +643,6 @@ class Observatory(PanBase):
                          camera_list=None,
                          bias=2048,
                          max_num_exposures=10,
-                         take_darks=False,
                          ):
         """Take flat fields.
 
@@ -683,12 +682,8 @@ class Observatory(PanBase):
             camera_list (list, optional): List of cameras to use for flat-fielding.
             bias (int, optional): Default bias for the cameras.
             max_num_exposures (int, optional): Maximum number of flats to take.
-            take_darks (bool, optional): If dark fields matching flat fields should be
-                taken, default False.
         """
         target_adu = target_adu_percentage * (min_counts + max_counts)
-
-        image_dir = self.config['directories']['images']
 
         flat_obs = self._create_flat_field_observation(
             which=which, alt=alt, az=az,
@@ -812,54 +807,6 @@ class Observatory(PanBase):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
 
-        # Add a bias exposure at beginning
-        for cam_name in camera_list:
-            exp_times[cam_name].insert(0, 0 * u.second)
-
-            # Record how many exposures we took
-            num_exposures = len(exp_times[cam_name])
-
-        if take_darks:
-            # Take darks
-            for i in range(num_exposures):
-                self.logger.debug("Slewing to dark-field coords: {}".format(flat_obs.field))
-                self.mount.set_target_coordinates(flat_obs.field)
-                self.mount.slew_to_target()
-                self.status()
-
-                for cam_name in camera_list:
-
-                    camera = self.cameras[cam_name]
-
-                    filename = "{}/darks/{}/{}/dark_{:02d}.{}".format(
-                        image_dir,
-                        camera.uid,
-                        flat_obs.seq_time,
-                        flat_obs.current_exp,
-                        camera.file_extension)
-
-                    exp_time = exp_times[cam_name][i]
-                    if exp_time > max_exptime:
-                        continue
-
-                    # Take picture and wait for result
-                    camera_event = camera.take_observation(
-                        flat_obs,
-                        fits_headers,
-                        filename=filename,
-                        exp_time=exp_times[cam_name][i],
-                        dark=True
-                    )
-
-                    camera_events[cam_name] = {
-                        'event': camera_event,
-                        'filename': filename,
-                    }
-
-                # Will block here until done exposing on all cameras
-                while not all([info['event'].is_set() for info in camera_events.values()]):
-                    self.logger.debug('Waiting for dark-field image')
-                    time.sleep(1)
 
 ##########################################################################
 # Private Methods
