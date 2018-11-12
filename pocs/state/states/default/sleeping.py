@@ -3,7 +3,7 @@ def on_enter(event_data):
     pocs = event_data.model
 
     if pocs.run_once:
-        pocs.say('Only wanted to run once, shuttting down')
+        pocs.say('Only wanted to run once, shutting down')
     elif pocs.is_safe() and pocs.should_retry is False:
         pocs.say("Weather is good and it is dark. Something must have gone wrong. " +
                  "Stopping loop.")
