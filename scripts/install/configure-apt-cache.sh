@@ -4,7 +4,7 @@
 # if one has been setup. Pass in the port as the first (and only) argument
 # to this script, else set the APT_PROXY_PORT environment variable to the
 # port number. Records the URL of the proxy "permanently" in
-# /etc/apt/apt.conf.d/01proxy; root root access is required to write to
+# /etc/apt/apt.conf.d/01proxy; root access is required to write to
 # that file.
 #
 # Using this script is appropriate if it isn't practical to pass the

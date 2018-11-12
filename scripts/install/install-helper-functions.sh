@@ -78,7 +78,7 @@ function proc_net_route_addr() {
   printf "%d.%d.%d.%d\n" "${a}" "${b}" "${c}" "${d}"
 }
 
-# Print the first IP on the route to 8.8.8.8, i.e. to Google's public DNS server?
+# Print the first IP on the route to 8.8.8.8, i.e. to Google's public DNS server.
 # Will be one of this hosts IP addresses or nothing if 'ip' is not installed.
 function route_dns_addr() {
   if [ -x /sbin/ip ] ; then

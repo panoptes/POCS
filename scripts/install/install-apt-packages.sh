@@ -8,12 +8,15 @@ THIS_DIR="$(dirname "$(readlink -f "${0}")")"
 source "${THIS_DIR}/install-helper-functions.sh"
 
 # Suppress prompting for input during package processing, unless DEBIAN_FRONTEND
-# is already set. The tzdata 
+# is already set. The tzdata package prompts the user to pick a timezone,
+# annoying when you're trying to automate things and don't care which time
+# zone is selected (the default is UTC).
 if [ -z "${DEBIAN_FRONTEND}" ] ; then
   export DEBIAN_FRONTEND=noninteractive
 fi
 
 # Generate the basic apt-get install command, minus the list of packages.
+# We store into a shell array, i.e. an array of strings.
 declare -a apt_get_install=(apt-get install --no-install-recommends --yes)
 # shellcheck disable=SC2119
 apt_proxy_url="$(get_apt_proxy_url)"
@@ -36,6 +39,11 @@ function install_apt_packages() {
     echo
     echo_running_sudo "apt-get install for the files in ${APT_PKGS_FILE}"
     echo
+    # A note on syntax: ${array_variable} expands to just the first element
+    # of the array. ${array_variable[@]} expands to all of the elements.
+    # Putting quotes around that has the affect of expanding the array as
+    # one quoted string PER element in the array, and thus spaces in
+    # a single element (e.g. "a b") doesn't result in multiple 'words'.
     # shellcheck disable=SC2086
     my_sudo "${apt_get_install[@]}" ${APT_PKGS}
   done
