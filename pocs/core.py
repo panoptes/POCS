@@ -577,7 +577,7 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             time.sleep(sleep_delay)
 
-    def wait_until_dark(self, horizon='observe'):
+    def wait_until_dark(self, horizon='observe', check_safety=True):
         """Waits until sun is below the given horizon.
 
         Sends the mount to the home position and waits for a True value to be
@@ -587,6 +587,12 @@ class POCS(PanStateMachine, PanBase):
         Args:
             horizon (str, optional): Which horizon to check, either
                 'observe' or 'flat', default 'observe'.
+            check_safety (bool, optional): If safety checks should be performed
+                while waiting, default True. Note that the only place this should
+                be false is in the `sleeping` state.
+
+        Returns:
+            bool: If dark upon exit
         """
         while not self.observatory.is_dark(horizon=horizon):
             if (self.observatory.mount.is_parked is False and
@@ -598,17 +604,20 @@ class POCS(PanStateMachine, PanBase):
             self.logger.warning(f"Waiting for {horizon} horizon")
             self.sleep(delay=self._safe_delay)
 
-            # Check power
-            if not self.has_ac_power():
-                self.logger.warning("AC power not detected")
-                self.next_state = 'parking'
-                return
+            if check_safety:
+                # Check power
+                if not self.has_ac_power():
+                    self.logger.warning("AC power not detected")
+                    self.next_state = 'parking'
+                    return False
 
-            # Check weather
-            if not self.is_weather_safe():
-                self.logger.warning("Weather is no longer safe, parking")
-                self.next_state = 'parking'
-                return
+                # Check weather
+                if not self.is_weather_safe():
+                    self.logger.warning("Weather is no longer safe, parking")
+                    self.next_state = 'parking'
+                    return False
+
+        return self.observatory.is_dark(horizon=horizon)
 
 
 ##################################################################################################

@@ -1,6 +1,8 @@
 import os
 import pytest
 
+from astropy import units as u
+from pocs.utils import current_time
 from pocs.camera import create_cameras_from_config
 from pocs.observatory import Observatory
 from pocs.core import POCS
@@ -76,15 +78,16 @@ def test_sleeping(pocs):
     assert pocs.observatory.is_dark(horizon='flat') is False
     pocs._safe_delay = 5
 
-    # Insert dummy power record then change time so that it will expire and
-    # time out our wait
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
-
-    os.environ['POCSTIME'] = '2016-09-09 20:00:00'
-    pocs.db.insert_current('power', {'main': True})
-    assert pocs.has_ac_power() is True
-
-    os.environ['POCSTIME'] = '2016-09-09 20:01:25'
+    t0 = current_time()
+    next_sunset = pocs.observatory.scheduler.observer.sun_set_time(
+        t0,
+        which='next',
+        horizon=pocs.config['location']['flat_horizon']
+    )
+    os.environ['POCSTIME'] = (next_sunset - 10 * u.second).isot
     assert pocs.goto_next_state()
     assert pocs.state == 'sleeping'
-    pocs.power_down()
+
+    assert pocs.goto_next_state()
+    assert pocs.state == 'ready'
+    assert pocs.next_state == 'calibrating'

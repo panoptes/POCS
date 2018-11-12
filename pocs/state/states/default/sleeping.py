@@ -19,4 +19,6 @@ def on_enter(event_data):
         # Sleep until dark.
         if (pocs.observatory.is_dark(horizon='flat') is False):
             pocs.logger.warning("Waiting until flat twilight")
-            pocs.wait_until_dark(horizon='flat')
+
+            # We don't check the safety here because we are already parked
+            pocs.wait_until_dark(horizon='flat', check_safety=False)
