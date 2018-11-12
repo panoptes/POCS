@@ -812,18 +812,12 @@ class Observatory(PanBase):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
 
-            self.logger.debug("Incrementing exposure count")
-            flat_obs.current_exp += 1
-
         # Add a bias exposure at beginning
         for cam_name in camera_list:
             exp_times[cam_name].insert(0, 0 * u.second)
 
             # Record how many exposures we took
             num_exposures = len(exp_times[cam_name])
-
-        # Reset to first exposure so we can loop through again taking darks
-        flat_obs.current_exp = 0
 
         if take_darks:
             # Take darks
@@ -866,8 +860,6 @@ class Observatory(PanBase):
                 while not all([info['event'].is_set() for info in camera_events.values()]):
                     self.logger.debug('Waiting for dark-field image')
                     time.sleep(1)
-
-                flat_obs.current_exp = i
 
 ##########################################################################
 # Private Methods
