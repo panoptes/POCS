@@ -12,10 +12,12 @@ def on_enter(event_data):
         pocs.logger.error("Failed to open the dome while entering state 'ready'")
         pocs.next_state = 'parking'
     else:
-        pocs.observatory.mount.unpark()
 
         if pocs.observatory.is_dark(horizon='flat') is False:
             pocs.say("Not dark enough yet, going to wait a little while.")
+
+            # TODO(wtgee) Not properly detecting park state so goes home first.
             pocs.wait_until_dark(horizon='flat', wait_position='park')
 
+        pocs.observatory.mount.unpark()
         pocs.next_state = 'calibrating'
