@@ -640,7 +640,7 @@ class Observatory(PanBase):
                          max_counts=12000,
                          target_adu_percentage=0.5,
                          initial_exptime=3.,
-                         max_exptime=60.,
+                         max_exptime=120.,
                          camera_list=None,
                          bias=2048,
                          max_num_exposures=10,
