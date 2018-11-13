@@ -126,6 +126,7 @@ def _parse_config(config):
             'longitude',
             'horizon',
             'flat_horizon',
+            'focus_horizon',
             'observe_horizon'
         ]:
             with suppress(KeyError):
