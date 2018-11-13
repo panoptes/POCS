@@ -16,9 +16,9 @@ def on_enter(event_data):
 
         pocs.say("Another successful night!")
 
-        # Sleep until dark.
+        # Sleep until dark. TODO(wtgee) Needs to check for morning
         if (pocs.observatory.is_dark(horizon='flat') is False):
             pocs.logger.warning("Waiting until flat twilight")
 
             # We don't check the safety here because we are already parked
-            pocs.wait_until_dark(horizon='flat', check_safety=False)
+            pocs.wait_until_dark(horizon='flat', check_safety=False, wait_position='park')

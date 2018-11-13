@@ -16,6 +16,6 @@ def on_enter(event_data):
 
         if pocs.observatory.is_dark(horizon='flat') is False:
             pocs.say("Not dark enough yet, going to wait a little while.")
-            pocs.wait_until_dark(horizon='flat')
+            pocs.wait_until_dark(horizon='flat', wait_position='park')
 
         pocs.next_state = 'calibrating'

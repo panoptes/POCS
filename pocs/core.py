@@ -468,6 +468,7 @@ class POCS(PanStateMachine, PanBase):
 # Convenience Methods
 ##################################################################################################
 
+
     def sleep(self, delay=2.5, with_status=True):
         """ Send POCS to sleep
 
@@ -577,7 +578,7 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             time.sleep(sleep_delay)
 
-    def wait_until_dark(self, horizon='observe', check_safety=True):
+    def wait_until_dark(self, horizon='observe', check_safety=True, wait_position='home'):
         """Waits until sun is below the given horizon.
 
         Sends the mount to the home position and waits for a True value to be
@@ -590,13 +591,18 @@ class POCS(PanStateMachine, PanBase):
             check_safety (bool, optional): If safety checks should be performed
                 while waiting, default True. Note that the only place this should
                 be false is in the `sleeping` state.
+            wait_position (str, optional): Where should the unit wait, default
+                'home', can also be 'park'. Note that any invalid entry will send
+                to 'home'.
 
         Returns:
             bool: If dark upon exit
         """
         while not self.observatory.is_dark(horizon=horizon):
-            if (self.observatory.mount.is_parked is False and
-                    self.observatory.mount.is_home is False):
+            if wait_position == 'park':
+                self.logger.warning("Sending mount to parking position to wait for dark")
+                self.observatory.mount.home_and_park()
+            else:
                 # Send the mount to home to wait
                 self.logger.warning("Sending mount to home to wait for dark")
                 self.observatory.mount.slew_to_home()
@@ -623,6 +629,7 @@ class POCS(PanStateMachine, PanBase):
 ##################################################################################################
 # Class Methods
 ##################################################################################################
+
 
     @classmethod
     def check_environment(cls):

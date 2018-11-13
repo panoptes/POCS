@@ -20,7 +20,7 @@ def on_enter(event_data):
     try:
         # Wait until dark enough to observe (will send to Home)
         pocs.say("Checking if it's dark enough to observe")
-        pocs.wait_until_dark(horizon='observe')
+        pocs.wait_until_dark(horizon='observe', wait_position='home')
         pocs.next_state = 'scheduling'
     except Exception as e:
         pocs.logger.warning("Problem waiting until darks: {}".format(e))

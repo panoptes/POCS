@@ -27,6 +27,7 @@ from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
+from pocs.utils import CountdownTimer
 from pocs.camera import AbstractCamera
 
 
@@ -697,16 +698,23 @@ class Observatory(PanBase):
         exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
 
         # Loop until conditions are met for flat-fielding
-        while True:
+        take_flats = True
+        slew_timer = CountdownTimer(5 * u.minute)
+        while take_flats:
             self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
             self.mount.set_target_coordinates(flat_obs.field)
             self.mount.slew_to_target()
 
-            while not self.mount.is_tracking:
+            # Slew to the flat-field (with 5 minute timeout)
+            slew_timer.restart()
+            while not self.mount.is_tracking and not slew_timer.expired():
                 self.logger.debug("Slewing to target")
-                time.sleep(2)
+                time.sleep(5)
+                self.status()
 
-            self.status()  # Seems to help with reading coords
+            # Make sure we safely arrive and not timed out
+            if slew_timer.expired() and not self.mount.is_tracking:
+                raise error.Timeout(f'Problem slewing to flat field.')  # pragma: no cover
 
             fits_headers = self.get_standard_headers(observation=flat_obs)
 
@@ -792,20 +800,20 @@ class Observatory(PanBase):
             # Stop flats if we are going on too long
             if any([len(t) - 1 >= max_num_exposures for t in exp_times.values()]):
                 self.logger.debug(f"Have max exposures ({max_num_exposures}), stopping.")
-                break
+                take_flats = False
 
             self.logger.debug("Checking for saturation on short exposure")
             if is_saturated and exp_times[cam_name][-1].value <= 2:
                 self.logger.debug("Saturated short exposure, waiting 60 seconds")
                 max_num_exposures += 1
                 time.sleep(60)
-                break
+                take_flats = False
 
             self.logger.debug("Checking for long exposures")
             # Stop flats if any time is greater than max
             if any([t[-1].value >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
-                break
+                take_flats = False
 
 
 ##########################################################################
