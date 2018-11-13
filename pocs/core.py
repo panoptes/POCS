@@ -468,7 +468,6 @@ class POCS(PanStateMachine, PanBase):
 # Convenience Methods
 ##################################################################################################
 
-
     def sleep(self, delay=2.5, with_status=True):
         """ Send POCS to sleep
 
@@ -601,7 +600,8 @@ class POCS(PanStateMachine, PanBase):
         while not self.observatory.is_dark(horizon=horizon):
             if wait_position == 'park':
                 self.logger.warning("Sending mount to parking position to wait for dark")
-                self.observatory.mount.home_and_park()
+                if not self.observatory.mount.is_parked:
+                    self.observatory.mount.home_and_park()
             else:
                 # Send the mount to home to wait
                 self.logger.warning("Sending mount to home to wait for dark")
@@ -629,7 +629,6 @@ class POCS(PanStateMachine, PanBase):
 ##################################################################################################
 # Class Methods
 ##################################################################################################
-
 
     @classmethod
     def check_environment(cls):
