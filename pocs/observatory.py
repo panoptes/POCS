@@ -143,6 +143,7 @@ class Observatory(PanBase):
 # Device Getters/Setters
 ##########################################################################
 
+
     def add_camera(self, cam_name, camera):
         """Add camera to list of cameras as cam_name.
 
@@ -644,8 +645,9 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            twilight_horizon = config_site.get(
-                'twilight_horizon', -18 * u.degree)
+            flat_horizon = config_site.get('flat_horizon', 0 * u.degree)
+            focus_horizon = config_site.get('focus_horizon', 0 * u.degree)
+            observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -656,7 +658,9 @@ class Observatory(PanBase):
                 'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon,
-                'twilight_horizon': twilight_horizon,
+                'flat_horizon': flat_horizon,
+                'focus_horizon': focus_horizon,
+                'observe_horizon': observe_horizon,
             }
             self.logger.debug("Location: {}".format(self.location))
 
