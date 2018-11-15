@@ -645,8 +645,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            flat_horizon = config_site.get('flat_horizon', 0 * u.degree)
-            focus_horizon = config_site.get('focus_horizon', 0 * u.degree)
+            flat_horizon = config_site.get('flat_horizon', -6 * u.degree)
+            focus_horizon = config_site.get('focus_horizon', -12 * u.degree)
             observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
 
             self.location = {
