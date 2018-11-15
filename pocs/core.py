@@ -276,7 +276,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self, no_warning=False):
+    def is_safe(self, no_warning=False, horizon='observe'):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -288,7 +288,8 @@ class POCS(PanStateMachine, PanBase):
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
-
+            horizon (str, optional): For night time check use given horizon,
+                default 'observe'.
         Returns:
             bool: Latest safety flag
 
@@ -306,7 +307,7 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values['ac_power'] = has_power
 
         # Check if night time
-        is_safe_values['is_dark'] = self.is_dark()
+        is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
@@ -326,19 +327,22 @@ class POCS(PanStateMachine, PanBase):
 
         return safe
 
-    def is_dark(self):
+    def is_dark(self, horizon='flat'):
         """Is it dark
 
         Checks whether it is dark at the location provided. This checks for the config
-        entry `location.horizon` or 18 degrees (astronomical twilight).
+        entry `location.flat_horizon` by default.
+
+        Args:
+            horizon (str, optional): Which horizon to use, 'flat' (default),
+                'focus', or 'observe'.
 
         Returns:
-            bool: Is night at location
-
+            bool: Is sun below horizon at location
         """
         # See if dark - we check this first because we want to know
         # the sun position even if using a simulator.
-        is_dark = self.observatory.is_dark
+        is_dark = self.observatory.is_dark(horizon=horizon)
 
         # Check simulator
         with suppress(KeyError):
@@ -349,7 +353,7 @@ class POCS(PanStateMachine, PanBase):
         return is_dark
 
     def is_weather_safe(self, stale=180):
-        """Determines whether current weather conditions are safe or not
+        """Determines whether current weather conditions are safe or not.
 
         Args:
             stale (int, optional): Number of seconds before record is stale, defaults to 180
