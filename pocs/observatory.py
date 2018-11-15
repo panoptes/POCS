@@ -145,7 +145,6 @@ class Observatory(PanBase):
 # Device Getters/Setters
 ##########################################################################
 
-
     def add_camera(self, cam_name, camera):
         """Add camera to list of cameras as cam_name.
 
