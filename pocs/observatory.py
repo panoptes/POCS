@@ -19,8 +19,8 @@ from pocs.images import Image
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import Altitude
-from pocs.scheduler import Observation
-from pocs.scheduler import Field
+from pocs.scheduler.observation import Observation
+from pocs.scheduler.field import Field
 from pocs.utils import current_time
 from pocs.utils import flatten_time
 from pocs.utils import altaz_to_radec
