@@ -665,36 +665,44 @@ class Observatory(PanBase):
             bias (int, optional): Default bias for the cameras.
             max_num_exposures (int, optional): Maximum number of flats to take.
         """
+        if camera_list is None:
+            camera_list = list(self.cameras.keys())
+
         target_adu = target_adu_percentage * (min_counts + max_counts)
+
+        # Create the observation
         flat_obs = self._create_flat_field_observation(
             which=which, alt=alt, az=az,
             initial_exptime=initial_exptime
         )
-        if camera_list is None:
-            camera_list = list(self.cameras.keys())
+
         # Setup initial exposure times
         exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
-        # Loop until conditions are met for flat-fielding
-        take_flats = True
+
         slew_timer = CountdownTimer(5 * u.minute)
-        while take_flats:
+
+        keep_taking_flats = True
+        while keep_taking_flats:
+            # Slew to the flat-field (with 5 minute timeout)
             self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
             self.mount.set_target_coordinates(flat_obs.field)
             self.mount.slew_to_target()
-            # Slew to the flat-field (with 5 minute timeout)
             slew_timer.restart()
             while not self.mount.is_tracking and not slew_timer.expired():
                 self.logger.debug("Slewing to target")
                 time.sleep(5)
                 self.status()
+
             # Make sure we safely arrive and not timed out
             if slew_timer.expired() and not self.mount.is_tracking:
                 raise error.Timeout(f'Problem slewing to flat field.')  # pragma: no cover
-            fits_headers = self.get_standard_headers(observation=flat_obs)
+
             start_time = current_time()
+            fits_headers = self.get_standard_headers(observation=flat_obs)
             fits_headers['start_time'] = flatten_time(start_time)
-            camera_events = dict()
+
             # Take the observations
+            camera_events = dict()
             for cam_name in camera_list:
                 camera = self.cameras[cam_name]
                 exp_time = exp_times[cam_name][-1].value
@@ -715,58 +723,74 @@ class Observatory(PanBase):
                     'event': camera_event,
                     'filename': filename,
                 }
+
             # Block until done exposing on all cameras
             while not all([info['event'].is_set() for info in camera_events.values()]):
                 self.logger.debug('Waiting for flat-field image')
                 time.sleep(1)
+
             # Check the counts for each image
             is_saturated = False
             for cam_name, info in camera_events.items():
+
+                # Make sure we can find the file
                 img_file = info['filename'].replace('.cr2', '.fits')
                 if not os.path.exists(img_file):
                     img_file = img_file.replace('.fits', '.fits.fz')
                     if not os.path.exists(img_file):  # pragma: no cover
                         self.logger.warning(f"No flat file {img_file} found, skipping")
                         continue
+
                 self.logger.debug("Checking counts for {}".format(img_file))
+
                 # Get the bias subtracted data
                 data = fits.getdata(img_file) - bias
+
                 # Simple mean works just as well as sigma_clipping and is quicker for RGB
                 counts = data.mean()
                 self.logger.debug("Counts: {:.02f}".format(counts))
+
+                # Check we are above minimum counts
                 if counts < min_counts:
                     self.logger.debug("Counts are too low, flat should be discarded")
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
-                # If we are saturating then wait a bit and redo
+
+                # Check we are below maximum counts
                 if counts >= max_counts:
                     self.logger.debug("Image is saturated")
                     is_saturated = True
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
+
+                # Get suggested exposure time
                 elapsed_time = (current_time() - start_time).sec
                 self.logger.debug("Elapsed time: {:.02f}".format(elapsed_time))
-                # Get suggested exposure time
                 previous_exp_time = exp_times[cam_name][-1].value
+
                 # TODO(wtgee) Document this better
                 exptime = int(previous_exp_time * (target_adu / counts) *
                               (2.0 ** (elapsed_time / 180.0)) + 0.5)
+
                 self.logger.debug(f"Suggested exp_time for {cam_name}: {exptime:.02f}")
                 exp_times[cam_name].append(exptime * u.second)
-            self.logger.debug("Checking for too many exposures")
+
             # Stop flats if we are going on too long
+            self.logger.debug("Checking for too many exposures")
             if any([len(t) - 1 >= max_num_exposures for t in exp_times.values()]):
                 self.logger.debug(f"Have max exposures ({max_num_exposures}), stopping.")
-                take_flats = False
+                keep_taking_flats = False
+
+            # Stop flats if any time is greater than max
+            self.logger.debug("Checking for long exposures")
+            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
+                self.logger.debug("Exposure times greater than max, stopping flat fields")
+                keep_taking_flats = False
+
             self.logger.debug("Checking for saturation on short exposure")
             if is_saturated and exp_times[cam_name][-1].value <= 2:
                 self.logger.debug("Saturated short exposure, waiting 60 seconds")
                 max_num_exposures += 1
                 time.sleep(60)
-                take_flats = False
-            self.logger.debug("Checking for long exposures")
-            # Stop flats if any time is greater than max
-            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
-                self.logger.debug("Exposure times greater than max, stopping flat fields")
-                take_flats = False
+                keep_taking_flats = False
 
 ##########################################################################
 # Private Methods
