@@ -379,3 +379,18 @@ def test_operate_dome(config_with_simulated_dome):
     assert observatory.open_dome()
     assert observatory.dome.is_open
     assert not observatory.dome.is_closed
+
+
+def test_create_flat_field(observatory):
+
+    flat0 = observatory._create_flat_field_observation(flat_time=Time('2016-09-09 22:00:00'))
+    assert flat0.field.dec.value == pytest.approx(8.898, rel=1e-2)
+
+    alt = observatory.config['flat_field']['evening']['alt']
+    az = observatory.config['flat_field']['evening']['az']
+
+    os.environ['POCSTIME'] = '2016-09-09 22:00:00'
+    flat1 = observatory._create_flat_field_observation(alt=alt, az=az)
+
+    assert flat1.field.ra.value == pytest.approx(flat0.field.ra.value, rel=1e-2)
+    assert flat1.field.dec.value == pytest.approx(flat0.field.dec.value, rel=1e-2)
