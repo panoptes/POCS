@@ -5,7 +5,6 @@
 # of this project.
 
 import copy
-import os
 import pytest
 
 import pocs.base

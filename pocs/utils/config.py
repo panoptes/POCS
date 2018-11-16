@@ -1,5 +1,6 @@
 import os
 import yaml
+from contextlib import suppress
 
 from astropy import units as u
 from pocs import hardware
@@ -120,8 +121,15 @@ def _parse_config(config):
     if 'location' in config:
         loc = config['location']
 
-        for angle in ['latitude', 'longitude', 'horizon', 'twilight_horizon']:
-            if angle in loc:
+        for angle in [
+            'latitude',
+            'longitude',
+            'horizon',
+            'flat_horizon',
+            'focus_horizon',
+            'observe_horizon'
+        ]:
+            with suppress(KeyError):
                 loc[angle] = loc[angle] * u.degree
 
         loc['elevation'] = loc.get('elevation', 0) * u.meter
