@@ -290,7 +290,6 @@ class POCS(PanStateMachine, PanBase):
                 defaults to False.
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
-
         Returns:
             bool: Latest safety flag
 
@@ -328,17 +327,18 @@ class POCS(PanStateMachine, PanBase):
 
         return safe
 
-    def is_dark(self, horizon='flat'):
-        """Is it dark.
+    def is_dark(self, horizon='observe'):
+        """Is it dark
 
-        Checks whether it is dark at the location provided. This checks for the
-        config entry `location.flat_horizon`.
+        Checks whether it is dark at the location provided. This checks for the config
+        entry `location.flat_horizon` by default.
 
         Args:
-            horizon (str, optional): Which horizon to use, 'flat' or 'observe'.
+            horizon (str, optional): Which horizon to use, 'flat''focus', or
+                'observe' (default).
 
         Returns:
-            bool: Is night at location.
+            bool: Is sun below horizon at location
         """
         # See if dark - we check this first because we want to know
         # the sun position even if using a simulator.

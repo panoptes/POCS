@@ -75,25 +75,30 @@ class Observatory(PanBase):
         self.logger.info('\t Observatory initialized')
 
 ##########################################################################
-# Helper Methods
+# Helper methods
 ##########################################################################
 
     def is_dark(self, horizon='observe', at_time=None):
+        """If sun is below horizon.
+
+        Args:
+            horizon (str, optional): Which horizon to use, 'flat', 'focus', or
+                'observe' (default).
+            at_time (None or `astropy.time.Time`, optional): Time at which to
+                check if dark, defaults to now.
+        """
         if at_time is None:
             at_time = current_time()
-
         try:
             horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
         except KeyError:
             self.logger.info(f"Can't find {horizon}_horizon, using -18°")
             horizon_deg = -18 * u.degree
-
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
             sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
-            self.logger.debug("Sun {:.02f} > {} [{}]".format(
-                sun_pos, horizon_deg, horizon))
+            self.logger.debug(f"Sun {sun_pos:.02f} > {horizon_deg} [{horizon}]")
 
         return is_dark
 
@@ -851,7 +856,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            flat_horizon = config_site.get('flat_horizon', 0 * u.degree)
+            flat_horizon = config_site.get('flat_horizon', -6 * u.degree)
+            focus_horizon = config_site.get('focus_horizon', -12 * u.degree)
             observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
 
             self.location = {
@@ -864,6 +870,7 @@ class Observatory(PanBase):
                 'pressure': pressure,
                 'horizon': horizon,
                 'flat_horizon': flat_horizon,
+                'focus_horizon': focus_horizon,
                 'observe_horizon': observe_horizon,
             }
             self.logger.debug("Location: {}".format(self.location))

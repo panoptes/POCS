@@ -160,17 +160,14 @@ def test_is_dark(observatory):
 
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
     assert observatory.is_dark() is False
-
+    assert observatory.is_dark() is False
     assert observatory.is_dark(at_time=Time('2016-08-13 10:00:00')) is True
-
     os.environ['POCSTIME'] = '2016-09-09 04:00:00'
     assert observatory.is_dark(horizon='flat') is False
-
     os.environ['POCSTIME'] = '2016-09-09 05:00:00'
     assert observatory.is_dark(horizon='flat') is True
     assert observatory.is_dark(horizon='observe') is False
     assert observatory.is_dark(horizon='invalid-defaults-to-observe') is False
-
     os.environ['POCSTIME'] = '2016-09-09 09:00:00'
     assert observatory.is_dark(horizon='observe') is True
     assert observatory.is_dark(horizon='invalid-defaults-to-observe') is True
