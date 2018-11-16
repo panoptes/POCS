@@ -148,6 +148,10 @@ class PocsShell(Cmd):
         """Setup and initialize a POCS instance."""
         simulator = listify(arg[0].split())
 
+        # TODO(wtgee) Incorporate real power readings
+        if 'power' not in simulator:
+            simulator.append('power')
+
         if 'POCSTIME' in os.environ:
             print_warning("Clearing POCSTIME variable")
             del os.environ['POCSTIME']
