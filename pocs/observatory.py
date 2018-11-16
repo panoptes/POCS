@@ -68,7 +68,7 @@ class Observatory(PanBase):
         self.logger.info('\t Observatory initialized')
 
 ##########################################################################
-# Property methods
+# Helper methods
 ##########################################################################
 
     def is_dark(self, horizon='observe', at_time=None):
@@ -96,7 +96,7 @@ class Observatory(PanBase):
         return is_dark
 
 ##########################################################################
-# Helper methods
+# Properties
 ##########################################################################
 
     @property
