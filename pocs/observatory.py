@@ -670,6 +670,13 @@ class Observatory(PanBase):
 
         target_adu = target_adu_percentage * (min_counts + max_counts)
 
+        # Get the sun direction multiplier used to determine if exposure
+        # times are increasing or decreasing
+        if which == 'evening':
+            sun_direction = 1
+        else:
+            sun_direction = -1
+
         # Create the observation
         flat_obs = self._create_flat_field_observation(
             which=which, alt=alt, az=az,
@@ -768,7 +775,7 @@ class Observatory(PanBase):
 
                 # TODO(wtgee) Document this better
                 exptime = int(previous_exp_time * (target_adu / counts) *
-                              (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                              (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5)
 
                 self.logger.debug(f"Suggested exp_time for {cam_name}: {exptime:.02f}")
                 exp_times[cam_name].append(exptime * u.second)
