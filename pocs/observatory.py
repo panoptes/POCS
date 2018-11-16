@@ -19,8 +19,11 @@ from pocs.images import Image
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import Altitude
+from pocs.scheduler import Observation
+from pocs.scheduler import Field
 from pocs.utils import current_time
 from pocs.utils import flatten_time
+from pocs.utils import altaz_to_radec
 from pocs.utils import CountdownTimer
 from pocs.utils import error
 from pocs.utils import horizon as horizon_utils
@@ -923,3 +926,51 @@ class Observatory(PanBase):
         else:
             raise error.NotFound(
                 msg="Fields file does not exist: {}".format(fields_file))
+
+    def _create_flat_field_observation(self,
+                                       which='evening',
+                                       alt=None,
+                                       az=None,
+                                       field_name='Evening Flat',
+                                       flat_time=None,
+                                       initial_exptime=5):
+        """Small convenince wrapper.
+        Args:
+            which (str, optional): Which flat field to take, 'evening' or
+                'morning'. Will look up flat-field information from config file.
+                If `alt` and `az` are specified than the config entry is ignored.
+            alt (float, optional): Altitude desired, in degrees.
+            az (float, optional): Azimuth desired, in degrees.
+            field_name (str, optional): Name of the field, which will also be directory
+                name. Note that it is probably best to pass the camera.uid as name.
+            flat_time (`astropy.time.Time`, optional): The time at which the flats
+                will be taken, default `now`.
+            initial_exptime (int, optional): Initial exptime in seconds, default 5.
+        Returns:
+            `pocs.scheduler.Observation`: Information about the flat-field.
+        """
+        self.logger.debug("Creating flat-field observation")
+        # Get an Alt and Az from the config
+        if alt is None or az is None:
+            flat_config = self.config['flat_field'][which]
+            alt = alt or flat_config['alt']
+            az = az or flat_config['az']
+        if flat_time is None:
+            flat_time = current_time()
+        # Construct RA/Dec coords from the Alt Az
+        flat_coords = altaz_to_radec(
+            alt=alt,
+            az=az,
+            location=self.earth_location,
+            obstime=flat_time)
+        field = Field(field_name, flat_coords)
+        flat_obs = Observation(field, exp_time=initial_exptime * u.second)
+        # Note different 'flat' concepts
+        flat_obs.seq_time = flatten_time(flat_time)
+        # Setup the directory to store images
+        flat_obs._directory = os.path.join(
+            self.config['directories']['images'],
+            'flats',
+        )
+        self.logger.debug("Flat-field observation: {}".format(flat_obs))
+        return flat_obs
