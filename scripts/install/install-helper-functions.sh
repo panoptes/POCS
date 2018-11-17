@@ -54,6 +54,23 @@ function safe_which() {
 # Does the first arg start with the second arg?
 function beginswith() { case "${1}" in "${2}"*) true;; *) false;; esac; }
 
+# Match a line that looks like this:
+#     8.8.8.8 via 192.168.86.1 dev wlp3s0 src 192.168.86.36 uid 1000
+# And extract either the "via" or the "src" address.
+# $1 (first and only arge) should be "via" or "src".
+function sbin_ip_route_addr() {
+  local -r pattern="${1}"
+  local cmd
+  if [ -x "$(safe_which ip)" ] ; then
+    cmd='ip'
+  elif [ -x /sbin/ip ] ; then
+    cmd='/sbin/ip'
+  else
+    return 0
+  fi
+  "${cmd}" route get 8.8.8.8 | awk -F" ${pattern} " 'NR==1{split($2,a," ");print a[1]}'
+}
+
 #-------------------------------------------------------------------------------
 # Helpers for finding the IP gateway of this device.
 
@@ -86,15 +103,7 @@ function proc_net_route_gateway() {
 # address of the host. Requires the iproute2 package be installed, which it
 # is not by default in an ubuntu-18.04 docker image.
 function sbin_ip_gateway() {
-  local cmd
-  if [ -x "$(safe_which ip)" ] ; then
-    cmd='ip'
-  elif [ -x /sbin/ip ] ; then
-    cmd='/sbin/ip'
-  else
-    return 0
-  fi
-  "${cmd}" route get 8.8.8.8 | awk -F"via " 'NR==1{split($2,a," ");print a[1]}'
+  sbin_ip_route_addr via
 }
 
 # Try all methods, output all gateway addresses (there could be duplicates).
@@ -120,21 +129,13 @@ function hostname_addresses() {
 # Requires the iproute2 package be installed, which it is not by default in an
 # ubuntu-18.04 docker image.
 function sbin_ip_host() {
-  local cmd
-  if [ -x "$(safe_which ip)" ] ; then
-    cmd='ip'
-  elif [ -x /sbin/ip ] ; then
-    cmd='/sbin/ip'
-  else
-    return 0
-  fi
-  "${cmd}" route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}'
+  sbin_ip_route_addr src
 }
 
 # Try all methods, output all host addresses (there could be duplicates).
 function get_host_ips() {
   hostname_addresses
-  sbin_ip_gateway
+  sbin_ip_host
 }
 
 #-------------------------------------------------------------------------------
