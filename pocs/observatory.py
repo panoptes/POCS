@@ -152,6 +152,7 @@ class Observatory(PanBase):
 # Device Getters/Setters
 ##########################################################################
 
+
     def add_camera(self, cam_name, camera):
         """Add camera to list of cameras as cam_name.
 
@@ -677,15 +678,16 @@ class Observatory(PanBase):
         else:
             sun_direction = -1
 
+        # Setup initial exposure times
+        exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
+
         # Create the observation
         flat_obs = self._create_flat_field_observation(
             which=which, alt=alt, az=az,
             initial_exptime=initial_exptime
         )
 
-        # Setup initial exposure times
-        exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
-
+        # A countdown timeout for the mount slewing
         slew_timer = CountdownTimer(5 * u.minute)
 
         keep_taking_flats = True
