@@ -660,7 +660,7 @@ class Observatory(PanBase):
                 that counts are close to: target * (`min_counts` + `max_counts`). Defaults
                 to 0.5.
             initial_exptime (float, optional): Start the flat fields with this exposure
-                time, default 1 second.
+                time, default 3 seconds.
             max_exptime (float, optional): Maximum exposure time before stopping.
             camera_list (list, optional): List of cameras to use for flat-fielding.
             bias (int, optional): Default bias for the cameras.
@@ -672,27 +672,27 @@ class Observatory(PanBase):
         target_adu = target_adu_percentage * (min_counts + max_counts)
 
         # Get the sun direction multiplier used to determine if exposure
-        # times are increasing or decreasing
+        # times are increasing or decreasing.
         if which == 'evening':
             sun_direction = 1
         else:
             sun_direction = -1
 
-        # Setup initial exposure times
+        # Setup initial exposure times.
         exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
 
-        # Create the observation
+        # Create the observation.
         flat_obs = self._create_flat_field_observation(
             which=which, alt=alt, az=az,
             initial_exptime=initial_exptime
         )
 
-        # A countdown timeout for the mount slewing
+        # A countdown timeout for the mount slewing.
         slew_timer = CountdownTimer(5 * u.minute)
 
         keep_taking_flats = True
         while keep_taking_flats:
-            # Slew to the flat-field (with 5 minute timeout)
+            # Slew to the flat-field (with 5 minute timeout).
             self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
             self.mount.set_target_coordinates(flat_obs.field)
             self.mount.slew_to_target()
@@ -702,7 +702,7 @@ class Observatory(PanBase):
                 time.sleep(5)
                 self.status()
 
-            # Make sure we safely arrive and not timed out
+            # Make sure we safely arrive and not timed out.
             if slew_timer.expired() and not self.mount.is_tracking:
                 raise error.Timeout(f'Problem slewing to flat field.')  # pragma: no cover
 
@@ -710,7 +710,7 @@ class Observatory(PanBase):
             fits_headers = self.get_standard_headers(observation=flat_obs)
             fits_headers['start_time'] = flatten_time(start_time)
 
-            # Take the observations
+            # Take the observations.
             camera_events = dict()
             for cam_name in camera_list:
                 camera = self.cameras[cam_name]
@@ -721,7 +721,7 @@ class Observatory(PanBase):
                     flat_obs.seq_time,
                     f'flat_{flat_obs.current_exp_num:02d}.{camera.file_extension}'
                 ))
-                # Take picture and get event
+                # Take picture and get event.
                 camera_event = camera.take_observation(
                     flat_obs,
                     fits_headers,
@@ -738,11 +738,11 @@ class Observatory(PanBase):
                 self.logger.debug('Waiting for flat-field image')
                 time.sleep(1)
 
-            # Check the counts for each image
+            # Check the counts for each image.
             is_saturated = False
             for cam_name, info in camera_events.items():
 
-                # Make sure we can find the file
+                # Make sure we can find the file.
                 img_file = info['filename'].replace('.cr2', '.fits')
                 if not os.path.exists(img_file):
                     img_file = img_file.replace('.fits', '.fits.fz')
@@ -752,43 +752,43 @@ class Observatory(PanBase):
 
                 self.logger.debug("Checking counts for {}".format(img_file))
 
-                # Get the bias subtracted data
+                # Get the bias subtracted data.
                 data = fits.getdata(img_file) - bias
 
-                # Simple mean works just as well as sigma_clipping and is quicker for RGB
+                # Simple mean works just as well as sigma_clipping and is quicker for RGB.
                 counts = data.mean()
                 self.logger.debug("Counts: {:.02f}".format(counts))
 
-                # Check we are above minimum counts
+                # Check we are above minimum counts.
                 if counts < min_counts:
                     self.logger.debug("Counts are too low, flat should be discarded")
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
 
-                # Check we are below maximum counts
+                # Check we are below maximum counts.
                 if counts >= max_counts:
                     self.logger.debug("Image is saturated")
                     is_saturated = True
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
 
-                # Get suggested exposure time
+                # Get suggested exposure time.
                 elapsed_time = (current_time() - start_time).sec
                 self.logger.debug("Elapsed time: {:.02f}".format(elapsed_time))
                 previous_exp_time = exp_times[cam_name][-1].value
 
-                # TODO(wtgee) Document this better
+                # TODO(wtgee) Document this better.
                 exptime = int(previous_exp_time * (target_adu / counts) *
                               (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5)
 
                 self.logger.debug(f"Suggested exp_time for {cam_name}: {exptime:.02f}")
                 exp_times[cam_name].append(exptime * u.second)
 
-            # Stop flats if we are going on too long
+            # Stop flats if we are going on too long.
             self.logger.debug("Checking for too many exposures")
             if any([len(t) - 1 >= max_num_exposures for t in exp_times.values()]):
                 self.logger.debug(f"Have max exposures ({max_num_exposures}), stopping.")
                 keep_taking_flats = False
 
-            # Stop flats if any time is greater than max
+            # Stop flats if any time is greater than max.
             self.logger.debug("Checking for long exposures")
             if any([t[-1].value >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
