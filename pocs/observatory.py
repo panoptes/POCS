@@ -967,7 +967,12 @@ class Observatory(PanBase):
                                        field_name='Evening Flat',
                                        flat_time=None,
                                        initial_exptime=5):
-        """Small convenince wrapper.
+        """Small convenince wrapper to create a flat-field Observation.
+
+        Flat-fields are specified by AltAz coordinates so this method is just a helper
+        to look up the current RA-Dec coordaintes based on the unit's location and
+        the current time (or `flat_time` if provided).
+
         Args:
             which (str, optional): Which flat field to take, 'evening' or
                 'morning'. Will look up flat-field information from config file.
