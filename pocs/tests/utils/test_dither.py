@@ -81,16 +81,20 @@ def test_dice9_random():
     assert len(positions) == 12
     # postion 0 should be the base position
     assert positions[0].separation(base) < Angle(30 * 2**0.5 * u.arcsecond)
+
+    angle_0 = Angle(0 * u.degree).radian
+    angle_05 = Angle(0.5 * u.degree).radian
+    angle_30 = Angle(30 * u.arcsecond).radian
+    position_1_offset = base.spherical_offsets_to(positions[1])
+    position_3_offset = base.spherical_offsets_to(positions[3])
+
     # Position 1 should be 30 arcminute offset from base, in declination direction only
-    assert base.spherical_offsets_to(positions[1])[0].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
-    assert base.spherical_offsets_to(positions[1])[1].radian == pytest.approx(Angle(0.5 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
+    assert position_1_offset[0].radian == pytest.approx(angle_0, abs=angle_30)
+    assert position_1_offset[1].radian == pytest.approx(angle_05, abs=angle_30)
+
     # Position 3 should be 30 arcminute offset from base in RA only.
-    assert base.spherical_offsets_to(positions[3])[0].radian == pytest.approx(Angle(0.5 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
-    assert base.spherical_offsets_to(positions[3])[1].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
+    assert position_3_offset[0].radian == pytest.approx(angle_05, abs=angle_30)
+    assert position_3_offset[1].radian == pytest.approx(angle_0, abs=angle_30)
 
 
 def test_random():
@@ -102,15 +106,16 @@ def test_random():
     assert isinstance(positions, SkyCoord)
     assert len(positions) == 12
 
-    assert base.spherical_offsets_to(positions[0])[0].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
-    assert base.spherical_offsets_to(positions[0])[1].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
+    angle_0 = Angle(0 * u.degree).radian
+    angle_30 = Angle(30 * u.arcsecond).radian
+    position_0_offset = base.spherical_offsets_to(positions[0])
+    position_1_offset = base.spherical_offsets_to(positions[1])
 
-    assert base.spherical_offsets_to(positions[1])[0].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
-    assert base.spherical_offsets_to(positions[1])[1].radian == pytest.approx(Angle(0 * u.degree).radian,
-                                                                              abs=Angle(30 * u.arcsecond).radian)
+    assert position_0_offset[0].radian == pytest.approx(angle_0, abs=angle_30)
+    assert position_0_offset[1].radian == pytest.approx(angle_0, abs=angle_30)
+
+    assert position_1_offset[0].radian == pytest.approx(angle_0, abs=angle_30)
+    assert position_1_offset[1].radian == pytest.approx(angle_0, abs=angle_30)
 
 
 def test_dice5():
