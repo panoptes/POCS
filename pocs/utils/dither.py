@@ -3,6 +3,10 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import SkyOffsetFrame
 from astropy.coordinates import ICRS
+from astropy.wcs import WCS
+
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 # Pattern for dice 9 3x3 grid (sequence of (RA offset, dec offset) pairs)
 dice9 = ((0, 0),
@@ -29,7 +33,7 @@ def get_dither_positions(base_position,
                          pattern=None,
                          pattern_offset=30 * u.arcminute,
                          random_offset=None):
-    """Create a a dithering patter for a given position.
+    """Create a a dithering pattern for a given position.
 
     Given a base position creates a SkyCoord list of dithered sky positions,
     applying a dither pattern and/or random dither offsets.
@@ -51,7 +55,7 @@ def get_dither_positions(base_position,
             type passed instead it will be assumed to be in arcseconds.
 
     Returns:
-        SkyCoord: list of n_positions dithered sky positions
+        SkyCoord: list of n_positions dithered sky positions.
 
     Raises:
         ValueError: Raised if the `base_position` is not a valid `astropy.coordinates.SkyCoord`.
@@ -93,3 +97,43 @@ def get_dither_positions(base_position,
     dither_coords = SkyCoord(positions)
 
     return dither_coords
+
+
+def plot_dither_pattern(base_position,
+                        dither_positions):
+    """Utility function to generate a plot of the dither pattern.
+
+    Args:
+        base_position (SkyCoord or compatible): base position for the dither pattern,
+            either a SkyCoord or an object that can be converted to one by the SkyCoord
+            constructor (e.g. string).
+        pattern (sequence of 2-tuples, optional): sequence of (RA offset, dec offset)
+            tuples, in units of the pattern_offset. If given pattern_offset must also
+            be specified.
+
+    Returns:
+        `matplotlib.figure.Figure`: The matplotlib plot.
+    """
+    dummy_wcs = WCS(naxis=2)
+    dummy_wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+    dummy_wcs.wcs.crval = [base_position.ra.value, base_position.dec.value]
+
+    fig = Figure()
+    FigureCanvas(fig)
+    ax = fig.add_subplot(111, projection=dummy_wcs)
+
+    ax.plot(dither_positions.ra, dither_positions.dec, 'b*-', transform=ax.get_transform('world'))
+    ax.plot(base_position.ra.value, base_position.dec.value,
+            'rx', transform=ax.get_transform('world'))
+
+    ax.set_aspect('equal', adjustable='datalim')
+    ax.coords[0].set_axislabel('Right Ascension')
+    ax.coords[0].set_major_formatter('hh:mm')
+    ax.coords[1].set_axislabel('Declination')
+    ax.coords[1].set_major_formatter('dd:mm')
+    ax.grid()
+
+    ax.set_title(base_position.to_string('hmsdms'))
+    fig.set_size_inches(8, 8.5)
+
+    return fig
