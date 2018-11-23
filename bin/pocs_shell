@@ -26,6 +26,7 @@ from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.utils.images import polar_alignment as polar_alignment_utils
 from pocs.utils import listify
+from pocs.utils import dither
 from pocs.utils.database import PanDB
 from pocs.utils.messaging import PanMessaging
 
@@ -471,6 +472,26 @@ Hardware names: {}   (or all for all hardware)'''.format(
             self.pocs.say("No longer listening to PAWS")
             pass
 
+    def do_take_flat_fields(self, *arg):
+        """Take flat fields."""
+        args, kwargs = parse_options(*arg)
+
+        if self.pocs is None:
+            print_warning('Please run `setup_pocs` before trying to run')
+            return
+
+        if self.pocs.observatory.mount.is_parked:
+            print_warning('Mount is parked. To unpark run `unpark`')
+            return False
+
+        try:
+            print_info('Starting flat fields')
+            self.pocs.observatory.take_flat_fields(*args, **kwargs)
+        except Exception as e:
+            print_warning('Problem taking flats: {}'.format(e))
+        finally:
+            print_info('Flat fields complete, slewing to home')
+            self.do_go_home()
 
 ##########################################################################
 # Private Methods
@@ -479,6 +500,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 ##########################################################################
 # Utility Methods
 ##########################################################################
+
 
 def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
