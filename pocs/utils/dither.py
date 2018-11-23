@@ -5,6 +5,8 @@ from astropy.coordinates import SkyOffsetFrame
 from astropy.coordinates import ICRS
 from astropy.wcs import WCS
 
+from astroplan.plots import plot_finder_image
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -99,20 +101,25 @@ def get_dither_positions(base_position,
     return dither_coords
 
 
-def plot_dither_pattern(base_position,
-                        dither_positions):
+def plot_dither_pattern(base_position, dither_positions, include_finder_chart=False):
     """Utility function to generate a plot of the dither pattern.
 
     Args:
         base_position (SkyCoord or compatible): base position for the dither pattern,
             either a SkyCoord or an object that can be converted to one by the SkyCoord
             constructor (e.g. string).
-        pattern (sequence of 2-tuples, optional): sequence of (RA offset, dec offset)
-            tuples, in units of the pattern_offset. If given pattern_offset must also
-            be specified.
+        dither_positions (SkyCoord): SkyCoord positions to be plotted as generated from
+            `get_dither_positions`.
+        include_finder_chart (bool, optional): If the plot should include a finder
+            chart as background, default False.
 
     Returns:
         `matplotlib.figure.Figure`: The matplotlib plot.
+
+    Deleted Parameters:
+        pattern (sequence of 2-tuples, optional): sequence of (RA offset, dec offset)
+            tuples, in units of the pattern_offset. If given pattern_offset must also
+            be specified.
     """
     dummy_wcs = WCS(naxis=2)
     dummy_wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
