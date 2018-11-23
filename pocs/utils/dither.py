@@ -108,11 +108,6 @@ def plot_dither_pattern(dither_positions):
 
     Returns:
         `matplotlib.figure.Figure`: The matplotlib plot.
-
-    Deleted Parameters:
-        pattern (sequence of 2-tuples, optional): sequence of (RA offset, dec offset)
-            tuples, in units of the pattern_offset. If given pattern_offset must also
-            be specified.
     """
     fig = Figure()
     FigureCanvas(fig)
