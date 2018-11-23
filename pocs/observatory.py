@@ -630,7 +630,7 @@ class Observatory(PanBase):
                          camera_list=None,
                          bias=2048,
                          max_num_exposures=10,
-                         ):
+                         ): # pragma: no cover
         """Take flat fields.
         This method will slew the mount to the given AltAz coordinates(which
         should be roughly opposite of the setting sun) and then begin the flat-field
