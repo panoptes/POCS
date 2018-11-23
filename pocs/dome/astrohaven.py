@@ -7,38 +7,35 @@ from pocs.dome import abstract_serial_dome
 
 
 class Protocol:
-    # yapf: disable
     # Status codes, produced when not responding to an input. They are oriented towards
     # reporting whether the two shutters are fully closed.
     BOTH_CLOSED = '0'  # Both A and B shutters are fully closed.
     A_IS_CLOSED = '1'  # Only shutter A is fully closed.
     B_IS_CLOSED = '2'  # Only shutter B is fully closed.
-    BOTH_OPEN   = '3'  # Really means both NOT fully closed.
+    BOTH_OPEN = '3'  # Really means both NOT fully closed.
 
     # Status codes produced by the dome when not responding to a movement command.
     STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)
 
     # Limit responses, when the limit has been reached on a direction of movement.
-    A_OPEN_LIMIT  = 'x'  # Response to asking for A to open, and being at open limit.
+    A_OPEN_LIMIT = 'x'  # Response to asking for A to open, and being at open limit.
     A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit.
 
-    B_OPEN_LIMIT  = 'y'  # Response to asking for B to open, and being at open limit.
+    B_OPEN_LIMIT = 'y'  # Response to asking for B to open, and being at open limit.
     B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit.
 
     # Command codes, echoed while happening.
     CLOSE_A = 'A'
-    OPEN_A  = 'a'
+    OPEN_A = 'a'
 
     CLOSE_B = 'B'
-    OPEN_B  = 'b'
+    OPEN_B = 'b'
 
     # These codes are documented for an 18' dome, but appear
     # not to work with the 7' domes we have access to.
-    OPEN_BOTH =  'O'
+    OPEN_BOTH = 'O'
     CLOSE_BOTH = 'C'
-    RESET =      'R'
-
-    # yapf: enable
+    RESET = 'R'
 
     @classmethod
     def code_to_string(cls, code):
