@@ -17,23 +17,20 @@ class AbstractSerialDome(dome.AbstractDome):
         super().__init__(*args, **kwargs)
 
         # Get config info, e.g. which port (e.g. /dev/ttyUSB123) should we use?
-        # TODO(jamessynge): Switch to passing configuration of serial port in as a sub-section
-        # of the dome config in the YAML. That way we don't intermingle serial settings and
-        # any other settings required.
-        cfg = self._dome_config
-        self._port = cfg.get('port')
-        if not self._port:
-            msg = 'No port specified in the config for dome: {}'.format(cfg)
+        serial_config = self._dome_config.get('serial', {})
+        if not isinstance(serial_config, dict):
+            msg = 'No serial device parameters found in the dome config: {}'.format(
+                self._dome_config)
             self.logger.error(msg)
             raise error.DomeNotFound(msg=msg)
-
-        baudrate = int(cfg.get('baudrate', 9600))
 
         # Setup our serial connection to the given port.
         self.serial = None
         try:
-            self.serial = rs232.SerialData(port=self._port, baudrate=baudrate)
+            self.serial = rs232.SerialData(**serial_config)
         except Exception as err:
+            self.logger.error('Failed to create dome serial device: {}'.format(err))
+            self.logger.error('Dome config: {}'.format(self._dome_config))
             raise error.DomeNotFound(err)
 
     def __del__(self):
@@ -64,8 +61,7 @@ class AbstractSerialDome(dome.AbstractDome):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning(
-                    'Could not create serial connection to dome\n{}'.format(err))
+                self.logger.warning('Could not create serial connection to dome\n{}'.format(err))
         else:
             self.logger.debug('Already connected to dome')
 

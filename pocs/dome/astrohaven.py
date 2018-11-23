@@ -7,37 +7,76 @@ from pocs.dome import abstract_serial_dome
 
 
 class Protocol:
+    # yapf: disable
     # Status codes, produced when not responding to an input. They are oriented towards
     # reporting whether the two shutters are fully closed.
     BOTH_CLOSED = '0'  # Both A and B shutters are fully closed.
-
     A_IS_CLOSED = '1'  # Only shutter A is fully closed.
     B_IS_CLOSED = '2'  # Only shutter B is fully closed.
-
-    BOTH_OPEN = '3'    # Really means both NOT fully closed.
+    BOTH_OPEN   = '3'  # Really means both NOT fully closed.
 
     # Status codes produced by the dome when not responding to a movement command.
     STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)
 
     # Limit responses, when the limit has been reached on a direction of movement.
-    A_OPEN_LIMIT = 'x'  # Response to asking for A to open, and being at open limit
-    A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit
+    A_OPEN_LIMIT  = 'x'  # Response to asking for A to open, and being at open limit.
+    A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit.
 
-    B_OPEN_LIMIT = 'y'  # Response to asking for B to open, and being at open limit
-    B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit
+    B_OPEN_LIMIT  = 'y'  # Response to asking for B to open, and being at open limit.
+    B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit.
 
-    # Command codes, echoed while happening
+    # Command codes, echoed while happening.
     CLOSE_A = 'A'
-    OPEN_A = 'a'
+    OPEN_A  = 'a'
 
     CLOSE_B = 'B'
-    OPEN_B = 'b'
+    OPEN_B  = 'b'
 
-    # These codes are documented for an 18' dome, but appear not to work with the 7' domes
-    # we have access to.
-    OPEN_BOTH = 'O'
+    # These codes are documented for an 18' dome, but appear
+    # not to work with the 7' domes we have access to.
+    OPEN_BOTH =  'O'
     CLOSE_BOTH = 'C'
-    RESET = 'R'
+    RESET =      'R'
+
+    # yapf: enable
+
+    @classmethod
+    def code_to_string(cls, code):
+        if code == cls.BOTH_CLOSED:
+            return 'Both sides closed'
+        if code == cls.A_IS_CLOSED:
+            return 'Side A closed, side B open'
+        if code == cls.B_IS_CLOSED:
+            return 'Side A open, side B closed'
+        if code == cls.BOTH_OPEN:
+            return 'Both sides open'
+
+        if code == cls.A_OPEN_LIMIT:
+            return 'Side A at open limit'
+        if code == cls.A_CLOSE_LIMIT:
+            return 'Side A at close limit'
+        if code == cls.B_OPEN_LIMIT:
+            return 'Side B at open limit'
+        if code == cls.B_CLOSE_LIMIT:
+            return 'Side B at close limit'
+
+        if code == cls.CLOSE_A:
+            return 'Close side A'
+        if code == cls.OPEN_A:
+            return 'Open side A'
+        if code == cls.CLOSE_B:
+            return 'Close side B'
+        if code == cls.OPEN_B:
+            return 'Open side B'
+
+        if code == cls.OPEN_BOTH:
+            return 'Open both sides'
+        if code == cls.CLOSE_BOTH:
+            return 'Close both sides'
+        if code == cls.RESET:
+            return 'Reset'
+
+        return None
 
 
 class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
@@ -51,7 +90,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response.
     MOVE_TIMEOUT = 10  # Max number of seconds to run the door motors.
     MOVE_LISTEN_TIMEOUT = 0.1  # When moving, how long to wait for feedback.
-    NUM_CLOSE_FEEDBACKS = 2  # Number of target_feedback bytes needed.
+    NUM_CLOSE_FEEDBACKS = 1  # Number of target_feedback bytes needed.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,6 +105,9 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # output from the PLC.
         # TODO(jamessynge): Remove this, replace with a value in the config file.
         self.serial.ser.timeout = AstrohavenDome.LISTEN_TIMEOUT
+        self.extra_close_side_b = bool(self._dome_config.get('extra_close_side_b', False))
+        self.move_listen_timeout = float(
+            self._dome_config.get('move_listen_timeout', AstrohavenDome.MOVE_LISTEN_TIMEOUT))
 
     @property
     def is_open(self):
@@ -87,10 +129,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
-        self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT,
-                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
-        self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT,
-                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
+        if self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT) and self.extra_close_side_b:
+            self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT, feedback_countdown=2)
+        else:
+            self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_CLOSED:
             return True
@@ -103,14 +145,9 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         if not self.is_connected:
             return 'Not connected to the dome'
         v = self._read_latest_state()
-        if v == Protocol.BOTH_CLOSED:
-            return 'Both sides closed'
-        if v == Protocol.A_IS_CLOSED:
-            return 'Side A closed, side B open'
-        if v == Protocol.B_IS_CLOSED:
-            return 'Side A open, side B closed'
-        if v == Protocol.BOTH_OPEN:
-            return 'Both sides open'
+        s = Protocol.code_to_string(v)
+        if s:
+            return s
         return 'Unexpected response from Astrohaven Dome Controller: %r' % v
 
     def __str__(self):
@@ -157,6 +194,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
             target_feedback: The response code to compare to the response from the dome;
                 this is a string of one ASCII character. See Protocol above for the codes;
                 while the dome is moving, it echoes the command code sent.
+            feedback_countdown: Number of times the target_feedback needs to be received
+                before reporting success. When closing, if the first side has fully closed,
+                then the second side is physically limited from going to far, so sending
+                extra close commands to the second side will help ensure that the two
+                shutters are closed tightly.
         Returns:
             True if the target_feedback is received from the dome before the MOVE_TIMEOUT;
             False otherwise.
@@ -165,7 +207,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # In other words, we'll try to read status, but if it isn't available,
         # we'll just send another command.
         saved_timeout = self.serial.ser.timeout
-        self.serial.ser.timeout = AstrohavenDome.MOVE_LISTEN_TIMEOUT
+        self.serial.ser.timeout = self.move_listen_timeout
         try:
             have_seen_send = False
             end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT

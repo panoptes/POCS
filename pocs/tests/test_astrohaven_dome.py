@@ -19,7 +19,10 @@ def dome(config):
     dome_config.update({
         'brand': 'Astrohaven',
         'driver': 'astrohaven',
-        'port': 'astrohaven_simulator://',
+        'serial': {
+            'port': 'astrohaven_simulator://',
+            'baudrate': 9600,
+        }
     })
     del config['simulator']
     the_dome = pocs.dome.create_dome_from_config(config)
