@@ -10,7 +10,7 @@ def test_dice9_SkyCoord():
     base = SkyCoord("16h52m42.2s -38d37m12s")
 
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             pattern=dither.dice9,
                                             pattern_offset=30 * u.arcminute)
 
@@ -36,7 +36,7 @@ def test_dice9_string():
     base = "16h52m42.2s -38d37m12s"
 
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             pattern=dither.dice9,
                                             pattern_offset=30 * u.arcminute)
 
@@ -63,7 +63,7 @@ def test_dice9_string():
 def test_dice9_bad_base_position():
     with pytest.raises(ValueError):
         dither.get_dither_positions(base_position=42,
-                                    n_positions=42,
+                                    num_positions=42,
                                     pattern=dither.dice9,
                                     pattern_offset=300 * u.arcsecond)
 
@@ -71,11 +71,12 @@ def test_dice9_bad_base_position():
 def test_dice9_random():
     base = SkyCoord("16h52m42.2s -38d37m12s")
 
+    # Offsets don't have units so added as arcseconds
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             pattern=dither.dice9,
-                                            pattern_offset=30 * u.arcminute,
-                                            random_offset=30 * u.arcsecond)
+                                            pattern_offset=30 * 60,
+                                            random_offset=30)
 
     assert isinstance(positions, SkyCoord)
     assert len(positions) == 12
@@ -101,7 +102,7 @@ def test_random():
     base = SkyCoord("16h52m42.2s -38d37m12s")
 
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             random_offset=30 * u.arcsecond)
     assert isinstance(positions, SkyCoord)
     assert len(positions) == 12
@@ -122,7 +123,7 @@ def test_dice5():
     base = SkyCoord("16h52m42.2s -38d37m12s")
 
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             pattern=dither.dice5,
                                             pattern_offset=30 * u.arcminute)
 
@@ -153,7 +154,7 @@ def test_custom_pattern():
              (-1, 0))
 
     positions = dither.get_dither_positions(base_position=base,
-                                            n_positions=12,
+                                            num_positions=12,
                                             pattern=cross,
                                             pattern_offset=1800 * u.arcsecond)
 
