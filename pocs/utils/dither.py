@@ -137,7 +137,7 @@ def get_dither_positions(base_position,
     return dither_coords
 
 
-def _get_pattern_position(self, index, pattern):
+def _get_pattern_position(index, pattern):
     """Utility function to get a position index from the given pattern.
 
     Args:
