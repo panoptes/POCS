@@ -38,6 +38,43 @@ def get_dither_positions(base_position,
     Given a base position creates a SkyCoord list of dithered sky positions,
     applying a dither pattern and/or random dither offsets.
 
+    .. code-block:: python
+
+        >>> # Get 10 positions follwing a dice9 pattern with no random offset.
+        >>> from astropy.coordinates import SkyCoord
+        >>> from pocs.utils import dither
+        >>> from pocs.utils import altaz_to_radec
+        >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
+        >>> dither.get_dither_positions(base_position=base_position,
+                                        n_positions=10,
+                                        pattern=dither.dice9)
+        <SkyCoord (ICRS): (ra, dec) in deg
+            [(253.17583333, -38.62      ), (253.17583333, -38.12      ),
+             (253.8113495 , -38.11826925), (253.81577984, -38.61825719),
+             (253.82027238, -39.11824495), (253.17583333, -39.12      ),
+             (252.53139429, -39.11824495), (252.53588683, -38.61825719),
+             (252.54031717, -38.11826925), (253.17583333, -38.62      )]>
+
+    Most likely you will want to apply a random offset to each position:
+
+    .. code-block:: python
+
+        >>> # Get 10 positions follwing a dice9 pattern with random offset.
+        >>> from astropy.coordinates import SkyCoord
+        >>> from pocs.utils import dither
+        >>> from pocs.utils import altaz_to_radec
+        >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
+        >>> dither.get_dither_positions(base_position=base_position,
+                                        n_positions=10,
+                                        pattern=dither.dice9,
+                                        random_offset=10 * u.arcmin) # doctest: +SKIP
+        <SkyCoord (ICRS): (ra, dec) in deg
+            [(253.33513189, -38.65063911), (253.33463142, -38.00020824),
+             (253.65000693, -38.01452578), (253.80677543, -38.69076095),
+             (253.63202533, -39.2491502 ), (253.11426706, -39.0822071 ),
+             (252.38772318, -39.09556059), (252.59295796, -38.45361116),
+             (252.5301312 , -37.98104943), (253.1341578 , -38.47970717)]>
+
     Args:
         base_position (SkyCoord or compatible): base position for the dither pattern,
             either a SkyCoord or an object that can be converted to one by the SkyCoord
@@ -105,6 +142,38 @@ def plot_dither_pattern(dither_positions):
     Args:
         dither_positions (SkyCoord): SkyCoord positions to be plotted as generated from
             `get_dither_positions`.
+
+    .. code-block:: python
+
+        >>> # Get 10 positions follwing a dice9 pattern with random offset.
+        >>> from astropy.coordinates import SkyCoord
+        >>> from pocs.utils import dither
+        >>> from pocs.utils import altaz_to_radec
+        >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
+        >>> dither.get_dither_positions(base_position=base_position,
+                                        n_positions=10,
+                                        pattern=dither.dice9,
+                                        random_offset=10 * u.arcmin) # doctest: +SKIP
+        <SkyCoord (ICRS): (ra, dec) in deg
+            [(253.33513189, -38.65063911), (253.33463142, -38.00020824),
+             (253.65000693, -38.01452578), (253.80677543, -38.69076095),
+             (253.63202533, -39.2491502 ), (253.11426706, -39.0822071 ),
+             (252.38772318, -39.09556059), (252.59295796, -38.45361116),
+             (252.5301312 , -37.98104943), (253.1341578 , -38.47970717)]>
+
+    .. plot::
+
+        from matplotlib import pyplot as plt
+        # Get 10 positions follwing a dice9 pattern with random offset.
+        from astropy.coordinates import SkyCoord
+        from pocs.utils import dither
+        from pocs.utils import altaz_to_radec
+        base_position = SkyCoord("16h52m42.2s -38d37m12s")
+        positions = dither.get_dither_positions(base_position=base_position,
+                                                n_positions=10,
+                                                pattern=dither.dice9,
+                                                random_offset=10 * u.arcmin)
+        dither.plot_dither_pattern(positions)
 
     Returns:
         `matplotlib.figure.Figure`: The matplotlib plot.
