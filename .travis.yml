@@ -92,4 +92,4 @@ cache:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 after_failure:
-  - bash scripts/upload_files.sh image-results gs://panoptes-survey/panotpes-test-bucket/ manifest_log.txt
+  - bash scripts/upload_files.sh ${POCS}/image-results gs://panoptes-survey/panotpes-test-bucket/ manifest_log.txt
