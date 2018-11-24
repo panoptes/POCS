@@ -29,7 +29,7 @@ dice5 = ((0, 0),
 
 
 def get_dither_positions(base_position,
-                         n_positions,
+                         num_positions,
                          pattern=None,
                          pattern_offset=30 * u.arcminute,
                          random_offset=None):
@@ -46,7 +46,7 @@ def get_dither_positions(base_position,
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
         >>> dither.get_dither_positions(base_position=base_position,
-                                        n_positions=10,
+                                        num_positions=10,
                                         pattern=dither.dice9)
         <SkyCoord (ICRS): (ra, dec) in deg
             [(253.17583333, -38.62      ), (253.17583333, -38.12      ),
@@ -65,7 +65,7 @@ def get_dither_positions(base_position,
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
         >>> dither.get_dither_positions(base_position=base_position,
-                                        n_positions=10,
+                                        num_positions=10,
                                         pattern=dither.dice9,
                                         random_offset=10 * u.arcmin) # doctest: +SKIP
         <SkyCoord (ICRS): (ra, dec) in deg
@@ -79,10 +79,11 @@ def get_dither_positions(base_position,
         base_position (SkyCoord or compatible): base position for the dither pattern,
             either a SkyCoord or an object that can be converted to one by the SkyCoord
             constructor (e.g. string).
-        n_positions (int): number of dithered sky positions to generate.
+        num_positions (int): number of dithered sky positions to generate.
         pattern (sequence of 2-tuples, optional): sequence of (RA offset, dec offset)
             tuples, in units of the pattern_offset. If given pattern_offset must also
-            be specified.
+            be specified. Two pre-defined patterns are included in this module,
+            `pocs.utils.dither.dice5` and `pocs.utils.dither.dice9`.
         pattern_offset (Quantity, optional): scale for the dither pattern. Should
             be a Quantity with angular units, if a numeric type is passed instead
             it will be assumed to be in arceconds. If pattern offset is given pattern
@@ -92,7 +93,7 @@ def get_dither_positions(base_position,
             type passed instead it will be assumed to be in arcseconds.
 
     Returns:
-        SkyCoord: list of n_positions dithered sky positions.
+        SkyCoord: list of num_positions dithered sky positions.
 
     Raises:
         ValueError: Raised if the `base_position` is not a valid `astropy.coordinates.SkyCoord`.
@@ -108,17 +109,17 @@ def get_dither_positions(base_position,
         if not isinstance(pattern_offset, u.Quantity):
             pattern_offset = pattern_offset * u.arcsec
 
-        # Get n_positions from the pattern
-        ra_offsets = [pattern[count % len(pattern)][0] for count in range(n_positions)]
-        dec_offsets = [pattern[count % len(pattern)][1] for count in range(n_positions)]
+        # Iterate over the pattern for num_positions (i.e. cycle through the pattern)
+        ra_offsets = [_get_pattern_position(i, pattern)[0] for i in range(num_positions)]
+        dec_offsets = [_get_pattern_position(i, pattern)[1] for i in range(num_positions)]
 
         # Apply offsets to positions
         ra_offsets *= pattern_offset
         dec_offsets *= pattern_offset
 
     else:
-        ra_offsets = np.zeros(n_positions) * u.arcsec
-        dec_offsets = np.zeros(n_positions) * u.arcsec
+        ra_offsets = np.zeros(num_positions) * u.arcsec
+        dec_offsets = np.zeros(num_positions) * u.arcsec
 
     if random_offset:
         if not isinstance(random_offset, u.Quantity):
@@ -136,6 +137,19 @@ def get_dither_positions(base_position,
     return dither_coords
 
 
+def _get_pattern_position(self, index, pattern):
+    """Utility function to get a position index from the given pattern.
+
+    Args:
+        index (int): The requested index position.
+        pattern (seqeunce of 2-tuples): The pattern to get the position from.
+
+    Returns:
+        tuple: The pattern value at the corresponding position.
+    """
+    return pattern[index % len(pattern)]
+
+
 def plot_dither_pattern(dither_positions):
     """Utility function to generate a plot of the dither pattern.
 
@@ -151,7 +165,7 @@ def plot_dither_pattern(dither_positions):
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
         >>> dither.get_dither_positions(base_position=base_position,
-                                        n_positions=10,
+                                        num_positions=10,
                                         pattern=dither.dice9,
                                         random_offset=10 * u.arcmin) # doctest: +SKIP
         <SkyCoord (ICRS): (ra, dec) in deg
@@ -170,7 +184,7 @@ def plot_dither_pattern(dither_positions):
         from pocs.utils import altaz_to_radec
         base_position = SkyCoord("16h52m42.2s -38d37m12s")
         positions = dither.get_dither_positions(base_position=base_position,
-                                                n_positions=10,
+                                                num_positions=10,
                                                 pattern=dither.dice9,
                                                 random_offset=10 * u.arcmin)
         dither.plot_dither_pattern(positions)
