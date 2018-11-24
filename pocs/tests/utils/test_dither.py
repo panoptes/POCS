@@ -174,3 +174,15 @@ def test_custom_pattern():
         Angle(-0.5 * u.degree).radian)
     assert base.spherical_offsets_to(
         positions[4])[1].radian == pytest.approx(Angle(0 * u.degree).radian)
+
+
+@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', tolerance=0)
+def test_plot_dither(tmpdir):
+    base = SkyCoord("16h52m42.2s -38d37m12s")
+    positions = dither.get_dither_positions(base_position=base,
+                                            num_positions=12,
+                                            pattern=dither.dice9,
+                                            pattern_offset=30 * u.arcminute)
+
+    dither_figure = dither.plot_dither_pattern(positions)
+    return dither_figure

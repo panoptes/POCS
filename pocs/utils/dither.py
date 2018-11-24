@@ -45,8 +45,8 @@ def get_dither_positions(base_position,
         >>> from pocs.utils import dither
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
-        >>> dither.get_dither_positions(base_position=base_position,
-                                        num_positions=10,
+        >>> dither.get_dither_positions(base_position=base_position, \
+                                        num_positions=10, \
                                         pattern=dither.dice9)
         <SkyCoord (ICRS): (ra, dec) in deg
             [(253.17583333, -38.62      ), (253.17583333, -38.12      ),
@@ -64,9 +64,9 @@ def get_dither_positions(base_position,
         >>> from pocs.utils import dither
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
-        >>> dither.get_dither_positions(base_position=base_position,
-                                        num_positions=10,
-                                        pattern=dither.dice9,
+        >>> dither.get_dither_positions(base_position=base_position, \
+                                        num_positions=10, \
+                                        pattern=dither.dice9, \
                                         random_offset=10 * u.arcmin) # doctest: +SKIP
         <SkyCoord (ICRS): (ra, dec) in deg
             [(253.33513189, -38.65063911), (253.33463142, -38.00020824),
@@ -164,9 +164,9 @@ def plot_dither_pattern(dither_positions):
         >>> from pocs.utils import dither
         >>> from pocs.utils import altaz_to_radec
         >>> base_position = SkyCoord("16h52m42.2s -38d37m12s")
-        >>> dither.get_dither_positions(base_position=base_position,
-                                        num_positions=10,
-                                        pattern=dither.dice9,
+        >>> dither.get_dither_positions(base_position=base_position, \
+                                        num_positions=10, \
+                                        pattern=dither.dice9, \
                                         random_offset=10 * u.arcmin) # doctest: +SKIP
         <SkyCoord (ICRS): (ra, dec) in deg
             [(253.33513189, -38.65063911), (253.33463142, -38.00020824),
@@ -183,9 +183,9 @@ def plot_dither_pattern(dither_positions):
         from pocs.utils import dither
         from pocs.utils import altaz_to_radec
         base_position = SkyCoord("16h52m42.2s -38d37m12s")
-        positions = dither.get_dither_positions(base_position=base_position,
-                                                num_positions=10,
-                                                pattern=dither.dice9,
+        positions = dither.get_dither_positions(base_position=base_position, \
+                                                num_positions=10, \
+                                                pattern=dither.dice9, \
                                                 random_offset=10 * u.arcmin)
         dither.plot_dither_pattern(positions)
 
