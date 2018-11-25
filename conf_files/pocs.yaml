@@ -125,8 +125,8 @@ state_machine: simple_state_table
 # Note: The times at which flat-fielding will occur are controlled by the
 # `location.flat_horizon` and `location.observe_horizon` config entries.
 #
-# take_evening_flats: If we should try to take flats during evening twilight
-# take_morning_flats: If we should try to take flats during morning twilight
+# take_evening_flats: If we should try to take flats during evening twilight.
+# take_morning_flats: If we should try to take flats during morning twilight.
 ################################################################################
 flat_field:
     take_evening_flats: False
