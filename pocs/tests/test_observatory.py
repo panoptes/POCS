@@ -4,6 +4,7 @@ import pytest
 import time
 from astropy import units as u
 from astropy.time import Time
+from astropy.coordinates import get_sun
 
 from pocs import hardware
 import pocs.version
@@ -383,11 +384,15 @@ def test_operate_dome(config_with_simulated_dome):
 
 def test_create_flat_field(observatory):
 
-    flat0 = observatory._create_flat_field_observation(flat_time=Time('2016-09-09 22:00:00'))
-    assert flat0.field.dec.value == pytest.approx(8.898, rel=1e-2)
+    flat_time = Time('2016-09-09 22:00:00')
 
-    alt = observatory.config['flat_field']['evening']['alt']
-    az = observatory.config['flat_field']['evening']['az']
+    flat0 = observatory._create_flat_field_observation(flat_time=flat_time)
+
+    sun_pos = observatory.observer.altaz(flat_time, target=get_sun(flat_time))
+    alt = sun_pos.alt.value
+    az = 70
+
+    assert flat0.field.dec.value == pytest.approx(38.4, rel=1e-2)
 
     os.environ['POCSTIME'] = '2016-09-09 22:00:00'
     flat1 = observatory._create_flat_field_observation(alt=alt, az=az)
