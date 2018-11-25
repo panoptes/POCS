@@ -4,6 +4,7 @@ import readline
 import time
 import zmq
 
+from contextlib import suppress
 from cmd import Cmd
 from subprocess import TimeoutExpired
 from pprint import pprint
@@ -872,6 +873,11 @@ def parse_options(opts):
         else:
             name, value = opt.split('=')
             name = name.replace('--', '')
+
+            # Make it a number if possible.
+            with suppress(ValueError):
+                value = float(value)
+
             if name in kwargs:
                 kwargs[name] = listify(kwargs[name])
                 kwargs[name].append(value)
