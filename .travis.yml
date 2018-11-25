@@ -92,4 +92,6 @@ cache:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 after_failure:
-  - bash scripts/testing/failed-images-upload.sh ${POCS}/test_images/
+  - echo "Uploading failed images to https://transfer.sh service"
+  - tar zcf failed-images.tgz ${POCS}/test_images/
+  - curl --upload-file failed-images.tgz https://transfer.sh/failed-images.tgz
