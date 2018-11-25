@@ -96,3 +96,4 @@ after_failure:
   - tar zcf failed-images.tgz ${POCS}/test_images/
   - echo "Download failed images from:"
   - curl --upload-file failed-images.tgz https://transfer.sh/failed-images.tgz -o "-"
+  - echo "Each test will have it's own folder with the baseline, generated, and diff image."
