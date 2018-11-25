@@ -176,6 +176,9 @@ def test_custom_pattern():
         positions[4])[1].radian == pytest.approx(Angle(0 * u.degree).radian)
 
 
+# Note that the tolerance is way to high for this to be an effective test but
+# we are waiting on some clarity from the module.
+# https://github.com/matplotlib/pytest-mpl/issues/81
 @pytest.mark.mpl_image_compare(baseline_dir='baseline_images', tolerance=15)
 def test_plot_dither(tmpdir):
     base = SkyCoord("16h52m42.2s -38d37m12s")
