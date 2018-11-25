@@ -389,13 +389,12 @@ def test_create_flat_field(observatory):
     flat0 = observatory._create_flat_field_observation(flat_time=flat_time)
 
     sun_pos = observatory.observer.altaz(flat_time, target=get_sun(flat_time))
-    alt = sun_pos.alt.value
-    az = 70
+    az = sun_pos.az.value - 180
 
     assert flat0.field.dec.value == pytest.approx(38.4, rel=1e-2)
 
     os.environ['POCSTIME'] = '2016-09-09 22:00:00'
-    flat1 = observatory._create_flat_field_observation(alt=alt, az=az)
+    flat1 = observatory._create_flat_field_observation(az=az, flat_time=flat_time)
 
     assert flat1.field.ra.value == pytest.approx(flat0.field.ra.value, rel=1e-2)
     assert flat1.field.dec.value == pytest.approx(flat0.field.dec.value, rel=1e-2)
