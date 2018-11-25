@@ -682,8 +682,7 @@ class Observatory(PanBase):
 
         # Create the observation.
         flat_obs = self._create_flat_field_observation(
-            which=which, alt=alt, az=az,
-            initial_exptime=initial_exptime
+            alt=alt, az=az, initial_exptime=initial_exptime
         )
 
         # A countdown timeout for the mount slewing.
