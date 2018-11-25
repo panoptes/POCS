@@ -176,7 +176,7 @@ def test_custom_pattern():
         positions[4])[1].radian == pytest.approx(Angle(0 * u.degree).radian)
 
 
-@pytest.mark.mpl_image_compare(baseline_dir='baseline_images', tolerance=20)
+@pytest.mark.mpl_image_compare(baseline_dir='baseline_images')
 def test_plot_dither(tmpdir):
     base = SkyCoord("16h52m42.2s -38d37m12s")
     positions = dither.get_dither_positions(base_position=base,
