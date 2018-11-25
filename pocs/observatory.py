@@ -759,7 +759,7 @@ class Observatory(PanBase):
 
                 # Simple mean works just as well as sigma_clipping and is quicker for RGB.
                 counts = data.mean()
-                self.logger.debug("Counts: {:.02f}".format(counts))
+                self.logger.debug(f"Counts: {counts:.02f} Desired: {target_adu:.02f}")
 
                 # Check we are above minimum counts.
                 if counts < min_counts:
