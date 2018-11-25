@@ -681,9 +681,13 @@ class Observatory(PanBase):
         exp_times = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
 
         # Create the observation.
-        flat_obs = self._create_flat_field_observation(
-            alt=alt, az=az, initial_exptime=initial_exptime
-        )
+        try:
+            flat_obs = self._create_flat_field_observation(
+                alt=alt, az=az, initial_exptime=initial_exptime
+            )
+        except Exception as e:
+            self.logger.warning(f'Problem making flat field: {e}')
+            return
 
         # A countdown timeout for the mount slewing.
         slew_timer = CountdownTimer(5 * u.minute)
