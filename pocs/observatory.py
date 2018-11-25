@@ -999,7 +999,7 @@ class Observatory(PanBase):
             sun_pos = self.observer.altaz(flat_time, target=get_sun(flat_time))
             az = sun_pos.az.value - 180.  # Opposite the sun
 
-        self.logger.debug(f'Flat-fields coords: alt={alt:.02f} az={az:.02f}')
+        self.logger.debug(f'Flat-field coords: alt={alt:.02f} az={az:.02f}')
 
         # Construct RA/Dec coords from the Alt Az.
         flat_coords = altaz_to_radec(
@@ -1007,6 +1007,7 @@ class Observatory(PanBase):
             az=az,
             location=self.earth_location,
             obstime=flat_time)
+        self.logger.debug(f'Flat-field coords: {flat_coords}')
 
         field = Field(field_name, flat_coords)
         flat_obs = Observation(field, exp_time=initial_exptime * u.second)
