@@ -960,8 +960,7 @@ class Observatory(PanBase):
                 msg="Fields file does not exist: {}".format(fields_file))
 
     def _create_flat_field_observation(self,
-                                       which='evening',
-                                       alt=None,
+                                       alt=70,  # degrees
                                        az=None,
                                        field_name='Evening Flat',
                                        flat_time=None,
@@ -972,12 +971,13 @@ class Observatory(PanBase):
         to look up the current RA-Dec coordaintes based on the unit's location and
         the current time (or `flat_time` if provided).
 
+        If no azimuth is provided this will figure out the azimuth of the sun at
+        `flat_time` and use that position minus 180 degrees.
+
         Args:
-            which (str, optional): Which flat field to take, 'evening' or
-                'morning'. Will look up flat-field information from config file.
-                If `alt` and `az` are specified than the config entry is ignored.
-            alt (float, optional): Altitude desired, in degrees.
-            az (float, optional): Azimuth desired, in degrees.
+            alt (float, optional): Altitude desired, default 70 degrees.
+            az (float, optional): Azimuth desired in degrees, defaults to a position
+                -180 degrees opposite the sun at `flat_time`.
             field_name (str, optional): Name of the field, which will also be directory
                 name. Note that it is probably best to pass the camera.uid as name.
             flat_time (`astropy.time.Time`, optional): The time at which the flats
@@ -987,24 +987,29 @@ class Observatory(PanBase):
             `pocs.scheduler.Observation`: Information about the flat-field.
         """
         self.logger.debug("Creating flat-field observation")
-        # Get an Alt and Az from the config
-        if alt is None or az is None:
-            flat_config = self.config['flat_field'][which]
-            alt = alt or flat_config['alt']
-            az = az or flat_config['az']
+
         if flat_time is None:
             flat_time = current_time()
-        # Construct RA/Dec coords from the Alt Az
+
+        # Get an azimuth that is roughly opposite the sun.
+        if az is None:
+            sun_pos = self.observer.altaz(flat_time, target=get_sun(flat_time))
+            az = sun_pos.az - 180.  # Opposite the sun
+
+        # Construct RA/Dec coords from the Alt Az.
         flat_coords = altaz_to_radec(
             alt=alt,
             az=az,
             location=self.earth_location,
             obstime=flat_time)
+
         field = Field(field_name, flat_coords)
         flat_obs = Observation(field, exp_time=initial_exptime * u.second)
-        # Note different 'flat' concepts
+
+        # Note different 'flat' concepts.
         flat_obs.seq_time = flatten_time(flat_time)
-        # Setup the directory to store images
+
+        # Setup the directory to store images.
         flat_obs._directory = os.path.join(
             self.config['directories']['images'],
             'flats',
