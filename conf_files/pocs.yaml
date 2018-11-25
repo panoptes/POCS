@@ -118,21 +118,16 @@ state_machine: simple_state_table
 
 ########################### Flat Fields ########################################
 # Controls various aspects of flat fields, both for evening and morning. 
+# The coordinates for the flat-field are calculated for each unit, with the
+# azimuth being -180 degrees from the setting sun and the altitude being near
+# the zenith (currently 70 degrees).
 # 
 # Note: The times at which flat-fielding will occur are controlled by the
 # `location.flat_horizon` and `location.observe_horizon` config entries.
 #
 # take_evening_flats: If we should try to take flats during evening twilight
 # take_morning_flats: If we should try to take flats during morning twilight
-# evening:            The coordinates should be roughly opposite the sun.
-# morning:            The coordinates should be roughly opposite the sun.
 ################################################################################
 flat_field:
     take_evening_flats: False
     take_morning_flats: False
-    evening:
-        alt: 70  # degrees
-        az: 120  # degrees
-    morning:
-        alt: 70  # degrees
-        az: 320  # degrees
