@@ -822,7 +822,9 @@ class Observatory(PanBase):
                 keep_taking_flats = False
 
             # Report the sun level
-            self.is_dark(horizon='flat')
+            t0 = current_time()
+            sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
+            self.logger.debug(f"Sun {sun_pos:.02f}")
 
 ##########################################################################
 # Private Methods
