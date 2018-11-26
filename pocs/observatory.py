@@ -781,12 +781,12 @@ class Observatory(PanBase):
 
                 # Check we are above minimum counts.
                 if counts < min_counts:
-                    self.logger.debug("Counts are too low, flat should be discarded")
+                    self.logger.info("Counts are too low, flat should be discarded")
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
 
                 # Check we are below maximum counts.
                 if counts >= max_counts:
-                    self.logger.debug("Image is saturated")
+                    self.logger.info("Image is saturated")
                     is_saturated = True
                     # TODO(wtgee) Mark in headers? Skip rest of loop?
 
@@ -805,18 +805,18 @@ class Observatory(PanBase):
             # Stop flats if we are going on too long.
             self.logger.debug("Checking for too many exposures")
             if any([len(t) - 1 >= max_num_exposures for t in exp_times.values()]):
-                self.logger.debug(f"Have max exposures ({max_num_exposures}), stopping.")
+                self.logger.info(f"Have max exposures ({max_num_exposures}), stopping.")
                 keep_taking_flats = False
 
             # Stop flats if any time is greater than max.
             self.logger.debug("Checking for long exposures")
             if any([t[-1].value >= max_exptime for t in exp_times.values()]):
-                self.logger.debug("Exposure times greater than max, stopping flat fields")
+                self.logger.info("Exposure times greater than max, stopping flat fields")
                 keep_taking_flats = False
 
             self.logger.debug("Checking for saturation on short exposure")
             if is_saturated and exp_times[cam_name][-1].value <= 2:
-                self.logger.debug("Saturated short exposure, waiting 60 seconds")
+                self.logger.info("Saturated short exposure, waiting 60 seconds")
                 max_num_exposures += 1
                 time.sleep(60)
                 keep_taking_flats = False
