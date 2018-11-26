@@ -821,6 +821,9 @@ class Observatory(PanBase):
                 time.sleep(60)
                 keep_taking_flats = False
 
+            # Report the sun level
+            self.is_dark(horizon='flat')
+
 ##########################################################################
 # Private Methods
 ##########################################################################
