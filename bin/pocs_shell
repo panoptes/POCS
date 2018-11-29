@@ -476,11 +476,11 @@ Hardware names: {}   (or all for all hardware)'''.format(
         args, kwargs = parse_options(*arg)
 
         if self.pocs is None:
-            print_warning('Please run `setup_pocs` before trying to run')
+            print_warning('Please run `setup_pocs` before trying to run.')
             return
 
         if self.pocs.observatory.mount.is_parked:
-            print_warning('Mount is parked. To unpark run `unpark`')
+            print_warning('Mount is parked. To unpark run `unpark`.')
             return False
 
         try:
@@ -489,8 +489,16 @@ Hardware names: {}   (or all for all hardware)'''.format(
         except Exception as e:
             print_warning('Problem taking flats: {}'.format(e))
         finally:
-            print_info('Flat fields complete, slewing to home')
-            self.do_go_home()
+            if self.pocs.is_weather_safe():
+                print_info('Flat fields complete, slewing to home.')
+                self.do_go_home()
+            else:
+                print_info('Flat fields complete but weather not safe. Parking.')
+                try:
+                    self.pocs.observatory.mount.home_and_park()
+                except Exception as e:
+                    #TODO(wtgee) Somehow alert a human.
+                    print_warning('Problem parking: {}'.format(e))            
 
 ##########################################################################
 # Private Methods
