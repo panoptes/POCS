@@ -218,7 +218,7 @@ def get_free_space(dir=None):
     return free_space
 
 
-def parse_string_to_params(opts):
+def string_to_params(opts):
     """Parses a single string into parameters that can be passed to a function.
 
     A user of the `peas_shell` can supply positional and keyword arguments to the
@@ -235,12 +235,17 @@ def parse_string_to_params(opts):
         If a string is required inclue a single quote around the value, e.g.
         `param='42'` will keep the value as the string `'42'`.
 
-    Example:
 
-    .. code-block::
-
-        # Note that this is a mostly fabricated example.
-        PEAS > setup_pocs simulator=night simulator=mount num_retries=3 unit_id='001'
+    >>> from pocs.utils import string_to_params
+    >>> args, kwargs = string_to_params("parg1 parg2 key1=a_str key2=2 key2='2' key3=03")
+    >>> args
+    (['parg1', 'parg2']
+    >>> kwargs
+    {'key1': 'a_str', 'key2': [2.0, "'2'"], 'key3': 3.0})
+    >>> isinstance(kwargs['key2'][0], float)
+    True
+    >>> isinstance(kwargs['key2'][1], str)
+    True
 
     Args:
         opts (str): A single string containing everything beyond the actual

@@ -20,7 +20,7 @@ from pocs.camera import create_cameras_from_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils import current_time
-from pocs.utils import parse_string_to_params
+from pocs.utils import string_to_params
 from pocs.utils import error
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
@@ -146,7 +146,7 @@ class PocsShell(Cmd):
 
     def do_setup_pocs(self, *arg):
         """Setup and initialize a POCS instance."""
-        args, kwargs = parse_string_to_params(*arg)
+        args, kwargs = string_to_params(*arg)
 
         simulator = kwargs.get('simulator', list())
         if isinstance(simulator, str):
@@ -623,7 +623,7 @@ class DriftShell(Cmd):
 
     def do_setup_pocs(self, *arg):
         """Setup and initialize a POCS instance."""
-        args, kwargs = parse_string_to_params(*arg)
+        args, kwargs = string_to_params(*arg)
         simulator = kwargs.get('simulator', [])
         print_info("Simulator: {}".format(simulator))
 
@@ -638,7 +638,7 @@ class DriftShell(Cmd):
         if self.ready is False:
             return
 
-        args, kwargs = parse_string_to_params(*arg)
+        args, kwargs = string_to_params(*arg)
 
         try:
             direction = kwargs['direction']
@@ -680,7 +680,7 @@ class DriftShell(Cmd):
         if not self.ready:
             return
 
-        args, kwargs = parse_string_to_params(*arg)
+        args, kwargs = string_to_params(*arg)
 
         num_pics = int(kwargs.get('num_pics', self.num_pics))
         exp_time = float(kwargs.get('exp_time', self.exp_time))
