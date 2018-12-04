@@ -2,7 +2,6 @@ import contextlib
 import os
 import shutil
 import signal
-import subprocess
 import time
 
 from astropy import units as u
@@ -219,6 +218,66 @@ def get_free_space(dir=None):
     return free_space
 
 
+def parse_string_to_params(opts):
+    """Parses a single string into parameters that can be passed to a function.
+
+    A user of the `peas_shell` can supply positional and keyword arguments to the
+    command being called, however the native structured of the `Cmd` module does
+    not parse these options but instead passes this as a single string. This utility
+    method does some simple parsing of that string and returns a list of positoinal
+    parameters and a dictonary of keyword arguments.  A keyword argument is considered
+    anything that contains an equal sign (e.g. `exptime=30`).
+
+    A list of items can be passed by specifying the keyword argument multiple times.
+
+    Note:
+        This function will attempt to parse keyword values as floats if possible.
+        If a string is required inclue a single quote around the value, e.g.
+        `param='42'` will keep the value as the string `'42'`.
+
+    Example:
+
+    .. code-block::
+
+        # Note that this is a mostly fabricated example.
+        PEAS > setup_pocs simulator=night simulator=mount num_retries=3 unit_id='001'
+
+    Args:
+        opts (str): A single string containing everything beyond the actual
+            command that is called.
+
+    Returns:
+        tuple(list, dict): Returns a list of positional parameters and a dictonary
+            of keyword arguments. These correspond to the *args and **kwargs that
+            a typical funciton would receive.
+    """
+    args = []
+    kwargs = {}
+
+    for opt in opts.split(' '):
+        if '=' not in opt:
+            args.append(opt)
+        else:
+            name, value = opt.split('=')
+            name = name.replace('--', '')
+
+            if "'" in value:
+                # Remove the explict single quotes.
+                value.replace("'", "")
+            else:
+                # Make it a number if possible.
+                with contextlib.suppress(ValueError):
+                    value = float(value)
+
+            if name in kwargs:
+                kwargs[name] = listify(kwargs[name])
+                kwargs[name].append(value)
+            else:
+                kwargs[name] = value
+
+    return args, kwargs
+
+
 def load_module(module_name):
     """Dynamically load a module.
 
@@ -283,6 +342,7 @@ class DelaySigTerm(contextlib.ContextDecorator):
             db.WriteCurrentRecord(record)
     """
     # TODO(jamessynge): Consider generalizing as DelaySignal(signum).
+
     def __enter__(self, callback=None):
         """
         Args:
