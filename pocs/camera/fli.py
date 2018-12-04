@@ -312,7 +312,7 @@ class Camera(AbstractCamera):
 
     def _get_camera_info(self):
 
-        serial_number = self._FLIDriver.FLIGetSerialString(self._handle),
+        serial_number = self._FLIDriver.FLIGetSerialString(self._handle)
         camera_model = self._FLIDriver.FLIGetModel(self._handle)
         hardware_version = self._FLIDriver.FLIGetHWRevision(self._handle)
         firmware_version = self._FLIDriver.FLIGetFWRevision(self._handle)
