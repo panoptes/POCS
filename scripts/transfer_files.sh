@@ -29,8 +29,8 @@ usage() {
  $ $(basename $0) FROM_PATH TO_PATH MANIFEST_FILE
  
  Options:
-  FROM_PATH     The string path to be searched.
-  TO_PATH     	Remote upload TO_PATH.
+  FROM_PATH     File(s) to be moved.
+  TO_PATH     	Where file(s) are to be placed.
   MANIFEST_FILE Path to manifest file for tracking uploads. Optional, defaults
   				to manifest_file.log in the current directory.
 
