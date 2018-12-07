@@ -30,9 +30,9 @@ usage() {
  
  Options:
   FROM_PATH     File(s) to be moved.
-  TO_PATH     	Where file(s) are to be placed.
+  TO_PATH       Where file(s) are to be placed.
   MANIFEST_FILE Path to manifest file for tracking uploads. Optional, defaults
-  				to manifest_file.log in the current directory.
+                to manifest_file.log in the current directory.
 
  NOTE: $POCS/scripts/upload_image_dir.py may be more appropriate.
 
