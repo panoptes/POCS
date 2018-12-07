@@ -241,7 +241,7 @@ def string_to_params(opts):
     >>> args
     (['parg1', 'parg2']
     >>> kwargs
-    {'key1': 'a_str', 'key2': [2.0, "'2'"], 'key3': 3.0})
+    {'key1': 'a_str', 'key2': [2.0, "2"], 'key3': 3.0})
     >>> isinstance(kwargs['key2'][0], float)
     True
     >>> isinstance(kwargs['key2'][1], str)
