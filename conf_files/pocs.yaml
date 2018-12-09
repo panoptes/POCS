@@ -35,7 +35,7 @@ directories:
     mounts: POCS/resources/mounts
 db: 
     name: panoptes
-    type: mongo
+    type: file
 scheduler:
     type: dispatch
     fields_file: simple.yaml

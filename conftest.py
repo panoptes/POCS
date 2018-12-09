@@ -52,7 +52,7 @@ def pytest_addoption(parser):
     group.addoption(
         "--test-databases",
         nargs="+",
-        default=['mongo'],
+        default=['file'],
         help=("Test databases in the list. List items can include: " + db_names +
               ". Note that travis-ci will test all of them by default."))
 
