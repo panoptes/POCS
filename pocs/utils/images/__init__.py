@@ -228,7 +228,7 @@ def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):
 def make_timelapse(
         directory,
         fn_out=None,
-        file_type='jpg',
+        glob_pattern='20[1-9][0-9]*T[0-9]*.jpg',
         overwrite=False,
         timeout=60,
         verbose=False,
@@ -241,7 +241,10 @@ def make_timelapse(
         directory (str): Directory containing image files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
-        file_type (str, optional): Type of file to search for, default 'jpg'.
+        glob_pattern (str, optional): A glob file pattern of images to include,
+            default '20[1-9][0-9]*T[0-9]*.jpg', which corresponds to the observation
+            images but excludes any pointing images. The pattern should be relative
+            to the local directory.
         overwrite (bool, optional): Overwrite timelapse if exists, default False.
         timeout (int): Timeout for making movie, default 60 seconds.
         verbose (bool, optional): Show output, default False.
@@ -274,7 +277,7 @@ def make_timelapse(
     if ffmpeg is None:
         raise error.InvalidSystemCommand("ffmpeg not found, can't make timelapse")
 
-    inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
+    inputs_glob = os.path.join(directory, glob_pattern)
 
     try:
         ffmpeg_cmd = [
