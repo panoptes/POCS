@@ -3,7 +3,6 @@ import os
 import shutil
 import signal
 import time
-import shlex
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -242,12 +241,14 @@ def string_to_params(opts):
     >>> from pocs.utils import string_to_params
     >>> args, kwargs = string_to_params("parg1 parg2 key1=a_str key2=2 key2='2' key3=03")
     >>> args
-    (['parg1', 'parg2']
+    ['parg1', 'parg2']
     >>> kwargs
-    {'key1': 'a_str', 'key2': [2.0, "2"], 'key3': 3.0})
+    {'key1': 'a_str', 'key2': [2.0, '2'], 'key3': 3.0}
     >>> isinstance(kwargs['key2'][0], float)
     True
     >>> isinstance(kwargs['key2'][1], str)
+    True
+    >>> kwargs['key2'][1] == '2'
     True
     >>> args, kwargs = string_to_params('--key1=val1 --key1-2=val1-2')
     >>> kwargs
@@ -265,7 +266,7 @@ def string_to_params(opts):
     args = []
     kwargs = {}
 
-    for opt in shlex.split(opts):
+    for opt in opts.split(' '):
         if '=' not in opt:
             args.append(opt)
         else:
@@ -273,13 +274,13 @@ def string_to_params(opts):
             if name.startswith('--') and len(name) > 2:
                 name = name[2:]
 
-            # if "'" in value:
-            #     # Remove the explict single quotes.
-            #     value.replace("'", "")
-            # else:
-            # Make it a number if possible.
-            with contextlib.suppress(ValueError):
-                value = float(value)
+            if "'" in value:
+                # Remove the explict single quotes.
+                value = value.replace("'", "")
+            else:
+                # Make it a number if possible.
+                with contextlib.suppress(ValueError):
+                    value = float(value)
 
             if name in kwargs:
                 kwargs[name] = listify(kwargs[name])
