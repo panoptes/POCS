@@ -3,7 +3,7 @@
 usage() {
   echo -n "
 #############################################################
-# Transer files to/from a Google Cloud Storage bucket.
+# Transfer files to/from a Google Cloud Storage bucket.
 # 
 # This script will call the underlying gsutil utility, using
 # the parallel options (-m) by default. This will also write
