@@ -138,7 +138,7 @@ def get_shared_mongo_client(host, port, connect):
         # See second Note in official api docs for MongoClient
         # The ismaster command is cheap and does not require auth.
         client.admin.command('ismaster')
-    except ConnectionFailure:
+    except ConnectionFailure:  # pragma: no cover
         raise ConnectionError(f'Mongo server not available')
 
     _shared_mongo_clients[key] = client
