@@ -7,6 +7,7 @@ from warnings import warn
 from uuid import uuid4
 from glob import glob
 from bson.objectid import ObjectId
+from pymongo.errors import ConnectionFailure
 
 from pocs.utils import current_time
 from pocs.utils import serializers as json_util
@@ -122,6 +123,8 @@ _shared_mongo_clients = weakref.WeakValueDictionary()
 def get_shared_mongo_client(host, port, connect):
     global _shared_mongo_clients
     key = (host, port, connect)
+
+    # Try to get previously stored client.
     try:
         client = _shared_mongo_clients[key]
         if client:
@@ -129,7 +132,14 @@ def get_shared_mongo_client(host, port, connect):
     except KeyError:
         pass
 
+    # No client available, try to create new one.
     client = pymongo.MongoClient(host, port, connect=connect)
+    try:
+        # See second Note in official api docs for MongoClient
+        # The ismaster command is cheap and does not require auth.
+        client.admin.command('ismaster')
+    except ConnectionFailure:
+        raise ConnectionError(f'Mongo server not available')
 
     _shared_mongo_clients[key] = client
     return client
@@ -240,6 +250,9 @@ class PanMongoDB(AbstractPanDB):
             host (str, optional): hostname running MongoDB.
             port (int, optional): port running MongoDb.
             connect (bool, optional): Connect to mongo on create, defaults to True.
+
+        Raises:
+            ConnectionError: If the mongod server is not available.
         """
 
         super().__init__(**kwargs)
