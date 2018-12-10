@@ -51,33 +51,38 @@ class SerialData(object):
     .. doctest::
 
         >>> import serial
+
         # Register our serial simulators
         >>> serial.protocol_handler_packages.append('pocs.tests.serial_handlers')
+
         # Create a fake device
         >>> from pocs.tests.serial_handlers.protocol_buffers import SetRBufferValue as WriteFakeDevice
-        >>> from pocs.tests.serial_handlers.protocol_buffers import GetWBuffer as ReadFakeDevice
+        >>> from pocs.tests.serial_handlers.protocol_buffers import GetWBufferValue as ReadFakeDevice
+        >>> from pocs.tests.serial_handlers.protocol_buffers import ResetBuffers
 
         # Import our serial utils
         >>> from pocs.utils.rs232 import SerialData
 
         # Connect to our fake buffered device
         >>> device_listener = SerialData(port='buffers://')
+        >>> ResetBuffers()
         >>> device_listener.is_connected
         True
 
-        >>> device.port
-        buffers://
+        >>> device_listener.port
+        'buffers://'
 
         # Device sends event
         >>> WriteFakeDevice(b'emit event')
 
         # Listen for event
         >>> device_listener.read()
-        emit event
+        'emit event'
 
-        >>> device_listener.write(b'ack event')
+        >>> device_listener.write('ack event')
+        9
         >>> ReadFakeDevice()
-        ack event
+        b'ack event'
     """
 
     def __init__(self,
