@@ -390,16 +390,18 @@ class PanFileDB(AbstractPanDB):
 
     def find(self, collection, obj_id):
         collection_fn = self._get_file(collection)
-        with open(collection_fn, 'r') as f:
-            for line in f:
-                # Note: We can speed this up for the case where the obj_id doesn't
-                # contain any characters that json would need to escape: first
-                # check if the line contains the obj_id; if not skip. Else, parse
-                # as json, and then check for the _id match.
-                obj = json_util.loads(line)
-                if obj['_id'] == obj_id:
-                    return obj
-        return None
+        try:
+            with open(collection_fn, 'r') as f:
+                for line in f:
+                    # Note: We can speed this up for the case where the obj_id doesn't
+                    # contain any characters that json would need to escape: first
+                    # check if the line contains the obj_id; if not skip. Else, parse
+                    # as json, and then check for the _id match.
+                    obj = json_util.loads(line)
+                    if obj['_id'] == obj_id:
+                        return obj
+        except FileNotFoundError:
+            return None
 
     def clear_current(self, type):
         current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
