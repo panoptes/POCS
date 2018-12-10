@@ -54,8 +54,6 @@ class SerialData(object):
 
         # Register our serial simulators
         >>> serial.protocol_handler_packages.append('pocs.tests.serial_handlers')
-
-        # Create a fake device
         >>> from pocs.tests.serial_handlers.protocol_buffers import SetRBufferValue as WriteFakeDevice
         >>> from pocs.tests.serial_handlers.protocol_buffers import GetWBufferValue as ReadFakeDevice
         >>> from pocs.tests.serial_handlers.protocol_buffers import ResetBuffers
@@ -65,6 +63,9 @@ class SerialData(object):
 
         # Connect to our fake buffered device
         >>> device_listener = SerialData(port='buffers://')
+
+        # Note: A manual reset is currently required because implementation is not complete.
+        # See https://github.com/panoptes/POCS/issues/758 for details.
         >>> ResetBuffers()
         >>> device_listener.is_connected
         True
