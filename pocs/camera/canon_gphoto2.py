@@ -164,7 +164,7 @@ class Camera(AbstractGPhotoCamera):
         Converts the CR2 to a FITS file
         """
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=True)
+        fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=False)
         # Replace the path name with the FITS file
         info['file_path'] = fits_path
         return fits_path
