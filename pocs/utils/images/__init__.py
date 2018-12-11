@@ -3,11 +3,12 @@ import subprocess
 import shutil
 from contextlib import suppress
 
-from matplotlib import cm as colormap
 from warnings import warn
 
+from matplotlib import cm as colormap
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+
 
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
@@ -204,7 +205,10 @@ def _make_pretty_from_fits(fname=None,
 
     new_filename = fname.replace('.fits', '.jpg')
     fig.savefig(new_filename, bbox_inches='tight')
-    del fig  # explicitly delete figure
+
+    # explicitly close and delete figure
+    fig.clf()
+    del fig
 
     return new_filename
 

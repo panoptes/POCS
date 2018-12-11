@@ -523,7 +523,10 @@ class AbstractFocuser(PanBase):
 
             fig.tight_layout()
             fig.savefig(plot_path, transparent=False)
-            del fig  # explicitly delete figure
+
+            # explicitly close and delete figure
+            fig.clf()
+            del fig
 
             self.logger.info('{} focus plot for camera {} written to {}'.format(
                 focus_type.capitalize(), self._camera, plot_path))
