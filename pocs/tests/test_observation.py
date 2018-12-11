@@ -54,7 +54,7 @@ def test_bad_min_set_combo(field):
     with pytest.raises(AssertionError):
         Observation(field, exp_set_size=7)
     with pytest.raises(AssertionError):
-        Observation(field, min_nexp=57)
+        Observation(field, min_nexp=57, exp_set_size=10)
 
 
 def test_small_sets(field):
@@ -84,19 +84,18 @@ def test_min_max_nexp(field):
     assert obs.max_nexp == 10
 
 
-def test_default_min_duration(field):
+def test_default_durations(field):
     obs = Observation(field)
+    # Each set lasts (default one exp at 120s):
+    assert obs.set_duration == 120 * u.second
+
+    # Total with default minimum lasts:
     assert obs.minimum_duration == 7200 * u.second
-
-
-def test_default_set_duration(field):
-    obs = Observation(field)
-    assert obs.set_duration == 1200 * u.second
 
 
 def test_print(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    str_repr = "Test Observation: 17.5 s exposures in blocks of 9, min/max 27/None, priority 100"
+    str_repr = "Test Observation: 17.5 s exposures in blocks of 9, min/max=27/None, priority=100"
     assert str(obs) == str_repr
 
 

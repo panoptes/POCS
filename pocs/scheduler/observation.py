@@ -10,7 +10,7 @@ class Observation(PanBase):
 
     @u.quantity_input(exp_time=u.second)
     def __init__(self, field, exp_time=120 * u.second, min_nexp=60, max_nexp=None,
-                 exp_set_size=10, priority=100, **kwargs):
+                 exp_set_size=1, priority=100, **kwargs):
         """An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -35,9 +35,9 @@ class Observation(PanBase):
             max_nexp (int, optional): The maxiumum number of exposures to take,
                 default `None`, which will dwell on the field as long as possible.
                 See also the note in the docstring.
-            exp_set_size (int, optional): Number of exposures taken per set, default 10.
+            exp_set_size (int, optional): Number of exposures taken per set, default 1,
+                which will match any block size.
             priority (int, optional): The priority of the target, default 100.
-            **kwargs: Description
         """
         PanBase.__init__(self)
 
@@ -233,7 +233,7 @@ class Observation(PanBase):
 ##################################################################################################
 
     def __str__(self):
-        str_repr = "{}: {} exposures in blocks of {}, min/max {}/{}, priority {:.0f}".format(
+        str_repr = "{}: {} exposures in blocks of {}, min/max={}/{}, priority={:.0f}".format(
             self.field.name,
             self.exp_time,
             self.exp_set_size,
