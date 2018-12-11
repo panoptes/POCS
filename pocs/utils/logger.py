@@ -16,7 +16,7 @@ from pocs.utils.config import load_config
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
 #    (profile, json_serialized_logger_config).
-all_loggers = {}
+_all_loggers = {}
 
 
 def field_name_to_key(field_name):
@@ -194,6 +194,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     Returns:
         logger(logging.logger): A configured instance of the logger
     """
+    global _all_loggers
 
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
@@ -201,7 +202,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     # If we already created a logger for this profile and log_config, return that.
     logger_key = (profile, json.dumps(log_config, sort_keys=True))
     try:
-        return all_loggers[logger_key]
+        return _all_loggers[logger_key]
     except KeyError:
         pass
 
@@ -270,9 +271,9 @@ def get_root_logger(profile='panoptes', log_config=None):
     logging.setLogRecordFactory(StrFormatLogRecord)
 
     logger.info('{:*^80}'.format(' Starting PanLogger '))
-    # TODO(jamessynge) Output name of script, cmdline args, etc. And do son
+    # TODO(jamessynge) Output name of script, cmdline args, etc. And do so
     # when the log rotates too!
-    all_loggers[logger_key] = logger
+    _all_loggers[logger_key] = logger
     return logger
 
 
