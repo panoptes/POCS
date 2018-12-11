@@ -11,6 +11,7 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+#
 import os
 import sys
 from recommonmark.parser import CommonMarkParser
@@ -26,7 +27,7 @@ from pocs.version import __version__
 # -- Project information -----------------------------------------------------
 
 project = 'POCS'
-copyright = '2018, Project PANOPTES Team'
+copyright = '2018, PANOPTES Team'
 author = 'PANOPTES Team'
 
 # The short X.Y version
@@ -46,21 +47,21 @@ release = ''
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
-    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
 ]
+
+napoleon_numpy_docstring = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 source_parsers = {'.md': CommonMarkParser}
-
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -80,11 +81,11 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path .
+# This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-# pygments_style = 'sphinx'
+pygments_style = 'sphinx'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -130,7 +131,7 @@ html_logo = '_static/pan-title-black-transparent.png'
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'PANOPTESdoc'
+htmlhelp_basename = 'POCSdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -157,7 +158,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PANOPTES.tex', 'PANOPTES Documentation',
+    (master_doc, 'POCS.tex', 'POCS Documentation',
      'PANOPTES Team', 'manual'),
 ]
 
@@ -167,7 +168,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'panoptes', 'PANOPTES Documentation',
+    (master_doc, 'pocs', 'POCS Documentation',
      [author], 1)
 ]
 
@@ -178,10 +179,28 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PANOPTES', 'PANOPTES Documentation',
-     author, 'PANOPTES', 'One line description of project.',
+    (master_doc, 'POCS', 'POCS Documentation',
+     author, 'POCS', 'PANOPTES Observatory Control System',
      'Miscellaneous'),
 ]
+
+
+# -- Options for Epub output -------------------------------------------------
+
+# Bibliographic Dublin Core info.
+epub_title = project
+
+# The unique identifier of the text. This can be a ISBN number
+# or the project homepage.
+#
+# epub_identifier = ''
+
+# A unique identification for the text.
+#
+# epub_uid = ''
+
+# A list of files that should not be packed into the epub file.
+epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
@@ -189,11 +208,7 @@ texinfo_documents = [
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'astroplan': ('https://astroplan.readthedocs.io/en/latest/', None),
-}
+intersphinx_mapping = {'https://docs.python.org/': None}
 
 # -- Options for todo extension ----------------------------------------------
 
