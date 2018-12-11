@@ -9,9 +9,9 @@ from pocs.scheduler.field import Field
 class Observation(PanBase):
 
     @u.quantity_input(exp_time=u.second)
-    def __init__(self, field, exp_time=120 * u.second, min_nexp=60,
+    def __init__(self, field, exp_time=120 * u.second, min_nexp=60, max_nexp=None,
                  exp_set_size=10, priority=100, **kwargs):
-        """ An observation of a given `~pocs.scheduler.field.Field`.
+        """An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
         must be taken at a set exposure time (`exp_time`). These exposures come
@@ -19,26 +19,25 @@ class Observation(PanBase):
         exposures  must be an integer multiple of the set size.
 
         Note:
-            An observation may consist of more exposures than `min_nexp` but
-            exposures will always come in groups of `exp_set_size`.
+            Both the `min_nexp` and the `max_nexp` must be multiples of the
+            `exp_set_size`. If `max_nexp` is less than `min_nexp` then `max_nexp`
+            will take priority.
 
         Decorators:
             u.quantity_input
 
         Arguments:
-            field {`pocs.scheduler.field.Field`} -- An object representing the
-            field to be captured
-
-        Keyword Arguments:
-            exp_time {u.second} -- Exposure time for individual exposures
-                (default: {120 * u.second})
-            min_nexp {int} -- The minimum number of exposures to be taken for a
-                given field (default: 60)
-            exp_set_size {int} -- Number of exposures to take per set
-                (default: {10})
-            priority {int} -- Overall priority for field, with 1.0 being highest
-                (default: {100})
-
+            field (`~pocs.scheduler.field.Field`): An object representing the
+                field to be captured.
+            exp_time (`astropy.unit.Quantity`, optional): The exposure time in
+                seconds, default 120.
+            min_nexp (int, optional): The minimum number of exposures to take, default 60.
+            max_nexp (int, optional): The maxiumum number of exposures to take,
+                default `None`, which will dwell on the field as long as possible.
+                See also the note in the docstring.
+            exp_set_size (int, optional): Number of exposures taken per set, default 10.
+            priority (int, optional): The priority of the target, default 100.
+            **kwargs: Description
         """
         PanBase.__init__(self)
 
@@ -48,9 +47,16 @@ class Observation(PanBase):
             self.logger.error("Exposure time (exp_time) must be greater than 0")
 
         assert min_nexp % exp_set_size == 0, \
-            self.logger.error(
-                "Minimum number of exposures (min_nexp) must be " +
-                "multiple of set size (exp_set_size)")
+            self.logger.error('min_nexp exposures must occur in blocks of exp_set_size')
+
+        if max_nexp:
+            assert max_nexp % exp_set_size == 0, \
+                self.logger.error('max_nexp exposures must occur in blocks of exp_set_size')
+
+        # Make sure max_nexp is larger than min_nexp if given.
+        if max_nexp and max_nexp < min_nexp:
+            self.logger.debug(f'Max number of exposures less than minimum, changing minimum.')
+            min_nexp = max_nexp
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
 
@@ -58,6 +64,7 @@ class Observation(PanBase):
 
         self.exp_time = exp_time
         self.min_nexp = min_nexp
+        self.max_nexp = max_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
         self.pointing_images = OrderedDict()
@@ -210,6 +217,7 @@ class Observation(PanBase):
             'field_ra': self.field.coord.ra.value,
             'merit': self.merit,
             'min_nexp': self.min_nexp,
+            'max_nexp': self.max_nexp,
             'minimum_duration': self.minimum_duration.value,
             'priority': self.priority,
             'ra_mnt': self.field.coord.ra.value,
@@ -225,5 +233,13 @@ class Observation(PanBase):
 ##################################################################################################
 
     def __str__(self):
-        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exp_time, self.exp_set_size, self.min_nexp, self.priority)
+        str_repr = "{}: {} exposures in blocks of {}, min/max {}/{}, priority {:.0f}".format(
+            self.field.name,
+            self.exp_time,
+            self.exp_set_size,
+            self.min_nexp,
+            self.max_nexp,
+            self.priority
+        )
+
+        return str_repr

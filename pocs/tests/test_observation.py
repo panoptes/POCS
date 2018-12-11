@@ -68,6 +68,22 @@ def test_good_min_set_combo(field):
     assert isinstance(obs, Observation)
 
 
+def test_min_max_nexp(field):
+    # Test with neither
+    obs = Observation(field)
+    assert obs.min_nexp == 60
+    assert obs.max_nexp is None
+
+    # Test with min_nexp == max_nexp
+    obs = Observation(field, min_nexp=10, max_nexp=10)
+    assert obs.min_nexp == obs.max_nexp
+
+    # Test with min_nexp > max_nexp
+    obs = Observation(field, max_nexp=10)
+    assert obs.min_nexp == 10
+    assert obs.max_nexp == 10
+
+
 def test_default_min_duration(field):
     obs = Observation(field)
     assert obs.minimum_duration == 7200 * u.second
@@ -80,7 +96,8 @@ def test_default_set_duration(field):
 
 def test_print(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert str(obs) == "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
+    str_repr = "Test Observation: 17.5 s exposures in blocks of 9, min/max 27/None, priority 100"
+    assert str(obs) == str_repr
 
 
 def test_seq_time(field):
