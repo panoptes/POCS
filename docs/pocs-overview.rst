@@ -163,10 +163,11 @@ or remains in the sleeping or ready state.
 .. include:: pocs-alternatives.rst
 
 .. [1] Writing hardware simulators, while helpful for testing purposes, can 
-also add significant overhead to a project. For major projects such as the
-LSST or TMT this is obviously a requirement. PANOPTES implements basic
-hardware simulators for the mount and camera but full-scale hardware 
-simulation of specific components has not yet been achieved.
+  also add significant overhead to a project. For major projects such as the
+  LSST or TMT this is obviously a requirement. PANOPTES implements basic
+  hardware simulators for the mount and camera but full-scale hardware 
+  simulation of specific components has not yet been achieved.
+
 
 .. [2] The Python FSM used by POCS is in fact called `transitions <https://github.com/tyarkoni/transitions>`_. 
 
