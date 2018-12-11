@@ -15,6 +15,10 @@ def on_enter(event_data):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
+        # Check for maximum number of exposures
+        if observation.current_exp_num == observation.max_nexp:
+            pocs.logger.info('Maximum number of exposures reached, rescheduling')
+
         # Check for minimum number of exposures
         if observation.current_exp_num >= observation.min_nexp:
             # Check if we have completed an exposure block

@@ -269,8 +269,7 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
                                                     'position': '20h06m15.4536s +44d27m24.75s',
                                                     'priority': '100',
                                                     'exp_time': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
+                                                    'max_nexp': 2,
                                                     })
 
         pocs.initialize()
@@ -407,8 +406,7 @@ def test_run_complete(pocs):
                                                         'position': '20h06m15.4536s +44d27m24.75s',
                                                         'priority': '100',
                                                         'exp_time': 2,
-                                                        'min_nexp': 2,
-                                                        'exp_set_size': 2,
+                                                        'max_nexp': 2,
                                                 })
 
     pocs.initialize()
@@ -431,8 +429,7 @@ def test_run_power_down_interrupt(observatory, cmd_publisher, msg_subscriber):
                                                     'position': '20h06m15.4536s +44d27m24.75s',
                                                     'priority': '100',
                                                     'exp_time': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
+                                                    'max_nexp': 2,
                                                     })
         pocs.logger.info('Starting observatory run')
         pocs.run()
