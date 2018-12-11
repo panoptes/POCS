@@ -45,13 +45,14 @@ def format_has_reference_keys(fmt, args):
     """Does fmt have named references in it?
 
     Args:
-        fmt: A format string of the type supported by string.Formatter.
-        args: A dictionary which *may* be providing values to be formatted
+        fmt (str): A format string of the type supported by `string.Formatter`.
+
+        args (dict): A dictonary which may be providing values to be formatted
             according to the format fmt.
 
     Returns:
-        True if fmt has any format substitution field that references an
-        entry in args by a string key. False otherwise.
+        bool: True if fmt has any format substitution field that references an
+            entry in args by a string key. False otherwise.
     """
     assert isinstance(args, dict)
     try:
