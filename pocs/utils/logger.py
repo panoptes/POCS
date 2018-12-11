@@ -102,8 +102,9 @@ def logger_msg_formatter(fmt, args):
     The logging package assumes that if the sole argument to the logger
     call is a dict, that the caller intends to use that dict as a source
     for mapping key substitutions in the formatting operation, so
-    discards the sequence that surrounded the dict (as part of *args),
+    discards the sequence that surrounded the dict (as part of `*args`),
     keeping only the dict as the value of logging.LogRecord.args here.
+
     It happens that the old style formatting operator '%' would detect
     whether the string included keys mapping into the dict on the right
     hand side of the % operator, and if so would look them up; however,
