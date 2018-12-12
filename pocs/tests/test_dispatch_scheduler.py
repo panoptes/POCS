@@ -69,6 +69,7 @@ def field_list():
         name: Wasp 33
         position: 02h26m51.0582s +37d33m01.733s
         priority: 100
+        exp_set_size: 10
     -
         name: M42
         position: 05h35m17.2992s -05d23m27.996s
