@@ -217,9 +217,11 @@ def get_root_logger(profile='panoptes', log_config=None):
             # KeyError in the for loop below if 'formatters' is missing.
             warn('formatters is missing from log_config!')
             warn(f'log_config: {log_config!r}')
-        for name, formatter in log_config['formatters'].items():
-            log_config['formatters'][name].setdefault('()', _UTCFormatter)
+
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+
+        # Make the log use UTC
+        logging.Formatter.converter = time.gmtime
     else:
         log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
 
@@ -274,8 +276,3 @@ def get_root_logger(profile='panoptes', log_config=None):
     # when the log rotates too!
     all_loggers[logger_key] = logger
     return logger
-
-
-class _UTCFormatter(logging.Formatter):
-    """ Simple class to convert times to UTC in the logger """
-    converter = time.gmtime
