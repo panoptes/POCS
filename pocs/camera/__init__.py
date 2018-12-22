@@ -25,6 +25,8 @@ def list_connected_cameras():
     """
 
     gphoto2 = shutil.which('gphoto2')
+    if not gphoto2:  # pragma: no cover
+        raise error.NotFound('The gphoto2 command is missing, please install.')
     command = [gphoto2, '--auto-detect']
     result = subprocess.check_output(command)
     lines = result.decode('utf-8').split('\n')
