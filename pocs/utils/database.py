@@ -3,6 +3,7 @@ import os
 import pymongo
 import threading
 import weakref
+from contextlib import suppress
 from warnings import warn
 from uuid import uuid4
 from glob import glob
@@ -403,23 +404,28 @@ class PanFileDB(AbstractPanDB):
 
     def find(self, collection, obj_id):
         collection_fn = self._get_file(collection)
-        with open(collection_fn, 'r') as f:
-            for line in f:
-                # Note: We can speed this up for the case where the obj_id doesn't
-                # contain any characters that json would need to escape: first
-                # check if the line contains the obj_id; if not skip. Else, parse
-                # as json, and then check for the _id match.
-                obj = json_util.loads(line)
-                if obj['_id'] == obj_id:
-                    return obj
-        return None
-
-    def clear_current(self, type):
-        current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
         try:
-            os.remove(current_f)
+            with open(collection_fn, 'r') as f:
+                for line in f:
+                    # Note: We can speed this up for the case where the obj_id doesn't
+                    # contain any characters that json would need to escape: first
+                    # check if the line contains the obj_id; if not skip. Else, parse
+                    # as json, and then check for the _id match.
+                    obj = json_util.loads(line)
+                    if obj['_id'] == obj_id:
+                        return obj
         except FileNotFoundError:
-            pass
+            return None
+
+    def clear_current(self, record_type):
+        """Clears the current record of the given type.
+
+        Args:
+            record_type (str): The record type, e.g. 'weather', 'environment', etc.
+        """
+        current_f = self._get_file(record_type, permanent=False)
+        with suppress(FileNotFoundError):
+            os.remove(current_f)
 
     def _get_file(self, collection, permanent=True):
         if permanent:
