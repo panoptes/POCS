@@ -3,6 +3,7 @@ import os
 import pymongo
 import threading
 import weakref
+from contextlib import suppress
 from warnings import warn
 from uuid import uuid4
 from glob import glob
@@ -416,12 +417,15 @@ class PanFileDB(AbstractPanDB):
         except FileNotFoundError:
             return None
 
-    def clear_current(self, type):
-        current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
-        try:
+    def clear_current(self, record_type):
+        """Clears the current record of the given type.
+
+        Args:
+            record_type (str): The record type, e.g. 'weather', 'environment', etc.
+        """
+        current_f = self._get_file(record_type, permanent=False)
+        with suppress(FileNotFoundError):
             os.remove(current_f)
-        except FileNotFoundError:
-            pass
 
     def _get_file(self, collection, permanent=True):
         if permanent:
