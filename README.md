@@ -1,7 +1,7 @@
 Welcome to POCS documentation!
 ================================
 <p align="center">
-<img src="http://www.projectpanoptes.org/images/logo/png/sm/logo-inverted.png" alt="PANOPTES logo" style="border: 1px solid;" width="400px" />  
+<img src="https://projectpanoptes.org/uploads/2018/12/16/pan-logo.png" alt="PANOPTES logo" style="border: 1px solid;" width="400px" />  
 </p>
 <br>
 
