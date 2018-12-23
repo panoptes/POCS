@@ -2,7 +2,6 @@ import contextlib
 import os
 import shutil
 import signal
-import subprocess
 import time
 
 from astropy import units as u
@@ -219,6 +218,79 @@ def get_free_space(dir=None):
     return free_space
 
 
+def string_to_params(opts):
+    """Parses a single string into parameters that can be passed to a function.
+
+    A user of the `peas_shell` can supply positional and keyword arguments to the
+    command being called, however the `Cmd` module that is used for the shell does
+    not parse these options but instead passes this as a single string. This utility
+    method does some simple parsing of that string and returns a list of positional
+    parameters and a dictionary of keyword arguments.  A keyword argument is considered
+    anything that contains an equal sign (e.g. `exptime=30`). Any leading `--` to
+    a keyword argument will be stripped during parsing.
+
+    A list of items can be passed by specifying the keyword argument multiple times.
+
+
+    Note:
+        This function will attempt to parse keyword values as floats if possible.
+        If a string is required include a single quote around the value, e.g.
+        `param='42'` will keep the value as the string `'42'`.
+
+
+    >>> from pocs.utils import string_to_params
+    >>> args, kwargs = string_to_params("parg1 parg2 key1=a_str key2=2 key2='2' key3=03")
+    >>> args
+    ['parg1', 'parg2']
+    >>> kwargs
+    {'key1': 'a_str', 'key2': [2.0, '2'], 'key3': 3.0}
+    >>> isinstance(kwargs['key2'][0], float)
+    True
+    >>> isinstance(kwargs['key2'][1], str)
+    True
+    >>> kwargs['key2'][1] == '2'
+    True
+    >>> args, kwargs = string_to_params('--key1=val1 --key1-2=val1-2')
+    >>> kwargs
+    {'key1': 'val1', 'key1-2': 'val1-2'}
+
+    Args:
+        opts (str): A single string containing everything beyond the actual
+            command that is called.
+
+    Returns:
+        tuple(list, dict): Returns a list of positional parameters and a dictionary
+            of keyword arguments. These correspond to the *args and **kwargs that
+            a typical function would receive.
+    """
+    args = []
+    kwargs = {}
+
+    for opt in opts.split(' '):
+        if '=' not in opt:
+            args.append(opt)
+        else:
+            name, value = opt.split('=', maxsplit=1)
+            if name.startswith('--') and len(name) > 2:
+                name = name[2:]
+
+            if "'" in value:
+                # Remove the explict single quotes.
+                value = value.replace("'", "")
+            else:
+                # Make it a number if possible.
+                with contextlib.suppress(ValueError):
+                    value = float(value)
+
+            if name in kwargs:
+                kwargs[name] = listify(kwargs[name])
+                kwargs[name].append(value)
+            else:
+                kwargs[name] = value
+
+    return args, kwargs
+
+
 def load_module(module_name):
     """Dynamically load a module.
 
@@ -283,6 +355,7 @@ class DelaySigTerm(contextlib.ContextDecorator):
             db.WriteCurrentRecord(record)
     """
     # TODO(jamessynge): Consider generalizing as DelaySignal(signum).
+
     def __enter__(self, callback=None):
         """
         Args:
