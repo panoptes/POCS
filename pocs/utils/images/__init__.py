@@ -3,8 +3,11 @@ import subprocess
 import shutil
 from contextlib import suppress
 
-from matplotlib import pyplot as plt
 from warnings import warn
+
+from matplotlib import cm as colormap
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
@@ -19,7 +22,7 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(plt.cm.inferno)
+palette = copy(colormap.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
@@ -162,10 +165,13 @@ def _make_pretty_from_fits(fname=None,
 
     norm = ImageNormalize(interval=PercentileInterval(clip_percent), stretch=LogStretch())
 
-    fig = plt.figure(figsize=figsize, dpi=dpi)
+    fig = Figure()
+    FigureCanvas(fig)
+    fig.set_size_inches(*figsize)
+    fig.dpi = dpi
 
     if wcs.is_celestial:
-        ax = plt.subplot(projection=wcs)
+        ax = fig.add_subplot(1, 1, 1, projection=wcs)
         ax.coords.grid(True, color='white', ls='-', alpha=alpha)
 
         ra_axis = ax.coords['ra']
@@ -186,7 +192,7 @@ def _make_pretty_from_fits(fname=None,
             exclude_overlapping=True
         )
     else:
-        ax = plt.subplot()
+        ax = fig.add_subplot(111)
         ax.grid(True, color='white', ls='-', alpha=alpha)
 
         ax.set_xlabel('X / pixels')
@@ -194,11 +200,14 @@ def _make_pretty_from_fits(fname=None,
 
     im = ax.imshow(data, norm=norm, cmap=palette, origin='lower')
     fig.colorbar(im)
-    plt.title(title)
+    fig.suptitle(title)
 
     new_filename = fname.replace('.fits', '.jpg')
-    plt.savefig(new_filename, bbox_inches='tight')
-    plt.close()
+    fig.savefig(new_filename, bbox_inches='tight')
+
+    # explicitly close and delete figure
+    fig.clf()
+    del fig
 
     return new_filename
 
@@ -228,7 +237,7 @@ def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):
 def make_timelapse(
         directory,
         fn_out=None,
-        file_type='jpg',
+        glob_pattern='20[1-9][0-9]*T[0-9]*.jpg',
         overwrite=False,
         timeout=60,
         verbose=False,
@@ -241,7 +250,10 @@ def make_timelapse(
         directory (str): Directory containing image files
         fn_out (str, optional): Full path to output file name, if not provided,
             defaults to `directory` basename.
-        file_type (str, optional): Type of file to search for, default 'jpg'.
+        glob_pattern (str, optional): A glob file pattern of images to include,
+            default '20[1-9][0-9]*T[0-9]*.jpg', which corresponds to the observation
+            images but excludes any pointing images. The pattern should be relative
+            to the local directory.
         overwrite (bool, optional): Overwrite timelapse if exists, default False.
         timeout (int): Timeout for making movie, default 60 seconds.
         verbose (bool, optional): Show output, default False.
@@ -274,7 +286,7 @@ def make_timelapse(
     if ffmpeg is None:
         raise error.InvalidSystemCommand("ffmpeg not found, can't make timelapse")
 
-    inputs_glob = os.path.join(directory, '*.{}'.format(file_type))
+    inputs_glob = os.path.join(directory, glob_pattern)
 
     try:
         ffmpeg_cmd = [
