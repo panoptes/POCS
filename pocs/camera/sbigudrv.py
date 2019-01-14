@@ -636,7 +636,10 @@ command_codes = {'CC_NULL': 0,
                  'CC_CUSTOMER_OPTIONS': 55,
                  'CC_DEBUG_LOG': 56,
                  'CC_QUERY_USB2': 57,
-                 'CC_QUERY_ETHERNET2': 58}
+                 'CC_QUERY_ETHERNET2': 58,
+                 'CC_GET_AO_MODEL': 59,
+                 'CC_QUERY_USB3': 60,
+                 'CC_QUERY_COMMAND_STATUS2': 61}
 
 # Reversed dictionary, just in case you ever need to look up a command given a
 # command code.
@@ -685,7 +688,9 @@ errors = {0: 'CE_NO_ERROR',
           38: 'CE_DIFF_GUIDER_ERROR',
           39: 'CE_RIPPLE_CORRECTION_ERROR',
           40: 'CE_EZUSB_RESET',
-          41: 'CE_NEXT_ERROR'}
+          41: 'CE_INCOMPATIBLE_FIRMWARE',
+          42: 'CE_INVALID_HANDLE',
+          43: 'CE_NEXT_ERROR'}
 
 # Reverse dictionary, just in case you ever need to look up an error code given
 # an error name
