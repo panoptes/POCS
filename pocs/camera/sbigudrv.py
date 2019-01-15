@@ -490,20 +490,24 @@ class SBIGDriver(PanBase):
 
     def _disable_vdd_optimized(self, handle):
         """
-        There are many driver control parameters, almost all of which we would not want to change from their default
-        values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
+        There are many driver control parameters, almost all of which we would not want to change
+        from their default values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
 
-            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces amplifier glow)
-            only for images 3 seconds and longer. This was done to increase the image throughput for short exposures as
-            raising and lowering Vdd takes 100s of milliseconds. The lowering and subsequent raising of Vdd delays the
-            image readout slightly which causes short exposures to have a different bias structure than long exposures.
-            Setting this parameter to FALSE stops the short exposure optimization from occurring.
+            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which
+            reduces amplifier glow) only for images 3 seconds and longer. This was done to increase
+            the image throughput for short exposures as raising and lowering Vdd takes 100s of
+            milliseconds. The lowering and subsequent raising of Vdd delays the image readout
+            slightly which causes short exposures to have a different bias structure than long
+            exposures. Setting this parameter to FALSE stops the short exposure optimization from
+            occurring.
 
-        The default behaviour will improve image throughput for exposure times of 3 seconds or less but at the penalty
-        of altering the bias structure between short and long exposures. This could cause systematic errors in bias
-        frames, dark current measurements, etc. It's probably not worth it.
+        The default behaviour will improve image throughput for exposure times of 3 seconds or less
+        but at the penalty of altering the bias structure between short and long exposures. This
+        could cause systematic errors in bias frames, dark current measurements, etc. It's probably
+        not worth it.
         """
-        set_driver_control_params = SetDriverControlParams(driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
+        set_driver_control_params = SetDriverControlParams(
+            driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
         self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
         with self._command_lock:
             self._set_handle(handle)
@@ -775,7 +779,23 @@ device_types = {0: "DEV_NONE",
                 0x7F06: "DEV_USB5",
                 0x7F07: "DEV_USB6",
                 0x7F08: "DEV_USB7",
-                0x7F09: "DEV_USB8"}
+                0x7F09: "DEV_USB8",
+                0x7F0A: "DEV_USB9",
+                0x7F0B: "DEV_USB10",
+                0x7F0C: "DEV_USB11",
+                0x7F0D: "DEV_USB12",
+                0x7F0E: "DEV_USB13",
+                0x7F0F: "DEV_USB14",
+                0x7F10: "DEV_USB15",
+                0x7F11: "DEV_USB16",
+                0x7F12: "DEV_USB17",
+                0x7F13: "DEV_USB18",
+                0x7F14: "DEV_USB19",
+                0x7F15: "DEV_USB20",
+                0x7F16: "DEV_USB21",
+                0x7F19: "DEV_USB22",
+                0x7F1A: "DEV_USB23",
+                0x7F1B: "DEV_USB24"}
 
 # Reverse dictionary
 device_type_codes = {device: code for code, device in device_types.items()}
@@ -1053,6 +1073,9 @@ driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABL
                                                              'DCP_COLUMN_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_COUNT',
+                                                             'DCP_TDI_MODE_DRIFT_RATE',
+                                                             'DCP_OVERRIDE_AD_GAIN',
+                                                             'DCP_ENABLE_AUTO_OFFSET',
                                                              'DCP_LAST'))}
 
 driver_control_codes = {param: code for code, param in driver_control_params.items()}

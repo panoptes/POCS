@@ -1,5 +1,6 @@
 from pocs.base import PanBase
 
+
 class AbstractFilterWheel(PanBase):
     """
     Base class for all filter wheels
@@ -24,9 +25,29 @@ class AbstractFilterWheel(PanBase):
         self._connected = False
         self._serial_number = 'XXXXXX'
 
+        self.logger.debug('Filter wheel created: {} on {}'.format(self.name, self.port))
+
+##################################################################################################
+# Properties
+##################################################################################################
+
+
+@property
+def uid(self):
+    """ A serial number of the filter wheel """
+    return self._serial_number
+
+
+@property
+def is_connected(self):
+    """ Is the filterwheel available """
+    return self._connected
+
+
 ##################################################################################################
 # Methods
 ##################################################################################################
+
 
 def go_to(self, position):
     """
@@ -40,7 +61,7 @@ def _fits_header(self, header):
     header.set('FW-MOD', self.model, 'Filter wheel model')
     header.set('FW-ID', self.uid, 'Filter wheel serial number')
     header.set('FW-POS', self.position, 'Filter wheel position')
-    header.set('FILTER', self.filter_names[self.position], 'Filter name')
+    header.set('FILTER', self.filter_name, 'Filter name')
     return header
 
 
