@@ -13,6 +13,7 @@ from ctypes.util import find_library
 from warnings import warn
 import time
 from threading import Timer, Lock
+import enum
 
 import numpy as np
 from numpy.ctypeslib import as_ctypes
@@ -105,7 +106,8 @@ class SBIGDriver(PanBase):
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info('SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
+        self.logger.info('SBIGDriver initialised: found {} cameras'.format(
+            self._camera_info.camerasFound))
 
     @property
     def retries(self):
@@ -149,7 +151,8 @@ class SBIGDriver(PanBase):
             try:
                 index = self._handle_assigned.index(False)
             except ValueError:
-                # All handles already assigned, must be trying to intialising more cameras than are connected.
+                # All handles already assigned, must be trying to intialising more cameras than are
+                # connected.
                 self.logger.error('No connected SBIG cameras available!')
                 return (INVALID_HANDLE_VALUE, None)
 
@@ -164,7 +167,8 @@ class SBIGDriver(PanBase):
 
         # Serial number, name and type should match with those from Query USB Info obtained earlier
         camera_serial = str(self._camera_info.usbInfo[index].serialNumber, encoding='ascii')
-        assert camera_serial == ccd_info['serial number'], self.logger.error('Serial number mismatch!')
+        assert camera_serial == ccd_info['serial number'], \
+            self.logger.error('Serial number mismatch!')
 
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
@@ -176,7 +180,8 @@ class SBIGDriver(PanBase):
         return (handle, ccd_info)
 
     def query_temp_status(self, handle):
-        query_temp_params = QueryTemperatureStatusParams(temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
+        query_temp_params = QueryTemperatureStatusParams(
+            temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
         query_temp_results = QueryTemperatureStatusResults2()
 
         with self._command_lock:
@@ -205,7 +210,13 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, header=None):
+    def take_exposure(self,
+                      handle,
+                      seconds,
+                      filename,
+                      exposure_event=None,
+                      dark=False,
+                      header=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -217,8 +228,9 @@ class SBIGDriver(PanBase):
             seconds = seconds.to(u.second).value
         centiseconds = int(seconds * 100)
 
-        # This setting is ignored by most cameras (even if they do have ABG), only exceptions are the TC211 versions
-        # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the PixCel255
+        # This setting is ignored by most cameras (even if they do have ABG), only exceptions are
+        # the TC211 versions of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the
+        # PixCel255
         if ccd_info['imaging ABG']:
             # Camera supports anti-blooming, use it on medium setting?
             abg_command_code = abg_state_codes['ABG_CLK_MED7']
@@ -288,8 +300,8 @@ class SBIGDriver(PanBase):
                     self._ccd_info[handle]['serial number']))
 
         # Start exposure
-        self.logger.debug('Starting {} second exposure on {}'.format(seconds,
-                                                                     self._ccd_info[handle]['serial number']))
+        self.logger.debug('Starting {} second exposure on {}'.format(
+            seconds, self._ccd_info[handle]['serial number']))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
@@ -366,23 +378,24 @@ class SBIGDriver(PanBase):
                                        params=readout_line_params,
                                        results=as_ctypes(image_data[i]))
                 except RuntimeError as err:
-                    message = 'Readout error on {}: expected {} rows, got {}!'.format(self._ccd_info[handle]['serial number'],
-                                                                                      height,
-                                                                                      i)
+                    message = 'Readout error on {}: expected {} rows, got {}!'.format(
+                        self._ccd_info[handle]['serial number'], height, i)
                     self.logger.error(message)
                     self.logger.error(err)
                     warn(message)
                     break
 
             try:
-                self.logger.debug("Ending readout on {}".format(self._ccd_info[handle]['serial number']))
+                self.logger.debug("Ending readout on {}".format(
+                    self._ccd_info[handle]['serial number']))
                 self._send_command('CC_END_READOUT', params=end_readout_params)
             except RuntimeError as err:
-                message = "Error ending readout on {}: {}".format(self._ccd_info[handle]['serial number'],
-                                                                  err)
+                message = "Error ending readout on {}: {}".format(
+                    self._ccd_info[handle]['serial number'], err)
                 self.logger.error(message)
             else:
-                self.logger.debug('Readout on {} complete'.format(self._ccd_info[handle]['serial number']))
+                self.logger.debug('Readout on {} complete'.format(
+                    self._ccd_info[handle]['serial number']))
             finally:
                 fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
@@ -405,16 +418,25 @@ class SBIGDriver(PanBase):
         ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
 
-        # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour, Bayer/Truesense.
+        # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour,
+        # Bayer/Truesense.
         ccd_info_params6 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
         ccd_info_results6 = GetCCDInfoResults6()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params0, results=ccd_info_results0)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params2, results=ccd_info_results2)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params4, results=ccd_info_results4)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6, results=ccd_info_results6)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params0,
+                               results=ccd_info_results0)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params2,
+                               results=ccd_info_results2)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params4,
+                               results=ccd_info_results4)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params6,
+                               results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
         ccd_info = {'firmware version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
@@ -435,7 +457,8 @@ class SBIGDriver(PanBase):
                     'colour': bool(ccd_info_results6.ccd_b0),
                     'Truesense': bool(ccd_info_results6.ccd_b1)}
 
-        readout_mode_info = self._parse_readout_info(ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
+        readout_mode_info = self._parse_readout_info(
+            ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
         ccd_info['readout modes'] = readout_mode_info
 
         return ccd_info
@@ -551,9 +574,10 @@ class SBIGDriver(PanBase):
 
             # Send the command to the driver. Need to pass pointers to params,
             # results structs or None (which gets converted to a null pointer).
-            return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
-                                                        (ctypes.byref(params) if params else None),
-                                                        (ctypes.byref(results) if results else None))
+            return_code = self._CDLL.SBIGUnivDrvCommand(
+                command_code,
+                (ctypes.byref(params) if params else None),
+                (ctypes.byref(results) if results else None))
 
             # Look up the error message for the return code, raises Error if no
             # match found. This should never happen, and if it does it probably
@@ -562,7 +586,8 @@ class SBIGDriver(PanBase):
             try:
                 error = errors[return_code]
             except KeyError:
-                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(
+                    return_code))
 
             retries_remaining -= 1
 
@@ -923,7 +948,8 @@ temperature_regulations = {0: "REGULATION_OFF",
                            5: "REGULATION_ENABLE_AUTOFREEZE",
                            6: "REGULATION_DISABLE_AUTOFREEZE"}
 
-temperature_regulation_codes = {regulation: code for code, regulation in temperature_regulations.items()}
+temperature_regulation_codes = {regulation: code for code, regulation in
+                                temperature_regulations.items()}
 
 
 class SetTemperatureRegulationParams(ctypes.Structure):
@@ -1263,3 +1289,109 @@ class GetDriverInfoResults0(ctypes.Structure):
     _fields_ = [('version', ctypes.c_ushort),
                 ('name', ctypes.c_char * 64),
                 ('maxRequest', ctypes.c_ushort)]
+
+
+#################################################################################
+# Filter wheel related
+#################################################################################
+
+class CFWParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the CFW (colour filter wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwCommand', ctypes.c_ushort),
+                ('cfwParam1', ctypes.c_ulong),
+                ('cfwParam2', ctypes.c_ulong),
+                ('outLength', ctypes.c_ushort),
+                ('outPtr', ctypes.c_char_p),
+                ('inLength', ctypes.c_ushort),
+                ('inPtr', ctypes.c_char_p)]
+
+
+class CFWResults(ctypes.Structure):
+    """
+    ctypes Structure used to fold the results from the CFW (colour filer wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwPosition', ctypes.c_ushort),
+                ('cfwStatus', ctypes.c_ushort),
+                ('cfwError', ctypes.c_ushort),
+                ('cfwResults1', ctypes.c_ulong),
+                ('cfwResults2', ctypes.c_ulong)]
+
+
+@enum.unique
+class CFWModelSelect(enum.IntEnum):
+    """
+    Filter wheel model selection enum
+    """
+    UNKNOWN = 0
+    CFW2 = emum.auto()
+    CFW5 = enum.auto()
+    CFW8 = enum.auto()
+    CFWL = enum.auto()
+    CFW402 = enum.auto()
+    AUTO = enum.auto()
+    CFW6A = enum.auto()
+    CFW10 = enum.auto()
+    CFW10_SERIAL = enum.auto()
+    CFW9 = enum.auto()
+    CFWL8 = enum.auto()
+    CFWL8G = enum.auto()
+    CFW1603 = enum.auto()
+    FW5_STX = enum.auto()
+    FW5_8300 = enum.auto()
+    FW8_8300 = enum.auto()
+    FW7_STX = enum.auto()
+    FW8_STT = enum.auto()
+    FW5_STF_DETENT = enum.auto()
+
+
+@enum.unique
+class CFWCommand(enum.IntEnum):
+    """
+    Filter wheel command enum
+    """
+    QUERY = 0
+    GOTO = enum.auto()
+    INIT = enum.auto()
+    GET_INFO = enum.auto()
+    OPEN_DEVICE = enum.auto()
+    CLOSE_DEVICE = enum.auto()
+
+
+@emum.unique
+class CFWStatus(enum.IntEnum):
+    """
+    Filter wheel status enum
+    """
+    UNKNOWN = 0
+    IDLE = enum.auto()
+    BUSY = enum.auto()
+
+
+@enum.unique
+class CFWError(enum.IntEnum):
+    """
+    Filter wheel errors enum
+    """
+    NONE = 0
+    BUSY = enum.auto()
+    BAD_COMMAND = enum.auto()
+    CAL_ERROR = enum.auto()
+    MOTOR_TIMEOUT = enum.auto()
+    BAD_MODEL = enum.auto()
+    DEVICE_NOT_CLOSED = enum.auto()
+    DEVICE_NOT_OPEN = enum.auto()
+    I2C_ERROR = enum.auto()
+
+
+@enum.unique
+class CFWGetInfoSelect(enum.IntEnum):
+    """
+    Filter wheel get info select enum
+    """
+    FIRMWARE_VERSION = 0
+    CAL_DATA = enum.auto()
+    DATA_REGISTERS = enum.auto()
