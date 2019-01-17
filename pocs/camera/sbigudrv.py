@@ -318,6 +318,18 @@ class SBIGDriver(PanBase):
 
         return readout_thread
 
+    def cfw_init(self, handle):
+        """
+        Initialise colour filter wheel
+
+        Sends the initialise command to the colour filter wheel attached to the camera
+        specified with handle. This will generally not be required because all SBIG filter
+        wheels initialise themselves on power up.
+        """
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_init_params, cfw_init_results)
+
 # Private methods
 
     def _readout(self, handle, centiseconds, filename, readout_mode_code,
@@ -596,6 +608,14 @@ class SBIGDriver(PanBase):
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
         if error != 'CE_NO_ERROR':
+            if error = 'CE_CFW_ERROR':
+                cfw_error_code = results.cfwError
+                try:
+                    error = "CFW {}".format(CFWError(cfw_error_code).name)
+                except ValueError:
+                    raise RunTImeError("SBIG Driver return unknown CFW error code '{}'".format(
+                        cfw_error_code))
+
             raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
 
         return error
