@@ -318,7 +318,7 @@ class SBIGDriver(PanBase):
 
         return readout_thread
 
-    def cfw_init(self, handle):
+    def cfw_init(self, handle, model='AUTO'):
         """
         Initialise colour filter wheel
 
@@ -326,9 +326,73 @@ class SBIGDriver(PanBase):
         specified with handle. This will generally not be required because all SBIG filter
         wheels initialise themselves on power up.
         """
+        cfw_init_params = CFWParams(CFWModelSelect[model],
+                                    CFWCommand.INIT)
+        cfw_init_results = CFWResults()
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_init_params, cfw_init_results)
+
+        return self._cfw_parse_results(cfw_query_results)
+
+    def cfw_query(self, handle, model='AUTO'):
+        """
+        Query status of the colour filter wheel
+
+        This is mostly used to poll the filter wheel status after an asking the filter wheel
+        to move in order to find out when the move has completed.
+        """
+        cfw_query_params = CFWParams(CFWModelSelect[model],
+                                     CFWCommand.QUERY)
+        cfw_query_results = CFWResults()
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_query_params, cfw_query_results)
+
+        return self._cfw_parse_results(cfw_query_results)
+
+    def cfw_get_info(self, handle, model='AUTO'):
+        """
+        Get info from the colour filter wheel
+
+        This will return the usual status information plus the firmware version and the number
+        of filter wheel positions.
+        """
+        cfw_info_params = CFWParams(CFWModelSelect[model],
+                                    CFWCommand.GET_INFO,
+                                    CFWGetInfoSelect.FIRMWARE_VERSION)
+        cfw_info_results = CFWResults()
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_info_params, cfw_info_results)
+
+        results = self._cfw_parse_results(cfw_info_results)
+        results['firmware_version'] = int(cfw_info_results.cfwResults1)
+        results['n_positions'] = int(cfw_info_results.cfwResults2)
+
+        return results
+
+    def cfw_goto(self, handle, position, model='AUTO'):
+        """
+        Move colour filer wheel to a given position
+        """
+        # First check that the filter wheel isn't currently moving, and that the requested
+        # position is valid.
+        info = self.cfw_get_info(handle, model)
+        if position < 1 or position > info['n_positions']:
+            raise RunTimeError("Position must be between 1 and {}, got {}".format(
+                info['n_positions'], position
+            ))
+        if info['status'] == CFWStatus.BUSY:
+            raise RunTimeError("Attempt to move filter wheel when already moving")
+
+        cfw_goto_params = CFWParams(CFWModelSelect(model),
+                                    CFWCommand.GOTO,
+                                    position)
+        cfw_goto_results = CFWResults()
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_goto_params, cfw_goto_results)
 
 # Private methods
 
@@ -547,6 +611,20 @@ class SBIGDriver(PanBase):
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_SET_DRIVER_CONTROL', params=set_driver_control_params)
+
+    def _cfw_parse_results(self, cfw_results):
+        """
+        Converts filter wheel results Structure into something more Pythonic
+        """
+        results = {'model': CFWModelSelect(cfw_query_reults.cfwModel).name,
+                   'position': int(cfw_query_results.cfwPosition),
+                   'status': CFWStatus(cfw_results.cfwStatus).name,
+                   'error': CFWError(cfw_query_results.cfwError).name}
+
+        if results['position'] == 0:
+            results['position'] = float('nan')  # 0 means position unknown
+
+        return results
 
     def _set_handle(self, handle):
         set_handle_params = SetDriverHandleParams(handle)
