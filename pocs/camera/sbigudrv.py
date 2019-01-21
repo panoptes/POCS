@@ -12,7 +12,7 @@ import ctypes
 from ctypes.util import find_library
 from warnings import warn
 import time
-from threading import Timer, Lock
+from threading import Timer, Lock, Thread
 import enum
 
 import numpy as np
@@ -21,6 +21,7 @@ from astropy import units as u
 
 from pocs.base import PanBase
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import error
 
 ################################################################################
 # Main SBIGDriver class
@@ -325,6 +326,18 @@ class SBIGDriver(PanBase):
         Sends the initialise command to the colour filter wheel attached to the camera
         specified with handle. This will generally not be required because all SBIG filter
         wheels initialise themselves on power up.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
         """
         cfw_init_params = CFWParams(CFWModelSelect[model],
                                     CFWCommand.INIT)
@@ -341,6 +354,18 @@ class SBIGDriver(PanBase):
 
         This is mostly used to poll the filter wheel status after an asking the filter wheel
         to move in order to find out when the move has completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
         """
         cfw_query_params = CFWParams(CFWModelSelect[model],
                                      CFWCommand.QUERY)
@@ -357,6 +382,19 @@ class SBIGDriver(PanBase):
 
         This will return the usual status information plus the firmware version and the number
         of filter wheel positions.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver, plus the 'firmware_version' and 'n_positions' for the
+                filter wheel.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
         """
         cfw_info_params = CFWParams(CFWModelSelect[model],
                                     CFWCommand.GET_INFO,
@@ -372,19 +410,45 @@ class SBIGDriver(PanBase):
 
         return results
 
-    def cfw_goto(self, handle, position, model='AUTO'):
+    def cfw_goto(self, handle, position, model='AUTO', cfw_event=None, timeout=10*u.second):
         """
         Move colour filer wheel to a given position
+
+        This function returns immediately after starting the move but spawns a thread to poll the
+        filter wheel until the move completes (see _cfw_poll method for details). This thread will
+        log the result of the move, and optionally set a threading.Event to signal that it has
+        completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
         """
+        self.logger.debug("Moving filter wheel on {} to position {}".format(handle, position))
         # First check that the filter wheel isn't currently moving, and that the requested
         # position is valid.
         info = self.cfw_get_info(handle, model)
         if position < 1 or position > info['n_positions']:
-            raise RunTimeError("Position must be between 1 and {}, got {}".format(
-                info['n_positions'], position
-            ))
+            msg = "Position must be between 1 and {}, got {}".format(
+                info['n_positions'], position)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
         if info['status'] == CFWStatus.BUSY:
-            raise RunTimeError("Attempt to move filter wheel when already moving")
+            msg = "Attempt to move filter wheel when already moving"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
         cfw_goto_params = CFWParams(CFWModelSelect(model),
                                     CFWCommand.GOTO,
@@ -394,14 +458,74 @@ class SBIGDriver(PanBase):
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_goto_params, cfw_goto_results)
 
+        # Poll filter wheel in order to set cfw_event once move is complete
+        poll_thread = Thread(function=self._cfw_poll,
+                             args=(handle, position, model, cfw_event, timeout))
+        poll_thread.start()
+
+        return self._cfw_parse_results(cfw_goto_results)
+
 # Private methods
+
+    def _cfw_poll(self, handle, position, model='AUTO', cfw_event=None, timeout=None):
+        """
+        Polls filter wheel until the current move is complete.
+
+        Also monitors for errors while polling and checks status and position after the move is
+        complete. Optionally sets a threading.Event to signal the end of the move. Has an optional
+        timeout to raise an TimeoutError is the move takes longer than expected.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error or if the final status and position
+                are not as expected.
+            pocs.utils.error.Timeout: raised if the move does not end within the period of time
+                specified by the timeout argument.
+        """
+        if timeout is not None:
+            start_time = time.time()
+            if isinstance(timeout, u.Quantity):
+                timeout = timeout.to(u.second).value
+
+        try:
+            query = self.cfw_query(handle, model)
+            while query['status'] == 'BUSY':
+                if timeout is not None and (time.time() - start_time) > timeout:
+                    msg = "Timeout waiting for filter wheel on {} move to complete".format(handle)
+                    raise error.Timeout(msg)
+                time.sleep(0.1)
+                query = self.cfw_query(handle, model)
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while moving filter wheel on {}: {}'.format(handle, err))
+            raise err
+        else:
+            # No driver errors, but still check status and position
+            if query['status'] == 'IDLE' and query['position'] == position:
+                self.logger.debug('Filter wheel on {} moved to position {}'.format(
+                    handle, query['position']))
+            else:
+                msg = 'Problem moving filter wheel on {} to {} - status: {}, position: {}'.format(
+                    handle, position query['status'], query['position'])
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+        finally:
+            # Regardless must always set the Event when the move has stopped.
+            if cfw_event is not None:
+                cfw_event.set()
 
     def _readout(self, handle, centiseconds, filename, readout_mode_code,
                  top, left, height, width,
                  header, exposure_event=None):
-        """
-
-        """
         # Set up all the parameter and result Structures that will be needed.
         end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
@@ -691,7 +815,7 @@ class SBIGDriver(PanBase):
                 try:
                     error = "CFW {}".format(CFWError(cfw_error_code).name)
                 except ValueError:
-                    raise RunTImeError("SBIG Driver return unknown CFW error code '{}'".format(
+                    raise RuntimeError("SBIG Driver return unknown CFW error code '{}'".format(
                         cfw_error_code))
 
             raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
