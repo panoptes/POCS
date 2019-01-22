@@ -342,6 +342,7 @@ class SBIGDriver(PanBase):
         cfw_init_params = CFWParams(CFWModelSelect[model],
                                     CFWCommand.INIT)
         cfw_init_results = CFWResults()
+        self.logger.debug("Initialising filter wheel on {}".format(handle)")
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_init_params, cfw_init_results)
@@ -400,6 +401,7 @@ class SBIGDriver(PanBase):
                                     CFWCommand.GET_INFO,
                                     CFWGetInfoSelect.FIRMWARE_VERSION)
         cfw_info_results = CFWResults()
+        self.logger.debug("Getting info from filter wheel on {}".format(handle))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_info_params, cfw_info_results)
@@ -407,6 +409,8 @@ class SBIGDriver(PanBase):
         results = self._cfw_parse_results(cfw_info_results)
         results['firmware_version'] = int(cfw_info_results.cfwResults1)
         results['n_positions'] = int(cfw_info_results.cfwResults2)
+        self.logger.debug("{}, {}, {}, {}, {}, {}".format(
+            ["{}: {}".format(key, value) for key, value in results.items()]))
 
         return results
 
@@ -522,6 +526,20 @@ class SBIGDriver(PanBase):
             # Regardless must always set the Event when the move has stopped.
             if cfw_event is not None:
                 cfw_event.set()
+
+    def _cfw_parse_results(self, cfw_results):
+        """
+        Converts filter wheel results Structure into something more Pythonic
+        """
+        results = {'model': CFWModelSelect(cfw_query_reults.cfwModel).name,
+                   'position': int(cfw_query_results.cfwPosition),
+                   'status': CFWStatus(cfw_results.cfwStatus).name,
+                   'error': CFWError(cfw_query_results.cfwError).name}
+
+        if results['position'] == 0:
+            results['position'] = float('nan')  # 0 means position unknown
+
+        return results
 
     def _readout(self, handle, centiseconds, filename, readout_mode_code,
                  top, left, height, width,
@@ -735,20 +753,6 @@ class SBIGDriver(PanBase):
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_SET_DRIVER_CONTROL', params=set_driver_control_params)
-
-    def _cfw_parse_results(self, cfw_results):
-        """
-        Converts filter wheel results Structure into something more Pythonic
-        """
-        results = {'model': CFWModelSelect(cfw_query_reults.cfwModel).name,
-                   'position': int(cfw_query_results.cfwPosition),
-                   'status': CFWStatus(cfw_results.cfwStatus).name,
-                   'error': CFWError(cfw_query_results.cfwError).name}
-
-        if results['position'] == 0:
-            results['position'] = float('nan')  # 0 means position unknown
-
-        return results
 
     def _set_handle(self, handle):
         set_handle_params = SetDriverHandleParams(handle)
