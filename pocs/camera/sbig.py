@@ -29,9 +29,9 @@ class Camera(AbstractCamera):
         super().__init__(name, *args, **kwargs)
         self.connect()
         if filter_type is not None:
-            # connect() will set this based on camera info, but that doesn't know about filters
-            # upstream of the CCD.
-            self.filter_type = filter_type
+            # connect() will have set this based on camera info, but that doesn't know about filters
+            # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
+            self._filter_type = filter_type
         if self.is_connected:
             # Set and enable cooling, if a set point has been given.
             if set_point is not None:
@@ -133,11 +133,11 @@ class Camera(AbstractCamera):
 
         if self._info['colour']:
             if self._info['Truesense']:
-                self.filter_type = 'CRGB'
+                self._filter_type = 'CRGB'
             else:
-                self.filter_type = 'RGGB'
+                self._filter_type = 'RGGB'
         else:
-            self.filter_type = 'M'
+            self._filter_type = 'M'
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -192,8 +192,5 @@ class Camera(AbstractCamera):
                    'Microns')
         header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
                    'Electrons/ADU')
-
-        if self.focuser:
-            header = self.focuser._fits_header(header)
 
         return header

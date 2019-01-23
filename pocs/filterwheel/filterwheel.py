@@ -166,7 +166,6 @@ class AbstractFilterWheel(PanBase):
         header.set('FW-MOD', self.model, 'Filter wheel model')
         header.set('FW-ID', self.uid, 'Filter wheel serial number')
         header.set('FW-POS', self.position, 'Filter wheel position')
-        header.set('FILTER', self.current_filter, 'Filter name')
         return header
 
     def __str__(self):

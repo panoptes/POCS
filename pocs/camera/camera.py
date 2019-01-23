@@ -53,7 +53,7 @@ class AbstractCamera(PanBase):
         self.is_primary = primary
         self.properties = None
 
-        self.filter_type = kwargs.get('filter_type', 'RGGB')
+        self._filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
@@ -158,6 +158,14 @@ class AbstractCamera(PanBase):
         not for those that don't (e.g. DSLRs).
         """
         raise NotImplementedError
+
+    @property
+    def filter_type(self):
+        """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
+        if self.filterwheel:
+            return self.filterwheel.current_filter
+        else:
+            return self._filter_type
 
 ##################################################################################################
 # Methods
@@ -402,6 +410,11 @@ class AbstractCamera(PanBase):
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
+
+        if self.focuser:
+            header = self.focuser._fits_header(header)
+        if self.filterwheel:
+            header = self.filterwheel._fits_header(header)
 
         return header
 

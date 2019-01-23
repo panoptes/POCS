@@ -305,9 +305,6 @@ class Camera(AbstractCamera):
         header.set('XPIXSZ', self._info['pixel width'].value, 'Microns')
         header.set('YPIXSZ', self._info['pixel height'].value, 'Microns')
 
-        if self.focuser:
-            header = self.focuser._fits_header(header)
-
         return header
 
     def _get_camera_info(self):
