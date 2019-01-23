@@ -85,6 +85,29 @@ class AbstractFilterWheel(PanBase):
         """ Number of positions in the filter wheel """
         return self._n_positions
 
+    @property
+    def position(self):
+        """ Current integer position of the filter wheel """
+        raise NotImplementedError
+
+    @position.setter
+    def position(self, position):
+        self.move_to(position, blocking=True)
+
+    @property
+    def current_filter(self):
+        """ Name of the filter in the current position """
+        try:
+            filter_name = self.filter_names[self.position + 1]  # 1 based numbering
+        except IndexError, TypeError:
+            # Some filter wheels sometimes cannot return their current position
+            filter_name = "UNKNOWN"
+        return filter_name
+
+    @current_filter.setter
+    def current_filter(self, filter_name):
+        self.move_to(filter_name, blocking=True)
+
 ##################################################################################################
 # Methods
 ##################################################################################################

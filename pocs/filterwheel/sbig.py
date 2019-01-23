@@ -1,4 +1,5 @@
 from threading import Event
+import math
 
 from astropy import units as u
 
@@ -61,6 +62,14 @@ class FilterWheel(AbstractFilterWheel):
     def firmware_version(self):
         """ Firmware version of the filter wheel """
         return self._firmware_version
+
+    @property
+    def position(self):
+        """ Current integer position of the filter wheel """
+        status = self._SBIGDriver.cfw_query(self._handle)
+        if math.isnan(status['position']):
+            self.logger.warning("Filter wheel position unknown, returning NaN")
+        return status['position']
 
 ##################################################################################################
 # Methods
