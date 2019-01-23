@@ -1,4 +1,3 @@
-from pocs.camera import AbstractCamera
 from pocs.base import PanBase
 
 
@@ -65,10 +64,6 @@ class AbstractFilterWheel(PanBase):
 
     @camera.setter
     def camera(self, camera):
-        if not isinstance(camera, AbstractCamera):
-            msg = "Camera must be an instance of pocs.camera.AbstractCamera, got {}".format(camera)
-            self.logger.error(msg)
-            raise ValueError(msg)
         if self._camera:
             self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
                                 self, self.camera, camera)
@@ -99,7 +94,7 @@ class AbstractFilterWheel(PanBase):
         """ Name of the filter in the current position """
         try:
             filter_name = self.filter_names[self.position + 1]  # 1 based numbering
-        except IndexError, TypeError:
+        except (IndexError, TypeError):
             # Some filter wheels sometimes cannot return their current position
             filter_name = "UNKNOWN"
         return filter_name
@@ -171,7 +166,7 @@ class AbstractFilterWheel(PanBase):
         header.set('FW-MOD', self.model, 'Filter wheel model')
         header.set('FW-ID', self.uid, 'Filter wheel serial number')
         header.set('FW-POS', self.position, 'Filter wheel position')
-        header.set('FILTER', self.filter_name, 'Filter name')
+        header.set('FILTER', self.current_filter, 'Filter name')
         return header
 
     def __str__(self):

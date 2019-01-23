@@ -12,7 +12,7 @@ import ctypes
 from ctypes.util import find_library
 from warnings import warn
 import time
-from threading import Timer, Lock, Thread
+import threading
 import enum
 
 import numpy as np
@@ -102,7 +102,7 @@ class SBIGDriver(PanBase):
 
         # Create a Lock that will used to prevent simultaneous commands from multiple
         # cameras. Main reason for this is preventing overlapping readouts.
-        self._command_lock = Lock()
+        self._command_lock = threading.Lock()
 
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
@@ -312,9 +312,10 @@ class SBIGDriver(PanBase):
         readout_args = (handle, centiseconds, filename, readout_mode_code,
                         top, left, height, width,
                         header, exposure_event)
-        readout_thread = Timer(interval=wait,
-                               function=self._readout,
-                               args=readout_args)
+        readout_thread = threading.Timer(interval=wait,
+                                         function=self._readout,
+                                         args=readout_args,
+                                         daemon=True)
         readout_thread.start()
 
         return readout_thread
@@ -463,8 +464,9 @@ class SBIGDriver(PanBase):
             self._send_command('CC_CFW', cfw_goto_params, cfw_goto_results)
 
         # Poll filter wheel in order to set cfw_event once move is complete
-        poll_thread = Thread(function=self._cfw_poll,
-                             args=(handle, position, model, cfw_event, timeout))
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, position, model, cfw_event, timeout),
+                                       daemon=True)
         poll_thread.start()
 
         return self._cfw_parse_results(cfw_goto_results)

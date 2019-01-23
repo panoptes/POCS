@@ -1,4 +1,4 @@
-from threading import Event
+import threading
 import math
 
 from astropy import units as u
@@ -97,7 +97,7 @@ class FilterWheel(AbstractFilterWheel):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         position = self._parse_position(position)
-        move_event = Event()
+        move_event = threading.Event()
         self._SBIGDriver.cfw_goto(handle=self._handle,
                                   position=position,
                                   cfw_event=move_event,

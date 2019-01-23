@@ -16,7 +16,6 @@ from threading import Thread
 
 
 from pocs.base import PanBase
-from pocs.camera import AbstractCamera
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 
@@ -140,10 +139,6 @@ class AbstractFocuser(PanBase):
 
     @camera.setter
     def camera(self, camera):
-        if not isinstance(camera, AbstractCamera):
-            msg = "Camera must be an instance of pocs.camera.AbstractCamera, got {}".format(camera)
-            self.logger.error(msg)
-            raise ValueError(msg)
         if self._camera:
             self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
                                 self, self.camera, camera)
