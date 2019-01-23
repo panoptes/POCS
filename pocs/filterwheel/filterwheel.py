@@ -1,3 +1,4 @@
+from pocs.camera import AbstractCamera
 from pocs.base import PanBase
 
 
@@ -21,7 +22,7 @@ class AbstractFilterWheel(PanBase):
 
         self._model = model
         self._name = name
-        self._camera = camera
+        self.camera = camera
         self._filter_names = filter_names
 
         self._n_positions = len(filter_names)
@@ -57,13 +58,17 @@ class AbstractFilterWheel(PanBase):
     @property
     def camera(self):
         """
-        Reference to the Camera object that the Focuser is assigned to, if any. A Focuser
+        Reference to the Camera object that the FilterWheel is assigned to, if any. A filter wheel
         should only ever be assigned to one or zero Cameras!
         """
         return self._camera
 
     @camera.setter
     def camera(self, camera):
+        if not isinstance(camera, AbstractCamera):
+            msg = "Camera must be an instance of pocs.camera.AbstractCamera, got {}".format(camera)
+            self.logger.error(msg)
+            raise ValueError(msg)
         if self._camera:
             self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
                                 self, self.camera, camera)
@@ -106,6 +111,37 @@ class AbstractFilterWheel(PanBase):
 ##################################################################################################
 # Private methods
 ##################################################################################################
+
+    def _parse_position(self, position):
+        """
+        Converts a requested position to an integer filter wheel position.
+
+        If position is a string it will search the list of filter names for one that begins with
+        that string and return the corresponding integer position, otherwise (or if there is no
+        match) it will do an explicity case to an integer.
+        """
+        int_position = None
+        if isinstance(position, str):
+            # Got a string, so search for a match in the filter names list
+            for i, filter_name in enumerate(filter_names):
+                if filter_name.startswith(position):
+                    int_position = i + 1  # 1 based numbering for filter wheel positions
+
+        if int_position is None:
+            # Not a string or no match. Try to use as an integer position number.
+            try:
+                int_position = int(position)
+            except ValueError:
+                msg = "No match for '{}' in filter_names, & not an integer either".format(position)
+                self.logger.error(msg)
+                raise ValueError(msg)
+
+        if int_position < 1 or int_position > self.n_positions:
+            msg = "Position must be between 1 and {}, got {}".format(self.n_positions, int_position)
+            self.logger.error(msg)
+            raise ValueError(msg)
+
+        return int_position
 
     def _fits_header(self, header):
         header.set('FW-NAME', self.name, 'Filter wheel name')

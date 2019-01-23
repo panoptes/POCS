@@ -2,13 +2,20 @@ from threading import Event
 
 from astropy import units as u
 
-from pocs.camera import AbstractCamera
 from pocs.filterwheel import AbstractFilterWheel
+from pocs.camera.sbig import Camera as SBIGCamera
 
 
 class FilterWheel(AbstractFilterWheel):
     """
+    Class for SBIG filter wheels connected to the I2C port of an SBIG camera.
 
+    Args:
+        name (str, optional): name of the filter wheel
+        model (str, optional): model of the filter wheel
+        camera (pocs.camera.sbig.Camera): camera that this filter wheel is associated with.
+        filter_names (list of str): names of the filters installed at each filter wheel position
+        serial_number (str): serial number of the filter wheel
     """
     def __init__(self,
                  name='SBIG Filter Wheel',
@@ -17,20 +24,20 @@ class FilterWheel(AbstractFilterWheel):
                  filter_names=None,
                  serial_number=None,
                  *args, **kwargs):
+        if camera is None:
+            msg = "Camera must be provided for SBIG filter wheels"
+            self.logger.error(msg)
+            raise ValueError(msg)
+        if not isinstance(camera, SBIGCamera):
+            msg = "Camera must be an instance of pocs.camera.sbig.Camera, got {}".format(camera)
+            self.logger.error(msg)
+            raise ValueError(msg)
         super().__init__(name=name,
                          model=model,
                          camera=camera,
                          filter_names=filter_name,
                          *args, **kwargs)
-
-        if camera is None:
-            msg = "Camera must be provided for SBIG filter wheels"
-            self.logger.error(msg)
-            raise ValueError(msg)
-        if not isinstance(camera, AbstractCamera):
-            msg = "Camera must be an instance of pocs.camera.AbstractCamera, got {}".format(camera)
-            self.logger.error(msg)
-            raise ValueError(msg)
+        self._serial_number = serial_number
         self._SBIGDriver = self.camera._SBIGDriver
         self._handle = self.camera._handle
 
@@ -42,6 +49,9 @@ class FilterWheel(AbstractFilterWheel):
                 "number of positions in filter wheel ({})".format(self.n_positions)
             self.logger.error(msg)
             raise ValueError(msg)
+
+        self.logger.info("Filter wheel {} initialised".format(self))
+        self._connected = True
 
 ##################################################################################################
 # Properties
@@ -56,7 +66,7 @@ class FilterWheel(AbstractFilterWheel):
 # Methods
 ##################################################################################################
 
-    def go_to(self, position, blocking=False, timeout=10 * u.second):
+    def move_to(self, position, blocking=False, timeout=10 * u.second):
         """
         Move the filter wheel to the given position.
 
@@ -76,6 +86,8 @@ class FilterWheel(AbstractFilterWheel):
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
         """
+        assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
+        position = self._parse_position(position)
         move_event = Event()
         self._SBIGDriver.cfw_goto(handle=self._handle,
                                   position=position,
@@ -96,4 +108,4 @@ class FilterWheel(AbstractFilterWheel):
         return header
 
     def __str__(self):
-        return "{} ({}) on {}".format(self.name, self.model, self.camera.uid)
+        return "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
