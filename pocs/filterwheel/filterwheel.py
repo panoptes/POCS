@@ -1,4 +1,5 @@
 from pocs.base import PanBase
+from pocs.utils import listify
 
 
 class AbstractFilterWheel(PanBase):
@@ -8,7 +9,7 @@ class AbstractFilterWheel(PanBase):
     Args:
         name (str, optional): name of the filter wheel
         model (str, optional): model of the filter wheel
-        camera (pocs.camera.Camera, optional): camera that this filter wheel is associated with.
+        camera (pocs.camera.*.Camera, optional): camera that this filter wheel is associated with.
         filter_names (list of str): names of the filters installed at each filter wheel position
     """
     def __init__(self,
@@ -21,9 +22,13 @@ class AbstractFilterWheel(PanBase):
 
         self._model = model
         self._name = name
-        self.camera = camera
-        self._filter_names = filter_names
-
+        self._camera = camera
+        self._filter_names = listify(filter_names)
+        if not self._filter_names:
+            # Empty list
+            msg = "Must provide list of filter names"
+            self.logger.error(msg)
+            raise ValueError(msg)
         self._n_positions = len(filter_names)
         self._connected = False
         self._serial_number = 'XXXXXX'
@@ -169,4 +174,7 @@ class AbstractFilterWheel(PanBase):
         return header
 
     def __str__(self):
-        return "{} ({})".format(self.name, self.uid)
+        if self.camera:
+            return "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
+        else:
+            return "{} ({})".format(self.name, self.uid)

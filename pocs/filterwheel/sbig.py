@@ -36,7 +36,7 @@ class FilterWheel(AbstractFilterWheel):
         super().__init__(name=name,
                          model=model,
                          camera=camera,
-                         filter_names=filter_name,
+                         filter_names=filter_names,
                          *args, **kwargs)
         self._serial_number = serial_number
         self._SBIGDriver = self.camera._SBIGDriver
@@ -115,6 +115,3 @@ class FilterWheel(AbstractFilterWheel):
         header = super()._fits_header(header)
         header.set('FW-FW', self.firmware_version, 'Filter wheel firmware version')
         return header
-
-    def __str__(self):
-        return "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
