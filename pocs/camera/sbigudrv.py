@@ -314,8 +314,7 @@ class SBIGDriver(PanBase):
                         header, exposure_event)
         readout_thread = threading.Timer(interval=wait,
                                          function=self._readout,
-                                         args=readout_args,
-                                         daemon=True)
+                                         args=readout_args)
         readout_thread.start()
 
         return readout_thread

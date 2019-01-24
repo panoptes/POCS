@@ -61,14 +61,14 @@ class AbstractCamera(PanBase):
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._current_observation = None
 
-        self._create_submodule(subcomponent=focuser,
-                               name='focuser',
-                               class_name='Focuser',
-                               base_class=AbstractFocuser)
-        self._create_submodule(subcomponent=filter_wheel,
-                               name='filterwheel',
-                               class_name='FilterWheel',
-                               base_class=AbstractFilterWheel)
+        self._create_subcomponent(subcomponent=focuser,
+                                  name='focuser',
+                                  class_name='Focuser',
+                                  base_class=AbstractFocuser)
+        self._create_subcomponent(subcomponent=filterwheel,
+                                  name='filterwheel',
+                                  class_name='FilterWheel',
+                                  base_class=AbstractFilterWheel)
 
         self.logger.debug('Camera created: {}'.format(name))
 

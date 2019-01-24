@@ -98,7 +98,7 @@ class AbstractFilterWheel(PanBase):
     def current_filter(self):
         """ Name of the filter in the current position """
         try:
-            filter_name = self.filter_names[self.position + 1]  # 1 based numbering
+            filter_name = self.filter_names[self.position - 1]  # 1 based numbering
         except (IndexError, TypeError):
             # Some filter wheels sometimes cannot return their current position
             filter_name = "UNKNOWN"
@@ -150,7 +150,7 @@ class AbstractFilterWheel(PanBase):
         int_position = None
         if isinstance(position, str):
             # Got a string, so search for a match in the filter names list
-            for i, filter_name in enumerate(filter_names):
+            for i, filter_name in enumerate(self.filter_names):
                 if filter_name.startswith(position):
                     int_position = i + 1  # 1 based numbering for filter wheel positions
 

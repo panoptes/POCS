@@ -38,7 +38,7 @@ class FilterWheel(AbstractFilterWheel):
                          filter_names=filter_names,
                          *args, **kwargs)
         if isinstance(move_time, u.Quantity):
-            self._move_time = move_time.to(u.seconds).value
+            self._move_time = move_time.to(u.second).value
         else:
             self._move_time = move_time
         self._move_birectional = bool(move_bidirectional)
@@ -49,7 +49,7 @@ class FilterWheel(AbstractFilterWheel):
 # Properties
 ##################################################################################################
 
-    @property
+    @AbstractFilterWheel.position.getter
     def position(self):
         """ Current integer position of the filter wheel """
         if math.isnan(self._position):
@@ -109,8 +109,7 @@ class FilterWheel(AbstractFilterWheel):
 
         move = threading.Timer(interval=move_duration,
                                function=self._complete_move,
-                               args=(position, move_event),
-                               daemon=True)
+                               args=(position, move_event))
         self._moving = True
         self._position = float('nan')
         move.start()
@@ -118,8 +117,7 @@ class FilterWheel(AbstractFilterWheel):
         if move_duration > timeout:
             timeout_timer = threading.Timer(interval=timeout,
                                             function=self._timeout_move,
-                                            args(move_event),
-                                            daemon=True)
+                                            args=(move_event))
             timeout_timer.start()
 
         if blocking:

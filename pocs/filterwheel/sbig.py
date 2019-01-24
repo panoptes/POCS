@@ -50,7 +50,7 @@ class FilterWheel(AbstractFilterWheel):
         """ Firmware version of the filter wheel """
         return self._firmware_version
 
-    @property
+    @AbstractFilterWheel.position.getter
     def position(self):
         """ Current integer position of the filter wheel """
         status = self._SBIGDriver.cfw_query(self._handle)
@@ -68,6 +68,7 @@ class FilterWheel(AbstractFilterWheel):
         self._handle = self.camera._handle
 
         info = self._SBIGDriver.cfw_get_info(self._handle)
+        self._model = info['model']
         self._firmware_version = info['firmware_version']
         self._n_positions = info['n_positions']
         if len(filter_names) != self.n_positions:
