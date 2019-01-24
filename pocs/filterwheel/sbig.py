@@ -39,20 +39,7 @@ class FilterWheel(AbstractFilterWheel):
                          filter_names=filter_names,
                          *args, **kwargs)
         self._serial_number = serial_number
-        self._SBIGDriver = self.camera._SBIGDriver
-        self._handle = self.camera._handle
-
-        info = self._SBIGDriver.cfw_get_info(self._handle)
-        self._firmware_version = info['firmware_version']
-        self._n_positions = info['n_positions']
-        if len(filter_names) != self.n_positions:
-            msg = "Number of names in filter_names ({}) doesn't match".format(len(filter_names)) + \
-                "number of positions in filter wheel ({})".format(self.n_positions)
-            self.logger.error(msg)
-            raise ValueError(msg)
-
-        self.logger.info("Filter wheel {} initialised".format(self))
-        self._connected = True
+        self.connect()
 
 ##################################################################################################
 # Properties
@@ -74,6 +61,23 @@ class FilterWheel(AbstractFilterWheel):
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def connect(self):
+        """ Connect to filter wheel """
+        self._SBIGDriver = self.camera._SBIGDriver
+        self._handle = self.camera._handle
+
+        info = self._SBIGDriver.cfw_get_info(self._handle)
+        self._firmware_version = info['firmware_version']
+        self._n_positions = info['n_positions']
+        if len(filter_names) != self.n_positions:
+            msg = "Number of names in filter_names ({}) doesn't match".format(len(filter_names)) + \
+                "number of positions in filter wheel ({})".format(self.n_positions)
+            self.logger.error(msg)
+            raise ValueError(msg)
+
+        self.logger.info("Filter wheel {} initialised".format(self))
+        self._connected = True
 
     def move_to(self, position, blocking=False, timeout=10 * u.second):
         """

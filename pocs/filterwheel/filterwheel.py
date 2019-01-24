@@ -112,6 +112,10 @@ class AbstractFilterWheel(PanBase):
 # Methods
 ##################################################################################################
 
+    def connect(self):
+        """ Connect to filter wheel """
+        raise NotImplementError
+
     def move_to(self, position, blocking=False):
         """
         Move the filter wheel to the given position.
