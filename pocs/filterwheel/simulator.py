@@ -18,6 +18,10 @@ class FilterWheel(AbstractFilterWheel):
         model (str, optional): model of the filter wheel
         camera (pocs.camera.*.Camera, optional): camera that this filter wheel is associated with.
         filter_names (list of str): names of the filters installed at each filter wheel position
+        timeout (u.Quantity, optional): maximum time to wait for a move to complete. Should be
+            a Quantity with time units. If a numeric type without units is given seconds will be
+            assumed. Default is 10 seconds.
+        serial_number (str): serial number of the filter wheel
         move_time (astropy.units.Quantity, optional): time to move the filter wheel by one position,
             optional, default 1 second.
         move_bidirectional (bool, optional): if True will simulate filter wheel which can rotate in
@@ -29,6 +33,8 @@ class FilterWheel(AbstractFilterWheel):
                  model='simulator',
                  camera=None,
                  filter_names=None,
+                 timeout=10 * u.second,
+                 serial_number=None,
                  move_time=1 * u.second,
                  move_bidirectional=False,
                  *args, **kwargs):
@@ -36,6 +42,8 @@ class FilterWheel(AbstractFilterWheel):
                          model=model,
                          camera=camera,
                          filter_names=filter_names,
+                         timeout=timeout,
+                         serial_number=serial_number,
                          *args, **kwargs)
         if isinstance(move_time, u.Quantity):
             self._move_time = move_time.to(u.second).value
@@ -65,9 +73,10 @@ class FilterWheel(AbstractFilterWheel):
         self._serial_number = 'SF{:04d}'.format(random.randint(0, 9999))
         self._position = 1
         self._moving = False
+        self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
-    def move_to(self, position, blocking=False, timeout=10 * u.second):
+    def move_to(self, position, blocking=False):
         """
         Move the filter wheel to the given position.
 
@@ -80,15 +89,14 @@ class FilterWheel(AbstractFilterWheel):
             position (int or str): position to move to.
             blocking (bool, optional): If False (default) return immediately, if True block until
                 the filter wheel move has been completed.
-            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
-                a Quantity with time units. If a numeric type without units is given seconds will be
-                assumed. Default is 10 seconds.
 
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         position = self._parse_position(position)
+        self.logger.info("Moving {} to position {} ({})".format(
+            self, position, self.filter_names[position + 1]))
         if isinstance(timeout, u.Quantity):
                 timeout = timeout.to(u.second).value
 
@@ -115,7 +123,7 @@ class FilterWheel(AbstractFilterWheel):
         move.start()
 
         if move_duration > timeout:
-            timeout_timer = threading.Timer(interval=timeout,
+            timeout_timer = threading.Timer(interval=self._timeout,
                                             function=self._timeout_move,
                                             args=(move_event))
             timeout_timer.start()

@@ -16,6 +16,9 @@ class FilterWheel(AbstractFilterWheel):
         model (str, optional): model of the filter wheel
         camera (pocs.camera.sbig.Camera): camera that this filter wheel is associated with.
         filter_names (list of str): names of the filters installed at each filter wheel position
+        timeout (u.Quantity, optional): maximum time to wait for a move to complete. Should be
+            a Quantity with time units. If a numeric type without units is given seconds will be
+            assumed. Default is 10 seconds.
         serial_number (str): serial number of the filter wheel
     """
     def __init__(self,
@@ -23,6 +26,7 @@ class FilterWheel(AbstractFilterWheel):
                  model='sbig',
                  camera=None,
                  filter_names=None,
+                 timeout=10 * u.second,
                  serial_number=None,
                  *args, **kwargs):
         if camera is None:
@@ -37,9 +41,9 @@ class FilterWheel(AbstractFilterWheel):
                          model=model,
                          camera=camera,
                          filter_names=filter_names,
+                         timeout=timeout,
+                         serial_number=serial_number,
                          *args, **kwargs)
-        self._serial_number = serial_number
-        self.connect()
 
 ##################################################################################################
 # Properties
@@ -64,6 +68,8 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """ Connect to filter wheel """
+        assert self.camera.is_connected, \
+            self.logger.error("Can't connect {}, camera not connected".format(self))
         self._SBIGDriver = self.camera._SBIGDriver
         self._handle = self.camera._handle
 
@@ -71,16 +77,16 @@ class FilterWheel(AbstractFilterWheel):
         self._model = info['model']
         self._firmware_version = info['firmware_version']
         self._n_positions = info['n_positions']
-        if len(filter_names) != self.n_positions:
-            msg = "Number of names in filter_names ({}) doesn't match".format(len(filter_names)) + \
-                "number of positions in filter wheel ({})".format(self.n_positions)
+        if len(self.filter_names) != self.n_positions:
+            msg = "Number of names in filter_names ({}) doesn't".format(len(self.filter_names)) + \
+                "match number of positions in filter wheel ({})".format(self.n_positions)
             self.logger.error(msg)
             raise ValueError(msg)
 
         self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
-    def move_to(self, position, blocking=False, timeout=10 * u.second):
+    def move_to(self, position, blocking=False):
         """
         Move the filter wheel to the given position.
 
@@ -93,24 +99,31 @@ class FilterWheel(AbstractFilterWheel):
             position (int or str): position to move to.
             blocking (bool, optional): If False (default) return immediately, if True block until
                 the filter wheel move has been completed.
-            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
-                a Quantity with time units. If a numeric type without units is given seconds will be
-                assumed. Default is 10 seconds.
 
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         position = self._parse_position(position)
+        self.logger.info("Moving {} to position {} ({})".format(
+            self, position, self.filter_names[position - 1]))
         move_event = threading.Event()
         self._SBIGDriver.cfw_goto(handle=self._handle,
                                   position=position,
                                   cfw_event=move_event,
-                                  timeout=timeout)
+                                  timeout=self._timeout)
         if blocking:
             move_event.wait()
 
         return move_event
+
+    def reinitialise(self):
+        """
+        Reinitialises/calibrates the filter wheel. It should not be necessary to call this as
+        SBIG filter wheels initialise and calibrate themselves on power up.
+        """
+        results = self._SBIGDriver.cfw_init(handle=self._handle, timeout=self._timeout)
+        self.logger.info("{} reinitialised".format(self))
 
 ##################################################################################################
 # Private methods

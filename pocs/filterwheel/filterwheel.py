@@ -11,12 +11,18 @@ class AbstractFilterWheel(PanBase):
         model (str, optional): model of the filter wheel
         camera (pocs.camera.*.Camera, optional): camera that this filter wheel is associated with.
         filter_names (list of str): names of the filters installed at each filter wheel position
+        timeout (u.Quantity, optional): maximum time to wait for a move to complete. Should be
+            a Quantity with time units. If a numeric type without units is given seconds will be
+            assumed. Default is None (no timeout).
+        serial_number (str, optional): serial number of the filter wheel, default 'XXXXXX'
     """
     def __init__(self,
                  name='Generic Filter Wheel',
                  model='simulator',
                  camera=None,
                  filter_names=None,
+                 timeout=None,
+                 serial_number='XXXXXX',
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -30,8 +36,9 @@ class AbstractFilterWheel(PanBase):
             self.logger.error(msg)
             raise ValueError(msg)
         self._n_positions = len(filter_names)
+        self._timeout = timeout
+        self._serial_number = serial_number
         self._connected = False
-        self._serial_number = 'XXXXXX'
 
         self.logger.debug('Filter wheel created: {}'.format(self))
 
@@ -152,7 +159,14 @@ class AbstractFilterWheel(PanBase):
             # Got a string, so search for a match in the filter names list
             for i, filter_name in enumerate(self.filter_names):
                 if filter_name.startswith(position):
-                    int_position = i + 1  # 1 based numbering for filter wheel positions
+                    if int_position is None:
+                        int_position = i + 1  # 1 based numbering for filter wheel positions
+                    else:
+                        # Already matched at least once
+                        msg = "More than one filter name matches '{}', using '{}'".format(
+                            position, self.filter_names[int_position - 1])
+                        self.logger.warning(msg)
+                        break
 
         if int_position is None:
             # Not a string or no match. Try to use as an integer position number.

@@ -70,7 +70,7 @@ class AbstractCamera(PanBase):
                                   class_name='FilterWheel',
                                   base_class=AbstractFilterWheel)
 
-        self.logger.debug('Camera created: {}'.format(name))
+        self.logger.debug('Camera created: {}'.format(self))
 
 ##################################################################################################
 # Properties
@@ -535,8 +535,12 @@ class AbstractCamera(PanBase):
 
         s = "{} ({}) on {}".format(name, self.uid, self.port)
 
-        if hasattr(self, 'focuser') and self.focuser is not None:
+        if self.focuser:
             s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
 
         return s
 

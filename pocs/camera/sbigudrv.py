@@ -319,7 +319,7 @@ class SBIGDriver(PanBase):
 
         return readout_thread
 
-    def cfw_init(self, handle, model='AUTO'):
+    def cfw_init(self, handle, model='AUTO', timeout=10 * u.second):
         """
         Initialise colour filter wheel
 
@@ -331,6 +331,9 @@ class SBIGDriver(PanBase):
             handle (int): handle of the camera that the filter wheel is connected to.
             model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
                 asks the driver to autodetect the model.
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
 
         Returns:
             dict: dictionary containing the 'model', 'position', 'status' and 'error' values
@@ -346,8 +349,16 @@ class SBIGDriver(PanBase):
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_init_params, cfw_init_results)
+        # The filterwheel init command does not block until complete, but this method should.
+        # Need to poll.
+        init_event = threading.Event()
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, 1, model, init_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
+        init_event.wait()
 
-        return self._cfw_parse_results(cfw_query_results)
+        return self._cfw_parse_results(cfw_init_results)
 
     def cfw_query(self, handle, model='AUTO'):
         """
@@ -390,8 +401,7 @@ class SBIGDriver(PanBase):
                 asks the driver to autodetect the model.
 
         Returns:
-            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
-                returned by the driver, plus the 'firmware_version' and 'n_positions' for the
+            dict: dictionary containing the 'model',  'firmware_version' and 'n_positions' for the
                 filter wheel.
 
         Raises:
@@ -401,20 +411,21 @@ class SBIGDriver(PanBase):
                                     CFWCommand.GET_INFO,
                                     CFWGetInfoSelect.FIRMWARE_VERSION)
         cfw_info_results = CFWResults()
-        self.logger.debug("Getting info from filter wheel on {}".format(handle))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_info_params, cfw_info_results)
 
         results = self._cfw_parse_results(cfw_info_results)
-        results['firmware_version'] = int(cfw_info_results.cfwResults1)
-        results['n_positions'] = int(cfw_info_results.cfwResults2)
-        self.logger.debug("{}, {}, {}, {}, {}, {}".format(
-            ["{}: {}".format(key, value) for key, value in results.items()]))
+        results = {'model': CFWModelSelect(cfw_info_results.cfwModel).name,
+                   'firmware_version': int(cfw_info_results.cfwResults1),
+                   'n_positions': int(cfw_info_results.cfwResults2)}
+        msg = "Filter wheel on {}, model: {}, firmware version: {}, number of positions: {}".format(
+            handle, results['model'], results['firmware_version'], results['n_positions'])
+        self.logger.debug(msg)
 
         return results
 
-    def cfw_goto(self, handle, position, model='AUTO', cfw_event=None, timeout=10*u.second):
+    def cfw_goto(self, handle, position, model='AUTO', cfw_event=None, timeout=10 * u.second):
         """
         Move colour filer wheel to a given position
 
@@ -449,12 +460,13 @@ class SBIGDriver(PanBase):
                 info['n_positions'], position)
             self.logger.error(msg)
             raise RuntimeError(msg)
-        if info['status'] == CFWStatus.BUSY:
+        query = self.cfw_query(handle, model)
+        if query['status'] == CFWStatus.BUSY:
             msg = "Attempt to move filter wheel when already moving"
             self.logger.error(msg)
             raise RuntimeError(msg)
 
-        cfw_goto_params = CFWParams(CFWModelSelect(model),
+        cfw_goto_params = CFWParams(CFWModelSelect[model],
                                     CFWCommand.GOTO,
                                     position)
         cfw_goto_results = CFWResults()
@@ -532,10 +544,10 @@ class SBIGDriver(PanBase):
         """
         Converts filter wheel results Structure into something more Pythonic
         """
-        results = {'model': CFWModelSelect(cfw_query_reults.cfwModel).name,
-                   'position': int(cfw_query_results.cfwPosition),
+        results = {'model': CFWModelSelect(cfw_results.cfwModel).name,
+                   'position': int(cfw_results.cfwPosition),
                    'status': CFWStatus(cfw_results.cfwStatus).name,
-                   'error': CFWError(cfw_query_results.cfwError).name}
+                   'error': CFWError(cfw_results.cfwError).name}
 
         if results['position'] == 0:
             results['position'] = float('nan')  # 0 means position unknown

@@ -24,6 +24,9 @@ class Camera(AbstractCamera):
                  set_point=None,
                  filter_type=None,
                  *args, **kwargs):
+        # For SBIG cameras serial_number and port are synomymous but at least one must be set
+        kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
+        kwargs['port'] = kwargs.get('port', kwargs.get('serial_number'))
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
@@ -104,10 +107,16 @@ class Camera(AbstractCamera):
     def __str__(self):
         # For SBIG cameras uid and port are both aliases for serial number so
         # shouldn't include both
-        try:
-            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
-        except AttributeError:
-            return "{} ({})".format(self.name, self.uid)
+        s = "{} ({})".format(self.name, self.uid)
+
+        if self.focuser:
+            s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
+
+        return s
 
     def connect(self):
         """
@@ -138,6 +147,11 @@ class Camera(AbstractCamera):
                 self._filter_type = 'RGGB'
         else:
             self._filter_type = 'M'
+
+        if self.filterwheel and not self.filterwheel.is_connected:
+            # Need to defer connection of SBIG filter wheels until after camera is connected
+            # so do it here.
+            self.filterwheel.connect()
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
