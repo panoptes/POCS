@@ -342,7 +342,7 @@ class SBIGDriver(PanBase):
         cfw_init_params = CFWParams(CFWModelSelect[model],
                                     CFWCommand.INIT)
         cfw_init_results = CFWResults()
-        self.logger.debug("Initialising filter wheel on {}".format(handle)")
+        self.logger.debug("Initialising filter wheel on {}".format(handle))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_init_params, cfw_init_results)
@@ -520,7 +520,7 @@ class SBIGDriver(PanBase):
                     handle, query['position']))
             else:
                 msg = 'Problem moving filter wheel on {} to {} - status: {}, position: {}'.format(
-                    handle, position query['status'], query['position'])
+                    handle, position, query['status'], query['position'])
                 self.logger.error(msg)
                 raise RuntimeError(msg)
         finally:
@@ -805,8 +805,9 @@ class SBIGDriver(PanBase):
             try:
                 error = errors[return_code]
             except KeyError:
-                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(
-                    return_code))
+                msg = "SBIG Driver returned unknown error code '{}'".format(return_code)
+                self.logger.error(msg)
+                raise RuntimeError(msg)
 
             retries_remaining -= 1
 
@@ -815,15 +816,18 @@ class SBIGDriver(PanBase):
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
         if error != 'CE_NO_ERROR':
-            if error = 'CE_CFW_ERROR':
+            if error == 'CE_CFW_ERROR':
                 cfw_error_code = results.cfwError
                 try:
                     error = "CFW {}".format(CFWError(cfw_error_code).name)
                 except ValueError:
-                    raise RuntimeError("SBIG Driver return unknown CFW error code '{}'".format(
-                        cfw_error_code))
+                    msg = "SBIG Driver return unknown CFW error code '{}'".format(cfw_error_code)
+                    self.logger.error(msg)
+                    raise RuntimeError(msg)
 
-            raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
+            msg = "SBIG Driver returned error '{}'!".format(error)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
         return error
 
@@ -1554,7 +1558,7 @@ class CFWModelSelect(enum.IntEnum):
     Filter wheel model selection enum
     """
     UNKNOWN = 0
-    CFW2 = emum.auto()
+    CFW2 = enum.auto()
     CFW5 = enum.auto()
     CFW8 = enum.auto()
     CFWL = enum.auto()
@@ -1588,7 +1592,7 @@ class CFWCommand(enum.IntEnum):
     CLOSE_DEVICE = enum.auto()
 
 
-@emum.unique
+@enum.unique
 class CFWStatus(enum.IntEnum):
     """
     Filter wheel status enum
