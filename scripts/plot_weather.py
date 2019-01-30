@@ -16,6 +16,7 @@ from astroplan import Observer
 from astropy.coordinates import EarthLocation
 
 from pocs.utils.config import load_config
+from pocs.utils import serializers as json_util
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -137,7 +138,19 @@ class WeatherPlotter(object):
                       'f4', 'O')
 
         if data_file is not None:
-            table = Table.from_pandas(pd.read_csv(data_file, parse_dates=True))
+            if data_file.endswith('.json'):
+                weather_entries = list()
+                with open(data_file) as df:
+                    for entry in df:
+                        rec0 = json_util.loads(entry)
+                        weather_entries.append({**rec0['data']})
+
+                table = pd.DataFrame(weather_entries)
+                # Fix bad dtype conversion
+                table.rain_sensor_temp_C = pd.to_numeric(table.rain_sensor_temp_C)
+                table = Table.from_pandas(table)
+            else:
+                table = Table.from_pandas(pd.read_csv(data_file, parse_dates=True))
         else:
             # -------------------------------------------------------------------------
             # Grab data from Mongo
