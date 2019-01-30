@@ -522,8 +522,8 @@ class AbstractCamera(PanBase):
             else:
                 # Should have been passed either a instance of base_class or dict with subcomponent
                 # configuration. Got something else...
-                self.logger.error(
-                    "Expected either a {} instance or dict, got {}".format(class_name, focuser))
+                self.logger.error("Expected either a {} instance or dict, got {}".format(
+                    class_name, subcomponent))
                 setattr(self, name, None)
         else:
             setattr(self, name, None)
