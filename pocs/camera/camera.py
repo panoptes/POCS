@@ -57,7 +57,7 @@ class AbstractCamera(PanBase):
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._current_observation = None
 
-        self._create_subcomponent(subcomponent=focusr,
+        self._create_subcomponent(subcomponent=focuser,
                                   name='focuser',
                                   class_name='Focuser',
                                   base_class=AbstractFocuser)
@@ -480,7 +480,7 @@ class AbstractCamera(PanBase):
         fits_utils.update_headers(file_path, info)
         return file_path
 
-    def _create_subcomponent(self, subcomponent, name, class, base_class):
+    def _create_subcomponent(self, subcomponent, name, class_name, base_class):
         """
 
         """
@@ -490,7 +490,7 @@ class AbstractCamera(PanBase):
                 setattr(self, name, subcomponent)
                 getattr(self, name).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(name, subcompoent['model'])
+                module_name = 'pocs.{}.{}'.format(name, subcomponent['model'])
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
