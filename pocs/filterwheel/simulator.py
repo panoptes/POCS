@@ -70,37 +70,17 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """ Connect to the filter wheel """
-        self._serial_number = 'SF{:04d}'.format(random.randint(0, 9999))
+        self._serial_number = 'SW{:04d}'.format(random.randint(0, 9999))
         self._position = 1
         self._moving = False
         self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
-    def move_to(self, position, blocking=False):
-        """
-        Move the filter wheel to the given position.
+##################################################################################################
+# Private methods
+##################################################################################################
 
-        The position can be expressed either as an integer, or as (part of) one of the names from
-        the filter_names list. To allow filter names of the form '<filter band>_<serial number>'
-        to be selected by band only position can be a substring from the start of one
-        of the names in the filter_names list, provided that this produces only one match.
-
-        Args:
-            position (int or str): position to move to.
-            blocking (bool, optional): If False (default) return immediately, if True block until
-                the filter wheel move has been completed.
-
-        Returns:
-            threading.Event: Event that will be set to signal when the move has completed
-        """
-        assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
-        position = self._parse_position(position)
-        self.logger.info("Moving {} to position {} ({})".format(
-            self, position, self.filter_names[position + 1]))
-        if isinstance(timeout, u.Quantity):
-                timeout = timeout.to(u.second).value
-
-        move_event = threading.Event()
+    def _move_to(self, position, move_event):
         if self._moving:
             move_event.set()
             msg = "Attempt to move filter wheel when already moving"
@@ -118,28 +98,19 @@ class FilterWheel(AbstractFilterWheel):
         move = threading.Timer(interval=move_duration,
                                function=self._complete_move,
                                args=(position, move_event))
-        self._moving = True
-        self._position = float('nan')
         move.start()
+        self._position = float('nan')
+        self._moving = True
 
-        if move_duration > timeout:
+        if move_duration > self._timeout:
             timeout_timer = threading.Timer(interval=self._timeout,
                                             function=self._timeout_move,
-                                            args=(move_event))
+                                            args=(move_event,))
             timeout_timer.start()
 
-        if blocking:
-            move_event.wait()
-
-        return move_event
-
-##################################################################################################
-# Private methods
-##################################################################################################
-
     def _complete_move(self, position, move_event):
-        self._position = position
         self._moving = False
+        self._position = position
         move_event.set()
 
     def _timeout_move(self, move_event):

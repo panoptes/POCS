@@ -1,3 +1,7 @@
+import threading
+
+from astropy import units as u
+
 from pocs.base import PanBase
 from pocs.utils import listify
 
@@ -29,14 +33,17 @@ class AbstractFilterWheel(PanBase):
         self._model = model
         self._name = name
         self._camera = camera
-        self._filter_names = listify(filter_names)
+        self._filter_names = [str(name) for name in listify(filter_names)]
         if not self._filter_names:
             # Empty list
             msg = "Must provide list of filter names"
             self.logger.error(msg)
             raise ValueError(msg)
         self._n_positions = len(filter_names)
-        self._timeout = timeout
+        if isinstance(timeout, u.Quantity):
+            self._timeout = timeout.to(u.second).value
+        else:
+            self._timeout = timeout
         self._serial_number = serial_number
         self._connected = False
 
@@ -140,11 +147,30 @@ class AbstractFilterWheel(PanBase):
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
         """
-        raise NotImplementedError
+        assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
+        position = self._parse_position(position)
+        self.logger.info("Moving {} to position {} ({})".format(
+            self, position, self.filter_names[position - 1]))
+        move_event = threading.Event()
+
+        if position == self.position:
+            # Don't go nowhere
+            move_event.set()
+            return move_event
+
+        self._move_to(position, move_event)  # Private method to actually perform the move.
+
+        if blocking:
+            move_event.wait()
+
+        return move_event
 
 ##################################################################################################
 # Private methods
 ##################################################################################################
+
+    def _move_to(self, position, move_event):
+        raise NotImplementedError
 
     def _parse_position(self, position):
         """

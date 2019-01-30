@@ -67,7 +67,10 @@ class FilterWheel(AbstractFilterWheel):
 ##################################################################################################
 
     def connect(self):
-        """ Connect to filter wheel """
+        """
+        Connect to filter wheel. Not called by __init__ because we need the camera to be connected
+        first. The SBIG camera connect() method will call this once it's OK to do so.
+        """
         assert self.camera.is_connected, \
             self.logger.error("Can't connect {}, camera not connected".format(self))
         self._SBIGDriver = self.camera._SBIGDriver
@@ -86,37 +89,6 @@ class FilterWheel(AbstractFilterWheel):
         self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
-    def move_to(self, position, blocking=False):
-        """
-        Move the filter wheel to the given position.
-
-        The position can be expressed either as an integer, or as (part of) one of the names from
-        the filter_names list. To allow filter names of the form '<filter band>_<serial number>'
-        to be selected by band only position can be a substring from the start of one
-        of the names in the filter_names list, provided that this produces only one match.
-
-        Args:
-            position (int or str): position to move to.
-            blocking (bool, optional): If False (default) return immediately, if True block until
-                the filter wheel move has been completed.
-
-        Returns:
-            threading.Event: Event that will be set to signal when the move has completed
-        """
-        assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
-        position = self._parse_position(position)
-        self.logger.info("Moving {} to position {} ({})".format(
-            self, position, self.filter_names[position - 1]))
-        move_event = threading.Event()
-        self._SBIGDriver.cfw_goto(handle=self._handle,
-                                  position=position,
-                                  cfw_event=move_event,
-                                  timeout=self._timeout)
-        if blocking:
-            move_event.wait()
-
-        return move_event
-
     def reinitialise(self):
         """
         Reinitialises/calibrates the filter wheel. It should not be necessary to call this as
@@ -128,6 +100,12 @@ class FilterWheel(AbstractFilterWheel):
 ##################################################################################################
 # Private methods
 ##################################################################################################
+
+    def _move_to(self, position, move_event):
+        self._SBIGDriver.cfw_goto(handle=self._handle,
+                                  position=position,
+                                  cfw_event=move_event,
+                                  timeout=self._timeout)
 
     def _fits_header(self, header):
         header = super()._fits_header(header)
