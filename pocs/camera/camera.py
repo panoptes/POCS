@@ -26,7 +26,7 @@ class AbstractCamera(PanBase):
 
     Attributes:
         filter_type (str): Type of filter attached to camera, default RGGB.
-        focuser (`pocs.cameras.focuser.Focuser`|None): Focuser for the camera, default None.
+        focuser (`pocs.focuser.*.Focuser`|None): Focuser for the camera, default None.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
@@ -57,31 +57,12 @@ class AbstractCamera(PanBase):
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._current_observation = None
 
-        if focuser:
-            if isinstance(focuser, AbstractFocuser):
-                self.logger.debug("Focuser received: {}".format(focuser))
-                self.focuser = focuser
-                self.focuser.camera = self
-            elif isinstance(focuser, dict):
-                try:
-                    module = load_module('pocs.focuser.{}'.format(focuser['model']))
-                except AttributeError as err:
-                    self.logger.critical("Couldn't import Focuser module {}!".format(module))
-                    raise err
-                else:
-                    focuser_kwargs = copy.copy(focuser)
-                    focuser_kwargs.update({'camera': self, 'config': self.config})
-                    self.focuser = module.Focuser(**focuser_kwargs)
-            else:
-                # Should have been passed either a Focuser instance or a dict with Focuser
-                # configuration. Got something else...
-                self.logger.error(
-                    "Expected either a Focuser instance or dict, got {}".format(focuser))
-                self.focuser = None
-        else:
-            self.focuser = None
+        self._create_subcomponent(subcomponent=focusr,
+                                  name='focuser',
+                                  class_name='Focuser',
+                                  base_class=AbstractFocuser)
 
-        self.logger.debug('Camera created: {}'.format(name))
+        self.logger.debug('Camera created: {}'.format(self))
 
 ##################################################################################################
 # Properties
@@ -414,6 +395,9 @@ class AbstractCamera(PanBase):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
+        if self.focuser:
+            header = self.focuser._fits_header(header)
+
         return header
 
     def _setup_observation(self, observation, headers, filename, **kwargs):
@@ -496,6 +480,36 @@ class AbstractCamera(PanBase):
         fits_utils.update_headers(file_path, info)
         return file_path
 
+    def _create_subcomponent(self, subcomponent, name, class, base_class):
+        """
+
+        """
+        if subcomponent:
+            if isinstance(subcomponent, base_class):
+                self.logger.debug("{} received: {}".format(class_name, subcomponent))
+                setattr(self, name, subcomponent)
+                getattr(self, name).camera = self
+            elif isinstance(subcomponent, dict):
+                module_name = 'pocs.{}.{}'.format(name, subcompoent['model'])
+                try:
+                    module = load_module(module_name)
+                except AttributeError as err:
+                    self.logger.critical("Couldn't import {} module {}!".format(
+                        class_name, module_name))
+                    raise err
+                else:
+                    subcomponent_kwargs = copy.copy(subcomponent)
+                    subcomponent_kwargs.update({'camera': self, 'config': self.config})
+                    setattr(self, name, getattr(module, class_name)(**subcomponent_kwargs))
+            else:
+                # Should have been passed either an instance of base_class or dict with subcomponent
+                # configuration. Got something else...
+                self.logger.error("Expected either a {} instance or dict, got {}".format(
+                    class_name, subcomponent))
+                setattr(self, name, None)
+        else:
+            setattr(self, name, None)
+
     def __str__(self):
         name = self.name
         if self.is_primary:
@@ -503,7 +517,7 @@ class AbstractCamera(PanBase):
 
         s = "{} ({}) on {}".format(name, self.uid, self.port)
 
-        if hasattr(self, 'focuser') and self.focuser is not None:
+        if self.focuser:
             s += ' with {}'.format(self.focuser.name)
 
         return s

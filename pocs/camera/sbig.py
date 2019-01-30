@@ -24,6 +24,9 @@ class Camera(AbstractCamera):
                  set_point=None,
                  filter_type=None,
                  *args, **kwargs):
+        # For SBIG cameras serial_number and port are synonymous but at least one must be set
+        kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
+        kwargs['port'] = kwargs.get('port', kwargs.get('serial_number'))
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
@@ -104,10 +107,12 @@ class Camera(AbstractCamera):
     def __str__(self):
         # For SBIG cameras uid and port are both aliases for serial number so
         # shouldn't include both
-        try:
-            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
-        except AttributeError:
-            return "{} ({})".format(self.name, self.uid)
+        s = "{} ({})".format(self.name, self.uid)
+
+        if self.focuser:
+            s += ' with {}'.format(self.focuser.name)
+
+        return s
 
     def connect(self):
         """
@@ -192,8 +197,5 @@ class Camera(AbstractCamera):
                    'Microns')
         header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
                    'Electrons/ADU')
-
-        if self.focuser:
-            header = self.focuser._fits_header(header)
 
         return header
