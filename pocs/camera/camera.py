@@ -58,7 +58,7 @@ class AbstractCamera(PanBase):
         self._current_observation = None
 
         self._create_subcomponent(subcomponent=focuser,
-                                  name='focuser',
+                                  sub_name='focuser',
                                   class_name='Focuser',
                                   base_class=AbstractFocuser)
 
@@ -480,17 +480,29 @@ class AbstractCamera(PanBase):
         fits_utils.update_headers(file_path, info)
         return file_path
 
-    def _create_subcomponent(self, subcomponent, name, class_name, base_class):
+    def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):
         """
+        Creates a subcomponent as an attribute of the camera. Can do this from either an instance
+        of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
+        subcomponent class' constructor.
 
+        Args:
+            subcomponent (instance of class_name | dict): the subcomponent object, or the keyword
+                arguments required to create it.
+            sub_name (str): name of the subcomponent, e.g. 'focuser'. Will be used as the attribute
+                name, and must also match the name corresponding POCS submodule for this
+                subcomponent, e.g. `pocs.focuser`
+            class_name (str): name of the subcomponent class, e.g. 'Focuser'
+            base_class (class): the base class for the subcomponent, e.g.
+                `pocs.focuser.AbtractFocuser1, used to check whether subcomponent is an instance.
         """
         if subcomponent:
             if isinstance(subcomponent, base_class):
                 self.logger.debug("{} received: {}".format(class_name, subcomponent))
-                setattr(self, name, subcomponent)
-                getattr(self, name).camera = self
+                setattr(self, sub_name, subcomponent)
+                getattr(self, sub_name).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(name, subcomponent['model'])
+                module_name = 'pocs.{}.{}'.format(sub_name, subcomponent['model'])
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
@@ -500,15 +512,15 @@ class AbstractCamera(PanBase):
                 else:
                     subcomponent_kwargs = copy.copy(subcomponent)
                     subcomponent_kwargs.update({'camera': self, 'config': self.config})
-                    setattr(self, name, getattr(module, class_name)(**subcomponent_kwargs))
+                    setattr(self, sub_name, getattr(module, class_name)(**subcomponent_kwargs))
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
                 self.logger.error("Expected either a {} instance or dict, got {}".format(
                     class_name, subcomponent))
-                setattr(self, name, None)
+                setattr(self, sub_name, None)
         else:
-            setattr(self, name, None)
+            setattr(self, sub_name, None)
 
     def __str__(self):
         name = self.name

@@ -79,7 +79,7 @@ class Camera(AbstractCamera):
                 warn(message)
                 return
             self.logger.debug('Found {} ({}) on {}'.format(
-                name, kwargs['serial_numner'], device_node))
+                name, kwargs['serial_number'], device_node))
             kwargs['port'] = device_node
 
         if kwargs['port'] in Camera._assigned_nodes:
