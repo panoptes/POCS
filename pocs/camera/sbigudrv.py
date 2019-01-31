@@ -668,7 +668,10 @@ command_codes = {'CC_NULL': 0,
                  'CC_CUSTOMER_OPTIONS': 55,
                  'CC_DEBUG_LOG': 56,
                  'CC_QUERY_USB2': 57,
-                 'CC_QUERY_ETHERNET2': 58}
+                 'CC_QUERY_ETHERNET2': 58,
+                 'CC_GET_AO_MODEL': 59,
+                 'CC_QUERY_USB3': 60,
+                 'CC_QUERY_COMMAND_STATUS2': 61}
 
 # Reversed dictionary, just in case you ever need to look up a command given a
 # command code.
@@ -717,7 +720,9 @@ errors = {0: 'CE_NO_ERROR',
           38: 'CE_DIFF_GUIDER_ERROR',
           39: 'CE_RIPPLE_CORRECTION_ERROR',
           40: 'CE_EZUSB_RESET',
-          41: 'CE_NEXT_ERROR'}
+          41: 'CE_INCOMPATIBLE_FIRMWARE',
+          42: 'CE_INVALID_HANDLE',
+          43: 'CE_NEXT_ERROR'}
 
 # Reverse dictionary, just in case you ever need to look up an error code given
 # an error name
@@ -802,7 +807,23 @@ device_types = {0: "DEV_NONE",
                 0x7F06: "DEV_USB5",
                 0x7F07: "DEV_USB6",
                 0x7F08: "DEV_USB7",
-                0x7F09: "DEV_USB8"}
+                0x7F09: "DEV_USB8",
+                0x7F0A: "DEV_USB9",
+                0x7F0B: "DEV_USB10",
+                0x7F0C: "DEV_USB11",
+                0x7F0D: "DEV_USB12",
+                0x7F0E: "DEV_USB13",
+                0x7F0F: "DEV_USB14",
+                0x7F10: "DEV_USB15",
+                0x7F11: "DEV_USB16",
+                0x7F12: "DEV_USB17",
+                0x7F13: "DEV_USB18",
+                0x7F14: "DEV_USB19",
+                0x7F15: "DEV_USB20",
+                0x7F16: "DEV_USB21",
+                0x7F17: "DEV_USB22",
+                0x7F18: "DEV_USB23",
+                0x7F19: "DEV_USB24"}
 
 # Reverse dictionary
 device_type_codes = {device: code for code, device in device_types.items()}
