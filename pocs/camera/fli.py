@@ -33,9 +33,11 @@ class Camera(AbstractCamera):
                  filter_type='M',
                  library_path=False,
                  *args, **kwargs):
+        # FLI cameras should be specified by either serial number (preferred) or 'port' (device
+        # node). For backwards compatibility reasons allow port to be used as an alias of serial
+        # number. If both are given serial number takes precedence
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
-        super().__init__(name, *args, **kwargs)
 
         # Create a Lock that will be used to prevent overlapping exposures.
         self._exposure_lock = Lock()
@@ -43,9 +45,10 @@ class Camera(AbstractCamera):
         # Create an instance of the FLI Driver interface
         self._FLIDriver = libfli.FLIDriver(library_path)
 
-        if serial_number_pattern.match(self.port):
+        if kwargs.get('serial_number') or serial_number_pattern.match(kwargs.get('port')):
             # Have been given a serial number instead of a device node
-            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
+            kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
+            self.logger.debug('Looking for {} ({})...'.format(name, kwargs['serial_number']))
 
             if Camera._fli_nodes is None:
                 # No cached device nodes scanning results. 1st get list of all FLI cameras
@@ -69,21 +72,23 @@ class Camera(AbstractCamera):
 
             # Search in cached device node scanning results for serial number.
             try:
-                device_node = Camera._fli_nodes[self.port]
+                device_node = Camera._fli_nodes[kwargs['serial_number']]
             except KeyError:
-                message = 'Could not find {} ({})!'.format(self.name, self.port)
+                message = 'Could not find {} ({})!'.format(name, kwargs['serial_number'])
                 self.logger.error(message)
                 warn(message)
                 return
-            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
-            self.port = device_node
+            self.logger.debug('Found {} ({}) on {}'.format(
+                name, kwargs['serial_number'], device_node))
+            kwargs['port'] = device_node
 
-        if self.port in Camera._assigned_nodes:
-            message = 'Device node {} already in use!'.format(self.port)
+        if kwargs['port'] in Camera._assigned_nodes:
+            message = 'Device node {} already in use!'.format(kwargs['port'])
             self.logger.error(message)
             warn(message)
             return
 
+        super().__init__(name, *args, **kwargs)
         self.connect()
         Camera._assigned_nodes.append(self.port)
         self.filter_type = filter_type
@@ -304,9 +309,6 @@ class Camera(AbstractCamera):
         header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
         header.set('XPIXSZ', self._info['pixel width'].value, 'Microns')
         header.set('YPIXSZ', self._info['pixel height'].value, 'Microns')
-
-        if self.focuser:
-            header = self.focuser._fits_header(header)
 
         return header
 
