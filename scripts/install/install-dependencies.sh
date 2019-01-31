@@ -87,11 +87,11 @@ if [[ "${GUESSED_A_VAR}" == "1" ]] ; then
 "
 fi
 
-# Python 3.6 works around a problem building astroscrappy in 3.7.
 PYTHON_VERSION="3.6"
 ASTROMETRY_VERSION="0.76"
 ASTROMETRY_DIR="${PANDIR}/astrometry"
-CONDA_INSTALL_DIR="${PANDIR}/miniconda"
+# CONDA_INSTALL_DIR="${PANDIR}/miniconda"
+CONDA_INSTALL_DIR="/opt/conda"
 CONDA_SH="${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh"
 TIMESTAMP="$(date "+%Y%m%d.%H%M%S")"
 INSTALL_LOGS_DIR="${PANDIR}/logs/install/${TIMESTAMP}"
