@@ -747,13 +747,12 @@ class SBIGDriver(PanBase):
         There are many driver control parameters, almost all of which we would not want to change
         from their default values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
 
-            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which
-            reduces amplifier glow) only for images 3 seconds and longer. This was done to increase
-            the image throughput for short exposures as raising and lowering Vdd takes 100s of
-            milliseconds. The lowering and subsequent raising of Vdd delays the image readout
-            slightly which causes short exposures to have a different bias structure than long
-            exposures. Setting this parameter to FALSE stops the short exposure optimization from
-            occurring.
+        The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces
+        amplifier glow) only for images 3 seconds and longer. This was done to increase the image
+        throughput for short exposures as raising and lowering Vdd takes 100s of milliseconds. The
+        lowering and subsequent raising of Vdd delays the image readout slightly which causes short
+        exposures to have a different bias structure than long exposures. Setting this parameter to
+        FALSE stops the short exposure optimization from occurring.
 
         The default behaviour will improve image throughput for exposure times of 3 seconds or less
         but at the penalty of altering the bias structure between short and long exposures. This
@@ -796,7 +795,9 @@ class SBIGDriver(PanBase):
         try:
             command_code = command_codes[command]
         except KeyError:
-            raise KeyError("Invalid SBIG command '{}'!".format(command))
+            msg = "Invalid SBIG command '{}'!".format(command)
+            self.logger.error(msg)
+            raise KeyError(msg)
 
         error = None
         retries_remaining = self.retries
@@ -1061,9 +1062,9 @@ device_types = {0: "DEV_NONE",
                 0x7F14: "DEV_USB19",
                 0x7F15: "DEV_USB20",
                 0x7F16: "DEV_USB21",
-                0x7F19: "DEV_USB22",
-                0x7F1A: "DEV_USB23",
-                0x7F1B: "DEV_USB24"}
+                0x7F17: "DEV_USB22",
+                0x7F18: "DEV_USB23",
+                0x7F19: "DEV_USB24"}
 
 # Reverse dictionary
 device_type_codes = {device: code for code, device in device_types.items()}

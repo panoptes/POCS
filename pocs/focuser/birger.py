@@ -315,7 +315,7 @@ class Focuser(AbstractFocuser):
 
         Returns:
             list: possibly empty list containing the '\r' terminated lines of the response from the
-            adaptor.
+                adaptor.
         """
         if not self.is_connected:
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
