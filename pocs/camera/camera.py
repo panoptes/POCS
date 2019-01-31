@@ -412,9 +412,9 @@ class AbstractCamera(PanBase):
         header.set('CAM-MOD', self.model, 'Camera model')
 
         if self.focuser:
-            header = self.focuser._fits_header(header)
+            header = self.focuser._add_fits_keywords(header)
         if self.filterwheel:
-            header = self.filterwheel._fits_header(header)
+            header = self.filterwheel._add_fits_keywords(header)
 
         return header
 

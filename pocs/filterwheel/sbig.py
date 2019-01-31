@@ -107,7 +107,7 @@ class FilterWheel(AbstractFilterWheel):
                                   cfw_event=move_event,
                                   timeout=self._timeout)
 
-    def _fits_header(self, header):
-        header = super()._fits_header(header)
+    def _add_fits_keywords(self, header):
+        header = super()._add_fits_keywords(header)
         header.set('FW-FW', self.firmware_version, 'Filter wheel firmware version')
         return header

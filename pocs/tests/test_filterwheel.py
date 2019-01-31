@@ -33,6 +33,11 @@ def test_camera_init():
     assert sim_camera.filterwheel.camera is sim_camera
 
 
+def test_camera_no_filterwheel():
+    sim_camera = SimCamera()
+    assert sim_camera.filterwheel is None
+
+
 def test_camera_association_on_init():
     sim_camera = SimCamera()
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
@@ -97,11 +102,18 @@ def test_move_bad_number(filterwheel):
     with pytest.raises(ValueError):
         filterwheel.move_to(0, blocking=True)  # No zero based numbering here!
     with pytest.raises(ValueError):
-        filterwheel.position = 99
+        filterwheel.move_to(-1, blocking=True)  # Definitely not
+    with pytest.raises(ValueError):
+        filterwheel.position = 99  # Problems.
+    with pytest.raises(ValueError):
+        filterwheel.move_to(filterwheel._n_positions + 1, blocking=True)  # Close, but...
+    filterwheel.move_to(filterwheel._n_positions, blocking=True)  # OK
 
 
 def test_move_name(filterwheel, caplog):
+    filterwheel.position = 1  # Start from a known position
     e = filterwheel.move_to('quattro')
+    assert filterwheel.current_filter == 'UNKNOWN'  # I'm between filters right now
     e.wait()
     assert filterwheel.current_filter == 'quattro'
     e = filterwheel.move_to('o', blocking=True)  # Matches leading substrings too

@@ -146,6 +146,17 @@ class AbstractFilterWheel(PanBase):
 
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
+
+        Examples:
+            Substring matching is useful when the filter names contain both the type of filter
+            and a serial number, e.g. the following selects a g band filter without having to
+            know its full name.
+
+            >>> fw = FilterWheel(filter_names=['u_12', 'g_04', 'r_09', 'i_20', 'z_07'])
+            >>> fw_event = fw.move_to('g')
+            >>> fw_event.wait()
+            >>> fw.current_filter
+            'g_04'
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         position = self._parse_position(position)
@@ -210,7 +221,7 @@ class AbstractFilterWheel(PanBase):
 
         return int_position
 
-    def _fits_header(self, header):
+    def _add_fits_keywords(self, header):
         header.set('FW-NAME', self.name, 'Filter wheel name')
         header.set('FW-MOD', self.model, 'Filter wheel model')
         header.set('FW-ID', self.uid, 'Filter wheel serial number')

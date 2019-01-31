@@ -539,7 +539,7 @@ class AbstractFocuser(PanBase):
 
         return initial_focus, final_focus
 
-    def _fits_header(self, header):
+    def _add_fits_keywords(self, header):
         header.set('FOC-NAME', self.name, 'Focuser name')
         header.set('FOC-MOD', self.model, 'Focuser model')
         header.set('FOC-ID', self.uid, 'Focuser serial number')
