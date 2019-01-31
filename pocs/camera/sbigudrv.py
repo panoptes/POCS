@@ -499,7 +499,7 @@ class SBIGDriver(PanBase):
         try:
             query = self.cfw_query(handle, model)
             while query['status'] == 'BUSY':
-                if timer.expired:
+                if timer.expired():
                     msg = "Timeout waiting for filter wheel on {} move to {} to complete".format(
                         self._ccd_info[handle]['serial number'], position)
                     raise error.Timeout(msg)
@@ -553,8 +553,8 @@ class SBIGDriver(PanBase):
         Returns:
             CFWResults: ctypes Structure containing results of the command
         """
-        cfw_params = CFWParams(CFWSelect[model], *args)
-        cfw_results = CFWResuls()
+        cfw_params = CFWParams(CFWModelSelect[model], *args)
+        cfw_results = CFWResults()
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_CFW', cfw_params, cfw_results)

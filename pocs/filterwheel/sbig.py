@@ -82,7 +82,7 @@ class FilterWheel(AbstractFilterWheel):
         self._n_positions = info['n_positions']
         if len(self.filter_names) != self.n_positions:
             msg = "Number of names in filter_names ({}) doesn't".format(len(self.filter_names)) + \
-                "match number of positions in filter wheel ({})".format(self.n_positions)
+                " match number of positions in filter wheel ({})".format(self.n_positions)
             self.logger.error(msg)
             raise ValueError(msg)
 
