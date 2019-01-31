@@ -24,9 +24,10 @@ class Camera(AbstractCamera):
                  set_point=None,
                  filter_type=None,
                  *args, **kwargs):
-        # For SBIG cameras serial_number and port are synomymous but at least one must be set
+        # SBIG cameras don't have a 'port' but should have their serial number specified.
+        # For backwards compatibility purposes allow port to be used as an alias of serial number.
         kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
-        kwargs['port'] = kwargs.get('port', kwargs.get('serial_number'))
+        kwargs['port'] = None
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
@@ -105,8 +106,8 @@ class Camera(AbstractCamera):
 # Methods
 
     def __str__(self):
-        # For SBIG cameras uid and port are both aliases for serial number so
-        # shouldn't include both
+        # SBIG cameras don't have a port so just include the serial number in the string
+        # representation.
         s = "{} ({})".format(self.name, self.uid)
 
         if self.focuser:
@@ -124,18 +125,18 @@ class Camera(AbstractCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug('Connecting to {} ({})'.format(self.name, self.port))
+        self.logger.debug('Connecting to {}'.format(self))
 
         # Claim handle from the SBIGDriver, store camera info.
-        self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
+        self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.uid)
         if self._handle == INVALID_HANDLE_VALUE:
-            message = 'Could not connect to {} ({})!'.format(self.name, self.port)
+            message = 'Could not connect to {}!'.format(self)
             self.logger.error(message)
             warn(message)
             self._connected = False
             return
 
-        self.logger.debug("{} connected".format(self.name))
+        self.logger.debug("{} connected".format(self))
         self._connected = True
         self._serial_number = self._info['serial number']
         self.model = self._info['camera name']
