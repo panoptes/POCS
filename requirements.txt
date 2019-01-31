@@ -1,6 +1,5 @@
 astroplan
 astropy >= 3.0.0
-ccdproc
 codecov
 coveralls
 dateparser
