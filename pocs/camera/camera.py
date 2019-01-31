@@ -18,6 +18,7 @@ from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
+from pocs.filterwheel import AbstractFilterWheel
 
 
 class AbstractCamera(PanBase):
@@ -27,6 +28,8 @@ class AbstractCamera(PanBase):
     Attributes:
         filter_type (str): Type of filter attached to camera, default RGGB.
         focuser (`pocs.focuser.*.Focuser`|None): Focuser for the camera, default None.
+        filter_wheel (`pocs.filterwheel.*.FilterWheel`|None): Filter wheel for the camera, default
+            None.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
@@ -40,6 +43,7 @@ class AbstractCamera(PanBase):
                  port=None,
                  primary=False,
                  focuser=None,
+                 filterwheel=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -49,7 +53,7 @@ class AbstractCamera(PanBase):
         self.is_primary = primary
         self.properties = None
 
-        self.filter_type = kwargs.get('filter_type', 'RGGB')
+        self._filter_type = kwargs.get('filter_type', 'RGGB')
 
         self._connected = False
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
@@ -61,6 +65,10 @@ class AbstractCamera(PanBase):
                                   sub_name='focuser',
                                   class_name='Focuser',
                                   base_class=AbstractFocuser)
+        self._create_subcomponent(subcomponent=filterwheel,
+                                  sub_name='filterwheel',
+                                  class_name='FilterWheel',
+                                  base_class=AbstractFilterWheel)
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -150,6 +158,14 @@ class AbstractCamera(PanBase):
         not for those that don't (e.g. DSLRs).
         """
         raise NotImplementedError
+
+    @property
+    def filter_type(self):
+        """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
+        if self.filterwheel:
+            return self.filterwheel.current_filter
+        else:
+            return self._filter_type
 
 ##################################################################################################
 # Methods
@@ -396,7 +412,9 @@ class AbstractCamera(PanBase):
         header.set('CAM-MOD', self.model, 'Camera model')
 
         if self.focuser:
-            header = self.focuser._fits_header(header)
+            header = self.focuser._add_fits_keywords(header)
+        if self.filterwheel:
+            header = self.filterwheel._add_fits_keywords(header)
 
         return header
 
@@ -494,7 +512,7 @@ class AbstractCamera(PanBase):
                 subcomponent, e.g. `pocs.focuser`
             class_name (str): name of the subcomponent class, e.g. 'Focuser'
             base_class (class): the base class for the subcomponent, e.g.
-                `pocs.focuser.AbtractFocuser1, used to check whether subcomponent is an instance.
+                `pocs.focuser.AbtractFocuser`, used to check whether subcomponent is an instance.
         """
         if subcomponent:
             if isinstance(subcomponent, base_class):
@@ -531,6 +549,10 @@ class AbstractCamera(PanBase):
 
         if self.focuser:
             s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
 
         return s
 

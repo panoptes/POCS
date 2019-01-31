@@ -13,6 +13,7 @@ from ctypes.util import find_library
 from warnings import warn
 import time
 import threading
+import enum
 
 import numpy as np
 from numpy.ctypeslib import as_ctypes
@@ -20,6 +21,8 @@ from astropy import units as u
 
 from pocs.base import PanBase
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import error
+from pocs.utils import CountdownTimer
 
 ################################################################################
 # Main SBIGDriver class
@@ -317,14 +320,249 @@ class SBIGDriver(PanBase):
 
         return readout_thread
 
+    def cfw_init(self, handle, model='AUTO', timeout=10 * u.second):
+        """
+        Initialise colour filter wheel
+
+        Sends the initialise command to the colour filter wheel attached to the camera
+        specified with handle. This will generally not be required because all SBIG filter
+        wheels initialise themselves on power up.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        self.logger.debug("Initialising filter wheel on {}".format(
+            self._ccd_info[handle]['serial number']))
+        cfw_init = self._cfw_params(handle, model, CFWCommand.INIT)
+        # The filterwheel init command does not block until complete, but this method should.
+        # Need to poll.
+        init_event = threading.Event()
+        # Expect filter wheel to end up in position 1 after initialisation
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, 1, model, init_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
+        init_event.wait()
+
+        return self._cfw_parse_results(cfw_init)
+
+    def cfw_query(self, handle, model='AUTO'):
+        """
+        Query status of the colour filter wheel
+
+        This is mostly used to poll the filter wheel status after asking the filter wheel to move
+        in order to find out when the move has completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        cfw_query = self._cfw_command(handle, model, CFWCommand.QUERY)
+        return self._cfw_parse_results(cfw_query)
+
+    def cfw_get_info(self, handle, model='AUTO'):
+        """
+        Get info from the colour filter wheel
+
+        This will return the usual status information plus the firmware version and the number
+        of filter wheel positions.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model',  'firmware_version' and 'n_positions' for the
+                filter wheel.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        cfw_info = self._cfw_command(handle,
+                                     model,
+                                     CFWCommand.GET_INFO,
+                                     CFWGetInfoSelect.FIRMWARE_VERSION)
+        results = {'model': CFWModelSelect(cfw_info.cfwModel).name,
+                   'firmware_version': int(cfw_info.cfwResults1),
+                   'n_positions': int(cfw_info.cfwResults2)}
+        msg = "Filter wheel on {}, model: {}, firmware version: {}, number of positions: {}".format(
+            self._ccd_info[handle]['serial number'],
+            results['model'],
+            results['firmware_version'],
+            results['n_positions'])
+        self.logger.debug(msg)
+
+        return results
+
+    def cfw_goto(self, handle, position, model='AUTO', cfw_event=None, timeout=10 * u.second):
+        """
+        Move colour filer wheel to a given position
+
+        This function returns immediately after starting the move but spawns a thread to poll the
+        filter wheel until the move completes (see _cfw_poll method for details). This thread will
+        log the result of the move, and optionally set a threading.Event to signal that it has
+        completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        self.logger.debug("Moving filter wheel on {} to position {}".format(
+            self._ccd_info[handle]['serial number'], position))
+        # First check that the filter wheel isn't currently moving, and that the requested
+        # position is valid.
+        info = self.cfw_get_info(handle, model)
+        if position < 1 or position > info['n_positions']:
+            msg = "Position must be between 1 and {}, got {}".format(
+                info['n_positions'], position)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+        query = self.cfw_query(handle, model)
+        if query['status'] == CFWStatus.BUSY:
+            msg = "Attempt to move filter wheel when already moving"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+
+        cfw_goto_results = self._cfw_command(handle, model, CFWCommand.GOTO, position)
+
+        # Poll filter wheel in order to set cfw_event once move is complete
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, position, model, cfw_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
+
+        return self._cfw_parse_results(cfw_goto_results)
+
 # Private methods
+
+    def _cfw_poll(self, handle, position, model='AUTO', cfw_event=None, timeout=None):
+        """
+        Polls filter wheel until the current move is complete.
+
+        Also monitors for errors while polling and checks status and position after the move is
+        complete. Optionally sets a threading.Event to signal the end of the move. Has an optional
+        timeout to raise an TimeoutError is the move takes longer than expected.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must be an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error or if the final status and position
+                are not as expected.
+            pocs.utils.error.Timeout: raised if the move does not end within the period of time
+                specified by the timeout argument.
+        """
+        if timeout is not None:
+            timer = CountdownTimer(duration=timeout)
+
+        try:
+            query = self.cfw_query(handle, model)
+            while query['status'] == 'BUSY':
+                if timer.expired():
+                    msg = "Timeout waiting for filter wheel on {} move to {} to complete".format(
+                        self._ccd_info[handle]['serial number'], position)
+                    raise error.Timeout(msg)
+                time.sleep(0.1)
+                query = self.cfw_query(handle, model)
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while moving filter wheel on {} to {}: {}'.format(
+                self._ccd_info[handle]['serial number'], position, err))
+            raise err
+        else:
+            # No driver errors, but still check status and position
+            if query['status'] == 'IDLE' and query['position'] == position:
+                self.logger.debug('Filter wheel on {} moved to position {}'.format(
+                    self._ccd_info[handle]['serial number'], query['position']))
+            else:
+                msg = 'Problem moving filter wheel on {} to {} - status: {}, position: {}'.format(
+                    self._ccd_info[handle]['serial number'],
+                    position,
+                    query['status'],
+                    query['position'])
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+        finally:
+            # Regardless must always set the Event when the move has stopped.
+            if cfw_event is not None:
+                cfw_event.set()
+
+    def _cfw_parse_results(self, cfw_results):
+        """
+        Converts filter wheel results Structure into something more Pythonic
+        """
+        results = {'model': CFWModelSelect(cfw_results.cfwModel).name,
+                   'position': int(cfw_results.cfwPosition),
+                   'status': CFWStatus(cfw_results.cfwStatus).name,
+                   'error': CFWError(cfw_results.cfwError).name}
+
+        if results['position'] == 0:
+            results['position'] = float('nan')  # 0 means position unknown
+
+        return results
+
+    def _cfw_command(self, handle, model, *args):
+        """
+        Helper function to send filter wheel commands
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str): Model of the filter wheel to control.
+            *args: remaining parameters for the filter wheel command
+        Returns:
+            CFWResults: ctypes Structure containing results of the command
+        """
+        cfw_params = CFWParams(CFWModelSelect[model], *args)
+        cfw_results = CFWResults()
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_params, cfw_results)
+        return cfw_results
 
     def _readout(self, handle, centiseconds, filename, readout_mode_code,
                  top, left, height, width,
                  header, exposure_event=None):
-        """
-
-        """
         # Set up all the parameter and result Structures that will be needed.
         end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
@@ -597,6 +835,15 @@ class SBIGDriver(PanBase):
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
         if error != 'CE_NO_ERROR':
+            if error == 'CE_CFW_ERROR':
+                cfw_error_code = results.cfwError
+                try:
+                    error = "CFW {}".format(CFWError(cfw_error_code).name)
+                except ValueError:
+                    msg = "SBIG Driver return unknown CFW error code '{}'".format(cfw_error_code)
+                    self.logger.error(msg)
+                    raise RuntimeError(msg)
+
             msg = "SBIG Driver returned error '{}'!".format(error)
             self.logger.error(msg)
             raise RuntimeError(msg)
@@ -1102,6 +1349,9 @@ driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABL
                                                              'DCP_COLUMN_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_COUNT',
+                                                             'DCP_TDI_MODE_DRIFT_RATE',
+                                                             'DCP_OVERRIDE_AD_GAIN',
+                                                             'DCP_ENABLE_AUTO_OFFSET',
                                                              'DCP_LAST'))}
 
 driver_control_codes = {param: code for code, param in driver_control_params.items()}
@@ -1289,3 +1539,109 @@ class GetDriverInfoResults0(ctypes.Structure):
     _fields_ = [('version', ctypes.c_ushort),
                 ('name', ctypes.c_char * 64),
                 ('maxRequest', ctypes.c_ushort)]
+
+
+#################################################################################
+# Filter wheel related
+#################################################################################
+
+class CFWParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the CFW (colour filter wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwCommand', ctypes.c_ushort),
+                ('cfwParam1', ctypes.c_ulong),
+                ('cfwParam2', ctypes.c_ulong),
+                ('outLength', ctypes.c_ushort),
+                ('outPtr', ctypes.c_char_p),
+                ('inLength', ctypes.c_ushort),
+                ('inPtr', ctypes.c_char_p)]
+
+
+class CFWResults(ctypes.Structure):
+    """
+    ctypes Structure used to fold the results from the CFW (colour filer wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwPosition', ctypes.c_ushort),
+                ('cfwStatus', ctypes.c_ushort),
+                ('cfwError', ctypes.c_ushort),
+                ('cfwResults1', ctypes.c_ulong),
+                ('cfwResults2', ctypes.c_ulong)]
+
+
+@enum.unique
+class CFWModelSelect(enum.IntEnum):
+    """
+    Filter wheel model selection enum
+    """
+    UNKNOWN = 0
+    CFW2 = enum.auto()
+    CFW5 = enum.auto()
+    CFW8 = enum.auto()
+    CFWL = enum.auto()
+    CFW402 = enum.auto()
+    AUTO = enum.auto()
+    CFW6A = enum.auto()
+    CFW10 = enum.auto()
+    CFW10_SERIAL = enum.auto()
+    CFW9 = enum.auto()
+    CFWL8 = enum.auto()
+    CFWL8G = enum.auto()
+    CFW1603 = enum.auto()
+    FW5_STX = enum.auto()
+    FW5_8300 = enum.auto()
+    FW8_8300 = enum.auto()
+    FW7_STX = enum.auto()
+    FW8_STT = enum.auto()
+    FW5_STF_DETENT = enum.auto()
+
+
+@enum.unique
+class CFWCommand(enum.IntEnum):
+    """
+    Filter wheel command enum
+    """
+    QUERY = 0
+    GOTO = enum.auto()
+    INIT = enum.auto()
+    GET_INFO = enum.auto()
+    OPEN_DEVICE = enum.auto()
+    CLOSE_DEVICE = enum.auto()
+
+
+@enum.unique
+class CFWStatus(enum.IntEnum):
+    """
+    Filter wheel status enum
+    """
+    UNKNOWN = 0
+    IDLE = enum.auto()
+    BUSY = enum.auto()
+
+
+@enum.unique
+class CFWError(enum.IntEnum):
+    """
+    Filter wheel errors enum
+    """
+    NONE = 0
+    BUSY = enum.auto()
+    BAD_COMMAND = enum.auto()
+    CAL_ERROR = enum.auto()
+    MOTOR_TIMEOUT = enum.auto()
+    BAD_MODEL = enum.auto()
+    DEVICE_NOT_CLOSED = enum.auto()
+    DEVICE_NOT_OPEN = enum.auto()
+    I2C_ERROR = enum.auto()
+
+
+@enum.unique
+class CFWGetInfoSelect(enum.IntEnum):
+    """
+    Filter wheel get info select enum
+    """
+    FIRMWARE_VERSION = 0
+    CAL_DATA = enum.auto()
+    DATA_REGISTERS = enum.auto()

@@ -33,9 +33,9 @@ class Camera(AbstractCamera):
         super().__init__(name, *args, **kwargs)
         self.connect()
         if filter_type is not None:
-            # connect() will set this based on camera info, but that doesn't know about filters
-            # upstream of the CCD.
-            self.filter_type = filter_type
+            # connect() will have set this based on camera info, but that doesn't know about filters
+            # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
+            self._filter_type = filter_type
         if self.is_connected:
             # Set and enable cooling, if a set point has been given.
             if set_point is not None:
@@ -112,6 +112,10 @@ class Camera(AbstractCamera):
 
         if self.focuser:
             s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
 
         return s
 
@@ -139,11 +143,16 @@ class Camera(AbstractCamera):
 
         if self._info['colour']:
             if self._info['Truesense']:
-                self.filter_type = 'CRGB'
+                self._filter_type = 'CRGB'
             else:
-                self.filter_type = 'RGGB'
+                self._filter_type = 'RGGB'
         else:
-            self.filter_type = 'M'
+            self._filter_type = 'M'
+
+        if self.filterwheel and not self.filterwheel.is_connected:
+            # Need to defer connection of SBIG filter wheels until after camera is connected
+            # so do it here.
+            self.filterwheel.connect()
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
