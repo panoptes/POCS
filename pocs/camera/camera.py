@@ -62,11 +62,11 @@ class AbstractCamera(PanBase):
         self._current_observation = None
 
         self._create_subcomponent(subcomponent=focuser,
-                                  name='focuser',
+                                  sub_name='focuser',
                                   class_name='Focuser',
                                   base_class=AbstractFocuser)
         self._create_subcomponent(subcomponent=filterwheel,
-                                  name='filterwheel',
+                                  sub_name='filterwheel',
                                   class_name='FilterWheel',
                                   base_class=AbstractFilterWheel)
 
@@ -512,7 +512,7 @@ class AbstractCamera(PanBase):
                 subcomponent, e.g. `pocs.focuser`
             class_name (str): name of the subcomponent class, e.g. 'Focuser'
             base_class (class): the base class for the subcomponent, e.g.
-                `pocs.focuser.AbtractFocuser1, used to check whether subcomponent is an instance.
+                `pocs.focuser.AbtractFocuser`, used to check whether subcomponent is an instance.
         """
         if subcomponent:
             if isinstance(subcomponent, base_class):
