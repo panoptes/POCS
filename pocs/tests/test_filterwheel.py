@@ -169,4 +169,5 @@ def test_move_exposing(tmpdir, caplog):
     with pytest.raises(error.PanError):
         sim_camera.filterwheel.move_to(2, blocking=True)  # Attempt to move while camera is exposing
     assert caplog.records[-1].levelname == 'ERROR'
+    assert sim_camera.filterwheel.position == 1  # Should not have moved
     exp_event.wait()

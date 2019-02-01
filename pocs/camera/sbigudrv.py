@@ -213,7 +213,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
     def get_exposure_status(self, handle):
-        """  """
+        """Returns the current exposure status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
         query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
         query_status_results = QueryCommandStatusResults()
 
