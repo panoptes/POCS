@@ -4,6 +4,7 @@ from astropy import units as u
 
 from pocs.base import PanBase
 from pocs.utils import listify
+from pocs.utils import error
 
 
 class AbstractFilterWheel(PanBase):
@@ -159,6 +160,10 @@ class AbstractFilterWheel(PanBase):
             'g_04'
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
+        if self.camera.is_exposing:
+            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring".format(self)
+            raise error.PanError(msg)
+
         position = self._parse_position(position)
         self.logger.info("Moving {} to position {} ({})".format(
             self, position, self.filter_names[position - 1]))
