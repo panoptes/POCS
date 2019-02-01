@@ -1,0 +1,23 @@
+version: '3.2'
+services:
+  pocs:
+    image: gcr.io/panoptes-survey/pocs
+    privileged: true
+    env_file: .env
+    command: tail -F $PANLOG/pocs_shell-info.log
+    volumes:
+      - type: volume
+        source: astrometry_index
+        target: /var/panoptes/astrometry/data
+        read_only: true
+      - type: bind
+        source: /var/panoptes/images
+        target: /var/panoptes/images
+      - type: bind
+        source: /var/panoptes/json_store
+        target: /var/panoptes/json_store
+      - type: bind
+        source: /var/panoptes/logs
+        target: /var/panoptes/logs
+volumes:
+    astrometry_index:
