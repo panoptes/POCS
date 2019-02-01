@@ -103,6 +103,11 @@ class Camera(AbstractCamera):
         """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
+    @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        return self._SBIGDriver.get_exposure_status(self._handle) != 'CS_IDLE'
+
 # Methods
 
     def __str__(self):

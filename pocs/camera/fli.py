@@ -170,6 +170,11 @@ class Camera(AbstractCamera):
         """
         return self._FLIDriver.FLIGetCoolerPower(self._handle)
 
+    @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        return bool(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
+
 # Methods
 
     def connect(self):
