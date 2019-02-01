@@ -11,7 +11,6 @@ ENV SHELL /bin/bash
 ENV PANDIR $pan_dir
 ENV PANLOG $PANDIR/logs 
 ENV POCS $PANDIR/POCS  
-ENV PAWS $PANDIR/PAWS  
 ENV PANUSER root
 ENV SOLVE_FIELD=/usr/bin/solve-field
 
@@ -20,29 +19,20 @@ COPY . /var/panoptes/POCS
 # Use "bash" as replacement for "sh"
 # Note: I don't think this is the preferred way to do this anymore
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
-    && apt-get update --fix-missing \
-    && apt-get -y install \
+    && apt-get update \
+    && apt-get --yes install \
+        `cut '-d#' -f1 $POCS/scripts/install/apt-packages-list.txt | sort | uniq` \
         astrometry.net \
-        byobu \
-        bzip2 \
-        ca-certificates \
-        git \
+        python3-pip \
         wget \
-        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p $PAWS \
     && mkdir -p $POCS \
     && mkdir -p $PANLOG \
-    && echo 'export PATH=/opt/conda/bin:$PATH' > /root/.bashrc \
-    && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/anaconda.sh \
-    && /bin/bash ~/anaconda.sh -b -p /opt/conda \
-    && rm ~/anaconda.sh \
+    && mkdir -p ${PANDIR}/astrometry/data \
+    && echo "add_path /var/panoptes/astrometry/data" >> /etc/astrometry.cfg \
     && cd $POCS \
-    && /bin/bash scripts/install/install-dependencies.sh --no-conda --no-mongodb \
-    && /opt/conda/bin/pip install -Ur requirements.txt \
-    && /opt/conda/bin/pip install -e . \
-    && cd $PANDIR \
-    && /opt/conda/bin/conda clean --all --yes
+    && pip3 install -Ur requirements.txt \
+    && pip3 install -e .
 
 WORKDIR ${POCS}
 
