@@ -160,7 +160,7 @@ class AbstractFilterWheel(PanBase):
             'g_04'
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
-        if self.camera.is_exposing:
+        if self.camera and self.camera.is_exposing:
             msg = "Attempt to move filter wheel {} while camera is exposing, ignoring".format(self)
             raise error.PanError(msg)
 

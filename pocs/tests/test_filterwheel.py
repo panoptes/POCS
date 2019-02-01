@@ -7,6 +7,7 @@ from astropy import units as u
 
 from pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
 from pocs.camera.simulator import Camera as SimCamera
+from pocs.utils import error
 
 
 @pytest.fixture(scope='module')
@@ -158,3 +159,14 @@ def test_move_times(name, bidirectional, expected):
         pytest.approx(0.2, rel=2e-2)
     assert timeit("sim_filterwheel.position = 3", number=1, globals=locals()) == \
         pytest.approx(expected, rel=2e-2)
+
+
+def test_move_exposing(tmpdir, caplog):
+    sim_camera = SimCamera(filterwheel={'model': 'simulator',
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro']})
+    fits_path = str(tmpdir.join('test_exposure.fits'))
+    exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)
+    with pytest.raises(error.PanError):
+        sim_camera.filterwheel.move_to(2, blocking=True)  # Attempt to move while camera is exposing
+    assert caplog.records[-1].levelname == 'ERROR'
+    exp_event.wait()
