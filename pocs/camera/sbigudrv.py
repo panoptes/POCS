@@ -212,6 +212,19 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
+    def get_exposure_status(self, handle):
+        """Returns the current exposure status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
+        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+        query_status_results = QueryCommandStatusResults()
+
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_QUERY_COMMAND_STATUS',
+                               params=query_status_params,
+                               results=query_status_results)
+
+        return statuses[query_status_results.status]
+
     def take_exposure(self,
                       handle,
                       seconds,
@@ -270,28 +283,16 @@ class SBIGDriver(PanBase):
         # Make sure there isn't already an exposure in progress on this camera.
         # If there is then we need to wait otherwise we'll cause a hang.
         # Could do this with Locks but it's more robust to directly query the hardware.
-        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
-        query_status_results = QueryCommandStatusResults()
-
-        with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS',
-                               params=query_status_params,
-                               results=query_status_results)
-
-        if query_status_results.status != status_codes['CS_IDLE']:
+        exposure_status = self.get_exposure_status(handle)
+        if exposure_status != 'CS_IDLE':
             self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(
                 self._ccd_info[handle]['serial number']))
             # Wait until camera is idle
-            while query_status_results.status != status_codes['CS_IDLE']:
+            while exposure_status != 'CS_IDLE':
                 self.logger.warning('Waiting for exposure on {} to complete'.format(
                     self._ccd_info[handle]['serial number']))
                 time.sleep(1)
-                with self._command_lock:
-                    self._set_handle(handle)
-                    self._send_command('CC_QUERY_COMMAND_STATUS',
-                                       params=query_status_params,
-                                       results=query_status_results)
+                exposure_status = self.get_exposure_status(handle)
 
         # Check temerature is OK.
         temp_status = self.query_temp_status(handle)
@@ -585,22 +586,14 @@ class SBIGDriver(PanBase):
         image_data = np.zeros((height, width), dtype=np.uint16)
 
         # Check for the end of the exposure.
-        with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS',
-                               params=query_status_params,
-                               results=query_status_results)
+        exposure_status = self.get_exposure_status(handle)
 
         # Poll if needed.
-        while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
+        while exposure_status != 'CS_INTEGRATION_COMPLETE':
             self.logger.debug('Waiting for exposure on {} to complete'.format(
                 self._ccd_info[handle]['serial number']))
             time.sleep(0.1)
-            with self._command_lock:
-                self._set_handle(handle)
-                self._send_command('CC_QUERY_COMMAND_STATUS',
-                                   params=query_status_params,
-                                   results=query_status_results)
+            exposure_status = self.get_exposure_status(handle)
 
         self.logger.debug('Exposure on {} complete'.format(self._ccd_info[handle]['serial number']))
 
