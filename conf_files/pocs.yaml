@@ -66,6 +66,9 @@ messaging:
     # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
+    messaging_host: localhost 
+    # If running in Docker uncomment the line below
+    # messaging_host: messaging
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field

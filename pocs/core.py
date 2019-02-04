@@ -662,6 +662,7 @@ class POCS(PanStateMachine, PanBase):
 
         cmd_port = self.config['messaging']['cmd_port']
         msg_port = self.config['messaging']['msg_port']
+        messaging_host = self.config['messaging']['messaging_host']
 
         def create_forwarder(port):
             try:
@@ -683,10 +684,10 @@ class POCS(PanStateMachine, PanBase):
         self._cmd_queue = multiprocessing.Queue()
         self._sched_queue = multiprocessing.Queue()
 
-        self._msg_publisher = PanMessaging.create_publisher(msg_port)
+        self._msg_publisher = PanMessaging.create_publisher(msg_port, host=messaging_host)
 
         def check_message_loop(cmd_queue):
-            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
+            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1, host=messaging_host)
 
             poller = zmq.Poller()
             poller.register(cmd_subscriber.socket, zmq.POLLIN)

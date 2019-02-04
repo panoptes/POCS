@@ -1,10 +1,64 @@
 version: '3.2'
 services:
-  pocs:
-    image: gcr.io/panoptes-survey/pocs
+  messaging:
+    image: gcr.io/panoptes-survey/pocs-base
     privileged: true
-    env_file: .env
-    command: bash -c "echo 'POCS Docker started' && tail -f /dev/null"
+    env_file: env_file
+    volumes:
+      - type: bind
+        source: /var/panoptes/logs
+        target: /var/panoptes/logs
+      - type: bind
+        source: /var/panoptes/POCS
+        target: /var/panoptes/POCS        
+    command: bash -c "python3 $POCS/scripts/run_messaging_hub.py --from_config"
+  weather:
+    image: gcr.io/panoptes-survey/pocs-base
+    privileged: true
+    env_file: env_file
+    depends_on:
+      - "messaging"    
+    volumes:
+      - type: bind
+        source: /var/panoptes/json_store
+        target: /var/panoptes/json_store
+      - type: bind
+        source: /var/panoptes/logs
+        target: /var/panoptes/logs
+      - type: bind
+        source: /var/panoptes/POCS
+        target: /var/panoptes/POCS        
+    command: bash -c "python3 $POCS/scripts/docker/run_weather.py"
+  paws:
+    image: gcr.io/panoptes-survey/paws
+    privileged: true
+    env_file: env_file
+    depends_on:
+      - "messaging"    
+    ports:
+      - target: 8888
+        published: 8080
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: bind
+        source: /var/panoptes/json_store
+        target: /var/panoptes/json_store
+      - type: bind
+        source: /var/panoptes/logs
+        target: /var/panoptes/logs
+      - type: bind
+        source: /var/panoptes/POCS
+        target: /var/panoptes/POCS
+      - type: bind
+        source: /var/panoptes/PAWS
+        target: /var/panoptes/PAWS
+  pocs:
+    image: gcr.io/panoptes-survey/pocs-base
+    privileged: true
+    env_file: env_file
+    depends_on:
+      - "messaging"
     volumes:
       - type: volume
         source: astrometry_index
@@ -19,5 +73,9 @@ services:
       - type: bind
         source: /var/panoptes/logs
         target: /var/panoptes/logs
+      - type: bind
+        source: /var/panoptes/POCS
+        target: /var/panoptes/POCS        
+    command: bash -c "python3 $POCS/scripts/docker/run_pocs.py"
 volumes:
     astrometry_index:

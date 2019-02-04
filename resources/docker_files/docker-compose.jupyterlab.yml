@@ -1,0 +1,9 @@
+version: "3.2"
+services:            
+  pocs:
+    command: bash -c "jupyter-lab --ip 0.0.0.0 --allow-root --no-browser"
+    ports:
+      - target: 8888
+        published: 8888
+        protocol: tcp
+        mode: host

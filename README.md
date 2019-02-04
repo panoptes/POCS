@@ -125,8 +125,7 @@ are some helper scripts to make this easier (from [here](https://cloud.google.co
 
 ```
 gcloud components install docker-credential-gcr
-docker-credential-gcr configure-docker
-docker-credential-gcr gcr-login
+gcloud auth configure-docker
 ```
 
 #### Pull POCS container

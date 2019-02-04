@@ -14,7 +14,10 @@ ENV POCS $PANDIR/POCS
 ENV PANUSER root
 ENV SOLVE_FIELD=/usr/bin/solve-field
 
-COPY . /var/panoptes/POCS
+COPY . $POCS
+
+# Note that pocs-base has the default ubuntu environment, so
+# we need to specify python3 so we don't get python2
 
 # Use "bash" as replacement for "sh"
 # Note: I don't think this is the preferred way to do this anymore

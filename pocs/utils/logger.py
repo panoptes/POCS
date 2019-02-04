@@ -10,6 +10,7 @@ import sys
 from tempfile import gettempdir
 import time
 from warnings import warn
+from contextlib import suppress
 
 from pocs.utils.config import load_config
 
@@ -249,17 +250,11 @@ def get_root_logger(profile='panoptes', log_config=None):
         # Create a symlink to the log file with just the name of the script and the handler
         # (level), as this makes it easier to find the latest file.
         # Use a relative path, so that if we move PANLOG the paths aren't broken.
-        for f in ['{}-{}.log'.format(invoked_script, handler), 'panoptes.log']:
-            if f == 'panoptes.log' and handler != 'all':
-                continue
-            log_symlink = os.path.join(log_dir, f)
-            log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
-            try:
-                os.unlink(log_symlink)
-            except FileNotFoundError:  # pragma: no cover
-                pass
-            finally:
-                os.symlink(log_symlink_target, log_symlink)
+        log_symlink = os.path.join(log_dir, '{}-{}.log'.format(invoked_script, handler))
+        log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
+        with suppress(FileNotFoundError):
+            os.unlink(log_symlink)
+            os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)

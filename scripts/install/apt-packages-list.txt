@@ -31,6 +31,9 @@ zlib1g-dev
 # for rendering.
 libcairo2-dev 
 
+# ZMQ is used for our messaging system.
+libzmq3-dev
+
 # exiftool is used in a couple of places to extract info from the .cr2 file
 exiftool 
 
@@ -43,12 +46,9 @@ libcfitsio-bin
 openssh-client
 openssh-server
 
-# Graphviz is used for rendering the state machine of POCS.
-graphviz
-libgraphviz-dev
-
 # Linux tool used during building and installing software (e.g. astrometry).
 pkg-config
+gcc
 
 # Improves interaction with pocs_shell (via readline).
 libncurses5-dev
@@ -63,18 +63,6 @@ libgeos-dev
 byobu
 tmux
 
-# Used for creating a timelapse.
-ffmpeg
-
-# Used for colorizing log files.
-grc
-
 # GNU coreutils provides basic commands that we depend on (echo, ls), and is
 # almost certainly already installed, but let's make sure.
 coreutils
-
-# Want git for upgrading to the latest version. Probably already installed
-# but not necessarily (i.e. it is possible to download a zip of POCS, which
-# includes this file).
-git
-

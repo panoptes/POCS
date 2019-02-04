@@ -120,7 +120,7 @@ class PanMessaging(object):
                 done_fn()
 
     @classmethod
-    def create_publisher(cls, port, bind=False, connect=True):
+    def create_publisher(cls, port, host='localhost', bind=False, connect=True):
         """Create a publisher
 
         Args:
@@ -141,7 +141,6 @@ class PanMessaging(object):
             host = '*'
             socket.bind(f'tcp://{host}:{port}')
         elif connect:
-            host = 'localhost'
             socket.connect(f'tcp://{host}:{port}')
 
         obj.socket = socket
