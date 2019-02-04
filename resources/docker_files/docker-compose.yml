@@ -4,7 +4,7 @@ services:
     image: gcr.io/panoptes-survey/pocs
     privileged: true
     env_file: .env
-    command: tail -F $PANLOG/pocs_shell-info.log
+    command: bash -c "echo 'POCS Docker started' && tail -f /dev/null"
     volumes:
       - type: volume
         source: astrometry_index

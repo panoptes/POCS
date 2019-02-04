@@ -11,7 +11,6 @@ from json import dumps
 from json import loads
 
 from pocs.utils import current_time
-from pocs.utils import CountdownTimer
 from pocs.utils.logger import get_root_logger
 
 
@@ -122,13 +121,15 @@ class PanMessaging(object):
 
     @classmethod
     def create_publisher(cls, port, bind=False, connect=True):
-        """ Create a publisher
+        """Create a publisher
 
         Args:
             port (int): The port (on localhost) to bind to.
+            bind (bool, optional): If socket should be bound (i.e. a server), default False.
+            connect (bool, optional): If socked should just connect once, default True.
 
         Returns:
-            A ZMQ PUB socket
+            `zmq.Socket`: A ZMQ socket.
         """
         obj = cls()
 
@@ -137,21 +138,29 @@ class PanMessaging(object):
         socket = obj.context.socket(zmq.PUB)
 
         if bind:
-            socket.bind('tcp://*:{}'.format(port))
+            host = '*'
+            socket.bind(f'tcp://{host}:{port}')
         elif connect:
-            socket.connect('tcp://localhost:{}'.format(port))
+            host = 'localhost'
+            socket.connect(f'tcp://{host}:{port}')
 
         obj.socket = socket
 
         return obj
 
     @classmethod
-    def create_subscriber(cls, port, topic='', bind=False, connect=True):
-        """ Create a listener
+    def create_subscriber(cls, port, topic='', host='localhost', bind=False, connect=True):
+        """Create a listener
 
         Args:
-            port (int):         The port (on localhost) to bind to.
-            topic (str):      Which topic or topic prefix to subscribe to.
+            port (int): The port (on localhost) to bind to.
+            topic (str): Which topic or topic prefix to subscribe to.
+            host (str, optional): Host name to connect to, default 'localhost'.
+            bind (bool, optional): If subscriber should bind as a server, default False.
+            connect (bool, optional): If socket should make one-time connection, default True.
+
+        Returns:
+            `zmq.Socket`: A ZMQ socket.
 
         """
         obj = cls()
@@ -161,11 +170,11 @@ class PanMessaging(object):
 
         if bind:
             try:
-                socket.bind('tcp://*:{}'.format(port))
+                socket.bind(f'tcp://*:{port}')
             except zmq.error.ZMQError:
                 obj.logger.debug('Problem binding port {}'.format(port))
         elif connect:
-            socket.connect('tcp://localhost:{}'.format(port))
+            socket.connect(f'tcp://{host}:{port}')
 
         socket.setsockopt_string(zmq.SUBSCRIBE, topic)
 
