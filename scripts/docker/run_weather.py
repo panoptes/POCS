@@ -36,5 +36,5 @@ def main(config, loop_delay=60):
 
 
 if __name__ == '__main__':
-    config = load_config()
-    main(config=config)
+    config = load_config('peas')
+    main(config)

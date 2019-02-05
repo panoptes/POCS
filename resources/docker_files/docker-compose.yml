@@ -37,7 +37,7 @@ services:
       - "messaging"    
     ports:
       - target: 8888
-        published: 8080
+        published: 8888
         protocol: tcp
         mode: host
     volumes:
