@@ -4,7 +4,6 @@ Low level interface to the FLI library
 Reproduces in Python (using ctypes) the C interface provided by FLI's library.
 """
 import ctypes
-from ctypes.util import find_library
 import os
 
 import numpy as np
@@ -12,6 +11,7 @@ import numpy as np
 import astropy.units as u
 
 from pocs.base import PanBase
+from pocs.utils.library import load_library
 import pocs.camera.libfliconstants as c
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
@@ -38,7 +38,7 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
 
 class FLIDriver(PanBase):
 
-    def __init__(self, library_path=False, *args, **kwargs):
+    def __init__(self, library_path=None, *args, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
         the shared object/dynamically linked version of the FLI library, which
@@ -52,23 +52,18 @@ class FLIDriver(PanBase):
         will be used to try to locate it.
 
         Args:
-            library_path (string, optional): shared library path,
-                e.g. '/usr/local/lib/libfli.so'
+            library_path (str, optional): path to the library, e.g. '/usr/local/lib/libfli.so'
 
         Returns:
             `~pocs.camera.libfli.FLIDriver`
+
+        Raises:
+            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+                locate the library.
+            OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(*args, **kwargs)
-
-        # Open library
-        self.logger.debug('Opening FLI library')
-        if not library_path:
-            library_path = find_library('fli')
-            if library_path is None:
-                self.logger.error('Could not find FLI SDK library!')
-                raise RuntimeError('Could not find FLI SDK library!')
-        # This CDLL loader will raise OSError if the library could not be loaded
-        self._CDLL = ctypes.CDLL(library_path)
+        self._CDLL = load_library(name='fli', path=library_path, logger=self.logger)
 
         # Get library version.
         version = ctypes.create_string_buffer(64)
@@ -92,8 +87,8 @@ class FLIDriver(PanBase):
         and model name.
 
         Args:
-            interface_type (int, optional): interface to search for connected devices. Valid values are
-                libfli.FLIDOMAIN_USB (default), FLIDOMAIN_PARALLEL_PORT, FLIDOMAIN_SERIAL,
+            interface_type (int, optional): interface to search for connected devices. Valid values
+                are libfli.FLIDOMAIN_USB (default), FLIDOMAIN_PARALLEL_PORT, FLIDOMAIN_SERIAL,
                 FLIDOMAIN_SERIAL_1200, FLIDOMAIN_SERIAL_19200, FLIDOMAIN_INET.
             device_types (int, optional): device type to search for. Valid values are
                 libfli.FLIDEVICE_CAMERA (default), FLIDEVICE_FILTERWHEEL, FLIDEVICE_HS_FILTERWHEEL,

@@ -23,6 +23,7 @@ from pocs.base import PanBase
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import error
 from pocs.utils import CountdownTimer
+from pocs.utils.library import load_library
 
 ################################################################################
 # Main SBIGDriver class
@@ -31,7 +32,7 @@ from pocs.utils import CountdownTimer
 
 class SBIGDriver(PanBase):
 
-    def __init__(self, library_path=False, retries=1, *args, **kwargs):
+    def __init__(self, library_path=None, retries=1, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
         On construction loads SBIG's shared library which must have already
@@ -41,28 +42,22 @@ class SBIGDriver(PanBase):
         will be used to locate it.
 
         Args:
-            library_path (string, optional): shared library path,
-                e.g. '/usr/local/lib/libsbigudrv.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libsbigudrv.so'
             retries (int, optional): maximum number of times to attempt to send
                 a command to a camera in case of failures. Default 1, i.e. only
                 send a command once.
 
         Returns:
             `~pocs.camera.sbigudrv.SBIGDriver`
+
+        Raises:
+            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+                locate the library.
+            OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(*args, **kwargs)
-
         self.retries = retries
-
-        # Open library
-        self.logger.debug('Opening SBIGUDrv library')
-        if not library_path:
-            library_path = find_library('sbigudrv')
-            if library_path is None:
-                self.logger.error('Could not find SBIG Universal Driver/Library!')
-                raise RuntimeError('Could not find SBIG Universal Driver/Library!')
-        # This CDLL loader will raise OSError if the library could not be loaded
-        self._CDLL = ctypes.CDLL(library_path)
+        self._CDLL = load_library(name='sbigudrv', path=library_path, logger=self.logger)
 
         # Open driver
         self.logger.debug('Opening SBIGUDrv driver')
