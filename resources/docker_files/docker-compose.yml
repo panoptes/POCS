@@ -53,6 +53,9 @@ services:
       - type: bind
         source: /var/panoptes/PAWS
         target: /var/panoptes/PAWS
+      - type: bind
+        source: /var/panoptes/images
+        target: /var/panoptes/images        
   pocs:
     image: gcr.io/panoptes-survey/pocs-base
     privileged: true
