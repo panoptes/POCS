@@ -666,7 +666,7 @@ class POCS(PanStateMachine, PanBase):
 
         def create_forwarder(port):
             try:
-                PanMessaging.create_forwarder(port, port + 1)
+                PanMessaging.create_forwarder(port, port + 1, host=messaging_host)
             except Exception:
                 pass
 

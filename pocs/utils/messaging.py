@@ -138,8 +138,7 @@ class PanMessaging(object):
         socket = obj.context.socket(zmq.PUB)
 
         if bind:
-            host = '*'
-            socket.bind(f'tcp://{host}:{port}')
+            socket.bind(f'tcp://*:{port}')
         elif connect:
             socket.connect(f'tcp://{host}:{port}')
 
