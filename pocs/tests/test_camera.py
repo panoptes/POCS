@@ -11,6 +11,7 @@ from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
+from pocs.camera.zwo import Camera as ZWOCamera
 from pocs.camera import create_cameras_from_config
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
@@ -22,8 +23,8 @@ from pocs.utils import error
 from pocs import hardware
 
 
-params = [SimCamera, SBIGCamera, FLICamera]
-ids = ['simulator', 'sbig', 'fli']
+params = [SimCamera, SBIGCamera, FLICamera, ZWOCamera]
+ids = ['simulator', 'sbig', 'fli', 'zwo']
 
 
 @pytest.fixture(scope='module')
@@ -339,6 +340,8 @@ def test_observation(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
     counter['value'] += 1
@@ -346,6 +349,8 @@ def test_autofocus_coarse(camera, patterns, counter):
 
 
 def test_autofocus_fine(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
     counter['value'] += 1
@@ -353,6 +358,8 @@ def test_autofocus_fine(camera, patterns, counter):
 
 
 def test_autofocus_fine_blocking(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
     counter['value'] += 1
@@ -360,6 +367,8 @@ def test_autofocus_fine_blocking(camera, patterns, counter):
 
 
 def test_autofocus_with_plots(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
     counter['value'] += 1
@@ -368,6 +377,8 @@ def test_autofocus_with_plots(camera, patterns, counter):
 
 
 def test_autofocus_coarse_with_plots(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(coarse=True, make_plots=True)
     autofocus_event.wait()
     counter['value'] += 1
@@ -376,6 +387,8 @@ def test_autofocus_coarse_with_plots(camera, patterns, counter):
 
 
 def test_autofocus_keep_files(camera, patterns, counter):
+    if not camera.focuser:
+        pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
     counter['value'] += 1

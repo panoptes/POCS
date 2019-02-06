@@ -171,7 +171,7 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -197,10 +197,13 @@ class AbstractCamera(PanBase):
         exp_time, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
-                                                                          *args,
                                                                           **kwargs)
 
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
+        try:
+            kwargs.pop('exp_time')  # No longer needed here after _setup_observation
+        except KeyError:
+            pass
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -219,8 +222,51 @@ class AbstractCamera(PanBase):
 
         return observation_event
 
-    def take_exposure(self, *args, **kwargs):
-        raise NotImplementedError
+    def take_exposure(self,
+                      seconds=1.0 * u.second,
+                      filename=None,
+                      dark=False,
+                      blocking=False,
+                      *args,
+                      **kwargs):
+        """
+        Take an exposure for given number of seconds and saves to provided filename.
+
+        Args:
+            seconds (u.second, optional): Length of exposure
+            filename (str, optional): Image is saved to this filename
+            dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
+            blocking (bool, optional): If False (default) returns immediately after starting
+                the exposure, if True will block until it completes.
+
+        Returns:
+            threading.Event: Event that will be set when exposure is complete
+
+        """
+        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+
+        assert filename is not None, self.logger.error("Must pass filename for take_exposure")
+
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, self.name, filename))
+
+        exposure_event = threading.Event()
+        header = self._fits_header(seconds, dark)
+
+        self._take_exposure(seconds=seconds,
+                            filename=filename,
+                            dark=dark,
+                            exposure_event=exposure_event,
+                            header=header,
+                            *args, *kwargs)
+
+        if blocking:
+            exposure_event.wait()
+
+        return exposure_event
 
     def process_exposure(self, info, observation_event, exposure_event=None):
         """
@@ -379,6 +425,9 @@ class AbstractCamera(PanBase):
             os.unlink(file_path)
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
+
+    def _take_exposure(self, *args, **kwargs):
+        raise NotImplementedError
 
     def _fits_header(self, seconds, dark=None):
         header = fits.Header()

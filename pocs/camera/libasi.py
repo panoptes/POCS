@@ -258,7 +258,7 @@ class ASIDriver(PanBase):
             exposure_data = np.zeros((height, width), dtype=np.uint8, order='C')
         elif image_type == 'RAW16':
             exposure_data = np.zeros((height, width), dtype=np.uint16, order='C')
-        elif image_type == 'RGB8':
+        elif image_type == 'RGB24':
             exposure_data = np.zeros((3, height, width), dtype=np.uint8, order='C')
 
         self._call_function('ASIGetDataAfterExp',

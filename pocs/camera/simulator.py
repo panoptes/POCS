@@ -44,42 +44,14 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def take_exposure(self,
-                      seconds=1.0 * u.second,
-                      filename=None,
-                      dark=False,
-                      blocking=False,
-                      *args,
-                      **kwargs):
-        """ Take an exposure for given number of seconds """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
-
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.to(u.second)
-            seconds = seconds.value
-
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
-
-        # Build FITS header
-        header = self._fits_header(seconds, dark)
-
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header):
         # Set up a Timer that will wait for the duration of the exposure then
         # copy a dummy FITS file to the specified path and adjust the headers
         # according to the exposure time, type.
-        exposure_event = Event()
-        exposure_thread = Timer(interval=seconds,
+        exposure_thread = Timer(interval=seconds.value,
                                 function=self._fake_exposure,
                                 args=[filename, header, exposure_event])
         exposure_thread.start()
-
-        if blocking:
-            exposure_event.wait()
-
-        return exposure_event
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
@@ -90,7 +62,7 @@ class Camera(AbstractCamera):
         )
         fake_data = fits.getdata(file_path)
 
-        if header['IMAGETYP'] == 'Dark Frame':
+        if header.get('IMAGETYP') == 'Dark Frame':
             # Replace example data with a bunch of random numbers
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
