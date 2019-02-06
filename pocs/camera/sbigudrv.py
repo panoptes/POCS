@@ -12,7 +12,8 @@ import ctypes
 from ctypes.util import find_library
 from warnings import warn
 import time
-from threading import Timer, Lock
+import threading
+import enum
 
 import numpy as np
 from numpy.ctypeslib import as_ctypes
@@ -20,6 +21,8 @@ from astropy import units as u
 
 from pocs.base import PanBase
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import error
+from pocs.utils import CountdownTimer
 
 ################################################################################
 # Main SBIGDriver class
@@ -100,12 +103,13 @@ class SBIGDriver(PanBase):
 
         # Create a Lock that will used to prevent simultaneous commands from multiple
         # cameras. Main reason for this is preventing overlapping readouts.
-        self._command_lock = Lock()
+        self._command_lock = threading.Lock()
 
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info('SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
+        self.logger.info('SBIGDriver initialised: found {} cameras'.format(
+            self._camera_info.camerasFound))
 
     @property
     def retries(self):
@@ -149,7 +153,8 @@ class SBIGDriver(PanBase):
             try:
                 index = self._handle_assigned.index(False)
             except ValueError:
-                # All handles already assigned, must be trying to intialising more cameras than are connected.
+                # All handles already assigned, must be trying to intialising more cameras than are
+                # connected.
                 self.logger.error('No connected SBIG cameras available!')
                 return (INVALID_HANDLE_VALUE, None)
 
@@ -164,7 +169,8 @@ class SBIGDriver(PanBase):
 
         # Serial number, name and type should match with those from Query USB Info obtained earlier
         camera_serial = str(self._camera_info.usbInfo[index].serialNumber, encoding='ascii')
-        assert camera_serial == ccd_info['serial number'], self.logger.error('Serial number mismatch!')
+        assert camera_serial == ccd_info['serial number'], \
+            self.logger.error('Serial number mismatch!')
 
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
@@ -176,7 +182,8 @@ class SBIGDriver(PanBase):
         return (handle, ccd_info)
 
     def query_temp_status(self, handle):
-        query_temp_params = QueryTemperatureStatusParams(temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
+        query_temp_params = QueryTemperatureStatusParams(
+            temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
         query_temp_results = QueryTemperatureStatusResults2()
 
         with self._command_lock:
@@ -205,7 +212,26 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, header=None):
+    def get_exposure_status(self, handle):
+        """Returns the current exposure status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
+        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+        query_status_results = QueryCommandStatusResults()
+
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_QUERY_COMMAND_STATUS',
+                               params=query_status_params,
+                               results=query_status_results)
+
+        return statuses[query_status_results.status]
+
+    def take_exposure(self,
+                      handle,
+                      seconds,
+                      filename,
+                      exposure_event=None,
+                      dark=False,
+                      header=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -217,8 +243,9 @@ class SBIGDriver(PanBase):
             seconds = seconds.to(u.second).value
         centiseconds = int(seconds * 100)
 
-        # This setting is ignored by most cameras (even if they do have ABG), only exceptions are the TC211 versions
-        # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the PixCel255
+        # This setting is ignored by most cameras (even if they do have ABG), only exceptions are
+        # the TC211 versions of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the
+        # PixCel255
         if ccd_info['imaging ABG']:
             # Camera supports anti-blooming, use it on medium setting?
             abg_command_code = abg_state_codes['ABG_CLK_MED7']
@@ -256,28 +283,16 @@ class SBIGDriver(PanBase):
         # Make sure there isn't already an exposure in progress on this camera.
         # If there is then we need to wait otherwise we'll cause a hang.
         # Could do this with Locks but it's more robust to directly query the hardware.
-        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
-        query_status_results = QueryCommandStatusResults()
-
-        with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS',
-                               params=query_status_params,
-                               results=query_status_results)
-
-        if query_status_results.status != status_codes['CS_IDLE']:
+        exposure_status = self.get_exposure_status(handle)
+        if exposure_status != 'CS_IDLE':
             self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(
                 self._ccd_info[handle]['serial number']))
             # Wait until camera is idle
-            while query_status_results.status != status_codes['CS_IDLE']:
+            while exposure_status != 'CS_IDLE':
                 self.logger.warning('Waiting for exposure on {} to complete'.format(
                     self._ccd_info[handle]['serial number']))
                 time.sleep(1)
-                with self._command_lock:
-                    self._set_handle(handle)
-                    self._send_command('CC_QUERY_COMMAND_STATUS',
-                                       params=query_status_params,
-                                       results=query_status_results)
+                exposure_status = self.get_exposure_status(handle)
 
         # Check temerature is OK.
         temp_status = self.query_temp_status(handle)
@@ -288,8 +303,8 @@ class SBIGDriver(PanBase):
                     self._ccd_info[handle]['serial number']))
 
         # Start exposure
-        self.logger.debug('Starting {} second exposure on {}'.format(seconds,
-                                                                     self._ccd_info[handle]['serial number']))
+        self.logger.debug('Starting {} second exposure on {}'.format(
+            seconds, self._ccd_info[handle]['serial number']))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
@@ -299,21 +314,256 @@ class SBIGDriver(PanBase):
         readout_args = (handle, centiseconds, filename, readout_mode_code,
                         top, left, height, width,
                         header, exposure_event)
-        readout_thread = Timer(interval=wait,
-                               function=self._readout,
-                               args=readout_args)
+        readout_thread = threading.Timer(interval=wait,
+                                         function=self._readout,
+                                         args=readout_args)
         readout_thread.start()
 
         return readout_thread
 
+    def cfw_init(self, handle, model='AUTO', timeout=10 * u.second):
+        """
+        Initialise colour filter wheel
+
+        Sends the initialise command to the colour filter wheel attached to the camera
+        specified with handle. This will generally not be required because all SBIG filter
+        wheels initialise themselves on power up.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        self.logger.debug("Initialising filter wheel on {}".format(
+            self._ccd_info[handle]['serial number']))
+        cfw_init = self._cfw_params(handle, model, CFWCommand.INIT)
+        # The filterwheel init command does not block until complete, but this method should.
+        # Need to poll.
+        init_event = threading.Event()
+        # Expect filter wheel to end up in position 1 after initialisation
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, 1, model, init_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
+        init_event.wait()
+
+        return self._cfw_parse_results(cfw_init)
+
+    def cfw_query(self, handle, model='AUTO'):
+        """
+        Query status of the colour filter wheel
+
+        This is mostly used to poll the filter wheel status after asking the filter wheel to move
+        in order to find out when the move has completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        cfw_query = self._cfw_command(handle, model, CFWCommand.QUERY)
+        return self._cfw_parse_results(cfw_query)
+
+    def cfw_get_info(self, handle, model='AUTO'):
+        """
+        Get info from the colour filter wheel
+
+        This will return the usual status information plus the firmware version and the number
+        of filter wheel positions.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+
+        Returns:
+            dict: dictionary containing the 'model',  'firmware_version' and 'n_positions' for the
+                filter wheel.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        cfw_info = self._cfw_command(handle,
+                                     model,
+                                     CFWCommand.GET_INFO,
+                                     CFWGetInfoSelect.FIRMWARE_VERSION)
+        results = {'model': CFWModelSelect(cfw_info.cfwModel).name,
+                   'firmware_version': int(cfw_info.cfwResults1),
+                   'n_positions': int(cfw_info.cfwResults2)}
+        msg = "Filter wheel on {}, model: {}, firmware version: {}, number of positions: {}".format(
+            self._ccd_info[handle]['serial number'],
+            results['model'],
+            results['firmware_version'],
+            results['n_positions'])
+        self.logger.debug(msg)
+
+        return results
+
+    def cfw_goto(self, handle, position, model='AUTO', cfw_event=None, timeout=10 * u.second):
+        """
+        Move colour filer wheel to a given position
+
+        This function returns immediately after starting the move but spawns a thread to poll the
+        filter wheel until the move completes (see _cfw_poll method for details). This thread will
+        log the result of the move, and optionally set a threading.Event to signal that it has
+        completed.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed. Default is 10 seconds.
+
+        Returns:
+            dict: dictionary containing the 'model', 'position', 'status' and 'error' values
+                returned by the driver.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error
+        """
+        self.logger.debug("Moving filter wheel on {} to position {}".format(
+            self._ccd_info[handle]['serial number'], position))
+        # First check that the filter wheel isn't currently moving, and that the requested
+        # position is valid.
+        info = self.cfw_get_info(handle, model)
+        if position < 1 or position > info['n_positions']:
+            msg = "Position must be between 1 and {}, got {}".format(
+                info['n_positions'], position)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+        query = self.cfw_query(handle, model)
+        if query['status'] == CFWStatus.BUSY:
+            msg = "Attempt to move filter wheel when already moving"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+
+        cfw_goto_results = self._cfw_command(handle, model, CFWCommand.GOTO, position)
+
+        # Poll filter wheel in order to set cfw_event once move is complete
+        poll_thread = threading.Thread(target=self._cfw_poll,
+                                       args=(handle, position, model, cfw_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
+
+        return self._cfw_parse_results(cfw_goto_results)
+
 # Private methods
+
+    def _cfw_poll(self, handle, position, model='AUTO', cfw_event=None, timeout=None):
+        """
+        Polls filter wheel until the current move is complete.
+
+        Also monitors for errors while polling and checks status and position after the move is
+        complete. Optionally sets a threading.Event to signal the end of the move. Has an optional
+        timeout to raise an TimeoutError is the move takes longer than expected.
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            position (int): position to move the filter wheel. Must be an integer >= 1.
+            model (str, optional): Model of the filter wheel to control. Default is 'AUTO', which
+                asks the driver to autodetect the model.
+            cfw_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed.
+
+        Raises:
+            RuntimeError: raised if the driver returns an error or if the final status and position
+                are not as expected.
+            pocs.utils.error.Timeout: raised if the move does not end within the period of time
+                specified by the timeout argument.
+        """
+        if timeout is not None:
+            timer = CountdownTimer(duration=timeout)
+
+        try:
+            query = self.cfw_query(handle, model)
+            while query['status'] == 'BUSY':
+                if timer.expired():
+                    msg = "Timeout waiting for filter wheel on {} move to {} to complete".format(
+                        self._ccd_info[handle]['serial number'], position)
+                    raise error.Timeout(msg)
+                time.sleep(0.1)
+                query = self.cfw_query(handle, model)
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while moving filter wheel on {} to {}: {}'.format(
+                self._ccd_info[handle]['serial number'], position, err))
+            raise err
+        else:
+            # No driver errors, but still check status and position
+            if query['status'] == 'IDLE' and query['position'] == position:
+                self.logger.debug('Filter wheel on {} moved to position {}'.format(
+                    self._ccd_info[handle]['serial number'], query['position']))
+            else:
+                msg = 'Problem moving filter wheel on {} to {} - status: {}, position: {}'.format(
+                    self._ccd_info[handle]['serial number'],
+                    position,
+                    query['status'],
+                    query['position'])
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+        finally:
+            # Regardless must always set the Event when the move has stopped.
+            if cfw_event is not None:
+                cfw_event.set()
+
+    def _cfw_parse_results(self, cfw_results):
+        """
+        Converts filter wheel results Structure into something more Pythonic
+        """
+        results = {'model': CFWModelSelect(cfw_results.cfwModel).name,
+                   'position': int(cfw_results.cfwPosition),
+                   'status': CFWStatus(cfw_results.cfwStatus).name,
+                   'error': CFWError(cfw_results.cfwError).name}
+
+        if results['position'] == 0:
+            results['position'] = float('nan')  # 0 means position unknown
+
+        return results
+
+    def _cfw_command(self, handle, model, *args):
+        """
+        Helper function to send filter wheel commands
+
+        Args:
+            handle (int): handle of the camera that the filter wheel is connected to.
+            model (str): Model of the filter wheel to control.
+            *args: remaining parameters for the filter wheel command
+        Returns:
+            CFWResults: ctypes Structure containing results of the command
+        """
+        cfw_params = CFWParams(CFWModelSelect[model], *args)
+        cfw_results = CFWResults()
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_CFW', cfw_params, cfw_results)
+        return cfw_results
 
     def _readout(self, handle, centiseconds, filename, readout_mode_code,
                  top, left, height, width,
                  header, exposure_event=None):
-        """
-
-        """
         # Set up all the parameter and result Structures that will be needed.
         end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
@@ -336,22 +586,14 @@ class SBIGDriver(PanBase):
         image_data = np.zeros((height, width), dtype=np.uint16)
 
         # Check for the end of the exposure.
-        with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS',
-                               params=query_status_params,
-                               results=query_status_results)
+        exposure_status = self.get_exposure_status(handle)
 
         # Poll if needed.
-        while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
+        while exposure_status != 'CS_INTEGRATION_COMPLETE':
             self.logger.debug('Waiting for exposure on {} to complete'.format(
                 self._ccd_info[handle]['serial number']))
             time.sleep(0.1)
-            with self._command_lock:
-                self._set_handle(handle)
-                self._send_command('CC_QUERY_COMMAND_STATUS',
-                                   params=query_status_params,
-                                   results=query_status_results)
+            exposure_status = self.get_exposure_status(handle)
 
         self.logger.debug('Exposure on {} complete'.format(self._ccd_info[handle]['serial number']))
 
@@ -366,23 +608,24 @@ class SBIGDriver(PanBase):
                                        params=readout_line_params,
                                        results=as_ctypes(image_data[i]))
                 except RuntimeError as err:
-                    message = 'Readout error on {}: expected {} rows, got {}!'.format(self._ccd_info[handle]['serial number'],
-                                                                                      height,
-                                                                                      i)
+                    message = 'Readout error on {}: expected {} rows, got {}!'.format(
+                        self._ccd_info[handle]['serial number'], height, i)
                     self.logger.error(message)
                     self.logger.error(err)
                     warn(message)
                     break
 
             try:
-                self.logger.debug("Ending readout on {}".format(self._ccd_info[handle]['serial number']))
+                self.logger.debug("Ending readout on {}".format(
+                    self._ccd_info[handle]['serial number']))
                 self._send_command('CC_END_READOUT', params=end_readout_params)
             except RuntimeError as err:
-                message = "Error ending readout on {}: {}".format(self._ccd_info[handle]['serial number'],
-                                                                  err)
+                message = "Error ending readout on {}: {}".format(
+                    self._ccd_info[handle]['serial number'], err)
                 self.logger.error(message)
             else:
-                self.logger.debug('Readout on {} complete'.format(self._ccd_info[handle]['serial number']))
+                self.logger.debug('Readout on {} complete'.format(
+                    self._ccd_info[handle]['serial number']))
             finally:
                 fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
@@ -405,16 +648,25 @@ class SBIGDriver(PanBase):
         ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
 
-        # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour, Bayer/Truesense.
+        # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour,
+        # Bayer/Truesense.
         ccd_info_params6 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
         ccd_info_results6 = GetCCDInfoResults6()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params0, results=ccd_info_results0)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params2, results=ccd_info_results2)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params4, results=ccd_info_results4)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6, results=ccd_info_results6)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params0,
+                               results=ccd_info_results0)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params2,
+                               results=ccd_info_results2)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params4,
+                               results=ccd_info_results4)
+            self._send_command('CC_GET_CCD_INFO',
+                               params=ccd_info_params6,
+                               results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
         ccd_info = {'firmware version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
@@ -435,7 +687,8 @@ class SBIGDriver(PanBase):
                     'colour': bool(ccd_info_results6.ccd_b0),
                     'Truesense': bool(ccd_info_results6.ccd_b1)}
 
-        readout_mode_info = self._parse_readout_info(ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
+        readout_mode_info = self._parse_readout_info(
+            ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
         ccd_info['readout modes'] = readout_mode_info
 
         return ccd_info
@@ -490,20 +743,23 @@ class SBIGDriver(PanBase):
 
     def _disable_vdd_optimized(self, handle):
         """
-        There are many driver control parameters, almost all of which we would not want to change from their default
-        values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
+        There are many driver control parameters, almost all of which we would not want to change
+        from their default values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
 
-            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces amplifier glow)
-            only for images 3 seconds and longer. This was done to increase the image throughput for short exposures as
-            raising and lowering Vdd takes 100s of milliseconds. The lowering and subsequent raising of Vdd delays the
-            image readout slightly which causes short exposures to have a different bias structure than long exposures.
-            Setting this parameter to FALSE stops the short exposure optimization from occurring.
+        The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces
+        amplifier glow) only for images 3 seconds and longer. This was done to increase the image
+        throughput for short exposures as raising and lowering Vdd takes 100s of milliseconds. The
+        lowering and subsequent raising of Vdd delays the image readout slightly which causes short
+        exposures to have a different bias structure than long exposures. Setting this parameter to
+        FALSE stops the short exposure optimization from occurring.
 
-        The default behaviour will improve image throughput for exposure times of 3 seconds or less but at the penalty
-        of altering the bias structure between short and long exposures. This could cause systematic errors in bias
-        frames, dark current measurements, etc. It's probably not worth it.
+        The default behaviour will improve image throughput for exposure times of 3 seconds or less
+        but at the penalty of altering the bias structure between short and long exposures. This
+        could cause systematic errors in bias frames, dark current measurements, etc. It's probably
+        not worth it.
         """
-        set_driver_control_params = SetDriverControlParams(driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
+        set_driver_control_params = SetDriverControlParams(
+            driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
         self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
         with self._command_lock:
             self._set_handle(handle)
@@ -538,7 +794,9 @@ class SBIGDriver(PanBase):
         try:
             command_code = command_codes[command]
         except KeyError:
-            raise KeyError("Invalid SBIG command '{}'!".format(command))
+            msg = "Invalid SBIG command '{}'!".format(command)
+            self.logger.error(msg)
+            raise KeyError(msg)
 
         error = None
         retries_remaining = self.retries
@@ -547,9 +805,10 @@ class SBIGDriver(PanBase):
 
             # Send the command to the driver. Need to pass pointers to params,
             # results structs or None (which gets converted to a null pointer).
-            return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
-                                                        (ctypes.byref(params) if params else None),
-                                                        (ctypes.byref(results) if results else None))
+            return_code = self._CDLL.SBIGUnivDrvCommand(
+                command_code,
+                (ctypes.byref(params) if params else None),
+                (ctypes.byref(results) if results else None))
 
             # Look up the error message for the return code, raises Error if no
             # match found. This should never happen, and if it does it probably
@@ -558,7 +817,9 @@ class SBIGDriver(PanBase):
             try:
                 error = errors[return_code]
             except KeyError:
-                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+                msg = "SBIG Driver returned unknown error code '{}'".format(return_code)
+                self.logger.error(msg)
+                raise RuntimeError(msg)
 
             retries_remaining -= 1
 
@@ -567,7 +828,18 @@ class SBIGDriver(PanBase):
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
         if error != 'CE_NO_ERROR':
-            raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
+            if error == 'CE_CFW_ERROR':
+                cfw_error_code = results.cfwError
+                try:
+                    error = "CFW {}".format(CFWError(cfw_error_code).name)
+                except ValueError:
+                    msg = "SBIG Driver return unknown CFW error code '{}'".format(cfw_error_code)
+                    self.logger.error(msg)
+                    raise RuntimeError(msg)
+
+            msg = "SBIG Driver returned error '{}'!".format(error)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
         return error
 
@@ -636,7 +908,10 @@ command_codes = {'CC_NULL': 0,
                  'CC_CUSTOMER_OPTIONS': 55,
                  'CC_DEBUG_LOG': 56,
                  'CC_QUERY_USB2': 57,
-                 'CC_QUERY_ETHERNET2': 58}
+                 'CC_QUERY_ETHERNET2': 58,
+                 'CC_GET_AO_MODEL': 59,
+                 'CC_QUERY_USB3': 60,
+                 'CC_QUERY_COMMAND_STATUS2': 61}
 
 # Reversed dictionary, just in case you ever need to look up a command given a
 # command code.
@@ -685,7 +960,9 @@ errors = {0: 'CE_NO_ERROR',
           38: 'CE_DIFF_GUIDER_ERROR',
           39: 'CE_RIPPLE_CORRECTION_ERROR',
           40: 'CE_EZUSB_RESET',
-          41: 'CE_NEXT_ERROR'}
+          41: 'CE_INCOMPATIBLE_FIRMWARE',
+          42: 'CE_INVALID_HANDLE',
+          43: 'CE_NEXT_ERROR'}
 
 # Reverse dictionary, just in case you ever need to look up an error code given
 # an error name
@@ -770,7 +1047,23 @@ device_types = {0: "DEV_NONE",
                 0x7F06: "DEV_USB5",
                 0x7F07: "DEV_USB6",
                 0x7F08: "DEV_USB7",
-                0x7F09: "DEV_USB8"}
+                0x7F09: "DEV_USB8",
+                0x7F0A: "DEV_USB9",
+                0x7F0B: "DEV_USB10",
+                0x7F0C: "DEV_USB11",
+                0x7F0D: "DEV_USB12",
+                0x7F0E: "DEV_USB13",
+                0x7F0F: "DEV_USB14",
+                0x7F10: "DEV_USB15",
+                0x7F11: "DEV_USB16",
+                0x7F12: "DEV_USB17",
+                0x7F13: "DEV_USB18",
+                0x7F14: "DEV_USB19",
+                0x7F15: "DEV_USB20",
+                0x7F16: "DEV_USB21",
+                0x7F17: "DEV_USB22",
+                0x7F18: "DEV_USB23",
+                0x7F19: "DEV_USB24"}
 
 # Reverse dictionary
 device_type_codes = {device: code for code, device in device_types.items()}
@@ -898,7 +1191,8 @@ temperature_regulations = {0: "REGULATION_OFF",
                            5: "REGULATION_ENABLE_AUTOFREEZE",
                            6: "REGULATION_DISABLE_AUTOFREEZE"}
 
-temperature_regulation_codes = {regulation: code for code, regulation in temperature_regulations.items()}
+temperature_regulation_codes = {regulation: code for code, regulation in
+                                temperature_regulations.items()}
 
 
 class SetTemperatureRegulationParams(ctypes.Structure):
@@ -1048,6 +1342,9 @@ driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABL
                                                              'DCP_COLUMN_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_ENABLE',
                                                              'DCP_WARM_PIXEL_REPAIR_COUNT',
+                                                             'DCP_TDI_MODE_DRIFT_RATE',
+                                                             'DCP_OVERRIDE_AD_GAIN',
+                                                             'DCP_ENABLE_AUTO_OFFSET',
                                                              'DCP_LAST'))}
 
 driver_control_codes = {param: code for code, param in driver_control_params.items()}
@@ -1235,3 +1532,109 @@ class GetDriverInfoResults0(ctypes.Structure):
     _fields_ = [('version', ctypes.c_ushort),
                 ('name', ctypes.c_char * 64),
                 ('maxRequest', ctypes.c_ushort)]
+
+
+#################################################################################
+# Filter wheel related
+#################################################################################
+
+class CFWParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the CFW (colour filter wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwCommand', ctypes.c_ushort),
+                ('cfwParam1', ctypes.c_ulong),
+                ('cfwParam2', ctypes.c_ulong),
+                ('outLength', ctypes.c_ushort),
+                ('outPtr', ctypes.c_char_p),
+                ('inLength', ctypes.c_ushort),
+                ('inPtr', ctypes.c_char_p)]
+
+
+class CFWResults(ctypes.Structure):
+    """
+    ctypes Structure used to fold the results from the CFW (colour filer wheel) command
+    """
+    _fields_ = [('cfwModel', ctypes.c_ushort),
+                ('cfwPosition', ctypes.c_ushort),
+                ('cfwStatus', ctypes.c_ushort),
+                ('cfwError', ctypes.c_ushort),
+                ('cfwResults1', ctypes.c_ulong),
+                ('cfwResults2', ctypes.c_ulong)]
+
+
+@enum.unique
+class CFWModelSelect(enum.IntEnum):
+    """
+    Filter wheel model selection enum
+    """
+    UNKNOWN = 0
+    CFW2 = enum.auto()
+    CFW5 = enum.auto()
+    CFW8 = enum.auto()
+    CFWL = enum.auto()
+    CFW402 = enum.auto()
+    AUTO = enum.auto()
+    CFW6A = enum.auto()
+    CFW10 = enum.auto()
+    CFW10_SERIAL = enum.auto()
+    CFW9 = enum.auto()
+    CFWL8 = enum.auto()
+    CFWL8G = enum.auto()
+    CFW1603 = enum.auto()
+    FW5_STX = enum.auto()
+    FW5_8300 = enum.auto()
+    FW8_8300 = enum.auto()
+    FW7_STX = enum.auto()
+    FW8_STT = enum.auto()
+    FW5_STF_DETENT = enum.auto()
+
+
+@enum.unique
+class CFWCommand(enum.IntEnum):
+    """
+    Filter wheel command enum
+    """
+    QUERY = 0
+    GOTO = enum.auto()
+    INIT = enum.auto()
+    GET_INFO = enum.auto()
+    OPEN_DEVICE = enum.auto()
+    CLOSE_DEVICE = enum.auto()
+
+
+@enum.unique
+class CFWStatus(enum.IntEnum):
+    """
+    Filter wheel status enum
+    """
+    UNKNOWN = 0
+    IDLE = enum.auto()
+    BUSY = enum.auto()
+
+
+@enum.unique
+class CFWError(enum.IntEnum):
+    """
+    Filter wheel errors enum
+    """
+    NONE = 0
+    BUSY = enum.auto()
+    BAD_COMMAND = enum.auto()
+    CAL_ERROR = enum.auto()
+    MOTOR_TIMEOUT = enum.auto()
+    BAD_MODEL = enum.auto()
+    DEVICE_NOT_CLOSED = enum.auto()
+    DEVICE_NOT_OPEN = enum.auto()
+    I2C_ERROR = enum.auto()
+
+
+@enum.unique
+class CFWGetInfoSelect(enum.IntEnum):
+    """
+    Filter wheel get info select enum
+    """
+    FIRMWARE_VERSION = 0
+    CAL_DATA = enum.auto()
+    DATA_REGISTERS = enum.auto()

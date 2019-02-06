@@ -24,14 +24,18 @@ class Camera(AbstractCamera):
                  set_point=None,
                  filter_type=None,
                  *args, **kwargs):
+        # SBIG cameras don't have a 'port' but should have their serial number specified.
+        # For backwards compatibility purposes allow port to be used as an alias of serial number.
+        kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
+        kwargs['port'] = None
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
         self.connect()
         if filter_type is not None:
-            # connect() will set this based on camera info, but that doesn't know about filters
-            # upstream of the CCD.
-            self.filter_type = filter_type
+            # connect() will have set this based on camera info, but that doesn't know about filters
+            # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
+            self._filter_type = filter_type
         if self.is_connected:
             # Set and enable cooling, if a set point has been given.
             if set_point is not None:
@@ -99,15 +103,26 @@ class Camera(AbstractCamera):
         """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
+    @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        return self._SBIGDriver.get_exposure_status(self._handle) != 'CS_IDLE'
+
 # Methods
 
     def __str__(self):
-        # For SBIG cameras uid and port are both aliases for serial number so
-        # shouldn't include both
-        try:
-            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
-        except AttributeError:
-            return "{} ({})".format(self.name, self.uid)
+        # SBIG cameras don't have a port so just include the serial number in the string
+        # representation.
+        s = "{} ({})".format(self.name, self.uid)
+
+        if self.focuser:
+            s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
+
+        return s
 
     def connect(self):
         """
@@ -115,29 +130,34 @@ class Camera(AbstractCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug('Connecting to {} ({})'.format(self.name, self.port))
+        self.logger.debug('Connecting to {}'.format(self))
 
         # Claim handle from the SBIGDriver, store camera info.
-        self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
+        self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.uid)
         if self._handle == INVALID_HANDLE_VALUE:
-            message = 'Could not connect to {} ({})!'.format(self.name, self.port)
+            message = 'Could not connect to {}!'.format(self)
             self.logger.error(message)
             warn(message)
             self._connected = False
             return
 
-        self.logger.debug("{} connected".format(self.name))
+        self.logger.debug("{} connected".format(self))
         self._connected = True
         self._serial_number = self._info['serial number']
         self.model = self._info['camera name']
 
         if self._info['colour']:
             if self._info['Truesense']:
-                self.filter_type = 'CRGB'
+                self._filter_type = 'CRGB'
             else:
-                self.filter_type = 'RGGB'
+                self._filter_type = 'RGGB'
         else:
-            self.filter_type = 'M'
+            self._filter_type = 'M'
+
+        if self.filterwheel and not self.filterwheel.is_connected:
+            # Need to defer connection of SBIG filter wheels until after camera is connected
+            # so do it here.
+            self.filterwheel.connect()
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -192,8 +212,5 @@ class Camera(AbstractCamera):
                    'Microns')
         header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
                    'Electrons/ADU')
-
-        if self.focuser:
-            header = self.focuser._fits_header(header)
 
         return header

@@ -265,7 +265,8 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
+                self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved to {} encoder units".format(r[:-2]))
@@ -288,7 +289,8 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
+                self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved by {} encoder units".format(r[:-2]))
@@ -312,7 +314,8 @@ class Focuser(AbstractFocuser):
                 be used if the number of lines expected is not known (e.g. 'ds' command).
 
         Returns:
-            list: possibly empty list containing the '\r' terminated lines of the response from the adaptor.
+            list: possibly empty list containing the '\r' terminated lines of the response from the
+                adaptor.
         """
         if not self.is_connected:
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
@@ -329,7 +332,8 @@ class Focuser(AbstractFocuser):
 
         # In verbose mode adaptor will first echo the command
         echo = self._serial_io.readline().rstrip()
-        assert echo == command, self.logger.warning("echo != command: {} != {}".format(echo, command))
+        assert echo == command, self.logger.warning("echo != command: {} != {}".format(
+            echo, command))
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()
@@ -362,9 +366,11 @@ class Focuser(AbstractFocuser):
                 # Got an error message! Translate it.
                 try:
                     error_message = error_messages[int(error_match.group())]
-                    self.logger.error("{} returned error message '{}'!".format(self, error_message))
+                    self.logger.error("{} returned error message '{}'!".format(
+                        self, error_message))
                 except Exception:
-                    self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
+                    self.logger.error("Unknown error '{}' from {}!".format(
+                        error_match.group(), self))
 
         return response
 
@@ -379,7 +385,8 @@ class Focuser(AbstractFocuser):
         # Get the hardware version of the adaptor. Accessible as self.hardware_version
         self._get_hardware_version()
 
-        # Get basic lens info (e.g. '400mm,f28' for a 400 mm, f/2.8 lens). Accessible as self.lens_info
+        # Get basic lens info (e.g. '400mm,f28' for a 400 mm, f/2.8 lens). Accessible as
+        # self.lens_info
         self._get_lens_info()
 
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
@@ -463,8 +470,8 @@ class Focuser(AbstractFocuser):
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
             return int(r[:-2])
 
-    def _fits_header(self, header):
-        header = super()._fits_header(header)
+    def _add_fits_keywords(self, header):
+        header = super()._add_fits_keywords(header)
         header.set('FOC-HW', self.hardware_version, 'Focuser hardware version')
         header.set('FOC-FW', self.firmware_version, 'Focuser firmware version')
         header.set('LENSINFO', self.lens_info, 'Attached lens')
