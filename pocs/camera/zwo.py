@@ -322,7 +322,7 @@ class Camera(AbstractCamera):
         header = super()._fits_header(seconds, dark)
         header.set('XPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
         header.set('YPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
-        header.set('EGAIN', get_quantity_value(self.egain, u.electron/u.adu), 'Electrons/ADU')
+        header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu), 'Electrons/ADU')
         header.set('GAIN', self.gain, 'Internal units')
         header.set('BITDEPTH', int(get_quantity_value(self._info['bit_depth'], u.bit)),
                    'ADC bit depth')
