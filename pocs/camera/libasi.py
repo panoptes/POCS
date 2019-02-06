@@ -1,6 +1,7 @@
 import ctypes
 import enum
 
+import numpy as np
 from astropy import units as u
 
 from pocs.base import PanBase
@@ -197,16 +198,75 @@ class ASIDriver(PanBase):
 
     def set_roi_format(self, camera_ID, width, height, binning, image_type):
         """ Set the ROI size and image format settings for the camera with given integer ID """
-        width = get_quantity_value(width, unit=u.pixel)
-        height = get_quantity_value(width, unit=u.pixel)
+        width = int(get_quantity_value(width, unit=u.pixel))
+        height = int(get_quantity_value(height, unit=u.pixel))
+        binning = int(binning)
         self._call_function('ASISetROIFormat',
                             camera_ID,
                             ctypes.c_int(width),
                             ctypes.c_int(height),
                             ctypes.c_int(binning),
                             ctypes.c_int(ImgType[image_type]))
-        self.logger.debug("Set ROI & image format on camera {} to {}x{}/{} ({})".format(
+        self.logger.debug("Set ROI, format on camera {} to {}x{}/{}, {}".format(
             camera_ID, width, height, binning, image_type))
+
+    def get_start_position(self, camera_ID):
+        """ Get position of the upper left corner of the ROI for camera with given integer ID """
+        start_x = ctypes.c_int()
+        start_y = ctypes.c_int()
+        self._call_function('ASIGetStartPos',
+                            camera_ID,
+                            ctypes.byref(start_x),
+                            ctypes.byref(start_y))
+        start_x = start_x.value * u.pixel
+        start_y = start_y.value * u.pixel
+        return start_x, start_y  # Note, these coordinates are in binned pixels
+
+    def set_start_position(self, camera_ID, start_x, start_y):
+        """ Set position of the upper left corner of the ROI for camera with given integer ID """
+        start_x = int(get_quantity_value(start_x, unit=u.pixel))
+        start_y = int(get_quantity_value(start_y, unit=u.pixel))
+        self._call_function('ASISetStartPos',
+                            camera_ID,
+                            ctypes.c_int(start_x),
+                            ctypes.c_int(start_y))
+        self.logger.debug("Set ROI start position of camera {} to ({}, {})".format(
+            camera_ID, start_x, start_y))
+
+    def start_exposure(self, camera_ID):
+        """ Start exposure on the camera with given integer ID """
+        self._call_function('ASIStartExposure', camera_ID)
+        self.logger.debug("Exposure started on camera {}".format(camera_ID))
+
+    def stop_exposure(self, camera_ID):
+        """ Cancel current exposure on camera with given integer ID """
+        self._call_function('ASIStopExposure', camera_ID)
+        self.logger.debug("Exposure on camera {} cancelled".format(camera_ID))
+
+    def get_exposure_status(self, camera_ID):
+        """ Get status of current exposure on camera with given integer ID """
+        status = ctypes.c_int()
+        self._call_function('ASIGetExpStatus', camera_ID, ctypes.byref(status))
+        return ExposureStatus(status.value).name
+
+    def get_exposure_data(self, camera_ID, width, height, image_type):
+        """ Get image data from exposure on camera with given integer ID """
+        width = int(get_quantity_value(width, unit=u.pixel))
+        height = int(get_quantity_value(height, unit=u.pixel))
+
+        if image_type in ('RAW8', 'Y8'):
+            exposure_data = np.zeros((height, width), dtype=np.uint8, order='C')
+        elif image_type == 'RAW16':
+            exposure_data = np.zeros((height, width), dtype=np.uint16, order='C')
+        elif image_type == 'RGB8':
+            exposure_data = np.zeros((3, height, width), dtype=np.uint8, order='C')
+
+        self._call_function('ASIGetDataAfterExp',
+                            camera_ID,
+                            exposure_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
+                            ctypes.c_long(exposure_data.nbytes))
+        self.logger.debug("Got exposure data from camera {}".format(camera_ID))
+        return exposure_data
 
     # Private methods
 
