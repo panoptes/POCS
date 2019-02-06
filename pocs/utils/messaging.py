@@ -93,10 +93,10 @@ class PanMessaging(object):
         PanMessaging.run_forwarder(subscriber, publisher, ready_fn=ready_fn, done_fn=done_fn)
 
     @classmethod
-    def create_forwarder_sockets(cls, sub_port, pub_port):
+    def create_forwarder_sockets(cls, sub_port, pub_port, host='localhost'):
         cls.logger.info('Creating forwarder sockets for {} -> {}', sub_port, pub_port)
-        subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
-        publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
+        subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False, host=host)
+        publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False, host=host)
         return subscriber, publisher
 
     @classmethod
@@ -133,7 +133,7 @@ class PanMessaging(object):
         """
         obj = cls()
 
-        obj.logger.debug("Creating publisher. Binding to port {} ".format(port))
+        obj.logger.debug("Creating publisher. Host {} Port {} ".format(host, port))
 
         socket = obj.context.socket(zmq.PUB)
 
@@ -163,7 +163,8 @@ class PanMessaging(object):
 
         """
         obj = cls()
-        obj.logger.debug("Creating subscriber. Port: {} \tTopic: {}".format(port, topic))
+        obj.logger.debug(
+            "Creating subscriber. Host: {} Port: {} \tTopic: {}".format(host, port, topic))
 
         socket = obj.context.socket(zmq.SUB)
 

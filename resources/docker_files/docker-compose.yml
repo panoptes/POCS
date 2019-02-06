@@ -76,6 +76,7 @@ services:
       - type: bind
         source: /var/panoptes/POCS
         target: /var/panoptes/POCS        
-    command: bash -c "python3 $POCS/scripts/docker/run_pocs.py"
+    # No-op for now - connect via "docker exec -it panoptes_pocs_1 jupyter-console"
+    command: tail -f /dev/null  
 volumes:
     astrometry_index:

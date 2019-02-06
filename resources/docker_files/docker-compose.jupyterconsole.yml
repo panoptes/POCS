@@ -1,4 +1,0 @@
-version: "3.2"
-services:            
-  pocs:
-    command: bash -c "jupyter-console"

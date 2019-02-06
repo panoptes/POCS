@@ -32,14 +32,14 @@ def run_forwarder(sub_port, pub_port, sub, pub):
         say('Forwarder for {} -> {} has stopped', sub_port, pub_port)
 
 
-def run_forwarders(port_pairs):
+def run_forwarders(port_pairs, host='localhost'):
     the_root_logger.info('Creating sockets')
 
     socket_pairs = []
     for sub, pub in port_pairs:
         say('Creating sockets for {} -> {}', sub, pub)
         try:
-            socket_pairs.append(PanMessaging.create_forwarder_sockets(sub, pub))
+            socket_pairs.append(PanMessaging.create_forwarder_sockets(sub, pub, host=host))
         except Exception as e:
             say('Unable to create sockets: {}', e, error=True)
             sys.exit(1)
@@ -98,6 +98,10 @@ if __name__ == '__main__':
         type=int,
         help='First port of a pair to be forwarded. The other is the next integer.')
     parser.add_argument(
+        '--host',
+        default='localhost',
+        help='Host of the machine that has messaging, default localhost')
+    parser.add_argument(
         '--from_config',
         action='store_true',
         help='Read ports from the pocs.yaml and pocs_local.yaml config files.')
@@ -109,6 +113,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     all_ports = []
+    host = args.host
 
     def validate_unique_port(port):
         """Confirm that the port is valid and unique among all the ports."""
@@ -134,6 +139,7 @@ if __name__ == '__main__':
         config = load_config(config_files=['pocs'])
         add_pair(config['messaging']['cmd_port'])
         add_pair(config['messaging']['msg_port'])
+        host = config['messaging']['messaging_host']
 
     if args.pairs:
         for sub, pub in args.pairs:
@@ -148,4 +154,4 @@ if __name__ == '__main__':
 
     the_root_logger = get_root_logger()
 
-    run_forwarders(sub_and_pub_pairs)
+    run_forwarders(sub_and_pub_pairs, host=host)
