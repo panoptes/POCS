@@ -6,6 +6,7 @@ from astropy import units as u
 from pocs.base import PanBase
 from pocs.utils import error
 from pocs.utils.library import load_library
+from pocs.utils import get_quantity_value
 
 ####################################################################################################
 #
@@ -104,7 +105,7 @@ class ASIDriver(PanBase):
         self._call_function('ASIGetID', camera_ID, ctypes.byref(struct_ID))
         bytes_ID = bytes(struct_ID.id)
         string_ID = bytes_ID.decode()
-        self.logger.debug("Got string ID '{}'' from camera {}".format(string_ID, camera_ID))
+        self.logger.debug("Got string ID '{}' from camera {}".format(string_ID, camera_ID))
         return string_ID
 
     def set_ID(self, camera_ID, string_ID):
@@ -115,19 +116,112 @@ class ASIDriver(PanBase):
         """
         bytes_ID = string_ID.encode()  # Convert string to bytes
         if len(bytes_ID) > 8:
-            bytes_ID = bytes_ID[:8]
+            bytes_ID = bytes_ID[:8]  # This may chop out part of a UTF-8 multibyte character
             self.logger.warning("New ID longer than 8 bytes, truncating {} to {}".format(
                 string_ID, bytes_ID.decode()))
         else:
-            bytes_ID = bytes_ID.ljust(8)  # Pad to 8 butes if necessary
+            bytes_ID = bytes_ID.ljust(8)  # Pad to 8 bytes with spaces, if necessary
         uchar_ID = (ctypes.c_ubyte * 8).from_buffer_copy(bytes_ID)
         self._call_function('ASISetID', camera_ID, ID(uchar_ID))
         self.logger.debug("Set camera {} string ID to '{}'".format(camera_ID, bytes_ID.decode()))
 
+    def get_num_of_controls(self, camera_ID):
+        """ Gets the number of control types supported by the camera with given integer ID """
+        n_controls = ctypes.c_int()
+        self._call_function('ASIGetNumOfControls', camera_ID, ctypes.byref(n_controls))
+        n_controls = n_controls.value  # Convert from ctypes c_int type to Python int
+        self.logger.debug("Camera {} has {} controls".format(camera_ID, n_controls))
+        return n_controls
+
+    def get_control_caps(self, camera_ID):
+        """ Gets the details of all the controls supported by the camera with given integer ID """
+        n_controls = self.get_num_of_controls(camera_ID)  # First get number of controls
+        controls = {}
+        for i in range(n_controls):
+            control_caps = ControlCaps()
+            self._call_function('ASIGetControlCaps',
+                                camera_ID,
+                                ctypes.c_int(i),
+                                ctypes.byref(control_caps))
+            control = self._parse_caps(control_caps)
+            controls[control['control_type']] = control
+        self.logger.debug("Got details of {} controls from camera {}".format(n_controls, camera_ID))
+        return controls
+
+    def get_control_value(self, camera_ID, control_type):
+        """ Gets the value of the control control_type from camera with given integer ID """
+        value = ctypes.c_long()
+        is_auto = ctypes.c_int()
+        self._call_function('ASIGetControlValue',
+                            camera_ID,
+                            ControlType[control_type],
+                            ctypes.byref(value),
+                            ctypes.byref(is_auto))
+        nice_value = self._parse_return_value(value, control_type)
+        return nice_value, bool(is_auto)
+
+    def set_control_value(self, camera_ID, control_type, value):
+        """ Sets the value of the control control_type on camera with given integet ID """
+        if value == 'AUTO':
+            # Apparently need to pass current value when turning auto on
+            auto = True
+            value = self.get_control_value(camera_ID, control_type)[0]
+        else:
+            auto = False
+        self._call_function('ASISetControlValue',
+                            camera_ID,
+                            ctypes.c_int(ControlType[control_type]),
+                            self._parse_input_value(value, control_type),
+                            ctypes.c_int(auto))
+        self.logger.debug("Set {} to {} on camera {}".format(control_type,
+                                                             'AUTO' if auto else value,
+                                                             camera_ID))
+
+    def get_roi_format(self, camera_ID):
+        """ Get the ROI size and image format setting for camera with given integer ID """
+        width = ctypes.c_int()
+        height = ctypes.c_int()
+        binning = ctypes.c_int()
+        image_type = ctypes.c_int()
+        self._call_function('ASIGetROIFormat',
+                            camera_ID,
+                            ctypes.byref(width),
+                            ctypes.byref(height),
+                            ctypes.byref(binning),
+                            ctypes.byref(image_type))
+        roi_format = {'width': width.value * u.pixel,
+                      'height': height.value * u.pixel,
+                      'binning': binning.value,
+                      'image_type': ImgType(image_type.value).name}
+        return roi_format
+
+    def set_roi_format(self, camera_ID, width, height, binning, image_type):
+        """ Set the ROI size and image format settings for the camera with given integer ID """
+        width = get_quantity_value(width, unit=u.pixel)
+        height = get_quantity_value(width, unit=u.pixel)
+        self._call_function('ASISetROIFormat',
+                            camera_ID,
+                            ctypes.c_int(width),
+                            ctypes.c_int(height),
+                            ctypes.c_int(binning),
+                            ctypes.c_int(ImgType[image_type]))
+        self.logger.debug("Set ROI & image format on camera {} to {}x{}/{} ({})".format(
+            camera_ID, width, height, binning, image_type))
+
     # Private methods
 
+    def _call_function(self, function_name, camera_ID, *args):
+        """ Utility functions for calling the functions that take return ErrorCode """
+        function = getattr(self._CDLL, function_name)
+        error_code = function(ctypes.c_int(camera_ID), *args)
+        if error_code != ErrorCode.SUCCESS:
+            msg = "Error calling {}: {}".format(function_name, ErrorCode(error_code).name)
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+
     def _parse_info(self, camera_info):
-        pythonic_info = {'name': camera_info.name.decode('ascii'),
+        """ Utility function to parse CameraInfo Structures into something more Pythonic """
+        pythonic_info = {'name': camera_info.name.decode(),
                          'camera_ID': int(camera_info.camera_ID),
                          'max_height': camera_info.max_height * u.pixel,
                          'max_width': camera_info.max_width * u.pixel,
@@ -161,16 +255,82 @@ class ASIDriver(PanBase):
                 break
         return tuple(formats)
 
-    def _call_function(self, function_name, camera_id, *args):
-        """ Utility functions for calling the functions that take return ErrorCode """
-        function = getattr(self._CDLL, function_name)
-        error_code = function(ctypes.c_int(camera_id), *args)
-        if error_code != ErrorCode.SUCCESS:
-            msg = "Error calling {}: {}".format(function_name, ErrorCode(error_code).name)
-            self.logger.error(msg)
-            raise RuntimeError(msg)
+    def _parse_caps(self, control_caps):
+        """ Utility function to parse ControlCaps Structures into something more Pythonic """
+        control_info = {'name': control_caps.name.decode(),
+                        'description': control_caps.description.decode(),
+                        'max_value': int(control_caps.max_value),
+                        'min_value': int(control_caps.min_value),
+                        'default_value': int(control_caps.default_value),
+                        'is_auto_supported': bool(control_caps.is_auto_supported),
+                        'is_writable': bool(control_caps.is_writable),
+                        'control_type': ControlType(control_caps.control_type).name}
+        return control_info
 
+    def _parse_return_value(self, value, control_type):
+        """ Helper function to apply appropiate type conversion and/or units to value """
+        int_value = value.value  # To begin just extract Python int from ctypes.c_long
 
+        # Apply control type specific units and/or data types
+        if control_type == 'EXPOSURE':
+            nice_value = (int_value * u.us).to(u.second)
+        elif control_type == 'OFFSET':
+            nice_value = int_value * u.adu
+        elif control_type == 'BANDWIDTHOVERLOAD':
+            nice_value = int_value * u.percent
+        elif control_type == 'TEMPERATURE':
+            nice_value = int_value * 0.1 * u.Celsius
+        elif control_type == 'FLIP':
+            nice_value = FlipStatus(int_value).name
+        elif control_type == 'AUTO_MAX_EXP':
+            nice_value = (int_value * u.us).to(u.second)
+        elif control_type == 'AUTO_TARGET_BRIGHTNESS':
+            nice_value = int_value * u.adu
+        elif control_type == 'HARDWARE_BIN':
+            nice_value = bool(int_value)
+        elif control_type == 'HIGH_SPEED_MODE':
+            nice_value = bool(int_value)
+        elif control_type == 'COOLER_POWER_PERC':
+            nice_value = int_value * u.percent
+        elif control_type == 'TARGET_TEMP':
+            nice_value = int_value * u.Celsius
+        elif control_type == 'COOLER_ON':
+            nice_value = bool(int_value)
+        elif control_type == 'MONO_BIN':
+            nice_value = bool(int_value)
+        elif control_type == 'FAN_ON':
+            nice_value = bool(int_value)
+        elif control_type == 'PATTERN_ADJUST':
+            nice_value = bool(int_value)
+        elif control_type == 'ANTI_DEW_HEATER':
+            nice_value = bool(int_value)
+        else:
+            nice_value = int_value
+
+        return nice_value
+
+    def _parse_input_value(self, value, control_type):
+        """ Helper function to convert input values to appropriate ctypes.c_long """
+        if control_type == 'EXPOSURE':
+            value = get_quantity_value(value, unit=u.us)
+        elif control_type == 'OFFSET':
+            value = get_quantity_value(value, unit=u.adu)
+        elif control_type == 'BANDWIDTHOVERLOAD':
+            value = get_quantity_value(value, unit=u.percent)
+        elif control_type == 'TEMPERATURE':
+            value = get_quantity_value(value, unit=u.Celcius) * 10
+        elif control_type == 'FLIP':
+            value = FlipStatus[value]
+        elif control_type == 'AUTO_MAX_EXP':
+            value = get_quantity_value(value, unit=u.us)
+        elif control_type == 'AUTO_TARGET_BRIGHTNESS':
+            value = get_quantity_value(value, unit=u.adu)
+        elif control_type == 'COOLER_POWER_PERC':
+            value = get_quantity_value(value, unit=u.percent)
+        elif control_type == 'TARGET_TEMP':
+            value = get_quantity_value(value, unit=u.Celsius)
+
+        return ctypes.c_long(int(value))
 ####################################################################################################
 #
 # The C defines, enums and structs from ASICamera2.h translated to Python constants, enums and
