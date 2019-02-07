@@ -177,6 +177,15 @@ class Camera(AbstractCamera):
         self._control_setter('TARGET_TEMP', set_point)
 
     @property
+    def ccd_cooling_enabled(self):
+        """ Current status of the camera's image sensor cooling system (enabled/disabled) """
+        return self._control_getter('COOLER_ON')[0]
+
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, on):
+        self._control_setter('COOLER_ON', on)
+
+    @property
     def ccd_cooling_power(self):
         """ Current power level of the camera's image sensor cooling system (as a percentage). """
         return self._control_getter('COOLER_POWER_PERC')[0]
@@ -243,6 +252,8 @@ class Camera(AbstractCamera):
             self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
                 self))
             self._exposure_lock.acquire(blocking=True)
+
+        self._control_setter('EXPOSURE', seconds)
 
         # Start exposure
         Camera._ASIDriver.start_exposure(self._camera_ID)
