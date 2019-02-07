@@ -395,7 +395,7 @@ def get_quantity_value(quantity, unit=None):
     If passed something other than a Quantity will simply return the original object.
 
     Args:
-        quantity (astropy.units.Quantity): Quantity to extract numerical value from
+        quantity (astropy.units.Quantity): Quantity to extract numerical value from.
         unit (astropy.units.Unit, optional): unit to convert to.
 
     Returns:
