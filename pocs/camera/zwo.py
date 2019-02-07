@@ -226,7 +226,7 @@ class Camera(AbstractCamera):
 
     # Private methods
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header):
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         if not self._exposure_lock.acquire(blocking=False):
             self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
                 self))
@@ -284,12 +284,12 @@ class Camera(AbstractCamera):
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
+        header.set('CAM-GAIN', self.gain, 'Internal units')
+        header.set('CAM-BITS', int(get_quantity_value(self._info['bit_depth'], u.bit)),
+                   'ADC bit depth')
         header.set('XPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
         header.set('YPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
         header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu), 'Electrons/ADU')
-        header.set('GAIN', self.gain, 'Internal units')
-        header.set('BITDEPTH', int(get_quantity_value(self._info['bit_depth'], u.bit)),
-                   'ADC bit depth')
         return header
 
     def _refresh_info(self):
@@ -302,11 +302,32 @@ class Camera(AbstractCamera):
             raise NotImplementedError("'{}' has no '{}' parameter".format(self.model, control_type))
 
     def _control_setter(self, control_type, value):
-        if control_type in self._control_info.keys():
-            if self._control_info[control_type]['is_writeable']:
-                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
-            else:
-                raise NotImplementError("{} cannot set '{}' parameter'".format(
-                    self.model, control_type))
+        if control_type not in self._control_info.keys():
+            raise NotImplementedError("{} has no '{}'' parameter".format(self.model, control_type))
+
+        control_name = self._control_info[control_type]['name']
+        if not self._control_info[control_type]['is_writable']:
+            raise NotImplementError("{} cannot set {} parameter'".format(
+                self.model, control_name))
+
+        if value != 'AUTO':
+            # Check limits.
+            max_value = self._control_info[control_type]['max_value']
+            if value > max_value:
+                msg = "Cannot set {} to {}, clipping to max value {}".format(
+                    control_name, value, max_value)
+                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, max_value)
+                raise error.PanError(msg)
+
+            min_value = self._control_info[control_type]['min_value']
+            if value < min_value:
+                msg = "Cannot set {} to {}, clipping to min value {}".format(
+                    control_name, value, min_value)
+                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, min_value)
+                raise error.PanError(msg)
         else:
-            raise NotImplementedError("{} has no {} parameter".format(self.model, control_type))
+            if not self._control_info[control_type]['is_auto_supported']:
+                msg = "{} cannot set {} to AUTO".format(self.model, control_name)
+                raise PanError(msg)
+
+        Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)

@@ -44,7 +44,7 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header):
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         # Set up a Timer that will wait for the duration of the exposure then
         # copy a dummy FITS file to the specified path and adjust the headers
         # according to the exposure time, type.

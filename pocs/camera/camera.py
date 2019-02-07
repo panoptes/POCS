@@ -199,8 +199,6 @@ class AbstractCamera(PanBase):
                                                                           headers,
                                                                           filename,
                                                                           **kwargs)
-        with suppress(KeyError):
-            kwargs.pop('exp_time')  # No longer needed here after _setup_observation
 
         exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
 
@@ -264,7 +262,7 @@ class AbstractCamera(PanBase):
                             dark=dark,
                             exposure_event=exposure_event,
                             header=header,
-                            *args, *kwargs)
+                            *args, **kwargs)
 
         if blocking:
             exposure_event.wait()

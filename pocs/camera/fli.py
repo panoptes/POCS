@@ -197,7 +197,7 @@ class Camera(AbstractCamera):
 
 # Private Methods
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header):
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         if not self._exposure_lock.acquire(blocking=False):
             self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
                 self))

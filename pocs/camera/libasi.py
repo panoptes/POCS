@@ -318,19 +318,26 @@ class ASIDriver(PanBase):
 
     def _parse_caps(self, control_caps):
         """ Utility function to parse ControlCaps Structures into something more Pythonic """
+        control_type = ControlType(control_caps.control_type).name
         control_info = {'name': control_caps.name.decode(),
                         'description': control_caps.description.decode(),
-                        'max_value': int(control_caps.max_value),
-                        'min_value': int(control_caps.min_value),
-                        'default_value': int(control_caps.default_value),
+                        'max_value': self._parse_return_value(control_caps.max_value,
+                                                              control_type),
+                        'min_value': self._parse_return_value(control_caps.min_value,
+                                                              control_type),
+                        'default_value': self._parse_return_value(control_caps.default_value,
+                                                                  control_type),
                         'is_auto_supported': bool(control_caps.is_auto_supported),
                         'is_writable': bool(control_caps.is_writable),
-                        'control_type': ControlType(control_caps.control_type).name}
+                        'control_type': control_type}
         return control_info
 
     def _parse_return_value(self, value, control_type):
         """ Helper function to apply appropiate type conversion and/or units to value """
-        int_value = value.value  # To begin just extract Python int from ctypes.c_long
+        try:
+            int_value = value.value  # If not done already extract Python int from ctypes.c_long
+        except AttributeError:
+            int_value = value  # If from a ctypes struct value will already be a Python int
 
         # Apply control type specific units and/or data types
         if control_type == 'EXPOSURE':

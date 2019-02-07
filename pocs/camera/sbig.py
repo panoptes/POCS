@@ -156,7 +156,7 @@ class Camera(AbstractCamera):
 
 # Private methods
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header):
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         self._SBIGDriver.take_exposure(self._handle, seconds, filename,
                                        exposure_event, dark, header)
 
