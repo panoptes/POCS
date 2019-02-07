@@ -4,6 +4,7 @@ from warnings import warn
 from contextlib import suppress
 
 from astropy import units as u
+from astropy.time import Time
 
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libasi
@@ -306,6 +307,8 @@ class Camera(AbstractCamera):
                                                           image_type,
                                                           timeout)
             if video_data is not None:
+                now = Time.now()
+                header.set('DATE-OBS', now.fits, 'End of exposure + readout')
                 filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
                 fits_utils.write_fits(video_data, header, filename)
                 good_frames += 1

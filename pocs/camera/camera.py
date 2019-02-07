@@ -435,7 +435,7 @@ class AbstractCamera(PanBase):
             seconds = seconds.value
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
-        header.set('DATE-OBS', now.fits)
+        header.set('DATE-OBS', now.fits, 'Start of exposure')
         header.set('EXPTIME', seconds, 'Seconds')
         if dark is not None:
             if dark:
