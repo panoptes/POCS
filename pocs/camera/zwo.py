@@ -1,6 +1,7 @@
 import time
 import threading
 from warnings import warn
+from contextlib import suppress
 
 from astropy import units as u
 
@@ -143,26 +144,16 @@ class Camera(AbstractCamera):
 
     @property
     def ccd_temp(self):
-        """
-        Current temperature of the camera's image sensor.
-        """
-        if 'TEMPERATURE' in self._control_info.keys():
-            return Camera._ASIDriver.get_control_value(self._camera_ID, 'TEMPERATURE')[0]
-        else:
-            raise NotImplementedError("{} cannot return sensor temperature".format(self.model))
+        """ Current temperature of the camera's image sensor """
+        return self._control_getter('TEMPERATURE')[0]
 
     @property
     def ccd_set_point(self):
-        """
-        Current value of the CCD set point, the target temperature for the camera's
-        image sensor cooling control.
+        """ Current value of the target temperature for the camera's image sensor cooling control.
 
         Can be set by assigning an astropy.units.Quantity
         """
-        if 'TARGET_TEMP' in self._control_info.keys():
-            return Camera._ASIDriver.get_control_value(self._camera_ID, 'TARGET_TEMP')[0]
-        else:
-            raise NotImplementedError("{} has no sensor target temperature".format(self.model))
+        return self._control_getter('TARGET_TEMP')[0]
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
@@ -177,25 +168,16 @@ class Camera(AbstractCamera):
 
     @property
     def ccd_cooling_power(self):
-        """
-        Current power level of the camera's image sensor cooling system (as
-        a percentage of the maximum).
-        """
-        if 'COOLER_POWER_PERC' in self._control_info.keys():
-            return Camera._ASIDriver.get_control_value(self._camera_ID, 'COOLER_POWER_PERC')[0]
-        else:
-            raise NotImplementedError("{} cannot return cooling power".format(self.model))
+        """ Current power level of the camera's image sensor cooling system (as a percentage). """
+        return self._control_getter('COOLER_POWER_PERC')[0]
 
     @property
     def gain(self):
         """ Current value of the camera's gain setting in internal units.
 
-        See `egain` for the corresponding eletrons / ADU value
+        See `egain` for the corresponding eletrons / ADU value.
         """
-        if 'GAIN' in self._control_info.keys():
-            return Camera._ASIDriver.get_control_value(self._camera_ID, 'GAIN')[0]
-        else:
-            raise NotImplementedError("{} cannot return gain parameter".format(self.model))
+        return self._control_getter('GAIN')[0]
 
     @gain.setter
     def gain(self):
@@ -326,3 +308,9 @@ class Camera(AbstractCamera):
 
     def _refresh_info(self):
         self._info = Camera._ASIDriver.get_camera_property(self._camera_index)
+
+    def _control_getter(self, control_type):
+        if control_type in self._control_info.keys():
+            return Camera._ASIDriver.get_control_value(self._camera_ID, control_type)
+        else:
+            raise NotImplementedError("'{}' cannot return '{}'".format(self.model, control_type))
