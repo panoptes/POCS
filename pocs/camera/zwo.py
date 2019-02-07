@@ -22,9 +22,12 @@ class Camera(AbstractCamera):
 
     def __init__(self,
                  name='ZWO ASI Camera',
+                 set_point=None,
                  filter_type=None,
                  library_path=None,
                  timeout=1 * u.second,
+                 gain=None,
+                 image_type=None,
                  *args, **kwargs):
         # ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
         # camera_ID and, optionally, an 8 byte ID that can be written to the camera firmware
@@ -95,19 +98,33 @@ class Camera(AbstractCamera):
 
         super().__init__(name, *args, **kwargs)
         self.connect()
+        assert self.is_connected, error.PanError("Could not connect to {}".format(self))
+
         Camera._assigned_ids.append(self.uid)
-        if filter_type is not None:
+
+        self._setter_try('ccd_set_point', 'set_point', set_point)
+
+        if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
             # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
             self._filter_type = filter_type
-        if self.is_connected:
-            self.logger.info('{} initialised'.format(self))
+
+        self._setter_try('gain', 'gain', gain)
+
+        if image_type:
+            self._setter_try('image_type', 'image_type', image_type)
+        else:
+            # Take monochrome 12 bit raw images by default, if we can
+            if 'RAW16' in self._info['supported_video_format']:
+                self.image_type = 'RAW16'
+
+        self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
         """ Attempt some clean up """
         with suppress(AttributeError):
             id = self.uid
-            Camera.assigned_ids.remove(id)
+            Camera._assigned_ids.remove(id)
             self.logger.debug('Removed {} from assigned IDs list'.format(id))
         with suppress(AttributeError):
             camera_ID = self._camera_ID
@@ -213,16 +230,11 @@ class Camera(AbstractCamera):
             self._filter_type = self._info['bayer_pattern']
         else:
             self._filter_type = 'M'
-
         Camera._ASIDriver.open_camera(self._camera_ID)
         Camera._ASIDriver.init_camera(self._camera_ID)
-        self._connected = True
-
-        # Take monochrome 12 bit raw images by default, if we can
-        if 'RAW16' in self._info['supported_video_format']:
-            self.image_type = 'RAW16'
-
         self._control_info = Camera._ASIDriver.get_control_caps(self._camera_ID)
+
+        self._connected = True
 
     # Private methods
 
@@ -303,7 +315,7 @@ class Camera(AbstractCamera):
 
     def _control_setter(self, control_type, value):
         if control_type not in self._control_info.keys():
-            raise NotImplementedError("{} has no '{}'' parameter".format(self.model, control_type))
+            raise NotImplementedError("{} has no '{}' parameter".format(self.model, control_type))
 
         control_name = self._control_info[control_type]['name']
         if not self._control_info[control_type]['is_writable']:
@@ -331,3 +343,12 @@ class Camera(AbstractCamera):
                 raise PanError(msg)
 
         Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
+
+    def _setter_try(self, attr, keyword, value):
+        if value:
+            try:
+                setattr(self, attr, value)
+            except NotImplementedError:
+                msg = "Attempt to set '{}' but {} does not support this.".format(
+                    keyword, self.model)
+                self.logger.warning(msg)
