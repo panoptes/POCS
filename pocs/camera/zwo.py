@@ -157,14 +157,7 @@ class Camera(AbstractCamera):
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
-        if 'TARGET_TEMP' in self._control_info.keys():
-            if self._control_info['TARGET_TEMP']['is_writeable']:
-                Camera._ASIDriver.set_control_value(self._camera_ID, 'TARGET_TEMP', set_point)
-            else:
-                raise NotImplementError("{} cannot set sensor target temperature".format(
-                    self.model))
-        else:
-            raise NotImplementedError("{} has no sensor target temperature".format(self.model))
+        self._control_setter('TARGET_TEMP', set_point)
 
     @property
     def ccd_cooling_power(self):
@@ -180,15 +173,8 @@ class Camera(AbstractCamera):
         return self._control_getter('GAIN')[0]
 
     @gain.setter
-    def gain(self):
-        if 'GAIN' in self._control_info.keys():
-            if self._control_info['GAIN']['is_writeable']:
-                Camera._ASIDriver.set_control_value(self._camera_ID, 'TARGET_TEMP', set_point)
-            else:
-                raise NotImplementError("{} cannot set gain".format(
-                    self.model))
-        else:
-            raise NotImplementedError("{} has no gain parameter".format(self.model))
+    def gain(self, gain):
+        self._control_setter('GAIN', gain)
 
     @property
     def egain(self):
@@ -313,4 +299,14 @@ class Camera(AbstractCamera):
         if control_type in self._control_info.keys():
             return Camera._ASIDriver.get_control_value(self._camera_ID, control_type)
         else:
-            raise NotImplementedError("'{}' cannot return '{}'".format(self.model, control_type))
+            raise NotImplementedError("'{}' has no '{}' parameter".format(self.model, control_type))
+
+    def _control_setter(self, control_type, value):
+        if control_type in self._control_info.keys():
+            if self._control_info[control_type]['is_writeable']:
+                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
+            else:
+                raise NotImplementError("{} cannot set '{}' parameter'".format(
+                    self.model, control_type))
+        else:
+            raise NotImplementedError("{} has no {} parameter".format(self.model, control_type))
