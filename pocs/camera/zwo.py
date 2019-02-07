@@ -104,18 +104,14 @@ class Camera(AbstractCamera):
 
     def __del__(self):
         """ Attempt some clean up """
-        try:
+        with suppress(AttributeError):
             id = self.uid
             Camera.assigned_ids.remove(id)
             self.logger.debug('Removed {} from assigned IDs list'.format(id))
-        except AttributeError:
-            pass
-        try:
+        with suppress(AttributeError):
             camera_ID = self._camera_ID
             Camera._ASIDriver.close_camera(camera_ID)
             self.logger.debug("Closed ZWO camera {}".format(camera_ID))
-        except AttributeError:
-            pass
 
     # Properties
 

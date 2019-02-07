@@ -42,7 +42,7 @@ class SBIGDriver(PanBase):
         will be used to locate it.
 
         Args:
-            library_path (str, optional): path to the library e.g. '/usr/local/lib/libsbigudrv.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libsbigudrv.so'.
             retries (int, optional): maximum number of times to attempt to send
                 a command to a camera in case of failures. Default 1, i.e. only
                 send a command once.

@@ -52,7 +52,7 @@ class FLIDriver(PanBase):
         will be used to try to locate it.
 
         Args:
-            library_path (str, optional): path to the library, e.g. '/usr/local/lib/libfli.so'
+            library_path (str, optional): path to the library, e.g. '/usr/local/lib/libfli.so'.
 
         Returns:
             `~pocs.camera.libfli.FLIDriver`

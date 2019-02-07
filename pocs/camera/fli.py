@@ -4,6 +4,7 @@ from warnings import warn
 from threading import Event
 from threading import Timer
 from threading import Lock
+from contextlib import suppress
 
 import numpy as np
 
@@ -101,18 +102,14 @@ class Camera(AbstractCamera):
             self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
-        try:
+        with suppress(AttributeError):
             device_node = self.port
             Camera._assigned_nodes.remove(device_node)
             self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
-        except AttributeError:
-            pass
-        try:
+        with suppress(AttributeError):
             handle = self._handle
             self._FLIDriver.FLIClose(handle)
             self.logger.debug('Closed FLI camera handle {}'.format(handle.value))
-        except AttributeError:
-            pass
 
 # Properties
 

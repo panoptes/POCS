@@ -21,9 +21,10 @@ from pocs.utils import get_quantity_value
 
 class ASIDriver(PanBase):
     def __init__(self, library_path=None, *args, **kwargs):
-        """Main class representing the ZWO ASI library interface. On construction loads the shared
-        object/dynamically linked version of the ASI SDK library, which must be already installed
-        (see https://astronomy-imaging-camera.com/software-drivers).
+        """Main class representing the ZWO ASI library interface.
+
+        On construction loads the shared object/dynamically linked version of the ASI SDK library,
+        which must be already installed (see https://astronomy-imaging-camera.com/software-drivers).
 
         The name and location of the shared library can be manually specified with the library_path
         argument, otherwise the ctypes.util.find_library function will be used to try to locate it.

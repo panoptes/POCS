@@ -4,15 +4,15 @@ from pocs.utils import error
 
 
 def load_library(name, path=None, logger=None):
-    """Utility function to load a shared/dynamically linked library (.so/.dylib/.dll)
+    """Utility function to load a shared/dynamically linked library (.so/.dylib/.dll).
 
     The name and location of the shared library can be manually specified with the library_path
     argument, otherwise the ctypes.util.find_library function will be used to try to locate based
     on library_name.
 
     Args:
-        name (str): name of the library (without 'lib' prefix or any suffixes, e.g. 'fli')
-        path (str, optional): path to the library e.g. '/usr/local/lib/libfli.so'
+        name (str): name of the library (without 'lib' prefix or any suffixes, e.g. 'fli').
+        path (str, optional): path to the library e.g. '/usr/local/lib/libfli.so'.
 
     Returns:
         ctypes.CDLL

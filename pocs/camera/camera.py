@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import threading
 import yaml
+from contextlib import suppress
 
 from astropy.io import fits
 from astropy.time import Time
@@ -198,11 +199,9 @@ class AbstractCamera(PanBase):
                                                                           headers,
                                                                           filename,
                                                                           **kwargs)
-
-        try:
+        with suppress(KeyError):
             kwargs.pop('exp_time')  # No longer needed here after _setup_observation
-        except KeyError:
-            pass
+
         exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
 
         # Add most recent exposure to list
@@ -229,18 +228,22 @@ class AbstractCamera(PanBase):
                       blocking=False,
                       *args,
                       **kwargs):
-        """
-        Take an exposure for given number of seconds and saves to provided filename.
+        """Take an exposure for given number of seconds and saves to provided filename.
 
         Args:
-            seconds (u.second, optional): Length of exposure
-            filename (str, optional): Image is saved to this filename
-            dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
+            seconds (u.second, optional): Length of exposure.
+            filename (str, optional): Image is saved to this filename.
+            dark (bool, optional): Exposure is a dark frame, default False. On cameras that support
+                taking dark frames internally (by not opening a mechanical shutter) this will be
+                done, for other cameras the light must be blocked by some other means. In either
+                case setting dark to True will cause the `IMAGETYP` FITS header keyword to have
+                value 'Dark Frame' instead of 'Light Frame'. Set dark to None to disable the
+                `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes.
 
         Returns:
-            threading.Event: Event that will be set when exposure is complete
+            threading.Event: Event that will be set when exposure is complete.
 
         """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
@@ -307,10 +310,8 @@ class AbstractCamera(PanBase):
 
         file_path = self._process_fits(file_path, info)
         self.logger.debug("Finished processing FITS.")
-        try:
+        with suppress(Exception):
             info['exp_time'] = info['exp_time'].value
-        except Exception:
-            pass
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -444,18 +445,12 @@ class AbstractCamera(PanBase):
             else:
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
-        try:
+        with suppress(NotImplementedError):
             header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
-        except NotImplementedError:
-            pass
-        try:
+        with suppress(NotImplementedError):
             header.set('SET-TEMP', self.ccd_set_point.value, 'Degrees C')
-        except NotImplementedError:
-            pass
-        try:
+        with suppress(NotImplementedError):
             header.set('COOL-POW', self.ccd_cooling_power, 'Percentage')
-        except NotImplementedError:
-            pass
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
