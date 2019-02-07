@@ -252,15 +252,7 @@ class ASIDriver(PanBase):
 
     def get_exposure_data(self, camera_ID, width, height, image_type):
         """ Get image data from exposure on camera with given integer ID """
-        width = int(get_quantity_value(width, unit=u.pixel))
-        height = int(get_quantity_value(height, unit=u.pixel))
-
-        if image_type in ('RAW8', 'Y8'):
-            exposure_data = np.zeros((height, width), dtype=np.uint8, order='C')
-        elif image_type == 'RAW16':
-            exposure_data = np.zeros((height, width), dtype=np.uint16, order='C')
-        elif image_type == 'RGB24':
-            exposure_data = np.zeros((3, height, width), dtype=np.uint8, order='C')
+        exposure_data = self._image_array(width, height, image_type)
 
         self._call_function('ASIGetDataAfterExp',
                             camera_ID,
@@ -268,6 +260,30 @@ class ASIDriver(PanBase):
                             ctypes.c_long(exposure_data.nbytes))
         self.logger.debug("Got exposure data from camera {}".format(camera_ID))
         return exposure_data
+
+    def start_video_capture(self, camera_ID):
+        """ Start video capture mode on camera with given integer ID """
+        self._call_function('ASIStartVideoCapture', camera_ID)
+
+    def stop_video_capture(self, camera_ID):
+        """ Stop video capture mode on camera with given integer ID """
+        self._call_function('ASIStopVideoCapture', camera_ID)
+
+    def get_video_data(self, camera_ID, width, height, image_type, timeout):
+        """ Get the image data from the next available video frame """
+        video_data = self._image_array(width, height, image_type)
+        timeout = int(get_quantity_value(timeout, unit=u.ms))
+        try:
+            self._call_function('ASIGetVideoData',
+                                camera_ID,
+                                video_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
+                                ctypes.c_long(video_data.nbytes),
+                                ctypes.c_int(timeout))
+        except RuntimeError:
+            # Expect some dropped frames during video capture
+            return None
+        else:
+            return video_data
 
     # Private methods
 
@@ -399,6 +415,21 @@ class ASIDriver(PanBase):
             value = get_quantity_value(value, unit=u.Celsius)
 
         return ctypes.c_long(int(value))
+
+    def _image_array(self, width, height, image_type):
+        """ Creates a suitable numpy array for storing image data """
+        width = int(get_quantity_value(width, unit=u.pixel))
+        height = int(get_quantity_value(height, unit=u.pixel))
+
+        if image_type in ('RAW8', 'Y8'):
+            image_array = np.zeros((height, width), dtype=np.uint8, order='C')
+        elif image_type == 'RAW16':
+            image_array = np.zeros((height, width), dtype=np.uint16, order='C')
+        elif image_type == 'RGB24':
+            image_array = np.zeros((3, height, width), dtype=np.uint8, order='C')
+
+        return image_array
+
 ####################################################################################################
 #
 # The C defines, enums and structs from ASICamera2.h translated to Python constants, enums and
