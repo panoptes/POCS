@@ -254,14 +254,15 @@ class Camera(AbstractCamera):
             self._exposure_lock.acquire(blocking=True)
 
         self._control_setter('EXPOSURE', seconds)
+        roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
 
         # Start exposure
         Camera._ASIDriver.start_exposure(self._camera_ID)
 
         # Start readout thread
         readout_args = (filename,
-                        self._info['max_width'],
-                        self._info['max_height'],
+                        roi_format['width'],
+                        roi_format['height'],
                         header,
                         exposure_event)
         readout_thread = threading.Timer(interval=seconds.value,
@@ -274,7 +275,7 @@ class Camera(AbstractCamera):
         try:
             exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
             while exposure_status == 'WORKING':
-                if time.expired():
+                if timer.expired():
                     msg = "Timeout waiting for exposure on {} to complete".format(self)
                     raise error.Timeout(msg)
                 time.sleep(0.01)
