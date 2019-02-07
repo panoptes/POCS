@@ -278,7 +278,8 @@ class ASIDriver(PanBase):
                                 camera_ID,
                                 video_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
                                 ctypes.c_long(video_data.nbytes),
-                                ctypes.c_int(timeout))
+                                ctypes.c_int(-1))
+            # If set timeout to anything but -1 (no timeout) this call times out instantly?
         except RuntimeError:
             # Expect some dropped frames during video capture
             return None

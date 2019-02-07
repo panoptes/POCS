@@ -25,7 +25,7 @@ class Camera(AbstractCamera):
                  set_point=None,
                  filter_type=None,
                  library_path=None,
-                 timeout=1 * u.second,
+                 timeout=0.5 * u.second,
                  gain=None,
                  image_type=None,
                  *args, **kwargs):
@@ -42,6 +42,7 @@ class Camera(AbstractCamera):
 
         # Create a lock that wil be used to prevent overlapping exposures
         self._exposure_lock = threading.Lock()
+        self._video_event = threading.Event()
 
         if Camera._ASIDriver is None:
             # Initialise the driver if it hasn't already been done
@@ -256,9 +257,7 @@ class Camera(AbstractCamera):
         height = int(get_quantity_value(roi_format['height'], unit=u.pixel))
         image_type = roi_format['image_type']
 
-        timeout = get_quantity_value(seconds, unit=u.ms) + \
-            get_quantity_value(self._timeout * u.second, unit=u.ms)
-        self.logger.debug("timeout (ms): {}".format(timeout))
+        timeout = 2 * seconds + self._timeout * u.second
 
         video_args = (width,
                       height,
@@ -273,10 +272,12 @@ class Camera(AbstractCamera):
                                         daemon=True)
 
         Camera._ASIDriver.start_video_capture(self._camera_ID)
+        self._video_event.clear()
         video_thread.start()
         self.logger.debug("Video capture started on {}".format(self))
 
     def stop_video(self):
+        self._video_event.set()
         Camera._ASIDriver.stop_video_capture(self._camera_ID)
         self.logger.debug("Video capture stopped on {}".format(self))
 
@@ -294,26 +295,34 @@ class Camera(AbstractCamera):
 
         start_time = time.monotonic()
         good_frames = 0
+        bad_frames = 0
         for frame_number in range(max_frames):
+            if self._video_event.is_set():
+                break
             # This call will block for up to timeout milliseconds waiting for a frame
             video_data = Camera._ASIDriver.get_video_data(self._camera_ID,
                                                           width,
                                                           height,
                                                           image_type,
-                                                          -1)
+                                                          timeout)
             if video_data is not None:
                 filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
                 fits_utils.write_fits(video_data, header, filename)
                 good_frames += 1
+            else:
+                bad_frames += 1
 
-        self.stop_video()
+        if frame_number == max_frames - 1:
+            # No one callled stop_video() before max_frames so have to call it here
+            self.stop_video()
+
         elapsed_time = (time.monotonic() - start_time) * u.second
         self.logger.debug("Captured {} of {} frames in {:.2f} ({:.2f} fps), {} frames lost".format(
             good_frames,
             max_frames,
             elapsed_time,
             get_quantity_value(good_frames / elapsed_time),
-            max_frames - good_frames))
+            bad_frames))
 
     def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         if not self._exposure_lock.acquire(blocking=False):
