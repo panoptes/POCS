@@ -111,6 +111,7 @@ class Camera(AbstractCamera):
 
         if set_point:
             self.ccd_set_point = set_point
+            self.ccd_cooling_enabled = True
 
         if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
@@ -183,6 +184,8 @@ class Camera(AbstractCamera):
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
+        if not isinstance(set_point, u.Quantity):
+            set_point = set_point * u.Celsius
         self._control_setter('TARGET_TEMP', set_point)
 
     @property
@@ -259,11 +262,12 @@ class Camera(AbstractCamera):
 
         self._connected = True
 
-    def start_video(self, seconds, filename_root, image_type, max_frames):
+    def start_video(self, seconds, filename_root, max_frames, image_type=None):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
         self._control_setter('EXPOSURE', seconds)
-        self.image_type = image_type
+        if image_type:
+            self.image_type = image_type
 
         roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
         width = int(get_quantity_value(roi_format['width'], unit=u.pixel))

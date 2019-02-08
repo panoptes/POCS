@@ -101,7 +101,7 @@ class Camera(AbstractCamera):
         Current power level of the camera's image sensor cooling system (as
         a percentage of the maximum).
         """
-        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
+        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower * u.percent
 
     @property
     def properties(self):

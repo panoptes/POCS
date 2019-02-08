@@ -277,7 +277,7 @@ class FLIDriver(PanBase):
         power = ctypes.c_double()
         self._call_function('getting cooler power', self._CDLL.FLIGetCoolerPower,
                             handle, ctypes.byref(power))
-        return power.value
+        return power.value * u.percent
 
     def FLISetExposureTime(self, handle, exposure_time):
         """

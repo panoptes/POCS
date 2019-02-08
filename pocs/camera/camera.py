@@ -17,6 +17,7 @@ from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
+from pocs.utils import get_quantity_value
 from pocs.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
@@ -66,7 +67,6 @@ class AbstractCamera(PanBase):
         self.port = port
         self.name = name
         self.is_primary = primary
-        self.properties = None
 
         self._filter_type = kwargs.get('filter_type', 'RGGB')
 
@@ -444,13 +444,10 @@ class AbstractCamera(PanBase):
 
     def _fits_header(self, seconds, dark=None):
         header = fits.Header()
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.to(u.second)
-            seconds = seconds.value
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
         header.set('DATE-OBS', now.fits, 'Start of exposure')
-        header.set('EXPTIME', seconds, 'Seconds')
+        header.set('EXPTIME', get_quantity_value(seconds, u.second), 'Seconds')
         if dark is not None:
             if dark:
                 header.set('IMAGETYP', 'Dark Frame')
@@ -458,11 +455,12 @@ class AbstractCamera(PanBase):
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
         with suppress(NotImplementedError):
-            header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
+            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
         with suppress(NotImplementedError):
-            header.set('SET-TEMP', self.ccd_set_point.value, 'Degrees C')
+            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
         with suppress(NotImplementedError):
-            header.set('COOL-POW', self.ccd_cooling_power, 'Percentage')
+            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+                       'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
@@ -623,6 +621,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
+
+        self.properties = None
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
