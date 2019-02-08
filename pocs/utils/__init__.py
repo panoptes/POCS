@@ -387,3 +387,23 @@ class DelaySigTerm(contextlib.ContextDecorator):
             # Suppress any exception caught while the context was running.
             return True
         return False
+
+
+def get_quantity_value(quantity, unit=None):
+    """ Return the numerical value of a Quantity, optionally converting to unit at the same time.
+
+    If passed something other than a Quantity will simply return the original object.
+
+    Args:
+        quantity (astropy.units.Quantity): Quantity to extract numerical value from.
+        unit (astropy.units.Unit, optional): unit to convert to.
+
+    Returns:
+        float: numerical value of the Quantity after conversion to the specified unit.
+    """
+    if isinstance(quantity, u.Quantity):
+        if unit is not None:
+            quantity = quantity.to(unit)
+        return quantity.value
+    else:
+        return quantity

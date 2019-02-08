@@ -3,6 +3,7 @@ import re
 import serial
 import glob
 from warnings import warn
+from contextlib import suppress
 
 from pocs.focuser import AbstractFocuser
 
@@ -138,17 +139,13 @@ class Focuser(AbstractFocuser):
             self.position = initial_position
 
     def __del__(self):
-        try:
+        with suppress(AttributeError):
             device_node = self.port
             Focuser._assigned_nodes.remove(device_node)
             self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
-        except AttributeError:
-            pass
-        try:
+        with suppress(AttributeError):
             self._serial_port.close()
             self.logger.debug('Closed serial port {}'.format(self._port))
-        except AttributeError:
-            pass
 
 ##################################################################################################
 # Properties

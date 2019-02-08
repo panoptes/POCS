@@ -4,6 +4,7 @@ from warnings import warn
 from threading import Event
 from threading import Timer
 from threading import Lock
+from contextlib import suppress
 
 import numpy as np
 
@@ -13,6 +14,7 @@ from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
 from pocs.camera import libfliconstants as c
 from pocs.utils.images import fits as fits_utils
+from pocs.utils.logger import get_root_logger
 
 # FLI camera serial numbers have pairs of letters followed by a sequence of numbers
 serial_number_pattern = re.compile(r'^(ML|PL|KL|HP)\d+$')
@@ -31,12 +33,12 @@ class Camera(AbstractCamera):
                  name='FLI Camera',
                  set_point=25 * u.Celsius,
                  filter_type='M',
-                 library_path=False,
+                 library_path=None,
                  *args, **kwargs):
         # FLI cameras should be specified by either serial number (preferred) or 'port' (device
         # node). For backwards compatibility reasons allow port to be used as an alias of serial
         # number. If both are given serial number takes precedence
-        kwargs['readout_time'] = 1.0
+        kwargs['readout_time'] = kwargs.get('readout_time', 1.0)
         kwargs['file_extension'] = 'fits'
 
         # Create a Lock that will be used to prevent overlapping exposures.
@@ -45,20 +47,26 @@ class Camera(AbstractCamera):
         # Create an instance of the FLI Driver interface
         self._FLIDriver = libfli.FLIDriver(library_path)
 
+        # Would usually use self.logger but that won't exist until after calling super().__init__(),
+        # and don't want to do that until after the serial number and port have both been determined
+        # in order to avoid log entries with misleading values. To enable logging during the device
+        # scanning phase use get_root_logger() instead.
+        logger = get_root_logger()
+
         if kwargs.get('serial_number') or serial_number_pattern.match(kwargs.get('port')):
             # Have been given a serial number instead of a device node
             kwargs['serial_number'] = kwargs.get('serial_number', kwargs.get('port'))
-            self.logger.debug('Looking for {} ({})...'.format(name, kwargs['serial_number']))
+            logger.debug('Looking for {} ({})...'.format(name, kwargs['serial_number']))
 
             if Camera._fli_nodes is None:
                 # No cached device nodes scanning results. 1st get list of all FLI cameras
-                self.logger.debug('Getting serial numbers for all connected FLI cameras')
+                logger.debug('Getting serial numbers for all connected FLI cameras')
                 Camera._fli_nodes = {}
                 device_list = self._FLIDriver.FLIList(interface_type=c.FLIDOMAIN_USB,
                                                       device_type=c.FLIDEVICE_CAMERA)
                 if not device_list:
                     message = 'No FLI camera devices found!'
-                    self.logger.error(message)
+                    logger.error(message)
                     warn(message)
                     return
 
@@ -68,23 +76,23 @@ class Camera(AbstractCamera):
                     serial_number = self._FLIDriver.FLIGetSerialString(handle)
                     self._FLIDriver.FLIClose(handle)
                     Camera._fli_nodes[serial_number] = device[0]
-                self.logger.debug('Connected FLI cameras: {}'.format(Camera._fli_nodes))
+                logger.debug('Connected FLI cameras: {}'.format(Camera._fli_nodes))
 
             # Search in cached device node scanning results for serial number.
             try:
                 device_node = Camera._fli_nodes[kwargs['serial_number']]
             except KeyError:
                 message = 'Could not find {} ({})!'.format(name, kwargs['serial_number'])
-                self.logger.error(message)
+                logger.error(message)
                 warn(message)
                 return
-            self.logger.debug('Found {} ({}) on {}'.format(
+            logger.debug('Found {} ({}) on {}'.format(
                 name, kwargs['serial_number'], device_node))
             kwargs['port'] = device_node
 
         if kwargs['port'] in Camera._assigned_nodes:
             message = 'Device node {} already in use!'.format(kwargs['port'])
-            self.logger.error(message)
+            logger.error(message)
             warn(message)
             return
 
@@ -98,18 +106,14 @@ class Camera(AbstractCamera):
             self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
-        try:
+        with suppress(AttributeError):
             device_node = self.port
             Camera._assigned_nodes.remove(device_node)
             self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
-        except AttributeError:
-            pass
-        try:
+        with suppress(AttributeError):
             handle = self._handle
             self._FLIDriver.FLIClose(handle)
             self.logger.debug('Closed FLI camera handle {}'.format(handle.value))
-        except AttributeError:
-            pass
 
 # Properties
 
@@ -175,6 +179,11 @@ class Camera(AbstractCamera):
         """ True if an exposure is currently under way, otherwise False """
         return bool(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
+
 # Methods
 
     def connect(self):
@@ -200,40 +209,13 @@ class Camera(AbstractCamera):
         self.model = self._info['camera model']
         self.logger.debug("{} connected".format(self))
 
-    def take_exposure(self,
-                      seconds=1.0 * u.second,
-                      filename=None,
-                      dark=False,
-                      blocking=False,
-                      *args,
-                      **kwargs):
-        """
-        Take an exposure for given number of seconds and saves to provided filename.
+# Private Methods
 
-        Args:
-            seconds (u.second, optional): Length of exposure
-            filename (str, optional): Image is saved to this filename
-            dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
-            blocking (bool, optional): If False (default) returns immediately after starting
-                the exposure, if True will block until it completes.
-
-        Returns:
-            threading.Event: Event that will be set when exposure is complete
-
-        """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
-
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        if not isinstance(seconds, u.Quantity):
-            seconds = seconds * u.second
-
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         if not self._exposure_lock.acquire(blocking=False):
-            self.logger.warning('Exposure started on {} ({}) while exposure in progress! Waiting.',
-                                self.name, self.uid)
+            self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
+                self))
             self._exposure_lock.acquire(blocking=True)
-
-        self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
         self._FLIDriver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
@@ -259,14 +241,10 @@ class Camera(AbstractCamera):
         # In principle can set bit depth here (16 or 8 bit) but most FLI cameras don't support it.
         # Leave alone for now.
 
-        # Build FITS header
-        header = self._fits_header(seconds, dark)
-
         # Start exposure
         self._FLIDriver.FLIExposeFrame(self._handle)
 
         # Start readout thread
-        exposure_event = Event()
         readout_args = (filename,
                         self._info['visible width'],
                         self._info['visible height'],
@@ -276,13 +254,6 @@ class Camera(AbstractCamera):
                                function=self._readout,
                                args=readout_args)
         readout_thread.start()
-
-        if blocking:
-            exposure_event.wait()
-
-        return exposure_event
-
-# Private Methods
 
     def _readout(self, filename, width, height, header, exposure_event):
 

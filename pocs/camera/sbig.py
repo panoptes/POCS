@@ -101,12 +101,17 @@ class Camera(AbstractCamera):
         Current power level of the camera's image sensor cooling system (as
         a percentage of the maximum).
         """
-        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
+        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower * u.percent
 
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
         return self._SBIGDriver.get_exposure_status(self._handle) != 'CS_IDLE'
+
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
 
 # Methods
 
@@ -159,45 +164,11 @@ class Camera(AbstractCamera):
             # so do it here.
             self.filterwheel.connect()
 
-    def take_exposure(self,
-                      seconds=1.0 * u.second,
-                      filename=None,
-                      dark=False,
-                      blocking=False,
-                      *args,
-                      **kwargs
-                      ):
-        """
-        Take an exposure for given number of seconds and saves to provided filename.
+# Private methods
 
-        Args:
-            seconds (u.second, optional): Length of exposure
-            filename (str, optional): Image is saved to this filename
-            dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
-            blocking (bool, optional): If False (default) returns immediately after starting
-                the exposure, if True will block until it completes.
-
-        Returns:
-            threading.Event: Event that will be set when exposure is complete
-
-        """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
-
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(
-            seconds, self.name, filename))
-        exposure_event = Event()
-        header = self._fits_header(seconds, dark)
+    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
         self._SBIGDriver.take_exposure(self._handle, seconds, filename,
                                        exposure_event, dark, header)
-
-        if blocking:
-            exposure_event.wait()
-
-        return exposure_event
-
-# Private methods
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)

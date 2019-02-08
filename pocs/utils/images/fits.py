@@ -349,7 +349,7 @@ def funpack(*args, **kwargs):
     return fpack(*args, unpack=True, **kwargs)
 
 
-def write_fits(data, header, filename, logger, exposure_event=None):
+def write_fits(data, header, filename, logger=None, exposure_event=None):
     """
     Write FITS file to requested location
     """
@@ -362,12 +362,14 @@ def write_fits(data, header, filename, logger, exposure_event=None):
     try:
         hdu.writeto(filename)
     except OSError as err:
-        logger.error('Error writing image to {}!'.format(filename))
-        logger.error(err)
+        if logger:
+            logger.error('Error writing image to {}!'.format(filename))
+            logger.error(err)
     else:
-        logger.debug('Image written to {}'.format(filename))
+        if logger:
+            logger.debug('Image written to {}'.format(filename))
     finally:
-        if exposure_event is not None:
+        if exposure_event:
             exposure_event.set()
 
 

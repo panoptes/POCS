@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import threading
 import yaml
+from contextlib import suppress
 
 from astropy.io import fits
 from astropy.time import Time
@@ -16,6 +17,7 @@ from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
+from pocs.utils import get_quantity_value
 from pocs.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
@@ -34,7 +36,21 @@ class AbstractCamera(PanBase):
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
+        set_point (astropy.units.Quantity): image sensor cooling target temperature.
+        gain (int): The gain setting of the camera (ZWO cameras only).
+        image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
+        timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
+        readout_time (float): approximate time to readout the camera after an exposure.
+        file_extension (str): file extension used by the camera's image data, e.g. 'fits'
+        library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+
+    Notes:
+        The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
+        For these cameras serial_number should be passed to the constructor instead. For SBIG and
+        FLI this should simply be the serial number engraved on the camera case, whereas for
+        ZWO cameras this should be the 8 character ID string previously saved to the camera
+        firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
     def __init__(self,
@@ -51,7 +67,6 @@ class AbstractCamera(PanBase):
         self.port = port
         self.name = name
         self.is_primary = primary
-        self.properties = None
 
         self._filter_type = kwargs.get('filter_type', 'RGGB')
 
@@ -176,7 +191,7 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -202,10 +217,9 @@ class AbstractCamera(PanBase):
         exp_time, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
-                                                                          *args,
                                                                           **kwargs)
 
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -224,8 +238,55 @@ class AbstractCamera(PanBase):
 
         return observation_event
 
-    def take_exposure(self, *args, **kwargs):
-        raise NotImplementedError
+    def take_exposure(self,
+                      seconds=1.0 * u.second,
+                      filename=None,
+                      dark=False,
+                      blocking=False,
+                      *args,
+                      **kwargs):
+        """Take an exposure for given number of seconds and saves to provided filename.
+
+        Args:
+            seconds (u.second, optional): Length of exposure.
+            filename (str, optional): Image is saved to this filename.
+            dark (bool, optional): Exposure is a dark frame, default False. On cameras that support
+                taking dark frames internally (by not opening a mechanical shutter) this will be
+                done, for other cameras the light must be blocked by some other means. In either
+                case setting dark to True will cause the `IMAGETYP` FITS header keyword to have
+                value 'Dark Frame' instead of 'Light Frame'. Set dark to None to disable the
+                `IMAGETYP` keyword entirely.
+            blocking (bool, optional): If False (default) returns immediately after starting
+                the exposure, if True will block until it completes.
+
+        Returns:
+            threading.Event: Event that will be set when exposure is complete.
+
+        """
+        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+
+        assert filename is not None, self.logger.error("Must pass filename for take_exposure")
+
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, self.name, filename))
+
+        exposure_event = threading.Event()
+        header = self._fits_header(seconds, dark)
+
+        self._take_exposure(seconds=seconds,
+                            filename=filename,
+                            dark=dark,
+                            exposure_event=exposure_event,
+                            header=header,
+                            *args, **kwargs)
+
+        if blocking:
+            exposure_event.wait()
+
+        return exposure_event
 
     def process_exposure(self, info, observation_event, exposure_event=None):
         """
@@ -266,10 +327,8 @@ class AbstractCamera(PanBase):
 
         file_path = self._process_fits(file_path, info)
         self.logger.debug("Finished processing FITS.")
-        try:
+        with suppress(Exception):
             info['exp_time'] = info['exp_time'].value
-        except Exception:
-            pass
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -385,33 +444,28 @@ class AbstractCamera(PanBase):
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
+    def _take_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
     def _fits_header(self, seconds, dark=None):
         header = fits.Header()
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.to(u.second)
-            seconds = seconds.value
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
-        header.set('DATE-OBS', now.fits)
-        header.set('EXPTIME', seconds, 'Seconds')
+        header.set('DATE-OBS', now.fits, 'Start of exposure')
+        header.set('EXPTIME', get_quantity_value(seconds, u.second), 'Seconds')
         if dark is not None:
             if dark:
                 header.set('IMAGETYP', 'Dark Frame')
             else:
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
-        try:
-            header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
-        except NotImplementedError:
-            pass
-        try:
-            header.set('SET-TEMP', self.ccd_set_point.value, 'Degrees C')
-        except NotImplementedError:
-            pass
-        try:
-            header.set('COOL-POW', self.ccd_cooling_power, 'Percentage')
-        except NotImplementedError:
-            pass
+        with suppress(NotImplementedError):
+            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
+        with suppress(NotImplementedError):
+            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
+        with suppress(NotImplementedError):
+            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+                       'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
@@ -572,6 +626,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
+
+        self.properties = None
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
