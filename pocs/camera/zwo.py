@@ -217,6 +217,11 @@ class Camera(AbstractCamera):
         self._refresh_info()
         return self._info['e_per_adu']
 
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
+
     # Methods
 
     def __str__(self):

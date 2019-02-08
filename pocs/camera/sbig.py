@@ -103,6 +103,11 @@ class Camera(AbstractCamera):
         """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
+
 # Methods
 
     def __str__(self):

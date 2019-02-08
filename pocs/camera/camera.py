@@ -35,7 +35,21 @@ class AbstractCamera(PanBase):
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
+        set_point (astropy.units.Quantity): image sensor cooling target temperature.
+        gain (int): The gain setting of the camera (ZWO cameras only).
+        image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
+        timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
+        readout_time (float): approximate time to readout the camera after an exposure.
+        file_extension (str): file extension used by the camera's image data, e.g. 'fits'
+        library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+
+    Notes:
+        The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
+        For these cameras serial_number should be passed to the constructor instead. For SBIG and
+        FLI this should simply be the serial number engraved on the camera case, whereas for
+        ZWO cameras this should be the 8 character ID string previously saved to the camera
+        firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
     def __init__(self,

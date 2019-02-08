@@ -174,6 +174,11 @@ class Camera(AbstractCamera):
         """
         return self._FLIDriver.FLIGetCoolerPower(self._handle)
 
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
+
 # Methods
 
     def connect(self):
