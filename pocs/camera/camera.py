@@ -182,6 +182,11 @@ class AbstractCamera(PanBase):
         else:
             return self._filter_type
 
+    @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        raise NotImplementedError
+
 ##################################################################################################
 # Methods
 ##################################################################################################

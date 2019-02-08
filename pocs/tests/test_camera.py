@@ -250,14 +250,20 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
+    assert not camera.is_exposing
     # A one second normal exposure.
-    camera.take_exposure(filename=fits_path)
+    exp_event = camera.take_exposure(filename=fits_path)
+    assert camera.is_exposing
+    assert not exp_event.is_set()
     # By default take_exposure is non-blocking, need to give it some time to complete.
     if isinstance(camera, FLICamera):
         time.sleep(10)
     else:
         time.sleep(5)
+    # Output file should exist, Event should be set and camera should say it's not exposing.
     assert os.path.exists(fits_path)
+    assert exp_event.is_set()
+    assert not camera.is_exposing
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0

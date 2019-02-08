@@ -17,8 +17,14 @@ class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+        self._is_exposing = False
         self.logger.debug("Initializing simulated camera")
         self.connect()
+
+    @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        return self._is_exposing
 
     def connect(self):
         """ Connect to camera simulator
@@ -52,6 +58,7 @@ class Camera(AbstractCamera):
                                 function=self._fake_exposure,
                                 args=[filename, header, exposure_event])
         exposure_thread.start()
+        self._is_exposing = True
 
     def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
@@ -67,7 +74,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-
+        self._is_exposing = False
         fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
 
     def _process_fits(self, file_path, info):
