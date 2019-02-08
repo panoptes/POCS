@@ -365,24 +365,6 @@ class ASIDriver(PanBase):
             int_value = value  # If from a ctypes struct value will already be a Python int
 
         # Apply control type specific units and/or data types
-
-        units_and_scale = {'AUTO_TARGET_BRIGHTNESS': u.adu,
-                           'AUTO_MAX_EXP': 1e-6 * u.second,  # Unit is microseconds
-                           'BANDWIDTHOVERLOAD': u.percent,
-                           'COOLER_POWER_PERC': u.percent,
-                           'EXPOSURE': 1e-6 * u.second,  # Unit is microseconds
-                           'OFFSET': u.adu,
-                           'TARGET_TEMP': u.Celsius,
-                           'TEMPERATURE': 0.1 * u.Celsius}  # Unit is 1/10th degree C
-
-        boolean_controls = ('ANTI_DEW_HEATER',
-                            'COOLER_ON',
-                            'FAN_ON',
-                            'HARDWARE_BIN',
-                            'HIGH_SPEED_MODE',
-                            'MONO_BIN',
-                            'PATTERN_ADJUST')
-
         if control_type in units_and_scale:
             nice_value = int_value * units_and_scale[control_type]
         elif control_type in boolean_controls:
@@ -396,24 +378,11 @@ class ASIDriver(PanBase):
 
     def _parse_input_value(self, value, control_type):
         """ Helper function to convert input values to appropriate ctypes.c_long """
-        if control_type == 'EXPOSURE':
-            value = get_quantity_value(value, unit=u.us)
-        elif control_type == 'OFFSET':
-            value = get_quantity_value(value, unit=u.adu)
-        elif control_type == 'BANDWIDTHOVERLOAD':
-            value = get_quantity_value(value, unit=u.percent)
-        elif control_type == 'TEMPERATURE':
-            value = get_quantity_value(value, unit=u.Celcius) * 10
+
+        if control_type in units_and_scale:
+            value = get_quantity_value(value, unit=units_and_scale[control_type])
         elif control_type == 'FLIP':
             value = FlipStatus[value]
-        elif control_type == 'AUTO_MAX_EXP':
-            value = get_quantity_value(value, unit=u.us)
-        elif control_type == 'AUTO_TARGET_BRIGHTNESS':
-            value = get_quantity_value(value, unit=u.adu)
-        elif control_type == 'COOLER_POWER_PERC':
-            value = get_quantity_value(value, unit=u.percent)
-        elif control_type == 'TARGET_TEMP':
-            value = get_quantity_value(value, unit=u.Celsius)
 
         return ctypes.c_long(int(value))
 
@@ -430,6 +399,24 @@ class ASIDriver(PanBase):
             image_array = np.zeros((3, height, width), dtype=np.uint8, order='C')
 
         return image_array
+
+
+units_and_scale = {'AUTO_TARGET_BRIGHTNESS': u.adu,
+                   'AUTO_MAX_EXP': 1e-6 * u.second,  # Unit is microseconds
+                   'BANDWIDTHOVERLOAD': u.percent,
+                   'COOLER_POWER_PERC': u.percent,
+                   'EXPOSURE': 1e-6 * u.second,  # Unit is microseconds
+                   'OFFSET': u.adu,
+                   'TARGET_TEMP': u.Celsius,
+                   'TEMPERATURE': 0.1 * u.Celsius}  # Unit is 1/10th degree C
+
+boolean_controls = ('ANTI_DEW_HEATER',
+                    'COOLER_ON',
+                    'FAN_ON',
+                    'HARDWARE_BIN',
+                    'HIGH_SPEED_MODE',
+                    'MONO_BIN',
+                    'PATTERN_ADJUST')
 
 ####################################################################################################
 #
