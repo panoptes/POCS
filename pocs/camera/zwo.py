@@ -410,15 +410,15 @@ class Camera(AbstractCamera):
         if control_type in self._control_info:
             return Camera._ASIDriver.get_control_value(self._camera_ID, control_type)
         else:
-            raise NotImplementedError("'{}' has no '{}' parameter".format(self.model, control_type))
+            raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
 
     def _control_setter(self, control_type, value):
         if control_type not in self._control_info:
-            raise NotImplementedError("{} has no '{}' parameter".format(self.model, control_type))
+            raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
 
         control_name = self._control_info[control_type]['name']
         if not self._control_info[control_type]['is_writable']:
-            raise NotImplementedError("{} cannot set {} parameter'".format(
+            raise error.NotSupported("{} cannot set {} parameter'".format(
                 self.model, control_name))
 
         if value != 'AUTO':
@@ -428,17 +428,17 @@ class Camera(AbstractCamera):
                 msg = "Cannot set {} to {}, clipping to max value {}".format(
                     control_name, value, max_value)
                 Camera._ASIDriver.set_control_value(self._camera_ID, control_type, max_value)
-                raise error.PanError(msg)
+                raise error.IllegalValue(msg)
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
                 msg = "Cannot set {} to {}, clipping to min value {}".format(
                     control_name, value, min_value)
                 Camera._ASIDriver.set_control_value(self._camera_ID, control_type, min_value)
-                raise error.PanError(msg)
+                raise error.IllegalValue(msg)
         else:
             if not self._control_info[control_type]['is_auto_supported']:
                 msg = "{} cannot set {} to AUTO".format(self.model, control_name)
-                raise PanError(msg)
+                raise IllegalValue(msg)
 
         Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
