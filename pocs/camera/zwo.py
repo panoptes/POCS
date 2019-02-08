@@ -49,7 +49,12 @@ class Camera(AbstractCamera):
             # Initialise the driver if it hasn't already been done
             Camera._ASIDriver = libasi.ASIDriver(library_path=library_path)
 
+        # Would usually use self.logger but that won't exist until after calling super().__init__(),
+        # and don't want to do that until after the serial number and port have both been determined
+        # in order to avoid log entries with misleading values. To enable logging during the device
+        # scanning phase use get_root_logger() instead.
         logger = get_root_logger()
+
         serial_number = kwargs.get('serial_number')
         if not serial_number:
             msg = "Must specify serial_number (string ID) for ZWO ASI Camera"
@@ -71,13 +76,13 @@ class Camera(AbstractCamera):
             for camera_index in range(n_cameras):
                 # Can get IDs without opening cameras by parsing the name string
                 self._info = Camera._ASIDriver.get_camera_property(camera_index)
-                model, _, id = self._info['name'].partition('(')
-                if not id:
+                model, _, string_id = self._info['name'].partition('(')
+                if not string_id:
                     logger.warning("Found ZWO ASI camera with no ID set")
                     break
                 assert id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
-                id = id[:-1]
-                Camera._ids.append(id)
+                string_id = string_id[:-1]
+                Camera._ids.append(string_id)
 
             logger.debug('Connected ASI ZWO cameras: {}'.format(Camera._ids))
 
@@ -104,17 +109,19 @@ class Camera(AbstractCamera):
 
         Camera._assigned_ids.append(self.uid)
 
-        self._setter_try('ccd_set_point', 'set_point', set_point)
+        if set_point:
+            self.ccd_set_point = set_point
 
         if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
             # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
             self._filter_type = filter_type
 
-        self._setter_try('gain', 'gain', gain)
+        if gain:
+            self.gain = gain
 
         if image_type:
-            self._setter_try('image_type', 'image_type', image_type)
+            self.image_type = image_type
         else:
             # Take monochrome 12 bit raw images by default, if we can
             if 'RAW16' in self._info['supported_video_format']:
@@ -237,7 +244,7 @@ class Camera(AbstractCamera):
         self._refresh_info()
         self._camera_ID = self._info['camera_ID']
         self.model, _, _ = self._info['name'].partition('(')
-        if self._info['is_colour_camera']:
+        if self._info['is_color_camera']:
             self._filter_type = self._info['bayer_pattern']
         else:
             self._filter_type = 'M'  # Monochrome
@@ -400,13 +407,13 @@ class Camera(AbstractCamera):
         self._info = Camera._ASIDriver.get_camera_property(self._camera_index)
 
     def _control_getter(self, control_type):
-        if control_type in self._control_info.keys():
+        if control_type in self._control_info:
             return Camera._ASIDriver.get_control_value(self._camera_ID, control_type)
         else:
             raise NotImplementedError("'{}' has no '{}' parameter".format(self.model, control_type))
 
     def _control_setter(self, control_type, value):
-        if control_type not in self._control_info.keys():
+        if control_type not in self._control_info:
             raise NotImplementedError("{} has no '{}' parameter".format(self.model, control_type))
 
         control_name = self._control_info[control_type]['name']
@@ -435,12 +442,3 @@ class Camera(AbstractCamera):
                 raise PanError(msg)
 
         Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
-
-    def _setter_try(self, attr, keyword, value):
-        if value:
-            try:
-                setattr(self, attr, value)
-            except NotImplementedError:
-                msg = "Attempt to set '{}' but {} does not support this.".format(
-                    keyword, self.model)
-                self.logger.warning(msg)

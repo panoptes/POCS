@@ -212,7 +212,15 @@ class ASIDriver(PanBase):
             camera_ID, width, height, binning, image_type))
 
     def get_start_position(self, camera_ID):
-        """ Get position of the upper left corner of the ROI for camera with given integer ID """
+        """ Get position of the upper left corner of the ROI for camera with given integer ID
+
+        Args:
+            camera_ID (int): integer ID of the camera
+
+        Returns:
+            (astropy.units.Quantity, astropy.units.Quantity): x, y coordinates of the upper left
+                corner of the ROI. Note, these are in binned pixels.
+        """
         start_x = ctypes.c_int()
         start_y = ctypes.c_int()
         self._call_function('ASIGetStartPos',
@@ -221,7 +229,7 @@ class ASIDriver(PanBase):
                             ctypes.byref(start_y))
         start_x = start_x.value * u.pixel
         start_y = start_y.value * u.pixel
-        return start_x, start_y  # Note, these coordinates are in binned pixels
+        return start_x, start_y
 
     def set_start_position(self, camera_ID, start_x, start_y):
         """ Set position of the upper left corner of the ROI for camera with given integer ID """
@@ -303,7 +311,7 @@ class ASIDriver(PanBase):
                          'camera_ID': int(camera_info.camera_ID),
                          'max_height': camera_info.max_height * u.pixel,
                          'max_width': camera_info.max_width * u.pixel,
-                         'is_colour_camera': bool(camera_info.is_color_camera),
+                         'is_color_camera': bool(camera_info.is_color_camera),
                          'bayer_pattern': BayerPattern(camera_info.bayer_pattern).name,
                          'supported_bins': self._parse_bins(camera_info.supported_bins),
                          'supported_video_format': self._parse_formats(
@@ -325,8 +333,8 @@ class ASIDriver(PanBase):
 
     def _parse_formats(self, supported_formats):
         formats = []
-        for i in range(8):
-            format = ImgType(supported_formats[i])
+        for supported_format in supported_formats:
+            format = ImgType(supported_format)
             if format != ImgType.END:
                 formats.append(format.name)
             else:
@@ -357,38 +365,30 @@ class ASIDriver(PanBase):
             int_value = value  # If from a ctypes struct value will already be a Python int
 
         # Apply control type specific units and/or data types
-        if control_type == 'EXPOSURE':
-            nice_value = (int_value * u.us).to(u.second)
-        elif control_type == 'OFFSET':
-            nice_value = int_value * u.adu
-        elif control_type == 'BANDWIDTHOVERLOAD':
-            nice_value = int_value * u.percent
-        elif control_type == 'TEMPERATURE':
-            nice_value = int_value * 0.1 * u.Celsius
+
+        units_and_scale = {'AUTO_TARGET_BRIGHTNESS': u.adu,
+                           'AUTO_MAX_EXP': 1e-6 * u.second,  # Unit is microseconds
+                           'BANDWIDTHOVERLOAD': u.percent,
+                           'COOLER_POWER_PERC': u.percent,
+                           'EXPOSURE': 1e-6 * u.second,  # Unit is microseconds
+                           'OFFSET': u.adu,
+                           'TARGET_TEMP': u.Celsius,
+                           'TEMPERATURE': 0.1 * u.Celsius}  # Unit is 1/10th degree C
+
+        boolean_controls = ('ANTI_DEW_HEATER',
+                            'COOLER_ON',
+                            'FAN_ON',
+                            'HARDWARE_BIN',
+                            'HIGH_SPEED_MODE',
+                            'MONO_BIN',
+                            'PATTERN_ADJUST')
+
+        if control_type in units_and_scale:
+            nice_value = int_value * units_and_scale[control_type]
+        elif control_type in boolean_controls:
+            nice_value = bool(int_value)
         elif control_type == 'FLIP':
             nice_value = FlipStatus(int_value).name
-        elif control_type == 'AUTO_MAX_EXP':
-            nice_value = (int_value * u.us).to(u.second)
-        elif control_type == 'AUTO_TARGET_BRIGHTNESS':
-            nice_value = int_value * u.adu
-        elif control_type == 'HARDWARE_BIN':
-            nice_value = bool(int_value)
-        elif control_type == 'HIGH_SPEED_MODE':
-            nice_value = bool(int_value)
-        elif control_type == 'COOLER_POWER_PERC':
-            nice_value = int_value * u.percent
-        elif control_type == 'TARGET_TEMP':
-            nice_value = int_value * u.Celsius
-        elif control_type == 'COOLER_ON':
-            nice_value = bool(int_value)
-        elif control_type == 'MONO_BIN':
-            nice_value = bool(int_value)
-        elif control_type == 'FAN_ON':
-            nice_value = bool(int_value)
-        elif control_type == 'PATTERN_ADJUST':
-            nice_value = bool(int_value)
-        elif control_type == 'ANTI_DEW_HEATER':
-            nice_value = bool(int_value)
         else:
             nice_value = int_value
 
@@ -439,7 +439,7 @@ class ASIDriver(PanBase):
 ####################################################################################################
 
 
-ID_MAX = 128
+ID_MAX = 128  # Maximum value for camera integer ID (camaera_ID)
 
 
 @enum.unique

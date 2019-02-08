@@ -47,6 +47,10 @@ class Camera(AbstractCamera):
         # Create an instance of the FLI Driver interface
         self._FLIDriver = libfli.FLIDriver(library_path)
 
+        # Would usually use self.logger but that won't exist until after calling super().__init__(),
+        # and don't want to do that until after the serial number and port have both been determined
+        # in order to avoid log entries with misleading values. To enable logging during the device
+        # scanning phase use get_root_logger() instead.
         logger = get_root_logger()
 
         if kwargs.get('serial_number') or serial_number_pattern.match(kwargs.get('port')):
