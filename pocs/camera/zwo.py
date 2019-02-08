@@ -41,7 +41,7 @@ class Camera(AbstractCamera):
         # Maximum time to wait beyond exposure time for an exposure to complete
         self._timeout = get_quantity_value(timeout, unit=u.second)
 
-        # Create a lock that wil be used to prevent overlapping exposures
+        # Create a lock that will be used to prevent overlapping exposures.
         self._exposure_lock = threading.Lock()
         self._video_event = threading.Event()
 
@@ -59,7 +59,7 @@ class Camera(AbstractCamera):
         logger.debug("Looking for ZWO ASI camera with ID '{}'".format(serial_number))
 
         if not Camera._ids:
-            # Not cached camera IDs, need to probe for connected cameras
+            # No cached camera IDs, need to probe for connected cameras.
             n_cameras = Camera._ASIDriver.get_num_of_connected_cameras()
             if n_cameras == 0:
                 msg = "No ZWO ASI camera devices found"
@@ -125,9 +125,9 @@ class Camera(AbstractCamera):
     def __del__(self):
         """ Attempt some clean up """
         with suppress(AttributeError):
-            id = self.uid
-            Camera._assigned_ids.remove(id)
-            self.logger.debug('Removed {} from assigned IDs list'.format(id))
+            uid = self.uid
+            Camera._assigned_ids.remove(uid)
+            self.logger.debug('Removed {} from assigned IDs list'.format(uid))
         with suppress(AttributeError):
             camera_ID = self._camera_ID
             Camera._ASIDriver.close_camera(camera_ID)
@@ -139,9 +139,9 @@ class Camera(AbstractCamera):
     def uid(self):
         """Return unique identifier for camera.
 
-        Need to overide this because the base class only returns the 1st
+        Need to override this because the base class only returns the 1st
         6 characters of the serial number, which is not a unique identifier
-        for most of the camera types
+        for most of the camera types.
         """
         return self._serial_number
 
@@ -196,7 +196,7 @@ class Camera(AbstractCamera):
     def gain(self):
         """ Current value of the camera's gain setting in internal units.
 
-        See `egain` for the corresponding eletrons / ADU value.
+        See `egain` for the corresponding electrons / ADU value.
         """
         return self._control_getter('GAIN')[0]
 
@@ -240,7 +240,7 @@ class Camera(AbstractCamera):
         if self._info['is_colour_camera']:
             self._filter_type = self._info['bayer_pattern']
         else:
-            self._filter_type = 'M'
+            self._filter_type = 'M'  # Monochrome
         Camera._ASIDriver.open_camera(self._camera_ID)
         Camera._ASIDriver.init_camera(self._camera_ID)
         self._control_info = Camera._ASIDriver.get_control_caps(self._camera_ID)
@@ -380,7 +380,7 @@ class Camera(AbstractCamera):
             elif exposure_status == 'IDLE':
                 raise error.PanError("Exposure missing on {}".format(self))
             else:
-                raise error.PanError("Unepected exposure status on {}: '{}'".format(
+                raise error.PanError("Unexpected exposure status on {}: '{}'".format(
                     self, exposure_status))
         finally:
             exposure_event.set()  # write_fits will have already set this, *if* it got called.
@@ -411,7 +411,7 @@ class Camera(AbstractCamera):
 
         control_name = self._control_info[control_type]['name']
         if not self._control_info[control_type]['is_writable']:
-            raise NotImplementError("{} cannot set {} parameter'".format(
+            raise NotImplementedError("{} cannot set {} parameter'".format(
                 self.model, control_name))
 
         if value != 'AUTO':

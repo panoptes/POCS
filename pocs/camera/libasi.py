@@ -320,7 +320,7 @@ class ASIDriver(PanBase):
         return pythonic_info
 
     def _parse_bins(self, supported_bins):
-        bins = tuple(int(bin) for bin in supported_bins if bin != 0)
+        bins = tuple(int(b) for b in supported_bins if b != 0)
         return bins
 
     def _parse_formats(self, supported_formats):
