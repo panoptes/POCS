@@ -80,7 +80,7 @@ class Camera(AbstractCamera):
                 if not string_id:
                     logger.warning("Found ZWO ASI camera with no ID set")
                     break
-                assert id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
+                assert string_id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
                 string_id = string_id[:-1]
                 Camera._ids.append(string_id)
 
