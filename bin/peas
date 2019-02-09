@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker exec -it panoptes_pocs_1 $POCS/scripts/peas_shell
