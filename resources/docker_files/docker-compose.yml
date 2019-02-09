@@ -4,27 +4,18 @@ services:
     image: gcr.io/panoptes-survey/pocs-base
     privileged: true
     env_file: env_file
+    ports:
+      - target: 6500
+        published: 6500
+        protocol: tcp
+        mode: host    
+      - target: 6510
+        published: 6510
+        protocol: tcp
+        mode: host            
     volumes:
       - pandir:/var/panoptes
     command: bash -c "python3 $POCS/scripts/run_messaging_hub.py --from_config"
-  weather:
-    image: gcr.io/panoptes-survey/pocs-base
-    privileged: true
-    env_file: env_file
-    depends_on:
-      - "messaging"    
-    volumes:
-      - pandir:/var/panoptes
-    command: bash -c "python3 $POCS/scripts/docker/run_weather.py"
-  peas:
-    image: gcr.io/panoptes-survey/pocs-base
-    privileged: true
-    env_file: env_file
-    depends_on:
-      - "messaging"    
-    volumes:
-      - pandir:/var/panoptes
-    command: bash -c "python3 $POCS/scripts/docker/run_peas.py"    
   paws:
     image: gcr.io/panoptes-survey/paws
     privileged: true
@@ -46,7 +37,7 @@ services:
       - "messaging"
     volumes:
       - pandir:/var/panoptes
-    # No-op for now - connect via "docker exec -it panoptes_pocs_1 jupyter-console"
+    # No-op to keep machine running
     command: tail -f /dev/null  
 volumes:
     pandir:
