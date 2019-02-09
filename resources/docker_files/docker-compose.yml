@@ -5,12 +5,7 @@ services:
     privileged: true
     env_file: env_file
     volumes:
-      - type: bind
-        source: /var/panoptes/logs
-        target: /var/panoptes/logs
-      - type: bind
-        source: /var/panoptes/POCS
-        target: /var/panoptes/POCS        
+      - pandir:/var/panoptes
     command: bash -c "python3 $POCS/scripts/run_messaging_hub.py --from_config"
   weather:
     image: gcr.io/panoptes-survey/pocs-base
@@ -19,15 +14,7 @@ services:
     depends_on:
       - "messaging"    
     volumes:
-      - type: bind
-        source: /var/panoptes/json_store
-        target: /var/panoptes/json_store
-      - type: bind
-        source: /var/panoptes/logs
-        target: /var/panoptes/logs
-      - type: bind
-        source: /var/panoptes/POCS
-        target: /var/panoptes/POCS        
+      - pandir:/var/panoptes
     command: bash -c "python3 $POCS/scripts/docker/run_weather.py"
   peas:
     image: gcr.io/panoptes-survey/pocs-base
@@ -36,15 +23,7 @@ services:
     depends_on:
       - "messaging"    
     volumes:
-      - type: bind
-        source: /var/panoptes/json_store
-        target: /var/panoptes/json_store
-      - type: bind
-        source: /var/panoptes/logs
-        target: /var/panoptes/logs
-      - type: bind
-        source: /var/panoptes/POCS
-        target: /var/panoptes/POCS        
+      - pandir:/var/panoptes
     command: bash -c "python3 $POCS/scripts/docker/run_peas.py"    
   paws:
     image: gcr.io/panoptes-survey/paws
@@ -58,21 +37,7 @@ services:
         protocol: tcp
         mode: host
     volumes:
-      - type: bind
-        source: /var/panoptes/json_store
-        target: /var/panoptes/json_store
-      - type: bind
-        source: /var/panoptes/logs
-        target: /var/panoptes/logs
-      - type: bind
-        source: /var/panoptes/POCS
-        target: /var/panoptes/POCS
-      - type: bind
-        source: /var/panoptes/PAWS
-        target: /var/panoptes/PAWS
-      - type: bind
-        source: /var/panoptes/images
-        target: /var/panoptes/images        
+      - pandir:/var/panoptes
   pocs:
     image: gcr.io/panoptes-survey/pocs-base
     privileged: true
@@ -80,24 +45,13 @@ services:
     depends_on:
       - "messaging"
     volumes:
-      - type: volume
-        source: astrometry_index
-        target: /var/panoptes/astrometry/data
-        read_only: true
-      - type: bind
-        source: /var/panoptes/images
-        target: /var/panoptes/images
-      - type: bind
-        source: /var/panoptes/json_store
-        target: /var/panoptes/json_store
-      - type: bind
-        source: /var/panoptes/logs
-        target: /var/panoptes/logs
-      - type: bind
-        source: /var/panoptes/POCS
-        target: /var/panoptes/POCS        
+      - pandir:/var/panoptes
     # No-op for now - connect via "docker exec -it panoptes_pocs_1 jupyter-console"
-    # command: tail -f /dev/null  
-    command: bash -c "python3 $POCS/scripts/docker/run_pocs.py"    
+    command: tail -f /dev/null  
 volumes:
-    astrometry_index:
+    pandir:
+      driver: local
+      driver_opts:
+        type: none
+        device: /var/panoptes
+        o: bind
