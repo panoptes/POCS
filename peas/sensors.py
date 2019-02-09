@@ -20,7 +20,7 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self, auto_detect=False, *args, **kwargs):
-        self.config = load_config(config_files='peas')
+        self.config = load_config(config_files=['pocs', 'peas'])
         self.logger = get_root_logger()
 
         assert 'environment' in self.config

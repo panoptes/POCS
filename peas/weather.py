@@ -102,7 +102,7 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None, store_result=True):
-        self.config = load_config(config_files='peas')
+        self.config = load_config(config_files=['pocs', 'peas'])
         self.logger = get_root_logger()
 
         # Read configuration

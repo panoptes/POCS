@@ -4,6 +4,8 @@
 
 # dcraw decodes Canon raw images
 dcraw
+# For converting JPGs
+imagemagick
 
 # gphoto2 enables remote control of cameras, including the Canon DSLRs that
 # Panoptes uses. This includes changing many settings and taking pictures.
