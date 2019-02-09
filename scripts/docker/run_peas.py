@@ -7,7 +7,7 @@ from pocs.utils import CountdownTimer
 from pocs.utils import error
 
 
-def main(config, loop_delay=60):
+def main(config, loop_delay=5):
     try:
         print("Loading Arduino Serial Monitor")
         environment = ArduinoSerialMonitor(auto_detect=True)
@@ -21,7 +21,7 @@ def main(config, loop_delay=60):
     timer = CountdownTimer(loop_delay)
 
     # Loop forever.
-    print(f'Starting weather station loop with {loop_delay}s delay')
+    print(f'Starting environmental sensors loop with {loop_delay}s delay')
     while True:
         timer.restart()
         environment.capture(store_result=True, send_message=True)
