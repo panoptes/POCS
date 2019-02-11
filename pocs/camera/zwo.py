@@ -448,6 +448,6 @@ class Camera(AbstractCamera):
         else:
             if not self._control_info[control_type]['is_auto_supported']:
                 msg = "{} cannot set {} to AUTO".format(self.model, control_name)
-                raise IllegalValue(msg)
+                raise error.IllegalValue(msg)
 
         Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
