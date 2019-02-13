@@ -221,6 +221,11 @@ class Camera(AbstractCamera):
         return self._info['e_per_adu']
 
     @property
+    def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
+        return Camera._ASIDriver.get_exposure_status(self._camera_ID) == "WORKING"
+
+    @property
     def properties(self):
         """ A collection of camera properties as read from the camera """
         return self._info
