@@ -62,6 +62,14 @@ class FilterWheel(AbstractFilterWheel):
             self.logger.warning("Filter wheel position unknown, returning NaN")
         return status['position']
 
+    @property
+    def is_moving(self):
+        """ Is the filterwheel currently moving """
+        status = self._SBIGDriver.cfw_query(self._handle)
+        if status['status'] == 'UNKNOWN':
+            self.logger.warning("{} returned 'UNKNOWN' status".self)
+        return bool(status['status'] == 'BUSY')
+
 ##################################################################################################
 # Methods
 ##################################################################################################

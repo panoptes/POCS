@@ -44,7 +44,11 @@ def camera(request, images_dir):
                                     'autofocus_step': (10, 20),
                                     'autofocus_seconds': 0.1,
                                     'autofocus_size': 500,
-                                    'autofocus_keep_files': False})
+                                    'autofocus_keep_files': False},
+                           filterwheel={'model': 'simulator',
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                        'move_time': 0.1,
+                                        'timeout': 0.5})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -329,6 +333,22 @@ def test_exposure_not_connected(camera):
     with pytest.raises(AssertionError):
         camera.take_exposure(1.0)
     camera._connected = True
+
+
+def test_exposure_moving(camera, tmpdir):
+    if not camera.filterwheel:
+        pytest.skip("Camera does not have a filterwheel")
+    fits_path_1 = str(tmpdir.join('test_not_moving.fits'))
+    fits_path_2 = str(tmpdir.join('test_moving.fits'))
+    camera.filterwheel.position = 1
+    exp_event = camera.take_exposure(filename=fits_path_1)
+    exp_event.wait()
+    assert os.path.exists(fits_path_1)
+    move_event = camera.filterwheel.move_to(2)
+    with pytest.raises(error.PanError):
+        camera.take_exposure(filename=fits_path_2)
+    move_event.wait()
+    assert not os.path.exists(fits_path_2)
 
 
 def test_observation(camera, images_dir):
