@@ -267,6 +267,11 @@ class AbstractCamera(PanBase):
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
+        if self.filterwheel and self.filterwheel.is_moving:
+            msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
+                self)
+            raise error.PanError(msg)
+
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 

@@ -64,6 +64,11 @@ class FilterWheel(AbstractFilterWheel):
             self.logger.warning("Filter wheel position unknown, returning NaN")
         return self._position
 
+    @property
+    def is_moving(self):
+        """ Is the filterwheel currently moving """
+        return self._moving
+
 ##################################################################################################
 # Methods
 ##################################################################################################
