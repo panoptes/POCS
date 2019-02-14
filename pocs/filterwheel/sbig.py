@@ -67,7 +67,7 @@ class FilterWheel(AbstractFilterWheel):
         """ Is the filterwheel currently moving """
         status = self._SBIGDriver.cfw_query(self._handle)
         if status['status'] == 'UNKNOWN':
-            self.logger.warning("{} returned 'UNKNOWN' status".self)
+            self.logger.warning("{} returned 'UNKNOWN' status".format(self))
         return bool(status['status'] == 'BUSY')
 
 ##################################################################################################
