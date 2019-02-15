@@ -112,7 +112,7 @@ def test_create_cameras_from_config_fail(config):
 
 
 def test_create_cameras_from_empty_config():
-    # create_cameras_from_cpnfig should work with no camera config, if cameras simulation is set
+    # create_cameras_from_config should work with no camera config, if cameras simulation is set
     empty_config = {'simulator': ['camera', ], }
     cameras = create_cameras_from_config(config=empty_config)
     assert len(cameras) == 1
