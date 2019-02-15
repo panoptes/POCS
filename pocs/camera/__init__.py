@@ -87,11 +87,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             return cameras
         else:
             # Create a minimal dummy camera config to get a simulated camera
-            camera_info = [{'autodetect': False,
-                            'devices': [
-                                {'model': 'simulator'},
-                                ]
-                            }, ]
+            camera_info = {'autodetect': False,
+                           'devices': [
+                               {'model': 'simulator'}, ]}
 
     logger.debug("Camera config: {}".format(camera_info))
 

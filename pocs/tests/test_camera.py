@@ -111,6 +111,13 @@ def test_create_cameras_from_config_fail(config):
         create_cameras_from_config(config, simulator=simulator)
 
 
+def test_create_cameras_from_empty_config():
+    # create_cameras_from_cpnfig should work with no camera config, if cameras simulation is set
+    empty_config = {'simulator': ['camera', ], }
+    cameras = create_cameras_from_config(config=empty_config)
+    assert len(cameras) == 1
+
+
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
