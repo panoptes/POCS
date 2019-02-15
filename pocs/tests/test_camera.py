@@ -118,6 +118,13 @@ def test_create_cameras_from_empty_config():
     assert len(cameras) == 1
 
 
+def test_dont_create_cameras_from_empty_config():
+    # Can't pass a completely empty config otherwise default config will get loaded in its place.
+    really_empty_config = {'i_need_to_evaluate_to': True}
+    cameras = create_cameras_from_config(config=really_empty_config)
+    assert len(cameras) == 0
+
+
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
