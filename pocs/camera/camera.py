@@ -190,7 +190,7 @@ class AbstractCamera(PanBase):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
-        raise NotImplementedError
+        return not self._exposure_event.is_set()
 
 ##################################################################################################
 # Methods
@@ -280,7 +280,7 @@ class AbstractCamera(PanBase):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+        self.logger.debug('Taking {} exposure on {}: {}'.format(
             seconds, self.name, filename))
 
         header = self._fits_header(seconds, dark)
@@ -290,14 +290,17 @@ class AbstractCamera(PanBase):
                 self))
             self._exposure_event.wait()
 
+        # Clear event now to prevent any other exposures starting before this one is finsihed.
+        self._exposure_event.clear()
+
         # Cmmera type specific exposure set up
         readout_args = self._setup_exposure(seconds, filename, dark, header, *args, *kwargs)
 
-        # Start exposure
+        # Camera type specific exposure start
         self._start_exposure()
 
-        # Start readout thread
-        readout_thread = threading.Timer(interval=seconds.value,
+        # Start polling thread that will call camera type specific _readout method when done
+        readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
                                          function=self._poll_exposure,
                                          args=(readout_args, ))
         readout_thread.start()
@@ -484,6 +487,7 @@ class AbstractCamera(PanBase):
             self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
             raise err
         else:
+            # Camera type specific readout function
             self._readout(*readout_args)
         finally:
             self._exposure_event.set()  # write_fits will have already set this, *if* it got called.

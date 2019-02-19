@@ -248,6 +248,7 @@ class Camera(AbstractSDKCamera):
         return readout_args
 
     def _start_exposure(self):
+        self._exposure_event.clear()
         Camera._driver.start_exposure(self._camera_ID)
 
     def _readout(self, filename, width, height, header):

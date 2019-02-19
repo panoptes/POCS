@@ -10,8 +10,9 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.base import PanBase
-from pocs.camera import AbstractCamera, AbstractSDKCamera
+from pocs.camera import AbstractCamera
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
@@ -19,12 +20,11 @@ class Camera(AbstractCamera):
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         super().__init__(name, *args, **kwargs)
         self._is_exposing = False
-        self.logger.debug("Initializing simulated camera")
         self.connect()
+        self.logger.info("{} initialised".format(self))
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
         return self._is_exposing
 
     def connect(self):
@@ -51,17 +51,21 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
-        # Set up a Timer that will wait for the duration of the exposure then
-        # copy a dummy FITS file to the specified path and adjust the headers
-        # according to the exposure time, type.
-        exposure_thread = Timer(interval=seconds.value,
-                                function=self._fake_exposure,
-                                args=[filename, header, exposure_event])
-        exposure_thread.start()
-        self._is_exposing = True
+    def _setup_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+        self._seconds = seconds
+        readout_args = (filename, header)
+        return readout_args
 
-    def _fake_exposure(self, filename, header, exposure_event):
+    def _end_exposure(self):
+        self._is_exposing = False
+
+    def _start_exposure(self):
+        exposure_thread = Timer(interval=get_quantity_value(self._seconds, unit=u.second) + 0.05,
+                                function=self._end_exposure)
+        self._is_exposing = True
+        exposure_thread.start()
+
+    def _readout(self, filename, header):
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
@@ -75,8 +79,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        self._is_exposing = False
-        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
+        fits_utils.write_fits(fake_data, header, filename, self.logger)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
@@ -95,7 +98,3 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
-
-
-class SimSDKCamera(AbstractSDKCamera):
-    pass
