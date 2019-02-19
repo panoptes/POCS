@@ -4,9 +4,8 @@ import enum
 import numpy as np
 from astropy import units as u
 
-from pocs.base import PanBase
+from pocs.camera.sdk import AbstractSDKDriver
 from pocs.utils import error
-from pocs.utils.library import load_library
 from pocs.utils import get_quantity_value
 
 ####################################################################################################
@@ -19,8 +18,8 @@ from pocs.utils import get_quantity_value
 ####################################################################################################
 
 
-class ASIDriver(PanBase):
-    def __init__(self, library_path=None, *args, **kwargs):
+class ASIDriver(AbstractSDKDriver):
+    def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO ASI library interface.
 
         On construction loads the shared object/dynamically linked version of the ASI SDK library,
@@ -40,17 +39,7 @@ class ASIDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        library = load_library(name='ASICamera2', path=library_path, logger=self.logger)
-        self._CDLL = library
-        self._version = self.get_SDK_version()
-
-    # Properties
-
-    @property
-    def version(self):
-        """ Version of the ZWO ASI SDK """
-        return self._version
+        super().__init__(name='ASICamera2', path=library_path, **kwargs)
 
     # Methods
 

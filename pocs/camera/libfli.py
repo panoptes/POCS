@@ -10,8 +10,7 @@ import numpy as np
 
 import astropy.units as u
 
-from pocs.base import PanBase
-from pocs.utils.library import load_library
+from pocs.camera.sdk import AbstractSDKDriver
 import pocs.camera.libfliconstants as c
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
@@ -36,9 +35,9 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
 ################################################################################
 
 
-class FLIDriver(PanBase):
+class FLIDriver(AbstractSDKDriver):
 
-    def __init__(self, library_path=None, *args, **kwargs):
+    def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
         the shared object/dynamically linked version of the FLI library, which
@@ -62,22 +61,16 @@ class FLIDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        self._CDLL = load_library(name='fli', path=library_path, logger=self.logger)
+        super().__init__(name='fli', library_path=library_path, **kwargs)
 
+    # Public methods
+
+    def get_SDK_version(self):
         # Get library version.
         version = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
         self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
-        self._version = version.value.decode('ascii')
-
-    # Properties
-
-    @property
-    def version(self):
-        return self._version
-
-    # Public methods
+        return version.value.decode('ascii')
 
     def FLIList(self, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """

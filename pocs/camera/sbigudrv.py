@@ -19,20 +19,19 @@ import numpy as np
 from numpy.ctypeslib import as_ctypes
 from astropy import units as u
 
-from pocs.base import PanBase
+from pocs.camera.sdk import AbstractSDKDriver
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import error
 from pocs.utils import CountdownTimer
-from pocs.utils.library import load_library
 
 ################################################################################
 # Main SBIGDriver class
 ################################################################################
 
 
-class SBIGDriver(PanBase):
+class SBIGDriver(AbstractSDKDriver):
 
-    def __init__(self, library_path=None, retries=1, *args, **kwargs):
+    def __init__(self, library_path=None, retries=1, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
         On construction loads SBIG's shared library which must have already
@@ -55,13 +54,11 @@ class SBIGDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        self.retries = retries
-        self._CDLL = load_library(name='sbigudrv', path=library_path, logger=self.logger)
-
-        # Open driver
-        self.logger.debug('Opening SBIGUDrv driver')
-        self._send_command('CC_OPEN_DRIVER')
+        # Create a Lock that will used to prevent simultaneous commands from multiple
+        # cameras. Main reason for this is preventing overlapping readouts.
+        self._command_lock = threading.Lock()
+        self._retries = retries
+        super().__init__(name='sbigudrv', library_path=library_path, **kwargs)
 
         # Query USB bus for connected cameras, store basic camera info.
         self.logger.debug('Searching for connected SBIG cameras')
@@ -96,10 +93,6 @@ class SBIGDriver(PanBase):
 
         self._ccd_info = {}
 
-        # Create a Lock that will used to prevent simultaneous commands from multiple
-        # cameras. Main reason for this is preventing overlapping readouts.
-        self._command_lock = threading.Lock()
-
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
@@ -116,6 +109,19 @@ class SBIGDriver(PanBase):
         if retries < 1:
             raise ValueError("retries should be 1 or greater, got {}!".format(retries))
         self._retries = retries
+
+    def get_SDK_version(self, request_type='DRIVER_STD'):
+        # Make sure the driver is open
+        with self._command_lock:
+            error = self._send_command('CC_OPEN_DRIVER')
+        # Get the driver info
+        driver_info_params = GetDriverInfoParams(driver_request_codes[request_type])
+        driver_info_results = GetDriverInfoResults0()
+        with self._command_lock:
+            self._send_command('CC_GET_DRIVER_INFO', driver_info_params, driver_info_results)
+        version_string = "{}, {}".format(driver_info_results.name.decode('ascii'),
+                                         self._bcd_to_string(driver_info_results.version))
+        return version_string
 
     def assign_handle(self, serial=None):
         """
@@ -822,7 +828,10 @@ class SBIGDriver(PanBase):
         # This is probably excessively cautious and will need to be relaxed,
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
-        if error != 'CE_NO_ERROR':
+        # Will not raise a RunTimeError if the error is 'CE_DRIVER_NOT_CLOSED'
+        # because this only indicates an attempt to open the driver then it is
+        # already open.
+        if error not in ('CE_NO_ERROR', 'CE_DRIVER_NOT_CLOSED'):
             if error == 'CE_CFW_ERROR':
                 cfw_error_code = results.cfwError
                 try:

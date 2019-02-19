@@ -6,8 +6,8 @@ from contextlib import suppress
 from astropy import units as u
 from astropy.time import Time
 
-from pocs.camera.camera import AbstractCamera
-from pocs.camera import libasi
+from pocs.camera.sdk import AbstractSDKCamera
+from pocs.camera.libasi import ASIDriver
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import error
 from pocs.utils import CountdownTimer
@@ -15,18 +15,14 @@ from pocs.utils.logger import get_root_logger
 from pocs.utils import get_quantity_value
 
 
-class Camera(AbstractCamera):
+class Camera(AbstractSDKCamera):
 
-    _ASIDriver = None  # Class variable to store the ASI driver interface
-    _ids = []  # Cache of camera string IDs
-    _assigned_ids = []  # Camera string IDs already in use.
+    _driver = None  # Class variable to store the ASI driver interface
+    _cameras = []  # Cache of camera string IDs
+    _assigned_cameras = set()  # Camera string IDs already in use.
 
     def __init__(self,
                  name='ZWO ASI Camera',
-                 set_point=None,
-                 filter_type=None,
-                 library_path=None,
-                 timeout=0.5 * u.second,
                  gain=None,
                  image_type=None,
                  *args, **kwargs):
@@ -38,85 +34,9 @@ class Camera(AbstractCamera):
         kwargs['file_extension'] = 'fits'
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
 
-        # Maximum time to wait beyond exposure time for an exposure to complete
-        self._timeout = get_quantity_value(timeout, unit=u.second)
-
-        # Create a lock that will be used to prevent overlapping exposures.
-        self._exposure_lock = threading.Lock()
         self._video_event = threading.Event()
 
-        if Camera._ASIDriver is None:
-            # Initialise the driver if it hasn't already been done
-            Camera._ASIDriver = libasi.ASIDriver(library_path=library_path)
-
-        # Would usually use self.logger but that won't exist until after calling super().__init__(),
-        # and don't want to do that until after the serial number and port have both been determined
-        # in order to avoid log entries with misleading values. To enable logging during the device
-        # scanning phase use get_root_logger() instead.
-        logger = get_root_logger()
-
-        serial_number = kwargs.get('serial_number')
-        if not serial_number:
-            msg = "Must specify serial_number (string ID) for ZWO ASI Camera"
-            logger.error(msg)
-            raise ValueError(msg)
-
-        logger.debug("Looking for ZWO ASI camera with ID '{}'".format(serial_number))
-
-        if not Camera._ids:
-            # No cached camera IDs, need to probe for connected cameras.
-            n_cameras = Camera._ASIDriver.get_num_of_connected_cameras()
-            if n_cameras == 0:
-                msg = "No ZWO ASI camera devices found"
-                logger.error(msg)
-                warn(msg)
-                return
-
-            # Get the IDs
-            for camera_index in range(n_cameras):
-                # Can get IDs without opening cameras by parsing the name string
-                self._info = Camera._ASIDriver.get_camera_property(camera_index)
-                model, _, string_id = self._info['name'].partition('(')
-                if not string_id:
-                    logger.warning("Found ZWO ASI camera with no ID set")
-                    break
-                assert string_id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
-                string_id = string_id[:-1]
-                Camera._ids.append(string_id)
-
-            logger.debug('Connected ASI ZWO cameras: {}'.format(Camera._ids))
-
-        try:
-            self._camera_index = Camera._ids.index(serial_number)
-        except ValueError:
-            msg = "Could not find ZWO ASI camera with ID '{}'".format(serial_number)
-            logger.error(msg)
-            warn(msg)
-            return
-        else:
-            logger.debug("Found ZWO ASI Camera with ID '{}' at index {}".format(
-                serial_number, self._camera_index))
-
-        if serial_number in Camera._assigned_ids:
-            msg = "ZWO ASI Camera with ID '{}' already in use".format(serial_number)
-            logger.error(msg)
-            warn(msg)
-            return
-
-        super().__init__(name, *args, **kwargs)
-        self.connect()
-        assert self.is_connected, error.PanError("Could not connect to {}".format(self))
-
-        Camera._assigned_ids.append(self.uid)
-
-        if set_point:
-            self.ccd_set_point = set_point
-            self.ccd_cooling_enabled = True
-
-        if filter_type:
-            # connect() will have set this based on camera info, but that doesn't know about filters
-            # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
-            self._filter_type = filter_type
+        super().__init__(name, libasi.ASIDriver, *args, **kwargs)
 
         if gain:
             self.gain = gain
@@ -133,13 +53,10 @@ class Camera(AbstractCamera):
     def __del__(self):
         """ Attempt some clean up """
         with suppress(AttributeError):
-            uid = self.uid
-            Camera._assigned_ids.remove(uid)
-            self.logger.debug('Removed {} from assigned IDs list'.format(uid))
-        with suppress(AttributeError):
             camera_ID = self._camera_ID
             Camera._ASIDriver.close_camera(camera_ID)
             self.logger.debug("Closed ZWO camera {}".format(camera_ID))
+        super().__del__()
 
     # Properties
 

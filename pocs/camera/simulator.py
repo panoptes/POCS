@@ -9,7 +9,8 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 
-from pocs.camera import AbstractCamera
+from pocs.base import PanBase
+from pocs.camera import AbstractCamera, AbstractSDKCamera
 from pocs.utils.images import fits as fits_utils
 
 
@@ -94,3 +95,7 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+
+class SimSDKCamera(AbstractSDKCamera):
+    pass
