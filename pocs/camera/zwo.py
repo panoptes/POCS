@@ -10,8 +10,6 @@ from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.libasi import ASIDriver
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import error
-from pocs.utils import CountdownTimer
-from pocs.utils.logger import get_root_logger
 from pocs.utils import get_quantity_value
 
 
@@ -30,13 +28,12 @@ class Camera(AbstractSDKCamera):
         # camera_ID and, optionally, an 8 byte ID that can be written to the camera firmware
         # by the user (using ASICap, or pocs.camera.libasi.ASIDriver.set_ID()). We will use
         # the latter as a serial number string.
-        kwargs['port'] = None
-        kwargs['file_extension'] = 'fits'
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
+        kwargs['timeout'] = kwargs.get('timeout', 0.5)
 
         self._video_event = threading.Event()
 
-        super().__init__(name, libasi.ASIDriver, *args, **kwargs)
+        super().__init__(name, ASIDriver, *args, **kwargs)
 
         if gain:
             self.gain = gain
@@ -45,7 +42,7 @@ class Camera(AbstractSDKCamera):
             self.image_type = image_type
         else:
             # Take monochrome 12 bit raw images by default, if we can
-            if 'RAW16' in self._info['supported_video_format']:
+            if 'RAW16' in self.properties['supported_video_format']:
                 self.image_type = 'RAW16'
 
         self.logger.info('{} initialised'.format(self))
@@ -54,37 +51,27 @@ class Camera(AbstractSDKCamera):
         """ Attempt some clean up """
         with suppress(AttributeError):
             camera_ID = self._camera_ID
-            Camera._ASIDriver.close_camera(camera_ID)
+            Camera._driver.close_camera(camera_ID)
             self.logger.debug("Closed ZWO camera {}".format(camera_ID))
         super().__del__()
 
     # Properties
 
-    @AbstractCamera.uid.getter
-    def uid(self):
-        """Return unique identifier for camera.
-
-        Need to override this because the base class only returns the 1st
-        6 characters of the serial number, which is not a unique identifier
-        for most of the camera types.
-        """
-        return self._serial_number
-
     @property
     def image_type(self):
         """ Current camera image type, one of 'RAW8', 'RAW16', 'Y8', 'RGB24' """
-        roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
+        roi_format = Camera._driver.get_roi_format(self._camera_ID)
         return roi_format['image_type']
 
     @image_type.setter
     def image_type(self, new_image_type):
-        if new_image_type not in self._info['supported_video_format']:
+        if new_image_type not in self.properties['supported_video_format']:
             msg = "Image type '{} not supported by {}".format(new_image_type, self.model)
             self.logger.error(msg)
             raise ValueError(msg)
-        roi_format = self._ASIDriver.get_roi_format(self._camera_ID)
+        roi_format = self._driver.get_roi_format(self._camera_ID)
         roi_format['image_type'] = new_image_type
-        Camera._ASIDriver.set_roi_format(self._camera_ID, **roi_format)
+        Camera._driver.set_roi_format(self._camera_ID, **roi_format)
 
     @property
     def ccd_temp(self):
@@ -135,33 +122,14 @@ class Camera(AbstractSDKCamera):
     def egain(self):
         """ Nominal value of the image sensor gain for the camera's current gain setting """
         self._refresh_info()
-        return self._info['e_per_adu']
+        return self.properties['e_per_adu']
 
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
-        return Camera._ASIDriver.get_exposure_status(self._camera_ID) == "WORKING"
-
-    @property
-    def properties(self):
-        """ A collection of camera properties as read from the camera """
-        return self._info
+        return Camera._driver.get_exposure_status(self._camera_ID) == "WORKING"
 
     # Methods
-
-    def __str__(self):
-        # ZWO ASI cameras don't have a port so just include the serial number in the string
-        # representation.
-        s = "{} ({})".format(self.name, self.uid)
-
-        if self.focuser:
-            s += ' with {}'.format(self.focuser.name)
-            if self.filterwheel:
-                s += ' & {}'.format(self.filterwheel.name)
-        elif self.filterwheel:
-            s += ' with {}'.format(self.filterwheel.name)
-
-        return s
 
     def connect(self):
         """
@@ -171,17 +139,22 @@ class Camera(AbstractSDKCamera):
         of available camera commands/parameters.
         """
         self.logger.debug("Connecting to {}".format(self))
+        # Some confusing fiddling with camera_ID and camera_index here because the ASI Driver
+        # has *two* distinct integer IDs for each camera which are not guaranteed to be identical
+        # The initial scan gives camera_index, which is used to get camera info, then camera_ID
+        # is used for everything else.
+        self._camera_index = self._camera_ID
         self._refresh_info()
-        self._camera_ID = self._info['camera_ID']
-        self.model, _, _ = self._info['name'].partition('(')
-        if self._info['is_color_camera']:
-            self._filter_type = self._info['bayer_pattern']
+        self._camera_ID = self.properties['camera_ID']
+        self.model, _, _ = self.properties['name'].partition('(')
+        if self.properties['is_color_camera']:
+            self._filter_type = self.properties['bayer_pattern']
         else:
             self._filter_type = 'M'  # Monochrome
-        Camera._ASIDriver.open_camera(self._camera_ID)
-        Camera._ASIDriver.init_camera(self._camera_ID)
-        self._control_info = Camera._ASIDriver.get_control_caps(self._camera_ID)
-
+        Camera._driver.open_camera(self._camera_ID)
+        Camera._driver.init_camera(self._camera_ID)
+        self._control_info = Camera._driver.get_control_caps(self._camera_ID)
+        self._info['control_info'] = self._control_info  # control info accessible via properties
         self._connected = True
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
@@ -191,7 +164,7 @@ class Camera(AbstractSDKCamera):
         if image_type:
             self.image_type = image_type
 
-        roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
+        roi_format = Camera._driver.get_roi_format(self._camera_ID)
         width = int(get_quantity_value(roi_format['width'], unit=u.pixel))
         height = int(get_quantity_value(roi_format['height'], unit=u.pixel))
         image_type = roi_format['image_type']
@@ -210,14 +183,14 @@ class Camera(AbstractSDKCamera):
                                         args=video_args,
                                         daemon=True)
 
-        Camera._ASIDriver.start_video_capture(self._camera_ID)
+        Camera._driver.start_video_capture(self._camera_ID)
         self._video_event.clear()
         video_thread.start()
         self.logger.debug("Video capture started on {}".format(self))
 
     def stop_video(self):
         self._video_event.set()
-        Camera._ASIDriver.stop_video_capture(self._camera_ID)
+        Camera._driver.stop_video_capture(self._camera_ID)
         self.logger.debug("Video capture stopped on {}".format(self))
 
     # Private methods
@@ -239,11 +212,11 @@ class Camera(AbstractSDKCamera):
             if self._video_event.is_set():
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
-            video_data = Camera._ASIDriver.get_video_data(self._camera_ID,
-                                                          width,
-                                                          height,
-                                                          image_type,
-                                                          timeout)
+            video_data = Camera._driver.get_video_data(self._camera_ID,
+                                                       width,
+                                                       height,
+                                                       image_type,
+                                                       timeout)
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
@@ -265,81 +238,58 @@ class Camera(AbstractSDKCamera):
             get_quantity_value(good_frames / elapsed_time),
             bad_frames))
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
-        if not self._exposure_lock.acquire(blocking=False):
-            self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
-                self))
-            self._exposure_lock.acquire(blocking=True)
-
+    def _setup_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         self._control_setter('EXPOSURE', seconds)
-        roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
-
-        # Start exposure
-        Camera._ASIDriver.start_exposure(self._camera_ID)
-
-        # Start readout thread
+        roi_format = Camera._driver.get_roi_format(self._camera_ID)
         readout_args = (filename,
                         roi_format['width'],
                         roi_format['height'],
-                        header,
-                        exposure_event)
-        readout_thread = threading.Timer(interval=seconds.value,
-                                         function=self._readout,
-                                         args=readout_args)
-        readout_thread.start()
+                        header)
+        return readout_args
 
-    def _readout(self, filename, width, height, header, exposure_event):
-        timer = CountdownTimer(duration=self._timeout)
-        try:
-            exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
-            while exposure_status == 'WORKING':
-                if timer.expired():
-                    msg = "Timeout waiting for exposure on {} to complete".format(self)
-                    raise error.Timeout(msg)
-                time.sleep(0.01)
-                exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
-        except RuntimeError as err:
-            # Error returned by driver at some point while polling
-            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
-            raise err
-        else:
-            if exposure_status == 'SUCCESS':
-                try:
-                    image_data = Camera._ASIDriver.get_exposure_data(self._camera_ID,
-                                                                     width,
-                                                                     height,
-                                                                     self.image_type)
-                except RuntimeError as err:
-                    raise error.PanError('Error getting image data from {}: {}'.format(self, err))
-                else:
-                    fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
-            elif exposure_status == 'FAILED':
-                raise error.PanError("Exposure failed on {}".format(self))
-            elif exposure_status == 'IDLE':
-                raise error.PanError("Exposure missing on {}".format(self))
+    def _start_exposure(self):
+        Camera._driver.start_exposure(self._camera_ID)
+
+    def _readout(self, filename, width, height, header):
+        exposure_status = Camera._driver.get_exposure_status(self._camera_ID)
+        if exposure_status == 'SUCCESS':
+            try:
+                image_data = Camera._driver.get_exposure_data(self._camera_ID,
+                                                              width,
+                                                              height,
+                                                              self.image_type)
+            except RuntimeError as err:
+                raise error.PanError('Error getting image data from {}: {}'.format(self, err))
             else:
-                raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                    self, exposure_status))
-        finally:
-            exposure_event.set()  # write_fits will have already set this, *if* it got called.
-            self._exposure_lock.release()
+                fits_utils.write_fits(image_data,
+                                      header,
+                                      filename,
+                                      self.logger,
+                                      self._exposure_event)
+        elif exposure_status == 'FAILED':
+            raise error.PanError("Exposure failed on {}".format(self))
+        elif exposure_status == 'IDLE':
+            raise error.PanError("Exposure missing on {}".format(self))
+        else:
+            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
+                self, exposure_status))
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
         header.set('CAM-GAIN', self.gain, 'Internal units')
-        header.set('CAM-BITS', int(get_quantity_value(self._info['bit_depth'], u.bit)),
+        header.set('CAM-BITS', int(get_quantity_value(self.properties['bit_depth'], u.bit)),
                    'ADC bit depth')
-        header.set('XPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
-        header.set('YPIXSZ', get_quantity_value(self._info['pixel_size'], u.um), 'Microns')
+        header.set('XPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
+        header.set('YPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
         header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu), 'Electrons/ADU')
         return header
 
     def _refresh_info(self):
-        self._info = Camera._ASIDriver.get_camera_property(self._camera_index)
+        self._info = Camera._driver.get_camera_property(self._camera_index)
 
     def _control_getter(self, control_type):
         if control_type in self._control_info:
-            return Camera._ASIDriver.get_control_value(self._camera_ID, control_type)
+            return Camera._driver.get_control_value(self._camera_ID, control_type)
         else:
             raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
 
@@ -358,18 +308,18 @@ class Camera(AbstractSDKCamera):
             if value > max_value:
                 msg = "Cannot set {} to {}, clipping to max value {}".format(
                     control_name, value, max_value)
-                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, max_value)
+                Camera._driver.set_control_value(self._camera_ID, control_type, max_value)
                 raise error.IllegalValue(msg)
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
                 msg = "Cannot set {} to {}, clipping to min value {}".format(
                     control_name, value, min_value)
-                Camera._ASIDriver.set_control_value(self._camera_ID, control_type, min_value)
+                Camera._driver.set_control_value(self._camera_ID, control_type, min_value)
                 raise error.IllegalValue(msg)
         else:
             if not self._control_info[control_type]['is_auto_supported']:
                 msg = "{} cannot set {} to AUTO".format(self.model, control_name)
                 raise error.IllegalValue(msg)
 
-        Camera._ASIDriver.set_control_value(self._camera_ID, control_type, value)
+        Camera._driver.set_control_value(self._camera_ID, control_type, value)

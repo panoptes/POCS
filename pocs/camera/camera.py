@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import threading
+import time
 import yaml
 from contextlib import suppress
 
@@ -18,6 +19,7 @@ from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils import get_quantity_value
+from pocs.utils import CountdownTimer
 from pocs.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
@@ -72,11 +74,12 @@ class AbstractCamera(PanBase):
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self._timeout = get_quantity_value(kwargs.get('timeout'), unit=u.second)
+        self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
 
         self._connected = False
         self._current_observation = None
-        self._exposure_event = threading.Event
+        self._exposure_event = threading.Event()
+        self._exposure_event.set()
 
         self._create_subcomponent(subcomponent=focuser,
                                   sub_name='focuser',
@@ -280,20 +283,29 @@ class AbstractCamera(PanBase):
         self.logger.debug('Taking {} second exposure on {}: {}'.format(
             seconds, self.name, filename))
 
-        exposure_event = threading.Event()
         header = self._fits_header(seconds, dark)
 
-        self._take_exposure(seconds=seconds,
-                            filename=filename,
-                            dark=dark,
-                            exposure_event=exposure_event,
-                            header=header,
-                            *args, **kwargs)
+        if not self._exposure_event.is_set:
+            self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
+                self))
+            self._exposure_event.wait()
+
+        # Cmmera type specific exposure set up
+        readout_args = self._setup_exposure(seconds, filename, dark, header, *args, *kwargs)
+
+        # Start exposure
+        self._start_exposure()
+
+        # Start readout thread
+        readout_thread = threading.Timer(interval=seconds.value,
+                                         function=self._poll_exposure,
+                                         args=(readout_args, ))
+        readout_thread.start()
 
         if blocking:
-            exposure_event.wait()
+            self._exposure_event.wait()
 
-        return exposure_event
+        return self._exposure_event
 
     def process_exposure(self, info, observation_event, exposure_event=None):
         """
@@ -451,7 +463,32 @@ class AbstractCamera(PanBase):
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
-    def _take_exposure(self, *args, **kwargs):
+    def _setup_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _start_exposure(self):
+        raise NotImplementedError
+
+    def _poll_exposure(self, readout_args):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            is_exposing = self.is_exposing
+            while is_exposing:
+                if timer.expired():
+                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    raise error.Timeout(msg)
+                time.sleep(0.01)
+                is_exposing = self.is_exposing
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
+        else:
+            self._readout(*readout_args)
+        finally:
+            self._exposure_event.set()  # write_fits will have already set this, *if* it got called.
+
+    def _readout(self, *args):
         raise NotImplementedError
 
     def _fits_header(self, seconds, dark=None):

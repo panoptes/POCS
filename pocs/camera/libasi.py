@@ -43,20 +43,42 @@ class ASIDriver(AbstractSDKDriver):
 
     # Methods
 
-    def get_num_of_connected_cameras(self):
-        """ Get the count of connected ASI cameras """
-        count = self._CDLL.ASIGetNumOfConnectedCameras()  # Return type is int, needs no Pythonising
-        self.logger.debug("Found {} connected ASI cameras".format(count))
-        return count
-
     def get_SDK_version(self):
         """ Get the version of the ZWO ASI SDK """
         # First set return type for function to pointer to null terminated string
         self._CDLL.ASIGetSDKVersion.restype = ctypes.c_char_p
         version = self._CDLL.ASIGetSDKVersion().decode('ascii')  # Get bytes so decode to str
         version = version.replace(', ', '.')  # Format the version string properly
-        self.logger.debug("ZWO ASI SDK version: {}".format(version))
         return version
+
+    def get_cameras(self):
+        """Convenience function to get a dictionary of all currently connected camera string IDs
+        and their corresponding integer camera IDs.
+        """
+        n_cameras = self.get_num_of_connected_cameras()
+        if n_cameras == 0:
+            raise error.PanError("No ZWO ASI camera devices found")
+
+        # Get the IDs
+        cameras = {}
+        for camera_index in range(n_cameras):
+            # Can get IDs without opening cameras by parsing the name string
+            info = self.get_camera_property(camera_index)
+            model, _, string_id = info['name'].partition('(')
+            if not string_id:
+                self.logger.warning("Found ZWO ASI camera with no ID set")
+                break
+            assert string_id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
+            string_id = string_id[:-1]
+            cameras[string_id] = info['camera_ID']
+
+        return cameras
+
+    def get_num_of_connected_cameras(self):
+        """ Get the count of connected ASI cameras """
+        count = self._CDLL.ASIGetNumOfConnectedCameras()  # Return type is int, needs no Pythonising
+        self.logger.debug("Found {} connected ASI cameras".format(count))
+        return count
 
     def get_camera_property(self, camera_index):
         """ Get properties of the camera with given index """

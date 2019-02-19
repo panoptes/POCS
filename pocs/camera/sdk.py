@@ -1,7 +1,10 @@
+from contextlib import suppress
+
 from pocs.base import PanBase
 from pocs.camera.camera import AbstractCamera
 from pocs.utils import error
 from pocs.utils.library import load_library
+from pocs.utils.logger import get_root_logger
 
 
 class AbstractSDKDriver(PanBase):
@@ -29,6 +32,7 @@ class AbstractSDKDriver(PanBase):
         super().__init__(**kwargs)
         self._CDLL = load_library(name=name, path=library_path, logger=self.logger)
         self._version = self.get_SDK_version()
+        self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
 
     # Properties
 
@@ -85,6 +89,7 @@ class AbstractSDKCamera(AbstractCamera):
         if not type(self)._cameras:
             # No cached camera details, need to probe for connected cameras
             type(self)._cameras = type(self)._driver.get_cameras()
+            logger.debug("Connected {}s: {}".format(name, type(self)._cameras))
 
         if serial_number in type(self)._cameras:
             logger.debug("Found {} with UID '{}' at {}.".format(
@@ -99,6 +104,7 @@ class AbstractSDKCamera(AbstractCamera):
 
         type(self)._assigned_cameras.add(serial_number)
         super().__init__(name, *args, **kwargs)
+        self._camera_ID = type(self)._cameras[self.uid]
         self.connect()
         assert self.is_connected, error.PanError("Could not connect to {}.".format(self))
 
@@ -117,4 +123,36 @@ class AbstractSDKCamera(AbstractCamera):
             uid = self.uid
             type(self)._assigned_cameras.discard(uid)
             self.logger.debug('Removed {} from assigned cameras list'.format(uid))
-        super().__del__()
+
+    # Properties
+
+    @AbstractCamera.uid.getter
+    def uid(self):
+        """Return unique identifier for camera.
+
+        Need to override this because the base class only returns the 1st
+        6 characters of the serial number, which is not a unique identifier
+        for most of the camera types.
+        """
+        return self._serial_number
+
+    @property
+    def properties(self):
+        """ A collection of camera properties as read from the camera """
+        return self._info
+
+    # Methods
+
+    def __str__(self):
+        # SDK cameras don't have a port so just include the serial number in the string
+        # representation.
+        s = "{} ({})".format(self.name, self.uid)
+
+        if self.focuser:
+            s += ' with {}'.format(self.focuser.name)
+            if self.filterwheel:
+                s += ' & {}'.format(self.filterwheel.name)
+        elif self.filterwheel:
+            s += ' with {}'.format(self.filterwheel.name)
+
+        return s
