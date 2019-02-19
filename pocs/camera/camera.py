@@ -285,7 +285,7 @@ class AbstractCamera(PanBase):
 
         header = self._fits_header(seconds, dark)
 
-        if not self._exposure_event.is_set:
+        if not self._exposure_event.is_set():
             self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
                 self))
             self._exposure_event.wait()
