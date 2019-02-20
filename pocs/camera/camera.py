@@ -480,7 +480,7 @@ class AbstractCamera(PanBase):
                     raise error.Timeout(msg)
                 time.sleep(0.01)
                 is_exposing = self.is_exposing
-        except RuntimeError as err:
+        except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
             self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
             raise err

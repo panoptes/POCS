@@ -24,11 +24,8 @@ class Camera(AbstractSDKCamera):
     def __init__(self,
                  name='FLI Camera',
                  set_point=25 * u.Celsius,
-                 filter_type='M',
                  *args, **kwargs):
-        kwargs['timeout'] = kwargs.get('timeout', 5)
         kwargs['set_point'] = set_point
-        kwargs['filter_type'] = filter_type
         super().__init__(name, FLIDriver, *args, **kwargs)
         self.logger.info('{} initialised'.format(self))
 
@@ -60,12 +57,11 @@ class Camera(AbstractSDKCamera):
 
     @ccd_set_point.setter
     def ccd_set_point(self, set_point):
-        self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
+        if not isinstance(set_point, u.Quantity):
+            set_point = set_point * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
         self._driver.FLISetTemperature(self._handle, set_point)
-        if isinstance(set_point, u.Quantity):
-            self._set_point = set_point
-        else:
-            self._set_point = set_point * u.Celsius
+        self._set_point = set_point * u.Celsius
 
     @property
     def ccd_cooling_enabled(self):
@@ -157,8 +153,8 @@ class Camera(AbstractSDKCamera):
                 image_data[i] = self._driver.FLIGrabRow(self._handle, image_data.shape[1])
                 rows_got += 1
         except RuntimeError as err:
-            message = 'Readout error, expected {} rows, got {}: {}'.format(
-                image_data.shape[0], rows_got, err)
+            message = 'Readout error on {}, expected {} rows, got {}: {}'.format(
+                self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
             fits_utils.write_fits(image_data, header, filename, self.logger, self._exposure_event)

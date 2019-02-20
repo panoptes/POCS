@@ -90,6 +90,7 @@ class Camera(AbstractSDKCamera):
     def ccd_set_point(self, set_point):
         if not isinstance(set_point, u.Quantity):
             set_point = set_point * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
         self._control_setter('TARGET_TEMP', set_point)
 
     @property
