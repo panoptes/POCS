@@ -90,9 +90,9 @@ class SBIGDriver(AbstractSDKDriver):
         """Convenience function to get a dictionary of all currently connected camera serial numbers
         and their corresponding handles.
         """
-        camera_info = QueryUSBResults3()
+        camera_info = QueryUSBResults2()
         with self._command_lock:
-            self._send_command('CC_QUERY_USB3', results=camera_info)
+            self._send_command('CC_QUERY_USB2', results=camera_info)
         if not camera_info.camerasFound:
             raise error.PanError("No SBIG camera devices found.")
 

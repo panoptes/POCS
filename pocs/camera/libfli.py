@@ -12,6 +12,7 @@ from astropy import units as u
 from pocs.camera.sdk import AbstractSDKDriver
 from pocs.camera import libfliconstants as c
 from pocs.utils import error
+from pocs.utils import get_quantity_value
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                    c.FLIDOMAIN_USB,
@@ -268,9 +269,7 @@ class FLIDriver(AbstractSDKDriver):
                 to. A simple numeric type can be given instead of a Quantity, in which case the
                 units are assumed to be degrees Celsius.
         """
-        if isinstance(temperature, u.Quantity):
-            temperature = temperature.to(u.Celsius)
-            temperature = temperature.value
+        temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
         self._call_function('setting temperature', self._CDLL.FLISetTemperature,
@@ -301,9 +300,7 @@ class FLIDriver(AbstractSDKDriver):
                 can be given instead of a Quantity, in which case the units are assumed
                 to be seconds.
         """
-        if isinstance(exposure_time, u.Quantity):
-            exposure_time = exposure_time.to(u.second)
-            exposure_time = exposure_time.value
+        exposure_time = get_quantity_value(exposure_time, unit=u.second)
         milliseconds = ctypes.c_long(int(exposure_time * 1000))
         self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
                             handle, milliseconds)

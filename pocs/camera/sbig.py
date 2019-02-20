@@ -25,16 +25,6 @@ class Camera(AbstractSDKCamera):
 
 # Properties
 
-    @AbstractCamera.uid.getter
-    def uid(self):
-        """Return unique identifier for camera.
-
-        Need to overide this because the base class only returns the 1st
-        6 characters of the serial number, which is not a unique identifier
-        for most of the camera types
-        """
-        return self._serial_number
-
     @property
     def ccd_temp(self):
         """
@@ -139,7 +129,7 @@ class Camera(AbstractSDKCamera):
         # Check temerature is OK.
         if self.ccd_cooling_enabled:
             t_error = abs(self.ccd_temp - self.ccd_set_point)
-            if t_error > self._temperature_tolerance or self.ccd_cooling_power = 100 * u.percent:
+            if t_error > self._temperature_tolerance or self.ccd_cooling_power == 100 * u.percent:
                 self.logger.warning('Unstable CCD temperature in {}'.format(self))
 
         readout_mode = 'RM_1x1'  # Unbinned mode

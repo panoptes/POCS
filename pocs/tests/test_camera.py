@@ -193,11 +193,8 @@ def test_sbig_bad_serial():
     """
     if find_library('sbigudrv') is None:
         pytest.skip("Test requires SBIG camera driver to be installed")
-    camera = SBIGCamera(port='NOTAREALSERIALNUMBER')
-    assert camera._connected is False
-    if isinstance(camera, SBIGCamera):
-        assert camera._handle == INVALID_HANDLE_VALUE
-
+    with pytest.raises(error.PanError):
+        camera = SBIGCamera(serial_number='NOTAREALSERIALNUMBER')
 
 # *Potentially* hardware dependant tests:
 

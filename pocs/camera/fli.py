@@ -61,7 +61,7 @@ class Camera(AbstractSDKCamera):
             set_point = set_point * u.Celsius
         self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
         self._driver.FLISetTemperature(self._handle, set_point)
-        self._set_point = set_point * u.Celsius
+        self._set_point = set_point
 
     @property
     def ccd_cooling_enabled(self):

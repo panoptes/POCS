@@ -88,6 +88,7 @@ class AbstractSDKCamera(AbstractCamera):
 
         if not type(self)._cameras:
             # No cached camera details, need to probe for connected cameras
+            # This will raise a PanError if there are no cameras.
             type(self)._cameras = type(self)._driver.get_cameras()
             logger.debug("Connected {}s: {}".format(name, type(self)._cameras))
 
