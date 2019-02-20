@@ -7,11 +7,11 @@ import ctypes
 import os
 
 import numpy as np
-
-import astropy.units as u
+from astropy import units as u
 
 from pocs.camera.sdk import AbstractSDKDriver
-import pocs.camera.libfliconstants as c
+from pocs.camera import libfliconstants as c
+from pocs.utils import error
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                    c.FLIDOMAIN_USB,
@@ -71,6 +71,25 @@ class FLIDriver(AbstractSDKDriver):
         length = ctypes.c_size_t(64)
         self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
         return version.value.decode('ascii')
+
+    def get_cameras(self):
+        """Convenience function to get a dictionary of all currently connected camera serial numbers
+        and their corresponding device nodes.
+        """
+        device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB,
+                                   device_type=c.FLIDEVICE_CAMERA)
+        if not device_list:
+            raise error.PanError("No FLI camera devices found.")
+
+        cameras = {}
+        for device in device_list:
+            port = device[0]
+            handle = self.FLIOpen(port)
+            serial_number = self.FLIGetSerialString(handle)
+            self.FLIClose(handle)
+            cameras[serial_number] = port
+
+        return cameras
 
     def FLIList(self, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """

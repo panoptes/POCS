@@ -51,19 +51,16 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def _setup_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        self._seconds = seconds
-        readout_args = (filename, header)
-        return readout_args
-
     def _end_exposure(self):
         self._is_exposing = False
 
-    def _start_exposure(self):
-        exposure_thread = Timer(interval=get_quantity_value(self._seconds, unit=u.second) + 0.05,
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second) + 0.05,
                                 function=self._end_exposure)
         self._is_exposing = True
         exposure_thread.start()
+        readout_args = (filename, header)
+        return readout_args
 
     def _readout(self, filename, header):
         # Get example FITS file from test data directory

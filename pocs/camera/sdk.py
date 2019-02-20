@@ -71,8 +71,8 @@ class AbstractSDKCamera(AbstractCamera):
         # scanning phase use get_root_logger() instead.
         logger = get_root_logger()
 
-        # The SDK cameras don't have a 'port', they are identified by a serial_number, which
-        # is some form of unique ID readable via the camera SDK.
+        # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
+        # which is some form of unique ID readable via the camera SDK.
         kwargs['port'] = None
         serial_number = kwargs.get('serial_number')
         if not serial_number:
@@ -104,7 +104,7 @@ class AbstractSDKCamera(AbstractCamera):
 
         type(self)._assigned_cameras.add(serial_number)
         super().__init__(name, *args, **kwargs)
-        self._camera_ID = type(self)._cameras[self.uid]
+        self._address = type(self)._cameras[self.uid]
         self.connect()
         assert self.is_connected, error.PanError("Could not connect to {}.".format(self))
 

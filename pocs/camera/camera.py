@@ -293,11 +293,8 @@ class AbstractCamera(PanBase):
         # Clear event now to prevent any other exposures starting before this one is finsihed.
         self._exposure_event.clear()
 
-        # Cmmera type specific exposure set up
-        readout_args = self._setup_exposure(seconds, filename, dark, header, *args, *kwargs)
-
-        # Camera type specific exposure start
-        self._start_exposure()
+        # Cmmera type specific exposure set up and start
+        readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
@@ -465,9 +462,6 @@ class AbstractCamera(PanBase):
             os.unlink(file_path)
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
-
-    def _setup_exposure(self, *args, **kwargs):
-        raise NotImplementedError
 
     def _start_exposure(self):
         raise NotImplementedError
