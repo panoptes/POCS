@@ -1,5 +1,6 @@
 from threading import Event
 from warnings import warn
+from contextlib import suppress
 
 from astropy import units as u
 
@@ -22,6 +23,15 @@ class Camera(AbstractSDKCamera):
             temperature_tolerance = temperature_tolerance * u.Celsius
         self._temperature_tolerance = temperature_tolerance
         self.logger.info('{} initialised'.format(self))
+
+    del __del__(self):
+        with suppress(AttributeError):
+            handle = self._handle
+            self._driver.set_handle(handle)
+            self._driver.close_device()
+            self._driver.close_driver()
+            self.logger.debug("Closed SBIG camera device & driver for handle {}.".format(handle))
+        super().__del__()
 
 # Properties
 
