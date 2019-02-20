@@ -27,6 +27,8 @@ class Camera(AbstractSDKCamera):
                  filter_type='M',
                  *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 5)
+        kwargs['set_point'] = set_point
+        kwargs['filter_type'] = filter_type
         super().__init__(name, FLIDriver, *args, **kwargs)
         self.logger.info('{} initialised'.format(self))
 
@@ -76,7 +78,9 @@ class Camera(AbstractSDKCamera):
 
     @ccd_cooling_enabled.setter
     def ccd_cooling_enabled(self, enabled):
-        raise NotImplementedError('Cannot disable cooling on FLI cameras')
+        # Cooling is always enabled on FLI cameras
+        if not enabled:
+            raise error.NotSupported("Cannot disable cooling on {}".format(self.name))
 
     @property
     def ccd_cooling_power(self):
@@ -111,37 +115,36 @@ class Camera(AbstractSDKCamera):
 # Private Methods
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        self._FLIDriver.FLISetExposureTime(self._handle, exposure_time=seconds)
+        self._driver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
         if dark:
             frame_type = c.FLI_FRAME_TYPE_DARK
         else:
             frame_type = c.FLI_FRAME_TYPE_NORMAL
-        self._FLIDriver.FLISetFrameType(self._handle, frame_type)
+        self._driver.FLISetFrameType(self._handle, frame_type)
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
         # Can later use this for windowed exposures.
-        self._FLIDriver.FLISetImageArea(self._handle,
-                                        self._info['visible corners'][0],
-                                        self._info['visible corners'][1])
+        self._driver.FLISetImageArea(self._handle,
+                                     self._info['visible corners'][0],
+                                     self._info['visible corners'][1])
 
         # No on chip binning for now.
-        self._FLIDriver.FLISetHBin(self._handle, bin_factor=1)
-        self._FLIDriver.FLISetVBin(self._handle, bin_factor=1)
+        self._driver.FLISetHBin(self._handle, bin_factor=1)
+        self._driver.FLISetVBin(self._handle, bin_factor=1)
 
         # No pre-exposure image sensor flushing, either.
-        self._FLIDriver.FLISetNFlushes(self._handle, n_flushes=0)
+        self._driver.FLISetNFlushes(self._handle, n_flushes=0)
 
         # In principle can set bit depth here (16 or 8 bit) but most FLI cameras don't support it.
 
         # Start exposure
-        self._FLIDriver.FLIExposeFrame(self._handle)
+        self._driver.FLIExposeFrame(self._handle)
 
         readout_args = (filename,
                         self._info['visible width'],
                         self._info['visible height'],
-                        header,
-                        exposure_event)
+                        header)
         return readout_args
 
     def _readout(self, filename, width, height, header):
@@ -151,7 +154,7 @@ class Camera(AbstractSDKCamera):
         rows_got = 0
         try:
             for i in range(image_data.shape[0]):
-                image_data[i] = self._FLIDriver.FLIGrabRow(self._handle, image_data.shape[1])
+                image_data[i] = self._driver.FLIGrabRow(self._handle, image_data.shape[1])
                 rows_got += 1
         except RuntimeError as err:
             message = 'Readout error, expected {} rows, got {}: {}'.format(

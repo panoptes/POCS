@@ -9,7 +9,6 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 
-from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import get_quantity_value
@@ -25,6 +24,7 @@ class Camera(AbstractCamera):
 
     @property
     def is_exposing(self):
+        """ True if an exposure is currently under way, otherwise False """
         return self._is_exposing
 
     def connect(self):

@@ -293,8 +293,12 @@ class AbstractCamera(PanBase):
         # Clear event now to prevent any other exposures starting before this one is finsihed.
         self._exposure_event.clear()
 
-        # Cmmera type specific exposure set up and start
-        readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
+        try:
+            # Cmmera type specific exposure set up and start
+            readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
+        except (RuntimeError, ValueError, error.PanError) as err:
+            self._exposure_event.set()
+            raise error.PanError("Error starting exposure on {}: {}".format(self, err))
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
