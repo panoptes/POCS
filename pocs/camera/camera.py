@@ -294,7 +294,7 @@ class AbstractCamera(PanBase):
         self._exposure_event.clear()
 
         try:
-            # Cmmera type specific exposure set up and start
+            # Camera type specific exposure set up and start
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
         except (RuntimeError, ValueError, error.PanError) as err:
             self._exposure_event.set()
