@@ -116,6 +116,11 @@ def test_create_cameras_from_empty_config():
     empty_config = {'simulator': ['camera', ], }
     cameras = create_cameras_from_config(config=empty_config)
     assert len(cameras) == 1
+    # Default simulated camera will have simulated focuser and filterwheel
+    cam = cameras['Cam00']
+    assert cam.is_connected
+    assert cam.focuser.is_connected
+    assert cam.filterwheel.is_connected
 
 
 def test_dont_create_cameras_from_empty_config():
