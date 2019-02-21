@@ -3,6 +3,8 @@ import re
 import shutil
 import subprocess
 
+from astropy import units as u
+
 from pocs import hardware
 from pocs.utils import error
 from pocs.utils import load_module
@@ -136,6 +138,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                         msg="No port specified and auto_detect=False")
 
             camera_focuser = device_config.get('focuser', None)
+            camera_filterwheel = device_config.get('filterwheel', None)
             camera_readout = device_config.get('readout_time', 6.0)
 
         else:
@@ -151,6 +154,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                               'autofocus_step': (10, 20),
                               'autofocus_seconds': 0.1,
                               'autofocus_size': 500}
+            camera_filterwheel = {'model': 'simulator',
+                                  'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                  'move_time': 0.1 * u.second,
+                                  'timeout': 0.5 * u.second}
             camera_readout = 0.5
 
         camera_set_point = device_config.get('set_point', None)
@@ -168,6 +175,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                 set_point=camera_set_point,
                                 filter_type=camera_filter,
                                 focuser=camera_focuser,
+                                filterwheel=camera_filterwheel,
                                 readout_time=camera_readout)
         except Exception as e:
             # Warn if bad camera but keep trying other cameras
