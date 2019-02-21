@@ -18,7 +18,7 @@
     name: HD 189733
     position: 20h00m43.713s +22d42m39.07s
     priority: 105
-    exp_time: 100
+    exposure: 100
 -
     name: HD 209458
     position: 22h03m10.7721s +18d53m03.543s

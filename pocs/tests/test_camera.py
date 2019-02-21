@@ -116,6 +116,11 @@ def test_create_cameras_from_empty_config():
     empty_config = {'simulator': ['camera', ], }
     cameras = create_cameras_from_config(config=empty_config)
     assert len(cameras) == 1
+    # Default simulated camera will have simulated focuser and filterwheel
+    cam = cameras['Cam00']
+    assert cam.is_connected
+    assert cam.focuser.is_connected
+    assert cam.filterwheel.is_connected
 
 
 def test_dont_create_cameras_from_empty_config():
@@ -284,7 +289,7 @@ def test_exposure(camera, tmpdir):
     assert not camera.is_exposing
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
+    assert header['EXPOSURE'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
 
@@ -299,7 +304,7 @@ def test_exposure_blocking(camera, tmpdir):
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
+    assert header['EXPOSURE'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
 
 
@@ -313,7 +318,7 @@ def test_exposure_dark(camera, tmpdir):
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
+    assert header['EXPOSURE'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
 
 
@@ -333,8 +338,8 @@ def test_exposure_collision(camera, tmpdir):
         time.sleep(5)
     assert os.path.exists(fits_path_1)
     assert os.path.exists(fits_path_2)
-    assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
-    assert fits_utils.getval(fits_path_2, 'EXPTIME') == 1.0
+    assert fits_utils.getval(fits_path_1, 'EXPOSURE') == 2.0
+    assert fits_utils.getval(fits_path_2, 'EXPOSURE') == 1.0
 
 
 def test_exposure_no_filename(camera):
@@ -370,7 +375,7 @@ def test_observation(camera, images_dir):
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
-    observation = Observation(field, exp_time=1.5 * u.second)
+    observation = Observation(field, exposure=1.5 * u.second)
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)

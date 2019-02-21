@@ -11,11 +11,11 @@ usage() {
 # but should be generic to any gphoto2 camera that supports
 # bulb settings.
 ##################################################
- $ $(basename $0) PORT EXPTIME OUTFILE
+ $ $(basename $0) PORT EXPOSURE OUTFILE
  
  Options:
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.
-  EXPTIME           Exposure time in seconds, should be greater than 1 second.
+  EXPOSURE           Exposure time in seconds, should be greater than 1 second.
                     Can be either an integer or string.
   OUTFILE           Output filename with approrpiate extension, e.g. .cr2 for Canon.
 
@@ -30,7 +30,7 @@ if [ $# -eq 0 ]; then
 fi
 
 PORT=$1
-EXPTIME=$2
+EXPOSURE=$2
 FILENAME=$3
 echo 'Taking picture'
 echo "PORT = ${PORT}"
@@ -42,7 +42,7 @@ gphoto2 --port="${PORT}" \
         --set-config shutterspeed=0 `#Always set to bulb` \
         --set-config capturetarget=0 `#Capture to RAM for download` \
         --set-config eosremoterelease=Immediate \
-        --wait-event="${EXPTIME}s" \
+        --wait-event="${EXPOSURE}s" \
         --set-config eosremoterelease=4 \
         --wait-event-and-download=2s \
         --filename "${FILENAME}"
