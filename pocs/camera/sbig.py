@@ -7,6 +7,7 @@ from astropy import units as u
 from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
 from pocs.camera.sbigudrv import SBIGDriver
+from pocs.utils.images import fits as fits_utils
 
 
 class Camera(AbstractSDKCamera):
@@ -24,13 +25,10 @@ class Camera(AbstractSDKCamera):
         self._temperature_tolerance = temperature_tolerance
         self.logger.info('{} initialised'.format(self))
 
-    del __del__(self):
+    def __del__(self):
         with suppress(AttributeError):
-            handle = self._handle
-            self._driver.set_handle(handle)
-            self._driver.close_device()
-            self._driver.close_driver()
-            self.logger.debug("Closed SBIG camera device & driver for handle {}.".format(handle))
+            self._driver.set_handle(INVALID_HANDLE_VALUE)  # Shortcut to closing device & driver
+            self.logger.debug("Closed SBIG camera device & driver")
         super().__del__()
 
 # Properties
@@ -102,18 +100,18 @@ class Camera(AbstractSDKCamera):
         """
         self.logger.debug('Connecting to {}'.format(self))
         # This will close device and driver, ensuring it is ready to access a new camera
-        self._driver.set_handle()
+        self._driver.set_handle(handle=INVALID_HANDLE_VALUE)
         self._driver.open_driver()
         self._driver.open_device(self._address)
         self._driver.establish_link()
         link_status = self._driver.get_link_status()
         if not link_status['established']:
             raise error.PanError("Could not establish link to {}.".format(self))
-        self._handle = self._driver.get_handle()
+        self._handle = self._driver.get_driver_handle()
         if self._handle == INVALID_HANDLE_VALUE:
             raise error.PanError("Could not connect to {}.".format(self))
 
-        self._info = self._driver.get_ccd_info(handle)
+        self._info = self._driver.get_ccd_info(self._handle)
         self.model = self.properties['camera name']
         if self.properties['colour']:
             if self.properties['Truesense']:
@@ -124,7 +122,7 @@ class Camera(AbstractSDKCamera):
             self._filter_type = 'M'
 
         # Stop camera from skipping lowering of Vdd for exposures of 3 seconds of less
-        self._driver.disable_vdd_optimized(handle)
+        self._driver.disable_vdd_optimized(self._handle)
 
         self._connected = True
 
@@ -142,17 +140,21 @@ class Camera(AbstractSDKCamera):
             if t_error > self._temperature_tolerance or self.ccd_cooling_power == 100 * u.percent:
                 self.logger.warning('Unstable CCD temperature in {}'.format(self))
 
-        readout_mode = 'RM_1x1'  # Unbinned mode
+        readout_mode = 'RM_1X1'  # Unbinned mode
+        top = 0  # Unwindowed too
+        left = 0
+        height = self.properties['readout modes'][readout_mode]['height']
+        width = self.properties['readout modes'][readout_mode]['width']
+
         self._driver.start_exposure(handle=self._handle,
                                     seconds=seconds,
                                     dark=dark,
                                     antiblooming=self.properties['imaging ABG'],
                                     readout_mode=readout_mode,
-                                    top=0,
-                                    left=0,
-                                    height=self.properties['readout_modes'][readout_mode]['height'],
-                                    width=self.properties['readout_modes'][readout_mode]['width'])
-
+                                    top=top,
+                                    left=left,
+                                    height=height,
+                                    width=width)
         readout_args = (filename,
                         readout_mode,
                         top,
@@ -162,7 +164,7 @@ class Camera(AbstractSDKCamera):
                         header)
         return readout_args
 
-    def _readout(self, readout_mode, top, left, height, width, header):
+    def _readout(self, filename, readout_mode, top, left, height, width, header):
         exposure_status = Camera._driver.get_exposure_status(self._handle)
         if exposure_status == 'CS_INTEGRATION_COMPLETE':
             try:

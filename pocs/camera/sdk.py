@@ -114,7 +114,7 @@ class AbstractSDKCamera(AbstractCamera):
             # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
             self._filter_type = filter_type
 
-        if set_point:
+        if set_point is not None:
             self.ccd_set_point = set_point
             self.ccd_cooling_enabled = True
 

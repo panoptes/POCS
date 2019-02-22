@@ -20,7 +20,6 @@ from numpy.ctypeslib import as_ctypes
 from astropy import units as u
 
 from pocs.camera.sdk import AbstractSDKDriver
-from pocs.utils.images import fits as fits_utils
 from pocs.utils import error
 from pocs.utils import CountdownTimer
 from pocs.utils import get_quantity_value
@@ -98,7 +97,7 @@ class SBIGDriver(AbstractSDKDriver):
 
         cameras = {}
         for i in range(camera_info.camerasFound):
-            serial_number = camera_info[i].serialNumber.decode('ascii')
+            serial_number = camera_info.usbInfo[i].serialNumber.decode('ascii')
             device_type = "DEV_USB{}".format(i + 1)
             cameras[serial_number] = device_type
 
@@ -109,9 +108,9 @@ class SBIGDriver(AbstractSDKDriver):
             self._send_command('CC_OPEN_DRIVER')
 
     def open_device(self, device_type):
-        odp = OpenDeviceParams(device_type_codes[device_type])
+        odp = OpenDeviceParams(device_type_codes[device_type], 0, 0)
         with self._command_lock:
-            self._send_command('CC_OPEN_DEVICE')
+            self._send_command('CC_OPEN_DEVICE', params=odp)
 
     def establish_link(self):
         elp = EstablishLinkParams()
@@ -122,7 +121,7 @@ class SBIGDriver(AbstractSDKDriver):
     def get_link_status(self):
         lsr = GetLinkStatusResults()
         with self._command_lock:
-            self._send_command('CC_GET_LINK_STATUS', params=lsr)
+            self._send_command('CC_GET_LINK_STATUS', results=lsr)
         link_status = {'established': bool(lsr.linkEstablished),
                        'base_address': int(lsr.baseAddress),
                        'camera_type': camera_types[lsr.cameraType],
@@ -137,8 +136,6 @@ class SBIGDriver(AbstractSDKDriver):
         return ghr.handle
 
     def set_handle(self, handle):
-        if not handle:
-            handle = INVALID_HANDLE_VALUE
         set_handle_params = SetDriverHandleParams(handle)
         self._send_command('CC_SET_DRIVER_HANDLE', params=set_handle_params)
 
@@ -240,13 +237,13 @@ class SBIGDriver(AbstractSDKDriver):
         temp_status = {'cooling_enabled': bool(qtr.coolingEnabled),
                        'fan_enabled': bool(qtr.fanEnabled),
                        'ccd_set_point': qtr.ccdSetpoint * u.Celsius,
-                       'imaging_ccd_temperature': qtr.imageCCDTemperature * u.Celsius,
+                       'imaging_ccd_temperature': qtr.imagingCCDTemperature * u.Celsius,
                        'tracking_ccd_temperature': qtr.trackingCCDTemperature * u.Celsius,
                        'external_ccd_temperature': qtr.externalTrackingCCDTemperature * u.Celsius,
                        'ambient_temperature': qtr.ambientTemperature * u.Celsius,
                        'imaging_ccd_power': qtr.imagingCCDPower * u.percent,
                        'tracking_ccd_power': qtr.trackingCCDPower * u.percent,
-                       'external_ccd_power': qtr.extrenalTrackingCCDPower * u.percent,
+                       'external_ccd_power': qtr.externalTrackingCCDPower * u.percent,
                        'heatsink_temperature': qtr.heatsinkTemperature * u.Celsius,
                        'fan_power': qtr.fanPower * u.percent,
                        'fan_speed': qtr.fanSpeed / u.minute,
@@ -320,9 +317,9 @@ class SBIGDriver(AbstractSDKDriver):
                                                      centiseconds,
                                                      abg_command_code,
                                                      shutter_command_code,
-                                                     readout_mode_code[readout_mode],
+                                                     readout_mode_codes[readout_mode],
                                                      int(get_quantity_value(top, u.pixel)),
-                                                     int(get_quantity_valur(left, u.pixel)),
+                                                     int(get_quantity_value(left, u.pixel)),
                                                      int(get_quantity_value(height, u.pixel)),
                                                      int(get_quantity_value(width, u.pixel)))
         with self._command_lock:
@@ -337,6 +334,7 @@ class SBIGDriver(AbstractSDKDriver):
                 height,
                 width):
         # Set up all the parameter and result Structures that will be needed.
+        readout_mode_code = readout_mode_codes[readout_mode]
         top = int(get_quantity_value(top, unit=u.pixel))
         left = int(get_quantity_value(left, unit=u.pixel))
         height = int(get_quantity_value(height, unit=u.pixel))
@@ -345,7 +343,7 @@ class SBIGDriver(AbstractSDKDriver):
         end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
         start_readout_params = StartReadoutParams(ccd_codes['CCD_IMAGING'],
-                                                  readout_mode_codes[readout_mode],
+                                                  readout_mode_code,
                                                   top, left,
                                                   height, width)
 
