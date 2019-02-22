@@ -290,7 +290,7 @@ class AbstractCamera(PanBase):
                 self))
             self._exposure_event.wait()
 
-        # Clear event now to prevent any other exposures starting before this one is finsihed.
+        # Clear event now to prevent any other exposures starting before this one is finished.
         self._exposure_event.clear()
 
         try:
