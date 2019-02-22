@@ -473,13 +473,11 @@ class AbstractCamera(PanBase):
     def _poll_exposure(self, readout_args):
         timer = CountdownTimer(duration=self._timeout)
         try:
-            is_exposing = self.is_exposing
-            while is_exposing:
+            while self._is_exposing:
                 if timer.expired():
                     msg = "Timeout waiting for exposure on {} to complete".format(self)
                     raise error.Timeout(msg)
                 time.sleep(0.01)
-                is_exposing = self.is_exposing
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
             self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
@@ -488,7 +486,7 @@ class AbstractCamera(PanBase):
             # Camera type specific readout function
             self._readout(*readout_args)
         finally:
-            self._exposure_event.set()  # write_fits will have already set this, *if* it got called.
+            self._exposure_event.set()  # Need to make sure this gets set regardless of any errors
 
     def _readout(self, *args):
         raise NotImplementedError
