@@ -1,6 +1,6 @@
 # PANOPTES development container
 
-FROM ubuntu:18.04 as build-env
+FROM ubuntu:18.10 as build-env
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pan_dir=/var/panoptes
@@ -13,6 +13,7 @@ ENV PANLOG $PANDIR/logs
 ENV POCS $PANDIR/POCS  
 ENV PANUSER root
 ENV SOLVE_FIELD=/usr/bin/solve-field
+ENV DEBIAN_FRONTEND=noninteractive
 
 COPY . $POCS
 

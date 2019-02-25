@@ -55,11 +55,6 @@ gcc
 # Improves interaction with pocs_shell (via readline).
 libncurses5-dev
 
-# These support the Python package "Shapely", used in PIAA (called from POCS).
-libgeos-3.*
-libgeos-c1v5
-libgeos-dev
-
 # byobu and tmux provide a means to run multiple interactive shells in a way
 # that survives disconnection.
 byobu
@@ -68,3 +63,5 @@ tmux
 # GNU coreutils provides basic commands that we depend on (echo, ls), and is
 # almost certainly already installed, but let's make sure.
 coreutils
+
+vim-nox
