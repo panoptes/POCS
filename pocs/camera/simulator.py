@@ -18,14 +18,8 @@ class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-        self._is_exposing = False
         self.connect()
         self.logger.info("{} initialised".format(self))
-
-    @property
-    def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
-        return self._is_exposing
 
     def connect(self):
         """ Connect to camera simulator

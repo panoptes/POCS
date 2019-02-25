@@ -153,8 +153,8 @@ class SBIGDriver(AbstractSDKDriver):
         ccd_info_params2 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED'])
         ccd_info_results2 = GetCCDInfoResults2()
 
-        # 'CCD_INFO_EXTENDED2_IMAGING' will info like full frame/frame transfer, interline or not,
-        # presence of internal frame buffer, etc.
+        # 'CCD_INFO_EXTENDED2_IMAGING' will get info like full frame/frame transfer, interline or
+        # not, presence of internal frame buffer, etc.
         ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
 
@@ -205,6 +205,8 @@ class SBIGDriver(AbstractSDKDriver):
 
     def disable_vdd_optimized(self, handle):
         """
+        Stops selective lowering of the CCD's Vdd voltage to ensure consistent bias structures.
+
         There are many driver control parameters, almost all of which we would not want to change
         from their default values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
 

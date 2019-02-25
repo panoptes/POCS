@@ -71,10 +71,10 @@ class Camera(AbstractSDKCamera):
         return temp_status['cooling_enabled']
 
     @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enabled):
-        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enabled))
+    def ccd_cooling_enabled(self, enable):
+        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enable))
         set_point = self.ccd_set_point
-        self._driver.set_temp_regulation(self._handle, set_point, enabled)
+        self._driver.set_temp_regulation(self._handle, set_point, enable)
 
     @property
     def ccd_cooling_power(self):

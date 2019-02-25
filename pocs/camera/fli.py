@@ -73,9 +73,9 @@ class Camera(AbstractSDKCamera):
         return True
 
     @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enabled):
+    def ccd_cooling_enabled(self, enable):
         # Cooling is always enabled on FLI cameras
-        if not enabled:
+        if not enable:
             raise error.NotSupported("Cannot disable cooling on {}".format(self.name))
 
     @property

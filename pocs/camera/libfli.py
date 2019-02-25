@@ -85,10 +85,20 @@ class FLIDriver(AbstractSDKDriver):
         cameras = {}
         for device in device_list:
             port = device[0]
-            handle = self.FLIOpen(port)
-            serial_number = self.FLIGetSerialString(handle)
-            self.FLIClose(handle)
-            cameras[serial_number] = port
+            try:
+                handle = self.FLIOpen(port)
+            except RuntimeError as err:
+                self.logger.error("Couldn't open FLI camera at {}: {}".format(port, err))
+            else:
+                try:
+                    serial_number = self.FLIGetSerialString(handle)
+                except RuntimeError as err:
+                    self.logger.error("Couldn't get serial number from FLI camera at {}: {}".format(
+                        port, err))
+                else:
+                    cameras[serial_number] = port
+            finally:
+                self.FLIClose(handle)
 
         return cameras
 

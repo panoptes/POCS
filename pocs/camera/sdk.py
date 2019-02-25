@@ -21,9 +21,6 @@ class AbstractSDKDriver(PanBase):
             name (str): name of the library (without 'lib' prefix or any suffixes, e.g. 'fli').
             library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
 
-        Returns:
-            `~pocs.camera.libasi.ASIDriver`
-
         Raises:
             pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
                 locate the library.
@@ -80,34 +77,38 @@ class AbstractSDKCamera(AbstractCamera):
             logger.error(msg)
             raise ValueError(msg)
 
-        if type(self)._driver is None:
+        # Get class of current object in a way that works in derived classes
+        my_class = type(self)
+
+        if my_class._driver is None:
             # Initialise the driver if it hasn't already been done
-            type(self)._driver = driver(library_path=library_path)
+            my_class._driver = driver(library_path=library_path)
 
         logger.debug("Looking for {} with UID '{}'.".format(name, serial_number))
 
-        if not type(self)._cameras:
+        if not my_class._cameras:
             # No cached camera details, need to probe for connected cameras
             # This will raise a PanError if there are no cameras.
-            type(self)._cameras = type(self)._driver.get_cameras()
-            logger.debug("Connected {}s: {}".format(name, type(self)._cameras))
+            my_class._cameras = my_class._driver.get_cameras()
+            logger.debug("Connected {}s: {}".format(name, my_class._cameras))
 
-        if serial_number in type(self)._cameras:
+        if serial_number in my_class._cameras:
             logger.debug("Found {} with UID '{}' at {}.".format(
-                name, serial_number, type(self)._cameras[serial_number]))
+                name, serial_number, my_class._cameras[serial_number]))
         else:
             raise error.PanError("Could not find {} with UID '{}'.".format(
                 name, serial_number))
 
-        if serial_number in type(self)._assigned_cameras:
+        if serial_number in my_class._assigned_cameras:
             raise error.PanError("{} with UID '{}' already in use.".format(
                 name, serial_number))
 
-        type(self)._assigned_cameras.add(serial_number)
+        my_class._assigned_cameras.add(serial_number)
         super().__init__(name, *args, **kwargs)
-        self._address = type(self)._cameras[self.uid]
+        self._address = my_class._cameras[self.uid]
         self.connect()
-        assert self.is_connected, error.PanError("Could not connect to {}.".format(self))
+        if not self.is_connected:
+            raise error.PanError("Could not connect to {}.".format(self))
 
         if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
@@ -126,16 +127,6 @@ class AbstractSDKCamera(AbstractCamera):
             self.logger.debug('Removed {} from assigned cameras list'.format(uid))
 
     # Properties
-
-    @AbstractCamera.uid.getter
-    def uid(self):
-        """Return unique identifier for camera.
-
-        Need to override this because the base class only returns the 1st
-        6 characters of the serial number, which is not a unique identifier
-        for most of the camera types.
-        """
-        return self._serial_number
 
     @property
     def properties(self):

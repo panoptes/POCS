@@ -7,6 +7,7 @@ import threading
 import time
 import yaml
 from contextlib import suppress
+from abc import ABCMeta, abstractmethod
 
 from astropy.io import fits
 from astropy.time import Time
@@ -25,7 +26,7 @@ from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 
 
-class AbstractCamera(PanBase):
+class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     """Base class for all cameras.
 
@@ -80,6 +81,7 @@ class AbstractCamera(PanBase):
         self._current_observation = None
         self._exposure_event = threading.Event()
         self._exposure_event.set()
+        self._is_exposing = False
 
         self._create_subcomponent(subcomponent=focuser,
                                   sub_name='focuser',
@@ -98,8 +100,8 @@ class AbstractCamera(PanBase):
 
     @property
     def uid(self):
-        """ A six-digit serial number for the camera """
-        return self._serial_number[0:6]
+        """Return unique identifier for camera. """
+        return self._serial_number
 
     @property
     def is_connected(self):
@@ -159,7 +161,7 @@ class AbstractCamera(PanBase):
         return False
 
     @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enabled):
+    def ccd_cooling_enabled(self, enable):
         """
         Set status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -190,7 +192,7 @@ class AbstractCamera(PanBase):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
-        return not self._exposure_event.is_set()
+        return self._is_exposing
 
 ##################################################################################################
 # Methods
@@ -286,9 +288,8 @@ class AbstractCamera(PanBase):
         header = self._fits_header(seconds, dark)
 
         if not self._exposure_event.is_set():
-            self.logger.warning('Exposure started on {} while one in progress! Waiting.'.format(
-                self))
-            self._exposure_event.wait()
+            msg = "Attempt to take exposure on {} while one already in progress.".format(self)
+            raise error.PanError(msg)
 
         # Clear event now to prevent any other exposures starting before this one is finished.
         self._exposure_event.clear()
@@ -468,13 +469,14 @@ class AbstractCamera(PanBase):
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
-    def _start_exposure(self):
+    @abstractmethod
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         raise NotImplementedError
 
     def _poll_exposure(self, readout_args):
         timer = CountdownTimer(duration=self._timeout)
         try:
-            while self._is_exposing:
+            while self.is_exposing:
                 if timer.expired():
                     msg = "Timeout waiting for exposure on {} to complete".format(self)
                     raise error.Timeout(msg)
@@ -487,8 +489,9 @@ class AbstractCamera(PanBase):
             # Camera type specific readout function
             self._readout(*readout_args)
         finally:
-            self._exposure_event.set()  # Need to make sure this gets set regardless of any errors
+            self._exposure_event.set()  # Make sure this gets set regardless of readout errors
 
+    @abstractmethod
     def _readout(self, *args):
         raise NotImplementedError
 
@@ -681,6 +684,11 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
         # Setup a holder for the process
         self._proc = None
+
+    @AbstractCamera.uid.getter
+    def uid(self):
+        """ A six-digit serial number for the camera """
+        return self._serial_number[0:6]
 
     def command(self, cmd):
         """ Run gphoto2 command """

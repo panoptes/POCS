@@ -99,8 +99,8 @@ class Camera(AbstractSDKCamera):
         return self._control_getter('COOLER_ON')[0]
 
     @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, on):
-        self._control_setter('COOLER_ON', on)
+    def ccd_cooling_enabled(self, enable):
+        self._control_setter('COOLER_ON', enable)
 
     @property
     def ccd_cooling_power(self):
