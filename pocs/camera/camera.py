@@ -307,6 +307,7 @@ class AbstractCamera(PanBase):
         readout_thread.start()
 
         if blocking:
+            self.logger.debug("Blocking on exposure event for {}".format(self))
             self._exposure_event.wait()
 
         return self._exposure_event
