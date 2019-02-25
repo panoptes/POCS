@@ -689,7 +689,7 @@ class SBIGDriver(AbstractSDKDriver):
                 not recognised
         """
         # Look up integer command code for the given command string, raises
-        # KeyError if no matches found.++
+        # KeyError if no matches found.
         try:
             command_code = command_codes[command]
         except KeyError:
