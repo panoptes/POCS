@@ -23,8 +23,8 @@ from pocs.utils import error
 from pocs import hardware
 
 
-params = [SimCamera, SBIGCamera, FLICamera, ZWOCamera]
-ids = ['simulator', 'sbig', 'fli', 'zwo']
+params = [SimCamera, SimCamera, SimCamera, SBIGCamera, FLICamera, ZWOCamera]
+ids = ['simulator', 'simulator_focuser', 'simulator_filterwheel', 'sbig', 'fli', 'zwo']
 
 
 @pytest.fixture(scope='module')
@@ -36,7 +36,9 @@ def images_dir(tmpdir_factory):
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def camera(request, images_dir):
-    if request.param[0] == SimCamera:
+    if request.param[1] == 'simulator':
+        camera = SimCamera()
+    elif request.param[1] == 'simulator_focuser':
         camera = SimCamera(focuser={'model': 'simulator',
                                     'focus_port': '/dev/ttyFAKE',
                                     'initial_position': 20000,
@@ -44,11 +46,12 @@ def camera(request, images_dir):
                                     'autofocus_step': (10, 20),
                                     'autofocus_seconds': 0.1,
                                     'autofocus_size': 500,
-                                    'autofocus_keep_files': False},
-                           filterwheel={'model': 'simulator',
-                                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                                        'move_time': 0.1,
-                                        'timeout': 0.5})
+                                    'autofocus_keep_files': False})
+    elif request.param[1] == 'simulator_filterwheel':
+            camera = SimCamera(filterwheel={'model': 'simulator',
+                                            'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                            'move_time': 0.1,
+                                            'timeout': 0.5})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
