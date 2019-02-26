@@ -367,6 +367,30 @@ def test_exposure_moving(camera, tmpdir):
     assert not os.path.exists(fits_path_2)
 
 
+def test_exposure_timeout(camera, tmpdir, caplog):
+    """
+    Tests response to an exposure timeout
+    """
+    fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
+    # Make timeout extremely short to force a timeout error
+    original_timeout = camera._timeout
+    camera._timeout = 0.01
+    # This should result in a timeout error in the poll thread, but the exception won't
+    # be seen in the main thread. Can check for logged error though.
+    exposure_event = camera.take_exposure(seconds=0.1, filename=fits_path)
+    # Wait for it all to be over.
+    time.sleep(original_timeout)
+    # Put the timeout back to the original setting.
+    camera._timeout = original_timeout
+    # Should be an ERROR message in the log from the exposure tiemout
+    assert caplog.records[-1].levelname == "ERROR"
+    # Should be no data file, camera should not be exposing, and exposure event should be set
+    assert not os.path.exists(fits_path)
+    assert not camera.is_exposing
+    assert exposure_event is camera._exposure_event
+    assert exposure_event.is_set()
+
+
 def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
