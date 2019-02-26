@@ -8,6 +8,7 @@ from ctypes.util import find_library
 import astropy.units as u
 
 from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.simulator import SDKCamera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -23,8 +24,9 @@ from pocs.utils import error
 from pocs import hardware
 
 
-params = [SimCamera, SimCamera, SimCamera, SBIGCamera, FLICamera, ZWOCamera]
-ids = ['simulator', 'simulator_focuser', 'simulator_filterwheel', 'sbig', 'fli', 'zwo']
+params = [SimCamera, SimCamera, SimCamera, SimSDKCamera, SBIGCamera, FLICamera, ZWOCamera]
+ids = ['simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
+       'sbig', 'fli', 'zwo']
 
 
 @pytest.fixture(scope='module')
@@ -48,10 +50,12 @@ def camera(request, images_dir):
                                     'autofocus_size': 500,
                                     'autofocus_keep_files': False})
     elif request.param[1] == 'simulator_filterwheel':
-            camera = SimCamera(filterwheel={'model': 'simulator',
-                                            'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                                            'move_time': 0.1,
-                                            'timeout': 0.5})
+        camera = SimCamera(filterwheel={'model': 'simulator',
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                        'move_time': 0.1,
+                                        'timeout': 0.5})
+    elif request.param[1] == 'simulator_sdk':
+        camera = SimSDKCamera(serial_number='SSC101')
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -177,6 +181,21 @@ def test_sim_readout_time():
     sim_camera = SimCamera(readout_time=2.0)
     assert sim_camera.readout_time == 2.0
 
+
+def test_sdk_no_serial_number():
+    with pytest.raises(ValueError):
+        sim_camera = SimSDKCamera()
+
+
+def test_sdk_camera_not_found():
+    with pytest.raises(error.PanError):
+        sim_camera = SimSDKCamera(serial_number='SSC404')
+
+
+def test_sdk_already_in_use():
+    sim_camera = SimSDKCamera(serial_number='SSC999')
+    with pytest.raises(error.PanError):
+        sim_camera_2 = SimSDKCamera(serial_number='SSC999')
 
 # Hardware independent tests for SBIG camera
 

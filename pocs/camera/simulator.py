@@ -10,6 +10,7 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
+from pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import get_quantity_value
 
@@ -27,8 +28,9 @@ class Camera(AbstractCamera):
 
         The simulator merely markes the `connected` property.
         """
-        # Create a random serial number
-        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
+        # Create a random serial number if onw hasn't been specified
+        if self._serial_number == 'XXXXXX':
+            self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
@@ -90,3 +92,26 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+
+class SDKDriver(AbstractSDKDriver):
+    def __init__(self, library_path=None, **kwargs):
+        # Get library loader to load libc, which should usually be present...
+        super().__init__(name='c', library_path=library_path, **kwargs)
+
+    def get_SDK_version(self):
+        return "Simulated SDK Driver v0.001"
+
+    def get_cameras(self):
+        cameras = {'SSC007': 'DEV_USB0',
+                   'SSC101': 'DEV_USB1',
+                   'SSC999': 'DEV_USB2'}
+        return cameras
+
+
+class SDKCamera(AbstractSDKCamera, Camera):
+    def __init__(self,
+                 name='Simulated SDK camera',
+                 driver=SDKDriver,
+                 *args, **kwargs):
+        super().__init__(name, driver, *args, **kwargs)

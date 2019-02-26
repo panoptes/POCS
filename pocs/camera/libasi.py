@@ -39,7 +39,7 @@ class ASIDriver(AbstractSDKDriver):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(name='ASICamera2', path=library_path, **kwargs)
+        super().__init__(name='ASICamera2', library_path=library_path, **kwargs)
 
     # Methods
 

@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
 from pocs.base import PanBase
@@ -7,7 +8,7 @@ from pocs.utils.library import load_library
 from pocs.utils.logger import get_root_logger
 
 
-class AbstractSDKDriver(PanBase):
+class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
     def __init__(self, name, library_path=None, **kwargs):
         """Base class for all camera SDK interfaces.
 
@@ -39,10 +40,12 @@ class AbstractSDKDriver(PanBase):
 
     # Methods
 
+    @abstractmethod
     def get_SDK_version(self):
         """ Get the version of the SDK """
         raise NotImplementedError
 
+    @abstractmethod
     def get_cameras(self):
         """Convenience function to get a dictionary of all currently connected camera UIDs
         and their corresponding device nodes/handles/camera IDs.
