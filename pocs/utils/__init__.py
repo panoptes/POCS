@@ -226,7 +226,7 @@ def string_to_params(opts):
     not parse these options but instead passes this as a single string. This utility
     method does some simple parsing of that string and returns a list of positional
     parameters and a dictionary of keyword arguments.  A keyword argument is considered
-    anything that contains an equal sign (e.g. `exptime=30`). Any leading `--` to
+    anything that contains an equal sign (e.g. `exposure=30`). Any leading `--` to
     a keyword argument will be stripped during parsing.
 
     A list of items can be passed by specifying the keyword argument multiple times.

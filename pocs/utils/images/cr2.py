@@ -70,7 +70,7 @@ def cr2_to_fits(
         # Set some default headers
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
-        hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
+        hdu.header.set('EXPOSURE', exif.get('ExposureTime', 'Seconds'))
         hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
         hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
         hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')

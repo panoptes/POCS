@@ -48,7 +48,7 @@ class Image(PanBase):
         with fits.open(self.fits_file, 'readonly') as hdu:
             self.header = hdu[self.header_ext].header
 
-        required_headers = ['DATE-OBS', 'EXPTIME']
+        required_headers = ['DATE-OBS', 'EXPOSURE']
         for key in required_headers:
             if key not in self.header:
                 raise KeyError("Missing required FITS header: {}".format(key))
@@ -62,8 +62,8 @@ class Image(PanBase):
                                      )
         # Time Information
         self.starttime = Time(self.header['DATE-OBS'], location=location)
-        self.exptime = float(self.header['EXPTIME']) * u.second
-        self.midtime = self.starttime + (self.exptime / 2.0)
+        self.exposure = float(self.header['EXPOSURE']) * u.second
+        self.midtime = self.starttime + (self.exposure / 2.0)
         self.sidereal = self.midtime.sidereal_time('apparent')
         self.FK5_Jnow = FK5(equinox=self.midtime)
 
