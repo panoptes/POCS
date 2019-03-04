@@ -73,7 +73,7 @@ class Camera(AbstractGPhotoCamera):
         Gathers various header information, sets the file path, and calls
         `take_exposure`. Also creates a `threading.Event` object and a
         `threading.Timer` object. The timer calls `process_exposure` after the
-        set amount of time is expired (`observation.exp_time + self.readout_time`).
+        set amount of time is expired (`observation.exposure + self.readout_time`).
 
         Note:
             If a `filename` is passed in it can either be a full path that includes
@@ -85,7 +85,7 @@ class Camera(AbstractGPhotoCamera):
                 describing the observation
             headers (dict): Header data to be saved along with the file
             filename (str, optional): Filename for saving, defaults to ISOT time stamp
-            **kwargs (dict): Optional keyword arguments (`exp_time`)
+            **kwargs (dict): Optional keyword arguments (`exposure`)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
@@ -93,13 +93,13 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+        exposure, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
                                                                           *args,
                                                                           **kwargs)
 
-        proc = self.take_exposure(seconds=exp_time, filename=file_path)
+        proc = self.take_exposure(seconds=exposure, filename=file_path)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -109,7 +109,7 @@ class Camera(AbstractGPhotoCamera):
                 observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
-        wait_time = exp_time + self.readout_time
+        wait_time = exposure + self.readout_time
         t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()

@@ -8,13 +8,13 @@ from pocs.scheduler.field import Field
 
 class Observation(PanBase):
 
-    @u.quantity_input(exp_time=u.second)
-    def __init__(self, field, exp_time=120 * u.second, min_nexp=60,
+    @u.quantity_input(exposure=u.second)
+    def __init__(self, field, exposure=120 * u.second, min_nexp=60,
                  exp_set_size=10, priority=100, **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
-        must be taken at a set exposure time (`exp_time`). These exposures come
+        must be taken at a set exposure time (`exposure`). These exposures come
         in sets of a certain size (`exp_set_size`) where the minimum number of
         exposures  must be an integer multiple of the set size.
 
@@ -30,7 +30,7 @@ class Observation(PanBase):
             field to be captured
 
         Keyword Arguments:
-            exp_time {u.second} -- Exposure time for individual exposures
+            exposure {u.second} -- Exposure time for individual exposures
                 (default: {120 * u.second})
             min_nexp {int} -- The minimum number of exposures to be taken for a
                 given field (default: 60)
@@ -44,8 +44,8 @@ class Observation(PanBase):
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
-        assert exp_time > 0.0, \
-            self.logger.error("Exposure time (exp_time) must be greater than 0")
+        assert exposure > 0.0, \
+            self.logger.error("Exposure time (exposure) must be greater than 0")
 
         assert min_nexp % exp_set_size == 0, \
             self.logger.error(
@@ -56,7 +56,7 @@ class Observation(PanBase):
 
         self.field = field
 
-        self.exp_time = exp_time
+        self.exposure = exposure
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
@@ -64,8 +64,8 @@ class Observation(PanBase):
 
         self.priority = float(priority)
 
-        self._min_duration = self.exp_time * self.min_nexp
-        self._set_duration = self.exp_time * self.exp_set_size
+        self._min_duration = self.exposure * self.min_nexp
+        self._set_duration = self.exposure * self.exp_set_size
 
         self._image_dir = self.config['directories']['images']
         self._seq_time = None
@@ -204,7 +204,7 @@ class Observation(PanBase):
             'dec_mnt': self.field.coord.dec.value,
             'equinox': equinox,
             'exp_set_size': self.exp_set_size,
-            'exp_time': self.exp_time.value,
+            'exposure': self.exposure.value,
             'field_dec': self.field.coord.dec.value,
             'field_name': self.name,
             'field_ra': self.field.coord.ra.value,
@@ -226,4 +226,4 @@ class Observation(PanBase):
 
     def __str__(self):
         return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exp_time, self.exp_set_size, self.min_nexp, self.priority)
+            self.field, self.exposure, self.exp_set_size, self.min_nexp, self.priority)

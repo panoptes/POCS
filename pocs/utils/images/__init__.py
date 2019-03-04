@@ -145,7 +145,7 @@ def _make_pretty_from_fits(fname=None,
 
     if not title:
         field = header.get('FIELD', 'Unknown field')
-        exp_time = header.get('EXPTIME', 'Unknown exptime')
+        exposure = header.get('EXPOSURE', 'Unknown exposure')
         filter_type = header.get('FILTER', 'Unknown filter')
 
         try:
@@ -161,7 +161,7 @@ def _make_pretty_from_fits(fname=None,
 
         date_time = date_time.replace('T', ' ', 1)
 
-        title = '{} ({}s {}) {}'.format(field, exp_time, filter_type, date_time)
+        title = '{} ({}s {}) {}'.format(field, exposure, filter_type, date_time)
 
     norm = ImageNormalize(interval=PercentileInterval(clip_percent), stretch=LogStretch())
 

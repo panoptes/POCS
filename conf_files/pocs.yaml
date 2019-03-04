@@ -52,7 +52,7 @@ mount:
 pointing:
     auto_correct: False
     threshold: 500 # arcseconds ~ 50 pixels
-    exptime: 30 # seconds
+    exposure: 30 # seconds
     max_iterations: 3
 cameras:
     auto_detect: True
