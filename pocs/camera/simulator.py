@@ -10,29 +10,27 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
+from pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
+        kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
         super().__init__(name, *args, **kwargs)
-        self._is_exposing = False
-        self.logger.debug("Initializing simulated camera")
         self.connect()
-
-    @property
-    def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
-        return self._is_exposing
+        self.logger.info("{} initialised".format(self))
 
     def connect(self):
         """ Connect to camera simulator
 
         The simulator merely markes the `connected` property.
         """
-        # Create a random serial number
-        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
+        # Create a random serial number if one hasn't been specified
+        if self._serial_number == 'XXXXXX':
+            self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
@@ -50,17 +48,18 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
-        # Set up a Timer that will wait for the duration of the exposure then
-        # copy a dummy FITS file to the specified path and adjust the headers
-        # according to the exposure time, type.
-        exposure_thread = Timer(interval=seconds.value,
-                                function=self._fake_exposure,
-                                args=[filename, header, exposure_event])
-        exposure_thread.start()
-        self._is_exposing = True
+    def _end_exposure(self):
+        self._is_exposing = False
 
-    def _fake_exposure(self, filename, header, exposure_event):
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second) + 0.05,
+                                function=self._end_exposure)
+        self._is_exposing = True
+        exposure_thread.start()
+        readout_args = (filename, header)
+        return readout_args
+
+    def _readout(self, filename, header):
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
@@ -74,8 +73,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        self._is_exposing = False
-        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
+        fits_utils.write_fits(fake_data, header, filename, self.logger, self._exposure_event)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
@@ -94,3 +92,26 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+
+class SDKDriver(AbstractSDKDriver):
+    def __init__(self, library_path=None, **kwargs):
+        # Get library loader to load libc, which should usually be present...
+        super().__init__(name='c', library_path=library_path, **kwargs)
+
+    def get_SDK_version(self):
+        return "Simulated SDK Driver v0.001"
+
+    def get_cameras(self):
+        cameras = {'SSC007': 'DEV_USB0',
+                   'SSC101': 'DEV_USB1',
+                   'SSC999': 'DEV_USB2'}
+        return cameras
+
+
+class SDKCamera(AbstractSDKCamera, Camera):
+    def __init__(self,
+                 name='Simulated SDK camera',
+                 driver=SDKDriver,
+                 *args, **kwargs):
+        super().__init__(name, driver, *args, **kwargs)
