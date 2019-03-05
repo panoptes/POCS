@@ -6,7 +6,7 @@ MAX_EXTRA_TIME = 60  # second
 def on_enter(event_data):
     """Pointing State
 
-    Take 30 second exposure and plate-solve to get the pointing error
+    Take 30 second exptime and plate-solve to get the pointing error
     """
     pocs = event_data.model
 
@@ -37,7 +37,7 @@ def on_enter(event_data):
             pocs.logger.debug("Taking pointing image {}/{} on: {}",
                               img_num, num_pointing_images, primary_camera)
 
-            # Start the exposure
+            # Start the exptime
             camera_event = primary_camera.take_observation(
                 observation,
                 headers=fits_headers,

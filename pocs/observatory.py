@@ -366,7 +366,7 @@ class Observatory(PanBase):
         """Take individual images for the current observation
 
         This method gets the current observation and takes the next
-        corresponding exposure.
+        corresponding exptime.
 
         """
         # Get observatory metadata
@@ -375,11 +375,11 @@ class Observatory(PanBase):
         # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
-        # List of camera events to wait for to signal exposure is done
+        # List of camera events to wait for to signal exptime is done
         # processing
         camera_events = dict()
 
-        # Take exposure with each camera
+        # Take exptime with each camera
         for cam_name, camera in self.cameras.items():
             self.logger.debug("Exposing for camera: {}".format(cam_name))
 
@@ -395,9 +395,9 @@ class Observatory(PanBase):
         return camera_events
 
     def analyze_recent(self):
-        """Analyze the most recent exposure
+        """Analyze the most recent exptime
 
-        Compares the most recent exposure to the reference exposure and determines
+        Compares the most recent exptime to the reference exptime and determines
         the offset between the two.
 
         Returns:

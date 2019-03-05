@@ -5,7 +5,7 @@ usage() {
 # Take a series of bias frame images.
 # 
 # This will change the camera setting to the quickest
-# exposure possible and then take a number of photos
+# exptime possible and then take a number of photos
 # before changing camera back to bulb setting.
 ##################################################
 
