@@ -57,11 +57,11 @@ Hardware Abstraction Layer (HAL)
 The use of a HAL is widespread both in computing and robotics. In general, a
 HAL is meant to hide low-level hardware and device specific details from
 higher level programming [Elkady2012]_. Thus, while every camera ultimately
-needs to support, for instance, a ``take_exposure(seconds=120)`` command, the
+needs to support, for instance, a ``take_exptime(seconds=120)`` command, the
 details of how a specific camera model is programmed to achieve that may be
 very different. From the perspective of software at higher levels those
 details are not important, all that is important is that all attached cameras
-react appropriately to the ``take_exposure`` command.
+react appropriately to the ``take_exptime`` command.
 
 
 While the Core Layer consists of one module per feature, the HAL implements a

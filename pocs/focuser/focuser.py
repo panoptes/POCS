@@ -38,7 +38,7 @@ class AbstractFocuser(PanBase):
             following initialisation.
         autofocus_range ((int, int) optional): Coarse & fine focus sweep range, in encoder units
         autofocus_step ((int, int), optional): Coarse & fine focus sweep steps, in encoder units
-        autofocus_seconds (scalar, optional): Exposure time for focus exposures
+        autofocus_seconds (scalar, optional): Exposure time for focus exptimes
         autofocus_size (int, optional): Size of square central region of image to use, default
             500 x 500 pixels.
         autofocus_keep_files (bool, optional): If True will keep all images taken during focusing.
@@ -186,7 +186,7 @@ class AbstractFocuser(PanBase):
         should be followed by a fine focus before observing.
 
         Args:
-            seconds (scalar, optional): Exposure time for focus exposures, if not
+            seconds (scalar, optional): Exposure time for focus exptimes, if not
                 specified will use value from config.
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
                 encoder units. Specify to override values from config.
@@ -243,7 +243,7 @@ class AbstractFocuser(PanBase):
                 seconds = self.autofocus_seconds
             else:
                 raise ValueError(
-                    "No focus exposure time specified, aborting autofocus of {}!", self._camera)
+                    "No focus exptime time specified, aborting autofocus of {}!", self._camera)
 
         if not thumbnail_size:
             if self.autofocus_size:
@@ -385,12 +385,12 @@ class AbstractFocuser(PanBase):
         masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
         metric = np.empty(n_positions)
 
-        # Take and store an exposure for each focus position.
+        # Take and store an exptime for each focus position.
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
             focus_positions[i] = self.move_to(position)
 
-            # Take exposure
+            # Take exptime
             focus_fn = "{}_{:02d}.{}".format(focus_positions[i], i, self._camera.file_extension)
             file_path = os.path.join(file_path_root, focus_fn)
 

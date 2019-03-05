@@ -59,7 +59,7 @@ transitions:
         trigger: observe
         conditions:
             - mount_is_tracking
-            - has_exposures
+            - has_exptimes
     -
         source: visiting_observing
         dest: visiting_analyzing

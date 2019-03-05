@@ -256,32 +256,32 @@ class ASIDriver(AbstractSDKDriver):
         self.logger.debug("Set ROI start position of camera {} to ({}, {})".format(
             camera_ID, start_x, start_y))
 
-    def start_exposure(self, camera_ID):
-        """ Start exposure on the camera with given integer ID """
+    def start_exptime(self, camera_ID):
+        """ Start exptime on the camera with given integer ID """
         self._call_function('ASIStartExposure', camera_ID)
         self.logger.debug("Exposure started on camera {}".format(camera_ID))
 
-    def stop_exposure(self, camera_ID):
-        """ Cancel current exposure on camera with given integer ID """
+    def stop_exptime(self, camera_ID):
+        """ Cancel current exptime on camera with given integer ID """
         self._call_function('ASIStopExposure', camera_ID)
         self.logger.debug("Exposure on camera {} cancelled".format(camera_ID))
 
-    def get_exposure_status(self, camera_ID):
-        """ Get status of current exposure on camera with given integer ID """
+    def get_exptime_status(self, camera_ID):
+        """ Get status of current exptime on camera with given integer ID """
         status = ctypes.c_int()
         self._call_function('ASIGetExpStatus', camera_ID, ctypes.byref(status))
         return ExposureStatus(status.value).name
 
-    def get_exposure_data(self, camera_ID, width, height, image_type):
-        """ Get image data from exposure on camera with given integer ID """
-        exposure_data = self._image_array(width, height, image_type)
+    def get_exptime_data(self, camera_ID, width, height, image_type):
+        """ Get image data from exptime on camera with given integer ID """
+        exptime_data = self._image_array(width, height, image_type)
 
         self._call_function('ASIGetDataAfterExp',
                             camera_ID,
-                            exposure_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
-                            ctypes.c_long(exposure_data.nbytes))
-        self.logger.debug("Got exposure data from camera {}".format(camera_ID))
-        return exposure_data
+                            exptime_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
+                            ctypes.c_long(exptime_data.nbytes))
+        self.logger.debug("Got exptime data from camera {}".format(camera_ID))
+        return exptime_data
 
     def start_video_capture(self, camera_ID):
         """ Start video capture mode on camera with given integer ID """
@@ -419,7 +419,7 @@ units_and_scale = {'AUTO_TARGET_BRIGHTNESS': u.adu,
                    'AUTO_MAX_EXP': 1e-6 * u.second,  # Unit is microseconds
                    'BANDWIDTHOVERLOAD': u.percent,
                    'COOLER_POWER_PERC': u.percent,
-                   'EXPOSURE': 1e-6 * u.second,  # Unit is microseconds
+                   'EXPTIME': 1e-6 * u.second,  # Unit is microseconds
                    'OFFSET': u.adu,
                    'TARGET_TEMP': u.Celsius,
                    'TEMPERATURE': 0.1 * u.Celsius}  # Unit is 1/10th degree C
@@ -511,7 +511,7 @@ class ErrorCode(enum.IntEnum):
     INVALID_SEQUENCE = enum.auto()  # Stop capture first
     BUFFER_TOO_SMALL = enum.auto()
     VIDEO_MODE_ACTIVE = enum.auto()
-    EXPOSURE_IN_PROGRESS = enum.auto()
+    EXPTIME_IN_PROGRESS = enum.auto()
     GENERAL_ERROR = enum.auto()  # General error, e.g. value is out of valid range
     INVALID_MODE = enum.auto()  # The current mode is wrong
     END = enum.auto()
@@ -542,7 +542,7 @@ class CameraInfo(ctypes.Structure):
 class ControlType(enum.IntEnum):
     """ Control types """
     GAIN = 0
-    EXPOSURE = enum.auto()
+    EXPTIME = enum.auto()
     GAMMA = enum.auto()
     WB_R = enum.auto()
     WB_B = enum.auto()

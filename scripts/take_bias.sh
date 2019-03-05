@@ -5,7 +5,7 @@ usage() {
 # Take a series of bias frame images.
 # 
 # This will change the camera setting to the quickest
-# exposure possible and then take a number of photos
+# exptime possible and then take a number of photos
 # before changing camera back to bulb setting.
 ##################################################
 
@@ -14,7 +14,7 @@ usage() {
  Options:
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.
   OUTFILE           Output filename, defaults to bias-YMD-HMS.cr2.
-  NUM_FRAMES        Number of exposures to take, defaults to 1.
+  NUM_FRAMES        Number of exptimes to take, defaults to 1.
   SHUTTER_INDEX     The camera shutter index to use, defaults to 52 (1/4000s) on
                     EOS100D.
 "
