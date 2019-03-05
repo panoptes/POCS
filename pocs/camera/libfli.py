@@ -7,12 +7,12 @@ import ctypes
 import os
 
 import numpy as np
+from astropy import units as u
 
-import astropy.units as u
-
-from pocs.base import PanBase
-from pocs.utils.library import load_library
-import pocs.camera.libfliconstants as c
+from pocs.camera.sdk import AbstractSDKDriver
+from pocs.camera import libfliconstants as c
+from pocs.utils import error
+from pocs.utils import get_quantity_value
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                    c.FLIDOMAIN_USB,
@@ -36,9 +36,9 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
 ################################################################################
 
 
-class FLIDriver(PanBase):
+class FLIDriver(AbstractSDKDriver):
 
-    def __init__(self, library_path=None, *args, **kwargs):
+    def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
         the shared object/dynamically linked version of the FLI library, which
@@ -62,22 +62,47 @@ class FLIDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        self._CDLL = load_library(name='fli', path=library_path, logger=self.logger)
+        super().__init__(name='fli', library_path=library_path, **kwargs)
 
+    # Public methods
+
+    def get_SDK_version(self):
         # Get library version.
         version = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
         self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
-        self._version = version.value.decode('ascii')
+        return version.value.decode('ascii')
 
-    # Properties
+    def get_cameras(self):
+        """Gets currently connected camera info.
 
-    @property
-    def version(self):
-        return self._version
+        Returns:
+            dict: All currently connected camera serial numbers with corresponding device nodes.
+        """
+        device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB,
+                                   device_type=c.FLIDEVICE_CAMERA)
+        if not device_list:
+            raise error.PanError("No FLI camera devices found.")
 
-    # Public methods
+        cameras = {}
+        for device in device_list:
+            port = device[0]
+            try:
+                handle = self.FLIOpen(port)
+            except RuntimeError as err:
+                self.logger.error("Couldn't open FLI camera at {}: {}".format(port, err))
+            else:
+                try:
+                    serial_number = self.FLIGetSerialString(handle)
+                except RuntimeError as err:
+                    self.logger.error("Couldn't get serial number from FLI camera at {}: {}".format(
+                        port, err))
+                else:
+                    cameras[serial_number] = port
+            finally:
+                self.FLIClose(handle)
+
+        return cameras
 
     def FLIList(self, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """
@@ -256,9 +281,7 @@ class FLIDriver(PanBase):
                 to. A simple numeric type can be given instead of a Quantity, in which case the
                 units are assumed to be degrees Celsius.
         """
-        if isinstance(temperature, u.Quantity):
-            temperature = temperature.to(u.Celsius)
-            temperature = temperature.value
+        temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
         self._call_function('setting temperature', self._CDLL.FLISetTemperature,
@@ -289,9 +312,7 @@ class FLIDriver(PanBase):
                 can be given instead of a Quantity, in which case the units are assumed
                 to be seconds.
         """
-        if isinstance(exposure_time, u.Quantity):
-            exposure_time = exposure_time.to(u.second)
-            exposure_time = exposure_time.value
+        exposure_time = get_quantity_value(exposure_time, unit=u.second)
         milliseconds = ctypes.c_long(int(exposure_time * 1000))
         self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
                             handle, milliseconds)

@@ -268,7 +268,7 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
         pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
                                                     'position': '20h06m15.4536s +44d27m24.75s',
                                                     'priority': '100',
-                                                    'exp_time': 2,
+                                                    'exptime': 2,
                                                     'min_nexp': 2,
                                                     'exp_set_size': 2,
                                                     })
@@ -406,7 +406,7 @@ def test_run_complete(pocs):
     pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
                                                         'position': '20h06m15.4536s +44d27m24.75s',
                                                         'priority': '100',
-                                                        'exp_time': 2,
+                                                        'exptime': 2,
                                                         'min_nexp': 2,
                                                         'exp_set_size': 2,
                                                 })
@@ -430,7 +430,7 @@ def test_run_power_down_interrupt(observatory, cmd_publisher, msg_subscriber):
         pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
                                                     'position': '20h06m15.4536s +44d27m24.75s',
                                                     'priority': '100',
-                                                    'exp_time': 2,
+                                                    'exptime': 2,
                                                     'min_nexp': 2,
                                                     'exp_set_size': 2,
                                                     })
