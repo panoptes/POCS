@@ -641,7 +641,6 @@ class Observatory(PanBase):
             longitude = config_site.get('longitude')
 
             timezone = config_site.get('timezone')
-            utc_offset = config_site.get('utc_offset')
 
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
@@ -656,7 +655,6 @@ class Observatory(PanBase):
                 'longitude': longitude,
                 'elevation': elevation,
                 'timezone': timezone,
-                'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon,
                 'flat_horizon': flat_horizon,
