@@ -52,8 +52,10 @@ class ASIDriver(AbstractSDKDriver):
         return version
 
     def get_cameras(self):
-        """Convenience function to get a dictionary of all currently connected camera string IDs
-        and their corresponding integer camera IDs.
+        """Gets currently connected camera info.
+
+        Returns:
+            dict: All currently connected camera string IDs with corresponding integer camera IDs.
         """
         n_cameras = self.get_num_of_connected_cameras()
         if n_cameras == 0:

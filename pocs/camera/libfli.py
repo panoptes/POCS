@@ -74,8 +74,10 @@ class FLIDriver(AbstractSDKDriver):
         return version.value.decode('ascii')
 
     def get_cameras(self):
-        """Convenience function to get a dictionary of all currently connected camera serial numbers
-        and their corresponding device nodes.
+        """Gets currently connected camera info.
+
+        Returns:
+            dict: All currently connected camera serial numbers with corresponding device nodes.
         """
         device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB,
                                    device_type=c.FLIDEVICE_CAMERA)

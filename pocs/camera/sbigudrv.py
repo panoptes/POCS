@@ -86,8 +86,10 @@ class SBIGDriver(AbstractSDKDriver):
         return version_string
 
     def get_cameras(self):
-        """Convenience function to get a dictionary of all currently connected camera serial numbers
-        and their corresponding handles.
+        """Gets currently connected camera inf.
+
+        Returns:
+            dict: All currently connected camera serial numbers with corresponding handles.
         """
         camera_info = QueryUSBResults2()
         with self._command_lock:
