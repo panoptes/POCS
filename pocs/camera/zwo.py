@@ -38,7 +38,7 @@ class Camera(AbstractCamera):
         kwargs['file_extension'] = 'fits'
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
 
-        # Maximum time to wait beyond exposure time for an exposure to complete
+        # Maximum time to wait beyond exptime time for an exptime to complete
         self._timeout = get_quantity_value(timeout, unit=u.second)
 
         # Create a lock that will be used to prevent overlapping exposures.
@@ -222,7 +222,7 @@ class Camera(AbstractCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         return Camera._ASIDriver.get_exposure_status(self._camera_ID) == "WORKING"
 
     @property
@@ -270,7 +270,7 @@ class Camera(AbstractCamera):
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
-        self._control_setter('EXPOSURE', seconds)
+        self._control_setter('EXPTIME', seconds)
         if image_type:
             self.image_type = image_type
 
@@ -329,7 +329,7 @@ class Camera(AbstractCamera):
                                                           timeout)
             if video_data is not None:
                 now = Time.now()
-                header.set('DATE-OBS', now.fits, 'End of exposure + readout')
+                header.set('DATE-OBS', now.fits, 'End of exptime + readout')
                 filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
                 fits_utils.write_fits(video_data, header, filename)
                 good_frames += 1
@@ -354,10 +354,10 @@ class Camera(AbstractCamera):
                 self))
             self._exposure_lock.acquire(blocking=True)
 
-        self._control_setter('EXPOSURE', seconds)
+        self._control_setter('EXPTIME', seconds)
         roi_format = Camera._ASIDriver.get_roi_format(self._camera_ID)
 
-        # Start exposure
+        # Start exptime
         Camera._ASIDriver.start_exposure(self._camera_ID)
 
         # Start readout thread
@@ -377,13 +377,13 @@ class Camera(AbstractCamera):
             exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
             while exposure_status == 'WORKING':
                 if timer.expired():
-                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    msg = "Timeout waiting for exptime on {} to complete".format(self)
                     raise error.Timeout(msg)
                 time.sleep(0.01)
                 exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
         except RuntimeError as err:
             # Error returned by driver at some point while polling
-            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            self.logger.error('Error while waiting for exptime on {}: {}'.format(self, err))
             raise err
         else:
             if exposure_status == 'SUCCESS':
@@ -401,7 +401,7 @@ class Camera(AbstractCamera):
             elif exposure_status == 'IDLE':
                 raise error.PanError("Exposure missing on {}".format(self))
             else:
-                raise error.PanError("Unexpected exposure status on {}: '{}'".format(
+                raise error.PanError("Unexpected exptime status on {}: '{}'".format(
                     self, exposure_status))
         finally:
             exposure_event.set()  # write_fits will have already set this, *if* it got called.

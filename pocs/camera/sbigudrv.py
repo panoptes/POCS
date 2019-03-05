@@ -208,7 +208,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
     def get_exposure_status(self, handle):
-        """Returns the current exposure status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
+        """Returns the current exptime status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
         query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
         query_status_results = QueryCommandStatusResults()
 
@@ -228,12 +228,12 @@ class SBIGDriver(PanBase):
                       dark=False,
                       header=None):
         """
-        Starts an exposure and spawns thread that will perform readout and write
-        to file when the exposure is complete.
+        Starts an exptime and spawns thread that will perform readout and write
+        to file when the exptime is complete.
         """
         ccd_info = self._ccd_info[handle]
 
-        # SBIG driver expects exposure time in 100ths of a second.
+        # SBIG driver expects exptime time in 100ths of a second.
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second).value
         centiseconds = int(seconds * 100)
@@ -249,7 +249,7 @@ class SBIGDriver(PanBase):
             abg_command_code = abg_state_codes['ABG_LOW7']
 
         if not dark:
-            # Normal exposure, will open (and close) shutter
+            # Normal exptime, will open (and close) shutter
             shutter_command_code = shutter_command_codes['SC_OPEN_SHUTTER']
         else:
             # Dark frame, will keep shutter closed throughout
@@ -275,16 +275,16 @@ class SBIGDriver(PanBase):
                                                      top, left,
                                                      height, width)
 
-        # Make sure there isn't already an exposure in progress on this camera.
+        # Make sure there isn't already an exptime in progress on this camera.
         # If there is then we need to wait otherwise we'll cause a hang.
         # Could do this with Locks but it's more robust to directly query the hardware.
         exposure_status = self.get_exposure_status(handle)
         if exposure_status != 'CS_IDLE':
-            self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(
+            self.logger.warning('Attempt to start exptime on {} while camera busy!'.format(
                 self._ccd_info[handle]['serial number']))
             # Wait until camera is idle
             while exposure_status != 'CS_IDLE':
-                self.logger.warning('Waiting for exposure on {} to complete'.format(
+                self.logger.warning('Waiting for exptime on {} to complete'.format(
                     self._ccd_info[handle]['serial number']))
                 time.sleep(1)
                 exposure_status = self.get_exposure_status(handle)
@@ -297,14 +297,14 @@ class SBIGDriver(PanBase):
                 self.logger.warning('Unstable CCD temperature in {}'.format(
                     self._ccd_info[handle]['serial number']))
 
-        # Start exposure
-        self.logger.debug('Starting {} second exposure on {}'.format(
+        # Start exptime
+        self.logger.debug('Starting {} second exptime on {}'.format(
             seconds, self._ccd_info[handle]['serial number']))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
 
-        # Use a Timer to schedule the exposure readout and return a reference to the Timer.
+        # Use a Timer to schedule the exptime readout and return a reference to the Timer.
         wait = seconds - 0.1 if seconds > 0.1 else 0.0
         readout_args = (handle, centiseconds, filename, readout_mode_code,
                         top, left, height, width,
@@ -580,12 +580,12 @@ class SBIGDriver(PanBase):
         # Array to hold the image data
         image_data = np.zeros((height, width), dtype=np.uint16)
 
-        # Check for the end of the exposure.
+        # Check for the end of the exptime.
         exposure_status = self.get_exposure_status(handle)
 
         # Poll if needed.
         while exposure_status != 'CS_INTEGRATION_COMPLETE':
-            self.logger.debug('Waiting for exposure on {} to complete'.format(
+            self.logger.debug('Waiting for exptime on {} to complete'.format(
                 self._ccd_info[handle]['serial number']))
             time.sleep(0.1)
             exposure_status = self.get_exposure_status(handle)
@@ -746,9 +746,9 @@ class SBIGDriver(PanBase):
         throughput for short exposures as raising and lowering Vdd takes 100s of milliseconds. The
         lowering and subsequent raising of Vdd delays the image readout slightly which causes short
         exposures to have a different bias structure than long exposures. Setting this parameter to
-        FALSE stops the short exposure optimization from occurring.
+        FALSE stops the short exptime optimization from occurring.
 
-        The default behaviour will improve image throughput for exposure times of 3 seconds or less
+        The default behaviour will improve image throughput for exptime times of 3 seconds or less
         but at the penalty of altering the bias structure between short and long exposures. This
         could cause systematic errors in bias frames, dark current measurements, etc. It's probably
         not worth it.

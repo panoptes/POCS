@@ -39,8 +39,8 @@ class AbstractCamera(PanBase):
         set_point (astropy.units.Quantity): image sensor cooling target temperature.
         gain (int): The gain setting of the camera (ZWO cameras only).
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
-        timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
-        readout_time (float): approximate time to readout the camera after an exposure.
+        timeout (astropy.units.Quantity): max time to wait after exptime before TimeoutError.
+        readout_time (float): approximate time to readout the camera after an exptime.
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
@@ -184,7 +184,7 @@ class AbstractCamera(PanBase):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         raise NotImplementedError
 
 ##################################################################################################
@@ -197,7 +197,7 @@ class AbstractCamera(PanBase):
         Gathers various header information, sets the file path, and calls
             `take_exposure`. Also creates a `threading.Event` object and a
             `threading.Thread` object. The Thread calls `process_exposure`
-            after the exposure had completed and the Event is set once
+            after the exptime had completed and the Event is set once
             `process_exposure` finishes.
 
         Args:
@@ -206,29 +206,29 @@ class AbstractCamera(PanBase):
             headers (dict, optional): Header data to be saved along with the file.
             filename (str, optional): pass a filename for the output FITS file to
                 overrride the default file naming system
-            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
+            **kwargs (dict): Optional keyword arguments (`exptime`, dark)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
+        # To be used for marking when exptime is complete (see `process_exposure`)
         observation_event = threading.Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+        exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
                                                                           **kwargs)
 
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
 
-        # Add most recent exposure to list
+        # Add most recent exptime to list
         if self.is_primary:
             if 'POINTING' in headers:
                 observation.pointing_images[image_id] = file_path
             else:
                 observation.exposure_list[image_id] = file_path
 
-        # Process the exposure once readout is complete
+        # Process the exptime once readout is complete
         t = threading.Thread(
             target=self.process_exposure,
             args=(metadata, observation_event, exposure_event),
@@ -245,10 +245,10 @@ class AbstractCamera(PanBase):
                       blocking=False,
                       *args,
                       **kwargs):
-        """Take an exposure for given number of seconds and saves to provided filename.
+        """Take an exptime for given number of seconds and saves to provided filename.
 
         Args:
-            seconds (u.second, optional): Length of exposure.
+            seconds (u.second, optional): Length of exptime.
             filename (str, optional): Image is saved to this filename.
             dark (bool, optional): Exposure is a dark frame, default False. On cameras that support
                 taking dark frames internally (by not opening a mechanical shutter) this will be
@@ -257,10 +257,10 @@ class AbstractCamera(PanBase):
                 value 'Dark Frame' instead of 'Light Frame'. Set dark to None to disable the
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
-                the exposure, if True will block until it completes.
+                the exptime, if True will block until it completes.
 
         Returns:
-            threading.Event: Event that will be set when exposure is complete.
+            threading.Event: Event that will be set when exptime is complete.
 
         """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
@@ -268,14 +268,14 @@ class AbstractCamera(PanBase):
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
         if self.filterwheel and self.filterwheel.is_moving:
-            msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
+            msg = "Attempt to start exptime on {} while filterwheel is moving, ignoring.".format(
                 self)
             raise error.PanError(msg)
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+        self.logger.debug('Taking {} second exptime on {}: {}'.format(
             seconds, self.name, filename))
 
         exposure_event = threading.Event()
@@ -295,7 +295,7 @@ class AbstractCamera(PanBase):
 
     def process_exposure(self, info, observation_event, exposure_event=None):
         """
-        Processes the exposure.
+        Processes the exptime.
 
         If the camera is a primary camera, extract the jpeg image and save metadata to mongo
         `current` collection. Saves metadata to mongo `observations` collection for all images.
@@ -303,18 +303,18 @@ class AbstractCamera(PanBase):
         Args:
             info (dict): Header metadata saved for the image
             observation_event (threading.Event): An event that is set signifying that the
-                camera is done with this exposure
+                camera is done with this exptime
             exposure_event (threading.Event, optional): An event that should be set
-                when the exposure is complete, triggering the processing.
+                when the exptime is complete, triggering the processing.
         """
-        # If passed an Event that signals the end of the exposure wait for it to be set
+        # If passed an Event that signals the end of the exptime wait for it to be set
         if exposure_event is not None:
             exposure_event.wait()
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        exptime = info['exp_time']
+        exptime = info['exptime']
         field_name = info['field_name']
 
         image_title = '{} [{}s] {} {}'.format(field_name,
@@ -333,7 +333,7 @@ class AbstractCamera(PanBase):
         file_path = self._process_fits(file_path, info)
         self.logger.debug("Finished processing FITS.")
         with suppress(Exception):
-            info['exp_time'] = info['exp_time'].value
+            info['exptime'] = info['exptime'].value
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -434,15 +434,15 @@ class AbstractCamera(PanBase):
         returns a thumbnail from the centre of the image.
 
         Args:
-            seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
+            seconds (astropy.units.Quantity): exptime time, Quantity or numeric type in seconds.
             file_path (str): path to (temporarily) save the image file to.
             thumbnail_size (int): size of the square region of the centre of the image to return.
             keep_file (bool, optional): if True the image file will be deleted, if False it will
                 be kept.
             *args, **kwargs: passed to the take_exposure() method
         """
-        exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
-        exposure.wait()
+        exptime = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
+        exptime.wait()
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
@@ -456,7 +456,7 @@ class AbstractCamera(PanBase):
         header = fits.Header()
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
-        header.set('DATE-OBS', now.fits, 'Start of exposure')
+        header.set('DATE-OBS', now.fits, 'Start of exptime')
         header.set('EXPTIME', get_quantity_value(seconds, u.second), 'Seconds')
         if dark is not None:
             if dark:
@@ -547,12 +547,12 @@ class AbstractCamera(PanBase):
         }
         metadata.update(headers)
 
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        # The exp_time header data is set as part of observation but can
+        exptime = kwargs.get('exptime', observation.exptime.value)
+        # The exptime header data is set as part of observation but can
         # be override by passed parameter so update here.
-        metadata['exp_time'] = exp_time
+        metadata['exptime'] = exptime
 
-        return exp_time, file_path, image_id, metadata
+        return exptime, file_path, image_id, metadata
 
     def _process_fits(self, file_path, info):
         """

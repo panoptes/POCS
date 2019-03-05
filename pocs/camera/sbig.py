@@ -105,7 +105,7 @@ class Camera(AbstractCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         return self._SBIGDriver.get_exposure_status(self._handle) != 'CS_IDLE'
 
     @property

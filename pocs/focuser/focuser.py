@@ -243,7 +243,7 @@ class AbstractFocuser(PanBase):
                 seconds = self.autofocus_seconds
             else:
                 raise ValueError(
-                    "No focus exposure time specified, aborting autofocus of {}!", self._camera)
+                    "No focus exptime time specified, aborting autofocus of {}!", self._camera)
 
         if not thumbnail_size:
             if self.autofocus_size:
@@ -385,12 +385,12 @@ class AbstractFocuser(PanBase):
         masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
         metric = np.empty(n_positions)
 
-        # Take and store an exposure for each focus position.
+        # Take and store an exptime for each focus position.
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
             focus_positions[i] = self.move_to(position)
 
-            # Take exposure
+            # Take exptime
             focus_fn = "{}_{:02d}.{}".format(focus_positions[i], i, self._camera.file_extension)
             file_path = os.path.join(file_path_root, focus_fn)
 

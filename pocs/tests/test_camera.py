@@ -274,7 +274,7 @@ def test_exposure(camera, tmpdir):
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
     assert not camera.is_exposing
-    # A one second normal exposure.
+    # A one second normal exptime.
     exp_event = camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
     assert not exp_event.is_set()
@@ -298,7 +298,7 @@ def test_exposure_blocking(camera, tmpdir):
     Tests blocking take_exposure functionality. At least for now only SBIG cameras do this.
     """
     fits_path = str(tmpdir.join('test_exposure_blocking.fits'))
-    # A one second exposure, command should block until complete so FITS
+    # A one second exptime, command should block until complete so FITS
     # should exist immediately afterwards
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
@@ -313,7 +313,7 @@ def test_exposure_dark(camera, tmpdir):
     Tests taking a dark. At least for now only SBIG cameras do this.
     """
     fits_path = str(tmpdir.join('test_exposure_dark.fits'))
-    # A 1 second dark exposure
+    # A 1 second dark exptime
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
@@ -322,10 +322,10 @@ def test_exposure_dark(camera, tmpdir):
     assert header['IMAGETYP'] == 'Dark Frame'
 
 
-@pytest.mark.filterwarnings('ignore:Attempt to start exposure')
+@pytest.mark.filterwarnings('ignore:Attempt to start exptime')
 def test_exposure_collision(camera, tmpdir):
     """
-    Tests attempting to take an exposure while one is already in progress.
+    Tests attempting to take an exptime while one is already in progress.
     With the SBIG cameras this will generate warning but still should work. Don't do this though!
     """
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
@@ -375,7 +375,7 @@ def test_observation(camera, images_dir):
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
-    observation = Observation(field, exp_time=1.5 * u.second)
+    observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)

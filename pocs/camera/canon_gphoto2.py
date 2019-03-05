@@ -40,7 +40,7 @@ class Camera(AbstractGPhotoCamera):
             '/main/actions/viewfinder': 1,                # Screen off
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
             '/main/capturesettings/continuousaf': 0,      # No auto-focus
-            '/main/capturesettings/drivemode': 0,         # Single exposure
+            '/main/capturesettings/drivemode': 0,         # Single exptime
             '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
             '/main/capturesettings/shutterspeed': 0,      # Bulb
             '/main/imgsettings/imageformat': 9,           # RAW
@@ -73,7 +73,7 @@ class Camera(AbstractGPhotoCamera):
         Gathers various header information, sets the file path, and calls
         `take_exposure`. Also creates a `threading.Event` object and a
         `threading.Timer` object. The timer calls `process_exposure` after the
-        set amount of time is expired (`observation.exp_time + self.readout_time`).
+        set amount of time is expired (`observation.exptime + self.readout_time`).
 
         Note:
             If a `filename` is passed in it can either be a full path that includes
@@ -85,23 +85,23 @@ class Camera(AbstractGPhotoCamera):
                 describing the observation
             headers (dict): Header data to be saved along with the file
             filename (str, optional): Filename for saving, defaults to ISOT time stamp
-            **kwargs (dict): Optional keyword arguments (`exp_time`)
+            **kwargs (dict): Optional keyword arguments (`exptime`)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
+        # To be used for marking when exptime is complete (see `process_exposure`)
         camera_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+        exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
                                                                           *args,
                                                                           **kwargs)
 
-        proc = self.take_exposure(seconds=exp_time, filename=file_path)
+        proc = self.take_exposure(seconds=exptime, filename=file_path)
 
-        # Add most recent exposure to list
+        # Add most recent exptime to list
         if self.is_primary:
             if 'POINTING' in headers:
                 observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
@@ -109,7 +109,7 @@ class Camera(AbstractGPhotoCamera):
                 observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
-        wait_time = exp_time + self.readout_time
+        wait_time = exptime + self.readout_time
         t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
@@ -117,7 +117,7 @@ class Camera(AbstractGPhotoCamera):
         return camera_event
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
-        """Take an exposure for given number of seconds and saves to provided filename
+        """Take an exptime for given number of seconds and saves to provided filename
 
         Note:
             See `scripts/take_pic.sh`
@@ -126,13 +126,13 @@ class Camera(AbstractGPhotoCamera):
                 * Canon EOS 100D
 
         Args:
-            seconds (u.second, optional): Length of exposure
+            seconds (u.second, optional): Length of exptime
             filename (str, optional): Image is saved to this filename
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
+            'Taking {} second exptime on {}: {}'.format(
                 seconds, self.name, filename))
 
         if isinstance(seconds, u.Quantity):

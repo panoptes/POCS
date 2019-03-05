@@ -176,7 +176,7 @@ class Camera(AbstractCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         return bool(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
     @property
@@ -235,13 +235,13 @@ class Camera(AbstractCamera):
         self._FLIDriver.FLISetHBin(self._handle, bin_factor=1)
         self._FLIDriver.FLISetVBin(self._handle, bin_factor=1)
 
-        # No pre-exposure image sensor flushing, either.
+        # No pre-exptime image sensor flushing, either.
         self._FLIDriver.FLISetNFlushes(self._handle, n_flushes=0)
 
         # In principle can set bit depth here (16 or 8 bit) but most FLI cameras don't support it.
         # Leave alone for now.
 
-        # Start exposure
+        # Start exptime
         self._FLIDriver.FLIExposeFrame(self._handle)
 
         # Start readout thread
@@ -257,7 +257,7 @@ class Camera(AbstractCamera):
 
     def _readout(self, filename, width, height, header, exposure_event):
 
-        # Wait for exposure to complete. This should have a timeout in case something goes wrong.
+        # Wait for exptime to complete. This should have a timeout in case something goes wrong.
         while self._FLIDriver.FLIGetExposureStatus(self._handle) > 0 * u.second:
             time.sleep(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 

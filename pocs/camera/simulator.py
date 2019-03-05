@@ -23,7 +23,7 @@ class Camera(AbstractCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         return self._is_exposing
 
     def connect(self):
@@ -39,10 +39,10 @@ class Camera(AbstractCamera):
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        if exp_time > 1:
-            kwargs['exp_time'] = 1
-            self.logger.debug("Trimming camera simulator exposure to 1 s")
+        exptime = kwargs.get('exptime', observation.exptime.value)
+        if exptime > 1:
+            kwargs['exptime'] = 1
+            self.logger.debug("Trimming camera simulator exptime to 1 s")
 
         return super().take_observation(observation,
                                         headers,
@@ -51,9 +51,9 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _take_exposure(self, seconds, filename, dark, exposure_event, header, *args, **kwargs):
-        # Set up a Timer that will wait for the duration of the exposure then
+        # Set up a Timer that will wait for the duration of the exptime then
         # copy a dummy FITS file to the specified path and adjust the headers
-        # according to the exposure time, type.
+        # according to the exptime time, type.
         exposure_thread = Timer(interval=seconds.value,
                                 function=self._fake_exposure,
                                 args=[filename, header, exposure_event])

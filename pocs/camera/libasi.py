@@ -243,30 +243,30 @@ class ASIDriver(PanBase):
             camera_ID, start_x, start_y))
 
     def start_exposure(self, camera_ID):
-        """ Start exposure on the camera with given integer ID """
+        """ Start exptime on the camera with given integer ID """
         self._call_function('ASIStartExposure', camera_ID)
         self.logger.debug("Exposure started on camera {}".format(camera_ID))
 
     def stop_exposure(self, camera_ID):
-        """ Cancel current exposure on camera with given integer ID """
+        """ Cancel current exptime on camera with given integer ID """
         self._call_function('ASIStopExposure', camera_ID)
         self.logger.debug("Exposure on camera {} cancelled".format(camera_ID))
 
     def get_exposure_status(self, camera_ID):
-        """ Get status of current exposure on camera with given integer ID """
+        """ Get status of current exptime on camera with given integer ID """
         status = ctypes.c_int()
         self._call_function('ASIGetExpStatus', camera_ID, ctypes.byref(status))
         return ExposureStatus(status.value).name
 
     def get_exposure_data(self, camera_ID, width, height, image_type):
-        """ Get image data from exposure on camera with given integer ID """
+        """ Get image data from exptime on camera with given integer ID """
         exposure_data = self._image_array(width, height, image_type)
 
         self._call_function('ASIGetDataAfterExp',
                             camera_ID,
                             exposure_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
                             ctypes.c_long(exposure_data.nbytes))
-        self.logger.debug("Got exposure data from camera {}".format(camera_ID))
+        self.logger.debug("Got exptime data from camera {}".format(camera_ID))
         return exposure_data
 
     def start_video_capture(self, camera_ID):
@@ -405,7 +405,7 @@ units_and_scale = {'AUTO_TARGET_BRIGHTNESS': u.adu,
                    'AUTO_MAX_EXP': 1e-6 * u.second,  # Unit is microseconds
                    'BANDWIDTHOVERLOAD': u.percent,
                    'COOLER_POWER_PERC': u.percent,
-                   'EXPOSURE': 1e-6 * u.second,  # Unit is microseconds
+                   'EXPTIME': 1e-6 * u.second,  # Unit is microseconds
                    'OFFSET': u.adu,
                    'TARGET_TEMP': u.Celsius,
                    'TEMPERATURE': 0.1 * u.Celsius}  # Unit is 1/10th degree C
@@ -528,7 +528,7 @@ class CameraInfo(ctypes.Structure):
 class ControlType(enum.IntEnum):
     """ Control types """
     GAIN = 0
-    EXPOSURE = enum.auto()
+    EXPTIME = enum.auto()
     GAMMA = enum.auto()
     WB_R = enum.auto()
     WB_B = enum.auto()

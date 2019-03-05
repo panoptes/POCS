@@ -5,7 +5,7 @@ usage() {
 # Take a picture via gphoto2.
 # 
 # This will change the camera setting to bulb and then take
-# an exposure for the requested amount of time.
+# an exptime for the requested amount of time.
 # 
 # This script has only been tested with Canon EOS100D models
 # but should be generic to any gphoto2 camera that supports
