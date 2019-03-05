@@ -4,8 +4,10 @@ import re
 import shutil
 import subprocess
 import threading
+import time
 import yaml
 from contextlib import suppress
+from abc import ABCMeta, abstractmethod
 
 from astropy.io import fits
 from astropy.time import Time
@@ -18,12 +20,13 @@ from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils import images as img_utils
 from pocs.utils import get_quantity_value
+from pocs.utils import CountdownTimer
 from pocs.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 
 
-class AbstractCamera(PanBase):
+class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     """Base class for all cameras.
 
@@ -69,12 +72,16 @@ class AbstractCamera(PanBase):
         self.is_primary = primary
 
         self._filter_type = kwargs.get('filter_type', 'RGGB')
-
-        self._connected = False
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
+        self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+
+        self._connected = False
         self._current_observation = None
+        self._exposure_event = threading.Event()
+        self._exposure_event.set()
+        self._is_exposing = False
 
         self._create_subcomponent(subcomponent=focuser,
                                   sub_name='focuser',
@@ -93,8 +100,8 @@ class AbstractCamera(PanBase):
 
     @property
     def uid(self):
-        """ A six-digit serial number for the camera """
-        return self._serial_number[0:6]
+        """Return unique identifier for camera. """
+        return self._serial_number
 
     @property
     def is_connected(self):
@@ -154,7 +161,7 @@ class AbstractCamera(PanBase):
         return False
 
     @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enabled):
+    def ccd_cooling_enabled(self, enable):
         """
         Set status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -185,7 +192,7 @@ class AbstractCamera(PanBase):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
-        raise NotImplementedError
+        return self._is_exposing
 
 ##################################################################################################
 # Methods
@@ -275,23 +282,36 @@ class AbstractCamera(PanBase):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+        self.logger.debug('Taking {} exposure on {}: {}'.format(
             seconds, self.name, filename))
 
-        exposure_event = threading.Event()
         header = self._fits_header(seconds, dark)
 
-        self._take_exposure(seconds=seconds,
-                            filename=filename,
-                            dark=dark,
-                            exposure_event=exposure_event,
-                            header=header,
-                            *args, **kwargs)
+        if not self._exposure_event.is_set():
+            msg = "Attempt to take exposure on {} while one already in progress.".format(self)
+            raise error.PanError(msg)
+
+        # Clear event now to prevent any other exposures starting before this one is finished.
+        self._exposure_event.clear()
+
+        try:
+            # Camera type specific exposure set up and start
+            readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
+        except (RuntimeError, ValueError, error.PanError) as err:
+            self._exposure_event.set()
+            raise error.PanError("Error starting exposure on {}: {}".format(self, err))
+
+        # Start polling thread that will call camera type specific _readout method when done
+        readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
+                                         function=self._poll_exposure,
+                                         args=(readout_args, ))
+        readout_thread.start()
 
         if blocking:
-            exposure_event.wait()
+            self.logger.debug("Blocking on exposure event for {}".format(self))
+            self._exposure_event.wait()
 
-        return exposure_event
+        return self._exposure_event
 
     def process_exposure(self, info, observation_event, exposure_event=None):
         """
@@ -449,7 +469,30 @@ class AbstractCamera(PanBase):
         thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
-    def _take_exposure(self, *args, **kwargs):
+    @abstractmethod
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+        raise NotImplementedError
+
+    def _poll_exposure(self, readout_args):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            while self.is_exposing:
+                if timer.expired():
+                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    raise error.Timeout(msg)
+                time.sleep(0.01)
+        except (RuntimeError, error.PanError) as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
+        else:
+            # Camera type specific readout function
+            self._readout(*readout_args)
+        finally:
+            self._exposure_event.set()  # Make sure this gets set regardless of readout errors
+
+    @abstractmethod
+    def _readout(self, *args):
         raise NotImplementedError
 
     def _fits_header(self, seconds, dark=None):
@@ -641,6 +684,11 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
         # Setup a holder for the process
         self._proc = None
+
+    @AbstractCamera.uid.getter
+    def uid(self):
+        """ A six-digit serial number for the camera """
+        return self._serial_number[0:6]
 
     def command(self, cmd):
         """ Run gphoto2 command """
