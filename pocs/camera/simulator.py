@@ -28,7 +28,7 @@ class Camera(AbstractCamera):
 
         The simulator merely markes the `connected` property.
         """
-        # Create a random serial number if onw hasn't been specified
+        # Create a random serial number if one hasn't been specified
         if self._serial_number == 'XXXXXX':
             self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
