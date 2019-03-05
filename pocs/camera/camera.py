@@ -22,8 +22,6 @@ from pocs.utils import images as img_utils
 from pocs.utils import get_quantity_value
 from pocs.utils import CountdownTimer
 from pocs.utils.images import fits as fits_utils
-from pocs.focuser import AbstractFocuser
-from pocs.filterwheel import AbstractFilterWheel
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -56,13 +54,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
+    subcomponents = {'Focuser', 'FilterWheel'}
+
     def __init__(self,
                  name='Generic Camera',
                  model='simulator',
                  port=None,
                  primary=False,
-                 focuser=None,
-                 filterwheel=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -83,14 +81,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event.set()
         self._is_exposing = False
 
-        self._create_subcomponent(subcomponent=focuser,
-                                  sub_name='focuser',
-                                  class_name='Focuser',
-                                  base_class=AbstractFocuser)
-        self._create_subcomponent(subcomponent=filterwheel,
-                                  sub_name='filterwheel',
-                                  class_name='FilterWheel',
-                                  base_class=AbstractFilterWheel)
+        for sub_name in self.subcomponents:
+            self._create_subcomponent(subcomponent=kwargs.get(sub_name.casefold()),
+                                      sub_name=sub_name)
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -518,10 +511,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
-        if self.focuser:
-            header = self.focuser._add_fits_keywords(header)
-        if self.filterwheel:
-            header = self.filterwheel._add_fits_keywords(header)
+        for sub_name in self.subcomponents:
+            subcomponent = getattr(self, sub_name.casefold())
+            if subcomponent:
+                header = subcomponent._add_fits_keywords(header)
 
         return header
 
@@ -605,47 +598,55 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         fits_utils.update_headers(file_path, info)
         return file_path
 
-    def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):
+    def _create_subcomponent(self, subcomponent, sub_name):
         """
         Creates a subcomponent as an attribute of the camera. Can do this from either an instance
         of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
         subcomponent class' constructor.
 
         Args:
-            subcomponent (instance of class_name | dict): the subcomponent object, or the keyword
+            subcomponent (instance of sub_name | dict): the subcomponent object, or the keyword
                 arguments required to create it.
-            sub_name (str): name of the subcomponent, e.g. 'focuser'. Will be used as the attribute
-                name, and must also match the name corresponding POCS submodule for this
-                subcomponent, e.g. `pocs.focuser`
-            class_name (str): name of the subcomponent class, e.g. 'Focuser'
-            base_class (class): the base class for the subcomponent, e.g.
-                `pocs.focuser.AbtractFocuser`, used to check whether subcomponent is an instance.
+            sub_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version will
+                be used as the attribute name, and must also match the name of the corresponding
+                POCS submodule for this subcomponent, e.g. `pocs.focuser`.
         """
         if subcomponent:
+            base_module_name = "pocs.{}.{}".format(sub_name.casefold(), sub_name.casefold())
+            try:
+                base_module = load_module(base_module_name)
+            except AttributeError as err:
+                self.logger.critical("Couldn't import {} base class module {}!".format(
+                    sub_name, base_module_name))
+                raise err
+            base_class = getattr(base_module, "Abstract{}".format(sub_name))
+
             if isinstance(subcomponent, base_class):
-                self.logger.debug("{} received: {}".format(class_name, subcomponent))
-                setattr(self, sub_name, subcomponent)
-                getattr(self, sub_name).camera = self
+                self.logger.debug("{} received: {}".format(sub_name, subcomponent))
+                setattr(self, sub_name.casefold(), subcomponent)
+                getattr(self, sub_name.casefold()).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(sub_name, subcomponent['model'])
+                module_name = 'pocs.{}.{}'.format(sub_name.casefold(), subcomponent['model'])
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
                     self.logger.critical("Couldn't import {} module {}!".format(
-                        class_name, module_name))
+                        sub_name, module_name))
                     raise err
-                else:
-                    subcomponent_kwargs = copy.copy(subcomponent)
-                    subcomponent_kwargs.update({'camera': self, 'config': self.config})
-                    setattr(self, sub_name, getattr(module, class_name)(**subcomponent_kwargs))
+
+                subcomponent_kwargs = copy.copy(subcomponent)
+                subcomponent_kwargs.update({'camera': self, 'config': self.config})
+                setattr(self,
+                        sub_name.casefold(),
+                        getattr(module, sub_name)(**subcomponent_kwargs))
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
                 self.logger.error("Expected either a {} instance or dict, got {}".format(
-                    class_name, subcomponent))
-                setattr(self, sub_name, None)
+                    sub_name, subcomponent))
+                setattr(self, sub_name.casefold(), None)
         else:
-            setattr(self, sub_name, None)
+            setattr(self, sub_name.casefold(), None)
 
     def __str__(self):
         name = self.name

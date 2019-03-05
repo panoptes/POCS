@@ -140,7 +140,6 @@ class Observatory(PanBase):
     def has_dome(self):
         return self.dome is not None
 
-
 ##########################################################################
 # Device Getters/Setters
 ##########################################################################
