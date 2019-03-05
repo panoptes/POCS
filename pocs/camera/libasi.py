@@ -64,7 +64,8 @@ class ASIDriver(AbstractSDKDriver):
         # Get the IDs
         cameras = {}
         for camera_index in range(n_cameras):
-            # Can get IDs without opening cameras by parsing the name string
+            # Can get IDs without opening cameras by parsing the 'name' string, which has the format
+            # "model(string_id)" if the string ID has been set, otherwise it is just the model name.
             info = self.get_camera_property(camera_index)
             model, _, string_id = info['name'].partition('(')
             if not string_id:
