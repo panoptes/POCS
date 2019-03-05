@@ -13,7 +13,7 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     try:
-        maximum_duration = pocs.observatory.current_observation.exp_time.value + MAX_EXTRA_TIME
+        maximum_duration = pocs.observatory.current_observation.exptime.value + MAX_EXTRA_TIME
 
         # Start the observing.
         camera_events_info = pocs.observatory.observe()
@@ -25,7 +25,7 @@ def on_enter(event_data):
             "Timeout while waiting for images. Something wrong with camera, going to park.")
     except Exception as e:
         pocs.logger.warning("Problem with imaging: {}".format(e))
-        pocs.say("Hmm, I'm not sure what happened with that exposure.")
+        pocs.say("Hmm, I'm not sure what happened with that exptime.")
     else:
         pocs.logger.debug('Finished with observing, going to analyze')
         pocs.next_state = 'analyzing'

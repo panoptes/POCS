@@ -7,12 +7,12 @@ import ctypes
 import os
 
 import numpy as np
+from astropy import units as u
 
-import astropy.units as u
-
-from pocs.base import PanBase
-from pocs.utils.library import load_library
-import pocs.camera.libfliconstants as c
+from pocs.camera.sdk import AbstractSDKDriver
+from pocs.camera import libfliconstants as c
+from pocs.utils import error
+from pocs.utils import get_quantity_value
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                    c.FLIDOMAIN_USB,
@@ -36,9 +36,9 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
 ################################################################################
 
 
-class FLIDriver(PanBase):
+class FLIDriver(AbstractSDKDriver):
 
-    def __init__(self, library_path=None, *args, **kwargs):
+    def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
         the shared object/dynamically linked version of the FLI library, which
@@ -62,22 +62,47 @@ class FLIDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        self._CDLL = load_library(name='fli', path=library_path, logger=self.logger)
+        super().__init__(name='fli', library_path=library_path, **kwargs)
 
+    # Public methods
+
+    def get_SDK_version(self):
         # Get library version.
         version = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
         self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
-        self._version = version.value.decode('ascii')
+        return version.value.decode('ascii')
 
-    # Properties
+    def get_cameras(self):
+        """Gets currently connected camera info.
 
-    @property
-    def version(self):
-        return self._version
+        Returns:
+            dict: All currently connected camera serial numbers with corresponding device nodes.
+        """
+        device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB,
+                                   device_type=c.FLIDEVICE_CAMERA)
+        if not device_list:
+            raise error.PanError("No FLI camera devices found.")
 
-    # Public methods
+        cameras = {}
+        for device in device_list:
+            port = device[0]
+            try:
+                handle = self.FLIOpen(port)
+            except RuntimeError as err:
+                self.logger.error("Couldn't open FLI camera at {}: {}".format(port, err))
+            else:
+                try:
+                    serial_number = self.FLIGetSerialString(handle)
+                except RuntimeError as err:
+                    self.logger.error("Couldn't get serial number from FLI camera at {}: {}".format(
+                        port, err))
+                else:
+                    cameras[serial_number] = port
+            finally:
+                self.FLIClose(handle)
+
+        return cameras
 
     def FLIList(self, interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA):
         """
@@ -256,9 +281,7 @@ class FLIDriver(PanBase):
                 to. A simple numeric type can be given instead of a Quantity, in which case the
                 units are assumed to be degrees Celsius.
         """
-        if isinstance(temperature, u.Quantity):
-            temperature = temperature.to(u.Celsius)
-            temperature = temperature.value
+        temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
         self._call_function('setting temperature', self._CDLL.FLISetTemperature,
@@ -279,21 +302,19 @@ class FLIDriver(PanBase):
                             handle, ctypes.byref(power))
         return power.value * u.percent
 
-    def FLISetExposureTime(self, handle, exposure_time):
+    def FLISetExposureTime(self, handle, exptime_time):
         """
-        Set the exposure time for a camera.
+        Set the exptime time for a camera.
 
         Args:
-            handle (ctypes.c_long): handle of the camera to set the exposure time of.
-            exposure_time (u.Quantity): required exposure time. A simple numeric type
+            handle (ctypes.c_long): handle of the camera to set the exptime time of.
+            exptime_time (u.Quantity): required exptime time. A simple numeric type
                 can be given instead of a Quantity, in which case the units are assumed
                 to be seconds.
         """
-        if isinstance(exposure_time, u.Quantity):
-            exposure_time = exposure_time.to(u.second)
-            exposure_time = exposure_time.value
-        milliseconds = ctypes.c_long(int(exposure_time * 1000))
-        self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
+        exptime_time = get_quantity_value(exptime_time, unit=u.second)
+        milliseconds = ctypes.c_long(int(exptime_time * 1000))
+        self._call_function('setting exptime time', self._CDLL.FLISetExposureTime,
                             handle, milliseconds)
 
     def FLISetFrameType(self, handle, frame_type):
@@ -399,11 +420,11 @@ class FLIDriver(PanBase):
 
         This function sets the number of the times the CCD array of the camera is flushed before
         exposing a frame. Some FLI cameras support background flishing. Background flushing
-        continuously flushes the CCD eliminating the need for pre-exposure flushings.
+        continuously flushes the CCD eliminating the need for pre-exptime flushings.
 
         Args:
             handle (ctypes.c_long): handle of the camera to set the number of flushes for.
-            n_flushes (int): number of times to flush the CCD array before an exposure. The valid
+            n_flushes (int): number of times to flush the CCD array before an exptime. The valid
                 range is from 0 to 16 inclusive.
         """
         if n_flushes < 0 or n_flushes > 16:
@@ -415,28 +436,28 @@ class FLIDriver(PanBase):
         """
         Expose a frame for a given camera.
 
-        This function exposes a frame according the settings (image area, exposure time, binning,
+        This function exposes a frame according the settings (image area, exptime time, binning,
         etc.) of the camera. The settings must have been previously set to valid values using
         the appropriate FLISet* methods. This function is non-blocking and returns once the
-        exposure has stated.
+        exptime has stated.
 
         Args:
-            handle (ctypes.c_long): handle of the camera to start the exposure on.
+            handle (ctypes.c_long): handle of the camera to start the exptime on.
         """
-        self._call_function('starting exposure', self._CDLL.FLIExposeFrame, handle)
+        self._call_function('starting exptime', self._CDLL.FLIExposeFrame, handle)
 
     def FLIGetExposureStatus(self, handle):
         """
-        Get the remaining exposure time of a given camera.
+        Get the remaining exptime time of a given camera.
 
         Args:
-            handle (ctypes.c_long): handle of the camera to get the remaining exposure time of.
+            handle (ctypes.c_long): handle of the camera to get the remaining exptime time of.
 
         Returns:
-            astropy.units.Quantity: remaining exposure time
+            astropy.units.Quantity: remaining exptime time
         """
         time_left = ctypes.c_long()
-        self._call_function('getting exposure status', self._CDLL.FLIGetExposureStatus,
+        self._call_function('getting exptime status', self._CDLL.FLIGetExposureStatus,
                             handle, ctypes.byref(time_left))
         return (time_left.value * u.ms).to(u.s)
 
@@ -447,7 +468,7 @@ class FLIDriver(PanBase):
         This function grabs the next available row of imae data from the specificed camera and
         returns it as a nupt array. The widht of the row must be specified. The width should be
         consistent with the call to FLISetImageArea() that preceded the call to FLIExposeFrame().
-        This function should not be called until the exposure is complete, which can be confirmed
+        This function should not be called until the exptime is complete, which can be confirmed
         with FLIGetExposureStatus.
 
         Args:
@@ -471,7 +492,7 @@ class FLIDriver(PanBase):
         This function grabs the entire image frame from the specified camera and returns it as a
         numpy array. The width and height of the image must be specified. The width and height
         should be consistent with the call to FLISetImageArea() that preceded the call to
-        FLIExposeFrame(). This function should not be called until the exposure is complete, which
+        FLIExposeFrame(). This function should not be called until the exptime is complete, which
         can be confirmed with FLIGetExposureStatus().
 
         Args:

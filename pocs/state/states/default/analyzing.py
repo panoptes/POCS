@@ -15,9 +15,9 @@ def on_enter(event_data):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
-        # Check for minimum number of exposures
+        # Check for minimum number of exptimes
         if observation.current_exp_num >= observation.min_nexp:
-            # Check if we have completed an exposure block
+            # Check if we have completed an exptime block
             if observation.current_exp_num % observation.exp_set_size == 0:
                 pocs.next_state = 'scheduling'
     except Exception as e:
