@@ -214,16 +214,17 @@ class SBIGDriver(AbstractSDKDriver):
 
         The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces
         amplifier glow) only for images 3 seconds and longer. This was done to increase the image
-        throughput for short exptimes as raising and lowering Vdd takes 100s of milliseconds. The
+        throughput for short exposures as raising and lowering Vdd takes 100s of milliseconds. The
         lowering and subsequent raising of Vdd delays the image readout slightly which causes short
-        exptimes to have a different bias structure than long exptimes. Setting this parameter to
-        FALSE stops the short exptime optimization from occurring.
+        exposures to have a different bias structure than long exposures. Setting this parameter to
+        FALSE stops the short exposure optimization from occurring.
 
-        The default behaviour will improve image throughput for exptime times of 3 seconds or less
-        but at the penalty of altering the bias structure between short and long exptimes. This
+        The default behaviour will improve image throughput for exposure times of 3 seconds or less
+        but at the penalty of altering the bias structure between short and long exposures. This
         could cause systematic errors in bias frames, dark current measurements, etc. It's probably
         not worth it.
         """
+
         set_driver_control_params = SetDriverControlParams(
             driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
         self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
@@ -1300,7 +1301,7 @@ class StartExposureParams2(ctypes.Structure):
     (The Start Exposure command is deprecated.)
     """
     _fields_ = [('ccd', ctypes.c_ushort),
-                ('exptimeTime', ctypes.c_ulong),
+                ('exposureTime', ctypes.c_ulong),
                 ('abgState', ctypes.c_ushort),
                 ('openShutter', ctypes.c_ushort),
                 ('readoutMode', ctypes.c_ushort),

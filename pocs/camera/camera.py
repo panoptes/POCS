@@ -42,8 +42,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         set_point (astropy.units.Quantity): image sensor cooling target temperature.
         gain (int): The gain setting of the camera (ZWO cameras only).
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
-        timeout (astropy.units.Quantity): max time to wait after exptime before TimeoutError.
-        readout_time (float): approximate time to readout the camera after an exptime.
+        timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
+        readout_time (float): approximate time to readout the camera after an exposure.
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
@@ -191,7 +191,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     @property
     def is_exposing(self):
-        """ True if an exptime is currently under way, otherwise False """
+        """ True if an exposure is currently under way, otherwise False """
         return self._is_exposing
 
 ##################################################################################################
@@ -203,9 +203,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         Gathers various header information, sets the file path, and calls
             `take_exptime`. Also creates a `threading.Event` object and a
-            `threading.Thread` object. The Thread calls `process_exptime`
-            after the exptime had completed and the Event is set once
-            `process_exptime` finishes.
+            `threading.Thread` object. The Thread calls `process_exposure`
+            after the exposure had completed and the Event is set once
+            `process_exposure` finishes.
 
         Args:
             observation (~pocs.scheduler.observation.Observation): Object
@@ -218,7 +218,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exptime is complete (see `process_exptime`)
+        # To be used for marking when exposure is complete (see `process_exposure`)
         observation_event = threading.Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,

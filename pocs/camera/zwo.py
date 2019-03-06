@@ -244,29 +244,41 @@ class Camera(AbstractSDKCamera):
                         header)
         return readout_args
 
-    def _readout(self, filename, width, height, header):
-        exptime_status = Camera._driver.get_exptime_status(self._handle)
-        if exptime_status == 'SUCCESS':
-            try:
-                image_data = Camera._driver.get_exptime_data(self._handle,
-                                                              width,
-                                                              height,
-                                                              self.image_type)
-            except RuntimeError as err:
-                raise error.PanError('Error getting image data from {}: {}'.format(self, err))
-            else:
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger,
-                                      self._exptime_event)
-        elif exptime_status == 'FAILED':
-            raise error.PanError("Exposure failed on {}".format(self))
-        elif exptime_status == 'IDLE':
-            raise error.PanError("Exposure missing on {}".format(self))
+    def _readout(self, filename, width, height, header, exposure_event):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
+            while exposure_status == 'WORKING':
+                if timer.expired():
+                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    raise error.Timeout(msg)
+                time.sleep(0.01)
+                exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
         else:
-            raise error.PanError("Unexpected exptime status on {}: '{}'".format(
-                self, exptime_status))
+            if exposure_status == 'SUCCESS':
+                try:
+                    image_data = Camera._ASIDriver.get_exposure_data(self._camera_ID,
+                                                                     width,
+                                                                     height,
+                                                                     self.image_type)
+                except RuntimeError as err:
+                    raise error.PanError('Error getting image data from {}: {}'.format(self, err))
+                else:
+                    fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
+            elif exposure_status == 'FAILED':
+                raise error.PanError("Exposure failed on {}".format(self))
+            elif exposure_status == 'IDLE':
+                raise error.PanError("Exposure missing on {}".format(self))
+            else:
+                raise error.PanError("Unexpected exposure status on {}: '{}'".format(
+                    self, exposure_status))
+        finally:
+            exposure_event.set()  # write_fits will have already set this, *if* it got called.
+            self._exposure_lock.release()
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
