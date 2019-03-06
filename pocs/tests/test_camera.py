@@ -244,34 +244,34 @@ def test_uid(camera):
 
 def test_get_temp(camera):
     try:
-        temperature = camera.ccd_temp
+        temperature = camera.temperature
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
     else:
         assert temperature is not None
 
 
-def test_set_set_point(camera):
+def test_set_target_temperature(camera):
     try:
-        camera.ccd_set_point = 10 * u.Celsius
+        camera._target_temperature = 10 * u.Celsius
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
     else:
-        assert abs(camera.ccd_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
+        assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
 
 
 def test_enable_cooling(camera):
     try:
-        camera.ccd_cooling_enabled = True
+        camera.cooling_enabled = True
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
     else:
-        assert camera.ccd_cooling_enabled is True
+        assert camera.cooling_enabled is True
 
 
 def test_get_cooling_power(camera):
     try:
-        power = camera.ccd_cooling_power
+        power = camera.cooling_power
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
     else:
@@ -280,11 +280,11 @@ def test_get_cooling_power(camera):
 
 def test_disable_cooling(camera):
     try:
-        camera.ccd_cooling_enabled = False
+        camera.cooling_enabled = False
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
     else:
-        assert camera.ccd_cooling_enabled is False
+        assert camera.cooling_enabled is False
 
 
 def test_exposure(camera, tmpdir):

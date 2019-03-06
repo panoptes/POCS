@@ -63,7 +63,7 @@ class AbstractSDKCamera(AbstractCamera):
                  driver=AbstractSDKDriver,
                  library_path=None,
                  filter_type=None,
-                 set_point=None,
+                 target_temperature=None,
                  *args, **kwargs):
         # Would usually use self.logger but that won't exist until after calling super().__init__(),
         # and don't want to do that until after the serial number and port have both been determined
@@ -118,9 +118,9 @@ class AbstractSDKCamera(AbstractCamera):
             # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
             self._filter_type = filter_type
 
-        if set_point is not None:
-            self.ccd_set_point = set_point
-            self.ccd_cooling_enabled = True
+        if target_temperature is not None:
+            self.target_temperature = target_temperature
+            self.cooling_enabled = True
 
     def __del__(self):
         """ Attempt some clean up """

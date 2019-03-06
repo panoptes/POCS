@@ -37,7 +37,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
-        set_point (astropy.units.Quantity): image sensor cooling target temperature.
+        target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
         gain (int): The gain setting of the camera (ZWO cameras only).
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
         timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
@@ -112,7 +112,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._file_extension
 
     @property
-    def ccd_temp(self):
+    def temperature(self):
         """
         Get current temperature of the camera's image sensor.
 
@@ -122,18 +122,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """
-        Get current value of the CCD set point, the target temperature for the camera's
-        image sensor cooling control.
+        Get current value of the target temperature for the camera's image sensor cooling control.
 
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
         raise NotImplementedError
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
+    @target_temperature.setter
+    def target_temperature(self, target_temperature):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -144,7 +143,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
-    def ccd_cooling_enabled(self):
+    def cooling_enabled(self):
         """
         Get current status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -153,8 +152,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         return False
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         """
         Set status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -164,7 +163,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """
         Get current power level of the camera's image sensor cooling system (typically as
         a percentage of the maximum).
@@ -501,11 +500,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
         with suppress(NotImplementedError):
-            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
+            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
         with suppress(NotImplementedError):
-            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
+            header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
+                       'Degrees C')
         with suppress(NotImplementedError):
-            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+            header.set('COOL-POW', get_quantity_value(self.cooling_power, u.percent),
                        'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
@@ -633,7 +633,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     self.logger.critical("Couldn't import {} module {}!".format(
                         sub_name, module_name))
                     raise err
-
                 subcomponent_kwargs = copy.copy(subcomponent)
                 subcomponent_kwargs.update({'camera': self, 'config': self.config})
                 setattr(self,

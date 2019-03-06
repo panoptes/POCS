@@ -34,7 +34,7 @@ class Camera(AbstractSDKCamera):
 # Properties
 
     @property
-    def ccd_temp(self):
+    def temperature(self):
         """
         Current temperature of the camera's image sensor.
         """
@@ -42,26 +42,25 @@ class Camera(AbstractSDKCamera):
         return temp_status['imaging_ccd_temperature']
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """
-        Current value of the CCD set point, the target temperature for the camera's
-        image sensor cooling control.
+        Current value of the target temperature for the camera's image sensor cooling control.
 
         Can be set by assigning an astropy.units.Quantity.
         """
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['ccd_set_point']
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
-        if not isinstance(set_point, u.Quantity):
-            set_point = set_point * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
-        enabled = self.ccd_cooling_enabled
-        self._driver.set_temp_regulation(self._handle, set_point, enabled)
+    @target_temperature.setter
+    def target_temperature(self, target):
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
+        enabled = self.cooling_enabled
+        self._driver.set_temp_regulation(self._handle, target, enabled)
 
     @property
-    def ccd_cooling_enabled(self):
+    def cooling_enabled(self):
         """
         Current status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -70,14 +69,14 @@ class Camera(AbstractSDKCamera):
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['cooling_enabled']
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enable))
-        set_point = self.ccd_set_point
-        self._driver.set_temp_regulation(self._handle, set_point, enable)
+        target = self.target_temperature
+        self._driver.set_temp_regulation(self._handle, target, enable)
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """
         Current power level of the camera's image sensor cooling system (as
         a percentage of the maximum).
@@ -135,9 +134,9 @@ class Camera(AbstractSDKCamera):
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         # Check temerature is OK.
-        if self.ccd_cooling_enabled:
-            t_error = abs(self.ccd_temp - self.ccd_set_point)
-            if t_error > self._temperature_tolerance or self.ccd_cooling_power == 100 * u.percent:
+        if self.cooling_enabled:
+            t_error = abs(self.temperature - self.target_temperature)
+            if t_error > self._temperature_tolerance or self.cooling_power == 100 * u.percent:
                 self.logger.warning('Unstable CCD temperature in {}'.format(self))
 
         readout_mode = 'RM_1X1'  # Unbinned mode

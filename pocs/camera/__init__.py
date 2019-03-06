@@ -160,7 +160,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                   'timeout': 0.5 * u.second}
             camera_readout = 0.5
 
-        camera_set_point = device_config.get('set_point', None)
+        camera_target_temperature = device_config.get('target_temperature', None)
         camera_filter = device_config.get('filter_type', None)
 
         logger.debug('Creating camera: {}'.format(camera_model))
@@ -172,7 +172,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             cam = module.Camera(name=cam_name,
                                 model=camera_model,
                                 port=camera_port,
-                                set_point=camera_set_point,
+                                target_temperature=camera_target_temperature,
                                 filter_type=camera_filter,
                                 focuser=camera_focuser,
                                 filterwheel=camera_filterwheel,
