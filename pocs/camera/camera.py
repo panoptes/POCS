@@ -222,9 +222,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         observation_event = threading.Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          **kwargs)
+                                                                         headers,
+                                                                         filename,
+                                                                         **kwargs)
 
         exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
 

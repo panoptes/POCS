@@ -289,15 +289,15 @@ class SBIGDriver(AbstractSDKDriver):
         return statuses[query_status_results.status]
 
     def start_exptime(self,
-                       handle,
-                       seconds,
-                       dark,
-                       antiblooming,
-                       readout_mode,
-                       top,
-                       left,
-                       height,
-                       width):
+                      handle,
+                      seconds,
+                      dark,
+                      antiblooming,
+                      readout_mode,
+                      top,
+                      left,
+                      height,
+                      width):
         # SBIG driver expects exptime time in 100ths of a second.
         centiseconds = int(get_quantity_value(seconds, unit=u.second) * 100)
 
@@ -319,14 +319,14 @@ class SBIGDriver(AbstractSDKDriver):
             shutter_command_code = shutter_command_codes['SC_CLOSE_SHUTTER']
 
         start_exptime_params = StartExposureParams2(ccd_codes['CCD_IMAGING'],
-                                                     centiseconds,
-                                                     abg_command_code,
-                                                     shutter_command_code,
-                                                     readout_mode_codes[readout_mode],
-                                                     int(get_quantity_value(top, u.pixel)),
-                                                     int(get_quantity_value(left, u.pixel)),
-                                                     int(get_quantity_value(height, u.pixel)),
-                                                     int(get_quantity_value(width, u.pixel)))
+                                                    centiseconds,
+                                                    abg_command_code,
+                                                    shutter_command_code,
+                                                    readout_mode_codes[readout_mode],
+                                                    int(get_quantity_value(top, u.pixel)),
+                                                    int(get_quantity_value(left, u.pixel)),
+                                                    int(get_quantity_value(height, u.pixel)),
+                                                    int(get_quantity_value(width, u.pixel)))
         with self._command_lock:
             self.set_handle(handle)
             self._send_command('CC_START_EXPTIME2', params=start_exptime_params)

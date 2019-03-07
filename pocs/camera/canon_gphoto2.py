@@ -94,10 +94,10 @@ class Camera(AbstractGPhotoCamera):
         camera_event = Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          *args,
-                                                                          **kwargs)
+                                                                         headers,
+                                                                         filename,
+                                                                         *args,
+                                                                         **kwargs)
 
         proc = self.take_exposure(seconds=exptime, filename=file_path)
 

@@ -147,14 +147,14 @@ class Camera(AbstractSDKCamera):
         width = self.properties['readout modes'][readout_mode]['width']
 
         self._driver.start_exptime(handle=self._handle,
-                                    seconds=seconds,
-                                    dark=dark,
-                                    antiblooming=self.properties['imaging ABG'],
-                                    readout_mode=readout_mode,
-                                    top=top,
-                                    left=left,
-                                    height=height,
-                                    width=width)
+                                   seconds=seconds,
+                                   dark=dark,
+                                   antiblooming=self.properties['imaging ABG'],
+                                   readout_mode=readout_mode,
+                                   top=top,
+                                   left=left,
+                                   height=height,
+                                   width=width)
         readout_args = (filename,
                         readout_mode,
                         top,
