@@ -13,14 +13,14 @@ class Observation(PanBase):
                  exp_set_size=10, priority=100, **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
-        An observation consists of a minimum number of exptimes (`min_nexp`) that
-        must be taken at a set exptime time (`exptime`). These exptimes come
+        An observation consists of a minimum number of exposures (`min_nexp`) that
+        must be taken at a set exptime time (`exptime`). These exposures come
         in sets of a certain size (`exp_set_size`) where the minimum number of
-        exptimes  must be an integer multiple of the set size.
+        exposures  must be an integer multiple of the set size.
 
         Note:
-            An observation may consist of more exptimes than `min_nexp` but
-            exptimes will always come in groups of `exp_set_size`.
+            An observation may consist of more exposures than `min_nexp` but
+            exposures will always come in groups of `exp_set_size`.
 
         Decorators:
             u.quantity_input
@@ -30,11 +30,11 @@ class Observation(PanBase):
             field to be captured
 
         Keyword Arguments:
-            exptime {u.second} -- Exposure time for individual exptimes
+            exptime {u.second} -- Exposure time for individual exposures
                 (default: {120 * u.second})
-            min_nexp {int} -- The minimum number of exptimes to be taken for a
+            min_nexp {int} -- The minimum number of exposures to be taken for a
                 given field (default: 60)
-            exp_set_size {int} -- Number of exptimes to take per set
+            exp_set_size {int} -- Number of exposures to take per set
                 (default: {10})
             priority {int} -- Overall priority for field, with 1.0 being highest
                 (default: {100})
@@ -49,7 +49,7 @@ class Observation(PanBase):
 
         assert min_nexp % exp_set_size == 0, \
             self.logger.error(
-                "Minimum number of exptimes (min_nexp) must be " +
+                "Minimum number of exposures (min_nexp) must be " +
                 "multiple of set size (exp_set_size)")
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
@@ -59,7 +59,7 @@ class Observation(PanBase):
         self.exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exptime_list = OrderedDict()
+        self.exposure_list = OrderedDict()
         self.pointing_images = OrderedDict()
 
         self.priority = float(priority)
@@ -88,7 +88,7 @@ class Observation(PanBase):
 
     @property
     def set_duration(self):
-        """ Amount of time per set of exptimes """
+        """ Amount of time per set of exposures """
         return self._set_duration
 
     @property
@@ -128,34 +128,34 @@ class Observation(PanBase):
 
     @property
     def current_exp_num(self):
-        """ Return the current number of exptimes.
+        """ Return the current number of exposures.
 
         Returns:
-            int: The size of `self.exptime_list`.
+            int: The size of `self.exposure_list`.
         """
-        return len(self.exptime_list)
+        return len(self.exposure_list)
 
     @property
-    def first_exptime(self):
+    def first_exposure(self):
         """ Return the latest exptime information
 
         Returns:
             tuple: `image_id` and full path of most recent exptime from the primary camera
         """
         try:
-            return list(self.exptime_list.items())[0]
+            return list(self.exposure_list.items())[0]
         except IndexError:
             self.logger.warning("No exptime available")
 
     @property
-    def last_exptime(self):
+    def last_exposure(self):
         """ Return the latest exptime information
 
         Returns:
             tuple: `image_id` and full path of most recent exptime from the primary camera
         """
         try:
-            return list(self.exptime_list.items())[-1]
+            return list(self.exposure_list.items())[-1]
         except IndexError:
             self.logger.warning("No exptime available")
 
@@ -181,7 +181,7 @@ class Observation(PanBase):
         """Resets the exptime information for the observation """
         self.logger.debug("Resetting observation {}".format(self))
 
-        self.exptime_list = OrderedDict()
+        self.exposure_list = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
 
@@ -225,5 +225,5 @@ class Observation(PanBase):
 ##################################################################################################
 
     def __str__(self):
-        return "{}: {} exptimes in blocks of {}, minimum {}, priority {:.0f}".format(
+        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
             self.field, self.exptime, self.exp_set_size, self.min_nexp, self.priority)

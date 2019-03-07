@@ -500,7 +500,7 @@ def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     procs = dict()
     for cam_name, cam in pocs.observatory.cameras.items():
         fn = '{}/pole_{}.cr2'.format(base_dir, cam_name.lower())
-        proc = cam.take_exptime(seconds=exptime, filename=fn)
+        proc = cam.take_exposure(seconds=exptime, filename=fn)
         procs[fn] = proc
         if cam.is_primary:
             analyze_fn = fn
@@ -554,7 +554,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         for cam_name, cam in pocs.observatory.cameras.items():
             fn = '{}/rotation_{}_{}.cr2'.format(base_dir,
                                                 direction, cam_name.lower())
-            proc = cam.take_exptime(seconds=exptime, filename=fn)
+            proc = cam.take_exposure(seconds=exptime, filename=fn)
             procs[fn] = proc
             if cam.is_primary:
                 rotate_fn = fn
@@ -562,7 +562,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         # Move mount
         mount.move_direction(direction=direction, seconds=21)
 
-        # Get exptimes
+        # Get exposures
         for fn, proc in procs.items():
             try:
                 outs, errs = proc.communicate(timeout=(exptime + 15))
@@ -651,7 +651,7 @@ class DriftShell(Cmd):
 
         start_time = kwargs.get('start_time', current_time(flatten=True))
 
-        print_info('{} drift test with {}x {}sec exptimes'.format(
+        print_info('{} drift test with {}x {}sec exposures'.format(
             direction.capitalize(), num_pics, exptime))
 
         if direction:

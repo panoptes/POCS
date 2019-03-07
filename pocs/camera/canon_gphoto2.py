@@ -38,7 +38,7 @@ class Camera(AbstractGPhotoCamera):
         # Properties to be set upon init.
         prop2index = {
             '/main/actions/viewfinder': 1,                # Screen off
-            '/main/capturesettings/autoexptimemode': 3,  # 3 - Manual; 4 - Bulb
+            '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
             '/main/capturesettings/continuousaf': 0,      # No auto-focus
             '/main/capturesettings/drivemode': 0,         # Single exptime
             '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
@@ -71,8 +71,8 @@ class Camera(AbstractGPhotoCamera):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
-        `take_exptime`. Also creates a `threading.Event` object and a
-        `threading.Timer` object. The timer calls `process_exptime` after the
+        `take_exposure`. Also creates a `threading.Event` object and a
+        `threading.Timer` object. The timer calls `process_exposure` after the
         set amount of time is expired (`observation.exptime + self.readout_time`).
 
         Note:
@@ -90,7 +90,7 @@ class Camera(AbstractGPhotoCamera):
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exptime is complete (see `process_exptime`)
+        # To be used for marking when exptime is complete (see `process_exposure`)
         camera_event = Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
@@ -99,24 +99,24 @@ class Camera(AbstractGPhotoCamera):
                                                                           *args,
                                                                           **kwargs)
 
-        proc = self.take_exptime(seconds=exptime, filename=file_path)
+        proc = self.take_exposure(seconds=exptime, filename=file_path)
 
         # Add most recent exptime to list
         if self.is_primary:
             if 'POINTING' in headers:
                 observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
             else:
-                observation.exptime_list[image_id] = file_path.replace('.cr2', '.fits')
+                observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exptime + self.readout_time
-        t = Timer(wait_time, self.process_exptime, (metadata, camera_event, proc))
+        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
         return camera_event
 
-    def take_exptime(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
         """Take an exptime for given number of seconds and saves to provided filename
 
         Note:
@@ -129,7 +129,7 @@ class Camera(AbstractGPhotoCamera):
             seconds (u.second, optional): Length of exptime
             filename (str, optional): Image is saved to this filename
         """
-        assert filename is not None, self.logger.warning("Must pass filename for take_exptime")
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         self.logger.debug(
             'Taking {} second exptime on {}: {}'.format(

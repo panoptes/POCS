@@ -20,17 +20,17 @@ def test_create_observation_bad_field():
         Observation('20h00m43.7135s +22d42m39.0645s')
 
 
-def test_create_observation_exptime_no_units(field):
+def test_create_observation_exp_time_no_units(field):
     with pytest.raises(TypeError):
         Observation(field, exptime=1.0)
 
 
-def test_create_observation_exptime_bad(field):
+def test_create_observation_exp_time_bad(field):
     with pytest.raises(AssertionError):
         Observation(field, exptime=0.0 * u.second)
 
 
-def test_create_observation_exptime_minutes(field):
+def test_create_observation_exp_time_minutes(field):
     obs = Observation(field, exptime=5.0 * u.minute)
     assert obs.exptime == 300 * u.second
 
@@ -80,7 +80,7 @@ def test_default_set_duration(field):
 
 def test_print(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert str(obs) == "Test Observation: 17.5 s exptimes in blocks of 9, minimum 27, priority 100"
+    assert str(obs) == "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
 
 
 def test_seq_time(field):
@@ -88,25 +88,25 @@ def test_seq_time(field):
     assert obs.seq_time is None
 
 
-def test_no_exptimes(field):
+def test_no_exposures(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert obs.first_exptime is None
-    assert obs.last_exptime is None
+    assert obs.first_exposure is None
+    assert obs.last_exposure is None
     assert obs.pointing_image is None
 
 
-def test_last_exptime_and_reset(field):
+def test_last_exposure_and_reset(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27, exp_set_size=9)
     status = obs.status()
     assert status['current_exp'] == obs.current_exp_num
 
-    # Mimic taking exptimes
+    # Mimic taking exposures
     obs.merit = 112.5
 
     for i in range(5):
-        obs.exptime_list['image_{}'.format(i)] = 'full_image_path_{}'.format(i)
+        obs.exposure_list['image_{}'.format(i)] = 'full_image_path_{}'.format(i)
 
-    last = obs.last_exptime
+    last = obs.last_exposure
     assert isinstance(last, tuple)
     assert obs.merit > 0.0
     assert obs.current_exp_num == 5
@@ -114,15 +114,15 @@ def test_last_exptime_and_reset(field):
     assert last[0] == 'image_4'
     assert last[1] == 'full_image_path_4'
 
-    assert isinstance(obs.first_exptime, tuple)
-    assert obs.first_exptime[0] == 'image_0'
-    assert obs.first_exptime[1] == 'full_image_path_0'
+    assert isinstance(obs.first_exposure, tuple)
+    assert obs.first_exposure[0] == 'image_0'
+    assert obs.first_exposure[1] == 'full_image_path_0'
 
     obs.reset()
     status2 = obs.status()
 
     assert status2['current_exp'] == 0
     assert status2['merit'] == 0.0
-    assert obs.first_exptime is None
-    assert obs.last_exptime is None
+    assert obs.first_exposure is None
+    assert obs.last_exposure is None
     assert obs.seq_time is None
