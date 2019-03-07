@@ -112,6 +112,11 @@ class Camera(AbstractSDKCamera):
 
         self._info = self._driver.get_ccd_info(self._handle)
         self.model = self.properties['camera name']
+        # No way to directly ask the camera whether it has image sensor cooling or not. Need to
+        # check camera type and infer from that. As far as I can tell all models apart from the
+        # ST-i range and the SG-4 (which isn't included in the SDK yet) have cooling.
+        if self.properties['camera type'] != "STI_CAMERA":
+            self._is_cooled_camera = True
         if self.properties['colour']:
             if self.properties['Truesense']:
                 self._filter_type = 'CRGB'

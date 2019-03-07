@@ -143,6 +143,8 @@ class Camera(AbstractSDKCamera):
         self._refresh_info()
         self._handle = self.properties['camera_ID']
         self.model, _, _ = self.properties['name'].partition('(')
+        if self.properties['has_cooler']:
+            self._is_cooled_camera = True
         if self.properties['is_color_camera']:
             self._filter_type = self.properties['bayer_pattern']
         else:

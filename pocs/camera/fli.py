@@ -105,6 +105,8 @@ class Camera(AbstractSDKCamera):
             raise error.PanError(message)
         self._get_camera_info()
         self.model = self._info['camera model']
+        # All FLI camera models are cooled
+        self._is_cooled_camera = True
         self._connected = True
 
 # Private Methods

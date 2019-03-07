@@ -45,6 +45,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+        is_cooled_camera (bool): True if camera has image sensor cooling capability.
+        is_exposing (bool): True if an exposure is currently under way, otherwise False.
 
     Notes:
         The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
@@ -74,6 +76,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+        # Default is uncooled camera. Should be set to True if appropriate in camera connect() method,
+        # based on info received from camera.
+        self._is_cooled_camera = False
 
         self._connected = False
         self._current_observation = None
@@ -180,6 +185,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             return self.filterwheel.current_filter
         else:
             return self._filter_type
+
+    @property
+    def is_cooled_camera(self):
+        """ True if camera has image sensor cooling capability """
+        return self._is_cooled_camera
 
     @property
     def is_exposing(self):
@@ -500,11 +510,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
         with suppress(NotImplementedError):
+            # Some non cooled cameras can still report the image sensor temperature
             header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
-        with suppress(NotImplementedError):
+        if self.is_cooled_camera:
             header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
                        'Degrees C')
-        with suppress(NotImplementedError):
             header.set('COOL-POW', get_quantity_value(self.cooling_power, u.percent),
                        'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')

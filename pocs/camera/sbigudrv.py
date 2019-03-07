@@ -1201,7 +1201,7 @@ class GetCCDInfoResults4(ctypes.Structure):
     ctypes Structure to hold the results from the Get CCD Info command when used with
     requests 'CCD_INFO_EXTENDED2_IMAGING' or 'CCD_INFO_EXTENDED2_TRACKING'.
 
-    The capabilitiesBits is a bitmask, yay.
+    The capabilitiesBits is a bitmap, yay.
     """
     _fields_ = [('capabilities_b0', ctypes.c_int, 1),
                 ('capabilities_b1', ctypes.c_int, 1),
