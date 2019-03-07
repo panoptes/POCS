@@ -164,8 +164,8 @@ def test_move_times(name, bidirectional, expected):
 def test_move_exposing(tmpdir, caplog):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
-    fits_path = str(tmpdir.join('test_exptime.fits'))
-    exp_event = sim_camera.take_exptime(filename=fits_path, seconds=0.1)
+    fits_path = str(tmpdir.join('test_exposure.fits'))
+    exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)
     with pytest.raises(error.PanError):
         sim_camera.filterwheel.move_to(2, blocking=True)  # Attempt to move while camera is exposing
     assert caplog.records[-1].levelname == 'ERROR'
