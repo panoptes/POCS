@@ -213,7 +213,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             headers (dict, optional): Header data to be saved along with the file.
             filename (str, optional): pass a filename for the output FITS file to
                 overrride the default file naming system
-            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
+            **kwargs (dict): Optional keyword arguments (`exptime`, dark)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
@@ -221,12 +221,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # To be used for marking when exposure is complete (see `process_exposure`)
         observation_event = threading.Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+        exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
                                                                           **kwargs)
 
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -334,7 +334,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        exptime = info['exp_time']
+        exptime = info['exptime']
         field_name = info['field_name']
 
         image_title = '{} [{}s] {} {}'.format(field_name,
@@ -353,7 +353,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         file_path = self._process_fits(file_path, info)
         self.logger.debug("Finished processing FITS.")
         with suppress(Exception):
-            info['exp_time'] = info['exp_time'].value
+            info['exptime'] = info['exptime'].value
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -590,12 +590,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         }
         metadata.update(headers)
 
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        # The exp_time header data is set as part of observation but can
+        exptime = kwargs.get('exptime', observation.exptime.value)
+        # The exptime header data is set as part of observation but can
         # be override by passed parameter so update here.
-        metadata['exp_time'] = exp_time
+        metadata['exptime'] = exptime
 
-        return exp_time, file_path, image_id, metadata
+        return exptime, file_path, image_id, metadata
 
     def _process_fits(self, file_path, info):
         """

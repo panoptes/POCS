@@ -20,17 +20,17 @@ def test_create_observation_bad_field():
         Observation('20h00m43.7135s +22d42m39.0645s')
 
 
-def test_create_observation_exp_time_no_units(field):
+def test_create_observation_exptime_no_units(field):
     with pytest.raises(TypeError):
         Observation(field, exptime=1.0)
 
 
-def test_create_observation_exp_time_bad(field):
+def test_create_observation_exptime_bad(field):
     with pytest.raises(AssertionError):
         Observation(field, exptime=0.0 * u.second)
 
 
-def test_create_observation_exp_time_minutes(field):
+def test_create_observation_exptime_minutes(field):
     obs = Observation(field, exptime=5.0 * u.minute)
     assert obs.exptime == 300 * u.second
 
