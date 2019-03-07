@@ -88,7 +88,7 @@ class Camera(AbstractSDKCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exptime is currently under way, otherwise False """
         return bool(self._driver.FLIGetExposureStatus(self._handle).value)
 
 # Methods
@@ -110,8 +110,8 @@ class Camera(AbstractSDKCamera):
 
 # Private Methods
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        self._driver.FLISetExposureTime(self._handle, exposure_time=seconds)
+    def _start_exptime(self, seconds, filename, dark, header, *args, **kwargs):
+        self._driver.FLISetExposureTime(self._handle, exptime_time=seconds)
 
         if dark:
             frame_type = c.FLI_FRAME_TYPE_DARK
@@ -120,7 +120,7 @@ class Camera(AbstractSDKCamera):
         self._driver.FLISetFrameType(self._handle, frame_type)
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
-        # Can later use this for windowed exposures.
+        # Can later use this for windowed exptimes.
         self._driver.FLISetImageArea(self._handle,
                                      self._info['visible corners'][0],
                                      self._info['visible corners'][1])
@@ -129,12 +129,12 @@ class Camera(AbstractSDKCamera):
         self._driver.FLISetHBin(self._handle, bin_factor=1)
         self._driver.FLISetVBin(self._handle, bin_factor=1)
 
-        # No pre-exposure image sensor flushing, either.
+        # No pre-exptime image sensor flushing, either.
         self._driver.FLISetNFlushes(self._handle, n_flushes=0)
 
         # In principle can set bit depth here (16 or 8 bit) but most FLI cameras don't support it.
 
-        # Start exposure
+        # Start exptime
         self._driver.FLIExposeFrame(self._handle)
 
         readout_args = (filename,
@@ -157,7 +157,7 @@ class Camera(AbstractSDKCamera):
                 self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(image_data, header, filename, self.logger, self._exposure_event)
+            fits_utils.write_fits(image_data, header, filename, self.logger, self._exptime_event)
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)

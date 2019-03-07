@@ -127,8 +127,8 @@ class Camera(AbstractSDKCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
-        return Camera._driver.get_exposure_status(self._handle) == "WORKING"
+        """ True if an exptime is currently under way, otherwise False """
+        return Camera._driver.get_exptime_status(self._handle) == "WORKING"
 
     # Methods
 
@@ -156,7 +156,7 @@ class Camera(AbstractSDKCamera):
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
-        self._control_setter('EXPOSURE', seconds)
+        self._control_setter('EXPTIME', seconds)
         if image_type:
             self.image_type = image_type
 
@@ -215,7 +215,7 @@ class Camera(AbstractSDKCamera):
                                                        timeout)
             if video_data is not None:
                 now = Time.now()
-                header.set('DATE-OBS', now.fits, 'End of exposure + readout')
+                header.set('DATE-OBS', now.fits, 'End of exptime + readout')
                 filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
                 fits_utils.write_fits(video_data, header, filename)
                 good_frames += 1
@@ -234,39 +234,51 @@ class Camera(AbstractSDKCamera):
             get_quantity_value(good_frames / elapsed_time),
             bad_frames))
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        self._control_setter('EXPOSURE', seconds)
+    def _start_exptime(self, seconds, filename, dark, header, *args, **kwargs):
+        self._control_setter('EXPTIME', seconds)
         roi_format = Camera._driver.get_roi_format(self._handle)
-        Camera._driver.start_exposure(self._handle)
+        Camera._driver.start_exptime(self._handle)
         readout_args = (filename,
                         roi_format['width'],
                         roi_format['height'],
                         header)
         return readout_args
 
-    def _readout(self, filename, width, height, header):
-        exposure_status = Camera._driver.get_exposure_status(self._handle)
-        if exposure_status == 'SUCCESS':
-            try:
-                image_data = Camera._driver.get_exposure_data(self._handle,
-                                                              width,
-                                                              height,
-                                                              self.image_type)
-            except RuntimeError as err:
-                raise error.PanError('Error getting image data from {}: {}'.format(self, err))
-            else:
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger,
-                                      self._exposure_event)
-        elif exposure_status == 'FAILED':
-            raise error.PanError("Exposure failed on {}".format(self))
-        elif exposure_status == 'IDLE':
-            raise error.PanError("Exposure missing on {}".format(self))
+    def _readout(self, filename, width, height, header, exposure_event):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
+            while exposure_status == 'WORKING':
+                if timer.expired():
+                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    raise error.Timeout(msg)
+                time.sleep(0.01)
+                exposure_status = Camera._ASIDriver.get_exposure_status(self._camera_ID)
+        except RuntimeError as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
         else:
-            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                self, exposure_status))
+            if exposure_status == 'SUCCESS':
+                try:
+                    image_data = Camera._ASIDriver.get_exposure_data(self._camera_ID,
+                                                                     width,
+                                                                     height,
+                                                                     self.image_type)
+                except RuntimeError as err:
+                    raise error.PanError('Error getting image data from {}: {}'.format(self, err))
+                else:
+                    fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
+            elif exposure_status == 'FAILED':
+                raise error.PanError("Exposure failed on {}".format(self))
+            elif exposure_status == 'IDLE':
+                raise error.PanError("Exposure missing on {}".format(self))
+            else:
+                raise error.PanError("Unexpected exposure status on {}: '{}'".format(
+                    self, exposure_status))
+        finally:
+            exposure_event.set()  # write_fits will have already set this, *if* it got called.
+            self._exposure_lock.release()
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)

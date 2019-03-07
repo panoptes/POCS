@@ -224,6 +224,7 @@ class SBIGDriver(AbstractSDKDriver):
         could cause systematic errors in bias frames, dark current measurements, etc. It's probably
         not worth it.
         """
+
         set_driver_control_params = SetDriverControlParams(
             driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
         self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
@@ -274,9 +275,9 @@ class SBIGDriver(AbstractSDKDriver):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def get_exposure_status(self, handle):
-        """Returns the current exposure status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
-        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+    def get_exptime_status(self, handle):
+        """Returns the current exptime status of the camera, e.g. 'CS_IDLE', 'CS_INTEGRATING' """
+        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPTIME2'])
         query_status_results = QueryCommandStatusResults()
 
         with self._command_lock:
@@ -287,7 +288,7 @@ class SBIGDriver(AbstractSDKDriver):
 
         return statuses[query_status_results.status]
 
-    def start_exposure(self,
+    def start_exptime(self,
                        handle,
                        seconds,
                        dark,
@@ -297,7 +298,7 @@ class SBIGDriver(AbstractSDKDriver):
                        left,
                        height,
                        width):
-        # SBIG driver expects exposure time in 100ths of a second.
+        # SBIG driver expects exptime time in 100ths of a second.
         centiseconds = int(get_quantity_value(seconds, unit=u.second) * 100)
 
         # This setting is ignored by most cameras (even if they do have ABG), only exceptions are
@@ -311,13 +312,13 @@ class SBIGDriver(AbstractSDKDriver):
             abg_command_code = abg_state_codes['ABG_LOW7']
 
         if not dark:
-            # Normal exposure, will open (and close) shutter
+            # Normal exptime, will open (and close) shutter
             shutter_command_code = shutter_command_codes['SC_OPEN_SHUTTER']
         else:
             # Dark frame, will keep shutter closed throughout
             shutter_command_code = shutter_command_codes['SC_CLOSE_SHUTTER']
 
-        start_exposure_params = StartExposureParams2(ccd_codes['CCD_IMAGING'],
+        start_exptime_params = StartExposureParams2(ccd_codes['CCD_IMAGING'],
                                                      centiseconds,
                                                      abg_command_code,
                                                      shutter_command_code,
@@ -328,7 +329,7 @@ class SBIGDriver(AbstractSDKDriver):
                                                      int(get_quantity_value(width, u.pixel)))
         with self._command_lock:
             self.set_handle(handle)
-            self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
+            self._send_command('CC_START_EXPTIME2', params=start_exptime_params)
 
     def readout(self,
                 handle,
@@ -344,7 +345,7 @@ class SBIGDriver(AbstractSDKDriver):
         height = int(get_quantity_value(height, unit=u.pixel))
         width = int(get_quantity_value(width, unit=u.pixel))
 
-        end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
+        end_exptime_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
         start_readout_params = StartReadoutParams(ccd_codes['CCD_IMAGING'],
                                                   readout_mode_code,
@@ -364,7 +365,7 @@ class SBIGDriver(AbstractSDKDriver):
         # Readout data
         with self._command_lock:
             self.set_handle(handle)
-            self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+            self._send_command('CC_END_EXPTIME', params=end_exptime_params)
             self._send_command('CC_START_READOUT', params=start_readout_params)
             try:
                 for i in range(height):
@@ -757,8 +758,8 @@ class SBIGDriver(AbstractSDKDriver):
 
 # Camera command codes. Doesn't include the 'SBIG only" commands.
 command_codes = {'CC_NULL': 0,
-                 'CC_START_EXPOSURE': 1,
-                 'CC_END_EXPOSURE': 2,
+                 'CC_START_EXPTIME': 1,
+                 'CC_END_EXPTIME': 2,
                  'CC_READOUT_LINE': 3,
                  'CC_DUMP_LINES': 4,
                  'CC_SET_TEMPERATURE_REGULATION': 5,
@@ -806,7 +807,7 @@ command_codes = {'CC_NULL': 0,
                  'CC_BTDI_SETUP': 47,
                  'CC_MOTOR_FOCUS': 48,
                  'CC_QUERY_ETHERNET': 49,
-                 'CC_START_EXPOSURE2': 50,
+                 'CC_START_EXPTIME2': 50,
                  'CC_SET_TEMPERATURE_REGULATION2': 51,
                  'CC_READ_OFFSET2': 52,
                  'CC_DIFF_GUIDER': 53,
@@ -827,8 +828,8 @@ commands = {code: command for command, code in command_codes.items()}
 # Camera error messages
 errors = {0: 'CE_NO_ERROR',
           1: 'CE_CAMERA_NOT_FOUND',
-          2: 'CE_EXPOSURE_IN_PROGRESS',
-          3: 'CE_NO_EXPOSURE_IN_PROGRESS',
+          2: 'CE_EXPTIME_IN_PROGRESS',
+          3: 'CE_NO_EXPTIME_IN_PROGRESS',
           4: 'CE_UNKNOWN_COMMAND',
           5: 'CE_BAD_CAMERA_COMMAND',
           6: 'CE_BAD_PARAMETER',

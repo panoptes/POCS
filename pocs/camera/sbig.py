@@ -87,8 +87,8 @@ class Camera(AbstractSDKCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
-        return self._driver.get_exposure_status(self._handle) == 'CS_INTEGRATING'
+        """ True if an exptime is currently under way, otherwise False """
+        return self._driver.get_exptime_status(self._handle) == 'CS_INTEGRATING'
 
 # Methods
 
@@ -121,7 +121,7 @@ class Camera(AbstractSDKCamera):
         else:
             self._filter_type = 'M'
 
-        # Stop camera from skipping lowering of Vdd for exposures of 3 seconds of less
+        # Stop camera from skipping lowering of Vdd for exptimes of 3 seconds of less
         self._driver.disable_vdd_optimized(self._handle)
 
         self._connected = True
@@ -133,7 +133,7 @@ class Camera(AbstractSDKCamera):
 
 # Private methods
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+    def _start_exptime(self, seconds, filename, dark, header, *args, **kwargs):
         # Check temerature is OK.
         if self.ccd_cooling_enabled:
             t_error = abs(self.ccd_temp - self.ccd_set_point)
@@ -146,7 +146,7 @@ class Camera(AbstractSDKCamera):
         height = self.properties['readout modes'][readout_mode]['height']
         width = self.properties['readout modes'][readout_mode]['width']
 
-        self._driver.start_exposure(handle=self._handle,
+        self._driver.start_exptime(handle=self._handle,
                                     seconds=seconds,
                                     dark=dark,
                                     antiblooming=self.properties['imaging ABG'],
@@ -165,8 +165,8 @@ class Camera(AbstractSDKCamera):
         return readout_args
 
     def _readout(self, filename, readout_mode, top, left, height, width, header):
-        exposure_status = Camera._driver.get_exposure_status(self._handle)
-        if exposure_status == 'CS_INTEGRATION_COMPLETE':
+        exptime_status = Camera._driver.get_exptime_status(self._handle)
+        if exptime_status == 'CS_INTEGRATION_COMPLETE':
             try:
                 image_data = Camera._driver.readout(self._handle,
                                                     readout_mode,
@@ -181,12 +181,12 @@ class Camera(AbstractSDKCamera):
                                       header,
                                       filename,
                                       self.logger,
-                                      self._exposure_event)
-        elif exposure_status == 'CS_IDLE':
+                                      self._exptime_event)
+        elif exptime_status == 'CS_IDLE':
             raise error.PanError("Exposure missing on {}".format(self))
         else:
-            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                self, exposure_status))
+            raise error.PanError("Unexpected exptime status on {}: '{}'".format(
+                self, exptime_status))
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
