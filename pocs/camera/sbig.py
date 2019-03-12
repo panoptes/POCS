@@ -17,12 +17,8 @@ class Camera(AbstractSDKCamera):
 
     def __init__(self,
                  name='SBIG Camera',
-                 temperature_tolerance=0.5 * u.Celsius,
                  *args, **kwargs):
         super().__init__(name, SBIGDriver, *args, **kwargs)
-        if not isinstance(temperature_tolerance, u.Quantity):
-            temperature_tolerance = temperature_tolerance * u.Celsius
-        self._temperature_tolerance = temperature_tolerance
         self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
@@ -138,12 +134,6 @@ class Camera(AbstractSDKCamera):
 # Private methods
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        # Check temerature is OK.
-        if self.cooling_enabled:
-            t_error = abs(self.temperature - self.target_temperature)
-            if t_error > self._temperature_tolerance or self.cooling_power == 100 * u.percent:
-                self.logger.warning('Unstable CCD temperature in {}'.format(self))
-
         readout_mode = 'RM_1X1'  # Unbinned mode
         top = 0  # Unwindowed too
         left = 0

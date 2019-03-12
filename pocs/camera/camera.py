@@ -13,6 +13,8 @@ from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
+from pytest import approx
+
 from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
@@ -79,6 +81,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
+        self._temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
+        if not isinstance(self._temperature_tolerance, u.Quantity):
+            self._temperature_tolerance = self._temperature_tolerance * u.Celsius
 
         self._connected = False
         self._current_observation = None
@@ -192,13 +197,52 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._is_cooled_camera
 
     @property
+    def is_temperature_stable(self):
+        """ True if image sensor temperature is stable, False if not.
+
+        An uncooled camera, or cooled camera with cooling disabled, will always return False.
+        """
+        if self.is_cooled_camera and self.cooling_enabled:
+            at_target = self.temperature == approx(self.target_temperature,
+                                                   abs=self._temperature_tolerance)
+            if not at_target or self.cooling_power == 100 * u.percent:
+                self.logger.warning('Unstable CCD temperature in {}'.format(self))
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exposure is currently under way, otherwise False. """
         return self._is_exposing
+
+    @property
+    def is_ready(self):
+        """ True if camera is ready to start another exposure, otherwise False. """
+        # For cooled camera expect stable temperature before taking exposure
+        if self.is_cooled_camera and not self.is_temperature_stable:
+            return False
+
+        # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
+        for subcomponent in self.subcomponents:
+            if getattr(self, subcomponent) and not getattr(self, subcomponent).is_ready:
+                return False
+
+        # Make sure there isn't an exposure already in progress.
+        if self.is_exposing:
+            return False
+
+        return True
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    @abstractmethod
+    def connect(self):
+        raise NotImplementedError
 
     def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation

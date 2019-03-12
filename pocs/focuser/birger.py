@@ -134,6 +134,7 @@ class Focuser(AbstractFocuser):
             return
 
         Focuser._assigned_nodes.append(self.port)
+        self._is_moving = False
         self._initialise()
         if initial_position is not None:
             self.position = initial_position
@@ -204,6 +205,11 @@ class Focuser(AbstractFocuser):
         """
         return self._hardware_version
 
+    @property
+    def is_moving(self):
+        """ True if the focuser is currently moving. """
+        return self._is_moving
+
 ##################################################################################################
 # Public Methods
 ##################################################################################################
@@ -260,16 +266,22 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested position but will warn if the lens reports hitting
         a stop.
         """
-        response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
-        if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
-                self, response[0].rstrip()))
-        else:
-            r = response[0][4:].rstrip()
-            self.logger.debug("Moved to {} encoder units".format(r[:-2]))
-            if r[-1] == '1':
-                self.logger.warning('{} reported hitting a focus stop'.format(self))
-            return int(r[:-2])
+        self._is_moving = True
+        try:
+            response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+            if response[0][:4] != 'DONE':
+                self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
+                    self, response[0].rstrip()))
+            else:
+                r = response[0][4:].rstrip()
+                self.logger.debug("Moved to {} encoder units".format(r[:-2]))
+                if r[-1] == '1':
+                    self.logger.warning('{} reported hitting a focus stop'.format(self))
+                return int(r[:-2])
+        finally:
+            # Birger move commands block until the move is finished, so if the command has
+            # returned then the focuser is no longer moving.
+            self._is_moving = False
 
     def move_by(self, increment):
         """

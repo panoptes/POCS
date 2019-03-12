@@ -145,20 +145,31 @@ class AbstractFocuser(PanBase):
         else:
             self._camera = camera
 
-    @property
+    @abstractmethod
     def min_position(self):
         """ Get position of close limit of focus travel, in encoder units """
         raise NotImplementedError
 
-    @property
+    @abstractmethod
     def max_position(self):
         """ Get position of far limit of focus travel, in encoder units """
         raise NotImplementedError
+
+    @abstractmethod
+    def is_moving(self):
+        """ True if the focuser is currently moving. """
+        raise NotImplementedError
+
+    @property
+    def is_ready(self):
+        # A focuser is 'ready' if it is not currently moving.
+        return not self.is_moving
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
+    @abstractmethod
     def move_to(self, position):
         """ Move focuser to new encoder position """
         raise NotImplementedError
