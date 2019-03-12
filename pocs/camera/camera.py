@@ -76,8 +76,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
-        # Default is uncooled camera. Should be set to True if appropriate in camera connect() method,
-        # based on info received from camera.
+        # Default is uncooled camera. Should be set to True if appropriate in camera connect()
+        # method, based on info received from camera.
         self._is_cooled_camera = False
 
         self._connected = False
