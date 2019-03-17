@@ -224,8 +224,8 @@ class BaseScheduler(PanBase):
         Args:
             field_config (dict): Configuration items for `Observation`
         """
-        if 'exp_time' in field_config:
-            field_config['exp_time'] = float(field_config['exp_time']) * u.second
+        if 'exptime' in field_config:
+            field_config['exptime'] = float(field_config['exptime']) * u.second
 
         self.logger.debug("Adding {} to scheduler", field_config['name'])
         field = Field(field_config['name'], field_config['position'])
