@@ -407,8 +407,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error
         """
-        self.logger.debug("Initialising filter wheel on {}".format(
-            self._ccd_info[handle]['serial number']))
+        self.logger.debug("Initialising filter wheel on {}".format(handle))
         cfw_init = self._cfw_params(handle, model, CFWCommand.INIT)
         # The filterwheel init command does not block until complete, but this method should.
         # Need to poll.
@@ -471,7 +470,7 @@ class SBIGDriver(AbstractSDKDriver):
                    'firmware_version': int(cfw_info.cfwResults1),
                    'n_positions': int(cfw_info.cfwResults2)}
         msg = "Filter wheel on {}, model: {}, firmware version: {}, number of positions: {}".format(
-            self._ccd_info[handle]['serial number'],
+            handle,
             results['model'],
             results['firmware_version'],
             results['n_positions'])
@@ -505,8 +504,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error
         """
-        self.logger.debug("Moving filter wheel on {} to position {}".format(
-            self._ccd_info[handle]['serial number'], position))
+        self.logger.debug("Moving filter wheel on {} to position {}".format(handle, position))
         # First check that the filter wheel isn't currently moving, and that the requested
         # position is valid.
         info = self.cfw_get_info(handle, model)
@@ -565,23 +563,23 @@ class SBIGDriver(AbstractSDKDriver):
             while query['status'] == 'BUSY':
                 if timer.expired():
                     msg = "Timeout waiting for filter wheel on {} move to {} to complete".format(
-                        self._ccd_info[handle]['serial number'], position)
+                        handle, position)
                     raise error.Timeout(msg)
                 time.sleep(0.1)
                 query = self.cfw_query(handle, model)
         except RuntimeError as err:
             # Error returned by driver at some point while polling
             self.logger.error('Error while moving filter wheel on {} to {}: {}'.format(
-                self._ccd_info[handle]['serial number'], position, err))
+                handle, position, err))
             raise err
         else:
             # No driver errors, but still check status and position
             if query['status'] == 'IDLE' and query['position'] == position:
                 self.logger.debug('Filter wheel on {} moved to position {}'.format(
-                    self._ccd_info[handle]['serial number'], query['position']))
+                    handle, query['position']))
             else:
                 msg = 'Problem moving filter wheel on {} to {} - status: {}, position: {}'.format(
-                    self._ccd_info[handle]['serial number'],
+                    handle,
                     position,
                     query['status'],
                     query['position'])
