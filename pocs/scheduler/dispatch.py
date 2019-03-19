@@ -46,11 +46,7 @@ class Scheduler(BaseScheduler):
         valid_obs = {obs: 1.0 for obs in self.observations}
         best_obs = []
 
-        common_properties = {
-            'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
-            'moon': get_moon(time, self.observer.location),
-            'observed_list': self.observed_list
-        }
+        self.set_common_properties(time)
 
         for constraint in listify(self.constraints):
             self.logger.info("Checking Constraint: {}".format(constraint))
@@ -59,7 +55,7 @@ class Scheduler(BaseScheduler):
                     self.logger.debug("\tObservation: {}".format(obs_name))
 
                     veto, score = constraint.get_score(
-                        time, self.observer, observation, **common_properties)
+                        time, self.observer, observation, **self.common_properties)
 
                     self.logger.debug("\t\tScore: {:.05f}\tVeto: {}".format(score, veto))
 
@@ -99,7 +95,7 @@ class Scheduler(BaseScheduler):
             if self.current_observation is not None:
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
-                if end_of_next_set < common_properties['end_of_night'] and \
+                if end_of_next_set < self.common_properties['end_of_night'] and \
                         self.observation_available(self.current_observation, end_of_next_set):
 
                     self.logger.debug("Reusing {}".format(self.current_observation))

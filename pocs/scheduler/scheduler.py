@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 from astroplan import Observer
 from astropy import units as u
+from astropy.coordinates import get_moon
 
 from pocs.base import PanBase
 from pocs.utils import error
@@ -58,6 +59,8 @@ class BaseScheduler(PanBase):
         if not self.config['scheduler'].get('check_file', False):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
+
+        self.common_properties = None
 
 
 ##########################################################################
@@ -273,6 +276,14 @@ class BaseScheduler(PanBase):
                     self.logger.debug("Skipping duplicate field.")
                 except Exception as e:
                     self.logger.warning("Error adding field: {}", e)
+
+    def set_common_properties(self, time):
+
+        self.common_properties = {
+            'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
+            'moon': get_moon(time, self.observer.location),
+            'observed_list': self.observed_list
+        }
 
 ##########################################################################
 # Utility Methods
