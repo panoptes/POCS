@@ -60,6 +60,8 @@ class BaseScheduler(PanBase):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
+        # Items common to each observation that shouldn't be computed each time.
+
         self.common_properties = None
 
 ##########################################################################
@@ -278,8 +280,9 @@ class BaseScheduler(PanBase):
 
     def set_common_properties(self, time):
 
+        horizon_limit = self.config['location'].get('observe_horizon', -18 * u.degree)
         self.common_properties = {
-            'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
+            'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
             'moon': get_moon(time, self.observer.location),
             'observed_list': self.observed_list
         }

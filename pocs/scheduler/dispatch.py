@@ -1,7 +1,3 @@
-from astropy import units as u
-
-from astropy.coordinates import get_moon
-
 from pocs.utils import current_time
 from pocs.utils import listify
 from pocs.scheduler import BaseScheduler
