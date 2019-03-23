@@ -302,7 +302,8 @@ Links
 - Source Code: http://github.com/panoptes/POCS
 
 
-### HOW TO UPLOAD A SKETCH ON LINUX ENVIORNMENT IF ERROR HAS OCCURED
+
+## How To Upload a Sketch On Linux Enviornment If Error Has Occured
 
 It might happen that when you upload a sketch - after you have selected your board and the serial port -, you get an error *Error opening serial port ...* If you get this error, you need to set serial port permission.
 
