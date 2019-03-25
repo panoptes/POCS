@@ -152,3 +152,13 @@ class TheSkyXTimeout(TheSkyXError):
 class GoogleCloudError(PanError):
     """ Errors related to google cloud """
     pass
+
+
+class NotSupported(PanError, NotImplementedError):
+    """ Errors from trying to use hardware features not supported by a particular model """
+    pass
+
+
+class IllegalValue(PanError, ValueError):
+    """ Errors from trying to hardware parameters to values not supported by a particular model """
+    pass
