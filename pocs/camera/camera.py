@@ -59,6 +59,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     """
 
     subcomponents = {'Focuser', 'FilterWheel'}
+    sub_names = {subcomponent.casefold() for subcomponent in subcomponents}
 
     def __init__(self,
                  name='Generic Camera',
@@ -242,8 +243,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             return False
 
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
-        for subcomponent in self.subcomponents:
-            if getattr(self, subcomponent) and not getattr(self, subcomponent).is_ready:
+        for sub_name in self.sub_names:
+            if getattr(self, sub_name) and not getattr(self, sub_name).is_ready:
                 return False
 
         # Make sure there isn't an exposure already in progress.
@@ -581,8 +582,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
-        for sub_name in self.subcomponents:
-            subcomponent = getattr(self, sub_name.casefold())
+        for sub_name in self.sub_names:
+            subcomponent = getattr(self, sub_name)
             if subcomponent:
                 header = subcomponent._add_fits_keywords(header)
 
