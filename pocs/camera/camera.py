@@ -13,8 +13,6 @@ from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
-from pytest import approx
-
 from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
@@ -40,6 +38,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
         target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
+        temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
         gain (int): The gain setting of the camera (ZWO cameras only).
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
         timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
@@ -48,6 +47,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
         is_cooled_camera (bool): True if camera has image sensor cooling capability.
+        is_temperature_stable (bool): True if image sensor temperature is stable.
         is_exposing (bool): True if an exposure is currently under way, otherwise False.
 
     Notes:
@@ -81,9 +81,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
-        self._temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
-        if not isinstance(self._temperature_tolerance, u.Quantity):
-            self._temperature_tolerance = self._temperature_tolerance * u.Celsius
+        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
 
         self._connected = False
         self._current_observation = None
@@ -153,6 +151,24 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
+    def temperature_tolerance(self):
+        """
+        Get current value of the image sensor temperature tolerance.
+
+        If the image sensor temperature differs from the target temperature by more than the
+        temperature tolerance then the temperature is not considered stable (by
+        is_temperature_stable) and, for cooled cameras, is_ready will report False.
+        """
+        return self._temperature_tolerance
+
+    @temperature_tolerance.setter
+    def temperature_tolerance(self, temperature_tolerance):
+        """ Set the value of the image sensor temperature tolerance. """
+        if not isinstance(temperature_tolerance, u.Quantity):
+            temperature_tolerance = temperature_tolerance * u.Celsius
+        self._temperature_tolerance = temperature_tolerance
+
+    @property
     def cooling_enabled(self):
         """
         Get current status of the camera's image sensor cooling system (enabled/disabled).
@@ -203,8 +219,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         An uncooled camera, or cooled camera with cooling disabled, will always return False.
         """
         if self.is_cooled_camera and self.cooling_enabled:
-            at_target = self.temperature == approx(self.target_temperature,
-                                                   abs=self._temperature_tolerance)
+            at_target = abs(self.temperature - self.target_temperature) \
+                < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
                 self.logger.warning('Unstable CCD temperature in {}'.format(self))
                 return False
