@@ -154,11 +154,11 @@ def test_move_times(name, bidirectional, expected):
                                      timeout=0.5 * u.second)
     sim_filterwheel.position = 1
     assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == \
-        pytest.approx(0.1, rel=2e-2)
+        pytest.approx(0.1, rel=4e-2)
     assert timeit("sim_filterwheel.position = 4", number=1, globals=locals()) == \
-        pytest.approx(0.2, rel=2e-2)
+        pytest.approx(0.2, rel=4e-2)
     assert timeit("sim_filterwheel.position = 3", number=1, globals=locals()) == \
-        pytest.approx(expected, rel=2e-2)
+        pytest.approx(expected, rel=4e-2)
 
 
 def test_move_exposing(tmpdir, caplog):
@@ -171,3 +171,12 @@ def test_move_exposing(tmpdir, caplog):
     assert caplog.records[-1].levelname == 'ERROR'
     assert sim_camera.filterwheel.position == 1  # Should not have moved
     exp_event.wait()
+
+
+def test_is_moving(filterwheel):
+    filterwheel.position = 1
+    assert not filterwheel.is_moving
+    e = filterwheel.move_to(2)
+    assert filterwheel.is_moving
+    e.wait()
+    assert not filterwheel.is_moving

@@ -57,10 +57,18 @@ class FilterWheel(AbstractFilterWheel):
     @AbstractFilterWheel.position.getter
     def position(self):
         """ Current integer position of the filter wheel """
-        status = self._SBIGDriver.cfw_query(self._handle)
+        status = self._driver.cfw_query(self._handle)
         if math.isnan(status['position']):
             self.logger.warning("Filter wheel position unknown, returning NaN")
         return status['position']
+
+    @property
+    def is_moving(self):
+        """ Is the filterwheel currently moving """
+        status = self._driver.cfw_query(self._handle)
+        if status['status'] == 'UNKNOWN':
+            self.logger.warning("{} returned 'UNKNOWN' status".format(self))
+        return bool(status['status'] == 'BUSY')
 
 ##################################################################################################
 # Methods
@@ -73,10 +81,10 @@ class FilterWheel(AbstractFilterWheel):
         """
         assert self.camera.is_connected, \
             self.logger.error("Can't connect {}, camera not connected".format(self))
-        self._SBIGDriver = self.camera._SBIGDriver
+        self._driver = self.camera._driver
         self._handle = self.camera._handle
 
-        info = self._SBIGDriver.cfw_get_info(self._handle)
+        info = self._driver.cfw_get_info(self._handle)
         self._model = info['model']
         self._firmware_version = info['firmware_version']
         self._n_positions = info['n_positions']
@@ -94,7 +102,7 @@ class FilterWheel(AbstractFilterWheel):
         Reinitialises/calibrates the filter wheel. It should not be necessary to call this as
         SBIG filter wheels initialise and calibrate themselves on power up.
         """
-        results = self._SBIGDriver.cfw_init(handle=self._handle, timeout=self._timeout)
+        results = self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
         self.logger.info("{} reinitialised".format(self))
 
 ##################################################################################################
@@ -102,10 +110,10 @@ class FilterWheel(AbstractFilterWheel):
 ##################################################################################################
 
     def _move_to(self, position, move_event):
-        self._SBIGDriver.cfw_goto(handle=self._handle,
-                                  position=position,
-                                  cfw_event=move_event,
-                                  timeout=self._timeout)
+        self._driver.cfw_goto(handle=self._handle,
+                              position=position,
+                              cfw_event=move_event,
+                              timeout=self._timeout)
 
     def _add_fits_keywords(self, header):
         header = super()._add_fits_keywords(header)

@@ -8,6 +8,7 @@ from ctypes.util import find_library
 import astropy.units as u
 
 from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.simulator import SDKCamera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -23,8 +24,9 @@ from pocs.utils import error
 from pocs import hardware
 
 
-params = [SimCamera, SBIGCamera, FLICamera, ZWOCamera]
-ids = ['simulator', 'sbig', 'fli', 'zwo']
+params = [SimCamera, SimCamera, SimCamera, SimSDKCamera, SBIGCamera, FLICamera, ZWOCamera]
+ids = ['simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
+       'sbig', 'fli', 'zwo']
 
 
 @pytest.fixture(scope='module')
@@ -36,7 +38,9 @@ def images_dir(tmpdir_factory):
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def camera(request, images_dir):
-    if request.param[0] == SimCamera:
+    if request.param[1] == 'simulator':
+        camera = SimCamera()
+    elif request.param[1] == 'simulator_focuser':
         camera = SimCamera(focuser={'model': 'simulator',
                                     'focus_port': '/dev/ttyFAKE',
                                     'initial_position': 20000,
@@ -45,6 +49,13 @@ def camera(request, images_dir):
                                     'autofocus_seconds': 0.1,
                                     'autofocus_size': 500,
                                     'autofocus_keep_files': False})
+    elif request.param[1] == 'simulator_filterwheel':
+        camera = SimCamera(filterwheel={'model': 'simulator',
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                        'move_time': 0.1,
+                                        'timeout': 0.5})
+    elif request.param[1] == 'simulator_sdk':
+        camera = SimSDKCamera(serial_number='SSC101')
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -107,6 +118,25 @@ def test_create_cameras_from_config_fail(config):
         create_cameras_from_config(config, simulator=simulator)
 
 
+def test_create_cameras_from_empty_config():
+    # create_cameras_from_config should work with no camera config, if cameras simulation is set
+    empty_config = {'simulator': ['camera', ], }
+    cameras = create_cameras_from_config(config=empty_config)
+    assert len(cameras) == 1
+    # Default simulated camera will have simulated focuser and filterwheel
+    cam = cameras['Cam00']
+    assert cam.is_connected
+    assert cam.focuser.is_connected
+    assert cam.filterwheel.is_connected
+
+
+def test_dont_create_cameras_from_empty_config():
+    # Can't pass a completely empty config otherwise default config will get loaded in its place.
+    really_empty_config = {'i_need_to_evaluate_to': True}
+    cameras = create_cameras_from_config(config=really_empty_config)
+    assert len(cameras) == 0
+
+
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
@@ -152,6 +182,21 @@ def test_sim_readout_time():
     assert sim_camera.readout_time == 2.0
 
 
+def test_sdk_no_serial_number():
+    with pytest.raises(ValueError):
+        sim_camera = SimSDKCamera()
+
+
+def test_sdk_camera_not_found():
+    with pytest.raises(error.PanError):
+        sim_camera = SimSDKCamera(serial_number='SSC404')
+
+
+def test_sdk_already_in_use():
+    sim_camera = SimSDKCamera(serial_number='SSC999')
+    with pytest.raises(error.PanError):
+        sim_camera_2 = SimSDKCamera(serial_number='SSC999')
+
 # Hardware independent tests for SBIG camera
 
 
@@ -175,11 +220,8 @@ def test_sbig_bad_serial():
     """
     if find_library('sbigudrv') is None:
         pytest.skip("Test requires SBIG camera driver to be installed")
-    camera = SBIGCamera(port='NOTAREALSERIALNUMBER')
-    assert camera._connected is False
-    if isinstance(camera, SBIGCamera):
-        assert camera._handle == INVALID_HANDLE_VALUE
-
+    with pytest.raises(error.PanError):
+        camera = SBIGCamera(serial_number='NOTAREALSERIALNUMBER')
 
 # *Potentially* hardware dependant tests:
 
@@ -308,15 +350,15 @@ def test_exposure_collision(camera, tmpdir):
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
-    camera.take_exposure(1 * u.second, filename=fits_path_2)
+    with pytest.raises(error.PanError):
+        camera.take_exposure(1 * u.second, filename=fits_path_2)
     if isinstance(camera, FLICamera):
         time.sleep(10)
     else:
         time.sleep(5)
     assert os.path.exists(fits_path_1)
-    assert os.path.exists(fits_path_2)
+    assert not os.path.exists(fits_path_2)
     assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
-    assert fits_utils.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
 def test_exposure_no_filename(camera):
@@ -331,12 +373,52 @@ def test_exposure_not_connected(camera):
     camera._connected = True
 
 
+def test_exposure_moving(camera, tmpdir):
+    if not camera.filterwheel:
+        pytest.skip("Camera does not have a filterwheel")
+    fits_path_1 = str(tmpdir.join('test_not_moving.fits'))
+    fits_path_2 = str(tmpdir.join('test_moving.fits'))
+    camera.filterwheel.position = 1
+    exp_event = camera.take_exposure(filename=fits_path_1)
+    exp_event.wait()
+    assert os.path.exists(fits_path_1)
+    move_event = camera.filterwheel.move_to(2)
+    with pytest.raises(error.PanError):
+        camera.take_exposure(filename=fits_path_2)
+    move_event.wait()
+    assert not os.path.exists(fits_path_2)
+
+
+def test_exposure_timeout(camera, tmpdir, caplog):
+    """
+    Tests response to an exposure timeout
+    """
+    fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
+    # Make timeout extremely short to force a timeout error
+    original_timeout = camera._timeout
+    camera._timeout = 0.01
+    # This should result in a timeout error in the poll thread, but the exception won't
+    # be seen in the main thread. Can check for logged error though.
+    exposure_event = camera.take_exposure(seconds=0.1, filename=fits_path)
+    # Wait for it all to be over.
+    time.sleep(original_timeout)
+    # Put the timeout back to the original setting.
+    camera._timeout = original_timeout
+    # Should be an ERROR message in the log from the exposure tiemout
+    assert caplog.records[-1].levelname == "ERROR"
+    # Should be no data file, camera should not be exposing, and exposure event should be set
+    assert not os.path.exists(fits_path)
+    assert not camera.is_exposing
+    assert exposure_event is camera._exposure_event
+    assert exposure_event.is_set()
+
+
 def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
-    observation = Observation(field, exp_time=1.5 * u.second)
+    observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
