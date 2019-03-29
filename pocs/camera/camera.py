@@ -725,12 +725,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         s = "{} ({}) on {}".format(name, self.uid, self.port)
 
-        if self.focuser:
-            s += ' with {}'.format(self.focuser.name)
-            if self.filterwheel:
-                s += ' & {}'.format(self.filterwheel.name)
-        elif self.filterwheel:
-            s += ' with {}'.format(self.filterwheel.name)
+        sub_count = 0
+        for sub_name in self.sub_names:
+            subcomponent = getattr(self, sub_name)
+            if subcomponent:
+                if sub_count = 0:
+                    s += " with {}".format(subcomponent.name)
+                else:
+                    s += " & {}".format(subcomponent.name)
+                sub_count += 1
 
         return s
 
