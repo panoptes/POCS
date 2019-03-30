@@ -154,9 +154,6 @@ class ArduinoIO(object):
         if hasattr(self, '_logger'):
             self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
-    def __del__(self):
-        if hasattr(self, '_logger'):
-            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
     @property
     def stop_running(self):
