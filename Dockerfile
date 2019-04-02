@@ -9,7 +9,11 @@ RUN apt-get update \
         gcc \
         pkg-config \
         libncurses5-dev \
+    && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh \
+    && chmod +x gphoto2-updater.sh \
+    && ./gphoto2-updater.sh --stable \
     && rm -rf /var/lib/apt/lists/* \
+    && rm gphoto2-updater.sh \
     && cd ${POCS} \
     && pip3 install --no-cache-dir -r requirements.txt
 

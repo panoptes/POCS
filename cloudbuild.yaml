@@ -1,0 +1,21 @@
+steps:
+# Build
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'main-build'
+  args:
+  - 'build'
+  - '--tag=gcr.io/${PROJECT_ID}/pocs
+  :latest'
+  - '.'
+  waitFor: ['-']
+
+# Push
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-latest'
+  args:
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/pocs:latest'
+  waitFor: ['main-build']
+
+images:
+  - 'gcr.io/${PROJECT_ID}/pocs:latest'
