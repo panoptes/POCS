@@ -300,5 +300,3 @@ Links
 
 - PANOPTES Homepage: http://projectpanoptes.org
 - Source Code: http://github.com/panoptes/POCS
-
-
