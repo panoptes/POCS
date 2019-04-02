@@ -6,6 +6,7 @@ jupyterlab
 matplotlib > 3.0.0
 mocket
 numpy >= 1.12.1, !=1.15.3
+pycodestyle == 2.3.1
 pytest >= 3.4.0
 python_dateutil >= 2.5.3
 PyYAML >= 5.1
