@@ -75,6 +75,11 @@ class AbstractFilterWheel(PanBase):
         return self._connected
 
     @property
+    def is_moving(self):
+        """ Is the filterwheel currently moving """
+        raise NotImplementedError
+
+    @property
     def camera(self):
         """
         Reference to the Camera object that the FilterWheel is assigned to, if any. A filter wheel
@@ -161,7 +166,7 @@ class AbstractFilterWheel(PanBase):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         if self.camera and self.camera.is_exposing:
-            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring".format(self)
+            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring.".format(self)
             raise error.PanError(msg)
 
         position = self._parse_position(position)

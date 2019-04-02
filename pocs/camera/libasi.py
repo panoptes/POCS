@@ -4,9 +4,8 @@ import enum
 import numpy as np
 from astropy import units as u
 
-from pocs.base import PanBase
+from pocs.camera.sdk import AbstractSDKDriver
 from pocs.utils import error
-from pocs.utils.library import load_library
 from pocs.utils import get_quantity_value
 
 ####################################################################################################
@@ -19,8 +18,8 @@ from pocs.utils import get_quantity_value
 ####################################################################################################
 
 
-class ASIDriver(PanBase):
-    def __init__(self, library_path=None, *args, **kwargs):
+class ASIDriver(AbstractSDKDriver):
+    def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO ASI library interface.
 
         On construction loads the shared object/dynamically linked version of the ASI SDK library,
@@ -40,25 +39,9 @@ class ASIDriver(PanBase):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(*args, **kwargs)
-        library = load_library(name='ASICamera2', path=library_path, logger=self.logger)
-        self._CDLL = library
-        self._version = self.get_SDK_version()
-
-    # Properties
-
-    @property
-    def version(self):
-        """ Version of the ZWO ASI SDK """
-        return self._version
+        super().__init__(name='ASICamera2', library_path=library_path, **kwargs)
 
     # Methods
-
-    def get_num_of_connected_cameras(self):
-        """ Get the count of connected ASI cameras """
-        count = self._CDLL.ASIGetNumOfConnectedCameras()  # Return type is int, needs no Pythonising
-        self.logger.debug("Found {} connected ASI cameras".format(count))
-        return count
 
     def get_SDK_version(self):
         """ Get the version of the ZWO ASI SDK """
@@ -66,8 +49,39 @@ class ASIDriver(PanBase):
         self._CDLL.ASIGetSDKVersion.restype = ctypes.c_char_p
         version = self._CDLL.ASIGetSDKVersion().decode('ascii')  # Get bytes so decode to str
         version = version.replace(', ', '.')  # Format the version string properly
-        self.logger.debug("ZWO ASI SDK version: {}".format(version))
         return version
+
+    def get_cameras(self):
+        """Gets currently connected camera info.
+
+        Returns:
+            dict: All currently connected camera string IDs with corresponding integer camera IDs.
+        """
+        n_cameras = self.get_num_of_connected_cameras()
+        if n_cameras == 0:
+            raise error.PanError("No ZWO ASI camera devices found")
+
+        # Get the IDs
+        cameras = {}
+        for camera_index in range(n_cameras):
+            # Can get IDs without opening cameras by parsing the 'name' string, which has the format
+            # "model(string_id)" if the string ID has been set, otherwise it is just the model name.
+            info = self.get_camera_property(camera_index)
+            model, _, string_id = info['name'].partition('(')
+            if not string_id:
+                self.logger.warning("Found ZWO ASI camera with no ID set")
+                break
+            assert string_id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
+            string_id = string_id[:-1]
+            cameras[string_id] = info['camera_ID']
+
+        return cameras
+
+    def get_num_of_connected_cameras(self):
+        """ Get the count of connected ASI cameras """
+        count = self._CDLL.ASIGetNumOfConnectedCameras()  # Return type is int, needs no Pythonising
+        self.logger.debug("Found {} connected ASI cameras".format(count))
+        return count
 
     def get_camera_property(self, camera_index):
         """ Get properties of the camera with given index """

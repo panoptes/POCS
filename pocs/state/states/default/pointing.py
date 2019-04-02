@@ -41,7 +41,7 @@ def on_enter(event_data):
             camera_event = primary_camera.take_observation(
                 observation,
                 headers=fits_headers,
-                exp_time=exptime,
+                exptime=exptime,
                 filename='pointing{:02d}'.format(img_num)
             )
 

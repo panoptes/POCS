@@ -28,12 +28,6 @@ echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee 
 # Import the Google Cloud Platform public key
 wget -q -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - &>> install.log
 
-# Get a copy of POCS
-wget -q https://github.com/panoptes/POCS/archive/develop.zip
-mv develop.zip ${PANDIR} && cd /var/panoptes
-unzip develop.zip &>> install.log
-mv POCS-develop POCS
-
 sudo apt update &>> install.log
 sudo apt install -y docker.io &>> install.log
 sudo adduser panoptes docker &>> install.log
@@ -48,6 +42,20 @@ echo "export PATH="/var/panoptes/miniconda/bin:$PATH"" >> ~/.bashrc
 echo "export PANDIR=/var/panoptes" >> ~/.bashrc
 echo "export POCS=/var/panoptes/POCS" >> ~/.bashrc
 
+cd $HOME
+wget -q https://raw.githubusercontent.com/panoptes/POCS/40300ca08d5f12971d03c1ca58a4615f191f9471/resources/docker_files/docker-compose.yml
+wget -q https://raw.githubusercontent.com/panoptes/POCS/40300ca08d5f12971d03c1ca58a4615f191f9471/resources/docker_files/env_file
+wget -q https://raw.githubusercontent.com/panoptes/POCS/40300ca08d5f12971d03c1ca58a4615f191f9471/scripts/start_pocs_docker.sh
+chmod +x start_pocs_docker.sh
+
+cat <<EOT >> $HOME/Desktop/POCS.desktop
+[Desktop Entry]
+Exec=bash -c "cd $HOME && source activate panoptes && ./start_pocs_docker.sh"
+Name=pocs
+Terminal=true
+Type=Application
+EOT
+
 # Add for this session
 export PATH="/var/panoptes/miniconda/bin:$PATH"
 #source ${PANDIR}/miniconda/bin/activate
@@ -61,7 +69,7 @@ pip install --quiet docker-compose &>> install.log
 
 echo "Authenticating with google"
 gcloud auth activate-service-account --key-file ${PANDIR}/.key/${KEY_FILE}
-gcloud auth configure-docker --quiet
+gcloud auth configure-docker --quiet &>> install.log
 
 echo "Pulling POCS files from cloud"
 echo "WARNING: This is a large file that can take a long time!"
