@@ -4,6 +4,11 @@ services:
 before_install:
     - ci_env=`bash <(curl -s https://codecov.io/env)`
     - docker pull gcr.io/panoptes-survey/pocs
+env:
+    - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1    
 install: true  # skips install
 script:
-    - docker run -it $ci_env gcr.io/panoptes-survey/pocs scripts/testing/run_tests.sh
+    - cd ${POCS}
+    - pip install -r requirements.txt
+    - pip install -e .
+    - docker run -it -v /var/panotpes:/var/panoptes $ci_env gcr.io/panoptes-survey/pocs scripts/testing/run_tests.sh
