@@ -4,8 +4,7 @@ steps:
   id: 'main-build'
   args:
   - 'build'
-  - '--tag=gcr.io/${PROJECT_ID}/pocs
-  :latest'
+  - '--tag=gcr.io/${PROJECT_ID}/pocs:latest'
   - '.'
   waitFor: ['-']
 
