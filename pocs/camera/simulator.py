@@ -73,7 +73,6 @@ class Camera(AbstractCamera):
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
         fits_utils.write_fits(fake_data, header, filename, self.logger)
-        self._exposure_event.set()
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
