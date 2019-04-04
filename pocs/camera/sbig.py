@@ -186,8 +186,8 @@ class Camera(AbstractSDKCamera):
             raise error.PanError("Unexpected exposure status on {}: '{}'".format(
                 self, exposure_status))
 
-    def _fits_header(self, seconds, dark):
-        header = super()._fits_header(seconds, dark)
+    def _create_fits_header(self, seconds, dark):
+        header = super()._create_fits_header(seconds, dark)
 
         # Unbinned. Need to chance if binning gets implemented.
         readout_mode = 'RM_1X1'

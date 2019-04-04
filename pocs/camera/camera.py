@@ -284,7 +284,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
-        header = self._fits_header(seconds, dark)
+        header = self._create_fits_header(seconds, dark)
 
         if not self._exposure_event.is_set():
             msg = "Attempt to take exposure on {} while one already in progress.".format(self)
@@ -523,7 +523,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         finally:
             self._exposure_event.set()  # Make sure this gets set regardless of readout errors
 
-    def _fits_header(self, seconds, dark=None):
+    def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()

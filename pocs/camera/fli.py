@@ -154,8 +154,8 @@ class Camera(AbstractSDKCamera):
         else:
             fits_utils.write_fits(image_data, header, filename, self.logger)
 
-    def _fits_header(self, seconds, dark):
-        header = super()._fits_header(seconds, dark)
+    def _create_fits_header(self, seconds, dark):
+        header = super()._create_fits_header(seconds, dark)
 
         header.set('CAM-HW', self._info['hardware version'], 'Camera hardware version')
         header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
