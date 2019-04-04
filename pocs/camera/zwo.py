@@ -259,7 +259,6 @@ class Camera(AbstractSDKCamera):
                                       header,
                                       filename,
                                       self.logger)
-                self._exposure_event.set()
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':

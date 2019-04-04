@@ -282,8 +282,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug('Taking {} exposure on {}: {}'.format(
-            seconds, self.name, filename))
+        self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
         header = self._fits_header(seconds, dark)
 
@@ -470,8 +469,41 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return thumbnail
 
     @abstractmethod
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
-        raise NotImplementedError
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None):
+        """Responsible for the camera-specific process that start an exposure.
+
+        This method is called from the `take_exposure` method and is used to handle
+        hardware-specific items for each camera.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        Args:
+            seconds (float): The number of seconds to expose for.
+            filename (str): Filename location for saved image.
+            dark (bool): If image is a dark frame.
+            header (dict): Optional headers to save with the image.
+
+        Returns:
+            tuple|list: Any arguments required by the camera-specific `_readout`
+                method, which should be implemented at the same time as this method.
+        """
+        pass
+
+    @abstractmethod
+    def _readout(self, filename=None):
+        """Performs the camera-specific readout after exposure.
+
+        This method is called from the `_poll_exposure` private method and is responsible
+        for the camera-specific readout commands.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        """
+        pass
 
     def _poll_exposure(self, readout_args):
         timer = CountdownTimer(duration=self._timeout)
@@ -490,10 +522,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._readout(*readout_args)
         finally:
             self._exposure_event.set()  # Make sure this gets set regardless of readout errors
-
-    @abstractmethod
-    def _readout(self, *args):
-        raise NotImplementedError
 
     def _fits_header(self, seconds, dark=None):
         header = fits.Header()

@@ -180,7 +180,6 @@ class Camera(AbstractSDKCamera):
                                       header,
                                       filename,
                                       self.logger)
-                self._exposure_event.set()
         elif exposure_status == 'CS_IDLE':
             raise error.PanError("Exposure missing on {}".format(self))
         else:

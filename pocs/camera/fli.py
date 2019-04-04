@@ -153,7 +153,6 @@ class Camera(AbstractSDKCamera):
             raise error.PanError(message)
         else:
             fits_utils.write_fits(image_data, header, filename, self.logger)
-            self._exposure_event.set()
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
