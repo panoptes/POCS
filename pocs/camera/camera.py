@@ -496,7 +496,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """Performs the camera-specific readout after exposure.
 
         This method is called from the `_poll_exposure` private method and is responsible
-        for the camera-specific readout commands.
+        for the camera-specific readout commands. This method is responsible for actually
+        writing the FITS file.
 
         Note:
             Each sub-class is required to implement this abstract method. The derived
@@ -630,7 +631,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Add FITS headers from info the same as images.cr2_to_fits()
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
-        fits_utils.update_headers(file_path, info)
+        fits_utils.update_observation_headers(file_path, info)
         return file_path
 
     def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):

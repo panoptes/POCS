@@ -370,7 +370,7 @@ def write_fits(data, header, filename, logger=None):
             logger.debug('Image written to {}'.format(filename))
 
 
-def update_headers(file_path, info):
+def update_observation_headers(file_path, info):
     with fits.open(file_path, 'update') as f:
         hdu = f[0]
         hdu.header.set('IMAGEID', info.get('image_id', ''))
