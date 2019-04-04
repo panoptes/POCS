@@ -1,5 +1,3 @@
-from threading import Event
-from warnings import warn
 from contextlib import suppress
 
 from astropy import units as u
@@ -8,6 +6,7 @@ from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
 from pocs.camera.sbigudrv import SBIGDriver
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import error
 
 
 class Camera(AbstractSDKCamera):
@@ -180,8 +179,8 @@ class Camera(AbstractSDKCamera):
                 fits_utils.write_fits(image_data,
                                       header,
                                       filename,
-                                      self.logger,
-                                      self._exposure_event)
+                                      self.logger)
+                self._exposure_event.set()
         elif exposure_status == 'CS_IDLE':
             raise error.PanError("Exposure missing on {}".format(self))
         else:

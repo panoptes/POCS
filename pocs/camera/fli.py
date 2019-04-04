@@ -1,8 +1,3 @@
-import time
-from warnings import warn
-from threading import Event
-from threading import Timer
-from threading import Lock
 from contextlib import suppress
 
 import numpy as np
@@ -157,7 +152,8 @@ class Camera(AbstractSDKCamera):
                 self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(image_data, header, filename, self.logger, self._exposure_event)
+            fits_utils.write_fits(image_data, header, filename, self.logger)
+            self._exposure_event.set()
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)

@@ -258,8 +258,8 @@ class Camera(AbstractSDKCamera):
                 fits_utils.write_fits(image_data,
                                       header,
                                       filename,
-                                      self.logger,
-                                      self._exposure_event)
+                                      self.logger)
+                self._exposure_event.set()
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':
