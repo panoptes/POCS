@@ -48,7 +48,7 @@ def pocs(target):
         {'name': 'Testing Target',
          'position': target.to_string(style='hmsdms'),
          'priority': '100',
-         'exp_time': 2,
+         'exptime': 2,
          'min_nexp': 2,
          'exp_set_size': 2,
          },

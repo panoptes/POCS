@@ -10,32 +10,36 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
+from pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 from pocs.utils.images import fits as fits_utils
+from pocs.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
+        kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
         super().__init__(name, *args, **kwargs)
-        self.logger.debug("Initializing simulated camera")
         self.connect()
+        self.logger.info("{} initialised".format(self))
 
     def connect(self):
         """ Connect to camera simulator
 
         The simulator merely markes the `connected` property.
         """
-        # Create a random serial number
-        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
+        # Create a random serial number if one hasn't been specified
+        if self._serial_number == 'XXXXXX':
+            self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        if exp_time > 1:
-            kwargs['exp_time'] = 1
+        exptime = kwargs.get('exptime', observation.exptime.value)
+        if exptime > 1:
+            kwargs['exptime'] = 1
             self.logger.debug("Trimming camera simulator exposure to 1 s")
 
         return super().take_observation(observation,
@@ -44,44 +48,18 @@ class Camera(AbstractCamera):
                                         *args,
                                         **kwargs)
 
-    def take_exposure(self,
-                      seconds=1.0 * u.second,
-                      filename=None,
-                      dark=False,
-                      blocking=False,
-                      *args,
-                      **kwargs):
-        """ Take an exposure for given number of seconds """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+    def _end_exposure(self):
+        self._is_exposing = False
 
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.to(u.second)
-            seconds = seconds.value
-
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
-
-        # Build FITS header
-        header = self._fits_header(seconds, dark)
-
-        # Set up a Timer that will wait for the duration of the exposure then
-        # copy a dummy FITS file to the specified path and adjust the headers
-        # according to the exposure time, type.
-        exposure_event = Event()
-        exposure_thread = Timer(interval=seconds,
-                                function=self._fake_exposure,
-                                args=[filename, header, exposure_event])
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second) + 0.05,
+                                function=self._end_exposure)
+        self._is_exposing = True
         exposure_thread.start()
+        readout_args = (filename, header)
+        return readout_args
 
-        if blocking:
-            exposure_event.wait()
-
-        return exposure_event
-
-    def _fake_exposure(self, filename, header, exposure_event):
+    def _readout(self, filename, header):
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
@@ -90,13 +68,12 @@ class Camera(AbstractCamera):
         )
         fake_data = fits.getdata(file_path)
 
-        if header['IMAGETYP'] == 'Dark Frame':
+        if header.get('IMAGETYP') == 'Dark Frame':
             # Replace example data with a bunch of random numbers
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-
-        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
+        fits_utils.write_fits(fake_data, header, filename, self.logger, self._exposure_event)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
@@ -115,3 +92,26 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+
+class SDKDriver(AbstractSDKDriver):
+    def __init__(self, library_path=None, **kwargs):
+        # Get library loader to load libc, which should usually be present...
+        super().__init__(name='c', library_path=library_path, **kwargs)
+
+    def get_SDK_version(self):
+        return "Simulated SDK Driver v0.001"
+
+    def get_cameras(self):
+        cameras = {'SSC007': 'DEV_USB0',
+                   'SSC101': 'DEV_USB1',
+                   'SSC999': 'DEV_USB2'}
+        return cameras
+
+
+class SDKCamera(AbstractSDKCamera, Camera):
+    def __init__(self,
+                 name='Simulated SDK camera',
+                 driver=SDKDriver,
+                 *args, **kwargs):
+        super().__init__(name, driver, *args, **kwargs)
