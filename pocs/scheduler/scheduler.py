@@ -267,7 +267,7 @@ class BaseScheduler(PanBase):
                 raise FileNotFoundError
 
             with open(self.fields_file, 'r') as f:
-                self._fields_list = yaml.load(f.read())
+                self._fields_list = yaml.full_load(f.read())
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
