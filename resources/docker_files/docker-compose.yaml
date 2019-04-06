@@ -1,0 +1,22 @@
+version: '3.2'
+services:
+  pocs:
+    image: gcr.io/panoptes-survey/pocs
+    container_name: pocs
+    privileged: true
+    env_file: 
+      - ${PANDIR}/env_file
+    depends_on:
+      - "config-server"
+      - "messaging"
+    volumes:
+      - pandir:/var/panoptes
+    # No-op to keep machine running
+    command: tail -f /dev/null 
+volumes:
+    pandir:
+      driver: local
+      driver_opts:
+        type: none
+        device: /var/panoptes
+        o: bind
