@@ -1,5 +1,6 @@
 import os
 import pytest
+import requests
 
 from mocket import Mocket
 
