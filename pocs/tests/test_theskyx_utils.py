@@ -17,7 +17,7 @@ def skyx(request):
 
     # Use `--with-hardware thesky` on cli to run without mock
     Mocket.enable('theskyx', '{}/pocs/tests/data'.format(os.getenv('POCS')))
-    if 'theskyx' in pytest.config.getoption('--with-hardware'):
+    if 'theskyx' in request.config.getoption('--with-hardware'):
         Mocket.disable()
 
     theskyx = TheSkyX(connect=False)
