@@ -224,7 +224,7 @@ def can_connect_to_mongo():
 @pytest.fixture(scope='function', params=_all_databases)
 def db_type(request):
 
-    db_list = pytest.config.option.test_databases
+    db_list = request.config.option.test_databases
     if request.param not in db_list and 'all' not in db_list:
         pytest.skip("Skipping {} DB, set --test-all-databases=True".format(request.param))
 
