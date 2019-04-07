@@ -148,7 +148,7 @@ def _parse_config(config):
 def _add_to_conf(config, fn):
     try:
         with open(fn, 'r') as f:
-            c = yaml.load(f.read())
+            c = yaml.full_load(f.read())
             if c is not None and isinstance(c, dict):
                 config.update(c)
     except IOError:  # pragma: no cover
