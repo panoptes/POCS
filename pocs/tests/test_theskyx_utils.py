@@ -25,7 +25,7 @@ def skyx(request):
     yield theskyx
 
 
-def test_default_connect():
+def test_default_connect(request):
     """Test connection to TheSkyX
 
     If not running with a real connection then use Mocket
