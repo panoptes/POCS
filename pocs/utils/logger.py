@@ -12,6 +12,7 @@ import time
 from warnings import warn
 
 from pocs.utils.config import load_config
+from collections.abc import Mapping
 
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
@@ -121,7 +122,7 @@ def logger_msg_formatter(fmt, args):
     # formatting methods to try based on the contents.
     method_names = []
     may_have_legacy_subst = format_has_legacy_style(fmt)
-    args_are_mapping = isinstance(args, collections.Mapping)
+    args_are_mapping = isinstance(args, Mapping)
     if '{' in fmt:
         # Looks modern.
         if args_are_mapping:
