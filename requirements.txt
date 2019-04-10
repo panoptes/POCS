@@ -1,19 +1,25 @@
 astroplan
-astropy >= 3.0.0
+astropy
 dateparser
+docker-compose
+Flask
 jupyter-console
 jupyterlab
-matplotlib > 3.0.0
+matplotlib
 mocket
-numpy >= 1.12.1, !=1.15.3
+numpy
+psycopg2-binary
 pycodestyle == 2.3.1
+pyserial
 pytest >= 3.4.0
-python_dateutil >= 2.5.3
-PyYAML >= 5.1
-pyzmq >= 15.3.0
+python_dateutil
+PyYAML >= 3.11
+pyzmq
 readline
 requests
+scalpl
 scikit-image
+scipy
 scipy >= 0.17.1
 transitions >= 0.4.0
 wcsaxes

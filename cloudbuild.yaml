@@ -1,20 +1,86 @@
 steps:
-# Build
+# Set up multiarch support
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'main-build'
+  id: 'register-qemu'
+  args:
+  - 'run'
+  - '--privileged'
+  - 'multiarch/qemu-user-static:register'
+  - '--reset'
+  waitFor: ['-']  
+
+# Build
+# AMD Build  
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'amd64'
   args:
   - 'build'
-  - '--tag=gcr.io/${PROJECT_ID}/pocs:latest'
+  - '--build-arg=arch=amd64'
+  - '--tag=gcr.io/${PROJECT_ID}/pocs:amd64'
   - '.'
-  waitFor: ['-']
+  waitFor: ['register-qemu']
+# ARM Build (e.g. Raspberry Pi)  
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'arm32v7'
+  args:
+  - 'build'
+  - '-f'
+  - 'Dockerfile.rpi'
+  - '--build-arg=arch=arm32v7'
+  - '--tag=gcr.io/${PROJECT_ID}/pocs:arm32v7'
+  - '.'
+  waitFor: ['register-qemu']
 
 # Push
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'push-latest'
+  id: 'push-amd64'
   args:
   - 'push'
-  - 'gcr.io/${PROJECT_ID}/pocs:latest'
-  waitFor: ['main-build']
+  - 'gcr.io/${PROJECT_ID}/pocs:amd64'
+  waitFor: ['amd64']
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-arm'
+  args:
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/pocs:arm32v7'
+  waitFor: ['arm32v7']
 
-images:
+# Manifest file for multiarch
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'manifest'
+  env:
+  - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+  args:
+  - 'manifest'
+  - 'create'
   - 'gcr.io/${PROJECT_ID}/pocs:latest'
+  - 'gcr.io/${PROJECT_ID}/pocs:arm32v7'
+  - 'gcr.io/${PROJECT_ID}/pocs:amd64' 
+  waitFor: ['push-amd64', 'push-arm']
+
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'annotate-manifest'
+  env:
+  - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+  args:
+  - 'manifest'
+  - 'annotate'
+  - 'gcr.io/${PROJECT_ID}/pocs:latest'
+  - 'gcr.io/${PROJECT_ID}/pocs:arm32v7'
+  - '--os=linux'
+  - '--arch=arm'
+  waitFor: ['manifest']
+
+# Push manifest file
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-manifest'
+  env:
+  - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+  args:
+  - 'manifest'
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/pocs:latest'
+  waitFor: ['annotate-manifest']
+images:
+  - 'gcr.io/${PROJECT_ID}/pocs:amd64'
+  - 'gcr.io/${PROJECT_ID}/pocs:arm32v7'
