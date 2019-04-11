@@ -6,7 +6,8 @@ MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 ENV PANDIR /var/panoptes
 
 COPY . ${POCS}
-RUN apt-get update \
+RUN /opt/conda/bin/conda activate panoptes-env \
+    && apt-get update \
     && apt-get --yes install \
         gcc \
         pkg-config \

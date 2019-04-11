@@ -24,8 +24,6 @@ steps:
   id: 'arm32v7'
   args:
   - 'build'
-  - '-f'
-  - 'Dockerfile.rpi'
   - '--build-arg=arch=arm32v7'
   - '--tag=gcr.io/${PROJECT_ID}/pocs:arm32v7'
   - '.'
