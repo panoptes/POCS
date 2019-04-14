@@ -60,12 +60,16 @@ of the way) and re-run this script.
   "
       exit 1
     fi
-    echo "Cloning ${REPO_URL} into ${REPO_DIR}"
+    echo "
+Cloning ${REPO_URL} into ${REPO_DIR}
+"
     (set -x ; git clone "${REPO_URL}" "${REPO_DIR}")
     cd "${REPO_DIR}"
     git checkout "${BRANCH}"
   else
-    echo "Pulling the latest software into the worktree at ${REPO_DIR}"
+    echo "
+Pulling the latest software into the worktree at ${REPO_DIR}
+"
     cd "${REPO_DIR}"
     git fetch --all
     git checkout "${BRANCH}"
@@ -73,9 +77,7 @@ of the way) and re-run this script.
   fi
 }
 
-
-
-# Exit immediately if a command fails.
+# Exit immediately if a command fails:
 set -e
 
 # COPIED from default-env-vars.sh
@@ -96,17 +98,23 @@ do_sudo apt-get update
 
 if [ ! -x "$(safe_which git)" ]
 then
-  echo "git is not installed, so installing it..."
+  echo "
+git is not installed, so installing it...
+"
   do_sudo apt-get install -y git
 fi
 
-echo "Ensuring that ${PANDIR} exists"
+echo "
+Ensuring that ${PANDIR} exists
+"
 if [ ! -d "${PANDIR}" ]
 then
   do_sudo mkdir -p "${PANDIR}"
 fi
 
-echo "Ensuring that ${PANDIR} is owned by user ${PANUSER}"
+echo "
+Ensuring that ${PANDIR} is owned by user ${PANUSER}
+"
 do_sudo chown "${PANUSER}" "${PANDIR}"
 
 clone_or_update "${POCS}" "${POCS_GIT_URL}" "${POCS_BRANCH}"
