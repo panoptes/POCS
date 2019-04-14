@@ -185,7 +185,7 @@ class AbstractSerialMount(AbstractMount):
                         "Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
-                            commands.update(yaml.load(f.read()))
+                            commands.update(yaml.full_load(f.read()))
                             self.logger.debug(
                                 "Mount commands updated from {}".format(conf_file))
                     except OSError as err:
