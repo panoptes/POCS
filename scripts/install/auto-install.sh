@@ -117,6 +117,4 @@ Executing ${POCS}/scripts/install/install-dependencies.sh, which will
 install the tools needed to run POCS.
 "
 
-exit 1
-
 ${POCS}/scripts/install/install-dependencies.sh -x
