@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import logging
@@ -10,6 +9,7 @@ import sys
 from tempfile import gettempdir
 import time
 from warnings import warn
+from contextlib import suppress
 
 from pocs.utils.config import load_config
 from collections.abc import Mapping
@@ -252,12 +252,10 @@ def get_root_logger(profile='panoptes', log_config=None):
         # Use a relative path, so that if we move PANLOG the paths aren't broken.
         log_symlink = os.path.join(log_dir, '{}-{}.log'.format(invoked_script, handler))
         log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
-        try:
+        with suppress(FileNotFoundError):
             os.unlink(log_symlink)
-        except FileNotFoundError:  # pragma: no cover
-            pass
-        finally:
-            os.symlink(log_symlink_target, log_symlink)
+
+        os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)

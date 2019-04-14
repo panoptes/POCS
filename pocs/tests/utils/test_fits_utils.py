@@ -64,4 +64,4 @@ def test_solve_options(solved_fits_file):
 def test_solve_bad_field(solved_fits_file):
     proc = fits_utils.solve_field('Foo', verbose=True)
     outs, errs = proc.communicate()
-    assert 'ERROR' in outs
+    assert 'ERROR' in errs
