@@ -157,10 +157,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         device_config.setdefault('set_point', None)
         device_config.setdefault('filter_type', None)
 
-        logger.debug('Creating camera: {}'.format(config['model']))
+        logger.debug('Creating camera: {}'.format(device_config['model']))
 
         try:
-            module = load_module('pocs.camera.{}'.format(config['model']))
+            module = load_module('pocs.camera.{}'.format(device_config['model']))
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, **device_config)
