@@ -115,6 +115,14 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     primary_camera = None
 
+    # Different models require different connections methods.
+    model_requires = {
+        'canon_gphoto2': 'port',
+        'sbig': 'serial_number',
+        'zwo': 'serial_number',
+        'fli': 'serial_number',
+    }
+
     device_info = camera_info['devices']
     for cam_num, device_config in enumerate(device_info):
         cam_name = 'Cam{:02d}'.format(cam_num)
@@ -128,7 +136,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                     logger.warning("No ports left for {}, skipping.".format(cam_name))
                     continue
             else:
-                if not ('port' in device_config or 'serial_number' in device_config):
+
+                if model_requires[device_config['model']] not in device_config:
                     raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
             device_config.setdefault('focuser', None)
