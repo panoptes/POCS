@@ -2,12 +2,28 @@
 # auto-install.sh installs git if it isn't installed, then clones POCS and
 # installs its dependencies.
 #
-# To fetch this from github and execute it immediately, run this command:
+# To fetch this from github and execute it immediately, run one of these two
+# commands in a bash shell, the first if you have wget installed, the second
+# if you have curl installed:
 #
-#    bash <(curl -s https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
+# 1a) wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh | bash
+# 1b) bash <(wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
+#
+# 2) bash <(curl -s https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
+#
+# To determine whether you have these commands install, type these commands:
+#
+#   which wget
+#   which curl
 
-# Exit immediately if a command fails.
-set -e
+################################################################################
+# Env vars used for debugging of this script; these allow you to point to your
+# fork of POCS on github, so that you can download your fork instead of the
+# primary repo.
+
+[[ -z "${GITHUB_USER}" ]] && export GITHUB_USER="panoptes"
+[[ -z "${POCS_GIT_URL}" ]] && export POCS_GIT_URL="https://github.com/${GITHUB_USER}/POCS.git"
+[[ -z "${GITHUB_BRANCH}" ]] && export GITHUB_BRANCH="develop"
 
 ################################################################################
 # Functions COPIED from install-helper-functions.sh
@@ -27,6 +43,9 @@ function do_sudo() {
     (set -x ; sudo "$@")
   fi
 }
+
+# Exit immediately if a command fails.
+set -e
 
 # COPIED from default-env-vars.sh
 [[ -z "${PANUSER}" ]] && export PANUSER="panoptes"      # Default user
@@ -59,6 +78,7 @@ fi
 echo "Ensuring that ${PANDIR} is owned by user ${PANUSER}"
 do_sudo chown "${PANUSER}" "${PANDIR}"
 
+
 cd "${PANDIR}"
 
 if [ ! -d "${POCS}/.git" ]
@@ -73,14 +93,14 @@ of the way) and re-run this script.
     exit 1
   fi
   echo "Cloning the POCS git repository into ${POCS}"
-  git clone https://github.com/panoptes/POCS.git "${POCS}"
+  (set -x ; git clone "${POCS_GIT_URL}" "${POCS}")
   cd "${POCS}"
-  git checkout master
+  git checkout "${GITHUB_BRANCH}"
 else
   echo "Pulling the latest software into the POCS worktree (${POCS})"
   cd "${POCS}"
   git fetch --all
-  git checkout master
+  git checkout "${GITHUB_BRANCH}"
   git pull
 fi
 
@@ -89,4 +109,6 @@ Executing ${POCS}/scripts/install/install-dependencies.sh, which will
 install the tools needed to run POCS.
 "
 
-${POCS}/scripts/install/install-dependencies.sh
+exit 1
+
+${POCS}/scripts/install/install-dependencies.sh -x
