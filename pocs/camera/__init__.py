@@ -154,8 +154,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                             'timeout': 0.5 * u.second}
             device_config['readout_time'] = 0.5
 
-        device_config['set_point'] = device_config.get('set_point', None)
-        device_config['filter_type'] = device_config.get('filter_type', None)
+        device_config.setdefault('set_point', None)
+        device_config.setdefault('filter_type', None)
 
         logger.debug('Creating camera: {}'.format(config['model']))
 
