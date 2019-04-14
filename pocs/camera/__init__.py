@@ -136,9 +136,12 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                     logger.warning("No ports left for {}, skipping.".format(cam_name))
                     continue
             else:
-
-                if model_requires[device_config['model']] not in device_config:
-                    raise error.CameraNotFound(msg="No port specified and auto_detect=False")
+                # Check for proper connection method.
+                model = device_config['model']
+                connection_method = model_requires[model]
+                if connection_method not in device_config:
+                    raise error.CameraNotFound(
+                        msg=f"No {connection_method} for {model} specified and auto_detect=False")
 
             device_config.setdefault('focuser', None)
             device_config.setdefault('filterwheel', None)
