@@ -20,5 +20,5 @@ requests
 scalpl
 scikit-image
 scipy
-transitions >= 0.4.0
+transitions
 wcsaxes

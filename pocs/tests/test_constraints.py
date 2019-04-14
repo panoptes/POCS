@@ -42,7 +42,7 @@ def horizon_line(config):
 
 @pytest.fixture
 def field_list():
-    return yaml.load("""
+    return yaml.full_load("""
 -
     name: HD 189733
     position: 20h00m43.7135s +22d42m39.0645s
