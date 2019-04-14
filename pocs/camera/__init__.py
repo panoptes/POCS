@@ -138,8 +138,11 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             else:
                 # Check for proper connection method.
                 model = device_config['model']
-                connection_method = model_requires[model]
-                if connection_method not in device_config:
+                try:
+                    connection_method = model_requires[model]
+                    if connection_method not in device_config:
+                        raise error.CameraNotFound
+                except (KeyError, error.CameraNotFound):
                     raise error.CameraNotFound(
                         msg=f"No {connection_method} for {model} specified and auto_detect=False")
 
