@@ -144,4 +144,4 @@ Executing ${POCS}/scripts/install/install-dependencies.sh, which will
 install the tools needed to run POCS.
 "
 
-${POCS}/scripts/install/install-dependencies.sh -x
+${POCS}/scripts/install/install-dependencies.sh
