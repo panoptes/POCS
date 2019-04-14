@@ -574,7 +574,10 @@ function maybe_install_conda() {
 function get_installed_astrometry_version() {
   local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
   if [[ -x "${solve_field}" ]] ; then
-    "${solve_field}" --help|(grep -E '^Revision [0-9.]+,' || /bin/true)|cut -c10-|cut -d, -f1
+    ("${solve_field}" --help
+     | (grep -E --only-matching '^Revision [0-9.]+' || /bin/true)
+     | cut -c10-
+     | cut -d, -f1)
   fi
 }
 
