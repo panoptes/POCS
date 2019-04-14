@@ -1,9 +1,15 @@
 language: python
+python:
+  - "3.6"
 services:
-  - docker
+- docker
 before_install:
-    - ci_env=`bash <(curl -s https://codecov.io/env)`
-    - docker pull gcr.io/panoptes-survey/pocs
-install: true  # skips install
+- ci_env=`bash <(curl -s https://codecov.io/env)`
+- docker pull gcr.io/panoptes-survey/pocs
+install: true
 script:
-    - docker run -it -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS $ci_env gcr.io/panoptes-survey/pocs scripts/testing/run_tests.sh
+- docker run -it 
+  $ci_env 
+  -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
+  gcr.io/panoptes-survey/pocs
+  /bin/bash -c "source activate panoptes-env && scripts/testing/run_tests.sh"
