@@ -12,6 +12,7 @@ COPY . ${POCS}
 
 RUN apt-get update \
     && apt-get --yes install \
+        byobu \
         gcc \
         pkg-config \
         libncurses5-dev \
