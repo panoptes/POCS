@@ -19,11 +19,11 @@
 ################################################################################
 # Env vars used for debugging of this script; these allow you to point to your
 # fork of POCS on github, so that you can download your fork instead of the
-# primary repo.
+# primary repo. There is no support for doing the same with PAWS.
 
-[[ -z "${GITHUB_USER}" ]] && export GITHUB_USER="panoptes"
-[[ -z "${POCS_GIT_URL}" ]] && export POCS_GIT_URL="https://github.com/${GITHUB_USER}/POCS.git"
-[[ -z "${GITHUB_BRANCH}" ]] && export GITHUB_BRANCH="develop"
+[[ -z "${POCS_GITHUB_USER}" ]] && export POCS_GITHUB_USER="panoptes"
+[[ -z "${POCS_GIT_URL}" ]] && export POCS_GIT_URL="https://github.com/${POCS_GITHUB_USER}/POCS.git"
+[[ -z "${POCS_BRANCH}" ]] && export POCS_BRANCH="develop"
 
 ################################################################################
 # Functions COPIED from install-helper-functions.sh
@@ -43,6 +43,37 @@ function do_sudo() {
     (set -x ; sudo "$@")
   fi
 }
+
+function clone_or_update() {
+  local -r REPO_DIR="${1}"
+  local -r REPO_URL="${2}"
+  local -r BRANCH="${3}"
+
+  if [ ! -d "${REPO_DIR}/.git" ]
+  then
+    if [ -d "${REPO_DIR}" ]
+    then
+      echo 2> "
+The directory (${REPO_DIR}) already exists, but doesn't appear
+to be a valid git repository. Please remove it (or move it out
+of the way) and re-run this script.
+  "
+      exit 1
+    fi
+    echo "Cloning ${REPO_URL} into ${REPO_DIR}"
+    (set -x ; git clone "${REPO_URL}" "${REPO_DIR}")
+    cd "${REPO_DIR}"
+    git checkout "${BRANCH}"
+  else
+    echo "Pulling the latest software into the worktree at ${REPO_DIR}"
+    cd "${REPO_DIR}"
+    git fetch --all
+    git checkout "${BRANCH}"
+    git pull
+  fi
+}
+
+
 
 # Exit immediately if a command fails.
 set -e
@@ -78,31 +109,8 @@ fi
 echo "Ensuring that ${PANDIR} is owned by user ${PANUSER}"
 do_sudo chown "${PANUSER}" "${PANDIR}"
 
-
-cd "${PANDIR}"
-
-if [ ! -d "${POCS}/.git" ]
-then
-  if [ -d "${POCS}" ]
-  then
-    echo 2> "
-The POCS directory (${POCS}) already exists, but doesn't appear
-to be a valid git repository. Please remove it (or move it out
-of the way) and re-run this script.
-"
-    exit 1
-  fi
-  echo "Cloning the POCS git repository into ${POCS}"
-  (set -x ; git clone "${POCS_GIT_URL}" "${POCS}")
-  cd "${POCS}"
-  git checkout "${GITHUB_BRANCH}"
-else
-  echo "Pulling the latest software into the POCS worktree (${POCS})"
-  cd "${POCS}"
-  git fetch --all
-  git checkout "${GITHUB_BRANCH}"
-  git pull
-fi
+clone_or_update "${POCS}" "${POCS_GIT_URL}" "${POCS_BRANCH}"
+clone_or_update "${PAWS}" "https://github.com/panoptes/PAWS.git" "develop"
 
 echo "
 Executing ${POCS}/scripts/install/install-dependencies.sh, which will
