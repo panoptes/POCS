@@ -144,7 +144,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                         raise error.CameraNotFound
                 except (KeyError, error.CameraNotFound):
                     raise error.CameraNotFound(
-                        msg=f"No {connection_method} for {model} specified and auto_detect=False")
+                        msg=f"No connection_method for {model} specified and auto_detect=False")
 
             device_config.setdefault('focuser', None)
             device_config.setdefault('filterwheel', None)
