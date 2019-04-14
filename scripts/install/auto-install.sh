@@ -32,6 +32,18 @@ function safe_which() {
   type -p "${1}" || /bin/true
 }
 
+# Print a separator bar of # characters.
+function echo_bar() {
+  local terminal_width
+  if [ -n "${TERM}" ] && [ -t 0 ] ; then
+    if [[ -n "$(which resize)" ]] ; then
+      terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
+    elif [[ -n "$(which stty)" ]] ; then
+      terminal_width="$(stty size 2>/dev/null | cut '-d ' -f2)"
+    fi
+  fi
+  printf "%${terminal_width:-80}s\n" | tr ' ' '#'
+}
 ################################################################################
 
 function do_sudo() {
@@ -48,6 +60,8 @@ function clone_or_update() {
   local -r REPO_DIR="${1}"
   local -r REPO_URL="${2}"
   local -r BRANCH="${3}"
+
+  echo_bar
 
   if [ ! -d "${REPO_DIR}/.git" ]
   then
@@ -94,16 +108,19 @@ fi
 
 # Let's assume we'll need to run apt-get install, so first run apt-get update
 # which will refresh caches used during apt-get install.
+echo_bar
 do_sudo apt-get update
 
 if [ ! -x "$(safe_which git)" ]
 then
+  echo_bar
   echo "
 git is not installed, so installing it...
 "
   do_sudo apt-get install -y git
 fi
 
+echo_bar
 echo "
 Ensuring that ${PANDIR} exists
 "
@@ -112,6 +129,7 @@ then
   do_sudo mkdir -p "${PANDIR}"
 fi
 
+echo_bar
 echo "
 Ensuring that ${PANDIR} is owned by user ${PANUSER}
 "
@@ -120,6 +138,7 @@ do_sudo chown "${PANUSER}" "${PANDIR}"
 clone_or_update "${POCS}" "${POCS_GIT_URL}" "${POCS_BRANCH}"
 clone_or_update "${PAWS}" "https://github.com/panoptes/PAWS.git" "develop"
 
+echo_bar
 echo "
 Executing ${POCS}/scripts/install/install-dependencies.sh, which will
 install the tools needed to run POCS.
