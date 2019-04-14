@@ -1,6 +1,5 @@
 import time
 import threading
-from warnings import warn
 from contextlib import suppress
 
 from astropy import units as u

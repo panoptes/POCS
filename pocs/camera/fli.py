@@ -1,8 +1,3 @@
-import time
-from warnings import warn
-from threading import Event
-from threading import Timer
-from threading import Lock
 from contextlib import suppress
 
 import numpy as np
