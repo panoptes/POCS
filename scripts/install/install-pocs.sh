@@ -23,7 +23,7 @@ done
 echo "USER: ${PANUSER}"
 echo "DIR: ${PANDIR}"
 
-echo "Creating directories"
+echo "Creating directories."
 # Make directories
 sudo mkdir -p ${PANDIR}
 sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
@@ -32,15 +32,15 @@ mkdir -p ${PANDIR}/logs
 mkdir -p ${PANDIR}/conf_files
 mkdir -p ${PANDIR}/images
 
-echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log"
+echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log."
 
 # apt: git, wget
 echo "Installing system dependencies"
 sudo apt update &>> ${PANDIR}/logs/install-pocs.log
 sudo apt --yes install wget git &>> ${PANDIR}/logs/install-pocs.log
 
-echo "Cloning PANOPTES source code"
-echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)"
+echo "Cloning PANOPTES source code."
+echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
 read -p "Github User: [panoptes] " github_user
 
 cd ${PANDIR}
@@ -52,7 +52,7 @@ for repo in "${repos[@]}"; do
         echo "Cloning ${repo}"
         git clone https://github.com/${github_user}/${repo}.git &>> ${PANDIR}/logs/install-pocs.log
     else
-        echo "Repo ${repo} already exists on system"
+        echo "Repo ${repo} already exists on system."
     fi
 done
 
@@ -61,11 +61,14 @@ if ! hash docker; then
     echo "Installing Docker"
     sh -c "$(wget https://get.docker.com -O -)"
     sudo usermod -aG docker ${PANUSER}
+    # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
+    sudo curl -L --fail https://github.com/docker/compose/releases/download/1.24.0/run.sh -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    sudo chmod a+x /usr/local/bin/docker-compose
 fi
 
-echo "Pulling POCS docker images"
+echo "Pulling POCS docker images."
 sudo docker pull gcr.io/panoptes-survey/pocs
 sudo docker pull gcr.io/panoptes-survey/paws
 
-
-echo "Please logout and log back in to being using Docker as ${PANUSER}"
+echo "Please logout and log back in to being using Docker as ${PANUSER}."
