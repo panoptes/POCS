@@ -349,7 +349,7 @@ def funpack(*args, **kwargs):
     return fpack(*args, unpack=True, **kwargs)
 
 
-def write_fits(data, header, filename, logger=None, exposure_event=None):
+def write_fits(data, header, filename, logger=None):
     """
     Write FITS file to requested location
     """
@@ -368,12 +368,9 @@ def write_fits(data, header, filename, logger=None, exposure_event=None):
     else:
         if logger:
             logger.debug('Image written to {}'.format(filename))
-    finally:
-        if exposure_event:
-            exposure_event.set()
 
 
-def update_headers(file_path, info):
+def update_observation_headers(file_path, info):
     with fits.open(file_path, 'update') as f:
         hdu = f[0]
         hdu.header.set('IMAGEID', info.get('image_id', ''))
