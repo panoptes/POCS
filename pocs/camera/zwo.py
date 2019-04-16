@@ -174,7 +174,7 @@ class Camera(AbstractSDKCamera):
                       filename_root,
                       self.file_extension,
                       int(max_frames),
-                      self._fits_header(seconds, dark=False))
+                      self._create_fits_header(seconds, dark=False))
         video_thread = threading.Thread(target=self._video_readout,
                                         args=video_args,
                                         daemon=True)
@@ -258,8 +258,7 @@ class Camera(AbstractSDKCamera):
                 fits_utils.write_fits(image_data,
                                       header,
                                       filename,
-                                      self.logger,
-                                      self._exposure_event)
+                                      self.logger)
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':
@@ -268,8 +267,8 @@ class Camera(AbstractSDKCamera):
             raise error.PanError("Unexpected exposure status on {}: '{}'".format(
                 self, exposure_status))
 
-    def _fits_header(self, seconds, dark):
-        header = super()._fits_header(seconds, dark)
+    def _create_fits_header(self, seconds, dark):
+        header = super()._create_fits_header(seconds, dark)
         header.set('CAM-GAIN', self.gain, 'Internal units')
         header.set('CAM-BITS', int(get_quantity_value(self.properties['bit_depth'], u.bit)),
                    'ADC bit depth')
