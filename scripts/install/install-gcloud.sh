@@ -51,3 +51,8 @@ Installing the Google Cloud SDK.
 "
 my_sudo apt-get --quiet install google-cloud-sdk
 
+
+echo_bar
+echo "
+You'll now need to run [gcloud init] to set your credentials.
+"
