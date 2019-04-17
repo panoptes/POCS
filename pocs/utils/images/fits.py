@@ -71,7 +71,7 @@ def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
 
     try:
         proc = subprocess.Popen(cmd, universal_newlines=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as e:
         raise error.InvalidCommand(
             "Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
