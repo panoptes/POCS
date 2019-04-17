@@ -295,6 +295,14 @@ class SerialData(object):
         """
         self.ser.reset_input_buffer()
 
+    def reset_output_buffer(self):
+        """Clear buffered data from connected port/device.
+
+        This is continued with respect to the above block which was done by james synge.
+        Does the work of clearing the port's output buffer. This reduces delay.
+        """
+        self.ser.reset_output_buffer()
+
     def __del__(self):
         """Close the serial device on delete.
 

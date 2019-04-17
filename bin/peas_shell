@@ -4,6 +4,7 @@ import datetime
 import os
 import readline
 import sys
+import serial
 
 from astropy.utils import console
 from threading import Timer
@@ -163,6 +164,11 @@ class PanSensorShell(cmd.Cmd):
         self.weather = AAGCloudSensor(serial_address=port, store_result=True)
         self.do_enable_sensor('weather')
 
+    def clear_buffer(self):
+        ser=serial.Serial('/dev/ttyUSB0')
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
+
 ##################################################################################################
 # Relay Methods
 ##################################################################################################
@@ -207,7 +213,7 @@ class PanSensorShell(cmd.Cmd):
             relay_info = relay_lookup[relay]
             serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
 
-            serial_connection.ser.flushInput()
+            serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem toggling relay {}".format(relay))

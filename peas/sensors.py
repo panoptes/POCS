@@ -156,7 +156,7 @@ def find_arduino_devices():
 
 
 def detect_board_on_port(port, logger=None):
-    """Open a port and determine which type of board its producing output.
+    """Open a port and determine which type of board is producing output.
 
     Returns: (name, serial_reader) if we can read a line of JSON from the
         port, parse it and find a 'name' attribute in the top-level object.
