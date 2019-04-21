@@ -73,8 +73,8 @@ if ! hash docker; then
 fi
 
 echo "Pulling POCS docker images"
+sudo docker pull google/cloud-sdk:latest
 sudo docker pull gcr.io/panoptes-survey/pocs
 sudo docker pull gcr.io/panoptes-survey/paws
 
-
-echo "Please logout and log back in to being using Docker as ${PANUSER}"
+echo "You must logout and log back in to  before using POCS."
