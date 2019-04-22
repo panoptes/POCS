@@ -4,11 +4,13 @@ services:
     image: gcr.io/panoptes-survey/pocs
     container_name: pocs
     privileged: true
+    network_mode: host
     env_file: 
       - ${PANDIR}/env_file
     depends_on:
       - "config-server"
       - "messaging"
+      - "peas-shell"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running
@@ -20,3 +22,4 @@ volumes:
         type: none
         device: /var/panoptes
         o: bind
+
