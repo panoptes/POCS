@@ -5,7 +5,7 @@ MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pandir=/var/panoptes
 
-ENV PANDIR $pan_dir
+ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
 
 COPY . ${POCS}
