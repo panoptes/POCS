@@ -165,10 +165,12 @@ class PanSensorShell(cmd.Cmd):
         self.weather = AAGCloudSensor(serial_address=port, store_result=True)
         self.do_enable_sensor('weather')
 
-    def clear_buffer(self):
-        ser=serial.Serial('/dev/ttyUSB0')
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
+    def do_clear_buffer(self, sensor , sensor_name):
+        if hasattr(self, sensor) and sensor in self.active_sensors:
+            port = self.config[sensor][sensor_name]['serial_port']
+            ser=serial.Serial(port)
+            ser.reset_input_buffer()
+            ser.reset_output_buffer()
 
 ##################################################################################################
 # Relay Methods
