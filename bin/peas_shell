@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import cmd
 import datetime
 import os
@@ -96,7 +97,7 @@ class PanSensorShell(cmd.Cmd):
             self.active_sensors[sensor] = {'reader': sensor, 'delay': delay}
 
     def do_disable_sensor(self, sensor):
-        """ Enable the given sensor """
+        """ Disable the given sensor """
         if hasattr(self, sensor) and sensor in self.active_sensors:
             del self.active_sensors[sensor]
 

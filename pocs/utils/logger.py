@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import logging
@@ -10,8 +9,10 @@ import sys
 from tempfile import gettempdir
 import time
 from warnings import warn
+from contextlib import suppress
 
 from pocs.utils.config import load_config
+from collections.abc import Mapping
 
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
@@ -121,7 +122,7 @@ def logger_msg_formatter(fmt, args):
     # formatting methods to try based on the contents.
     method_names = []
     may_have_legacy_subst = format_has_legacy_style(fmt)
-    args_are_mapping = isinstance(args, collections.Mapping)
+    args_are_mapping = isinstance(args, Mapping)
     if '{' in fmt:
         # Looks modern.
         if args_are_mapping:
@@ -251,12 +252,10 @@ def get_root_logger(profile='panoptes', log_config=None):
         # Use a relative path, so that if we move PANLOG the paths aren't broken.
         log_symlink = os.path.join(log_dir, '{}-{}.log'.format(invoked_script, handler))
         log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
-        try:
+        with suppress(FileNotFoundError):
             os.unlink(log_symlink)
-        except FileNotFoundError:  # pragma: no cover
-            pass
-        finally:
-            os.symlink(log_symlink_target, log_symlink)
+
+        os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)
