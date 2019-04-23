@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import logging
@@ -255,7 +254,8 @@ def get_root_logger(profile='panoptes', log_config=None):
         log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
         with suppress(FileNotFoundError):
             os.unlink(log_symlink)
-            os.symlink(log_symlink_target, log_symlink)
+
+        os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)

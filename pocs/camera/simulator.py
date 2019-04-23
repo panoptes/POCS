@@ -1,7 +1,6 @@
 import os
 import random
 
-from threading import Event
 from threading import Timer
 
 import numpy as np
@@ -73,7 +72,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        fits_utils.write_fits(fake_data, header, filename, self.logger, self._exposure_event)
+        fits_utils.write_fits(fake_data, header, filename, self.logger)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
