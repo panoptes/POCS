@@ -67,7 +67,7 @@ def camera(request, images_dir):
             if camera_configs:
                 # Local config file camera section has a devices list
                 for camera_config in camera_configs:
-                    if camera_config['model'] == request.param[1]:
+                    if camera_config and camera_config['model'] == request.param[1]:
                         # Camera config is the right type
                         configs.append(camera_config)
 

@@ -58,8 +58,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
-    subcomponents = {'Focuser', 'FilterWheel'}
-    sub_names = {subcomponent.casefold() for subcomponent in subcomponents}
+    sub_classes = {'Focuser', 'FilterWheel'}
+    sub_names = {sub_class.casefold() for sub_class in sub_classes}
 
     def __init__(self,
                  name='Generic Camera',
@@ -90,9 +90,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event.set()
         self._is_exposing = False
 
-        for sub_name in self.subcomponents:
-            self._create_subcomponent(subcomponent=kwargs.get(sub_name.casefold()),
-                                      sub_name=sub_name)
+        for sub_name, sub_class in zip(self.sub_names, self.sub_classes):
+            self._create_subcomponent(subcomponent=kwargs.get(sub_name),
+                                      class_name=sub_class)
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -669,7 +669,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         fits_utils.update_headers(file_path, info)
         return file_path
 
-    def _create_subcomponent(self, subcomponent, sub_name):
+    def _create_subcomponent(self, subcomponent, class_name):
         """
         Creates a subcomponent as an attribute of the camera. Can do this from either an instance
         of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
@@ -678,45 +678,45 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             subcomponent (instance of sub_name | dict): the subcomponent object, or the keyword
                 arguments required to create it.
-            sub_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version will
-                be used as the attribute name, and must also match the name of the corresponding
-                POCS submodule for this subcomponent, e.g. `pocs.focuser`.
+            class_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version
+                will be used as the attribute name, and must also match the name of the
+                corresponding POCS submodule for this subcomponent, e.g. `pocs.focuser`.
         """
         if subcomponent:
-            base_module_name = "pocs.{}.{}".format(sub_name.casefold(), sub_name.casefold())
+            base_module_name = "pocs.{}.{}".format(class_name.casefold(), class_name.casefold())
             try:
                 base_module = load_module(base_module_name)
             except AttributeError as err:
                 self.logger.critical("Couldn't import {} base class module {}!".format(
-                    sub_name, base_module_name))
+                    class_name, base_module_name))
                 raise err
-            base_class = getattr(base_module, "Abstract{}".format(sub_name))
+            base_class = getattr(base_module, "Abstract{}".format(class_name))
 
             if isinstance(subcomponent, base_class):
-                self.logger.debug("{} received: {}".format(sub_name, subcomponent))
-                setattr(self, sub_name.casefold(), subcomponent)
-                getattr(self, sub_name.casefold()).camera = self
+                self.logger.debug("{} received: {}".format(class_name, subcomponent))
+                setattr(self, class_name.casefold(), subcomponent)
+                getattr(self, class_name.casefold()).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(sub_name.casefold(), subcomponent['model'])
+                module_name = 'pocs.{}.{}'.format(class_name.casefold(), subcomponent['model'])
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
                     self.logger.critical("Couldn't import {} module {}!".format(
-                        sub_name, module_name))
+                        class_name, module_name))
                     raise err
                 subcomponent_kwargs = copy.copy(subcomponent)
                 subcomponent_kwargs.update({'camera': self, 'config': self.config})
                 setattr(self,
-                        sub_name.casefold(),
-                        getattr(module, sub_name)(**subcomponent_kwargs))
+                        class_name.casefold(),
+                        getattr(module, class_name)(**subcomponent_kwargs))
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
                 self.logger.error("Expected either a {} instance or dict, got {}".format(
-                    sub_name, subcomponent))
-                setattr(self, sub_name.casefold(), None)
+                    class_name, subcomponent))
+                setattr(self, class_name.casefold(), None)
         else:
-            setattr(self, sub_name.casefold(), None)
+            setattr(self, class_name.casefold(), None)
 
     def __str__(self):
         name = self.name
