@@ -3,10 +3,10 @@ ARG arch=amd64
 FROM gcr.io/panoptes-survey/panoptes-utils:$arch
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
-ARG pocs_dir=POCS
+ARG pandir=/var/panoptes
 
-ENV PANDIR /var/panoptes
-ENV POCS ${PANDIR}/${pocs_dir}
+ENV PANDIR $pandir
+ENV POCS ${PANDIR}/POCS
 
 COPY . ${POCS}
 
@@ -27,9 +27,14 @@ RUN apt-get update \
     && rm gphoto2-updater.sh \
     # POCS
     && cd ${POCS} \
-    && ln -s ${POCS}/conf_files/ ${PANDIR}/ \
-    && /opt/conda/envs/panoptes-env/bin/pip install --no-cache-dir -r requirements.txt
+    && /opt/conda/envs/panoptes-env/bin/pip install --no-cache-dir -r requirements.txt \
+    && /opt/conda/envs/panoptes-env/bin/pip install -e . \
+    # Link conf_files to $PANDIR
+    && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
 WORKDIR ${POCS}
 
+ENTRYPOINT ["${POCS}/resources/docker_files/docker-entrypoint.sh"]
+
 CMD ["/bin/zsh"]
+

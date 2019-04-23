@@ -1,18 +1,28 @@
 version: '3.2'
 services:
-  pocs:
+  peas-shell:
     image: gcr.io/panoptes-survey/pocs
-    container_name: pocs
+    container_name: peas-shell
     privileged: true
-    env_file: 
-      - ${PANDIR}/env_file
+    network_mode: host
+    env_file: ${PANDIR}/env_file
     depends_on:
-      - "config-server"
-      - "messaging"
+      - "messaging-hub"  
     volumes:
       - pandir:/var/panoptes
-    # No-op to keep machine running
-    command: tail -f /dev/null 
+    command: /usr/bin/byobu new-session -s "POCS-Session" "/opt/conda/envs/panoptes-env/bin/python ${POCS}/scripts/peas-shell.py"
+  pocs-shell:
+    image: gcr.io/panoptes-survey/pocs
+    container_name: pocs-shell
+    privileged: true
+    network_mode: host
+    env_file: ${PANDIR}/env_file
+    depends_on:
+      - "peas-shell"  
+    volumes:
+      - pandir:/var/panoptes
+        # command: /usr/bin/byobu new-session -s "POCS-Session" "/opt/conda/envs/panoptes-env/bin/python ${POCS}/scripts/pocs-shell.py"
+    command: tail -f /dev/null
 volumes:
     pandir:
       driver: local
@@ -20,3 +30,4 @@ volumes:
         type: none
         device: /var/panoptes
         o: bind
+

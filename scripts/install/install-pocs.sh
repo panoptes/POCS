@@ -1,7 +1,13 @@
 #!/bin/bash -e
 
-PANUSER='panoptes'
-PANDIR='/var/panoptes'
+if [ -z ${PANUSER} ]; then
+	export PANUSER=$USER
+	echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
+fi
+if [ -z ${PANDIR} ]; then
+	export PANDIR='/var/panoptes'
+	echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
+fi
 
 while [[ $# -gt 0 ]]
 do
@@ -23,14 +29,16 @@ done
 echo "USER: ${PANUSER}"
 echo "DIR: ${PANDIR}"
 
-echo "Creating directories."
-# Make directories
-sudo mkdir -p ${PANDIR}
-sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
+if [[ ! -d ${PANDIR} ]] || [[ $(stat -c "%U" ${PANDIR}) -ne $USER ]]; then
+	echo "Creating directories"
+	# Make directories
+	sudo mkdir -p ${PANDIR}
+	sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
 
-mkdir -p ${PANDIR}/logs
-mkdir -p ${PANDIR}/conf_files
-mkdir -p ${PANDIR}/images
+	mkdir -p ${PANDIR}/logs
+	mkdir -p ${PANDIR}/conf_files
+	mkdir -p ${PANDIR}/images
+fi
 
 echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log."
 
@@ -49,8 +57,9 @@ declare -a repos=("POCS" "PAWS" "panoptes-utils")
 
 for repo in "${repos[@]}"; do
     if [ ! -d "${PANDIR}/${repo}" ]; then
-        echo "Cloning ${repo}"
-        git clone https://github.com/${github_user}/${repo}.git &>> ${PANDIR}/logs/install-pocs.log
+	    echo "Cloning ${repo}"
+	# Just redirect the errors because otherwise looks like it hangs.
+        git clone https://github.com/${github_user}/${repo}.git
     else
         echo "Repo ${repo} already exists on system."
     fi
@@ -67,8 +76,10 @@ if ! hash docker; then
     sudo chmod a+x /usr/local/bin/docker-compose
 fi
 
-echo "Pulling POCS docker images."
+echo "Pulling POCS docker images"
+sudo docker pull google/cloud-sdk:latest
 sudo docker pull gcr.io/panoptes-survey/pocs
 sudo docker pull gcr.io/panoptes-survey/paws
 
-echo "Please logout and log back in to being using Docker as ${PANUSER}."
+echo "You must logout and log back in to  before using POCS."
+

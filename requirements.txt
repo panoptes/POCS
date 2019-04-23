@@ -1,7 +1,6 @@
 astroplan
 astropy
 dateparser
-docker-compose
 Flask
 jupyter-console
 jupyterlab
