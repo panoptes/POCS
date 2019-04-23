@@ -729,7 +729,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         for sub_name in self.sub_names:
             subcomponent = getattr(self, sub_name)
             if subcomponent:
-                if sub_count = 0:
+                if sub_count == 0:
                     s += " with {}".format(subcomponent.name)
                 else:
                     s += " & {}".format(subcomponent.name)

@@ -1,19 +1,16 @@
 import os
-import matplotlib.colors as colours
-from matplotlib import cm as colormap
-
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-
-from astropy.modeling import models, fitting
-from scipy.ndimage import binary_dilation
+from copy import copy
+from threading import Event, Thread
+from abc import ABCMeta, abstractmethod
 
 import numpy as np
+from scipy.ndimage import binary_dilation
+from astropy.modeling import models, fitting
 
-from copy import copy
-from threading import Event
-from threading import Thread
-
+import matplotlib.colors as colours
+from matplotlib import cm as colormap
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 from pocs.base import PanBase
 from pocs.utils import current_time
@@ -25,7 +22,7 @@ palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
 
 
-class AbstractFocuser(PanBase):
+class AbstractFocuser(PanBase, metaclass=ABCMeta):
     """
     Base class for all focusers
 
