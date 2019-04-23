@@ -27,10 +27,11 @@ def focuser(request):
             if camera_configs:
                 # Local config file camera section has a devices list
                 for camera_config in camera_configs:
-                    focuser_config = camera_config.get('focuser', None)
-                    if focuser_config and focuser_config['model'] == request.param[1]:
-                        # Camera config has a focuser section, and it's the right type
-                        focuser_configs.append(focuser_config)
+                    if camera_config:
+                        focuser_config = camera_config.get('focuser', None)
+                        if focuser_config and focuser_config['model'] == request.param[1]:
+                            # Camera config has a focuser section, and it's the right type
+                            focuser_configs.append(focuser_config)
 
         if not focuser_configs:
             pytest.skip(

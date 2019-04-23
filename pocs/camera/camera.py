@@ -90,8 +90,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event.set()
         self._is_exposing = False
 
-        for sub_name, sub_class in zip(self.sub_names, self.sub_classes):
-            self._create_subcomponent(subcomponent=kwargs.get(sub_name),
+        for sub_class in self.sub_classes:
+            self._create_subcomponent(subcomponent=kwargs.get(sub_class.casefold()),
                                       class_name=sub_class)
 
         self.logger.debug('Camera created: {}'.format(self))
