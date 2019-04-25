@@ -115,6 +115,14 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     primary_camera = None
 
+    # Different models require different connections methods.
+    model_requires = {
+        'canon_gphoto2': 'port',
+        'sbig': 'serial_number',
+        'zwo': 'serial_number',
+        'fli': 'serial_number',
+    }
+
     device_info = camera_info['devices']
     for cam_num, device_config in enumerate(device_info):
         cam_name = 'Cam{:02d}'.format(cam_num)
@@ -128,8 +136,15 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                     logger.warning("No ports left for {}, skipping.".format(cam_name))
                     continue
             else:
-                if not ('port' in device_config or 'serial_number' in device_config):
-                    raise error.CameraNotFound(msg="No port specified and auto_detect=False")
+                # Check for proper connection method.
+                model = device_config['model']
+                try:
+                    connection_method = model_requires[model]
+                    if connection_method not in device_config:
+                        raise error.CameraNotFound
+                except (KeyError, error.CameraNotFound):
+                    raise error.CameraNotFound(
+                        msg=f"No connection_method for {model} specified and auto_detect=False")
 
             device_config.setdefault('focuser', None)
             device_config.setdefault('filterwheel', None)
@@ -157,10 +172,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
         device_config.setdefault('set_point', None)
         device_config.setdefault('filter_type', None)
 
-        logger.debug('Creating camera: {}'.format(config['model']))
+        logger.debug('Creating camera: {}'.format(device_config['model']))
 
         try:
-            module = load_module('pocs.camera.{}'.format(config['model']))
+            module = load_module('pocs.camera.{}'.format(device_config['model']))
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, **device_config)

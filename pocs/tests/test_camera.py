@@ -117,6 +117,24 @@ def test_create_cameras_from_config_fail(config):
     with pytest.raises(error.PanError):
         create_cameras_from_config(config, simulator=simulator)
 
+    # SBIGs require a serial_number, not port
+    config['cameras']['devices'][0] = {
+        'port': '/dev/ttyFAKE',
+        'model': 'sbit'
+    }
+
+    with pytest.raises(error.PanError):
+        create_cameras_from_config(config, simulator=simulator)
+
+    # Canon DSLRs require a port, not a serial_number
+    config['cameras']['devices'][0] = {
+        'serial_number': 'SC1234',
+        'model': 's'
+    }
+
+    with pytest.raises(error.PanError):
+        create_cameras_from_config(config, simulator=simulator)
+
 
 def test_create_cameras_from_empty_config():
     # create_cameras_from_config should work with no camera config, if cameras simulation is set
