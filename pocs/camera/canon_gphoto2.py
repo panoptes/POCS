@@ -116,7 +116,7 @@ class Camera(AbstractGPhotoCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
+    def _start_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
@@ -129,15 +129,6 @@ class Camera(AbstractGPhotoCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
         """
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
-
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.value
-
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
         run_cmd = [script_path, self.port, str(seconds), filename]
@@ -156,15 +147,11 @@ class Camera(AbstractGPhotoCamera):
             outs, errs = proc.communicate(timeout=10)
             if errs is not None:
                 self.logger.warning(errs)
-        else:
-            return proc
+        finally:
+            return (filename, )
 
-    def _process_fits(self, file_path, info):
-        """
-        Converts the CR2 to a FITS file
-        """
-        self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=False)
-        # Replace the path name with the FITS file
-        info['file_path'] = fits_path
+    def _readout(self, cr2_path, info):
+        """Reads out the image as a CR2 and converts to FITS"""
+        self.logger.debug("Converting CR2 -> FITS: {}".format(cr2_path))
+        fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
         return fits_path
