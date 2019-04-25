@@ -3,6 +3,7 @@ import pytest
 import os
 import time
 import glob
+from copy import deepcopy
 from ctypes.util import find_library
 
 import astropy.units as u
@@ -104,6 +105,7 @@ def test_create_cameras_from_config(config):
 
 
 def test_create_cameras_from_config_fail(config):
+    orig_config = deepcopy(config)
     cameras = create_cameras_from_config(config)
     assert len(cameras) == 2
     simulator = hardware.get_all_names(without=['camera'])
@@ -114,26 +116,30 @@ def test_create_cameras_from_config_fail(config):
         'model': 'foobar'
     }
 
-    with pytest.raises(error.PanError):
-        create_cameras_from_config(config, simulator=simulator)
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
 
     # SBIGs require a serial_number, not port
     config['cameras']['devices'][0] = {
         'port': '/dev/ttyFAKE',
-        'model': 'sbit'
+        'model': 'sbig'
     }
 
-    with pytest.raises(error.PanError):
-        create_cameras_from_config(config, simulator=simulator)
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
 
     # Canon DSLRs require a port, not a serial_number
     config['cameras']['devices'][0] = {
         'serial_number': 'SC1234',
-        'model': 's'
+        'model': 'canon_gphoto2'
     }
 
-    with pytest.raises(error.PanError):
-        create_cameras_from_config(config, simulator=simulator)
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
+
+    # Make sure we didn't fool ourselves
+    cameras = create_cameras_from_config(orig_config)
+    assert len(cameras) == 2
 
 
 def test_create_cameras_from_empty_config():

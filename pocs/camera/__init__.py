@@ -141,14 +141,9 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                 try:
                     connection_method = model_requires[model]
                     if connection_method not in device_config:
-                        raise error.CameraNotFound
-                except (KeyError, error.CameraNotFound):
-                    raise error.CameraNotFound(
-                        msg=f"No connection_method for {model} specified and auto_detect=False")
-
-            device_config.setdefault('focuser', None)
-            device_config.setdefault('filterwheel', None)
-            device_config.setdefault('readout_time', 6.0)
+                        logger.warning(f"Camera error: {connection_method} missing for {model}.")
+                except (KeyError, error.CameraNotFound) as e:
+                    logger.warning(e)
 
         else:
             logger.debug('Using camera simulator.')
@@ -169,8 +164,8 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
                                             'timeout': 0.5 * u.second}
             device_config['readout_time'] = 0.5
 
-        device_config.setdefault('set_point', None)
-        device_config.setdefault('filter_type', None)
+            # Simulator config should always ignore local settings.
+            device_config['ignore_local_config'] = True
 
         logger.debug('Creating camera: {}'.format(device_config['model']))
 
