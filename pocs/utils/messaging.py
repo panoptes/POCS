@@ -271,7 +271,8 @@ class PanMessaging(object):
             if isinstance(v, Time):
                 v = str(v.isot).split('.')[0].replace('T', ' ')
 
-            # Hmmmm. What is going on here? We need some documentation.
+            # _time gives the time in date and time format. 
+            # Date and Time are space seperated so only time is passed as value.
             if k.endswith('_time'):
                 v = str(v).split(' ')[-1]
 
