@@ -55,7 +55,7 @@ class Focuser(AbstractFocuser):
         self._min_position = 0
         self._max_position = 22200
         if self.position is None:
-            self._position = random.randint(0, 22200)
+            self._position = random.randint(0, self._max_position)
         self.logger.debug("Connected to focuser {}".format(self.uid))
 
     def move_to(self, position):
