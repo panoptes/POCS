@@ -734,7 +734,7 @@ See also:
                     self.logger.critical("Couldn't import {} module {}!".format(
                         class_name, module_name))
                     raise err
-                subcomponent_kwargs = copy.copy(subcomponent)
+                subcomponent_kwargs = copy.deepcopy(subcomponent)
                 subcomponent_kwargs.update({'camera': self, 'config': self.config})
                 setattr(self,
                         class_name.casefold(),
