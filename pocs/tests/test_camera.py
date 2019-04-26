@@ -8,8 +8,8 @@ from ctypes.util import find_library
 
 import astropy.units as u
 
-from pocs.camera.simulator import Camera as SimCamera
-from pocs.camera.simulator import SDKCamera as SimSDKCamera
+from pocs.camera.simulator.dslr import Camera as SimCamera
+from pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -128,10 +128,10 @@ def test_create_cameras_from_config_fail(config):
     cameras = create_cameras_from_config(config, simulator=simulator)
     assert len(cameras) != 2
 
-    # Canon DSLRs require a port, not a serial_number
+    # Canon DSLRs and the simulator require a port, not a serial_number
     config['cameras']['devices'][0] = {
         'serial_number': 'SC1234',
-        'model': 'canon_gphoto2'
+        'model': 'serial'
     }
 
     cameras = create_cameras_from_config(config, simulator=simulator)

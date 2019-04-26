@@ -117,6 +117,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     # Different models require different connections methods.
     model_requires = {
+        'simulator': 'port',
         'canon_gphoto2': 'port',
         'sbig': 'serial_number',
         'zwo': 'serial_number',
@@ -174,9 +175,10 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, **device_config)
+        except error.NotFound:
+            logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
         except Exception as e:
-            # Warn if bad camera but keep trying other cameras
-            logger.error(msg="Cannot find camera type: {} {}".format(device_config['model'], e))
+            logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
