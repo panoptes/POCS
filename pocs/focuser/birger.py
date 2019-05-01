@@ -271,13 +271,13 @@ class Focuser(AbstractFocuser):
         try:
             response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
             new_position = self._parse_move_response(response)
-        else:
-            self.logger.debug("Moved to encoder position {}".format(new_position))
-            return new_position
         finally:
             # Birger move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
             self._is_moving = False
+
+        self.logger.debug("Moved to encoder position {}".format(new_position))
+        return new_position
 
     def move_by(self, increment):
         """
@@ -296,13 +296,13 @@ class Focuser(AbstractFocuser):
         try:
             response = self._send_command('mf{:d}'.format(int(increment)), response_length=1)
             moved_by = self._parse_move_response(response)
-        else:
-            self.logger.debug("Moved by {} encoder units".format(moved_by))
-            return moved_by
         finally:
             # Birger move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
             self._is_moving = False
+
+        self.logger.debug("Moved by {} encoder units".format(moved_by))
+        return moved_by
 
 ##################################################################################################
 # Private Methods
