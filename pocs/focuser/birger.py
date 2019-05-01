@@ -44,7 +44,7 @@ error_messages = ('No error',
 
 class Focuser(AbstractFocuser):
     """
-    Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
+    Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
 
     Args:
         name (str, optional): default 'Birger Focuser'
@@ -166,7 +166,7 @@ class Focuser(AbstractFocuser):
     @AbstractFocuser.position.getter
     def position(self):
         """
-        Returns current focus position in the lens focus encoder units
+        Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('pf', response_length=1)
         return int(response[0].rstrip())
@@ -174,21 +174,21 @@ class Focuser(AbstractFocuser):
     @property
     def min_position(self):
         """
-        Returns position of close limit of focus travel, in encoder units
+        Returns position of close limit of focus travel, in encoder units.
         """
         return self._min_position
 
     @property
     def max_position(self):
         """
-        Returns position of far limit of focus travel, in encoder units
+        Returns position of far limit of focus travel, in encoder units.
         """
         return self._max_position
 
     @property
     def lens_info(self):
         """
-        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens)
+        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens).
         """
         return self._lens_info
 
@@ -202,7 +202,7 @@ class Focuser(AbstractFocuser):
     @property
     def hardware_version(self):
         """
-        Returns the hardware version of the Birger adaptor
+        Returns the hardware version of the Birger adaptor.
         """
         return self._hardware_version
 
@@ -394,7 +394,6 @@ class Focuser(AbstractFocuser):
             self.logger.warning('{} reported hitting a focus stop'.format(self))
 
         return amount
-
 
     def _initialise(self):
         # Get serial number. Note, this is the serial number of the Birger adaptor,
