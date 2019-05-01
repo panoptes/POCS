@@ -3,12 +3,13 @@ import pytest
 import os
 import time
 import glob
+from copy import deepcopy
 from ctypes.util import find_library
 
 import astropy.units as u
 
-from pocs.camera.simulator import Camera as SimCamera
-from pocs.camera.simulator import SDKCamera as SimSDKCamera
+from pocs.camera.simulator.dslr import Camera as SimCamera
+from pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -104,6 +105,7 @@ def test_create_cameras_from_config(config):
 
 
 def test_create_cameras_from_config_fail(config):
+    orig_config = deepcopy(config)
     cameras = create_cameras_from_config(config)
     assert len(cameras) == 2
     simulator = hardware.get_all_names(without=['camera'])
@@ -114,8 +116,30 @@ def test_create_cameras_from_config_fail(config):
         'model': 'foobar'
     }
 
-    with pytest.raises(error.PanError):
-        create_cameras_from_config(config, simulator=simulator)
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
+
+    # SBIGs require a serial_number, not port
+    config['cameras']['devices'][0] = {
+        'port': '/dev/ttyFAKE',
+        'model': 'sbig'
+    }
+
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
+
+    # Canon DSLRs and the simulator require a port, not a serial_number
+    config['cameras']['devices'][0] = {
+        'serial_number': 'SC1234',
+        'model': 'serial'
+    }
+
+    cameras = create_cameras_from_config(config, simulator=simulator)
+    assert len(cameras) != 2
+
+    # Make sure we didn't fool ourselves
+    cameras = create_cameras_from_config(orig_config)
+    assert len(cameras) == 2
 
 
 def test_create_cameras_from_empty_config():
