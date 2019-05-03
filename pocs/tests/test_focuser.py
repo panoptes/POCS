@@ -1,4 +1,5 @@
 import pytest
+from threading import Thread
 
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
@@ -76,6 +77,18 @@ def test_move_by(focuser, tolerance):
     increment = -13
     focuser.move_by(increment)
     assert focuser.position == pytest.approx((previous_position + increment), abs=tolerance)
+
+
+def test_is_ready(focuser):
+    move_thread = Thread(target=focuser.move_by, args=[13])
+    assert not focuser.is_moving
+    assert focuser.is_ready
+    move_thread.start()
+    assert focuser.is_moving
+    assert not focuser.is_ready
+    move_thread.join()
+    assert not focuser.is_moving
+    assert focuser.is_ready
 
 
 def test_position_setter(focuser, tolerance):
