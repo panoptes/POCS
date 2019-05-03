@@ -182,4 +182,4 @@ def test_is_moving(filterwheel):
     assert not filterwheel.is_ready
     e.wait()
     assert not filterwheel.is_moving
-    assert filter.is_ready
+    assert filterwheel.is_ready
