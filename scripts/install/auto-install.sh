@@ -29,8 +29,8 @@ function safe_which() {
 
 # Print a separator bar of # characters.
 function echo_bar() {
-  local terminal_width
-  if [ -n "${TERM}" ] && [ -t 0 ] ; then
+  local terminal_width="${COLUMNS}"
+  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ] ; then
     if [[ -n "$(which resize)" ]] ; then
       terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
     elif [[ -n "$(which stty)" ]] ; then
