@@ -90,7 +90,7 @@ Pulling the latest software into the worktree at ${REPO_DIR}
 function maybe_print_example() {
   if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
   then
-    cat >&2 <<ENDOFMESSAGE
+    >&2 cat <<ENDOFMESSAGE
 For example:
 
   wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
@@ -113,9 +113,9 @@ set -e
 
 set -x
 
-if ! id -u "${PANUSER}"
+if ! id -u "${PANUSER}" 2>/dev/null
 then
-  cat >&2 <<ENDOFMESSAGE
+  >&2 cat <<ENDOFMESSAGE
 The user ${PANUSER} doesn't exist yet. Please create it by running:
 
   sudo adduser --shell /bin/bash --add_extra_groups ${PANUSER}
