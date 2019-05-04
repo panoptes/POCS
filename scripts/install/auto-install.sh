@@ -9,7 +9,7 @@
 # AUTO_INSTALL_BRANCH="develop"
 # BASE_RAW_POCS_URL="https://raw.githubusercontent.com/${AUTO_INSTALL_GITHUB_USER}/POCS/${AUTO_INSTALL_BRANCH}"
 # export AUTO_INSTALL_RAW_URL="${BASE_RAW_POCS_URL}/scripts/install/auto-install.sh"
-# wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
+# wget -q -O - "${AUTO_INSTALL_RAW_URL}" | bash
 
 ################################################################################
 # Env vars used for debugging of this script; these allow you to point to your
@@ -93,7 +93,7 @@ function maybe_print_example() {
     >&2 cat <<ENDOFMESSAGE
 For example:
 
-  wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
+  wget -q -O - "${AUTO_INSTALL_RAW_URL}" | bash
 
 ENDOFMESSAGE
   fi
@@ -152,7 +152,9 @@ fi
 # Let's assume we'll need to run apt-get install, so first run apt-get update
 # which will refresh caches used during apt-get install.
 echo_bar
+echo
 do_sudo apt-get update
+echo
 
 if [ ! -x "$(safe_which git)" ]
 then
@@ -161,6 +163,7 @@ then
 git is not installed, so installing it...
 "
   do_sudo apt-get install -y git
+  echo
 fi
 
 echo_bar
@@ -170,17 +173,23 @@ Ensuring that ${PANDIR} exists
 if [ ! -d "${PANDIR}" ]
 then
   do_sudo mkdir -p "${PANDIR}"
+  echo
 fi
+
+PANGROUP="$(id -gn "${PANUSER}")"
 
 echo_bar
 echo "
-Ensuring that ${PANDIR} is owned by user ${PANUSER}
+Ensuring that ${PANDIR} is owned by user ${PANUSER}, and by group ${PANGROUP}
 "
-do_sudo chown "${PANUSER}" "${PANDIR}"
+do_sudo chown --recursive "${PANUSER}:${PANGROUP}" "${PANDIR}"
+echo
 
 clone_or_update "${POCS}" "${POCS_GIT_URL}" "${POCS_BRANCH}"
 clone_or_update "${PAWS}" "https://github.com/panoptes/PAWS.git" "develop"
 
+echo
+echo_bar
 echo_bar
 echo "
 Executing ${POCS}/scripts/install/install-dependencies.sh, which will
