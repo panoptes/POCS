@@ -6,15 +6,16 @@
 # commands in a bash shell, the first if you have wget installed, the second
 # if you have curl installed:
 #
-# 1a) wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh | bash
-# 1b) bash <(wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
+# 1) wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh | bash
 #
 # 2) bash <(curl -s https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
 #
-# To determine whether you have these commands install, type these commands:
+# To determine whether you have these commands installed, type these commands:
 #
 #   which wget
 #   which curl
+#
+# The `which` command will print nothing if the command isn't installed.
 
 ################################################################################
 # Env vars used for debugging of this script; these allow you to point to your
@@ -44,6 +45,7 @@ function echo_bar() {
   fi
   printf "%${terminal_width:-80}s\n" | tr ' ' '#'
 }
+
 ################################################################################
 
 function do_sudo() {
@@ -101,9 +103,34 @@ set -e
 [[ -z "${POCS}" ]] && export POCS="${PANDIR}/POCS"      # Main Observatory Control
 [[ -z "${PAWS}" ]] && export PAWS="${PANDIR}/PAWS"      # Web Interface
 
-if [[ "$(whoami)" != "${PANUSER}" ]] ; then
-  echo >2 "Please run this script as ${PANUSER}, not as $(whoami)"
-  exit 1
+if [[ "$(whoami)" != "${PANUSER}" ]]
+then
+  if ! id -u "${PANUSER}" 2>/dev/null
+  then
+    echo >2 "
+The user ${PANUSER} doesn't exist yet. Please create it by running:
+
+  sudo adduser --shell /bin/bash --add_extra_groups ${PANUSER}
+
+You will be prompted to enter a password for this new user. You may also be
+prompted to provide contact info as if this were a user on a shared computer
+(e.g. Full Name and Home Phone). Press Enter to leave these unset.
+
+After the command completes, we need to ensure that the user is a
+member of some key groups:
+
+  sudo usermod --append --groups adm,dialout,plugdev,sudo ${PANUSER}
+
+Next, login as ${PANUSER} and re-execute the command you used to
+run this script.
+"
+    exit 1
+  else
+    echo >2 "
+Please run this script as ${PANUSER}, not as $(whoami)
+"
+    exit 1
+  fi
 fi
 
 # Let's assume we'll need to run apt-get install, so first run apt-get update
