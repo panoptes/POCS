@@ -90,7 +90,7 @@ Pulling the latest software into the worktree at ${REPO_DIR}
 function maybe_print_example() {
   if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
   then
-    cat >2 <<ENDOFMESSAGE
+    cat >&2 <<ENDOFMESSAGE
 For example:
 
   wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
@@ -115,7 +115,7 @@ set -x
 
 if ! id -u "${PANUSER}"
 then
-  cat >2 <<ENDOFMESSAGE
+  cat >&2 <<ENDOFMESSAGE
 The user ${PANUSER} doesn't exist yet. Please create it by running:
 
   sudo adduser --shell /bin/bash --add_extra_groups ${PANUSER}
@@ -141,7 +141,7 @@ fi
 
 if [[ "$(whoami)" != "${PANUSER}" ]]
 then
-  echo >2 "
+  echo >&2 "
 This script should be executed by the user ${PANUSER}, not as $(whoami).
 Please login as ${PANUSER} and re-execute the command you used to
 run this script.
