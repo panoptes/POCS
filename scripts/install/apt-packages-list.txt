@@ -78,3 +78,6 @@ coreutils
 # includes this file).
 git
 
+# Installing some POCS dependencies (esp. astroscrappy) require a C compiler,
+# for which we install gcc via the build-essentials package.
+build-essentials
