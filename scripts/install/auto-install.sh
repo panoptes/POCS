@@ -30,10 +30,16 @@ function safe_which() {
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width="${COLUMNS}"
-  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ] ; then
-    if [[ -n "$(which resize)" ]] ; then
+  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ]
+  then
+    if [[ -n "$(safe_which tput)" ]]
+    then
+      terminal_width="$(tput cols)"
+    elif [[ -n "$(safe_which resize)" ]]
+    then
       terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
-    elif [[ -n "$(which stty)" ]] ; then
+    elif [[ -n "$(safe_which stty)" ]]
+    then
       terminal_width="$(stty size 2>/dev/null | cut '-d ' -f2)"
     fi
   fi
