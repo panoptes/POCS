@@ -87,6 +87,18 @@ Pulling the latest software into the worktree at ${REPO_DIR}
   fi
 }
 
+function maybe_print_example() {
+  if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
+  then
+    cat >2 <<ENDOFMESSAGE
+For example:
+
+  wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
+
+ENDOFMESSAGE
+  fi
+}
+
 # Exit immediately if a command fails:
 set -e
 
@@ -97,11 +109,13 @@ set -e
 [[ -z "${POCS}" ]] && export POCS="${PANDIR}/POCS"      # Main Observatory Control
 [[ -z "${PAWS}" ]] && export PAWS="${PANDIR}/PAWS"      # Web Interface
 
-if [[ "$(whoami)" != "${PANUSER}" ]]
+# Do we need to create the user PANUSER?
+
+set -x
+
+if ! id -u "${PANUSER}"
 then
-  if ! id -u "${PANUSER}" 2>/dev/null
-  then
-    echo >2 "
+  cat >2 <<ENDOFMESSAGE
 The user ${PANUSER} doesn't exist yet. Please create it by running:
 
   sudo adduser --shell /bin/bash --add_extra_groups ${PANUSER}
@@ -117,21 +131,24 @@ member of some key groups:
 
 Next, login as ${PANUSER} and re-execute the command you used to
 run this script.
-"
-    if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
-    then
-      echo "For example:
+ENDOFMESSAGE
 
-  wget -O - \"${AUTO_INSTALL_RAW_URL}\" | bash
+  maybe_print_example
+  exit 1
+fi
+
+# Do we need to login as the user PANUSER?
+
+if [[ "$(whoami)" != "${PANUSER}" ]]
+then
+  echo >2 "
+This script should be executed by the user ${PANUSER}, not as $(whoami).
+Please login as ${PANUSER} and re-execute the command you used to
+run this script.
 "
-    fi
-    exit 1
-  else
-    echo >2 "
-Please run this script as ${PANUSER}, not as $(whoami)
-"
-    exit 1
-  fi
+
+  maybe_print_example
+  exit 1
 fi
 
 # Let's assume we'll need to run apt-get install, so first run apt-get update
@@ -173,3 +190,5 @@ install the tools needed to run POCS.
 "
 
 ${POCS}/scripts/install/install-dependencies.sh
+
+exit $?
