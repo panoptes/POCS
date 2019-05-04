@@ -123,6 +123,7 @@ run this script.
 
   wget -O - \"${AUTO_INSTALL_RAW_URL}\" | bash
 "
+    fi
     exit 1
   else
     echo >2 "
