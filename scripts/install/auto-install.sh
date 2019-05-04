@@ -111,7 +111,7 @@ set -e
 
 # Do we need to create the user PANUSER?
 
-if ! id -u "${PANUSER}" 2>/dev/null
+if ! id -u "${PANUSER}" 2>/dev/null 1>/dev/null
 then
   >&2 cat <<ENDOFMESSAGE
 The user ${PANUSER} doesn't exist yet. Please create it by running:
