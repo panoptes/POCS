@@ -2,20 +2,14 @@
 # auto-install.sh installs git if it isn't installed, then clones POCS and
 # installs its dependencies.
 #
-# To fetch this from github and execute it immediately, run one of these two
-# commands in a bash shell, the first if you have wget installed, the second
-# if you have curl installed:
+# To fetch this script from github and execute it immediately,
+# run these commands:
 #
-# 1) wget -O - https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh | bash
-#
-# 2) bash <(curl -s https://raw.githubusercontent.com/panoptes/POCS/develop/scripts/install/auto-install.sh)
-#
-# To determine whether you have these commands installed, type these commands:
-#
-#   which wget
-#   which curl
-#
-# The `which` command will print nothing if the command isn't installed.
+# AUTO_INSTALL_GITHUB_USER="panoptes"
+# AUTO_INSTALL_BRANCH="develop"
+# BASE_RAW_POCS_URL="https://raw.githubusercontent.com/${AUTO_INSTALL_GITHUB_USER}/POCS/${AUTO_INSTALL_BRANCH}"
+# export AUTO_INSTALL_RAW_URL="${BASE_RAW_POCS_URL}/scripts/install/auto-install.sh"
+# wget -O - "${AUTO_INSTALL_RAW_URL}" | bash
 
 ################################################################################
 # Env vars used for debugging of this script; these allow you to point to your
@@ -123,6 +117,11 @@ member of some key groups:
 
 Next, login as ${PANUSER} and re-execute the command you used to
 run this script.
+"
+    if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
+    then echo "For example:
+
+  wget -O - \"${AUTO_INSTALL_RAW_URL}\" | bash
 "
     exit 1
   else
