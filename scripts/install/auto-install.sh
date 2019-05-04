@@ -119,7 +119,8 @@ Next, login as ${PANUSER} and re-execute the command you used to
 run this script.
 "
     if [[ -n "${AUTO_INSTALL_RAW_URL}" ]]
-    then echo "For example:
+    then
+      echo "For example:
 
   wget -O - \"${AUTO_INSTALL_RAW_URL}\" | bash
 "
