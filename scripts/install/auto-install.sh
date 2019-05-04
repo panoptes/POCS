@@ -111,8 +111,6 @@ set -e
 
 # Do we need to create the user PANUSER?
 
-set -x
-
 if ! id -u "${PANUSER}" 2>/dev/null
 then
   >&2 cat <<ENDOFMESSAGE
