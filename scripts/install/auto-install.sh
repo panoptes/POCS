@@ -232,4 +232,10 @@ install the tools needed to run POCS.
 
 ${POCS}/scripts/install/install-dependencies.sh
 
+# QUESTION: Should we add these lines here:
+# source $PANDIR/set-panoptes-env.sh
+# cd $POCS
+# python setup.py install
+# pytest --test-databases=all --solve
+
 exit $?
