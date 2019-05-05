@@ -39,7 +39,7 @@ echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | \
 echo "
 Importing the public key of that repository.
 "
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+wget --quiet -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
 echo "
 Updating the package list (i.e. fetching from the new repository).

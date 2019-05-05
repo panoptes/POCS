@@ -103,8 +103,8 @@ function ensure_ownership() {
   local -r group="${3}"
   echo_bar
   echo "
-  Ensuring that ${path} is owned by user ${user}, and by group ${group}.
-  "
+Ensuring that ${path} is owned by user ${user}, and by group ${group}.
+"
   time do_sudo chown --recursive "${user}:${group}" "${path}"
   echo
 }
@@ -116,8 +116,8 @@ function ensure_directory_ownership() {
 
   echo_bar
   echo "
-  Ensuring that directory ${path} exists.
-  "
+Ensuring that directory ${path} exists.
+"
   if [ ! -d "${path}" ]
   then
     do_sudo mkdir -p "${path}"
