@@ -97,6 +97,36 @@ ENDOFMESSAGE
   fi
 }
 
+function ensure_ownership() {
+  local -r path="${1}"
+  local -r user="${2}"
+  local -r group="${3}"
+  echo_bar
+  echo "
+  Ensuring that ${path} is owned by user ${user}, and by group ${group}.
+  "
+  time do_sudo chown --recursive "${user}:${group}" "${path}"
+  echo
+}
+
+function ensure_directory_ownership() {
+  local -r path="${1}"
+  local -r user="${2}"
+  local -r group="${3}"
+
+  echo_bar
+  echo "
+  Ensuring that directory ${path} exists.
+  "
+  if [ ! -d "${path}" ]
+  then
+    do_sudo mkdir -p "${path}"
+    echo
+  fi
+
+  ensure_ownership "${path}" "${user}" "${group}"
+}
+
 # End of functions.
 ################################################################################
 
@@ -150,6 +180,17 @@ run this script.
   exit 1
 fi
 
+# I (James Synge) have noticed that if $HOME/.cache/ doesn't exist, then at some
+# point during the install it gets created, but is owned by root:root, which
+# then messes up later steps that attempt to use it. So, we make sure here that
+# it exists with the correct ownership.
+
+PANGROUP="$(id -gn "${PANUSER}")"
+ensure_directory_ownership "${HOME}/.cache" "${PANUSER}" "${PANGROUP}"
+
+# Do the same with PANDIR (usually /var/panoptes).
+ensure_directory_ownership "${PANDIR}" "${PANUSER}" "${PANGROUP}"
+
 if [ ! -x "$(safe_which git)" ]
 then
   echo_bar
@@ -162,25 +203,6 @@ git is not installed. Updating package cache, then installing git.
   do_sudo apt-get install -y git
   echo
 fi
-
-echo_bar
-echo "
-Ensuring that ${PANDIR} exists.
-"
-if [ ! -d "${PANDIR}" ]
-then
-  do_sudo mkdir -p "${PANDIR}"
-  echo
-fi
-
-PANGROUP="$(id -gn "${PANUSER}")"
-
-echo_bar
-echo "
-Ensuring that ${PANDIR} is owned by user ${PANUSER}, and by group ${PANGROUP}.
-"
-do_sudo chown "${PANUSER}:${PANGROUP}" "${PANDIR}"
-echo
 
 ################################################################################
 # Clone the POCS repo from github.
