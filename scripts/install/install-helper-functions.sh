@@ -8,10 +8,16 @@
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width="${COLUMNS}"
-  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ] ; then
-    if [[ -n "$(which resize)" ]] ; then
+  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ]
+  then
+    if [[ -n "$(safe_which tput)" ]]
+    then
+      terminal_width="$(tput cols)"
+    elif [[ -n "$(which resize)" ]]
+    then
       terminal_width="$(resize 2>/dev/null | grep COLUMNS= | cut -d= -f2)"
-    elif [[ -n "$(which stty)" ]] ; then
+    elif [[ -n "$(which stty)" ]]
+    then
       terminal_width="$(stty size 2>/dev/null | cut '-d ' -f2)"
     fi
   fi
@@ -62,6 +68,101 @@ function string_contains() {
 # Join args 2 and beyond by the first param.
 function join_params_by() { local IFS="$1"; shift; echo "$*"; }
 
+# Does PATH contain the first arg?
+function is_in_PATH() {
+  local -r path=":${PATH}:"
+  string_contains "${path}" ":${1}:"
+}
+
+# Prepend the first arg to path.
+function prepend_to_PATH() {
+  local -r new_entry="${1}"
+  if ! is_in_PATH "${new_entry}"
+  then
+    export PATH="${new_entry}:${PATH}"
+  fi
+}
+
+# Remove duplicates from PATH, retaining order.
+function clean_PATH() {
+  local -a path_parts
+  IFS=: read -a path_parts <<<"${PATH}"
+
+  # echo old path parts $( join_params_by : "${path_parts[@]}" )
+
+  local -a new_path_parts
+  local -A in_new_path_parts
+  for entry in "${path_parts[@]}"
+  do
+    if [[ -z "${in_new_path_parts["${entry}"]}" ]]
+    then
+      new_path_parts+=("${entry}")
+      in_new_path_parts["${entry}"]='yes'
+    fi
+  done
+  if [[ -z "${in_new_path_parts["/bin"]}${in_new_path_parts["/usr/bin"]}" ]]
+  then
+    echo >&2 "Unable to confirm that PATH has a sensible value!
+
+PATH=${PATH}
+
+path_parts=${path_parts[@]}
+
+new_path_parts=${new_path_parts[@]}
+
+in_new_path_parts=${in_new_path_parts[@]}
+
+"
+    exit 1
+  fi
+  new_path="$( join_params_by : "${new_path_parts[@]}" )"
+  echo new_path="${new_path}"
+}
+
+# Backup the file whose path is the first arg, and print the path of the
+# backup file. If the file doesn't exist, no path is output.
+function backup_file() {
+  local -r the_original="${1}"
+  if [[ ! -e "${the_original}" ]] ; then
+    return
+  fi
+  if [[ ! -f "${the_original}" ]] ; then
+    echo 1>2 "
+${the_original} is not a regular file, can't copy!
+"
+    exit 1
+  fi
+  local -r the_backup="$(mktemp "${the_original}.backup.XXXXXXX")"
+  cp -p "${the_original}" "${the_backup}"
+  echo "${the_backup}"
+}
+
+function diff_backup_and_file_then_cleanup() {
+  local -r the_backup="${1}"
+  local -r the_file="${2}"
+  if [[ -z "${the_backup}" ]] ; then
+    echo_bar
+    echo
+    echo "Created ${the_file}:"
+    echo
+    cat "${the_file}"
+    echo
+    return
+  fi
+  if ! cmp "${the_backup}" "${the_file}" ; then
+    echo_bar
+    echo
+    echo "Modified ${the_file}:"
+    echo
+    diff -u "${the_backup}" "${the_file}" || /bin/true
+    echo
+  fi
+  rm -f "${the_backup}"
+}
+
+#-------------------------------------------------------------------------------
+# Helpers for finding the IP gateway of this device.
+
 # Match a line that looks like this:
 #     8.8.8.8 via 192.168.86.1 dev wlp3s0 src 192.168.86.36 uid 1000
 # And extract either the "via" or the "src" address.
@@ -78,9 +179,6 @@ function sbin_ip_route_addr() {
   fi
   "${cmd}" route get 8.8.8.8 | awk -F" ${pattern} " 'NR==1{split($2,a," ");print a[1]}'
 }
-
-#-------------------------------------------------------------------------------
-# Helpers for finding the IP gateway of this device.
 
 # Get the address of the gateway stored in /proc/net/route. Available inside
 # a docker container or in Ubuntu 18.04. When executed inside a container,
@@ -230,55 +328,4 @@ EOF
       return 0
     fi
   done
-}
-
-# Does PATH contain the first arg?
-function is_in_PATH() {
-  local -r path=":${PATH}:"
-  string_contains "${path}" ":${1}:"
-}
-
-# Prepend the first arg to path.
-function prepend_to_PATH() {
-  local -r new_entry="${1}"
-  if ! is_in_PATH "${new_entry}"
-  then
-    export PATH="${new_entry}:${PATH}"
-  fi
-}
-
-# Remove duplicates from PATH, retaining order.
-function clean_PATH() {
-  local -a path_parts
-  IFS=: read -a path_parts <<<"${PATH}"
-
-  # echo old path parts $( join_params_by : "${path_parts[@]}" )
-
-  local -a new_path_parts
-  local -A in_new_path_parts
-  for entry in "${path_parts[@]}"
-  do
-    if [[ -z "${in_new_path_parts["${entry}"]}" ]]
-    then
-      new_path_parts+=("${entry}")
-      in_new_path_parts["${entry}"]='yes'
-    fi
-  done
-  if [[ -z "${in_new_path_parts["/bin"]}${in_new_path_parts["/usr/bin"]}" ]]
-  then
-    echo >&2 "Unable to confirm that PATH has a sensible value!
-
-PATH=${PATH}
-
-path_parts=${path_parts[@]}
-
-new_path_parts=${new_path_parts[@]}
-
-in_new_path_parts=${in_new_path_parts[@]}
-
-"
-    exit 1
-  fi
-  new_path="$( join_params_by : "${new_path_parts[@]}" )"
-  echo new_path="${new_path}"
 }

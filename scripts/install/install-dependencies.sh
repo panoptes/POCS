@@ -200,47 +200,6 @@ done
 #-------------------------------------------------------------------------------
 # Misc helper functions.
 
-# Backup the file whose path is the first arg, and print the path of the
-# backup file. If the file doesn't exist, no path is output.
-function backup_file() {
-  local -r the_original="${1}"
-  if [[ ! -e "${the_original}" ]] ; then
-    return
-  fi
-  if [[ ! -f "${the_original}" ]] ; then
-    echo 1>2 "
-${the_original} is not a regular file, can't copy!
-"
-    exit 1
-  fi
-  local -r the_backup="$(mktemp "${the_original}.backup.XXXXXXX")"
-  cp -p "${the_original}" "${the_backup}"
-  echo "${the_backup}"
-}
-
-function diff_backup_and_file_then_cleanup() {
-  local -r the_backup="${1}"
-  local -r the_file="${2}"
-  if [[ -z "${the_backup}" ]] ; then
-    echo_bar
-    echo
-    echo "Created ${the_file}:"
-    echo
-    cat "${the_file}"
-    echo
-    return
-  fi
-  if ! cmp "${the_backup}" "${the_file}" ; then
-    echo_bar
-    echo
-    echo "Modified ${the_file}:"
-    echo
-    diff -u "${the_backup}" "${the_file}" || /bin/true
-    echo
-  fi
-  rm -f "${the_backup}"
-}
-
 #-------------------------------------------------------------------------------
 # Functions for creating the file in which we record the PANOPTES environment
 # variables and shell setup commands, and for inserting a 'source <the file>'
@@ -262,19 +221,6 @@ function profile_contains_text() {
   else
     return 1
   fi
-}
-
-# Add the text of the first arg to the PANOPTES environment setup.
-function add_to_panoptes_env_setup() {
-  PANOPTES_ENV_SETUP+=("${1}")
-}
-
-# Append $1 to PATH and write command to do the same to the
-# PANOPTES environment setup.
-function add_to_PATH() {
-  local -r the_dir="$(readlink -f "${1}")"
-  PATH="${the_dir}:${PATH}"
-  PANOPTES_ENV_SETUP+=("PATH=\"${the_dir}:\${PATH}\"")
 }
 
 # Create (or overwrite) the PANOPTES environment setup file,
@@ -320,8 +266,9 @@ function update_shell_rc_file() {
   local -r addition1="# File created by PANOPTES install-dependencies.sh"
   local -r addition2="source ${PANOPTES_ENV_SH}"
   # Prepend new lines, so that for non-interactive shells, we have the env
-  # set correctly.
-  echo "${addition1}" >> "${SHELL_RC}"
+  # set correctly; necessary because the default .bashrc exits almost
+  # immediately for non-interactive shells.
+  echo "${addition1}" > "${SHELL_RC}"
   echo "${addition2}" >> "${SHELL_RC}"
   # Copy existing SHELL_RC contents, minus our two additional lines.
   ( (fgrep -v -- "${addition1}" "${the_backup}" || /bin/true) | \
@@ -334,15 +281,6 @@ function update_shell_rc_file() {
 }
 
 #-------------------------------------------------------------------------------
-
-# Given the path to a pkg-config file (.pc), extract the version number.
-function extract_version_from_pkg_config() {
-  if [[ -f "${1}" ]] ; then
-    grep -E '^Version:' "${1}" | cut '-d:' -f2
-  else
-    echo ""
-  fi
-}
 
 function install_mongodb() {
   # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
@@ -570,6 +508,9 @@ function maybe_install_conda() {
   echo "Updating base conda."
   conda update -n base --yes --quiet conda
 }
+
+#-------------------------------------------------------------------------------
+# Astrometry support.
 
 function get_installed_astrometry_version() {
   local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
