@@ -75,9 +75,12 @@ class PanSensorShell(cmd.Cmd):
         print("{}:".format(device.upper()))
         pprint(rec)
         print_info('*' * 80)
+
+        # Display the age in seconds of the record
         if isinstance(rec.get('date'), datetime.datetime):
-            now = current_time(datetime=True)
-            age = (now - rec['date']).total_seconds()
+            now = current_time(datetime=True).replace(tzinfo=None)
+            record_date = rec['date'].replace(tzinfo=None)
+            age = (now - record_date).total_seconds()
             if age < 120:
                 print_info('{:.1f} seconds old'.format(age))
             else:
