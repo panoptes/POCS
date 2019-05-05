@@ -49,7 +49,7 @@ my_sudo apt-get --quiet update
 echo "
 Installing the Google Cloud SDK.
 "
-my_sudo apt-get --quiet install google-cloud-sdk
+my_sudo apt-get --quiet install --no-install-recommends --yes google-cloud-sdk
 
 
 echo_bar

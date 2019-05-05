@@ -17,7 +17,7 @@ fi
 
 # Generate the basic apt-get install command, minus the list of packages.
 # We store into a shell array, i.e. an array of strings.
-declare -a apt_get_install=(apt-get install --no-install-recommends --yes)
+declare -a apt_get_install=(apt-get --quiet install --no-install-recommends --yes)
 # shellcheck disable=SC2119
 apt_proxy_url="$(get_apt_proxy_url)"
 if [ -n "${apt_proxy_url}" ] ; then
@@ -30,7 +30,7 @@ function install_apt_packages() {
   echo
   echo_running_sudo "apt-get update"
   echo
-  my_sudo apt-get update
+  my_sudo apt-get --quiet update
 
   for APT_PKGS_FILE in "$@"
   do
