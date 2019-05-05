@@ -54,6 +54,14 @@ function safe_which() {
 # Does the first arg start with the second arg?
 function beginswith() { case "${1}" in "${2}"*) true;; *) false;; esac; }
 
+# Does the first arg contain the second arg?
+function string_contains() {
+  [[ "${1}" == *"${2}"* ]]
+}
+
+# Join args 2 and beyond by the first param.
+function join_params_by() { local IFS="$1"; shift; echo "$*"; }
+
 # Match a line that looks like this:
 #     8.8.8.8 via 192.168.86.1 dev wlp3s0 src 192.168.86.36 uid 1000
 # And extract either the "via" or the "src" address.
@@ -222,4 +230,55 @@ EOF
       return 0
     fi
   done
+}
+
+# Does PATH contain the first arg?
+function is_in_PATH() {
+  local -r path=":${PATH}:"
+  string_contains "${path}" ":${1}:"
+}
+
+# Prepend the first arg to path.
+function prepend_to_PATH() {
+  local -r new_entry="${1}"
+  if ! is_in_PATH "${new_entry}"
+  then
+    export PATH="${new_entry}:${PATH}"
+  fi
+}
+
+# Remove duplicates from PATH, retaining order.
+function clean_PATH() {
+  local -a path_parts
+  IFS=: read -a path_parts <<<"${PATH}"
+
+  # echo old path parts $( join_params_by : "${path_parts[@]}" )
+
+  local -a new_path_parts
+  local -A in_new_path_parts
+  for entry in "${path_parts[@]}"
+  do
+    if [[ -z "${in_new_path_parts["${entry}"]}" ]]
+    then
+      new_path_parts+=("${entry}")
+      in_new_path_parts["${entry}"]='yes'
+    fi
+  done
+  if [[ -z "${in_new_path_parts["/bin"]}${in_new_path_parts["/usr/bin"]}" ]]
+  then
+    echo >&2 "Unable to confirm that PATH has a sensible value!
+
+PATH=${PATH}
+
+path_parts=${path_parts[@]}
+
+new_path_parts=${new_path_parts[@]}
+
+in_new_path_parts=${in_new_path_parts[@]}
+
+"
+    exit 1
+  fi
+  new_path="$( join_params_by : "${new_path_parts[@]}" )"
+  echo new_path="${new_path}"
 }

@@ -294,8 +294,16 @@ export PANUSER="${USER}"
 . "\${PANDIR}/miniconda/etc/profile.d/conda.sh"
 conda activate panoptes-env
 
-# Add astrometry to the path.
-PATH="${ASTROMETRY_DIR}/bin:\${PATH}"
+if [[ -f "\${POCS}/scripts/install/install/install-helper-functions.sh" ]]
+then
+  source "\${POCS}/scripts/install/install/install-helper-functions.sh"
+  # Add astrometry to the path.
+  prepend_to_PATH "${ASTROMETRY_DIR}/bin"
+  clean_PATH
+else
+  # Add astrometry to the path.
+  PATH="${ASTROMETRY_DIR}/bin:\${PATH}"
+fi
 
 END_OF_FILE
   # We allow for other (optional) commands to be added by adding to
@@ -307,29 +315,21 @@ END_OF_FILE
 # Arrange for the PANOPTES environment setup file to be used
 # when the rc file of the user's shell is executed.
 function update_shell_rc_file() {
-  if [[ ! -f "${SHELL_RC}" ]] ; then
-    cat >"${SHELL_RC}" <<END_OF_FILE
-# File created by PANOPTES install-dependencies.sh
-source ${PANOPTES_ENV_SH}
-END_OF_FILE
-    echo_bar
-    echo
-    echo "Created ${SHELL_RC}."
-    return
-  fi
-  local -r new_text="source ${PANOPTES_ENV_SH}"
-  if profile_contains_text "${new_text}" ; then
-    # TODO Add logging/verbosity support, so messages like this always
-    # go to the log file, and conditionally to stdout or stderr.
-    echo "Already in ${SHELL_RC}: ${new_text}"
-    return 0
-  fi
-  local  -r the_backup="$(backup_file "${SHELL_RC}")"
-    (cat <<END_OF_FILE; cat "${the_backup}") > "${SHELL_RC}"
-# Added by PANOPTES install-dependencies.sh
-source ${PANOPTES_ENV_SH}
-
-END_OF_FILE
+  ensure_shell_rc_exists
+  local -r the_backup="$(backup_file "${SHELL_RC}")"
+  local -r addition1="# File created by PANOPTES install-dependencies.sh"
+  local -r addition2="source ${PANOPTES_ENV_SH}"
+  # Prepend new lines, so that for non-interactive shells, we have the env
+  # set correctly.
+  echo "${addition1}" >> "${SHELL_RC}"
+  echo "${addition2}" >> "${SHELL_RC}"
+  # Copy existing SHELL_RC contents, minus our two additional lines.
+  ( (fgrep -v -- "${addition1}" "${the_backup}" || /bin/true) | \
+    (fgrep -v -- "${addition2}" || /bin/true) ) >> "${SHELL_RC}"
+  # Append the lines again, so that for interactive shells the prompt is
+  # also configured correctly.
+  echo "${addition1}" >> "${SHELL_RC}"
+  echo "${addition2}" >> "${SHELL_RC}"
   diff_backup_and_file_then_cleanup "${the_backup}" "${SHELL_RC}"
 }
 
