@@ -22,5 +22,8 @@ scikit_image >= 0.12.3
 scipy >= 0.17.1
 transitions >= 0.4.0
 tweepy
-urllib3
+
+# requests 2.21 doesn't like urllib3 >=1.25
+urllib3 >= 1.24, < 1.25  
+
 wcsaxes
