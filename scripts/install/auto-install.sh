@@ -44,7 +44,11 @@ function do_sudo() {
     echo "Running ${*}"
     "$@"
   else
-    echo "Running sudo ${*}; you may be prompted for your password."
+    echo <<ENDOFMESSAGE
+Running:
+    sudo ${*}
+You may be prompted for your password.
+ENDOFMESSAGE
     (set -x ; sudo "$@")
   fi
 }
