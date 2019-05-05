@@ -25,6 +25,7 @@ Unable to determine the release. Is this OS really Debian or Ubuntu?
 fi
 
 CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+CLOUD_SDK_LIST="/etc/apt/sources.list.d/google-cloud-sdk.list"
 echo "
 Setting Google Cloud SDK repository location to:
 
@@ -33,11 +34,16 @@ Setting Google Cloud SDK repository location to:
 You may be prompted for your password.
 "
 echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | \
-    my_sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list | \
-    cat >/dev/null
+    my_sudo tee -a "${CLOUD_SDK_LIST}" | cat >/dev/null
+
+# If we re-run this script, the above leads us with multiple entries for the
+# same version. Resolve this by removing duplicate lines.
+
+echo "Cleaning duplicate sources entries, leaving:"
+uniq <(cat "${CLOUD_SDK_LIST}") | my_sudo tee -a "${CLOUD_SDK_LIST}"
 
 echo "
-Importing the public key of that repository.
+Importing the public key of that ${CLOUD_SDK_REPO}.
 "
 wget --quiet -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
