@@ -105,6 +105,7 @@ export PANDIR POCS PAWS PANLOG PANUSER
 export DO_APT_GET=1
 export DO_MONGODB=1
 export DO_CONDA=1
+export DO_GCLOUD=1
 export DO_REBUILD_CONDA_ENV=0
 export DO_INSTALL_CONDA_PACKAGES=1
 export DO_ASTROMETRY=1
@@ -132,6 +133,7 @@ options:
 --no-astrometry            don't install astrometry.net software
 --no-astrometry-indices    don't install astrometry.net indices
 --no-pip-requirements      don't install python packages
+--no-gcloud                don't install gcloud
 "
 }
 
@@ -186,6 +188,10 @@ while test ${#} -gt 0; do
       ;;
     --no-astrometry-ind*)
       DO_ASTROMETRY_INDICES=0
+      shift
+      ;;
+    --no-gcloud)
+      DO_GCLOUD=0
       shift
       ;;
     *)
@@ -252,9 +258,7 @@ else
 fi
 
 END_OF_FILE
-  # We allow for other (optional) commands to be added by adding to
-  # the array PANOPTES_ENV_SETUP.
-  printf '%s\n' "${PANOPTES_ENV_SETUP[@]}" >>"${PANOPTES_ENV_SH}"
+
   diff_backup_and_file_then_cleanup "${the_backup}" "${PANOPTES_ENV_SH}"
 }
 
@@ -732,6 +736,10 @@ if [[ "${DO_ASTROMETRY}" -eq 1 ]] ; then
 fi
 if [[ "${DO_ASTROMETRY_INDICES}" -eq 1 ]] ; then
   (install_astrometry_indices)
+fi
+
+if [[ "${DO_GCLOUD}" -eq 1 ]] ; then
+  "${THIS_DIR}/install-gcloud.sh"
 fi
 
 update_panoptes_env_file
