@@ -71,7 +71,7 @@ of the way) and re-run this script.
     echo "
 Cloning ${REPO_URL} into ${REPO_DIR}
 "
-    (set -x ; git clone "${REPO_URL}" "${REPO_DIR}")
+    (set -x ; git clone --origin "${ORIGIN_NAME}" "${REPO_URL}" "${REPO_DIR}")
     cd "${REPO_DIR}"
     git checkout "${BRANCH}"
   else
