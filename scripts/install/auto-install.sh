@@ -76,7 +76,7 @@ Cloning ${REPO_URL} into ${REPO_DIR}
     git checkout "${BRANCH}"
   else
     echo "
-Pulling the latest software into the worktree at ${REPO_DIR}
+Pulling the latest software into the worktree at ${REPO_DIR}.
 "
     cd "${REPO_DIR}"
     git fetch --all
@@ -150,26 +150,22 @@ run this script.
   exit 1
 fi
 
-# Let's assume we'll need to run apt-get install, so first run apt-get update
-# which will refresh caches used during apt-get install.
-echo_bar
-echo
-do_sudo apt-get update
-echo
-
 if [ ! -x "$(safe_which git)" ]
 then
   echo_bar
   echo "
-git is not installed, so installing it...
+git is not installed. Updating package cache, then installing git.
 "
+  do_sudo apt-get update
+  echo
+  echo
   do_sudo apt-get install -y git
   echo
 fi
 
 echo_bar
 echo "
-Ensuring that ${PANDIR} exists
+Ensuring that ${PANDIR} exists.
 "
 if [ ! -d "${PANDIR}" ]
 then
@@ -181,7 +177,7 @@ PANGROUP="$(id -gn "${PANUSER}")"
 
 echo_bar
 echo "
-Ensuring that ${PANDIR} is owned by user ${PANUSER}, and by group ${PANGROUP}
+Ensuring that ${PANDIR} is owned by user ${PANUSER}, and by group ${PANGROUP}.
 "
 do_sudo chown "${PANUSER}:${PANGROUP}" "${PANDIR}"
 echo
