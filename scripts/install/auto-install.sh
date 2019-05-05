@@ -5,20 +5,11 @@
 # To fetch this script from github and execute it immediately,
 # run these commands:
 #
-# AUTO_INSTALL_GITHUB_USER="panoptes"
-# AUTO_INSTALL_BRANCH="develop"
-# BASE_RAW_POCS_URL="https://raw.githubusercontent.com/${AUTO_INSTALL_GITHUB_USER}/POCS/${AUTO_INSTALL_BRANCH}"
+# export POCS_GITHUB_USER="panoptes"
+# export POCS_BRANCH="develop"
+# BASE_RAW_POCS_URL="https://raw.githubusercontent.com/${POCS_GITHUB_USER}/POCS/${POCS_BRANCH}"
 # export AUTO_INSTALL_RAW_URL="${BASE_RAW_POCS_URL}/scripts/install/auto-install.sh"
 # wget -q -O - "${AUTO_INSTALL_RAW_URL}" | bash
-
-################################################################################
-# Env vars used for debugging of this script; these allow you to point to your
-# fork of POCS on github, so that you can download your fork instead of the
-# primary repo. There is no support for doing the same with PAWS.
-
-[[ -z "${POCS_GITHUB_USER}" ]] && export POCS_GITHUB_USER="panoptes"
-[[ -z "${POCS_GIT_URL}" ]] && export POCS_GIT_URL="https://github.com/${POCS_GITHUB_USER}/POCS.git"
-[[ -z "${POCS_BRANCH}" ]] && export POCS_BRANCH="develop"
 
 ################################################################################
 # Functions COPIED from install-helper-functions.sh
@@ -61,7 +52,8 @@ function do_sudo() {
 function clone_or_update() {
   local -r REPO_DIR="${1}"
   local -r REPO_URL="${2}"
-  local -r BRANCH="${3}"
+  local -r ORIGIN_NAME="${3}"
+  local -r BRANCH="${4}"
 
   echo_bar
 
@@ -104,6 +96,9 @@ For example:
 ENDOFMESSAGE
   fi
 }
+
+# End of functions.
+################################################################################
 
 # Exit immediately if a command fails:
 set -e
@@ -188,11 +183,26 @@ echo_bar
 echo "
 Ensuring that ${PANDIR} is owned by user ${PANUSER}, and by group ${PANGROUP}
 "
-do_sudo chown --recursive "${PANUSER}:${PANGROUP}" "${PANDIR}"
+do_sudo chown "${PANUSER}:${PANGROUP}" "${PANDIR}"
 echo
 
-clone_or_update "${POCS}" "${POCS_GIT_URL}" "${POCS_BRANCH}"
-clone_or_update "${PAWS}" "https://github.com/panoptes/PAWS.git" "develop"
+################################################################################
+# Clone the POCS repo from github.
+
+clone_or_update "${POCS}" https://github.com/panoptes/POCS.git upstream develop
+
+# If the user specified another repo via POCS_GITHUB_USER, use that as
+# the origin, and checkout the branch POCS_BRANCH.
+
+if [[ -n "${POCS_GITHUB_USER}" && "${POCS_GITHUB_USER}" != "panoptes" ]]
+then
+  cd "${POCS}"
+  git remote add -f origin "https://github.com/${POCS_GITHUB_USER}/POCS.git" || true
+  git checkout "origin/${POCS_BRANCH:-develop}"
+fi
+
+clone_or_update \
+    "${PAWS}" "https://github.com/panoptes/PAWS.git" upstream develop
 
 echo
 echo_bar
