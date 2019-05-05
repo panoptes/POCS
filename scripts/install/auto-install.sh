@@ -21,7 +21,7 @@ function safe_which() {
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width="${COLUMNS}"
-  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ]
+  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ]
   then
     if [[ -n "$(safe_which tput)" ]]
     then

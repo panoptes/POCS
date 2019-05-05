@@ -8,7 +8,7 @@
 # Print a separator bar of # characters.
 function echo_bar() {
   local terminal_width="${COLUMNS}"
-  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ] && [ -t 0 ]
+  if [ -z "${terminal_width}" ] && [ -n "${TERM}" ]
   then
     if [[ -n "$(safe_which tput)" ]]
     then
@@ -26,9 +26,13 @@ function echo_bar() {
 
 function echo_running_sudo() {
   if [ "$(id -u -n)" == "root" ] ; then
-    echo "Running $1"
+    echo "Running: $1"
   else
-    echo "Running sudo $1; you may be prompted for your password."
+    echo <<ENDOFMESSAGE
+Running:
+    sudo $1
+You may be prompted for your password.
+ENDOFMESSAGE
   fi
 }
 
