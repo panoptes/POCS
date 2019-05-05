@@ -104,13 +104,13 @@ function clean_PATH() {
   then
     echo >&2 "Unable to confirm that PATH has a sensible value!
 
-PATH=${PATH}
+PATH: ${PATH}
 
-path_parts=${path_parts[@]}
+path_parts: ${path_parts[@]}
 
-new_path_parts=${new_path_parts[@]}
+new_path_parts: ${new_path_parts[@]}
 
-in_new_path_parts=${in_new_path_parts[@]}
+in_new_path_parts: ${in_new_path_parts[@]}
 
 "
     exit 1
