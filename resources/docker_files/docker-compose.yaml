@@ -10,7 +10,8 @@ services:
       - "messaging-hub"  
     volumes:
       - pandir:/var/panoptes
-    command: /usr/bin/byobu new-session -s "POCS-Session" "/opt/conda/envs/panoptes-env/bin/python ${POCS}/scripts/peas-shell.py"
+    # No-op to keep machine running, use $POCS/bin/peas to access
+    command: tail -f /dev/null
   pocs-shell:
     image: gcr.io/panoptes-survey/pocs
     container_name: pocs-shell
@@ -21,7 +22,7 @@ services:
       - "peas-shell"  
     volumes:
       - pandir:/var/panoptes
-        # command: /usr/bin/byobu new-session -s "POCS-Session" "/opt/conda/envs/panoptes-env/bin/python ${POCS}/scripts/pocs-shell.py"
+    # No-op to keep machine running, use $POCS/bin/pocs to access
     command: tail -f /dev/null
 volumes:
     pandir:
