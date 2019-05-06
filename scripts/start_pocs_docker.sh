@@ -6,29 +6,34 @@ usage() {
 # 
 ##################################################
 
- $ $(basename $0) [START]
+ $ $(basename $0) [COMMAND]
  
  Options:
-  START 	Program to start. Currently only option is 'jupyterlab'. If no
-  		option is given then start the state machine in the background.
+  COMMAND 	These options are passed at the end of the docker-compose command.
+  			To start all service simply pass 'up'.
+
+ Examples:
+
+	# Start all services.
+	$POCS/scripts/start-pocs-docker.sh up
+
+ 	# Start config-server and messaging-hub serivces in the background.
+	$POCS/scripts/start-pocs-docker.sh up --no-deps -d config-server messaging-hub
+
+ 	# Read the logs from the config-server
+	$POCS/scripts/start-pocs-docker.sh logs config-server
 "
 }
 
-if [ $# -eq 0 ]; then
-	docker-compose \
-		-f $POCS/resources/docker_files/docker-compose.yml \
-		-p panoptes up
-else
-	START=${1}
-
-	if [ ${START} = 'help' ] || [ ${START} = '-h' ] || [ ${START} = '--help' ]; then
-		usage
-		exit 1
-	else
-		docker-compose \
-			-f $POCS/resources/docker_files/docker-compose.yml \
-			-f $POCS/resources/docker_files/docker-compose.${START}.yml \
-			-p panoptes up
-	fi
-
+START=${1:-help}
+if [ ${START} = 'help' ] || [ ${START} = '-h' ] || [ ${START} = '--help' ]; then
+	usage
+	exit 1
 fi
+
+docker-compose \
+	-f $PANDIR/panoptes-utils/docker/docker-compose.yaml \
+	-f $PANDIR/PAWS/docker/docker-compose.yaml \
+	-f $PANDIR/POCS/resources/docker_files/docker-compose.yaml \
+	-p panoptes "$@"
+
