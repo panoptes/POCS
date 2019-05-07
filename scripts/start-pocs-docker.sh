@@ -14,7 +14,7 @@ usage() {
 
  Examples:
 
-	# Start all services.
+	# Start all services in the foreground.
 	$POCS/scripts/start-pocs-docker.sh up
 
  	# Start config-server and messaging-hub serivces in the background.

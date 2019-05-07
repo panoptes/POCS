@@ -15,6 +15,7 @@ steps:
   id: 'amd64'
   args:
   - 'build'
+  - '-f=resources/docker_files/Dockerfile'
   - '--build-arg=arch=amd64'
   - '--tag=gcr.io/${PROJECT_ID}/pocs:amd64'
   - '.'
@@ -24,6 +25,7 @@ steps:
   id: 'arm32v7'
   args:
   - 'build'
+  - '-f=resources/docker_files/Dockerfile'
   - '--build-arg=arch=arm32v7'
   - '--tag=gcr.io/${PROJECT_ID}/pocs:arm32v7'
   - '.'
