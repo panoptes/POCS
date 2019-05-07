@@ -116,7 +116,7 @@ class Camera(AbstractGPhotoCamera):
 
         return camera_event
 
-    def _start_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
@@ -148,7 +148,8 @@ class Camera(AbstractGPhotoCamera):
             if errs is not None:
                 self.logger.warning(errs)
         finally:
-            return (filename, )
+            readout_args = (filename, header)
+            return readout_args
 
     def _readout(self, cr2_path, info):
         """Reads out the image as a CR2 and converts to FITS"""
