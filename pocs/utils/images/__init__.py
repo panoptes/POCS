@@ -215,7 +215,7 @@ def _make_pretty_from_fits(fname=None,
 def _make_pretty_from_cr2(fname, title=None, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
-    script_name = os.path.join(os.getenv('POCS'), 'scripts', 'cr2_to_jpg.sh')
+    script_name = os.path.join(os.getenv('PANDIR'), 'panoptes-utils', 'scripts', 'cr2_to_jpg.sh')
     cmd = [script_name, fname]
 
     if title:
