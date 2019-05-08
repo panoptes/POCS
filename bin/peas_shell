@@ -6,6 +6,7 @@ import os
 import readline
 import sys
 
+from pytz import utc
 from astropy.utils import console
 from threading import Timer
 from pprint import pprint
@@ -78,8 +79,8 @@ class PanSensorShell(cmd.Cmd):
 
         # Display the age in seconds of the record
         if isinstance(rec.get('date'), datetime.datetime):
-            now = current_time(datetime=True).replace(tzinfo=None)
-            record_date = rec['date'].replace(tzinfo=None)
+            now = current_time(datetime=True).astimezone(utc)
+            record_date = rec['date'].astimezone(utc)
             age = (now - record_date).total_seconds()
             if age < 120:
                 print_info('{:.1f} seconds old'.format(age))
