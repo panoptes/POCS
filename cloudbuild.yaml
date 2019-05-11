@@ -7,10 +7,10 @@ steps:
   - '--privileged'
   - 'multiarch/qemu-user-static:register'
   - '--reset'
-  waitFor: ['-']  
+  waitFor: ['-']
 
 # Build
-# AMD Build  
+# AMD Build
 - name: 'gcr.io/cloud-builders/docker'
   id: 'amd64'
   args:
@@ -20,13 +20,14 @@ steps:
   - '--tag=gcr.io/${PROJECT_ID}/pocs:amd64'
   - '.'
   waitFor: ['register-qemu']
-# ARM Build (e.g. Raspberry Pi)  
+# ARM Build (e.g. Raspberry Pi)
 - name: 'gcr.io/cloud-builders/docker'
   id: 'arm32v7'
   args:
   - 'build'
   - '-f=resources/docker_files/Dockerfile'
   - '--build-arg=arch=arm32v7'
+  - '--build-arg=which_pip=/opt/conda/envs/panoptes-env/bin/pip'
   - '--tag=gcr.io/${PROJECT_ID}/pocs:arm32v7'
   - '.'
   waitFor: ['register-qemu']
@@ -55,7 +56,7 @@ steps:
   - 'create'
   - 'gcr.io/${PROJECT_ID}/pocs:latest'
   - 'gcr.io/${PROJECT_ID}/pocs:arm32v7'
-  - 'gcr.io/${PROJECT_ID}/pocs:amd64' 
+  - 'gcr.io/${PROJECT_ID}/pocs:amd64'
   waitFor: ['push-amd64', 'push-arm']
 
 - name: 'gcr.io/cloud-builders/docker'
