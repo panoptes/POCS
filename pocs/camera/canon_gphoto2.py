@@ -110,8 +110,6 @@ class Camera(AbstractGPhotoCamera):
         # Process the image after a set amount of time
         wait_time = exptime + self.readout_time
 
-        metadata['img_type'] = '.cr2'
-
         t = Timer(wait_time, self.process_exposure, (metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
@@ -158,3 +156,10 @@ class Camera(AbstractGPhotoCamera):
         self.logger.debug("Converting CR2 -> FITS: {}".format(cr2_path))
         fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
         return fits_path
+
+    def _process_fits(self, file_path, info):
+        """
+        Add FITS headers from info the same as images.cr2_to_fits()
+        """
+        file_path = file_path.replace('.cr2', '.fits')
+        return super()._process_fits(file_path, info)
