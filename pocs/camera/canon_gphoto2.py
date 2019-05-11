@@ -5,6 +5,7 @@ from threading import Event
 from threading import Timer
 
 from panoptes_utils import current_time
+from panoptes_utils import CountdownTimer
 from panoptes_utils import error
 from panoptes_utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
@@ -135,6 +136,7 @@ class Camera(AbstractGPhotoCamera):
 
         # Take Picture
         try:
+            self._is_exposing = True
             proc = subprocess.Popen(run_cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
@@ -163,3 +165,18 @@ class Camera(AbstractGPhotoCamera):
         """
         file_path = file_path.replace('.cr2', '.fits')
         return super()._process_fits(file_path, info)
+
+    def _poll_exposure(self, readout_args):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            timer.sleep()
+        except (RuntimeError, error.PanError) as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
+        else:
+            # Camera type specific readout function
+            self._readout(*readout_args)
+        finally:
+            self._is_exposing = False
+            self._exposure_event.set()  # Make sure this gets set regardless of readout errors
