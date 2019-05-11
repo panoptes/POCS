@@ -131,6 +131,25 @@ Ensuring that directory ${path} exists.
   ensure_ownership "${path}" "${user}" "${group}"
 }
 
+function already_have_a_repo() {
+  >&2 cat <<ENDOFMESSAGE
+
+The purpose of this script is to make sure git is installed, then to clone the
+POCS and PAWS git repositories (which contain the PANOPTES software for a
+PANOPTES telescope), install software that POCS and PAWS depend upon, and to
+run tests. However, there is already a $1 repository located at:
+
+    $2
+
+You may be able to install those dependencies by running this command:
+
+    ${POCS}/scripts/install/install-dependencies.sh
+
+ENDOFMESSAGE
+}
+
+
+
 # End of functions.
 ################################################################################
 
@@ -143,6 +162,7 @@ set -e
 [[ -z "${PANLOG}" ]] && export PANLOG="${PANDIR}/logs"  # Log files
 [[ -z "${POCS}" ]] && export POCS="${PANDIR}/POCS"      # Main Observatory Control
 [[ -z "${PAWS}" ]] && export PAWS="${PANDIR}/PAWS"      # Web Interface
+
 
 # Do we need to create the user PANUSER?
 
@@ -195,6 +215,23 @@ ensure_directory_ownership "${HOME}/.cache" "${PANUSER}" "${PANGROUP}"
 # Do the same with PANDIR (usually /var/panoptes).
 ensure_directory_ownership "${PANDIR}" "${PANUSER}" "${PANGROUP}"
 
+################################################################################
+# Is there already a POCS or PAWS repository? If so, the user should not need
+# this script.
+if [[ -d "${POCS}/.git" ]]
+then
+  already_have_a_repo POCS "${POCS}"
+  exit 1
+fi
+
+if [[ -d "${PAWS}/.git" ]]
+then
+  already_have_a_repo PAWS "${PAWS}"
+  exit 1
+fi
+
+# Install git if necessary.
+
 if [ ! -x "$(safe_which git)" ]
 then
   echo_bar
@@ -208,7 +245,6 @@ git is not installed. Updating package cache, then installing git.
   echo
 fi
 
-################################################################################
 # Clone the POCS repo from github.
 
 clone_or_update "${POCS}" https://github.com/panoptes/POCS.git upstream develop
@@ -223,9 +259,11 @@ then
   git checkout "origin/${POCS_BRANCH:-develop}"
 fi
 
+# Clone PAWS too, but only from the upstream.
 clone_or_update \
     "${PAWS}" "https://github.com/panoptes/PAWS.git" upstream develop
 
+################################################################################
 echo
 echo_bar
 echo_bar
@@ -236,10 +274,43 @@ install the tools needed to run POCS.
 
 ${POCS}/scripts/install/install-dependencies.sh
 
-# QUESTION: Should we add these lines here:
-# source $PANDIR/set-panoptes-env.sh
-# cd $POCS
-# python setup.py install
-# pytest --test-databases=all --solve
+echo
+echo
+echo_bar
+echo_bar
+echo "
 
-exit $?
+Testing the installation of POCS. This can easily take 5 minutes on an Intel NUC
+or longer on a Raspberry Pi.
+
+"
+
+if [[ ! -e  "${POCS}/conf_files/pocs_local.yaml" ]]
+then
+  # TODO Consider allowing the *_local.yaml files to be located outside of the
+  # /var/panoptes tree so that it is feasible to wipe out /var/panoptes and
+  # reinstall without losing local customizations.
+  cp "${POCS}/conf_files/pocs.yaml" "${POCS}/conf_files/pocs_local.yaml"
+  echo "
+
+You will need to modify the file ${POCS}/conf_files/pocs_local.yaml
+to suit your needs (e.g. set the unit name, location, etc.).
+"
+fi
+
+# shellcheck source=/var/panoptes/set-panoptes-env.sh
+source $PANDIR/set-panoptes-env.sh
+cd $POCS
+python setup.py install
+pytest --test-databases=all --solve
+
+if cmp "${POCS}/conf_files/pocs.yaml" "${POCS}/conf_files/pocs_local.yaml"
+then
+  echo "
+
+Don't forget to modify the file ${POCS}/conf_files/pocs_local.yaml
+to suit your needs (e.g. set the unit name, location, etc.).
+"
+fi
+
+exit
