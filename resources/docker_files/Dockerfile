@@ -29,7 +29,7 @@ RUN apt-get update \
     # POCS
     && cd ${POCS} \
     && $which_pip install --no-cache-dir -r requirements.txt \
-    && $which_pip install -e . \
+    && $which_pip install --no-cache-dir -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 

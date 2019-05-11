@@ -8,8 +8,8 @@ before_install:
 - docker pull gcr.io/panoptes-survey/pocs
 install: true
 script:
-- docker run -it 
-  $ci_env 
+- docker run -it
+  $ci_env
   -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
   gcr.io/panoptes-survey/pocs
-  /bin/bash -c "source activate panoptes-env && scripts/testing/run_tests.sh"
+  /bin/bash -c "scripts/testing/run_tests.sh"
