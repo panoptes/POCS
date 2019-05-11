@@ -4,6 +4,7 @@ FROM gcr.io/panoptes-survey/panoptes-utils:$arch
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pandir=/var/panoptes
+ARG which_pip=pip
 
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
@@ -27,8 +28,8 @@ RUN apt-get update \
     && rm gphoto2-updater.sh \
     # POCS
     && cd ${POCS} \
-    && /opt/conda/envs/panoptes-env/bin/pip install --no-cache-dir -r requirements.txt \
-    && /opt/conda/envs/panoptes-env/bin/pip install -e . \
+    && $which_pip install --no-cache-dir -r requirements.txt \
+    && $which_pip install -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
