@@ -90,7 +90,7 @@ class Camera(AbstractGPhotoCamera):
             threading.Event: An event to be set when the image is done processing
         """
         # To be used for marking when exposure is complete (see `process_exposure`)
-        camera_event = Event()
+        observation_event = Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
@@ -98,7 +98,7 @@ class Camera(AbstractGPhotoCamera):
                                                                          *args,
                                                                          **kwargs)
 
-        proc = self.take_exposure(seconds=exptime, filename=file_path)
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -109,11 +109,14 @@ class Camera(AbstractGPhotoCamera):
 
         # Process the image after a set amount of time
         wait_time = exptime + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
+
+        metadata['img_type'] = '.cr2'
+
+        t = Timer(wait_time, self.process_exposure, (metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
-        return camera_event
+        return observation_event
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
