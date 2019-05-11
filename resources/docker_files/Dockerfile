@@ -35,7 +35,5 @@ RUN apt-get update \
 
 WORKDIR ${POCS}
 
-ENTRYPOINT ["resources/docker_files/docker-entrypoint.sh"]
-
 CMD ["/bin/zsh"]
 
