@@ -8,12 +8,14 @@ ARG which_pip=pip
 
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
+# ENV GOOGLE_APPLICATION_CREDENTIALS="${PANDIR}/.key/panoptes-survey.json"
 
 COPY . ${POCS}
 
 RUN apt-get update \
-    && apt-get --yes install \
+    && apt-get install --no-install-recommends --yes \
         byobu \
+        ffmpeg \
         gcc \
         pkg-config \
         libncurses5-dev \
@@ -28,8 +30,8 @@ RUN apt-get update \
     && rm gphoto2-updater.sh \
     # POCS
     && cd ${POCS} \
-    && $which_pip install --no-cache-dir -r requirements.txt \
-    && $which_pip install --no-cache-dir -e . \
+    && $which_pip install --no-cache-dir --no-deps -r requirements.txt \
+    && $which_pip install --no-cache-dir --no-deps -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
