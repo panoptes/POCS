@@ -34,6 +34,6 @@ fi
 docker-compose \
 	-f $PANDIR/panoptes-utils/docker/docker-compose.yaml \
 	-f $PANDIR/PAWS/docker/docker-compose.yaml \
-	-f $PANDIR/POCS/resources/docker_files/docker-compose.yaml \
+	-f $PANDIR/POCS/docker/docker-compose.yaml \
 	-p panoptes "$@"
 

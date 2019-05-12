@@ -177,7 +177,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         except Exception as e:
             warn('Cannot remove extra files: {}'.format(e))
 
-    if errs is not None:
+    if errs is not None and errs > '':
         warn("Error in solving: {}".format(errs))
     else:
 
