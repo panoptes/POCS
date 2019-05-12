@@ -80,9 +80,5 @@ echo "Pulling POCS docker images"
 sudo docker pull gcr.io/panoptes-survey/pocs
 sudo docker pull gcr.io/panoptes-survey/paws
 
-echo "Installing docker-compose"
-sudo curl -L --fail https://github.com/docker/compose/releases/download/1.24.0/run.sh -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
 echo "You must logout and log back in to  before using POCS."
 
