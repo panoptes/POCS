@@ -87,21 +87,29 @@ function prepend_to_PATH() {
   fi
 }
 
-# Remove duplicates from PATH, retaining order.
+# Remove duplicates from PATH, retaining search order.
 function clean_PATH() {
+  # Split $PATH into an array of its parts (entries, paths).
   local -a path_parts
   IFS=: read -a path_parts <<<"${PATH}"
 
-  # echo old path parts $( join_params_by : "${path_parts[@]}" )
-
-  local -a new_path_parts
+  # Loop through the path parts, in order, creating a new array of non-duplicate
+  # entries.
+  local new_path=""
   local -A in_new_path_parts
   for entry in "${path_parts[@]}"
   do
     if [[ -z "${in_new_path_parts["${entry}"]}" ]]
     then
-      new_path_parts+=("${entry}")
       in_new_path_parts["${entry}"]='yes'
+      if [[ -z "${new_path}" ]]
+      then
+        new_path="${entry}"
+      else
+        new_path+=":${entry}"
+      fi
+    else
+      echo "Found duplicate entry in PATH: ${entry}"
     fi
   done
   if [[ -z "${in_new_path_parts["/bin"]}${in_new_path_parts["/usr/bin"]}" ]]
@@ -112,15 +120,14 @@ PATH: ${PATH}
 
 path_parts: ${path_parts[@]}
 
-new_path_parts: ${new_path_parts[@]}
+new_path: ${new_path}
 
 in_new_path_parts: ${in_new_path_parts[@]}
 
 "
     exit 1
   fi
-  new_path="$( join_params_by : "${new_path_parts[@]}" )"
-  echo new_path="${new_path}"
+  export PATH="${new_path}"
 }
 
 # Backup the file whose path is the first arg, and print the path of the

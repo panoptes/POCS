@@ -267,16 +267,17 @@ END_OF_FILE
 function update_shell_rc_file() {
   ensure_shell_rc_exists
   local -r the_backup="$(backup_file "${SHELL_RC}")"
-  local -r addition1="# File created by PANOPTES install-dependencies.sh"
-  local -r addition2="source ${PANOPTES_ENV_SH}"
+  local -r addition1="# Invoke file created by PANOPTES install-dependencies.sh"
+  local -r addition2=\
+"if [[ -e \"${PANOPTES_ENV_SH}\" ]] ; then source ${PANOPTES_ENV_SH}; fi"
   # Prepend new lines, so that for non-interactive shells, we have the env
   # set correctly; necessary because the default .bashrc exits almost
   # immediately for non-interactive shells.
   echo "${addition1}" > "${SHELL_RC}"
   echo "${addition2}" >> "${SHELL_RC}"
   # Copy existing SHELL_RC contents, minus our two additional lines.
-  ( (fgrep -v -- "${addition1}" "${the_backup}" || /bin/true) | \
-    (fgrep -v -- "${addition2}" || /bin/true) ) >> "${SHELL_RC}"
+  ( (fgrep -v -- "PANOPTES install-dependencies.sh" "${the_backup}" || /bin/true) | \
+    (fgrep -v -- "${PANOPTES_ENV_SH}" || /bin/true) ) >> "${SHELL_RC}"
   # Append the lines again, so that for interactive shells the prompt is
   # also configured correctly.
   echo "${addition1}" >> "${SHELL_RC}"
