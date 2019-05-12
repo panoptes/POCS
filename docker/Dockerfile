@@ -8,7 +8,6 @@ ARG which_pip=pip
 
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
-# ENV GOOGLE_APPLICATION_CREDENTIALS="${PANDIR}/.key/panoptes-survey.json"
 
 COPY . ${POCS}
 
