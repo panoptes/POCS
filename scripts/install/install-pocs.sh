@@ -70,9 +70,11 @@ if ! hash docker; then
     echo "Installing Docker"
     sh -c "$(wget https://get.docker.com -O -)"
     sudo usermod -aG docker ${PANUSER}
+fi
+
+if ! hash docker-compose; then
     # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
     sudo curl -L --fail https://github.com/docker/compose/releases/download/1.24.0/run.sh -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
     sudo chmod a+x /usr/local/bin/docker-compose
 fi
 
