@@ -77,9 +77,11 @@ if ! hash docker; then
 fi
 
 echo "Pulling POCS docker images"
-sudo docker pull google/cloud-sdk:latest
 sudo docker pull gcr.io/panoptes-survey/pocs
 sudo docker pull gcr.io/panoptes-survey/paws
+
+echo "Installing docker-compose"
+pip install --no-deps docker-compose
 
 echo "You must logout and log back in to  before using POCS."
 
