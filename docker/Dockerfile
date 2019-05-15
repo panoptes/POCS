@@ -36,7 +36,7 @@ RUN apt-get update \
 
 WORKDIR ${POCS}
 
-ENTRYPOINT ["${pandir}/POCS/docker/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "-c", "${POCS}/docker/entrypoint.sh"]
 
 CMD ["/bin/zsh"]
 
