@@ -36,5 +36,8 @@ RUN apt-get update \
 
 WORKDIR ${POCS}
 
+# Comes from base image
+ENTRYPOINT ["/var/panoptes/panoptes-utils/docker/entrypoint.sh"]
+
 CMD ["/bin/zsh"]
 
