@@ -12,6 +12,66 @@ from pocs.utils.messaging import PanMessaging
 from pocs.utils.rs232 import SerialData
 
 
+def auto_detect_arduino_devices(comports=None, logger=None):
+    if comports is None:
+        comports = find_arduino_devices()
+    if not logger:
+        logger = get_root_logger()
+    result = []
+    for port in comports:
+        v = detect_board_on_port(port, logger)
+        if v:
+            result.append(v)
+    return result
+
+
+def find_arduino_devices():
+    """Find devices (paths or URLs) that appear to be Arduinos.
+
+    Returns:
+        a list of strings; device paths (e.g. /dev/ttyACM1) or URLs (e.g. rfc2217://host:port
+        arduino_simulator://?board=camera).
+    """
+    comports = list_comports()
+    return [p.device for p in comports if 'Arduino' in p.description]
+
+
+def detect_board_on_port(port, logger=None):
+    """Open a port and determine which type of board its producing output.
+
+    Returns: (name, serial_reader) if we can read a line of JSON from the
+        port, parse it and find a 'name' attribute in the top-level object.
+        Else returns None.
+    """
+    if not logger:
+        logger = get_root_logger()
+    logger.debug('Attempting to connect to serial port: {}'.format(port))
+    try:
+        serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)
+        if not serial_reader.is_connected:
+            serial_reader.connect()
+        logger.debug('Connected to {}', port)
+    except Exception:
+        logger.warning('Could not connect to port: {}'.format(port))
+        return None
+    try:
+        reading = serial_reader.get_and_parse_reading(retry_limit=3)
+        if not reading:
+            return None
+        (ts, data) = reading
+        if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
+            result = (data['name'], serial_reader)
+            serial_reader = None
+            return result
+        logger.warning('Unable to find board name in reading: {!r}', reading)
+        return None
+    except Exception as e:
+        logger.error('Exception while auto-detecting port {!r}: {!r}'.format(port, e))
+    finally:
+        if serial_reader:
+            serial_reader.disconnect()
+
+
 class ArduinoSerialMonitor(object):
     """Monitors the serial lines and tries to parse any data recevied as JSON.
 
@@ -129,66 +189,6 @@ class ArduinoSerialMonitor(object):
             self.db.insert_current('environment', sensor_data)
 
         return sensor_data
-
-
-def auto_detect_arduino_devices(comports=None, logger=None):
-    if comports is None:
-        comports = find_arduino_devices()
-    if not logger:
-        logger = get_root_logger()
-    result = []
-    for port in comports:
-        v = detect_board_on_port(port, logger)
-        if v:
-            result.append(v)
-    return result
-
-
-def find_arduino_devices():
-    """Find devices (paths or URLs) that appear to be Arduinos.
-
-    Returns:
-        a list of strings; device paths (e.g. /dev/ttyACM1) or URLs (e.g. rfc2217://host:port
-        arduino_simulator://?board=camera).
-    """
-    comports = list_comports()
-    return [p.device for p in comports if 'Arduino' in p.description]
-
-
-def detect_board_on_port(port, logger=None):
-    """Open a port and determine which type of board its producing output.
-
-    Returns: (name, serial_reader) if we can read a line of JSON from the
-        port, parse it and find a 'name' attribute in the top-level object.
-        Else returns None.
-    """
-    if not logger:
-        logger = get_root_logger()
-    logger.debug('Attempting to connect to serial port: {}'.format(port))
-    try:
-        serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)
-        if not serial_reader.is_connected:
-            serial_reader.connect()
-        logger.debug('Connected to {}', port)
-    except Exception:
-        logger.warning('Could not connect to port: {}'.format(port))
-        return None
-    try:
-        reading = serial_reader.get_and_parse_reading(retry_limit=3)
-        if not reading:
-            return None
-        (ts, data) = reading
-        if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
-            result = (data['name'], serial_reader)
-            serial_reader = None
-            return result
-        logger.warning('Unable to find board name in reading: {!r}', reading)
-        return None
-    except Exception as e:
-        logger.error('Exception while auto-detecting port {!r}: {!r}'.format(port, e))
-    finally:
-        if serial_reader:
-            serial_reader.disconnect()
 
 
 # Support testing by just listing the available devices.
