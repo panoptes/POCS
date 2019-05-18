@@ -6,10 +6,19 @@
 #include "dht_handler.h"
 #include "PinUtils.h"
 
-const int DHT_PIN = 9;      // DHT Temp & Humidity Pin
-const int CAM_0_RELAY = 5;
-const int CAM_1_RELAY = 6;
-const int RESET_PIN = 12;
+#define UNO 0 // 1 if board is Uno, 0 if it is a Micro
+
+#ifdef UNO
+  const int DHT_PIN = 12; // DHT Temp & Humidity Pin
+  const int CAM_0_RELAY = 5;
+  const int CAM_1_RELAY = 9;
+  const int RESET_PIN = 13;
+#else // MICRO
+  const int DHT_PIN = 7;      // DHT Temp & Humidity Pin
+  const int CAM_0_RELAY = 10;
+  const int CAM_1_RELAY = 11;
+  const int RESET_PIN = 13;
+#endif
 
 // Type of Digital Humidity and Temperature (DHT) Sensor
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
