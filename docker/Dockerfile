@@ -5,7 +5,7 @@ MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pandir=/var/panoptes
 
-ARG arduino_url=https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linux64.tar.bz2
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linux64.tar.bz2"
 
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
@@ -19,6 +19,7 @@ RUN apt-get update \
         gcc \
         pkg-config \
         libncurses5-dev \
+        udev \
         vim-nox \
     # GPhoto2
     && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh \
@@ -28,6 +29,11 @@ RUN apt-get update \
     && wget -q $arduino_url -O arduino-cli.tar.bz2 \
     && bunzip2 arduino-cli.tar.bz2 \
     && tar xof arduino-cli.tar \
+    && rm arduino-cli.tar \
+    # Don't know exact name of untarred file.
+    && ARDUINO_FILE="$(ls arduino-cli*)" \
+    # Rename so we do know.
+    && mv ${ARDUINO_FILE} arduino-cli \
     && chmod +x arduino-cli \
     && mv arduino-cli /usr/local/bin/ \
     # Cleanup
