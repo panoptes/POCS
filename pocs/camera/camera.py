@@ -128,7 +128,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which can provided this information,
         e.g. those with cooled image sensors.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def target_temperature(self):
@@ -138,7 +138,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @target_temperature.setter
     def target_temperature(self, target_temperature):
@@ -149,7 +149,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def temperature_tolerance(self):
@@ -187,7 +187,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def cooling_power(self):
@@ -198,7 +198,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def filter_type(self):
@@ -260,7 +260,7 @@ See also:
 
     @abstractmethod
     def connect(self):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
@@ -553,7 +553,7 @@ See also:
             tuple|list: Any arguments required by the camera-specific `_readout`
                 method, which should be implemented at the same time as this method.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def _readout(self, filename=None):
@@ -568,7 +568,7 @@ See also:
             method should at a minimum implement the described parameters.
 
         """
-        pass
+        pass  # pragma: no cover
 
     def _poll_exposure(self, readout_args):
         timer = CountdownTimer(duration=self._timeout)

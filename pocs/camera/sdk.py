@@ -43,14 +43,14 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
     @abstractmethod
     def get_SDK_version(self):
         """ Get the version of the SDK """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_cameras(self):
         """Convenience function to get a dictionary of all currently connected camera UIDs
         and their corresponding device nodes/handles/camera IDs.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class AbstractSDKCamera(AbstractCamera):
