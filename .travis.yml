@@ -56,7 +56,8 @@ addons:
     - libbz2-dev
     - swig
     - cfitsio-dev
-    - cfitsio
+    - libcfitsio-bin
+    - libcfitsio-dev
 install:
   - cd $PANDIR
   # install POCS and requirements
