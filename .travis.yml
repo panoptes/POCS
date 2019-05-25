@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: python
 services:
@@ -56,8 +56,7 @@ addons:
     - libbz2-dev
     - swig
     - cfitsio-dev
-    - libcfitsio-bin
-    - libcfitsio-dev
+    - cfitsio
 install:
   - cd $PANDIR
   # install POCS and requirements
