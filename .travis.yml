@@ -20,7 +20,7 @@ before_install:
     - mkdir cfitsio
     - tar zxf cfitsio.tgz -C cfitsio --strip-components=1
     - cd cfitsio
-    - ./configure
+    - ./configure --prefix=/usr/local
     - make
     - make fpack
     - make funpack
