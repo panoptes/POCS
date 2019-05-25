@@ -54,10 +54,9 @@ install:
   - cd $PANDIR
 
   # Install astrometry.net
-  - wget https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz
-  - tar zxvf astrometry.net-0.72.tar.gz && cd astrometry.net-0.72
-  - make CFITS_INC="-I/usr/local/include" CFITS_SLIB="/usr/local/lib/libcfitsio.a"
-  - make py && make install INSTALL_DIR=$PANDIR/astrometry
+  - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
+  - tar zxvf astrometry.net-0.78.tar.gz && cd astrometry.net-0.78
+  - make && make py && make install INSTALL_DIR=$PANDIR/astrometry
   - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 
   # Install miniconda
