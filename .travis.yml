@@ -49,7 +49,6 @@ addons:
     - zlib1g-dev
     - libbz2-dev
     - swig
-    - cfitsio-dev
 install:
   - cd $PANDIR
 
