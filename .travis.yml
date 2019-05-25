@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: python
 services:
@@ -34,6 +34,8 @@ before_install:
     - conda info -a # Useful for debugging any issues with conda
     - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
     - source activate test-environment
+    # CFITSIO
+    - conda install -c conda-forge cfitsio
 
     # Install astrometry.net
     - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
@@ -46,8 +48,6 @@ addons:
     - gphoto2
     - libbz2-dev
     - libcairo2-dev
-    - libcfitsio-bin
-    - libcfitsio-dev
     - libjpeg-dev
     - libnetpbm10-dev
     - libpng12-dev
