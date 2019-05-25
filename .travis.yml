@@ -55,7 +55,6 @@ addons:
     - zlib1g-dev
     - libbz2-dev
     - swig
-    - cfitsio-dev
     - libcfitsio-bin
     - libcfitsio-dev
 install:
