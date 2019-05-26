@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: python
 services:
@@ -14,17 +14,6 @@ before_install:
     - pip install -U pip
     - pip install coveralls
 
-    # Install cfitsio
-    - cd $PANDIR
-    - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-    - tar zxf cfitsio_latest.tar.gz
-    - cd cfitsio
-    - ./configure
-    - make
-    - make fpack
-    - make funpack
-    - sudo make install
-
     # Install arudino files
     - cd $PANDIR
     - export DISPLAY=:1.0
@@ -33,6 +22,25 @@ before_install:
     - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
     - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
     - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+
+    # Install miniconda
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PANDIR/astrometry/bin:$PATH"
+    - hash -r
+
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda info -a # Useful for debugging any issues with conda
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
+    - source activate test-environment
+    - conda install numpy scipy
+
+    # Install astrometry.net
+    - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
+    - tar zxvf astrometry.net-0.78.tar.gz && cd astrometry.net-0.78
+    - make && make py && make install INSTALL_DIR=$PANDIR/astrometry
+    - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 addons:
   apt:
     packages:
@@ -48,28 +56,10 @@ addons:
     - zlib1g-dev
     - libbz2-dev
     - swig
-    - cfitsio-dev
+    - libcfitsio-bin
+    - libcfitsio-dev
 install:
   - cd $PANDIR
-
-  # Install astrometry.net
-  - wget https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz
-  - tar zxvf astrometry.net-0.72.tar.gz
-  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=$PANDIR/astrometry
-  - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
-
-  # Install miniconda
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$PANDIR/astrometry/bin:$PATH"
-  - hash -r
-
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a # Useful for debugging any issues with conda
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
-  - source activate test-environment
-
   # install POCS and requirements
   - cd $POCS
   - pip install -r requirements.txt

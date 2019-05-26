@@ -1,7 +1,6 @@
 import os
 import random
 
-from threading import Event
 from threading import Timer
 
 import numpy as np
@@ -10,7 +9,6 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
-from pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 from pocs.utils.images import fits as fits_utils
 from pocs.utils import get_quantity_value
 
@@ -73,7 +71,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        fits_utils.write_fits(fake_data, header, filename, self.logger, self._exposure_event)
+        fits_utils.write_fits(fake_data, header, filename, self.logger)
 
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
@@ -92,26 +90,3 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
-
-
-class SDKDriver(AbstractSDKDriver):
-    def __init__(self, library_path=None, **kwargs):
-        # Get library loader to load libc, which should usually be present...
-        super().__init__(name='c', library_path=library_path, **kwargs)
-
-    def get_SDK_version(self):
-        return "Simulated SDK Driver v0.001"
-
-    def get_cameras(self):
-        cameras = {'SSC007': 'DEV_USB0',
-                   'SSC101': 'DEV_USB1',
-                   'SSC999': 'DEV_USB2'}
-        return cameras
-
-
-class SDKCamera(AbstractSDKCamera, Camera):
-    def __init__(self,
-                 name='Simulated SDK camera',
-                 driver=SDKDriver,
-                 *args, **kwargs):
-        super().__init__(name, driver, *args, **kwargs)

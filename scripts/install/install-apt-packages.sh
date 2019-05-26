@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Installs APT packages (e.g. debian/ubuntu packages installed for all users).
 # Requires being logged in as root or the ability to successfully execute sudo.
@@ -17,7 +17,7 @@ fi
 
 # Generate the basic apt-get install command, minus the list of packages.
 # We store into a shell array, i.e. an array of strings.
-declare -a apt_get_install=(apt-get install --no-install-recommends --yes)
+declare -a apt_get_install=(apt-get --quiet install --no-install-recommends --yes)
 # shellcheck disable=SC2119
 apt_proxy_url="$(get_apt_proxy_url)"
 if [ -n "${apt_proxy_url}" ] ; then
@@ -26,17 +26,19 @@ fi
 
 # Install all of the packages specified in the files in the args.
 function install_apt_packages() {
+  echo_bar
   echo
   echo_running_sudo "apt-get update"
   echo
-  my_sudo apt-get update
+  my_sudo apt-get --quiet update
 
   for APT_PKGS_FILE in "$@"
   do
+    echo_bar
+    echo
     # Remove all the comments from the package list and install the packages whose
     # names are left.
     APT_PKGS="$(cut '-d#' -f1 "${APT_PKGS_FILE}" | sort | uniq)"
-    echo
     echo_running_sudo "apt-get install for the files in ${APT_PKGS_FILE}"
     echo
     # A note on syntax: ${array_variable} expands to just the first element
@@ -46,6 +48,7 @@ function install_apt_packages() {
     # a single element (e.g. "a b") doesn't result in multiple 'words'.
     # shellcheck disable=SC2086
     my_sudo "${apt_get_install[@]}" ${APT_PKGS}
+    echo
   done
 }
 

@@ -706,7 +706,7 @@ class WeatherPlotter(object):
                 plot_filename = '{}.png'.format(self.date_string)
 
             plot_filename = os.path.join(os.path.expandvars(
-                '$PANDIR'), 'weather_plots', plot_filename)
+                '$PANDIR'), 'images', 'weather_plots', plot_filename)
 
         plot_filename = os.path.abspath(plot_filename)
         plot_dir = os.path.dirname(plot_filename)

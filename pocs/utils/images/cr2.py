@@ -107,7 +107,7 @@ def cr2_to_fits(
             if remove_cr2:
                 os.unlink(cr2_fname)
 
-        fits_utils.update_headers(fits_fname, headers)
+        fits_utils.update_observation_headers(fits_fname, headers)
 
     return fits_fname
 
