@@ -34,6 +34,7 @@ before_install:
     - conda info -a # Useful for debugging any issues with conda
     - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
     - source activate test-environment
+    - conda install numpy scipy
 
     # Install astrometry.net
     - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
