@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from threading import Thread
 
@@ -84,6 +86,7 @@ def test_is_ready(focuser):
     assert not focuser.is_moving
     assert focuser.is_ready
     move_thread.start()
+    time.sleep(0.01)
     assert focuser.is_moving
     assert not focuser.is_ready
     move_thread.join()
