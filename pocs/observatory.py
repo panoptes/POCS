@@ -1,8 +1,7 @@
 import os
-
+import subprocess
 from collections import OrderedDict
 from datetime import datetime
-import subprocess
 from glob import glob
 
 from astroplan import Observer
@@ -11,22 +10,22 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs.base import PanBase
 import pocs.dome
+from pocs.base import PanBase
+from pocs.camera import AbstractCamera
 from pocs.images import Image
+from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
-from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
-from pocs.camera import AbstractCamera
 
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -59,8 +58,7 @@ class Observatory(PanBase):
         self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
-        self.scheduler = None
-        self._create_scheduler()
+        self.scheduler = scheduler
 
         self.current_offset_info = None
 
@@ -130,16 +128,19 @@ class Observatory(PanBase):
 
     @property
     def current_observation(self):
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
         self.scheduler.current_observation = new_observation
 
     @property
     def has_dome(self):
         return self.dome is not None
-
 
 ##########################################################################
 # Device Getters/Setters
@@ -202,6 +203,9 @@ class Observatory(PanBase):
         """
         status = {}
         try:
+            if self.scheduler is None:
+                raise error.NoScheduler("Scheduler nor found.")
+
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
 
@@ -242,6 +246,7 @@ class Observatory(PanBase):
 
         return status
 
+
     def get_observation(self, *args, **kwargs):
         """Gets the next observation from the scheduler
 
@@ -254,6 +259,9 @@ class Observatory(PanBase):
         """
 
         self.logger.debug("Getting observation for observatory")
+
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
 
         # If observation list is empty or a reread is requested
         reread_fields_file = (
@@ -302,6 +310,9 @@ class Observatory(PanBase):
                 keep_jpgs = self.config['observations']['keep_jpgs']
             except KeyError:
                 keep_jpgs = True
+
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -411,6 +422,9 @@ class Observatory(PanBase):
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
         try:
+            if self.scheduler is None:
+                raise error.NoScheduler("Scheduler nor found.")
+
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
@@ -458,7 +472,8 @@ class Observatory(PanBase):
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
-
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
             # Get the pier side of pointing image
             _, pointing_image = self.current_observation.pointing_image
             pointing_ha = pointing_image.header_ha
@@ -499,6 +514,9 @@ class Observatory(PanBase):
         field = observation.field
 
         self.logger.debug("Getting headers for : {}".format(observation))
+
+        if self.scheduler is None:
+            raise error.NoScheduler("Scheduler nor found.")
 
         t0 = current_time()
         moon = get_moon(t0, self.observer.location)

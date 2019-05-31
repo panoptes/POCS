@@ -162,3 +162,10 @@ class NotSupported(PanError, NotImplementedError):
 class IllegalValue(PanError, ValueError):
     """ Errors from trying to hardware parameters to values not supported by a particular model """
     pass
+
+
+class NoScheduler(PanError):
+    """ Scheduler not found. """
+
+    def __init__(self, msg='Scheduler not found.'):
+        super().__init__(msg, exit=True)
