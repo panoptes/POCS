@@ -59,6 +59,9 @@ class Observatory(PanBase):
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = scheduler
+        if self.scheduler is None:
+            self.scheduler = pocs.scheduler.create_scheduler_from_config(self.config, logger=self.logger,
+                                                                         observer=self.observer)
 
         self.current_offset_info = None
 
