@@ -128,20 +128,23 @@ class Observatory(PanBase):
 
     @property
     def current_observation(self):
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
         self.scheduler.current_observation = new_observation
 
     @property
     def has_dome(self):
         return self.dome is not None
 
+    @property
+    def can_observe(self):
+        return self.scheduler is not None
 ##########################################################################
 # Device Getters/Setters
 ##########################################################################
@@ -203,8 +206,8 @@ class Observatory(PanBase):
         """
         status = {}
         try:
-            if self.scheduler is None:
-                raise error.NoScheduler("Scheduler nor found.")
+            if not self.can_observe:
+                raise error.NoObservation("No valid observations found.")
 
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
@@ -246,7 +249,6 @@ class Observatory(PanBase):
 
         return status
 
-
     def get_observation(self, *args, **kwargs):
         """Gets the next observation from the scheduler
 
@@ -260,8 +262,8 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting observation for observatory")
 
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
 
         # If observation list is empty or a reread is requested
         reread_fields_file = (
@@ -311,8 +313,8 @@ class Observatory(PanBase):
             except KeyError:
                 keep_jpgs = True
 
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -422,8 +424,8 @@ class Observatory(PanBase):
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
         try:
-            if self.scheduler is None:
-                raise error.NoScheduler("Scheduler nor found.")
+            if not self.can_observe:
+                raise error.NoObservation("No valid observations found.")
 
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
@@ -472,8 +474,8 @@ class Observatory(PanBase):
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
             # Get the pier side of pointing image
             _, pointing_image = self.current_observation.pointing_image
             pointing_ha = pointing_image.header_ha
@@ -515,8 +517,8 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting headers for : {}".format(observation))
 
-        if self.scheduler is None:
-            raise error.NoScheduler("Scheduler nor found.")
+        if not self.can_observe:
+            raise error.NoObservation("No valid observations found.")
 
         t0 = current_time()
         moon = get_moon(t0, self.observer.location)
