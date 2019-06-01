@@ -162,4 +162,3 @@ class NotSupported(PanError, NotImplementedError):
 class IllegalValue(PanError, ValueError):
     """ Errors from trying to hardware parameters to values not supported by a particular model """
     pass
-
