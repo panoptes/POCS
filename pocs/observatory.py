@@ -59,9 +59,6 @@ class Observatory(PanBase):
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = scheduler
-        if self.scheduler is None:
-            self.scheduler = pocs.scheduler.create_scheduler_from_config(self.config, logger=self.logger,
-                                                                         observer=self.observer)
 
         self.current_offset_info = None
 
@@ -132,13 +129,13 @@ class Observatory(PanBase):
     @property
     def current_observation(self):
         if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+            raise error.NoObservation("Cannot be observed.")
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
         if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+            raise error.NoObservation("Cannot be observed.")
         self.scheduler.current_observation = new_observation
 
     @property
@@ -147,7 +144,23 @@ class Observatory(PanBase):
 
     @property
     def can_observe(self):
-        return self.scheduler is not None
+        """Return a boolean telling is it possible to observe.
+
+        Returns:
+            bool: If can observe.
+        """
+        can_observe = True
+        if can_observe and self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot observe.')
+            can_observe = False
+        if can_observe and self.cameras is None:
+            self.logger.info(f'Cameras not present, cannot observe.')
+            can_observe = False
+        if can_observe and self.mount is None:
+            self.logger.info(f'Mount not present, cannot observe.')
+            can_observe = False
+
+        return can_observe
 ##########################################################################
 # Device Getters/Setters
 ##########################################################################
@@ -209,8 +222,8 @@ class Observatory(PanBase):
         """
         status = {}
         try:
-            if not self.can_observe:
-                raise error.NoObservation("No valid observations found.")
+
+            status['can_observe'] = self.can_observe
 
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
@@ -266,7 +279,7 @@ class Observatory(PanBase):
         self.logger.debug("Getting observation for observatory")
 
         if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+            raise error.NoObservation("Cannot be observed.")
 
         # If observation list is empty or a reread is requested
         reread_fields_file = (
@@ -317,7 +330,7 @@ class Observatory(PanBase):
                 keep_jpgs = True
 
         if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+            raise error.NoObservation("Cannot be observed.")
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -427,9 +440,6 @@ class Observatory(PanBase):
             "Analyzing recent image using pointing image: '{}'".format(pointing_image))
 
         try:
-            if not self.can_observe:
-                raise error.NoObservation("No valid observations found.")
-
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
@@ -477,8 +487,7 @@ class Observatory(PanBase):
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
-        if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+
             # Get the pier side of pointing image
             _, pointing_image = self.current_observation.pointing_image
             pointing_ha = pointing_image.header_ha
@@ -521,7 +530,7 @@ class Observatory(PanBase):
         self.logger.debug("Getting headers for : {}".format(observation))
 
         if not self.can_observe:
-            raise error.NoObservation("No valid observations found.")
+            raise error.NoObservation("Cannot be observed.")
 
         t0 = current_time()
         moon = get_moon(t0, self.observer.location)
