@@ -23,7 +23,7 @@ def create_scheduler_from_config(config, logger=None, observer=None):
         return None
 
     if not observer:
-        logger.info("No valid observation found.")
+        logger.info("No valid Observer found.")
         return None
 
     scheduler_config = config.get('scheduler', {})
