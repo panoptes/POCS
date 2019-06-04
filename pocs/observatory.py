@@ -128,15 +128,17 @@ class Observatory(PanBase):
 
     @property
     def current_observation(self):
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot get current observation.')
+            return None
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
-        self.scheduler.current_observation = new_observation
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot set current observation.')
+        else:
+            self.scheduler.current_observation = new_observation
 
     @property
     def has_dome(self):
@@ -144,10 +146,17 @@ class Observatory(PanBase):
 
     @property
     def can_observe(self):
-        """Return a boolean telling is it possible to observe.
+        """A dynamic property indicating whether or not observations are possible.
+
+        This property will check to make sure that the following are present:
+          * Scheduler
+          * Cameras
+          * Mount
+
+        If any of the above are not present then a log message is generated and the property returns False.
 
         Returns:
-            bool: If can observe.
+            bool: True if observations are possible, False otherwise.
         """
         can_observe = True
         if can_observe and self.scheduler is None:
@@ -278,8 +287,9 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting observation for observatory")
 
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
+        if not self.scheduler:
+            self.logger.info(f'Scheduler not present, cannot get the next observation.')
+            return None
 
         # If observation list is empty or a reread is requested
         reread_fields_file = (
@@ -329,11 +339,12 @@ class Observatory(PanBase):
             except KeyError:
                 keep_jpgs = True
 
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
-
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
+
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot finish cleanup.')
+            return
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))

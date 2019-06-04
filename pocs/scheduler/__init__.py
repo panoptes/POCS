@@ -2,7 +2,6 @@ import os
 
 from astropy import units as u
 
-import pocs.utils.logger as logger_module
 from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
@@ -10,13 +9,14 @@ from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from pocs.utils import error
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
+from pocs.utils.logger import get_root_logger
 
 
 def create_scheduler_from_config(config, logger=None, observer=None):
     """ Sets up the scheduler that will be used by the observatory """
 
     if not logger:
-        logger = logger_module.get_root_logger()
+        logger = get_root_logger()
 
     if 'scheduler' not in config:
         logger.info("No scheduler in config")
