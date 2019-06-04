@@ -14,12 +14,8 @@ import pocs.dome
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
-from pocs.scheduler.constraint import Altitude
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
 
 
@@ -766,47 +762,3 @@ class Observatory(PanBase):
         self.mount = module.Mount(location=self.earth_location)
 
         self.logger.debug('Mount created')
-
-    def _create_scheduler(self):
-        """ Sets up the scheduler that will be used by the observatory """
-
-        scheduler_config = self.config.get('scheduler', {})
-        scheduler_type = scheduler_config.get('type', 'dispatch')
-
-        # Read the targets from the file
-        fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories'][
-                                   'targets'], fields_file)
-        self.logger.debug('Creating scheduler: {}'.format(fields_path))
-
-        if os.path.exists(fields_path):
-
-            try:
-                # Load the required module
-                module = load_module(
-                    'pocs.scheduler.{}'.format(scheduler_type))
-
-                obstruction_list = self.config['location'].get('obstructions', list())
-                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
-
-                horizon_line = horizon_utils.Horizon(
-                    obstructions=obstruction_list,
-                    default_horizon=default_horizon.value
-                )
-
-                # Simple constraint for now
-                constraints = [
-                    Altitude(horizon=horizon_line),
-                    MoonAvoidance(),
-                    Duration(default_horizon)
-                ]
-
-                # Create the Scheduler instance
-                self.scheduler = module.Scheduler(
-                    self.observer, fields_file=fields_path, constraints=constraints)
-                self.logger.debug("Scheduler created")
-            except ImportError as e:
-                raise error.NotFound(msg=e)
-        else:
-            raise error.NotFound(
-                msg="Fields file does not exist: {}".format(fields_file))
