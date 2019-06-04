@@ -1,16 +1,18 @@
 import os
-import pytest
-
 import time
+
+import pytest
 from astropy import units as u
 from astropy.time import Time
 
-from pocs import hardware
 import pocs.version
+from pocs import hardware
+from pocs.camera import create_cameras_from_config
 from pocs.observatory import Observatory
+from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
-from pocs.camera import create_cameras_from_config
+from pocs.site_location_details import setup_site_location_details_from_config
 from pocs.utils import error
 
 
@@ -27,7 +29,10 @@ def simulator():
 @pytest.fixture
 def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
+    details = setup_site_location_details_from_config(config)
+    scheduler = create_scheduler_from_config(config, observer=details['observer'])
     obs = Observatory(config=config,
+                      scheduler=scheduler,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
@@ -71,18 +76,18 @@ def test_bad_mount_driver(config):
 
 def test_bad_scheduler(config):
     conf = config.copy()
-    simulator = ['all']
     conf['scheduler']['type'] = 'foobar'
+    details = setup_site_location_details_from_config(config)
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        create_scheduler_from_config(config, observer=details['observer'])
 
 
 def test_bad_scheduler_fields_file(config):
     conf = config.copy()
-    simulator = ['all']
     conf['scheduler']['fields_file'] = 'foobar'
+    details = setup_site_location_details_from_config(config)
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        create_scheduler_from_config(config, observer=details['observer'])
 
 
 def test_camera_wrong_type(config):
