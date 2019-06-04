@@ -775,8 +775,7 @@ class Observatory(PanBase):
 
         # Read the targets from the file
         fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories'][
-                                       'targets'], fields_file)
+        fields_path = os.path.join(self.config['directories']['targets'], fields_file)
         self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
         if os.path.exists(fields_path):
