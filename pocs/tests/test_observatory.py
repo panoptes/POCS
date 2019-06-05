@@ -90,6 +90,46 @@ def test_bad_scheduler_fields_file(config):
         create_scheduler_from_config(config, observer=details['observer'])
 
 
+def test_can_observe_no_scheduler(config):
+    conf = config.copy()
+    cameras = create_cameras_from_config(conf)
+
+    obs = Observatory(cameras=cameras,
+                      scheduler=None,
+                      config=conf
+                      )
+
+    assert obs.can_observe is False
+
+
+def test_can_observe_no_cameras(config):
+    conf = config.copy()
+    details = setup_site_location_details_from_config(config)
+    scheduler = create_scheduler_from_config(config, observer=details['observer'])
+
+    obs = Observatory(cameras=None,
+                      scheduler=scheduler,
+                      config=conf
+                      )
+
+    assert obs.can_observe is False
+
+
+def test_can_observe_no_mount(config):
+    conf = config.copy()
+    details = setup_site_location_details_from_config(config)
+    scheduler = create_scheduler_from_config(config, observer=details['observer'])
+    cameras = create_cameras_from_config(conf)
+
+    obs = Observatory(cameras=cameras,
+                      scheduler=scheduler,
+                      config=conf,
+                      ignore_local_config=True
+                      )
+    obs.mount = None
+    assert obs.can_observe is False
+
+
 def test_camera_wrong_type(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['camera'])

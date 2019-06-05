@@ -158,7 +158,7 @@ class Observatory(PanBase):
         if can_observe and self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot observe.')
             can_observe = False
-        if can_observe and self.cameras is None:
+        if can_observe and not self.has_cameras:
             self.logger.info(f'Cameras not present, cannot observe.')
             can_observe = False
         if can_observe and self.mount is None:
