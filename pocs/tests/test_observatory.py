@@ -74,22 +74,6 @@ def test_bad_mount_driver(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-def test_bad_scheduler(config):
-    conf = config.copy()
-    conf['scheduler']['type'] = 'foobar'
-    details = setup_site_location_details_from_config(config)
-    with pytest.raises(error.NotFound):
-        create_scheduler_from_config(config, observer=details['observer'])
-
-
-def test_bad_scheduler_fields_file(config):
-    conf = config.copy()
-    conf['scheduler']['fields_file'] = 'foobar'
-    details = setup_site_location_details_from_config(config)
-    with pytest.raises(error.NotFound):
-        create_scheduler_from_config(config, observer=details['observer'])
-
-
 def test_can_observe_no_scheduler(config):
     conf = config.copy()
     cameras = create_cameras_from_config(conf)
