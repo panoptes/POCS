@@ -526,6 +526,10 @@ class Observatory(PanBase):
         Returns:
             dict: The standard headers
         """
+
+        if not self.can_observe:
+            raise error.NoObservation("Cannot be observed.")
+
         if observation is None:
             observation = self.current_observation
 
@@ -535,9 +539,6 @@ class Observatory(PanBase):
         field = observation.field
 
         self.logger.debug("Getting headers for : {}".format(observation))
-
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
 
         t0 = current_time()
         moon = get_moon(t0, self.observer.location)

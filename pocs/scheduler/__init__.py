@@ -12,11 +12,10 @@ from pocs.utils import load_module
 from pocs.utils.logger import get_root_logger
 
 
-def create_scheduler_from_config(config, logger=None, observer=None):
+def create_scheduler_from_config(config, observer=None):
     """ Sets up the scheduler that will be used by the observatory """
 
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
 
     if 'scheduler' not in config:
         logger.info("No scheduler in config")

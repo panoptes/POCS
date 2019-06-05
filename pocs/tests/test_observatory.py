@@ -151,6 +151,12 @@ def test_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
+def test_primary_camera_no_primary_camera(observatory):
+    obs = observatory
+    obs._primary_camera = None
+    assert obs.primary_camera is not None
+
+
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()
@@ -238,6 +244,13 @@ def test_standard_headers(observatory):
     assert headers['longitude'] == test_headers['longitude']
 
 
+def test_get_standard_headers_no_scheduler(observatory):
+    obs = observatory
+    obs.scheduler = None
+    with pytest.raises(error.NoObservation):
+        obs.get_standard_headers()
+
+
 def test_sidereal_time(observatory):
     os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     st = observatory.sidereal_time
@@ -254,6 +267,18 @@ def test_get_observation(observatory):
     assert isinstance(observation, Observation)
 
     assert observatory.current_observation == observation
+
+
+def test_get_observation_no_scheduler(observatory):
+    obs = observatory
+    obs.scheduler = None
+    assert obs.get_observation() is None
+
+
+def test_cleanup_observations_no_scheduler(observatory):
+    obs = observatory
+    obs.scheduler = None
+    assert obs.cleanup_observations() is None
 
 
 @pytest.mark.with_camera
