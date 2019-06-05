@@ -60,7 +60,7 @@ def create_scheduler_from_config(config, logger=None, observer=None):
             scheduler = module.Scheduler(
                 observer, fields_file=fields_path, constraints=constraints)
             logger.debug("Scheduler created")
-        except ImportError as e:
+        except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
         raise error.NotFound(
