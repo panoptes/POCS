@@ -42,6 +42,19 @@ def observatory(config, simulator, images_dir):
     return obs
 
 
+def test_camera_already_exists(observatory, config):
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        observatory.add_camera(cam_name, cam)
+
+
+def test_remove_cameras(observatory, config):
+    obs = observatory
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        obs.remove_camera(cam_name)
+
+
 def test_error_exit(config):
     # TODO Describe why this is expected to fail, and how it is different
     # from the other tests, esp. test_bad_mount_port.
@@ -279,6 +292,11 @@ def test_cleanup_observations_no_scheduler(observatory):
     obs = observatory
     obs.scheduler = None
     assert obs.cleanup_observations() is None
+
+
+def test_cleanup_observations_keep_jpgs(observatory):
+    obs = observatory
+    assert obs.cleanup_observations(keep_jpgs=False) is None
 
 
 @pytest.mark.with_camera
