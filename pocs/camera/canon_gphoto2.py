@@ -4,10 +4,10 @@ import subprocess
 from threading import Event
 from threading import Timer
 
-from panoptes_utils import current_time
-from panoptes_utils import CountdownTimer
-from panoptes_utils import error
-from panoptes_utils.images import cr2 as cr2_utils
+from panoptes.utils import current_time
+from panoptes.utils import CountdownTimer
+from panoptes.utils import error
+from panoptes.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
 
 
