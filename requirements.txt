@@ -21,4 +21,9 @@ scalpl
 scikit-image
 scipy
 transitions
+tweepy
+
+# requests 2.21 doesn't like urllib3 >=1.25
+urllib3 >= 1.24, < 1.25
+
 wcsaxes
