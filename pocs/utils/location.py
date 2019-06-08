@@ -63,13 +63,13 @@ def setup_site_location_details_from_config(config, logger=None):
         observer = Observer(
             location=earth_location, name=name, timezone=timezone)
 
-        details = {
+        site_details = {
             "location": location,
             "earth_location": earth_location,
             "observer": observer
         }
 
-        return details
+        return site_details
 
     except Exception:
         raise error.PanError(msg='Bad site information')

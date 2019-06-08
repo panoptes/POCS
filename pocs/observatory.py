@@ -527,9 +527,6 @@ class Observatory(PanBase):
             dict: The standard headers
         """
 
-        if not self.can_observe:
-            raise error.NoObservation("Cannot be observed.")
-
         if observation is None:
             observation = self.current_observation
 
