@@ -92,7 +92,7 @@ def test_can_observe(config, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Scheduler not present, cannot observe."
-    site_details = setup_site_location_details_from_config(conf)
+    site_details = create_location_from_config(conf)
     obs.scheduler = create_scheduler_from_config(conf, site_details['observer'])
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
