@@ -45,7 +45,7 @@ def cameras(config):
 
 @pytest.fixture(scope='function')
 def scheduler(config):
-    site_details = setup_site_location_details_from_config(config)
+    site_details = create_location_from_config(config)
     return create_scheduler_from_config(config, observer=site_details['observer'])
 
 
