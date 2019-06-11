@@ -8,7 +8,7 @@ from pocs.utils.logger import get_root_logger
 
 def setup_site_location_details_from_config(config, logger=None):
     """
-     Sets up the site and location details
+     Sets up the site and location details.
 
      Note:
          These items are read from the 'site' config directive and include:
