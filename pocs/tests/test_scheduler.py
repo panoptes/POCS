@@ -28,5 +28,5 @@ def test_no_observer(config):
 def test_no_scheduler_in_config(config):
     conf = config.copy()
     del conf['scheduler']
-    site_details = setup_site_location_details_from_config(conf)
+    site_details = create_location_from_config(conf)
     assert create_scheduler_from_config(conf, observer=site_details['observer']) is None
