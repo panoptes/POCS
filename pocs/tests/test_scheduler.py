@@ -8,7 +8,7 @@ from pocs.utils.location import setup_site_location_details_from_config
 def test_bad_scheduler_type(config):
     conf = config.copy()
     conf['scheduler']['type'] = 'foobar'
-    site_details = setup_site_location_details_from_config(config)
+    site_details = create_location_from_config(config)
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(conf, observer=site_details['observer'])
 
