@@ -13,7 +13,7 @@ from pocs.scheduler import create_scheduler_from_config
 from pocs.utils import CountdownTimer
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.location import setup_site_location_details_from_config
+from pocs.utils.location import create_location_from_config
 from pocs.utils.messaging import PanMessaging
 
 
