@@ -166,7 +166,8 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') == pytest.approx(observatory.config['location']['elevation'], rel=1 * u.meter)
+    assert observatory.location.get('elevation').value == pytest.approx(
+        observatory.config['location']['elevation'].value, rel=1 * u.meter)
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
