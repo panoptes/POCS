@@ -16,7 +16,7 @@ def test_bad_scheduler_type(config):
 def test_bad_scheduler_fields_file(config):
     conf = config.copy()
     conf['scheduler']['fields_file'] = 'foobar'
-    site_details = setup_site_location_details_from_config(config)
+    site_details = create_location_from_config(config)
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(conf, observer=site_details['observer'])
 
