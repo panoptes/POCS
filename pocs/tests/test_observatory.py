@@ -29,7 +29,7 @@ def simulator():
 @pytest.fixture
 def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
-    site_details = setup_site_location_details_from_config(config)
+    site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
     obs = Observatory(config=config,
                       scheduler=scheduler,
