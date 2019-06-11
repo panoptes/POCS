@@ -6,7 +6,7 @@ from pocs.utils import error
 from pocs.utils.logger import get_root_logger
 
 
-def setup_site_location_details_from_config(config, logger=None):
+def create_location_from_config(config, logger=None):
     """
      Sets up the site and location details.
 
