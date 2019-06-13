@@ -8,6 +8,7 @@ from astropy.time import Time
 import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -31,8 +32,10 @@ def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
+    dome = create_dome_from_config(config)
     obs = Observatory(config=config,
                       scheduler=scheduler,
+                      dome=dome,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
