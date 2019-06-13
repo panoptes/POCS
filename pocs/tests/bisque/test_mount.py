@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 

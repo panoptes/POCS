@@ -8,6 +8,7 @@ from astropy.time import Time
 import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
+from pocs.mount import create_mount_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -31,8 +32,10 @@ def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
+    mount = create_mount_from_config(config, earth_location=site_details['earth_location'])
     obs = Observatory(config=config,
                       scheduler=scheduler,
+                      mount=mount,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
@@ -69,23 +72,6 @@ def test_bad_site(simulator, config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-def test_bad_mount_port(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = '/dev/'
-    with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
-@pytest.mark.without_mount
-def test_bad_mount_driver(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['driver'] = 'foobar'
-    with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
 def test_can_observe(config, caplog):
     conf = config.copy()
     obs = Observatory(config=conf)
@@ -97,6 +83,9 @@ def test_can_observe(config, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
+    obs.cameras = create_cameras_from_config(config=conf)
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[-1].message == "Mount not present, cannot observe."
 
 
 def test_camera_wrong_type(config):
@@ -160,6 +149,22 @@ def test_status(observatory):
 
     assert 'mount' in status3
     assert 'observation' in status3
+
+
+def test_initialize_no_mount(config, caplog):
+    conf = config.copy()
+    obs = Observatory(config=conf)
+    assert obs.initialize() is None
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Mount not present, cannot initialize."
+
+
+def test_power_down_no_mount(config, caplog):
+    conf = config.copy()
+    obs = Observatory(config=conf)
+    assert obs.power_down() is None
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Mount not present, cannot shut down."
 
 
 def test_default_config(observatory):

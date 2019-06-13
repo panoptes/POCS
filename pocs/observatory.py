@@ -21,7 +21,7 @@ from pocs.utils import load_module
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, scheduler=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, mount=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -38,8 +38,7 @@ class Observatory(PanBase):
         self._setup_location()
 
         self.logger.info('\tSetting up mount')
-        self.mount = None
-        self._create_mount()
+        self.mount = mount
 
         self.cameras = OrderedDict()
 
@@ -210,6 +209,9 @@ class Observatory(PanBase):
     def initialize(self):
         """Initialize the observatory and connected hardware """
         self.logger.debug("Initializing mount")
+        if self.mount is None:
+            self.logger.info(f'Mount not present, cannot initialize.')
+            return
         self.mount.initialize()
         if self.dome:
             self.dome.connect()
@@ -218,6 +220,9 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
+        if self.mount is None:
+            self.logger.info(f'Mount not present, cannot shut down.')
+            return
         self.mount.disconnect()
         if self.dome:
             self.dome.disconnect()
@@ -494,6 +499,9 @@ class Observatory(PanBase):
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
+            if self.mount is None:
+                self.logger.info("Mount not present, cannot update the tracking.")
+                return
 
             # Get the pier side of pointing image
             _, pointing_image = self.current_observation.pointing_image
@@ -539,6 +547,8 @@ class Observatory(PanBase):
 
         t0 = current_time()
         moon = get_moon(t0, self.observer.location)
+
+        assert self.mount is not None, self.logger.warning("Mount not present, can't get headers.")
 
         headers = {
             'airmass': self.observer.altaz(t0, field).secz.value,

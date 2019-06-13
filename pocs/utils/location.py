@@ -16,7 +16,7 @@ def create_location_from_config(config, logger=None):
              * latitude
              * longitude
              * timezone
-             * presseure
+             * pressure
              * elevation
              * horizon
 
