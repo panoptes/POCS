@@ -95,7 +95,11 @@ do_install() {
 
     echo "Cloning PANOPTES source code."
     echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
-    read -p "Github User: [panoptes] " github_user
+
+    # Default user
+    read -p "Github User [panoptes]: " github_user
+    github_user=${github_user:-panoptes}
+    echo "Using repositories from user '${github_user}'."
 
     cd ${PANDIR}
 
