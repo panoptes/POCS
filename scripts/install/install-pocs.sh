@@ -39,11 +39,6 @@ usage() {
 "
 }
 
-if [ $# -eq 0 ]; then
-    usage
-    exit 1
-fi
-
 if [ -z ${PANUSER} ]; then
     export PANUSER=$USER
     echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
@@ -62,10 +57,15 @@ case $key in
     shift # past argument
     shift # past value
     ;;
-    -d|--dir)
+    -d|--pandir)
     PANDIR="$2"
     shift # past argument
     shift # past value
+    ;;
+    -h|--help)
+    PANDIR="$2"
+    usage
+    exit 1
     ;;
 esac
 done
@@ -131,10 +131,7 @@ do_install() {
     sudo docker pull gcr.io/panoptes-survey/pocs
     sudo docker pull gcr.io/panoptes-survey/paws
 
-    # Start docker - TODO: always start?
-    sudo service docker start
-
-    echo "You must logout and log back in to  before using POCS."
+    echo "Please reboot your machine before using POCS."
 
 }
 # wrapped up in a function so that we have some protection against only getting
