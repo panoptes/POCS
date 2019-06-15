@@ -91,7 +91,7 @@ do_install() {
     # apt: git, wget
     echo "Installing system dependencies"
     sudo apt update &>> ${PANDIR}/logs/install-pocs.log
-    sudo apt --yes install wget git &>> ${PANDIR}/logs/install-pocs.log
+    sudo apt --yes install wget git openssh-server &>> ${PANDIR}/logs/install-pocs.log
 
     echo "Cloning PANOPTES source code."
     echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
