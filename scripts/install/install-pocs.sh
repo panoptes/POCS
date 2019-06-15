@@ -45,12 +45,12 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ -z ${PANUSER} ]; then
-	export PANUSER=$USER
-	echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
+    export PANUSER=$USER
+    echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
 fi
 if [ -z ${PANDIR} ]; then
-	export PANDIR='/var/panoptes'
-	echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
+    export PANDIR='/var/panoptes'
+    echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
 fi
 
 while [[ $# -gt 0 ]]
@@ -76,14 +76,14 @@ do_install() {
     echo "DIR: ${PANDIR}"
 
     if [[ ! -d ${PANDIR} ]] || [[ $(stat -c "%U" ${PANDIR}) -ne $USER ]]; then
-    	echo "Creating directories"
-    	# Make directories
-    	sudo mkdir -p ${PANDIR}
-    	sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
+        echo "Creating directories"
+        # Make directories
+        sudo mkdir -p ${PANDIR}
+        sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
 
-    	mkdir -p ${PANDIR}/logs
-    	mkdir -p ${PANDIR}/conf_files
-    	mkdir -p ${PANDIR}/images
+        mkdir -p ${PANDIR}/logs
+        mkdir -p ${PANDIR}/conf_files
+        mkdir -p ${PANDIR}/images
     fi
 
     echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log."
@@ -91,7 +91,7 @@ do_install() {
     # apt: git, wget
     echo "Installing system dependencies"
     sudo apt update &>> ${PANDIR}/logs/install-pocs.log
-    sudo apt --yes install wget git openssh-server &>> ${PANDIR}/logs/install-pocs.log
+    sudo apt --yes install wget git openssh-server byobu &>> ${PANDIR}/logs/install-pocs.log
 
     echo "Cloning PANOPTES source code."
     echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
@@ -103,9 +103,12 @@ do_install() {
 
     for repo in "${repos[@]}"; do
         if [ ! -d "${PANDIR}/${repo}" ]; then
-    	    echo "Cloning ${repo}"
-    	# Just redirect the errors because otherwise looks like it hangs.
+            echo "Cloning ${repo}"
+            # Just redirect the errors because otherwise looks like it hangs.
             git clone https://github.com/${github_user}/${repo}.git
+
+            # TODO
+            # echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
         else
             echo "Repo ${repo} already exists on system."
         fi
@@ -127,6 +130,9 @@ do_install() {
     echo "Pulling POCS docker images"
     sudo docker pull gcr.io/panoptes-survey/pocs
     sudo docker pull gcr.io/panoptes-survey/paws
+
+    # Start docker - TODO: always start?
+    sudo service docker start
 
     echo "You must logout and log back in to  before using POCS."
 
