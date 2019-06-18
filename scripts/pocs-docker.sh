@@ -29,13 +29,14 @@ usage() {
 }
 
 START=${1:-help}
-if [ ${START} = 'help' ] || [ ${START} = '-h' ] || [ ${START} = '--help' ]; then
+if [ "${START}" = 'help' ] || [ "${START}" = '-h' ] || [ "${START}" = '--help' ]; then
 	usage
 	exit 1
 fi
 
-cd $PANDIR
+cd "$PANDIR"
 docker-compose \
+    --project-directory "${PANDIR}"
 	-f panoptes-utils/docker/docker-compose.yaml \
 	-f PAWS/docker/docker-compose.yaml \
 	-f POCS/docker/docker-compose.yaml \
