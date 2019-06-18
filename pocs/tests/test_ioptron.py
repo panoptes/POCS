@@ -6,7 +6,7 @@ from astropy import units as u
 
 from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
-from pocs.utils.config import load_config
+from panoptes.utils.config import load_config
 
 
 @pytest.fixture

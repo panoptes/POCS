@@ -3,7 +3,7 @@ import pytest
 
 from astropy.io import fits
 
-from pocs.utils.images import focus as focus_utils
+from panoptes.utils.images import focus as focus_utils
 
 
 def test_vollath_f4(data_dir):

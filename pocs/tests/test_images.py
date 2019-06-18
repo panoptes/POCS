@@ -5,8 +5,8 @@ import tempfile
 
 from pocs.images import Image
 from pocs.images import OffsetError
-from pocs.utils.error import SolveError
-from pocs.utils.error import Timeout
+from panoptes.utils.error import SolveError
+from panoptes.utils.error import Timeout
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord

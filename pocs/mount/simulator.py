@@ -2,7 +2,7 @@ import time
 
 from astropy import units as u
 
-from pocs.utils import current_time
+from panoptes.utils import current_time
 from pocs.mount import AbstractMount
 
 

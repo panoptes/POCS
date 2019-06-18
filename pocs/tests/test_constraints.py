@@ -18,7 +18,7 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import AlreadyVisited
 
-from pocs.utils import horizon as horizon_utils
+from panoptes.utils import horizon as horizon_utils
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 import pytest
 
 from pocs.scheduler import create_scheduler_from_config
-from pocs.utils import error
-from pocs.utils.location import create_location_from_config
+from panoptes.utils import error
+from panoptes.utils.location import create_location_from_config
 
 
 def test_bad_scheduler_type(config):

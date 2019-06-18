@@ -1,8 +1,8 @@
 import os
 import yaml
 
-from pocs.utils import error
-from pocs.utils import rs232
+from panoptes.utils import error
+from panoptes.utils import rs232
 
 from pocs.mount import AbstractMount
 

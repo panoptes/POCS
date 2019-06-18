@@ -8,8 +8,8 @@ import copy
 import pytest
 
 import pocs.base
-from pocs.utils.config import load_config
-from pocs.utils.logger import get_root_logger
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
 
 # Global variable with the default config; we read it once, copy it each time it is needed.
 _one_time_config = None

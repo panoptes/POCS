@@ -6,14 +6,14 @@ import subprocess
 from astropy import units as u
 
 from pocs import hardware
-from pocs.utils import error
-from pocs.utils import load_module
-from pocs.utils.config import load_config
+from panoptes.utils import error
+from panoptes.utils import load_module
+from panoptes.utils.config import load_config
 
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
 
-from pocs.utils import logger as logger_module
+from panoptes.utils import logger as logger_module
 
 
 def list_connected_cameras():

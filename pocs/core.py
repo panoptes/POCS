@@ -12,12 +12,12 @@ from astropy import units as u
 from pocs.base import PanBase
 from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
-from pocs.utils import current_time
-from pocs.utils import get_free_space
-from pocs.utils import CountdownTimer
-from pocs.utils import listify
-from pocs.utils import error
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import current_time
+from panoptes.utils import get_free_space
+from panoptes.utils import CountdownTimer
+from panoptes.utils import listify
+from panoptes.utils import error
+from panoptes.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):

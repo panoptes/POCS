@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from pocs.base import PanBase
-import pocs.utils
-import pocs.utils.logger as logger_module
+import panoptes.utils
+import panoptes.utils.logger as logger_module
 
 
 def create_dome_from_config(config, logger=None):
@@ -27,7 +27,7 @@ def create_dome_from_config(config, logger=None):
         brand = dome_config.get('brand')
         driver = dome_config['driver']
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
-    module = pocs.utils.load_module('pocs.dome.{}'.format(driver))
+    module = panoptes.utils.load_module('pocs.dome.{}'.format(driver))
     dome = module.Dome(config=config)
     logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
     return dome

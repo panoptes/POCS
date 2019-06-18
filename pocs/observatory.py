@@ -14,9 +14,9 @@ import pocs.dome
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils import load_module
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import load_module
 
 
 class Observatory(PanBase):

@@ -3,8 +3,8 @@ import pytest
 import serial
 from serial import serialutil
 
-from pocs.utils import error
-from pocs.utils import rs232
+from panoptes.utils import error
+from panoptes.utils import rs232
 
 from pocs.tests.serial_handlers import NoOpSerial
 from pocs.tests.serial_handlers import protocol_buffers

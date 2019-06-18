@@ -5,10 +5,10 @@ from astropy.coordinates import EarthLocation
 
 from pocs.core import POCS
 from pocs.dome.bisque import Dome
-from pocs.utils import altaz_to_radec
-from pocs.utils import current_time
-from pocs.utils.config import load_config
-from pocs.utils.theskyx import TheSkyX
+from panoptes.utils import altaz_to_radec
+from panoptes.utils import current_time
+from panoptes.utils.config import load_config
+from panoptes.utils.theskyx import TheSkyX
 
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,

@@ -1,8 +1,7 @@
 import pytest
 
-from pocs.utils.logger import field_name_to_key
-from pocs.utils.logger import format_has_reference_keys
-from pocs.utils.logger import logger_msg_formatter
+from panoptes.utils.logger import field_name_to_key
+from panoptes.utils.logger import logger_msg_formatter
 
 
 def test_field_name_to_key():

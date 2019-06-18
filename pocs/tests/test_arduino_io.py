@@ -9,10 +9,10 @@ import threading
 import time
 
 from pocs.sensors import arduino_io
-import pocs.utils.error as error
-from pocs.utils.logger import get_root_logger
-from pocs.utils import CountdownTimer
-from pocs.utils import rs232
+import panoptes.utils.error as error
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils import CountdownTimer
+from panoptes.utils import rs232
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description manufacturer')
 

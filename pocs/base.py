@@ -2,9 +2,9 @@ import sys
 
 from pocs import hardware
 from pocs import __version__
-from pocs.utils import config
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
+from panoptes.utils import config
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
 
 # Global vars
 _config = None

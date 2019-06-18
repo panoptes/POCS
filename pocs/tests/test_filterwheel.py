@@ -7,7 +7,7 @@ from astropy import units as u
 
 from pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
 from pocs.camera.simulator import Camera as SimCamera
-from pocs.utils import error
+from panoptes.utils import error
 
 
 @pytest.fixture(scope='module')
@@ -140,7 +140,7 @@ def test_move_timeout(caplog):
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
     time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
     assert caplog.records[-1].levelname == 'ERROR'  # Should have logged an ERROR by now
-    # It raises a pocs.utils.error.Timeout exception too, but because it's in another Thread it
+    # It raises a panoptes.utils.error.Timeout exception too, but because it's in another Thread it
     # doesn't get passes up to the calling code.
 
 

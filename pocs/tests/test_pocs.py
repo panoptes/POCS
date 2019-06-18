@@ -10,11 +10,11 @@ from pocs.camera import create_cameras_from_config
 from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
-from pocs.utils import CountdownTimer
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils.location import create_location_from_config
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import CountdownTimer
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils.location import create_location_from_config
+from panoptes.utils.messaging import PanMessaging
 
 
 def wait_for_running(sub, max_duration=90):

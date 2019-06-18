@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import random
 
-from pocs.utils.horizon import Horizon
+from panoptes.utils.horizon import Horizon
 
 
 def test_normal():

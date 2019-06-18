@@ -18,10 +18,10 @@ from pocs.camera import create_cameras_from_config
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
-from pocs.utils.config import load_config
-from pocs.utils.error import NotFound
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import error
+from panoptes.utils.config import load_config
+from panoptes.utils.error import NotFound
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import error
 from pocs import hardware
 
 

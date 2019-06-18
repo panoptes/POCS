@@ -1,13 +1,12 @@
 import os
 import subprocess
 
-from astropy import units as u
 from threading import Event
 from threading import Timer
 
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils.images import cr2 as cr2_utils
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
 
 

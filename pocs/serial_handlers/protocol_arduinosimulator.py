@@ -16,7 +16,7 @@ import time
 import urllib
 
 from pocs.tests import serial_handlers
-import pocs.utils.logger
+import panoptes.utils.logger
 
 
 def _drain_queue(q):
@@ -196,7 +196,7 @@ class ArduinoSimulator:
 class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger = panoptes.utils.logger.get_root_logger()
         self.simulator_thread = None
         self.relay_queue = queue.Queue(maxsize=1)
         self.json_queue = queue.Queue(maxsize=1)

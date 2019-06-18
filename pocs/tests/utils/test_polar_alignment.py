@@ -1,7 +1,7 @@
 import pytest
 
 from matplotlib.figure import Figure
-from pocs.utils.images import polar_alignment as pa_utils
+from panoptes.utils.images import polar_alignment as pa_utils
 
 
 @pytest.fixture

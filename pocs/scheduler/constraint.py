@@ -1,6 +1,6 @@
 from astropy import units as u
 
-from pocs.utils import horizon as horizon_utils
+from panoptes.utils import horizon as horizon_utils
 from pocs.base import PanBase
 
 

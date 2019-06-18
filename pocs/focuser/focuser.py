@@ -16,8 +16,8 @@ from threading import Thread
 
 
 from pocs.base import PanBase
-from pocs.utils import current_time
-from pocs.utils.images import focus as focus_utils
+from panoptes.utils import current_time
+from panoptes.utils.images import focus as focus_utils
 
 palette = copy(colormap.inferno)
 palette.set_over('w', 1.0)

@@ -5,8 +5,8 @@ import yaml
 
 from astropy import units as u
 
-from pocs.utils.config import load_config
-from pocs.utils.config import save_config
+from panoptes.utils.config import load_config
+from panoptes.utils.config import save_config
 
 
 def test_load_simulator(config):

@@ -14,14 +14,14 @@ from astropy.time import Time
 import astropy.units as u
 
 from pocs.base import PanBase
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils import listify
-from pocs.utils import load_module
-from pocs.utils import images as img_utils
-from pocs.utils import get_quantity_value
-from pocs.utils import CountdownTimer
-from pocs.utils.images import fits as fits_utils
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import listify
+from panoptes.utils import load_module
+from panoptes.utils import images as img_utils
+from panoptes.utils import get_quantity_value
+from panoptes.utils import CountdownTimer
+from panoptes.utils.images import fits as fits_utils
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 
