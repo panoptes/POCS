@@ -1,4 +1,4 @@
-version: '3.2'
+version: '3.7'
 services:
   peas-shell:
     image: gcr.io/panoptes-survey/pocs
@@ -7,7 +7,7 @@ services:
     network_mode: host
     env_file: ${PANDIR}/env_file
     depends_on:
-      - "messaging-hub"  
+      - "messaging-hub"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/peas to access
@@ -19,7 +19,7 @@ services:
     network_mode: host
     env_file: ${PANDIR}/env_file
     depends_on:
-      - "peas-shell"  
+      - "peas-shell"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/pocs to access
