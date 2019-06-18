@@ -11,15 +11,15 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
-from pocs.utils.config import load_config
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
 
 from .PID import PID
 
 
 def get_mongodb():
-    from pocs.utils.database import PanDB
+    from panoptes.utils.database import PanDB
     return PanDB()
 
 

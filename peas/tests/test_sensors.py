@@ -5,7 +5,7 @@ import pytest
 import serial
 
 from peas import sensors as sensors_module
-from pocs.utils import rs232
+from panoptes.utils import rs232
 
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
