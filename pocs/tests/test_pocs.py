@@ -1,18 +1,20 @@
 import os
-import pytest
-import time
 import threading
+import time
 
+import pytest
 from astropy import units as u
 
 from pocs import hardware
+from pocs.camera import create_cameras_from_config
 from pocs.core import POCS
 from pocs.observatory import Observatory
+from pocs.scheduler import create_scheduler_from_config
 from pocs.utils import CountdownTimer
-from pocs.utils.messaging import PanMessaging
-from pocs.utils import error
 from pocs.utils import current_time
-from pocs.camera import create_cameras_from_config
+from pocs.utils import error
+from pocs.utils.location import create_location_from_config
+from pocs.utils.messaging import PanMessaging
 
 
 def wait_for_running(sub, max_duration=90):
@@ -42,10 +44,17 @@ def cameras(config):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type, cameras):
+def scheduler(config):
+    site_details = create_location_from_config(config)
+    return create_scheduler_from_config(config, observer=site_details['observer'])
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras, scheduler):
     observatory = Observatory(
         config=config,
         cameras=cameras,
+        scheduler=scheduler,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
