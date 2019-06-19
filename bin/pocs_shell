@@ -19,15 +19,15 @@ from pocs.observatory import Observatory
 from pocs.camera import create_cameras_from_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
-from pocs.utils import current_time
-from pocs.utils import string_to_params
-from pocs.utils import error
-from pocs.utils import images as img_utils
-from pocs.utils.images import fits as fits_utils
-from pocs.utils.images import cr2 as cr2_utils
-from pocs.utils.images import polar_alignment as polar_alignment_utils
-from pocs.utils.database import PanDB
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import current_time
+from panoptes.utils import string_to_params
+from panoptes.utils import error
+from panoptes.utils import images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.images import polar_alignment as polar_alignment_utils
+from panoptes.utils.database import PanDB
+from panoptes.utils.messaging import PanMessaging
 
 
 class PocsShell(Cmd):

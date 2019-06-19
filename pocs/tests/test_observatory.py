@@ -13,7 +13,7 @@ from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from panoptes.utils import error
-from panoptes.utils.location import create_location_from_config
+from pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture

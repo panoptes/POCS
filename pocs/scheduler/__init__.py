@@ -5,9 +5,10 @@ from astropy import units as u
 from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
+from pocs.scheduler.scheduler import BaseScheduler
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
-from panoptes.utils import load_module
+from panoptes.utils.library import load_module
 from panoptes.utils.logger import get_root_logger
 
 

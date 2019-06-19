@@ -8,9 +8,9 @@ from astropy import units as u
 from panoptes.utils import current_time
 from panoptes.utils import DelaySigTerm
 from panoptes.utils import listify
-from panoptes.utils import load_module
 from panoptes.utils import CountdownTimer
 from panoptes.utils import error
+from panoptes.utils.library import load_module
 from pocs.camera import list_connected_cameras
 
 

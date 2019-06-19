@@ -7,8 +7,6 @@ concurrency =
 source =
     peas
     pocs
-omit =
-	pocs/utils/data.py
 parallel = True
 
 [report]

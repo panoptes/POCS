@@ -16,7 +16,7 @@ from pocs.camera import AbstractCamera
 from pocs.images import Image
 from panoptes.utils import current_time
 from panoptes.utils import error
-from panoptes.utils import load_module
+from panoptes.utils.library import load_module
 
 
 class Observatory(PanBase):

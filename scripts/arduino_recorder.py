@@ -7,11 +7,11 @@ import serial
 import sys
 
 from pocs.sensors import arduino_io
-from pocs.utils import DelaySigTerm
-from pocs.utils.config import load_config
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import DelaySigTerm
+from panoptes.utils.config import load_config
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
 
 
 def main(board, port, cmd_port, msg_port, db_type, db_name):

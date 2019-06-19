@@ -5,7 +5,7 @@ from transitions import State
 
 from panoptes.utils import error
 from panoptes.utils import listify
-from panoptes.utils import load_module
+from panoptes.utils.library import load_module
 
 can_graph = False
 try:  # pragma: no cover

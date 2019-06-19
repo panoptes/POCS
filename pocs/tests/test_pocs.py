@@ -13,8 +13,8 @@ from pocs.scheduler import create_scheduler_from_config
 from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
 from panoptes.utils import error
-from panoptes.utils.location import create_location_from_config
 from panoptes.utils.messaging import PanMessaging
+from pocs.utils.location import create_location_from_config
 
 
 def wait_for_running(sub, max_duration=90):

@@ -318,7 +318,7 @@ def test_arduino_io_basic(serial_handlers, memory_db, msg_publisher, msg_subscri
         assert sorted(stored_reading.keys()) == ['_id', 'data', 'date', 'type']
         assert isinstance(stored_reading['_id'], str)
         assert stored_reading['data']['data'] == msg_obj['data']
-        assert isinstance(stored_reading['date'], datetime.datetime)
+        assert isinstance(stored_reading['date'].datetime, datetime.datetime)
         assert stored_reading['type'] == board
 
         # There should be no new messages because we haven't called read_and_record again.

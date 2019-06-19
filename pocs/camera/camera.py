@@ -17,11 +17,11 @@ from pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils import listify
-from panoptes.utils import load_module
 from panoptes.utils import images as img_utils
 from panoptes.utils import get_quantity_value
 from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.library import load_module
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 

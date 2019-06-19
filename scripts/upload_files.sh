@@ -4,7 +4,7 @@ usage() {
   echo -n "
 #############################################################
 # Upload files to Google Cloud Storage bucket.
-# 
+#
 # This script will call the underlying gsutil utility, using
 # the parallel options (-m) by default. This will also write
 # a manifest log into the directory which can be used for upload
@@ -16,7 +16,7 @@ usage() {
 # Note:
 # The SEARCH_PATH and DESTINATION are often similar. Normal invocation
 # is done via $POCS/scripts/upload_image_dir.py. See also the utils in
-# $POCS/pocs/utils/google/storage.py.
+# $PANDIR/panoptes/utils/google/storage.py.
 #
 # Note:
 # The SEARCH_PATH can be any pattern, e.g:
@@ -27,7 +27,7 @@ usage() {
 #     - 'PAN006/Hd189733/7bab97/20180327T071126/' # Specific observation
 #############################################################
  $ $(basename $0) SEARCH_PATH DESTINATION MANIFEST_PATH
- 
+
  Options:
   SEARCH_PATH     The string path to be searched.
   DESTINATION     Remote upload destination.

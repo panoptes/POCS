@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import os
 
-from pocs.utils.config import load_config
-from pocs.utils.images import clean_observation_dir
-from pocs.utils.google.storage import upload_observation_to_bucket
-from pocs.utils import error
+from panoptes.utils.config import load_config
+from panoptes.utils.images import clean_observation_dir
+from panoptes.utils.google.storage import upload_observation_to_bucket
+from panoptes.utils import error
 
 
 def main(directory,

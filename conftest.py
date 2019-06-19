@@ -13,9 +13,9 @@ import subprocess
 import time
 
 from pocs import hardware
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -265,7 +265,7 @@ def messaging_ports():
 
 @pytest.fixture(scope='function')
 def message_forwarder(messaging_ports):
-    cmd = os.path.join(os.getenv('POCS'), 'scripts', 'run_messaging_hub.py')
+    cmd = os.path.join(os.getenv('PANDIR'), 'panoptes-utils', 'scripts', 'run_messaging_hub.py')
     args = [cmd]
     # Note that the other programs using these port pairs consider
     # them to be pub and sub, in that order, but the forwarder sees things
