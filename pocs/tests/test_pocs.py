@@ -8,6 +8,7 @@ from astropy import units as u
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
 from pocs.core import POCS
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils import CountdownTimer
@@ -50,11 +51,17 @@ def scheduler(config):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type, cameras, scheduler):
+def mount(config):
+    return create_dome_from_config(config)
+
+
+@pytest.fixture(scope='function')
+def observatory(config, db_type, cameras, scheduler, mount):
     observatory = Observatory(
         config=config,
         cameras=cameras,
         scheduler=scheduler,
+        mount=mount,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
