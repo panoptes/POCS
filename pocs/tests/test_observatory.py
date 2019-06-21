@@ -141,6 +141,16 @@ def test_primary_camera_no_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
+def test_add_remove_scheduler(config, observatory):
+    conf = config.copy()
+    site_details = create_location_from_config(conf)
+    scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    assert observatory.remove_scheduler() is None
+    assert observatory.scheduler is None
+    assert observatory.add_scheduler(scheduler) is None
+    assert observatory.scheduler is not None
+
+
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()

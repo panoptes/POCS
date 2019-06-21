@@ -14,6 +14,7 @@ import pocs.dome
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
+from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import load_module
@@ -202,6 +203,15 @@ class Observatory(PanBase):
         """
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
+
+    def add_scheduler(self, scheduler):
+        assert isinstance(scheduler, BaseScheduler)
+        self.logger.debug('Adding scheduler')
+        self.scheduler = scheduler
+
+    def remove_scheduler(self):
+        self.logger.debug('Removing scheduler')
+        self.scheduler = None
 
 ##########################################################################
 # Methods
