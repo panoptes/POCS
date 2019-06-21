@@ -36,7 +36,7 @@ fi
 
 cd "$PANDIR"
 docker-compose \
-    --project-directory "${PANDIR}"
+    	--project-directory "${PANDIR}" \
 	-f panoptes-utils/docker/docker-compose.yaml \
 	-f PAWS/docker/docker-compose.yaml \
 	-f POCS/docker/docker-compose.yaml \
