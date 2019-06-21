@@ -52,7 +52,8 @@ def scheduler(config):
 
 @pytest.fixture(scope='function')
 def mount(config):
-    return create_dome_from_config(config)
+    conf = config.copy()
+    return create_dome_from_config(conf)
 
 
 @pytest.fixture(scope='function')
