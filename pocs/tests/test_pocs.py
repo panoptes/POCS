@@ -51,18 +51,17 @@ def scheduler(config):
 
 
 @pytest.fixture(scope='function')
-def mount(config):
-    conf = config.copy()
-    return create_dome_from_config(conf)
+def dome(config):
+    return create_dome_from_config(config)
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type, cameras, scheduler, mount):
+def observatory(config, db_type, cameras, scheduler, dome):
     observatory = Observatory(
         config=config,
         cameras=cameras,
         scheduler=scheduler,
-        mount=mount,
+        dome=dome,
         simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
