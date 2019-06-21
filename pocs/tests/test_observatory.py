@@ -394,7 +394,7 @@ def test_no_dome(observatory):
 def test_operate_dome(config_with_simulated_dome, config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['dome', 'night'])
-    dome = create_dome_from_config(conf)
+    dome = create_dome_from_config(conf, logger=None)
     observatory = Observatory(config=config_with_simulated_dome, dome=dome, simulator=simulator,
                               ignore_local_config=True)
     assert observatory.has_dome
