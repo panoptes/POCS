@@ -1,7 +1,7 @@
 import os
 import yaml
-from contextlib import suppress
 
+from contextlib import suppress
 from astropy import units as u
 from pocs import hardware
 from pocs.utils import listify
@@ -129,10 +129,11 @@ def _parse_config(config):
             'focus_horizon',
             'observe_horizon'
         ]:
-            with suppress(KeyError):
+            with suppress((KeyError, TypeError)):
                 loc[angle] = loc[angle] * u.degree
 
-        loc['elevation'] = loc.get('elevation', 0) * u.meter
+        with suppress((KeyError, TypeError)):
+            loc['elevation'] = loc.get('elevation', 0) * u.meter
 
     # Prepend the base directory to relative dirs
     if 'directories' in config:

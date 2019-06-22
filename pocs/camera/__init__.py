@@ -115,71 +115,70 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
 
     primary_camera = None
 
+    # Different models require different connections methods.
+    model_requires = {
+        'simulator': 'port',
+        'canon_gphoto2': 'port',
+        'sbig': 'serial_number',
+        'zwo': 'serial_number',
+        'fli': 'serial_number',
+    }
+
     device_info = camera_info['devices']
     for cam_num, device_config in enumerate(device_info):
         cam_name = 'Cam{:02d}'.format(cam_num)
 
         if not a_simulator:
-            camera_model = device_config.get('model')
-
             # Assign an auto-detected port. If none are left, skip
             if auto_detect:
                 try:
-                    camera_port = ports.pop()
+                    device_config['port'] = ports.pop()
                 except IndexError:
-                    logger.warning(
-                        "No ports left for {}, skipping.".format(cam_name))
+                    logger.warning("No ports left for {}, skipping.".format(cam_name))
                     continue
             else:
+                # Check for proper connection method.
+                model = device_config['model']
                 try:
-                    camera_port = device_config['port']
-                except KeyError:
-                    raise error.CameraNotFound(
-                        msg="No port specified and auto_detect=False")
-
-            camera_focuser = device_config.get('focuser', None)
-            camera_filterwheel = device_config.get('filterwheel', None)
-            camera_readout = device_config.get('readout_time', 6.0)
+                    connection_method = model_requires[model]
+                    if connection_method not in device_config:
+                        logger.warning(f"Camera error: {connection_method} missing for {model}.")
+                except KeyError as e:
+                    logger.warning(e)
 
         else:
             logger.debug('Using camera simulator.')
             # Set up a simulated camera with fully configured simulated
             # focuser
-            camera_model = 'simulator'
-            camera_port = '/dev/camera/simulator'
-            camera_focuser = {'model': 'simulator',
-                              'focus_port': '/dev/ttyFAKE',
-                              'initial_position': 20000,
-                              'autofocus_range': (40, 80),
-                              'autofocus_step': (10, 20),
-                              'autofocus_seconds': 0.1,
-                              'autofocus_size': 500}
-            camera_filterwheel = {'model': 'simulator',
-                                  'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                                  'move_time': 0.1 * u.second,
-                                  'timeout': 0.5 * u.second}
-            camera_readout = 0.5
+            device_config['model'] = 'simulator'
+            device_config['port'] = '/dev/camera/simulator'
+            device_config['focuser'] = {'model': 'simulator',
+                                        'focus_port': '/dev/ttyFAKE',
+                                        'initial_position': 20000,
+                                        'autofocus_range': (40, 80),
+                                        'autofocus_step': (10, 20),
+                                        'autofocus_seconds': 0.1,
+                                        'autofocus_size': 500}
+            device_config['filterwheel'] = {'model': 'simulator',
+                                            'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                            'move_time': 0.1 * u.second,
+                                            'timeout': 0.5 * u.second}
+            device_config['readout_time'] = 0.5
 
-        camera_set_point = device_config.get('set_point', None)
-        camera_filter = device_config.get('filter_type', None)
+            # Simulator config should always ignore local settings.
+            device_config['ignore_local_config'] = True
 
-        logger.debug('Creating camera: {}'.format(camera_model))
+        logger.debug('Creating camera: {}'.format(device_config['model']))
 
         try:
-            module = load_module('pocs.camera.{}'.format(camera_model))
+            module = load_module('pocs.camera.{}'.format(device_config['model']))
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
-            cam = module.Camera(name=cam_name,
-                                model=camera_model,
-                                port=camera_port,
-                                set_point=camera_set_point,
-                                filter_type=camera_filter,
-                                focuser=camera_focuser,
-                                filterwheel=camera_filterwheel,
-                                readout_time=camera_readout)
+            cam = module.Camera(name=cam_name, **device_config)
+        except error.NotFound:
+            logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
         except Exception as e:
-            # Warn if bad camera but keep trying other cameras
-            logger.error(msg="Cannot find camera type: {} {}".format(camera_model, e))
+            logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:

@@ -105,6 +105,7 @@ export PANDIR POCS PAWS PANLOG PANUSER
 export DO_APT_GET=1
 export DO_MONGODB=1
 export DO_CONDA=1
+export DO_GCLOUD=1
 export DO_REBUILD_CONDA_ENV=0
 export DO_INSTALL_CONDA_PACKAGES=1
 export DO_ASTROMETRY=1
@@ -132,6 +133,7 @@ options:
 --no-astrometry            don't install astrometry.net software
 --no-astrometry-indices    don't install astrometry.net indices
 --no-pip-requirements      don't install python packages
+--no-gcloud                don't install gcloud
 "
 }
 
@@ -188,6 +190,10 @@ while test ${#} -gt 0; do
       DO_ASTROMETRY_INDICES=0
       shift
       ;;
+    --no-gcloud)
+      DO_GCLOUD=0
+      shift
+      ;;
     *)
       echo "Unknown parameter: ${1}"
       echo
@@ -199,47 +205,6 @@ done
 
 #-------------------------------------------------------------------------------
 # Misc helper functions.
-
-# Backup the file whose path is the first arg, and print the path of the
-# backup file. If the file doesn't exist, no path is output.
-function backup_file() {
-  local -r the_original="${1}"
-  if [[ ! -e "${the_original}" ]] ; then
-    return
-  fi
-  if [[ ! -f "${the_original}" ]] ; then
-    echo 1>2 "
-${the_original} is not a regular file, can't copy!
-"
-    exit 1
-  fi
-  local -r the_backup="$(mktemp "${the_original}.backup.XXXXXXX")"
-  cp -p "${the_original}" "${the_backup}"
-  echo "${the_backup}"
-}
-
-function diff_backup_and_file_then_cleanup() {
-  local -r the_backup="${1}"
-  local -r the_file="${2}"
-  if [[ -z "${the_backup}" ]] ; then
-    echo_bar
-    echo
-    echo "Created ${the_file}:"
-    echo
-    cat "${the_file}"
-    echo
-    return
-  fi
-  if ! cmp "${the_backup}" "${the_file}" ; then
-    echo_bar
-    echo
-    echo "Modified ${the_file}:"
-    echo
-    diff -u "${the_backup}" "${the_file}" || /bin/true
-    echo
-  fi
-  rm -f "${the_backup}"
-}
 
 #-------------------------------------------------------------------------------
 # Functions for creating the file in which we record the PANOPTES environment
@@ -264,19 +229,6 @@ function profile_contains_text() {
   fi
 }
 
-# Add the text of the first arg to the PANOPTES environment setup.
-function add_to_panoptes_env_setup() {
-  PANOPTES_ENV_SETUP+=("${1}")
-}
-
-# Append $1 to PATH and write command to do the same to the
-# PANOPTES environment setup.
-function add_to_PATH() {
-  local -r the_dir="$(readlink -f "${1}")"
-  PATH="${the_dir}:${PATH}"
-  PANOPTES_ENV_SETUP+=("PATH=\"${the_dir}:\${PATH}\"")
-}
-
 # Create (or overwrite) the PANOPTES environment setup file,
 # and print a diff showing the changes, if there are any.
 function update_panoptes_env_file() {
@@ -294,55 +246,46 @@ export PANUSER="${USER}"
 . "\${PANDIR}/miniconda/etc/profile.d/conda.sh"
 conda activate panoptes-env
 
-# Add astrometry to the path.
-PATH="${ASTROMETRY_DIR}/bin:\${PATH}"
+if [[ -f "\${POCS}/scripts/install/install/install-helper-functions.sh" ]]
+then
+  source "\${POCS}/scripts/install/install/install-helper-functions.sh"
+  # Add astrometry to the path.
+  prepend_to_PATH "${ASTROMETRY_DIR}/bin"
+  clean_PATH
+else
+  # Add astrometry to the path.
+  PATH="${ASTROMETRY_DIR}/bin:\${PATH}"
+fi
 
 END_OF_FILE
-  # We allow for other (optional) commands to be added by adding to
-  # the array PANOPTES_ENV_SETUP.
-  printf '%s\n' "${PANOPTES_ENV_SETUP[@]}" >>"${PANOPTES_ENV_SH}"
+
   diff_backup_and_file_then_cleanup "${the_backup}" "${PANOPTES_ENV_SH}"
 }
 
 # Arrange for the PANOPTES environment setup file to be used
 # when the rc file of the user's shell is executed.
 function update_shell_rc_file() {
-  if [[ ! -f "${SHELL_RC}" ]] ; then
-    cat >"${SHELL_RC}" <<END_OF_FILE
-# File created by PANOPTES install-dependencies.sh
-source ${PANOPTES_ENV_SH}
-END_OF_FILE
-    echo_bar
-    echo
-    echo "Created ${SHELL_RC}."
-    return
-  fi
-  local -r new_text="source ${PANOPTES_ENV_SH}"
-  if profile_contains_text "${new_text}" ; then
-    # TODO Add logging/verbosity support, so messages like this always
-    # go to the log file, and conditionally to stdout or stderr.
-    echo "Already in ${SHELL_RC}: ${new_text}"
-    return 0
-  fi
-  local  -r the_backup="$(backup_file "${SHELL_RC}")"
-    (cat <<END_OF_FILE; cat "${the_backup}") > "${SHELL_RC}"
-# Added by PANOPTES install-dependencies.sh
-source ${PANOPTES_ENV_SH}
-
-END_OF_FILE
+  ensure_shell_rc_exists
+  local -r the_backup="$(backup_file "${SHELL_RC}")"
+  local -r addition1="# Invoke file created by PANOPTES install-dependencies.sh"
+  local -r addition2=\
+"if [[ -e \"${PANOPTES_ENV_SH}\" ]] ; then source ${PANOPTES_ENV_SH}; fi"
+  # Prepend new lines, so that for non-interactive shells, we have the env
+  # set correctly; necessary because the default .bashrc exits almost
+  # immediately for non-interactive shells.
+  echo "${addition1}" > "${SHELL_RC}"
+  echo "${addition2}" >> "${SHELL_RC}"
+  # Copy existing SHELL_RC contents, minus our two additional lines.
+  ( (fgrep -v -- "PANOPTES install-dependencies.sh" "${the_backup}" || /bin/true) | \
+    (fgrep -v -- "${PANOPTES_ENV_SH}" || /bin/true) ) >> "${SHELL_RC}"
+  # Append the lines again, so that for interactive shells the prompt is
+  # also configured correctly.
+  echo "${addition1}" >> "${SHELL_RC}"
+  echo "${addition2}" >> "${SHELL_RC}"
   diff_backup_and_file_then_cleanup "${the_backup}" "${SHELL_RC}"
 }
 
 #-------------------------------------------------------------------------------
-
-# Given the path to a pkg-config file (.pc), extract the version number.
-function extract_version_from_pkg_config() {
-  if [[ -f "${1}" ]] ; then
-    grep -E '^Version:' "${1}" | cut '-d:' -f2
-  else
-    echo ""
-  fi
-}
 
 function install_mongodb() {
   # This is based on https://www.howtoforge.com/tutorial/install-mongodb-on-ubuntu/
@@ -571,10 +514,16 @@ function maybe_install_conda() {
   conda update -n base --yes --quiet conda
 }
 
+#-------------------------------------------------------------------------------
+# Astrometry support.
+
 function get_installed_astrometry_version() {
   local -r solve_field="${ASTROMETRY_DIR}/bin/solve-field"
   if [[ -x "${solve_field}" ]] ; then
-    "${solve_field}" --help|(grep -E '^Revision [0-9.]+,' || /bin/true)|cut -c10-|cut -d, -f1
+    ("${solve_field}" --help \
+     | (grep -E --only-matching '^Revision [0-9.]+' || /bin/true) \
+     | cut -c10- \
+     | cut -d, -f1)
   fi
 }
 
@@ -788,6 +737,10 @@ if [[ "${DO_ASTROMETRY}" -eq 1 ]] ; then
 fi
 if [[ "${DO_ASTROMETRY_INDICES}" -eq 1 ]] ; then
   (install_astrometry_indices)
+fi
+
+if [[ "${DO_GCLOUD}" -eq 1 ]] ; then
+  "${THIS_DIR}/install-gcloud.sh"
 fi
 
 update_panoptes_env_file
