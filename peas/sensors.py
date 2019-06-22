@@ -1,11 +1,12 @@
+import sys
 
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
+from contextlib import suppress
 
-import sys
 
-from pocs.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
@@ -20,12 +21,7 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self, auto_detect=False, *args, **kwargs):
-        self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
-
-        assert 'environment' in self.config
-        assert type(self.config['environment']) is dict, \
-            self.logger.warning('Environment config variable not set correctly. No sensors listed')
 
         self.db = None
         self.messaging = None
@@ -33,7 +29,7 @@ class ArduinoSerialMonitor(object):
         # Store each serial reader
         self.serial_readers = dict()
 
-        if auto_detect or self.config['environment'].get('auto_detect', False):
+        if auto_detect or get_config('environment.auto_detect', default=False):
             self.logger.debug('Performing auto-detect')
             for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
                 self.logger.info('Found name "{}" on {}', sensor_name, serial_reader.name)
@@ -43,13 +39,9 @@ class ArduinoSerialMonitor(object):
                 }
         else:
             # Try to connect to a range of ports
-            for sensor_name in self.config['environment'].keys():
-                try:
-                    port = self.config['environment'][sensor_name]['serial_port']
-                except TypeError:
-                    continue
-                except KeyError:
-                    continue
+            for sensor_name, sensor_config in get_config('environment', default={}).items():
+                with suppress(TypeError, KeyError):
+                    port = sensor_config['serial_port']
 
                 serial_reader = self._connect_serial(port)
                 self.serial_readers[sensor_name] = {
