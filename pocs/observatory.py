@@ -205,12 +205,20 @@ class Observatory(PanBase):
         del self.cameras[cam_name]
 
     def add_scheduler(self, scheduler):
-        assert isinstance(scheduler, BaseScheduler)
-        self.logger.debug('Adding scheduler')
-        self.scheduler = scheduler
+        """Add scheduler.
+
+        Args:
+            scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
+        """
+        if isinstance(scheduler, BaseScheduler):
+            self.logger.info('Adding scheduler')
+            self.scheduler = scheduler
+        else:
+            self.logger.warning('scheduler is not instance of BaseScheduler class, cannot add.')
 
     def remove_scheduler(self):
-        self.logger.debug('Removing scheduler')
+        """Remove scheduler. """
+        self.logger.info('Removing scheduler')
         self.scheduler = None
 
 ##########################################################################
