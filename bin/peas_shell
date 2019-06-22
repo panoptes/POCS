@@ -14,8 +14,8 @@ from pprint import pprint
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
+from pocs.utils.config import load_config
 from panoptes.utils import current_time
-from panoptes.utils.config import load_config
 from panoptes.utils.database import PanDB
 
 

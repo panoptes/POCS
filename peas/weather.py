@@ -11,7 +11,7 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
-from panoptes.utils.config import load_config
+from pocs.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 

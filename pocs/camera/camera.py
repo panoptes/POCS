@@ -632,6 +632,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
         fits_utils.update_observation_headers(file_path, info)
+        self.logger.debug("Finished FITS headers: {}".format(file_path))
         return file_path
 
     def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):

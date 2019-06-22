@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 
-from panoptes.utils.config import load_config
+from pocs.utils.config import load_config
 from panoptes.utils.images import clean_observation_dir
 from panoptes.utils.google.storage import upload_observation_to_bucket
 from panoptes.utils import error

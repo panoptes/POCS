@@ -5,8 +5,8 @@ from serial.tools.list_ports import comports as list_comports
 
 import sys
 
+from pocs.utils.config import load_config
 from panoptes.utils.database import PanDB
-from panoptes.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.rs232 import SerialData

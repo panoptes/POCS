@@ -15,7 +15,7 @@ from astropy.time import Time
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
 
-from panoptes.utils.config import load_config
+from pocs.utils.config import load_config
 from panoptes.utils import serializers as json_util
 
 import matplotlib as mpl
@@ -184,7 +184,7 @@ class WeatherPlotter(object):
         print('  Determining sunrise, sunset, and twilight times')
 
         if config is None:
-            from panoptes.utils.config import load_config as pocs_config
+            from pocs.utils.config import load_config as pocs_config
             config = pocs_config()['location']
 
         location = EarthLocation(

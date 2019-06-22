@@ -8,7 +8,7 @@ import copy
 import pytest
 
 import pocs.base
-from panoptes.utils.config import load_config
+from pocs.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
 
 # Global variable with the default config; we read it once, copy it each time it is needed.
@@ -27,7 +27,7 @@ def config(images_dir, messaging_ports):
 
     global _one_time_config
     if not _one_time_config:
-        _one_time_config = load_config(ignore_local=True, simulator=['all'])
+        _one_time_config = load_config(ignore_local=True, simulator=['all'], parse=True)
         # Set several fields to fixed values.
         _one_time_config['db']['name'] = 'panoptes_testing'
         _one_time_config['name'] = 'PAN000'  # Make sure always testing with PAN000

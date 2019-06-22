@@ -7,8 +7,8 @@ import serial
 import sys
 
 from pocs.sensors import arduino_io
+from pocs.utils.config import load_config
 from panoptes.utils import DelaySigTerm
-from panoptes.utils.config import load_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
@@ -23,6 +23,7 @@ def main(board, port, cmd_port, msg_port, db_type, db_name):
     sub = PanMessaging.create_subscriber(cmd_port)
     pub = PanMessaging.create_publisher(msg_port)
     aio = arduino_io.ArduinoIO(board, serial_data, db, pub, sub)
+
     def request_to_stop_running(**kwargs):
         aio.stop_running = True
     with DelaySigTerm(callback=request_to_stop_running):
