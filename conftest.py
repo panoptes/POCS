@@ -201,9 +201,10 @@ def config_server(config_port, images_dir, db_name):
     time.sleep(1)
 
     # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
     logger.info(f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_id, port=config_port)
+    set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
     logger.info(f'Setting testing database to {unit_id}')
