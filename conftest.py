@@ -183,7 +183,7 @@ def images_dir(tmpdir_factory):
     return str(directory)
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def config_server(config_port, images_dir, db_name):
     cmd = os.path.join(os.getenv('PANDIR'),
                        'panoptes-utils',
