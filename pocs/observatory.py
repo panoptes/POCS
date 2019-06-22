@@ -17,6 +17,7 @@ from pocs.images import Image
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.library import load_module
+from panoptes.utils.config.client import get_config
 
 
 class Observatory(PanBase):
@@ -51,14 +52,14 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
-        self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
+        self.dome = pocs.dome.create_dome_from_config(get_config(), logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = scheduler
 
         self.current_offset_info = None
 
-        self._image_dir = self.config['directories']['images']
+        self._image_dir = get_config('directories.images')
         self.logger.info('\t Observatory initialized')
 
 ##########################################################################
@@ -77,7 +78,7 @@ class Observatory(PanBase):
         if at_time is None:
             at_time = current_time()
         try:
-            horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
+            horizon_deg = get_config(f'location.{horizon}_horizon')
         except KeyError:
             self.logger.info(f"Can't find {horizon}_horizon, using -18°")
             horizon_deg = -18 * u.degree
@@ -291,7 +292,7 @@ class Observatory(PanBase):
         reread_fields_file = (
             self.scheduler.has_valid_observations is False or
             kwargs.get('reread_fields_file', False) or
-            self.config['scheduler'].get('check_file', False)
+            get_config('scheduler.check_file', default=False)
         )
 
         # This will set the `current_observation`
@@ -318,22 +319,13 @@ class Observatory(PanBase):
                 on local hard drive, default to config item `observations.keep_jpgs` then True.
         """
         if upload_images is None:
-            try:
-                upload_images = self.config.get('panoptes_network', {})['image_storage']
-            except KeyError:
-                upload_images = False
+            upload_images = get_config('panoptes_network.image_storage', default=False)
 
         if make_timelapse is None:
-            try:
-                make_timelapse = self.config['observations']['make_timelapse']
-            except KeyError:
-                make_timelapse = True
+            make_timelapse = get_config('observations.make_timelapse', default=True)
 
         if keep_jpgs is None:
-            try:
-                keep_jpgs = self.config['observations']['keep_jpgs']
-            except KeyError:
-                keep_jpgs = True
+            keep_jpgs = get_config('observations.keep_jpgs', default=True)
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -346,7 +338,7 @@ class Observatory(PanBase):
             self.logger.debug("Housekeeping for {}".format(observation))
 
             observation_dir = os.path.join(
-                self.config['directories']['images'],
+                self._image_dir,
                 'fields',
                 observation.field.field_name
             )
@@ -549,7 +541,7 @@ class Observatory(PanBase):
             'longitude': self.location.get('longitude').value,
             'moon_fraction': self.observer.moon_illumination(t0),
             'moon_separation': field.coord.separation(moon).value,
-            'observer': self.config.get('name', ''),
+            'observer': get_config('name', default=''),
             'origin': 'Project PANOPTES',
             'tracking_rate_ra': self.mount.tracking_rate,
         }
@@ -670,7 +662,7 @@ class Observatory(PanBase):
         self.logger.debug('Setting up site details of observatory')
 
         try:
-            config_site = self.config.get('location')
+            config_site = get_config('location')
 
             name = config_site.get('name', 'Nameless Location')
 
@@ -723,11 +715,11 @@ class Observatory(PanBase):
             pocs.mount:     Returns a sub-class of the mount type
         """
         if mount_info is None:
-            mount_info = self.config.get('mount')
+            mount_info = get_config('mount', default={})
 
         model = mount_info.get('model')
 
-        if 'mount' in self.config.get('simulator', []):
+        if 'mount' in get_config('simulator', default=[]):
             model = 'simulator'
             driver = 'simulator'
             mount_info['simulator'] = True
