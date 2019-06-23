@@ -1,5 +1,6 @@
 import os
 import pytest
+from contextlib import suppress
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
@@ -7,6 +8,7 @@ from astropy import units as u
 from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
 from panoptes.utils.config.client import get_config
+from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture
@@ -16,17 +18,17 @@ def location(config_port):
 
 
 @pytest.fixture(scope="function")
-def mount(config, location):
-    try:
+def mount(config_port, location):
+    with suppress(KeyError):
         del os.environ['POCSTIME']
-    except KeyError:
-        pass
 
-    config['mount'] = {
-        'brand': 'bisque',
-        'template_dir': 'resources/bisque',
-    }
-    return Mount(location=location, config=config)
+    set_config('mount',
+               {
+                   'brand': 'bisque',
+                   'template_dir': 'resources/bisque',
+               }, port=config_port)
+
+    return Mount(location=location, config_port=config_port)
 
 
 @pytest.mark.with_mount

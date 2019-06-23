@@ -1,8 +1,6 @@
 import os
-import time
 
 import pytest
-from astropy import units as u
 from astropy.time import Time
 
 import pocs.version

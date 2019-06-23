@@ -150,7 +150,6 @@ class Mount(AbstractSerialMount):
 
             expected_version = self.commands.get('version').get('response')
             expected_mount_info = self.commands.get('mount_info').get('response')
-            # expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron
@@ -254,7 +253,7 @@ class Mount(AbstractSerialMount):
         # Time
         self.query('disable_daylight_savings')
 
-        gmt_offset = self.config.get('location').get('gmt_offset', 0)
+        gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.query('set_gmt_offset', gmt_offset)
 
         now = current_time() + gmt_offset * u.minute
