@@ -1,4 +1,5 @@
 import sys
+from requests.exceptions import ConnectionError
 
 from pocs import __version__
 from panoptes.utils.database import PanDB
@@ -18,12 +19,12 @@ class PanBase(object):
 
         self._config_port = config_port
 
-        # Check to make sure config has some items we need
-        self._check_config()
-
         self.logger = kwargs.get('logger')
         if not self.logger:
             self.logger = get_root_logger()
+
+        # Check to make sure config has some items we need
+        self._check_config()
 
         # Get passed DB or set up new connection
         _db = kwargs.get('db', None)
@@ -48,7 +49,13 @@ class PanBase(object):
             *args: Passed to get_client
             **kwargs: Passed to get_client
         """
-        return client.get_config(port=self._config_port, *args, **kwargs)
+        config_value = None
+        try:
+            config_value = client.get_config(port=self._config_port, *args, **kwargs)
+        except ConnectionError as e:
+            self.logger.critical(f'Cannot connect to config_server: {e!r}')
+
+        return config_value
 
     def _check_config(self):
         """ Checks the config file for mandatory items """
