@@ -207,7 +207,7 @@ def config_server(config_port, images_dir, db_name):
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.info(f'Setting testing database to {unit_id}')
+    logger.info(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
