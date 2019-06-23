@@ -5,13 +5,13 @@ from pocs.camera.simulator import Camera
 
 
 # Ugly hack to access id inside fixture
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def focuser(config_port):
     # Simulated focuser, just create one and return it
     return SimFocuser(config_port=config_port)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tolerance(focuser):
     """
     Tolerance for confirming focuser has moved to the requested position. The Birger may be
@@ -78,7 +78,8 @@ def test_camera_init(config_port):
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'}, config_port=config_port)
+    sim_camera = Camera(focuser={'model': 'simulator',
+                                 'focus_port': '/dev/ttyFAKE'}, config_port=config_port)
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid
