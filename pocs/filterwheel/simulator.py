@@ -1,5 +1,4 @@
 import math
-import time
 import random
 import threading
 
@@ -28,6 +27,7 @@ class FilterWheel(AbstractFilterWheel):
             either direction, if False (default) will similate a filter wheel that only moves in
             one direction.
     """
+
     def __init__(self,
                  name='Simulated Filter Wheel',
                  model='simulator',

@@ -10,11 +10,12 @@ from pocs.camera.simulator import Camera as SimCamera
 from panoptes.utils import error
 
 
-@pytest.fixture(scope='module')
-def filterwheel():
+@pytest.fixture(scope='function')
+def filterwheel(config_port):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
-                                     timeout=0.5 * u.second)
+                                     timeout=0.5 * u.second,
+                                     config_port=config_port)
     return sim_filterwheel
 
 # intialisation
@@ -25,30 +26,31 @@ def test_init(filterwheel):
     assert filterwheel.is_connected
 
 
-def test_camera_init():
+def test_camera_init(config_port):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
-                                        'filter_names': ['one', 'deux', 'drei', 'quattro']})
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro']},
+                           config_port=config_port)
     assert isinstance(sim_camera.filterwheel, SimFilterWheel)
     assert sim_camera.filterwheel.is_connected
     assert sim_camera.filterwheel.uid
     assert sim_camera.filterwheel.camera is sim_camera
 
 
-def test_camera_no_filterwheel():
-    sim_camera = SimCamera()
+def test_camera_no_filterwheel(config_port):
+    sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.filterwheel is None
 
 
-def test_camera_association_on_init():
-    sim_camera = SimCamera()
+def test_camera_association_on_init(config_port):
+    sim_camera = SimCamera(config_port=config_port)
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
-                                     camera=sim_camera)
+                                     camera=sim_camera, config_port=config_port)
     assert sim_filterwheel.camera is sim_camera
 
 
-def test_with_no_name():
+def test_with_no_name(config_port):
     with pytest.raises(ValueError):
-        sim_filterwheel = SimFilterWheel()
+        SimFilterWheel(config_port=config_port)
 
 # Basic property getting and (not) setting
 
@@ -133,10 +135,11 @@ def test_move_bad_name(filterwheel):
         filterwheel.move_to('cinco')
 
 
-def test_move_timeout(caplog):
+def test_move_timeout(config_port, caplog):
     slow_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                       move_time=0.1,
-                                      timeout=0.2)
+                                      timeout=0.2,
+                                      config_port=config_port)
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
     time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
     assert caplog.records[-1].levelname == 'ERROR'  # Should have logged an ERROR by now
@@ -147,11 +150,12 @@ def test_move_timeout(caplog):
 @pytest.mark.parametrize("name,bidirectional, expected",
                          [("monodirectional", False, 0.3),
                           ("bidirectional", True, 0.1)])
-def test_move_times(name, bidirectional, expected):
+def test_move_times(config_port, name, bidirectional, expected):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
                                      move_bidirectional=bidirectional,
-                                     timeout=0.5 * u.second)
+                                     timeout=0.5 * u.second,
+                                     config_port=config_port)
     sim_filterwheel.position = 1
     assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == \
         pytest.approx(0.1, rel=4e-2)
@@ -161,13 +165,15 @@ def test_move_times(name, bidirectional, expected):
         pytest.approx(expected, rel=4e-2)
 
 
-def test_move_exposing(tmpdir, caplog):
+def test_move_exposing(config_port, tmpdir, caplog):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
-                                        'filter_names': ['one', 'deux', 'drei', 'quattro']})
+                                        'filter_names': ['one', 'deux', 'drei', 'quattro']},
+                           config_port=config_port)
     fits_path = str(tmpdir.join('test_exposure.fits'))
     exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)
     with pytest.raises(error.PanError):
-        sim_camera.filterwheel.move_to(2, blocking=True)  # Attempt to move while camera is exposing
+        # Attempt to move while camera is exposing
+        sim_camera.filterwheel.move_to(2, blocking=True)
     assert caplog.records[-1].levelname == 'ERROR'
     assert sim_camera.filterwheel.position == 1  # Should not have moved
     exp_event.wait()
