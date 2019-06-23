@@ -118,7 +118,6 @@ def pytest_runtest_logstart(nodeid, location):
     """
     try:
         logger = get_root_logger()
-        logger.critical('')
         logger.critical('##########' * 8)
         logger.critical('     START TEST {}', nodeid)
         logger.critical('')
@@ -140,7 +139,6 @@ def pytest_runtest_logfinish(nodeid, location):
         logger = get_root_logger()
         logger.critical('')
         logger.critical('       END TEST {}', nodeid)
-        logger.critical('')
         logger.critical('##########' * 8)
     except Exception:
         pass
@@ -192,7 +190,7 @@ def config_server(config_port, images_dir, db_name):
     args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
 
     logger = get_root_logger()
-    logger.info(f'Starting config_server for testing function: {args!r}')
+    logger.critical(f'Starting config_server for testing function: {args!r}')
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     logger.info(f'config_server started with PID={proc.pid}')
@@ -222,7 +220,7 @@ def config_server(config_port, images_dir, db_name):
     set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
 
     yield
-    logger.info(f'Killing config_server started with PID={proc.pid}')
+    logger.critical(f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
 

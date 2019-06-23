@@ -20,10 +20,10 @@ def config_server(config_port, images_dir, db_name):
     args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
 
     logger = get_root_logger()
-    logger.info(f'Starting config_server for testing function: {args!r}')
+    logger.debug(f'Starting config_server for testing function: {args!r}')
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.info(f'config_server started with PID={proc.pid}')
+    logger.critical(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -31,26 +31,26 @@ def config_server(config_port, images_dir, db_name):
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    logger.debug(f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.info(f'Setting testing database to {db_name}')
+    logger.debug(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
-    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.info(f'Setting temporary image directory for testing')
+    logger.debug(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator
     set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
 
     yield
-    logger.info(f'Killing config_server started with PID={proc.pid}')
+    logger.critical(f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
 
