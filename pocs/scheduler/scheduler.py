@@ -56,7 +56,7 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        if not self.config['scheduler'].get('check_file', False):
+        if not self.get_config('scheduler.check_file', default=False):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
@@ -232,10 +232,10 @@ class BaseScheduler(PanBase):
             field_config['exptime'] = float(field_config['exptime']) * u.second
 
         self.logger.debug("Adding {} to scheduler", field_config['name'])
-        field = Field(field_config['name'], field_config['position'])
+        field = Field(field_config['name'], field_config['position'], config_port=self._config_port)
 
         try:
-            obs = Observation(field, **field_config)
+            obs = Observation(field, config_port=self._config_port, **field_config)
         except Exception:
             raise error.InvalidObservation(
                 "Skipping invalid field config: {}".format(field_config))
@@ -280,7 +280,7 @@ class BaseScheduler(PanBase):
 
     def set_common_properties(self, time):
 
-        horizon_limit = self.config['location'].get('observe_horizon', -18 * u.degree)
+        horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
         self.common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
             'moon': get_moon(time, self.observer.location),
