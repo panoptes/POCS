@@ -211,11 +211,14 @@ def config_server(config_port, images_dir, db_name):
 
     fields_file = 'simulator.yaml'
     logger.info(f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', db_name, port=config_port)
+    set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
     logger.info(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
+
+    # Make everything a simulator
+    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
 
     yield
     logger.info(f'Killing config_server started with PID={proc.pid}')
