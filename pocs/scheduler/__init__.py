@@ -10,14 +10,17 @@ from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
 from panoptes.utils.logger import get_root_logger
+from panoptes.utils.config.client import get_config
 
 
-def create_scheduler_from_config(config, observer=None):
+def create_scheduler_from_config(config_port=6563, observer=None):
     """ Sets up the scheduler that will be used by the observatory """
 
     logger = get_root_logger()
 
-    if 'scheduler' not in config:
+    scheduler_config = get_config('scheduler', default=None, port=config_port)
+
+    if scheduler_config is None or len(scheduler_config) == 0:
         logger.info("No scheduler in config")
         return None
 
@@ -25,23 +28,21 @@ def create_scheduler_from_config(config, observer=None):
         logger.info("No valid Observer found.")
         return None
 
-    scheduler_config = config.get('scheduler', {})
     scheduler_type = scheduler_config.get('type', 'dispatch')
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(config['directories']['targets'], fields_file)
+    fields_path = os.path.join(get_config('directories.targets', port=config_port), fields_file)
     logger.debug('Creating scheduler: {}'.format(fields_path))
 
     if os.path.exists(fields_path):
 
         try:
             # Load the required module
-            module = load_module(
-                'pocs.scheduler.{}'.format(scheduler_type))
+            module = load_module(f'pocs.scheduler.{scheduler_type}')
 
-            obstruction_list = config['location'].get('obstructions', list())
-            default_horizon = config['location'].get('horizon', 30 * u.degree)
+            obstruction_list = get_config('location.obstructions', [], port=config_port)
+            default_horizon = get_config('location.horizon', default=30 * u.degree, port=config_port)
 
             horizon_line = horizon_utils.Horizon(
                 obstructions=obstruction_list,

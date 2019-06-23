@@ -4,9 +4,10 @@ from astropy.coordinates import EarthLocation
 
 from panoptes.utils import error
 from panoptes.utils.logger import get_root_logger
+from panoptes.utils.config.client import get_config
 
 
-def create_location_from_config(config, logger=None):
+def create_location_from_config(config_port=6563, logger=None):
     """
      Sets up the site and location details.
 
@@ -27,7 +28,7 @@ def create_location_from_config(config, logger=None):
     logger.debug('Setting up site details')
 
     try:
-        config_site = config.get('location')
+        config_site = get_config('location', port=config_port)
 
         name = config_site.get('name', 'Nameless Location')
 
