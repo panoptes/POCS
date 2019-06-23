@@ -7,128 +7,102 @@ from astropy.time import Time
 
 import pocs.version
 from pocs import hardware
-from pocs.camera import create_cameras_from_config
 from pocs.observatory import Observatory
-from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from panoptes.utils import error
+from panoptes.utils.config.client import set_config
+
+from pocs.camera import create_simulator_cameras
+from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
 
 
-@pytest.fixture
-def simulator():
-    """ We assume everything runs on a simulator
-
-    Tests that require real hardware should be marked with the appropriate
-    fixture (see `conftest.py`)
-    """
-    return hardware.get_all_names(without=['night'])
+@pytest.fixture(scope='function')
+def cameras(config_port):
+    return create_simulator_cameras(config_port=config_port)
 
 
 @pytest.fixture
-def observatory(config, simulator, images_dir):
+def observatory(config_port, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
-    site_details = create_location_from_config(config)
-    scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
-    obs = Observatory(config=config,
-                      scheduler=scheduler,
-                      simulator=simulator,
-                      ignore_local_config=True)
-    cameras = create_cameras_from_config(config)
+    site_details = create_location_from_config(config_port=config_port)
+    scheduler = create_scheduler_from_config(
+        observer=site_details['observer'], config_port=config_port)
+    obs = Observatory(scheduler=scheduler,
+                      config_port=config_port,
+                      )
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
     return obs
 
 
-def test_camera_already_exists(observatory, config):
-    cameras = create_cameras_from_config(config)
+def test_camera_already_exists(observatory, cameras, config_port):
     for cam_name, cam in cameras.items():
         observatory.add_camera(cam_name, cam)
 
 
-def test_remove_cameras(observatory, config):
-    cameras = create_cameras_from_config(config)
+def test_remove_cameras(observatory, cameras, config_port):
     for cam_name, cam in cameras.items():
         observatory.remove_camera(cam_name)
 
 
-def test_error_exit(config):
-    # TODO Describe why this is expected to fail, and how it is different
-    # from the other tests, esp. test_bad_mount_port.
-    # pytest.set_trace()
-    with pytest.raises(SystemExit):
-        Observatory(ignore_local_config=True, config=config, simulator=['none'])
-
-
-def test_bad_site(simulator, config):
-    conf = config.copy()
-    conf['location'] = {}
+def test_bad_site(config_port):
+    set_config('location', {}, port=config_port)
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        Observatory(config_port=config_port)
 
 
-def test_bad_mount_port(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = '/dev/'
+def test_bad_mount_port(config_port):
+    # Remove mount simulator
+    set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
+
+    set_config('mount.serial.port', '/dev/', port=config_port)
     with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        Observatory(config_port=config_port)
 
 
 @pytest.mark.without_mount
-def test_bad_mount_driver(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['driver'] = 'foobar'
+def test_bad_mount_driver(config_port):
+    # Remove mount simulator
+    set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
+
+    set_config('mount.driver', 'foobar', port=config_port)
     with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        Observatory(config_port=config_port)
 
 
-def test_can_observe(config, caplog):
-    conf = config.copy()
-    obs = Observatory(config=conf)
+def test_can_observe(config_port, caplog):
+    obs = Observatory(config_port=config_port)
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Scheduler not present, cannot observe."
-    site_details = create_location_from_config(conf)
-    obs.scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    site_details = create_location_from_config(config_port=config_port)
+    obs.scheduler = create_scheduler_from_config(
+        observer=site_details['observer'], config_port=config_port)
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
 
 
-def test_camera_wrong_type(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['camera'])
+def test_camera_wrong_type(config_port):
+    # Remove mount simulator
+    set_config('simulator', hardware.get_all_names(without='camera'), port=config_port)
 
     with pytest.raises(AttributeError):
-        Observatory(simulator=simulator,
-                    cameras=[Time.now()],
-                    config=conf,
-                    auto_detect=False,
-                    ignore_local_config=True
-                    )
+        Observatory(cameras=[Time.now()],
+                    config_port=config_port)
 
     with pytest.raises(AssertionError):
-        Observatory(simulator=simulator,
-                    cameras={'Cam00': Time.now()},
-                    config=conf,
-                    auto_detect=False,
-                    ignore_local_config=True
-                    )
+        Observatory(cameras={'Cam00': Time.now()},
+                    config_port=config_port)
 
 
-def test_camera(config):
-    conf = config.copy()
-    cameras = create_cameras_from_config(conf)
-    obs = Observatory(
-        cameras=cameras,
-        config=conf,
-        auto_detect=False,
-        ignore_local_config=True
-    )
+def test_camera(config_port):
+    cameras = create_simulator_cameras(config_port=config_port)
+    obs = Observatory(cameras=cameras,
+                      config_port=config_port)
     assert obs.has_cameras
 
 
@@ -167,8 +141,8 @@ def test_default_config(observatory):
 
     assert observatory.location is not None
     assert observatory.location.get('elevation').value == pytest.approx(
-        observatory.config['location']['elevation'].value, rel=1 * u.meter)
-    assert observatory.location.get('horizon') == observatory.config['location']['horizon']
+        observatory.get_config('location.elevation').value, rel=1)
+    assert observatory.location.get('horizon') == observatory.get_config('location.horizon')
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
 
@@ -276,6 +250,53 @@ def test_observe(observatory):
     assert len(observatory.scheduler.observed_list) == 0
 
 
+# def test_cleanup_missing_config_keys(observatory):
+#     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+
+#     observatory.get_observation()
+#     camera_events = observatory.observe()
+
+#     while not all([event.is_set() for name, event in camera_events.items()]):
+#         time.sleep(1)
+
+#     observatory.cleanup_observations()
+#     del observatory.config['panoptes_network']
+#     observatory.cleanup_observations()
+
+#     observatory.get_observation()
+
+#     observatory.cleanup_observations()
+#     del observatory.config['observations']['make_timelapse']
+#     observatory.cleanup_observations()
+
+#     observatory.get_observation()
+
+#     observatory.cleanup_observations()
+#     del observatory.config['observations']['keep_jpgs']
+#     observatory.cleanup_observations()
+
+#     observatory.get_observation()
+
+#     observatory.cleanup_observations()
+#     observatory.config['pan_id'] = 'PAN99999999'
+#     observatory.cleanup_observations()
+
+#     observatory.get_observation()
+
+#     observatory.cleanup_observations()
+#     del observatory.config['pan_id']
+#     observatory.cleanup_observations()
+
+#     observatory.get_observation()
+
+#     # Now use parameters
+#     observatory.cleanup_observations(
+#         upload_images=False,
+#         make_timelapse=False,
+#         keep_jpgs=True
+#     )
+
+
 def test_autofocus_disconnected(observatory):
     # 'Disconnect' simulated cameras which will cause
     # autofocus to fail with errors and no events returned.
@@ -285,8 +306,7 @@ def test_autofocus_disconnected(observatory):
     assert events == {}
 
 
-def test_autofocus_all(observatory, images_dir):
-    observatory.config['directories']['images'] = images_dir
+def test_autofocus_all(observatory):
     events = observatory.autofocus_cameras()
     # Two simulated cameras
     assert len(events) == 2
@@ -295,16 +315,14 @@ def test_autofocus_all(observatory, images_dir):
         event.wait()
 
 
-def test_autofocus_coarse(observatory, images_dir):
-    observatory.config['directories']['images'] = images_dir
+def test_autofocus_coarse(observatory):
     events = observatory.autofocus_cameras(coarse=True)
     assert len(events) == 2
     for event in events.values():
         event.wait()
 
 
-def test_autofocus_named(observatory, images_dir):
-    observatory.config['directories']['images'] = images_dir
+def test_autofocus_named(observatory):
     cam_names = [name for name in observatory.cameras.keys()]
     # Call autofocus on just one camera.
     events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
@@ -341,10 +359,17 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_with_simulated_dome):
-    simulator = hardware.get_all_names(without=['dome', 'night'])
-    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
-                              ignore_local_config=True)
+def test_operate_dome(config_port):
+    # Remove dome and night simulator
+    set_config('simulator', hardware.get_all_names(without=['dome', 'night']), port=config_port)
+
+    # Add dome to config
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
+
+    observatory = Observatory(config_port=config_port)
     assert observatory.has_dome
     assert observatory.open_dome()
     assert observatory.dome.is_open

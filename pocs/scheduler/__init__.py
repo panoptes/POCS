@@ -19,6 +19,7 @@ def create_scheduler_from_config(config_port=6563, observer=None):
     logger = get_root_logger()
 
     scheduler_config = get_config('scheduler', default=None, port=config_port)
+    logger.info(f'scheduler_config: {scheduler_config!r}')
 
     if scheduler_config is None or len(scheduler_config) == 0:
         logger.info("No scheduler in config")
@@ -41,8 +42,9 @@ def create_scheduler_from_config(config_port=6563, observer=None):
             # Load the required module
             module = load_module(f'pocs.scheduler.{scheduler_type}')
 
-            obstruction_list = get_config('location.obstructions', [], port=config_port)
-            default_horizon = get_config('location.horizon', default=30 * u.degree, port=config_port)
+            obstruction_list = get_config('location.obstructions', default=[], port=config_port)
+            default_horizon = get_config(
+                'location.horizon', default=30 * u.degree, port=config_port)
 
             horizon_line = horizon_utils.Horizon(
                 obstructions=obstruction_list,
@@ -51,14 +53,16 @@ def create_scheduler_from_config(config_port=6563, observer=None):
 
             # Simple constraint for now
             constraints = [
-                Altitude(horizon=horizon_line),
-                MoonAvoidance(),
-                Duration(default_horizon)
+                Altitude(horizon=horizon_line, config_port=config_port),
+                MoonAvoidance(config_port=config_port),
+                Duration(default_horizon, config_port=config_port)
             ]
 
             # Create the Scheduler instance
-            scheduler = module.Scheduler(
-                observer, fields_file=fields_path, constraints=constraints)
+            scheduler = module.Scheduler(observer,
+                                         fields_file=fields_path,
+                                         constraints=constraints,
+                                         config_port=config_port)
             logger.debug("Scheduler created")
         except error.NotFound as e:
             raise error.NotFound(msg=e)

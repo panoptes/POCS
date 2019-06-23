@@ -169,7 +169,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
     return cameras
 
 
-def create_simulator_cameras(num_cameras=2, logger=None, **kwargs):
+def create_simulator_cameras(num_cameras=2, config_port='6563', logger=None, **kwargs):
     """Create simulator camera object(s).
 
     Args:
@@ -202,7 +202,7 @@ def create_simulator_cameras(num_cameras=2, logger=None, **kwargs):
     primary_camera = None
 
     devices = list()
-    for cam_num in num_cameras:
+    for cam_num in range(num_cameras):
         cam_name = 'SimCam{:02d}'.format(cam_num)
 
         logger.debug('Using camera simulator.')
@@ -233,7 +233,7 @@ def create_simulator_cameras(num_cameras=2, logger=None, **kwargs):
             module = load_module('pocs.camera.{}'.format(device_config['model']))
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
-            cam = module.Camera(name=cam_name, **device_config)
+            cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
         except error.NotFound:
             logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
         except Exception as e:

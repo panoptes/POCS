@@ -17,7 +17,6 @@ from pocs.images import Image
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.library import load_module
-from panoptes.utils.config.client import get_config
 
 
 class Observatory(PanBase):
@@ -28,7 +27,7 @@ class Observatory(PanBase):
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
         self.logger.info('Initializing observatory')
 
         # Setup information about site location
@@ -52,36 +51,40 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
-        self.dome = pocs.dome.create_dome_from_config(get_config(), logger=self.logger)
+        self.dome = pocs.dome.create_dome_from_config(
+            self.get_config(), config_port=self._config_port, logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = scheduler
 
         self.current_offset_info = None
 
-        self._image_dir = get_config('directories.images')
+        self._image_dir = self.get_config('directories.images')
         self.logger.info('\t Observatory initialized')
 
 ##########################################################################
 # Helper methods
 ##########################################################################
 
-    def is_dark(self, horizon='observe', at_time=None):
+    def is_dark(self, horizon='observe', default_dark=-18 * u.degree, at_time=None):
         """If sun is below horizon.
 
         Args:
             horizon (str, optional): Which horizon to use, 'flat', 'focus', or
                 'observe' (default).
+            default_dark (`astropy.unit.Quantity`, optional): The default horizon
+                for when it is considered "dark". Default is astronomical twilight,
+                -18 degrees.
             at_time (None or `astropy.time.Time`, optional): Time at which to
                 check if dark, defaults to now.
+
+        Returns:
+            bool: If it is dark or not.
         """
         if at_time is None:
             at_time = current_time()
-        try:
-            horizon_deg = get_config(f'location.{horizon}_horizon')
-        except KeyError:
-            self.logger.info(f"Can't find {horizon}_horizon, using -18°")
-            horizon_deg = -18 * u.degree
+
+        horizon_deg = self.get_config(f'location.{horizon}_horizon', default=default_dark)
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
@@ -292,7 +295,7 @@ class Observatory(PanBase):
         reread_fields_file = (
             self.scheduler.has_valid_observations is False or
             kwargs.get('reread_fields_file', False) or
-            get_config('scheduler.check_file', default=False)
+            self.get_config('scheduler.check_file', default=False)
         )
 
         # This will set the `current_observation`
@@ -319,13 +322,13 @@ class Observatory(PanBase):
                 on local hard drive, default to config item `observations.keep_jpgs` then True.
         """
         if upload_images is None:
-            upload_images = get_config('panoptes_network.image_storage', default=False)
+            upload_images = self.get_config('panoptes_network.image_storage', default=False)
 
         if make_timelapse is None:
-            make_timelapse = get_config('observations.make_timelapse', default=True)
+            make_timelapse = self.get_config('observations.make_timelapse', default=True)
 
         if keep_jpgs is None:
-            keep_jpgs = get_config('observations.keep_jpgs', default=True)
+            keep_jpgs = self.get_config('observations.keep_jpgs', default=True)
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
@@ -541,7 +544,7 @@ class Observatory(PanBase):
             'longitude': self.location.get('longitude').value,
             'moon_fraction': self.observer.moon_illumination(t0),
             'moon_separation': field.coord.separation(moon).value,
-            'observer': get_config('name', default=''),
+            'observer': self.get_config('name', default=''),
             'origin': 'Project PANOPTES',
             'tracking_rate_ra': self.mount.tracking_rate,
         }
@@ -662,7 +665,7 @@ class Observatory(PanBase):
         self.logger.debug('Setting up site details of observatory')
 
         try:
-            config_site = get_config('location')
+            config_site = self.get_config('location')
 
             name = config_site.get('name', 'Nameless Location')
 
@@ -697,8 +700,8 @@ class Observatory(PanBase):
                 lat=latitude, lon=longitude, height=elevation)
             self.observer = Observer(
                 location=self.earth_location, name=name, timezone=timezone)
-        except Exception:
-            raise error.PanError(msg='Bad site information')
+        except Exception as e:
+            raise error.PanError(msg=f'Bad site information: {e!r}')
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.
@@ -715,11 +718,11 @@ class Observatory(PanBase):
             pocs.mount:     Returns a sub-class of the mount type
         """
         if mount_info is None:
-            mount_info = get_config('mount', default={})
+            mount_info = self.get_config('mount', default={})
 
         model = mount_info.get('model')
 
-        if 'mount' in get_config('simulator', default=[]):
+        if 'mount' in self.get_config('simulator', default=[]):
             model = 'simulator'
             driver = 'simulator'
             mount_info['simulator'] = True
@@ -749,6 +752,6 @@ class Observatory(PanBase):
         module = load_module('pocs.mount.{}'.format(driver))
 
         # Make the mount include site information
-        self.mount = module.Mount(location=self.earth_location)
+        self.mount = module.Mount(location=self.earth_location, config_port=self._config_port)
 
         self.logger.debug('Mount created')

@@ -18,7 +18,7 @@ class AbstractSerialMount(AbstractMount):
 
         # Setup our serial connection at the given port
         try:
-            serial_config = self.config('mount.serial')
+            serial_config = self.get_config('mount.serial')
             self.serial = rs232.SerialData(**serial_config)
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")

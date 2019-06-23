@@ -5,7 +5,7 @@ from panoptes.utils.library import load_module
 import panoptes.utils.logger as logger_module
 
 
-def create_dome_from_config(config, logger=None):
+def create_dome_from_config(config, config_port='6563', logger=None):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -28,7 +28,7 @@ def create_dome_from_config(config, logger=None):
         driver = dome_config['driver']
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
     module = load_module('pocs.dome.{}'.format(driver))
-    dome = module.Dome(config=config)
+    dome = module.Dome(config=config, config_port=config_port)
     logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
     return dome
 
@@ -53,8 +53,8 @@ class AbstractDome(PanBase):
         caller doesn't need to know the params needed by a specific type of
         dome interface class.
         """
-        super().__init__(*args, **kwargs)
-        self._dome_config = self.config['dome']
+        PanBase.__init__(self, *args, **kwargs)
+        self._dome_config = self.get_config('dome')
 
         # Sub-class directly modifies this property to record changes.
         self._is_connected = False
