@@ -276,53 +276,6 @@ def test_observe(observatory):
     assert len(observatory.scheduler.observed_list) == 0
 
 
-def test_cleanup_missing_config_keys(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
-
-    observatory.get_observation()
-    camera_events = observatory.observe()
-
-    while not all([event.is_set() for name, event in camera_events.items()]):
-        time.sleep(1)
-
-    observatory.cleanup_observations()
-    del observatory.config['panoptes_network']
-    observatory.cleanup_observations()
-
-    observatory.get_observation()
-
-    observatory.cleanup_observations()
-    del observatory.config['observations']['make_timelapse']
-    observatory.cleanup_observations()
-
-    observatory.get_observation()
-
-    observatory.cleanup_observations()
-    del observatory.config['observations']['keep_jpgs']
-    observatory.cleanup_observations()
-
-    observatory.get_observation()
-
-    observatory.cleanup_observations()
-    observatory.config['pan_id'] = 'PAN99999999'
-    observatory.cleanup_observations()
-
-    observatory.get_observation()
-
-    observatory.cleanup_observations()
-    del observatory.config['pan_id']
-    observatory.cleanup_observations()
-
-    observatory.get_observation()
-
-    # Now use parameters
-    observatory.cleanup_observations(
-        upload_images=False,
-        make_timelapse=False,
-        keep_jpgs=True
-    )
-
-
 def test_autofocus_disconnected(observatory):
     # 'Disconnect' simulated cameras which will cause
     # autofocus to fail with errors and no events returned.
