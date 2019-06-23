@@ -14,7 +14,7 @@ from pprint import pprint
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
-from pocs.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils import current_time
 from panoptes.utils.database import PanDB
 
@@ -34,7 +34,6 @@ class PanSensorShell(cmd.Cmd):
     captured_data = list()
     messaging = None
 
-    config = load_config(config_files=['peas'])
 
 ##################################################################################################
 # Generic Methods
@@ -126,12 +125,6 @@ class PanSensorShell(cmd.Cmd):
             except Exception:
                 print_error("Can't change log level for {}".format(sensor))
 
-    def do_display_config(self, config):
-        """ Display the config file for PEAS """
-        if self.config:
-            pprint(self.config)
-        else:
-            print_warning("No config file for PEAS.")
 
 ##################################################################################################
 # Load Methods
@@ -159,10 +152,8 @@ class PanSensorShell(cmd.Cmd):
         if self._keep_looping:
             print_error('The timer loop is already running.')
             return
-        try:
-            port = self.config['weather']['aag_cloud']['serial_port']
-        except KeyError:
-            port = '/dev/ttyUSB0'
+
+        port = get_config('weather.aag_cloud.serial_port', default='/dev/ttyUSB0')
 
         print("Loading AAG Cloud Sensor on {}".format(port))
         self.weather = AAGCloudSensor(serial_address=port, store_result=True)

@@ -1,44 +1,14 @@
 import pytest
 
 from pocs.focuser.simulator import Focuser as SimFocuser
-from pocs.focuser.birger import Focuser as BirgerFocuser
-from pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from pocs.camera.simulator import Camera
-from pocs.utils.config import load_config
-
-params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
-ids = ['simulator', 'birger', 'focuslynx']
 
 
 # Ugly hack to access id inside fixture
-@pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
-def focuser(request):
-    if request.param[0] == SimFocuser:
-        # Simulated focuser, just create one and return it
-        return request.param[0]()
-    else:
-        # Load the local config file and look for focuser configurations of the specified type
-        focuser_configs = []
-        local_config = load_config('pocs_local', ignore_local=True)
-        camera_info = local_config.get('cameras')
-        if camera_info:
-            # Local config file has a cameras section
-            camera_configs = camera_info.get('devices')
-            if camera_configs:
-                # Local config file camera section has a devices list
-                for camera_config in camera_configs:
-                    focuser_config = camera_config.get('focuser', None)
-                    if focuser_config and focuser_config['model'] == request.param[1]:
-                        # Camera config has a focuser section, and it's the right type
-                        focuser_configs.append(focuser_config)
-
-        if not focuser_configs:
-            pytest.skip(
-                "Found no {} configurations in pocs_local.yaml, skipping tests".format(
-                    request.param[1]))
-
-        # Create and return a Focuser based on the first config
-        return request.param[0](**focuser_configs[0])
+@pytest.fixture(scope='module')
+def focuser(config_port):
+    # Simulated focuser, just create one and return it
+    return SimFocuser(config_port=config_port)
 
 
 @pytest.fixture(scope='module')
@@ -47,12 +17,7 @@ def tolerance(focuser):
     Tolerance for confirming focuser has moved to the requested position. The Birger may be
     1 or 2 encoder steps off.
     """
-    if isinstance(focuser, SimFocuser):
-        return 0
-    elif isinstance(focuser, BirgerFocuser):
-        return 2
-    elif isinstance(focuser, FocusLynxFocuser):
-        return 0
+    return 0
 
 
 def test_init(focuser):
@@ -95,12 +60,12 @@ def test_move_above_max_positons(focuser, tolerance):
     assert focuser.position == pytest.approx(focuser.max_position, tolerance)
 
 
-def test_camera_association(focuser):
+def test_camera_association(config_port, focuser):
     """
     Test association of Focuser with Camera after initialisation (getter, setter)
     """
-    sim_camera_1 = Camera()
-    sim_camera_2 = Camera()
+    sim_camera_1 = Camera(config_port=config_port)
+    sim_camera_2 = Camera(config_port=config_port)
     # Cameras in the fixture haven't been associated with a Camera yet, this should work
     focuser.camera = sim_camera_1
     assert focuser.camera is sim_camera_1
@@ -109,21 +74,21 @@ def test_camera_association(focuser):
     assert focuser.camera is sim_camera_1
 
 
-def test_camera_init():
+def test_camera_init(config_port):
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'}, config_port=config_port)
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid
     assert sim_camera.focuser.camera is sim_camera
 
 
-def test_camera_association_on_init():
+def test_camera_association_on_init(config_port):
     """
     Test association of Focuser with Camera during Focuser init
     """
-    sim_camera = Camera()
-    focuser = SimFocuser(camera=sim_camera)
+    sim_camera = Camera(config_port=config_port)
+    focuser = SimFocuser(camera=sim_camera, config_port=config_port)
     assert focuser.camera is sim_camera

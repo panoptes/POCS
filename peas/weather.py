@@ -11,7 +11,7 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
-from pocs.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 
@@ -102,11 +102,10 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None, store_result=True):
-        self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
 
         # Read configuration
-        self.cfg = self.config['weather']['aag_cloud']
+        self.cfg = get_config('weather.aag_cloud')
 
         self.safety_delay = self.cfg.get('safety_delay', 15.)
 

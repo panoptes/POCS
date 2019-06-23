@@ -1,28 +1,20 @@
 import os
 import matplotlib.colors as colours
-from matplotlib import cm as colormap
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-from astropy.modeling import models, fitting
-from scipy.ndimage import binary_dilation
-
 import numpy as np
+from scipy.ndimage import binary_dilation
+from astropy.modeling import models, fitting
 
-from copy import copy
 from threading import Event
 from threading import Thread
-
 
 from pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils.images import focus as focus_utils
-
-palette = copy(colormap.inferno)
-palette.set_over('w', 1.0)
-palette.set_under('k', 1.0)
-palette.set_bad('g', 1.0)
+from panoptes.utils.images.plot import get_palette
 
 
 class AbstractFocuser(PanBase):
@@ -69,7 +61,8 @@ class AbstractFocuser(PanBase):
                  autofocus_merit_function_kwargs=None,
                  autofocus_mask_dilations=None,
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+        PanBase.__init__(self, *args, **kwargs)
 
         self.model = model
         self.port = port
@@ -333,7 +326,7 @@ class AbstractFocuser(PanBase):
                           focus_type, self._camera, initial_focus)
 
         # Set up paths for temporary focus files, and plots if requested.
-        image_dir = self.config['directories']['images']
+        image_dir = self.get_config('directories.images')
         start_time = current_time(flatten=True)
         file_path_root = os.path.join(image_dir,
                                       'focus',
@@ -488,7 +481,7 @@ class AbstractFocuser(PanBase):
 
             ax1 = fig.add_subplot(3, 1, 1)
             im1 = ax1.imshow(initial_thumbnail, interpolation='none',
-                             cmap=palette, norm=colours.LogNorm())
+                             cmap=get_palette(), norm=colours.LogNorm())
             fig.colorbar(im1)
             ax1.set_title('Initial focus position: {}'.format(initial_focus))
 
@@ -516,7 +509,7 @@ class AbstractFocuser(PanBase):
 
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(final_thumbnail, interpolation='none',
-                             cmap=palette, norm=colours.LogNorm())
+                             cmap=get_palette(), norm=colours.LogNorm())
             fig.colorbar(im3)
             ax3.set_title('Final focus position: {}'.format(final_focus))
             plot_path = os.path.join(file_path_root, '{}_focus.png'.format(focus_type))

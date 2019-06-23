@@ -16,6 +16,7 @@ from pocs import hardware
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
+from panoptes.utils.config.client import set_config
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -165,6 +166,62 @@ def pytest_runtest_logreport(report):
         pass
 
 
+@pytest.fixture(scope='session')
+def config_port():
+    return '6565'
+
+
+@pytest.fixture(scope='session')
+def db_name():
+    return 'panoptes_testing'
+
+
+@pytest.fixture(scope='session')
+def images_dir(tmpdir_factory):
+    directory = tmpdir_factory.mktemp('images')
+    return str(directory)
+
+
+@pytest.fixture(scope='function', autouse=True)
+def config_server(config_port, images_dir, db_name):
+    cmd = os.path.join(os.getenv('PANDIR'),
+                       'panoptes-utils',
+                       'scripts',
+                       'run_config_server.py'
+                       )
+    args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
+
+    logger = get_root_logger()
+    logger.info(f'Starting config_server for testing function: {args!r}')
+
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    logger.info(f'config_server started with PID={proc.pid}')
+
+    time.sleep(1)
+
+    # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
+    unit_id = 'PAN000'
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    set_config('name', unit_name, port=config_port)
+    set_config('pan_id', unit_id, port=config_port)
+
+    logger.info(f'Setting testing database to {db_name}')
+    set_config('db.name', db_name, port=config_port)
+
+    fields_file = 'simulator.yaml'
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    set_config('scheduler.fields_file', db_name, port=config_port)
+
+    # TODO(wtgee): determine if we need separate directories for each module.
+    logger.info(f'Setting temporary image directory for testing')
+    set_config('directories.images', images_dir, port=config_port)
+
+    yield
+    logger.info(f'Killing config_server started with PID={proc.pid}')
+    proc.terminate()
+
+
 @pytest.fixture
 def temp_file():
     temp_file = 'temp'
@@ -208,12 +265,12 @@ def fake_logger():
     return FakeLogger()
 
 
-def can_connect_to_mongo():
+def can_connect_to_mongo(db_name):
     global _can_connect_to_mongo
     if _can_connect_to_mongo is None:
         logger = get_root_logger()
         try:
-            PanDB(db_type='mongo', db_name='panoptes_testing', logger=logger, connect=True)
+            PanDB(db_type='mongo', db_name=db_name, logger=logger, connect=True)
             _can_connect_to_mongo = True
         except Exception:
             _can_connect_to_mongo = False
@@ -237,16 +294,16 @@ def db_type(request):
 
 
 @pytest.fixture(scope='function')
-def db(db_type):
+def db(db_type, db_name):
     return PanDB(
-        db_type=db_type, db_name='panoptes_testing', logger=get_root_logger(), connect=True)
+        db_type=db_type, db_name=db_name, logger=get_root_logger(), connect=True)
 
 
 @pytest.fixture(scope='function')
-def memory_db():
+def memory_db(db_name):
     PanDB.permanently_erase_database(
         'memory', 'panoptes_testing', really='Yes', dangerous='Totally')
-    return PanDB(db_type='memory', db_name='panoptes_testing')
+    return PanDB(db_type='memory', db_name=db_name)
 
 
 # -----------------------------------------------------------------------

@@ -6,13 +6,12 @@ from astropy import units as u
 
 from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
-from pocs.utils.config import load_config
+from panoptes.utils.config.client import get_config
 
 
 @pytest.fixture
-def location():
-    config = load_config(ignore_local=True)
-    loc = config['location']
+def location(config_port):
+    loc = get_config('location', port=config_port)
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 

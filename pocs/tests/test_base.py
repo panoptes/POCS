@@ -1,24 +1,22 @@
 import pytest
 
 from pocs.base import PanBase
+from panoptes.utils.config.client import set_config
 
 
-def test_check_config1(config):
-    del config['mount']
-    base = PanBase()
+def test_mount_in_config(config_port):
+    set_config('mount', {}, port=config_port)
     with pytest.raises(SystemExit):
-        base._check_config(config)
+        PanBase(config_port=config_port)
 
 
-def test_check_config2(config):
-    del config['directories']
-    base = PanBase()
+def test_directories_in_config(config_port):
+    set_config('directories', {}, port=config_port)
     with pytest.raises(SystemExit):
-        base._check_config(config)
+        PanBase(config_port=config_port)
 
 
-def test_check_config3(config):
-    del config['state_machine']
-    base = PanBase()
+def test_state_machine_in_config(config_port):
+    set_config('state_machine', {}, port=config_port)
     with pytest.raises(SystemExit):
-        base._check_config(config)
+        PanBase(config_port=config_port)

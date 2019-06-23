@@ -5,34 +5,34 @@ import yaml
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
-
 from astroplan import Observer
 
 from pocs.scheduler.dispatch import Scheduler
-
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-
-@pytest.fixture
-def constraints():
-    return [MoonAvoidance(), Duration(30 * u.deg)]
+from panoptes.utils.config.client import get_config
 
 
 @pytest.fixture
-def observer(config):
-    loc = config['location']
+def constraints(config_port):
+    return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
+
+
+@pytest.fixture
+def observer(config_port):
+    loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
-def field_file(config):
-    scheduler_config = config.get('scheduler', {})
+def field_file(config_port):
+    scheduler_config = get_config('scheduler', default={}, port=config_port)
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(config['directories']['targets'], fields_file)
+    fields_path = os.path.join(get_config('directories.targets', port=config_port), fields_file)
 
     return fields_path
 
@@ -82,13 +82,19 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list, observer, constraints):
-    return Scheduler(observer, fields_list=field_list, constraints=constraints)
+def scheduler(config_port, field_list, observer, constraints):
+    return Scheduler(observer,
+                     fields_list=field_list,
+                     constraints=constraints,
+                     config_port=config_port)
 
 
 @pytest.fixture
-def scheduler_from_file(field_file, observer, constraints):
-    return Scheduler(observer, fields_file=field_file, constraints=constraints)
+def scheduler_from_file(config_port, field_file, observer, constraints):
+    return Scheduler(observer,
+                     fields_file=field_file,
+                     constraints=constraints,
+                     config_port=config_port)
 
 
 def test_get_observation(scheduler):
@@ -100,14 +106,17 @@ def test_get_observation(scheduler):
     assert isinstance(best[1], float)
 
 
-def test_get_observation_reread(field_list, observer, temp_file, constraints):
+def test_get_observation_reread(config_port, field_list, observer, temp_file, constraints):
     time = Time('2016-08-13 10:00:00')
 
     # Write out the field list
     with open(temp_file, 'w') as f:
         f.write(yaml.dump(field_list))
 
-    scheduler = Scheduler(observer, fields_file=temp_file, constraints=constraints)
+    scheduler = Scheduler(observer,
+                          fields_file=temp_file,
+                          constraints=constraints,
+                          config_port=config_port)
 
     # Get observation as above
     best = scheduler.get_observation(time=time)
