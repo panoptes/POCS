@@ -13,7 +13,6 @@ from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
-from pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils import listify
@@ -22,6 +21,7 @@ from panoptes.utils import get_quantity_value
 from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
+from pocs.base import PanBase
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 
@@ -64,7 +64,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                  focuser=None,
                  filterwheel=None,
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         self.model = model
         self.port = port
@@ -588,7 +588,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             file_path = filename
 
-        unit_id = self.config['pan_id']
+        unit_id = self.get_config('pan_id')
 
         # Make the image_id
         image_id = '{}_{}_{}'.format(
@@ -661,13 +661,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
-                    self.logger.critical("Couldn't import {} module {}!".format(
-                        class_name, module_name))
+                    self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
                 else:
                     subcomponent_kwargs = copy.copy(subcomponent)
-                    subcomponent_kwargs.update({'camera': self, 'config': self.config})
-                    setattr(self, sub_name, getattr(module, class_name)(**subcomponent_kwargs))
+                    subcomponent_kwargs.update({'camera': self})
+
+                    # Create the actual component
+                    subcomponent_object = getattr(module, class_name)
+                    subcomponent_instance = subcomponent_object(config_port=self._config_port,
+                                                                **subcomponent_kwargs)
+
+                    # Attach as attribute
+                    setattr(self, sub_name, subcomponent_instance)
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
