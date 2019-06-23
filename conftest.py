@@ -192,7 +192,7 @@ def config_server(config_port, images_dir, db_name):
     args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
 
     logger = get_root_logger()
-    logger.info(f'Starting config_server for testing session: {args!r}')
+    logger.info(f'Starting config_server for testing function: {args!r}')
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     logger.info(f'config_server started with PID={proc.pid}')
