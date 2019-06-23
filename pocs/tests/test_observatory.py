@@ -1,4 +1,6 @@
 import os
+import time
+import subprocess
 
 import pytest
 from astropy.time import Time
@@ -10,10 +12,56 @@ from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
+from panoptes.utils.logger import get_root_logger
 
 from pocs.camera import create_simulator_cameras
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
+
+
+# Override default config_server and use function scope so we can change some values cleanly.
+@pytest.fixture(scope='function')
+def config_server(config_port, images_dir, db_name):
+    cmd = os.path.join(os.getenv('PANDIR'),
+                       'panoptes-utils',
+                       'scripts',
+                       'run_config_server.py'
+                       )
+    args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
+
+    logger = get_root_logger()
+    logger.info(f'Starting config_server for testing function: {args!r}')
+
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    logger.info(f'config_server started with PID={proc.pid}')
+
+    # Give server time to start
+    time.sleep(1)
+
+    # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
+    unit_id = 'PAN000'
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    set_config('name', unit_name, port=config_port)
+    set_config('pan_id', unit_id, port=config_port)
+
+    logger.info(f'Setting testing database to {db_name}')
+    set_config('db.name', db_name, port=config_port)
+
+    fields_file = 'simulator.yaml'
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    set_config('scheduler.fields_file', fields_file, port=config_port)
+
+    # TODO(wtgee): determine if we need separate directories for each module.
+    logger.info(f'Setting temporary image directory for testing')
+    set_config('directories.images', images_dir, port=config_port)
+
+    # Make everything a simulator
+    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
+
+    yield
+    logger.info(f'Killing config_server started with PID={proc.pid}')
+    proc.terminate()
 
 
 @pytest.fixture(scope='function')
@@ -46,13 +94,13 @@ def test_remove_cameras(observatory, cameras, config_port):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(config_port):
+def test_bad_site(config_server, config_port):
     set_config('location', {}, port=config_port)
     with pytest.raises(error.PanError):
         Observatory(config_port=config_port)
 
 
-def test_bad_mount_port(config_port):
+def test_bad_mount_port(config_server, config_port):
     # Remove mount simulator
     set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
 
@@ -62,7 +110,7 @@ def test_bad_mount_port(config_port):
 
 
 @pytest.mark.without_mount
-def test_bad_mount_driver(config_port):
+def test_bad_mount_driver(config_server, config_port):
     # Remove mount simulator
     set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
 
@@ -84,7 +132,7 @@ def test_can_observe(config_port, caplog):
         -1].message == "Cameras not present, cannot observe."
 
 
-def test_camera_wrong_type(config_port):
+def test_camera_wrong_type(config_server, config_port):
     # Remove mount simulator
     set_config('simulator', hardware.get_all_names(without='camera'), port=config_port)
 
@@ -357,7 +405,7 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_port):
+def test_operate_dome(config_server, config_port):
     # Remove dome and night simulator
     set_config('simulator', hardware.get_all_names(without=['dome', 'night']), port=config_port)
 

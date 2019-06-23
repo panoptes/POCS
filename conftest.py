@@ -182,7 +182,7 @@ def images_dir(tmpdir_factory):
     return str(directory)
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def config_server(config_port, images_dir, db_name):
     cmd = os.path.join(os.getenv('PANDIR'),
                        'panoptes-utils',
@@ -197,6 +197,7 @@ def config_server(config_port, images_dir, db_name):
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     logger.info(f'config_server started with PID={proc.pid}')
 
+    # Give server time to start
     time.sleep(1)
 
     # Adjust various config items for testing
