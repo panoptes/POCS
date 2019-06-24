@@ -145,11 +145,11 @@ def test_add_remove_scheduler(config, observatory, caplog):
     conf = config.copy()
     site_details = create_location_from_config(conf)
     scheduler = create_scheduler_from_config(conf, site_details['observer'])
-    assert observatory.remove_scheduler() is None
+    observatory.remove_scheduler()
     assert observatory.scheduler is None
-    assert observatory.add_scheduler(scheduler) is None
+    observatory.add_scheduler(scheduler)
     assert observatory.scheduler is not None
-    assert observatory.add_scheduler("scheduler") is None
+    observatory.add_scheduler("scheduler")
     assert caplog.records[-1].levelname == "WARNING" and caplog.records[
         -1].message == "scheduler is not instance of BaseScheduler class, cannot add."
 
