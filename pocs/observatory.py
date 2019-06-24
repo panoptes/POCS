@@ -10,7 +10,6 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-import pocs.dome
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
@@ -21,7 +20,7 @@ from panoptes.utils.library import load_module
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, scheduler=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, dome=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -49,10 +48,7 @@ class Observatory(PanBase):
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
-        # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
-        # here compared to that for the mount.
-        self.dome = pocs.dome.create_dome_from_config(
-            self.get_config(), config_port=self._config_port, logger=self.logger)
+        self.dome = dome
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = scheduler
@@ -153,7 +149,8 @@ class Observatory(PanBase):
           * Cameras
           * Mount
 
-        If any of the above are not present then a log message is generated and the property returns False.
+        If any of the above are not present then a log message is generated and
+        the property returns False.
 
         Returns:
             bool: True if observations are possible, False otherwise.

@@ -9,6 +9,7 @@ from astropy import units as u
 from pocs import hardware
 
 from pocs.core import POCS
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
@@ -106,6 +107,10 @@ def site_details(config_port):
     return create_location_from_config(config_port=config_port)
 
 
+def dome(config_port, scope='function'):
+    return create_dome_from_config(config_port=config_port)
+
+
 @pytest.fixture(scope='function')
 def scheduler(config_port, site_details):
     return create_scheduler_from_config(config_port=config_port,
@@ -145,7 +150,8 @@ def pocs_with_dome(config_port, db_type, scheduler):
     set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    observatory = Observatory(scheduler=scheduler, config_port=config_port)
+    dome = create_dome_from_config(config_port)
+    observatory = Observatory(scheduler=scheduler, dome=dome, config_port=config_port)
     pocs = POCS(observatory, config_port=config_port)
     yield pocs
     pocs.power_down()

@@ -7,6 +7,8 @@ from astropy.time import Time
 
 import pocs.version
 from pocs import hardware
+from pocs.camera import create_cameras_from_config
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
@@ -81,12 +83,14 @@ def cameras(config_port):
 @pytest.fixture
 def observatory(config_port, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
-    site_details = create_location_from_config(config_port=config_port)
-    scheduler = create_scheduler_from_config(
-        observer=site_details['observer'], config_port=config_port)
+
+    site_details = create_location_from_config(config_port)
+    scheduler = create_scheduler_from_config(config_port,
+                                             observer=site_details['observer'])
+    dome = create_dome_from_config(config_port)
     obs = Observatory(scheduler=scheduler,
-                      config_port=config_port,
-                      )
+                      dome=dome,
+                      config_port=config_port)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
@@ -418,13 +422,14 @@ def test_operate_dome(config_server, config_port):
     # Remove dome and night simulator
     set_config('simulator', hardware.get_all_names(without=['dome', 'night']), port=config_port)
 
-    # Add dome to config
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
     }, port=config_port)
 
-    observatory = Observatory(config_port=config_port)
+    dome = create_dome_from_config(config_port)
+    observatory = Observatory(dome=dome, config_port=config_port)
+
     assert observatory.has_dome
     assert observatory.open_dome()
     assert observatory.dome.is_open

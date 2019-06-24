@@ -2,10 +2,11 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 from pocs.base import PanBase
 from panoptes.utils.library import load_module
-import panoptes.utils.logger as logger_module
+from panoptes.utils.config.client import get_config
+from panoptes.utils.logger import get_root_logger
 
 
-def create_dome_from_config(config, config_port='6563', logger=None):
+def create_dome_from_config(config_port='6563', logger=None):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -13,8 +14,11 @@ def create_dome_from_config(config, config_port='6563', logger=None):
     independent actuators, for example slit, rotation and vents. Those would need to be handled
     by a single dome driver class.
     """
+    config = get_config(port=config_port)
+
     if not logger:
-        logger = logger_module.get_root_logger()
+        logger = get_root_logger()
+
     if 'dome' not in config:
         logger.info('No dome in config.')
         return None
