@@ -20,10 +20,10 @@
 # @pytest.fixture(scope='function')
 # def serial_handlers():
 #     # Install our test handlers for the duration.
-#     serial.protocol_handler_packages.insert(0, 'pocs.serial_handlers')
+#     serial.protocol_handler_packages.insert(0, 'panoptes.utils.tests.serial_handlers')
 #     yield True
 #     # Remove our test handlers.
-#     serial.protocol_handler_packages.remove('pocs.serial_handlers')
+#     serial.protocol_handler_packages.remove('panoptes.utils.tests.serial_handlers')
 
 
 # def get_serial_port_info():

@@ -135,7 +135,7 @@ class AbstractFilterWheel(PanBase):
 
     def connect(self):
         """ Connect to filter wheel """
-        raise NotImplementError
+        raise NotImplementedError
 
     def move_to(self, position, blocking=False):
         """
@@ -159,6 +159,7 @@ class AbstractFilterWheel(PanBase):
             and a serial number, e.g. the following selects a g band filter without having to
             know its full name.
 
+            >>> from pocs.filterwheel.filterwheel import AbstractFilterWheel as FilterWheel
             >>> fw = FilterWheel(filter_names=['u_12', 'g_04', 'r_09', 'i_20', 'z_07'])
             >>> fw_event = fw.move_to('g')
             >>> fw_event.wait()

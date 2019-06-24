@@ -71,7 +71,7 @@ if __name__ == '__main__':
     if args.port and not args.simulate:
         port = args.port
     elif args.simulate and not args.port:
-        serial.protocol_handler_packages.insert(0, 'pocs.serial_handlers')
+        serial.protocol_handler_packages.insert(0, 'panoptes.utils.tests.serial_handlers')
         port = 'arduinosimulator://?board=' + board.replace('_board', '')
     else:
         arg_error('Must specify exactly one of --port or --simulate')

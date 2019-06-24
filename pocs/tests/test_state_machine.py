@@ -8,8 +8,8 @@ from panoptes.utils import error
 
 
 @pytest.fixture
-def observatory():
-    observatory = Observatory(simulator=['all'])
+def observatory(config_port):
+    observatory = Observatory(simulator=['all'], config_port=config_port)
 
     yield observatory
 
@@ -19,8 +19,8 @@ def test_bad_state_machine_file():
         POCS.load_state_table(state_table_name='foo')
 
 
-def test_load_bad_state(observatory):
-    pocs = POCS(observatory)
+def test_load_bad_state(observatory, config_port):
+    pocs = POCS(observatory, config_port=config_port)
 
     with pytest.raises(error.InvalidConfig):
         pocs._load_state('foo')

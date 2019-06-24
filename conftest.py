@@ -165,6 +165,11 @@ def pytest_runtest_logreport(report):
 
 
 @pytest.fixture(scope='session')
+def config_host():
+    return 'localhost'
+
+
+@pytest.fixture(scope='session')
 def config_port():
     return '6565'
 
@@ -180,14 +185,27 @@ def images_dir(tmpdir_factory):
     return str(directory)
 
 
+@pytest.fixture(scope='session')
+def config_path():
+    return os.path.join(os.getenv('POCS'),
+                        'pocs',
+                        'tests',
+                        'pocs_testing.yaml'
+                        )
+
+
 @pytest.fixture(scope='session', autouse=True)
-def config_server(config_port, images_dir, db_name):
+def config_server(config_path, config_host, config_port, images_dir, db_name):
     cmd = os.path.join(os.getenv('PANDIR'),
                        'panoptes-utils',
                        'scripts',
                        'run_config_server.py'
                        )
-    args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
+    args = [cmd, '--config-file', config_path,
+            '--host', config_host,
+            '--port', config_port,
+            '--ignore-local',
+            '--no-save']
 
     logger = get_root_logger()
     logger.critical(f'Starting config_server for testing function: {args!r}')

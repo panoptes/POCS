@@ -20,15 +20,24 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
 
+@pytest.fixture(scope='module')
+def config_port():
+    return '4861'
+
+
 # Override default config_server and use function scope so we can change some values cleanly.
 @pytest.fixture(scope='function')
-def config_server(config_port, images_dir, db_name):
+def config_server(config_path, config_host, config_port, images_dir, db_name):
     cmd = os.path.join(os.getenv('PANDIR'),
                        'panoptes-utils',
                        'scripts',
                        'run_config_server.py'
                        )
-    args = [cmd, '--host', 'localhost', '--port', config_port, '--ignore-local', '--no-save']
+    args = [cmd, '--config-file', config_path,
+            '--host', config_host,
+            '--port', config_port,
+            '--ignore-local',
+            '--no-save']
 
     logger = get_root_logger()
     logger.debug(f'Starting config_server for testing function: {args!r}')

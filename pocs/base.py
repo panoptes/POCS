@@ -53,7 +53,9 @@ class PanBase(object):
         try:
             config_value = client.get_config(port=self._config_port, *args, **kwargs)
         except ConnectionError as e:
-            self.logger.critical(f'Cannot connect to config_server: {e!r}')
+            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+        except Exception as e:
+            self.logger.critical(f'Exception connecting to config_server: {e!r}')
 
         return config_value
 
@@ -67,5 +69,9 @@ class PanBase(object):
         ]
 
         for item in items_to_check:
-            if len(self.get_config(item, default={})) == 0:
+            config_item = self.get_config(item, default={})
+            if config_item is None:
+                self.logger.critical(f'Problem looking up {item} in _check_config')
+                self.logger.critical(f'Using {self._config_port}')
+            if config_item is None or len(config_item) == 0:
                 sys.exit(f'{item} must be specified in config, exiting')

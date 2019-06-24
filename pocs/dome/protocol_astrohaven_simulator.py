@@ -5,7 +5,7 @@ import threading
 import time
 
 from pocs.dome import astrohaven
-from pocs.tests import serial_handlers
+from panoptes.utils.tests import serial_handlers
 import panoptes.utils.logger
 
 Protocol = astrohaven.Protocol

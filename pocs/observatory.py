@@ -445,7 +445,8 @@ class Observatory(PanBase):
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            current_image = Image(image_path, location=self.earth_location)
+            current_image = Image(image_path, location=self.earth_location,
+                                  config_port=self._config_port)
 
             solve_info = current_image.solve_field(skip_solved=False)
 

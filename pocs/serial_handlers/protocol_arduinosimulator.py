@@ -15,7 +15,7 @@ import threading
 import time
 import urllib
 
-from pocs.tests import serial_handlers
+from panoptes.utils.tests import serial_handlers
 import panoptes.utils.logger
 
 
