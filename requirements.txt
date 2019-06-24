@@ -6,9 +6,10 @@ coveralls
 dateparser
 gcloud
 google-cloud-storage
-matplotlib >= 2.0.0,<3.0.0
+matplotlib
 mocket
-numpy >= 1.12.1, !=1.15.3
+numpy !=1.15.3
+photutils
 pycodestyle == 2.3.1
 pymongo >= 3.2.2
 pyserial >= 3.1.1
@@ -22,8 +23,4 @@ scikit_image >= 0.12.3
 scipy >= 0.17.1
 transitions >= 0.4.0
 tweepy
-
-# requests 2.21 doesn't like urllib3 >=1.25
-urllib3 >= 1.24, < 1.25  
-
 wcsaxes
