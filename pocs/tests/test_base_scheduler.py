@@ -54,8 +54,9 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
         try:
             logger.info(f'Seeing if config_server is alive {i}')
             temp_config = get_config(port=config_port)
-            logger.info(f'Found temp_config, config_server is alive.')
-            break
+            if temp_config is not None:
+                logger.info(f'Found temp_config, config_server is alive.')
+                break
         except Exception:
             i += 1
 
