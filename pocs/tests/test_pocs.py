@@ -2,7 +2,6 @@ import os
 import time
 import threading
 import pytest
-import subprocess
 
 from astropy import units as u
 
@@ -15,66 +14,11 @@ from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.messaging import PanMessaging
-from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config.client import set_config
 
 from pocs.camera import create_simulator_cameras
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
-
-
-@pytest.fixture(scope='function')
-def config_port():
-    return '4861'
-
-
-# Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
-
-    logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
-
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
-
-    # Give server time to start
-    time.sleep(1)
-
-    # Adjust various config items for testing
-    unit_name = 'Generic PANOPTES Unit'
-    unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_name, port=config_port)
-    set_config('pan_id', unit_id, port=config_port)
-
-    logger.debug(f'Setting testing database to {db_name}')
-    set_config('db.name', db_name, port=config_port)
-
-    fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file, port=config_port)
-
-    # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir, port=config_port)
-
-    # Make everything a simulator
-    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
-
-    yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
-    proc.terminate()
 
 
 def wait_for_running(sub, max_duration=90):
@@ -98,27 +42,27 @@ def wait_for_state(sub, state, max_duration=90):
 
 
 @pytest.fixture(scope='function')
-def cameras(config_port):
+def cameras(dynamic_config_server, config_port):
     return create_simulator_cameras(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
-def site_details(config_port):
+def site_details(dynamic_config_server, config_port):
     return create_location_from_config(config_port=config_port)
 
 
-def dome(config_port, scope='function'):
+def dome(dynamic_config_server, config_port, scope='function'):
     return create_dome_from_config(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
-def scheduler(config_port, site_details):
+def scheduler(dynamic_config_server, config_port, site_details):
     return create_scheduler_from_config(config_port=config_port,
                                         observer=site_details['observer'])
 
 
 @pytest.fixture
-def observatory(config_port, cameras, scheduler, site_details):
+def observatory(dynamic_config_server, config_port, cameras, scheduler, site_details):
     """Return a valid Observatory instance with a specific config."""
     obs = Observatory(scheduler=scheduler,
                       config_port=config_port,
@@ -130,7 +74,7 @@ def observatory(config_port, cameras, scheduler, site_details):
 
 
 @pytest.fixture(scope='function')
-def pocs(config_port, observatory):
+def pocs(dynamic_config_server, config_port, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory, run_once=True, config_port=config_port)
@@ -141,7 +85,7 @@ def pocs(config_port, observatory):
 
 
 @pytest.fixture(scope='function')
-def pocs_with_dome(config_port, db_type, scheduler):
+def pocs_with_dome(dynamic_config_server, config_port, db_type, scheduler):
     # Add dome to config
     set_config('dome', {
         'brand': 'Simulacrum',
@@ -150,7 +94,7 @@ def pocs_with_dome(config_port, db_type, scheduler):
     set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    dome = create_dome_from_config(config_port)
+    dome = create_dome_from_config(dynamic_config_server, config_port)
     observatory = Observatory(scheduler=scheduler, dome=dome, config_port=config_port)
     pocs = POCS(observatory, config_port=config_port)
     yield pocs
@@ -215,7 +159,7 @@ def test_simple_simulator(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_weather_and_dark_simulator(pocs, config_port):
+def test_is_weather_and_dark_simulator(dynamic_config_server, config_port, pocs):
     pocs.initialize()
     set_config('simulator', ['camera', 'mount', 'weather', 'night'], port=config_port)
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -288,7 +232,7 @@ def test_wait_for_events_timeout(pocs):
     t2.cancel()
 
 
-def test_is_weather_safe_no_simulator(pocs, config_port):
+def test_is_weather_safe_no_simulator(dynamic_config_server, config_port, pocs):
     pocs.initialize()
     set_config('simulator', ['camera', 'mount', 'night'], port=config_port)
 
@@ -320,7 +264,8 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return topic, msg_obj
 
 
-def test_run_wait_until_safe(config_port,
+def test_run_wait_until_safe(dynamic_config_server,
+                             config_port,
                              observatory,
                              cmd_publisher,
                              msg_subscriber,
@@ -378,7 +323,7 @@ def test_run_wait_until_safe(config_port,
     assert pocs_thread.is_alive() is False
 
 
-def test_unsafe_park(pocs, config_port):
+def test_unsafe_park(dynamic_config_server, config_port, pocs):
     pocs.initialize()
     assert pocs.is_initialized is True
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -402,7 +347,7 @@ def test_unsafe_park(pocs, config_port):
     pocs.power_down()
 
 
-def test_no_ac_power(pocs, config_port):
+def test_no_ac_power(dynamic_config_server, config_port, pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
 
@@ -463,7 +408,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
     assert not pocs.observatory.dome.is_connected
 
 
-def test_run_no_targets_and_exit(pocs, config_port):
+def test_run_no_targets_and_exit(dynamic_config_server, config_port, pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     set_config('simulator', hardware.get_all_names(), port=config_port)
 
@@ -476,7 +421,7 @@ def test_run_no_targets_and_exit(pocs, config_port):
     assert pocs.state == 'sleeping'
 
 
-def test_run_complete(pocs, config_port):
+def test_run_complete(dynamic_config_server, config_port, pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
     set_config('simulator', hardware.get_all_names(), port=config_port)
 
@@ -500,7 +445,8 @@ def test_run_complete(pocs, config_port):
     pocs.power_down()
 
 
-def test_run_power_down_interrupt(config_port,
+def test_run_power_down_interrupt(dynamic_config_server,
+                                  config_port,
                                   observatory,
                                   cmd_publisher,
                                   msg_subscriber,

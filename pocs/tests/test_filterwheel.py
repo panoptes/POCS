@@ -1,77 +1,17 @@
-import os
 import time
 import pytest
 import math
 from timeit import timeit
-import subprocess
 
 from astropy import units as u
 
-from pocs import hardware
 from pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
 from pocs.camera.simulator import Camera as SimCamera
 from panoptes.utils import error
-from panoptes.utils.logger import get_root_logger
-from panoptes.utils.config.client import set_config
-
-
-@pytest.fixture(scope='module')
-def config_port():
-    return '4861'
-
-# Override default config_server and use function scope so we can change some values cleanly.
 
 
 @pytest.fixture(scope='function')
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
-
-    logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
-
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
-
-    # Give server time to start
-    time.sleep(1)
-
-    # Adjust various config items for testing
-    unit_name = 'Generic PANOPTES Unit'
-    unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_name, port=config_port)
-    set_config('pan_id', unit_id, port=config_port)
-
-    logger.debug(f'Setting testing database to {db_name}')
-    set_config('db.name', db_name, port=config_port)
-
-    fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file, port=config_port)
-
-    # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir, port=config_port)
-
-    # Make everything a simulator
-    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
-
-    yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
-    proc.terminate()
-
-
-@pytest.fixture(scope='function')
-def filterwheel(config_port):
+def filterwheel(dynamic_config_server, config_port):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
                                      timeout=0.5 * u.second,
@@ -86,7 +26,7 @@ def test_init(filterwheel):
     assert filterwheel.is_connected
 
 
-def test_camera_init(config_port):
+def test_camera_init(dynamic_config_server, config_port):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']},
                            config_port=config_port)
@@ -96,19 +36,19 @@ def test_camera_init(config_port):
     assert sim_camera.filterwheel.camera is sim_camera
 
 
-def test_camera_no_filterwheel(config_port):
+def test_camera_no_filterwheel(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.filterwheel is None
 
 
-def test_camera_association_on_init(config_port):
+def test_camera_association_on_init(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      camera=sim_camera, config_port=config_port)
     assert sim_filterwheel.camera is sim_camera
 
 
-def test_with_no_name(config_port):
+def test_with_no_name(dynamic_config_server, config_port):
     with pytest.raises(ValueError):
         SimFilterWheel(config_port=config_port)
 
@@ -210,7 +150,7 @@ def test_move_timeout(config_port, caplog):
 @pytest.mark.parametrize("name,bidirectional, expected",
                          [("monodirectional", False, 0.3),
                           ("bidirectional", True, 0.1)])
-def test_move_times(config_port, name, bidirectional, expected):
+def test_move_times(dynamic_config_server, config_port, name, bidirectional, expected):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
                                      move_bidirectional=bidirectional,
@@ -225,7 +165,7 @@ def test_move_times(config_port, name, bidirectional, expected):
         pytest.approx(expected, rel=4e-2)
 
 
-def test_move_exposing(config_port, tmpdir, caplog):
+def test_move_exposing(dynamic_config_server, config_port, tmpdir, caplog):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']},
                            config_port=config_port)

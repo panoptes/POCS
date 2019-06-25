@@ -185,7 +185,7 @@ def static_config_port():
 @pytest.fixture(scope='module')
 def config_port():
     """Used for the function-scoped config_server when it is required to change
-    config values during testing.
+    config values during testing. See `dynamic_config_server` docs below.
     """
     return '4861'
 
@@ -270,11 +270,15 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     logger.critical(f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
-# Override default config_server and use function scope so we can change some values cleanly.
-
 
 @pytest.fixture(scope='function')
 def dynamic_config_server(config_host, config_port, config_server_args, images_dir, db_name):
+    """If a test requires changing the configuration we use a function-scoped testing
+    server. We only do this on tests that require it so we are not constantly starting and stopping
+    the config server unless necessary.  To use this, each test that requires it must use the
+    `dynamic_config_server` and `config_port` fixtures and must pass the `config_port` to all
+    instances that are created (propogated through PanBase).
+    """
 
     logger = get_root_logger()
     logger.critical(f'Starting config_server for testing function')

@@ -1,92 +1,33 @@
 import os
 import pytest
-import time
 import yaml
-import subprocess
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from astroplan import Observer
 
-from pocs import hardware
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
-
-
-@pytest.fixture(scope='module')
-def config_port():
-    return '4861'
-
-
-# Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
-
-    logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
-
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
-
-    # Give server time to start
-    time.sleep(1)
-
-    # Adjust various config items for testing
-    unit_name = 'Generic PANOPTES Unit'
-    unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_name, port=config_port)
-    set_config('pan_id', unit_id, port=config_port)
-
-    logger.debug(f'Setting testing database to {db_name}')
-    set_config('db.name', db_name, port=config_port)
-
-    fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file, port=config_port)
-
-    # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir, port=config_port)
-
-    # Make everything a simulator
-    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
-
-    yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
-    proc.terminate()
 
 
 @pytest.fixture
-def constraints(config_port):
+def constraints(dynamic_config_server, config_port):
     return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
 
 
 @pytest.fixture
-def observer(config_port):
+def observer(dynamic_config_server, config_port):
     loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
-def field_file(config_port):
+def field_file(dynamic_config_server, config_port):
     scheduler_config = get_config('scheduler', default={}, port=config_port)
 
     # Read the targets from the file
@@ -141,7 +82,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(config_port, field_list, observer, constraints):
+def scheduler(dynamic_config_server, config_port, field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints,
@@ -149,7 +90,7 @@ def scheduler(config_port, field_list, observer, constraints):
 
 
 @pytest.fixture
-def scheduler_from_file(config_port, field_file, observer, constraints):
+def scheduler_from_file(dynamic_config_server, config_port, field_file, observer, constraints):
     return Scheduler(observer,
                      fields_file=field_file,
                      constraints=constraints,
@@ -165,7 +106,12 @@ def test_get_observation(scheduler):
     assert isinstance(best[1], float)
 
 
-def test_get_observation_reread(config_port, field_list, observer, temp_file, constraints):
+def test_get_observation_reread(dynamic_config_server,
+                                config_port,
+                                field_list,
+                                observer,
+                                temp_file,
+                                constraints):
     time = Time('2016-08-13 10:00:00')
 
     # Write out the field list
