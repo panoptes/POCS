@@ -12,11 +12,16 @@ import pytest
 import subprocess
 import time
 
+from multiprocessing import Process
+from scalpl import Cut
+
 from pocs import hardware
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
+from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
+from panoptes.utils.config.server import app
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -194,23 +199,35 @@ def config_path():
                         )
 
 
+@pytest.fixture(scope='session')
+def config_server_args(config_path):
+    loaded_config = load_config(config_files=config_path, ignore_local=True)
+    return {
+        'config_file': config_path,
+        'auto_save': False,
+        'ignore_local': True,
+        'POCS': loaded_config,
+        'POCS_cut': Cut(loaded_config)
+    }
+
+
 @pytest.fixture(scope='session', autouse=True)
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
+def config_server(config_host, config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()
-    logger.critical(f'Starting config_server for testing function: {args!r}')
+    logger.critical(f'Starting config_server for testing session')
 
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            app.config[k] = v
+
+        # Start the actual flask server.
+        app.run(host=config_host, port=config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
     logger.info(f'config_server started with PID={proc.pid}')
 
     # Give server time to start

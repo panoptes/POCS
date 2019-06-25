@@ -1,9 +1,9 @@
 import os
 import time
-import subprocess
 import threading
 import pytest
 
+from multiprocessing import Process
 from astropy import units as u
 
 from pocs import hardware
@@ -21,6 +21,7 @@ from panoptes.utils.config.client import set_config
 from pocs.camera import create_simulator_cameras
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
+from panoptes.utils.config.server import app
 
 
 @pytest.fixture(scope='function')
@@ -30,23 +31,23 @@ def config_port():
 
 # Override default config_server and use function scope so we can change some values cleanly.
 @pytest.fixture(scope='function')
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
+def config_server(config_host, config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
+    logger.critical(f'Starting config_server for testing function')
 
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            app.config[k] = v
+
+        # Start the actual flask server.
+        app.run(host=config_host, port=config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
+    logger.info(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -54,19 +55,19 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.debug(f'Setting testing database to {db_name}')
+    logger.info(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
+    logger.info(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator

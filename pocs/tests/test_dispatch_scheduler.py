@@ -1,8 +1,7 @@
 import os
 import pytest
 import time
-import subprocess
-import yaml
+from multiprocessing import Process
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -15,8 +14,11 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
 from panoptes.utils.logger import get_root_logger
+from panoptes.utils.serializers import from_yaml
+from panoptes.utils.serializers import to_yaml
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
+from panoptes.utils.config.server import app
 
 # Override default config_server and use function scope so we can change some values cleanly.
 
@@ -27,23 +29,23 @@ def config_port():
 
 
 @pytest.fixture(scope='function', autouse=True)
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
+def config_server(config_host, config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
+    logger.critical(f'Starting config_server for testing function')
 
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            app.config[k] = v
+
+        # Start the actual flask server.
+        app.run(host=config_host, port=config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
+    logger.info(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -51,19 +53,19 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.debug(f'Setting testing database to {db_name}')
+    logger.info(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
+    logger.info(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator
@@ -99,7 +101,7 @@ def field_file(config_port):
 
 @pytest.fixture()
 def field_list():
-    return yaml.full_load("""
+    return from_yaml("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
@@ -171,7 +173,7 @@ def test_get_observation_reread(config_port, field_list, observer, temp_file, co
 
     # Write out the field list
     with open(temp_file, 'w') as f:
-        f.write(yaml.dump(field_list))
+        f.write(to_yaml(field_list))
 
     scheduler = Scheduler(observer,
                           fields_file=temp_file,
@@ -185,7 +187,7 @@ def test_get_observation_reread(config_port, field_list, observer, temp_file, co
 
     # Alter the field file - note same target but new name
     with open(temp_file, 'a') as f:
-        f.write(yaml.dump([{
+        f.write(to_yaml([{
             'name': 'New Name',
             'position': '20h00m43.7135s +22d42m39.0645s',
             'priority': 5000
