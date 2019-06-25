@@ -52,11 +52,12 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
             break
         time.sleep(1)
         try:
-            get_config(port=config_port)
+            logger.info(f'Seeing if config_server is alive {i}')
+            temp_config = get_config(port=config_port)
+            logger.info(f'Found temp_config, config_server is alive.')
             break
         except Exception:
             i += 1
-
 
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
