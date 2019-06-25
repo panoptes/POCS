@@ -25,3 +25,5 @@ scipy >= 0.17.1
 transitions >= 0.4.0
 tweepy
 wcsaxes
+-e git://github.com/panoptes/panoptes-utils.git@move-to-panotpes-utils#egg=panoptes-utils
+
