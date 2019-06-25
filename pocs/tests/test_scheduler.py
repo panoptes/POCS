@@ -22,7 +22,7 @@ def test_bad_scheduler_fields_file(config):
 
 
 def test_no_observer(config):
-    assert create_scheduler_from_config(config, observer=None) is None
+    create_scheduler_from_config(config, observer=None)
 
 
 def test_no_scheduler_in_config(config):
