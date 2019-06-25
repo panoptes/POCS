@@ -231,7 +231,16 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
     logger.critical(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
-    time.sleep(1)
+    i = 0
+    while True:
+        if i > 10:
+            break
+        time.sleep(1)
+        try:
+            get_config(port=config_port)
+            break
+        except Exception:
+            i += 1
 
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
