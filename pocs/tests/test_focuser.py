@@ -6,9 +6,9 @@ from pocs.camera.simulator import Camera
 
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='function')
-def focuser(config_port):
+def focuser():
     # Simulated focuser, just create one and return it
-    return SimFocuser(config_port=config_port)
+    return SimFocuser()
 
 
 @pytest.fixture(scope='function')
@@ -60,12 +60,12 @@ def test_move_above_max_positons(focuser, tolerance):
     assert focuser.position == pytest.approx(focuser.max_position, tolerance)
 
 
-def test_camera_association(config_port, focuser):
+def test_camera_association(focuser):
     """
     Test association of Focuser with Camera after initialisation (getter, setter)
     """
-    sim_camera_1 = Camera(config_port=config_port)
-    sim_camera_2 = Camera(config_port=config_port)
+    sim_camera_1 = Camera()
+    sim_camera_2 = Camera()
     # Cameras in the fixture haven't been associated with a Camera yet, this should work
     focuser.camera = sim_camera_1
     assert focuser.camera is sim_camera_1
@@ -74,22 +74,22 @@ def test_camera_association(config_port, focuser):
     assert focuser.camera is sim_camera_1
 
 
-def test_camera_init(config_port):
+def test_camera_init():
     """
     Test focuser init via Camera constructor/
     """
     sim_camera = Camera(focuser={'model': 'simulator',
-                                 'focus_port': '/dev/ttyFAKE'}, config_port=config_port)
+                                 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid
     assert sim_camera.focuser.camera is sim_camera
 
 
-def test_camera_association_on_init(config_port):
+def test_camera_association_on_init():
     """
     Test association of Focuser with Camera during Focuser init
     """
-    sim_camera = Camera(config_port=config_port)
-    focuser = SimFocuser(camera=sim_camera, config_port=config_port)
+    sim_camera = Camera()
+    focuser = SimFocuser(camera=sim_camera)
     assert focuser.camera is sim_camera

@@ -23,16 +23,16 @@ from panoptes.utils import horizon as horizon_utils
 
 
 @pytest.fixture
-def observer(config_port):
-    loc = get_config('location', port=config_port)
+def observer():
+    loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture
-def horizon_line(config_port):
-    obstruction_list = get_config('location.obstructions', default=list(), port=config_port)
-    default_horizon = get_config('location.horizon', port=config_port).value
+def horizon_line():
+    obstruction_list = get_config('location.obstructions', default=list())
+    default_horizon = get_config('location.horizon').value
 
     horizon_line = horizon_utils.Horizon(
         obstructions=obstruction_list,
@@ -89,22 +89,22 @@ def field():
 
 
 @pytest.fixture
-def observation(config_port, field):
-    return Observation(field, config_port=config_port)
+def observation(field):
+    return Observation(field)
 
 
-def test_bad_str_weight(config_port):
+def test_bad_str_weight():
     with pytest.raises(AssertionError):
-        BaseConstraint("1.0", config_port=config_port)
+        BaseConstraint("1.0")
 
 
-def test_negative_weight(config_port):
+def test_negative_weight():
     with pytest.raises(AssertionError):
-        BaseConstraint(-1.0, config_port=config_port)
+        BaseConstraint(-1.0)
 
 
-def test_default_weight(config_port):
-    c = BaseConstraint(config_port=config_port)
+def test_default_weight():
+    c = BaseConstraint()
     assert c.weight == 1.0
 
 
@@ -112,31 +112,31 @@ def test_altitude_subclass():
     assert issubclass(Altitude, BaseConstraint)
 
 
-def test_altitude_no_minimum(config_port):
+def test_altitude_no_minimum():
     with pytest.raises(AssertionError):
-        Altitude(config_port=config_port)
+        Altitude()
 
 
-def test_altitude_bad_param(config_port):
+def test_altitude_bad_param():
     with pytest.raises(AssertionError):
-        Altitude(30, config_port=config_port)
+        Altitude(30)
 
 
-def test_basic_altitude(config_port, observer, field_list, horizon_line):
+def test_basic_altitude(observer, field_list, horizon_line):
 
     # Target is at ~34 degrees altitude and 79 degrees azimuth
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
 
     # First check out with default horizon
-    ac = Altitude(horizon_line, config_port=config_port)
-    observation = Observation(Field(config_port=config_port, **m44), config_port=config_port, **m44)
+    ac = Altitude(horizon_line)
+    observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is False
 
 
-def test_custom_altitude(config_port, observer, field_list, horizon_line):
+def test_custom_altitude(observer, field_list, horizon_line):
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
 
@@ -146,14 +146,14 @@ def test_custom_altitude(config_port, observer, field_list, horizon_line):
             [[40, 70], [40, 80]]
         ],
     )
-    ac = Altitude(horizon_line, config_port=config_port)
-    observation = Observation(Field(config_port=config_port, **m44), config_port=config_port, **m44)
+    ac = Altitude(horizon_line)
+    observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is True
 
 
-def test_big_wall(config_port, observer, field_list):
+def test_big_wall(observer, field_list):
     time = Time('2018-01-19 07:10:00')
     horizon_line = horizon_utils.Horizon(
         obstructions=[
@@ -163,40 +163,40 @@ def test_big_wall(config_port, observer, field_list):
 
     vetoes = list()
     for field in field_list:
-        observation = Observation(Field(config_port=config_port, **field), config_port=config_port, **field)
+        observation = Observation(Field(**field), **field)
 
-        ac = Altitude(horizon_line, config_port=config_port)
+        ac = Altitude(horizon_line)
         veto, score = ac.get_score(time, observer, observation)
         vetoes.append(veto)
 
     assert all(vetoes)
 
 
-def test_duration_veto(config_port, observer, field_list):
-    dc = Duration(30 * u.degree, config_port=config_port)
+def test_duration_veto(observer, field_list):
+    dc = Duration(30 * u.degree)
 
     time = Time('2016-08-13 17:42:00.034059')
     sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
 
     hd189733 = field_list[0]
-    observation = Observation(Field(config_port=config_port, **hd189733), config_port=config_port, **hd189733)
+    observation = Observation(Field(**hd189733), **hd189733)
     veto, score = dc.get_score(time, observer, observation, sunrise=sunrise)
     assert veto is True
 
     wasp33 = field_list[-3]
-    observation = Observation(Field(config_port=config_port, **wasp33), config_port=config_port, **wasp33)
+    observation = Observation(Field(**wasp33), **wasp33)
     veto, score = dc.get_score(time, observer, observation, sunrise=sunrise)
     assert veto is False
 
 
-def test_duration_score(config_port, observer):
-    dc = Duration(30 * u.degree, config_port=config_port)
+def test_duration_score(observer):
+    dc = Duration(30 * u.degree)
 
     time = Time('2016-08-13 10:00:00')
     sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
 
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s', config_port=config_port), config_port=config_port)  # HD189733
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s', config_port=config_port), config_port=config_port)  # Hat-P-16
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
 
     veto1, score1 = dc.get_score(time, observer, observation1, sunrise=sunrise)
     veto2, score2 = dc.get_score(time, observer, observation2, sunrise=sunrise)
@@ -205,29 +205,29 @@ def test_duration_score(config_port, observer):
     assert score2 > score1
 
 
-def test_moon_veto(config_port, observer):
-    mac = MoonAvoidance(config_port=config_port)
+def test_moon_veto(observer):
+    mac = MoonAvoidance()
 
     time = Time('2016-08-13 10:00:00')
 
     moon = get_moon(time, observer.location)
 
-    observation1 = Observation(Field('Sabik', '17h10m23s -15d43m30s', config_port=config_port), config_port=config_port)  # Sabik
+    observation1 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
 
     veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
 
     assert veto1 is True
 
 
-def test_moon_avoidance(config_port, observer):
-    mac = MoonAvoidance(config_port=config_port)
+def test_moon_avoidance(observer):
+    mac = MoonAvoidance()
 
     time = Time('2016-08-13 10:00:00')
 
     moon = get_moon(time, observer.location)
 
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s', config_port=config_port), config_port=config_port)  # HD189733
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s', config_port=config_port), config_port=config_port)  # Hat-P-16
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
 
     veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
     veto2, score2 = mac.get_score(time, observer, observation2, moon=moon)
@@ -236,17 +236,17 @@ def test_moon_avoidance(config_port, observer):
     assert score2 > score1
 
 
-def test_already_visited(config_port, observer):
-    avc = AlreadyVisited(config_port=config_port)
+def test_already_visited(observer):
+    avc = AlreadyVisited()
 
     time = Time('2016-08-13 10:00:00')
 
     # HD189733
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s', config_port=config_port), config_port=config_port)
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))
     # Hat-P-16
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s', config_port=config_port), config_port=config_port)
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))
     # Sabik
-    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s', config_port=config_port), config_port=config_port)
+    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))
 
     observed_list = OrderedDict()
 
