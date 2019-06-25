@@ -135,7 +135,7 @@ def test_move_bad_name(filterwheel):
         filterwheel.move_to('cinco')
 
 
-def test_move_timeout(config_port, caplog):
+def test_move_timeout(dynamic_config_server, config_port, caplog):
     slow_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                       move_time=0.1,
                                       timeout=0.2,
