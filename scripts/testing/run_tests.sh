@@ -5,7 +5,7 @@ pip install -r requirements.txt
 
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START=.coveragerc
-coverage run $(which pytest) -v --test-databases all
+coverage run $(which pytest) -xvrs --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then
