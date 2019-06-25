@@ -25,11 +25,10 @@ from pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
-from pocs.camera.zwo import Camera as ZWOCamera
 
 
-params = [SimCamera, SimCamera, SimCamera, SimSDKCamera, ZWOCamera]
-ids = ['simulator', 'simulator_filterwheel', 'simulator_focuser', 'simulator_sdk', 'zwo']
+params = [SimCamera, SimCamera, SimCamera, SimSDKCamera]
+ids = ['simulator', 'simulator_filterwheel', 'simulator_focuser', 'simulator_sdk']
 
 
 @pytest.fixture(scope='module')
@@ -38,7 +37,7 @@ def config_port():
 
 
 # Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def config_server(config_host, config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()

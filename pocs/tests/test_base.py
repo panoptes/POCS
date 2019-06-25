@@ -15,7 +15,7 @@ def config_port():
 
 
 # Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def config_server(config_host, config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()
