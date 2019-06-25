@@ -1,9 +1,5 @@
 #!/bin/bash -e
 
-cd "$PANDIR/panoptes-utils"
-git checkout move-to-panotpes-utils
-git pull
-
 # Install any updated requirements
 pip install -r requirements.txt
 
