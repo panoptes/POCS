@@ -149,7 +149,7 @@ def test_add_remove_scheduler(config, observatory, caplog):
     assert observatory.scheduler is None
     observatory.add_scheduler(scheduler)
     assert observatory.scheduler is not None
-    with pytest.raises(TypeError, "scheduler is not instance of BaseScheduler class, cannot add."):
+    with pytest.raises(TypeError, message="scheduler is not instance of BaseScheduler class, cannot add."):
         observatory.add_scheduler("scheduler")
 
 
