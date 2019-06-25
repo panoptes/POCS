@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import subprocess
 
@@ -49,6 +50,7 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
     i = 0
     while True:
         if i > 10:
+            sys.exit(1)
             break
         time.sleep(1)
         try:
@@ -57,7 +59,9 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
             if temp_config is not None:
                 logger.info(f'Found temp_config, config_server is alive.')
                 break
-        except Exception:
+        except Exception as e:
+            logger.critical(f'Error starting server: {e!r}')
+        finally:
             i += 1
 
     # Adjust various config items for testing
