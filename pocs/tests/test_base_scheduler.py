@@ -27,7 +27,7 @@ def config_port():
 
 
 # Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function', autouse=True)
 def config_server(config_path, config_host, config_port, images_dir, db_name):
     cmd = os.path.join(os.getenv('PANDIR'),
                        'panoptes-utils',
@@ -91,17 +91,17 @@ def config_server(config_path, config_host, config_port, images_dir, db_name):
 
 
 @pytest.fixture
-def constraints(config_server, config_port):
+def constraints(config_port):
     return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
 
 
 @pytest.fixture
-def simple_fields_file(config_server, config_port):
+def simple_fields_file(config_port):
     return get_config('directories.targets', port=config_port) + '/simulator.yaml'
 
 
 @pytest.fixture
-def observer(config_server, config_port):
+def observer(config_port):
     loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
@@ -152,24 +152,24 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(config_server, config_port, field_list, observer, constraints):
+def scheduler(config_port, field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints,
                      config_port=config_port)
 
 
-def test_scheduler_load_no_params(config_server, config_port):
+def test_scheduler_load_no_params(config_port):
     with pytest.raises(TypeError):
         Scheduler(config_port=config_port)
 
 
-def test_no_observer(config_server, config_port, simple_fields_file):
+def test_no_observer(config_port, simple_fields_file):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file, config_port=config_port)
 
 
-def test_bad_observer(config_server, config_port, simple_fields_file, constraints):
+def test_bad_observer(config_port, simple_fields_file, constraints):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file,
                   constraints=constraints,
