@@ -9,11 +9,6 @@ from multiprocessing import Process
 import astropy.units as u
 
 from pocs import hardware
-from pocs.camera.simulator.dslr import Camera as SimCamera
-from pocs.camera.simulator.ccd import Camera as SimSDKCamera
-from pocs.camera.sbig import Camera as SBIGCamera
-from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
-from pocs.camera.fli import Camera as FLICamera
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -24,9 +19,17 @@ from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import app
 
+# Hardware specific imports
+from pocs.camera.simulator.dslr import Camera as SimCamera
+from pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from pocs.camera.sbig import Camera as SBIGCamera
+from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
+from pocs.camera.fli import Camera as FLICamera
+from pocs.camera.zwo import Camera as ZWOCamera
 
-params = [SimCamera, SimCamera, SimCamera, SimSDKCamera]
-ids = ['simulator', 'simulator_filterwheel', 'simulator_focuser', 'simulator_sdk']
+
+params = [SimCamera, SimCamera, SimCamera, SimSDKCamera, ZWOCamera]
+ids = ['simulator', 'simulator_filterwheel', 'simulator_focuser', 'simulator_sdk', 'zwo']
 
 
 @pytest.fixture(scope='module')
