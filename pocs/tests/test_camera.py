@@ -4,19 +4,15 @@ import os
 import time
 import glob
 from ctypes.util import find_library
-import subprocess
 
 import astropy.units as u
 
-from pocs import hardware
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
-from panoptes.utils.logger import get_root_logger
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
-from panoptes.utils.config.client import set_config
 
 # Hardware specific imports
 from pocs.camera.simulator.dslr import Camera as SimCamera
@@ -30,63 +26,9 @@ params = [SimCamera, SimCamera, SimCamera, SimSDKCamera]
 ids = ['simulator', 'simulator_filterwheel', 'simulator_focuser', 'simulator_sdk']
 
 
-@pytest.fixture(scope='module')
-def config_port():
-    return '4861'
-
-
-# Override default config_server and use function scope so we can change some values cleanly.
-@pytest.fixture(scope='function')
-def config_server(config_path, config_host, config_port, images_dir, db_name):
-    cmd = os.path.join(os.getenv('PANDIR'),
-                       'panoptes-utils',
-                       'scripts',
-                       'run_config_server.py'
-                       )
-    args = [cmd, '--config-file', config_path,
-            '--host', config_host,
-            '--port', config_port,
-            '--ignore-local',
-            '--no-save']
-
-    logger = get_root_logger()
-    logger.debug(f'Starting config_server for testing function: {args!r}')
-
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.critical(f'config_server started with PID={proc.pid}')
-
-    # Give server time to start
-    time.sleep(1)
-
-    # Adjust various config items for testing
-    unit_name = 'Generic PANOPTES Unit'
-    unit_id = 'PAN000'
-    logger.debug(f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_name, port=config_port)
-    set_config('pan_id', unit_id, port=config_port)
-
-    logger.debug(f'Setting testing database to {db_name}')
-    set_config('db.name', db_name, port=config_port)
-
-    fields_file = 'simulator.yaml'
-    logger.debug(f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file, port=config_port)
-
-    # TODO(wtgee): determine if we need separate directories for each module.
-    logger.debug(f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir, port=config_port)
-
-    # Make everything a simulator
-    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
-
-    yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
-    proc.terminate()
-
-
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
-def camera(request, images_dir, config_port):
+def camera(request, images_dir, dynamic_config_server, config_port):
     if request.param[1] == 'simulator':
         camera = SimCamera(config_port=config_port)
     elif request.param[1] == 'simulator_focuser':
@@ -112,61 +54,61 @@ def camera(request, images_dir, config_port):
 
 # Hardware independent tests, mostly use simulator:
 
-def test_sim_create_focuser(config_port):
+def test_sim_create_focuser(dynamic_config_server, config_port):
     sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'},
                            config_port=config_port)
     assert isinstance(sim_camera.focuser, Focuser)
 
 
-def test_sim_passed_focuser(config_port):
+def test_sim_passed_focuser(dynamic_config_server, config_port):
     sim_focuser = Focuser(port='/dev/ttyFAKE', config_port=config_port)
     sim_camera = SimCamera(focuser=sim_focuser, config_port=config_port)
     assert sim_camera.focuser is sim_focuser
 
 
-def test_sim_bad_focuser(config_port):
+def test_sim_bad_focuser(dynamic_config_server, config_port):
     with pytest.raises((AttributeError, ImportError, NotFound)):
         SimCamera(focuser={'model': 'NOTAFOCUSER'}, config_port=config_port)
 
 
-def test_sim_worse_focuser(config_port):
+def test_sim_worse_focuser(dynamic_config_server, config_port):
     sim_camera = SimCamera(focuser='NOTAFOCUSER', config_port=config_port)
     # Will log an error but raise no exceptions
     assert sim_camera.focuser is None
 
 
-def test_sim_string(config_port):
+def test_sim_string(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE', config_port=config_port)
     assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
 
-def test_sim_file_extension(config_port):
+def test_sim_file_extension(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.file_extension == 'fits'
     sim_camera = SimCamera(file_extension='FIT', config_port=config_port)
     assert sim_camera.file_extension == 'FIT'
 
 
-def test_sim_readout_time(config_port):
+def test_sim_readout_time(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.readout_time == 5.0
     sim_camera = SimCamera(readout_time=2.0, config_port=config_port)
     assert sim_camera.readout_time == 2.0
 
 
-def test_sdk_no_serial_number(config_port):
+def test_sdk_no_serial_number(dynamic_config_server, config_port):
     with pytest.raises(ValueError):
         SimSDKCamera(config_port=config_port)
 
 
-def test_sdk_camera_not_found(config_port):
+def test_sdk_camera_not_found(dynamic_config_server, config_port):
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number='SSC404', config_port=config_port)
 
 
-def test_sdk_already_in_use(config_port):
+def test_sdk_already_in_use(dynamic_config_server, config_port):
     sim_camera = SimSDKCamera(serial_number='SSC999', config_port=config_port)
     assert sim_camera
     with pytest.raises(error.PanError):
@@ -175,7 +117,7 @@ def test_sdk_already_in_use(config_port):
 # Hardware independent tests for SBIG camera
 
 
-def test_sbig_driver_bad_path(config_port):
+def test_sbig_driver_bad_path(dynamic_config_server, config_port):
     """
     Manually specify an incorrect path for the SBIG shared library. The
     CDLL loader should raise OSError when it fails. Can't test a successful
@@ -187,7 +129,7 @@ def test_sbig_driver_bad_path(config_port):
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
-def test_sbig_bad_serial(config_port):
+def test_sbig_bad_serial(dynamic_config_server, config_port):
     """
     Attempt to create an SBIG camera instance for a specific non-existent
     camera. No actual cameras are required to run this test but the SBIG
@@ -388,7 +330,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert exposure_event.is_set()
 
 
-def test_observation(config_port, camera, images_dir):
+def test_observation(dynamic_config_server, config_port, camera, images_dir):
     """
     Tests functionality of take_observation()
     """

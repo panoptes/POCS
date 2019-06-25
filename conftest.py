@@ -175,8 +175,19 @@ def config_host():
 
 
 @pytest.fixture(scope='session')
-def config_port():
+def static_config_port():
+    """Used for the session-scoped config_server where no config values
+    are expected to change during testing.
+    """
     return '6565'
+
+
+@pytest.fixture(scope='module')
+def config_port():
+    """Used for the function-scoped config_server when it is required to change
+    config values during testing.
+    """
+    return '4861'
 
 
 @pytest.fixture(scope='session')
@@ -212,10 +223,61 @@ def config_server_args(config_path):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def config_server(config_host, config_port, config_server_args, images_dir, db_name):
+def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
 
     logger = get_root_logger()
     logger.critical(f'Starting config_server for testing session')
+
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            app.config[k] = v
+
+        # Start the actual flask server.
+        app.run(host=config_host, port=static_config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
+    logger.info(f'config_server started with PID={proc.pid}')
+
+    # Give server time to start
+    time.sleep(1)
+
+    # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
+    unit_id = 'PAN000'
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    set_config('name', unit_name, port=static_config_port)
+    set_config('pan_id', unit_id, port=static_config_port)
+
+    logger.info(f'Setting testing database to {db_name}')
+    set_config('db.name', db_name, port=static_config_port)
+
+    fields_file = 'simulator.yaml'
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    set_config('scheduler.fields_file', fields_file, port=static_config_port)
+
+    # TODO(wtgee): determine if we need separate directories for each module.
+    logger.info(f'Setting temporary image directory for testing')
+    set_config('directories.images', images_dir, port=static_config_port)
+
+    # Make everything a simulator
+    set_config('simulator', hardware.get_simulator_names(
+        simulator=['all']), port=static_config_port)
+
+    yield
+    logger.critical(f'Killing config_server started with PID={proc.pid}')
+    proc.terminate()
+
+# Override default config_server and use function scope so we can change some values cleanly.
+
+
+@pytest.fixture(scope='function')
+def dynamic_config_server(config_host, config_port, config_server_args, images_dir, db_name):
+
+    logger = get_root_logger()
+    logger.critical(f'Starting config_server for testing function')
 
     def start_config_server():
         # Load the config items into the app config.
