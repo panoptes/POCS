@@ -214,7 +214,7 @@ class Observatory(PanBase):
             self.logger.info('Adding scheduler')
             self.scheduler = scheduler
         else:
-            raise TypeError("scheduler is not instance of BaseScheduler class, cannot add.")
+            raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
     def remove_scheduler(self):
         """Remove scheduler. """
