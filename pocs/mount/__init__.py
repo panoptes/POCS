@@ -49,7 +49,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
     module = load_module('pocs.mount.{}'.format(driver))
 
     # Make the mount include site information
-    mount = module.Mount(location=earth_location)
+    mount = module.Mount(location=earth_location, *args, **kwags)
 
     logger.debug('Mount created')
 
