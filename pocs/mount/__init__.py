@@ -7,7 +7,7 @@ from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
 
-def create_mount_from_config(config, mount_info=None, earth_location=None):
+def create_mount_from_config(config, mount_info=None, earth_location=None, *args, **kwargs):
     """ Sets up the mount that will be used by the observatory """
 
     logger = get_root_logger()
