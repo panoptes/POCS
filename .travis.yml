@@ -6,7 +6,7 @@ services:
 python:
   - "3.6"
 env:
-    - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
+    - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1 SOLVE_FIELD=$PANDIR/astrometry/bin/solve-field
 before_install:
     - mkdir -p $PANDIR/logs
     - mkdir -p $PANDIR/astrometry/data
