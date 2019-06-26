@@ -148,6 +148,7 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
     # doesn't get passes up to the calling code.
     # Check the last couple of records for our message
     for rec in caplog.records[-5:]:
+        print(f'Checking log record: {rec.levelname} {rec.text} {rec!r}')
         if rec.levelname == 'ERROR':
             assert rec.text == 'Timeout: Timeout waiting for filter wheel move to complete'
             return  # Leave test
