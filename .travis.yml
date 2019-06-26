@@ -3,6 +3,7 @@ sudo: required
 language: python
 services:
   - mongodb
+  - docker
 python:
   - "3.6"
 env:
@@ -42,11 +43,10 @@ before_install:
     - source activate test-environment
     - conda install numpy scipy
 
-    # Install astrometry.net
-    - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
-    - tar zxvf astrometry.net-0.78.tar.gz && cd astrometry.net-0.78
-    - make && make py && make install INSTALL_DIR=$PANDIR/astrometry PYTHON_SCRIPT="$HOME/miniconda/bin/env/test-environment/bin/python3"
-    - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
+    # Pull our docker image that contains a working astrometry.net
+    # See the panoptes-solve-field script in bin/
+    # Hopefully this is temporary.
+    - docker pull gcr.io/panoptes-survey/panoptes-utils:latest
 addons:
   apt:
     packages:

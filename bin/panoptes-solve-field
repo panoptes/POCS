@@ -1,0 +1,3 @@
+#!/bin/bash -e
+
+docker run --rm -it -v /var/panoptes:/var/panoptes gcr.io/panoptes-survey/panoptes-utils panoptes-solve-field "$@"
