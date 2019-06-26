@@ -94,7 +94,7 @@ def pocs_with_dome(dynamic_config_server, config_port, db_type, scheduler):
     set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    dome = create_dome_from_config(dynamic_config_server, config_port)
+    dome = create_dome_from_config(config_port)
     observatory = Observatory(scheduler=scheduler, dome=dome, config_port=config_port)
     pocs = POCS(observatory, config_port=config_port)
     yield pocs

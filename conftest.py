@@ -11,6 +11,7 @@ import os
 import pytest
 import subprocess
 import time
+import shutil
 
 from multiprocessing import Process
 from scalpl import Cut
@@ -382,14 +383,14 @@ def can_connect_to_mongo(db_name):
 
 
 @pytest.fixture(scope='function', params=_all_databases)
-def db_type(request):
+def db_type(request, db_name):
 
     db_list = request.config.option.test_databases
     if request.param not in db_list and 'all' not in db_list:
         pytest.skip("Skipping {} DB, set --test-all-databases=True".format(request.param))
 
     # If testing mongo, make sure we can connect, otherwise skip.
-    if request.param == 'mongo' and not can_connect_to_mongo():
+    if request.param == 'mongo' and not can_connect_to_mongo(db_name):
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
     PanDB.permanently_erase_database(
         request.param, 'panoptes_testing', really='Yes', dangerous='Totally')
@@ -425,7 +426,8 @@ def messaging_ports():
 
 @pytest.fixture(scope='function')
 def message_forwarder(messaging_ports):
-    cmd = os.path.join(os.getenv('PANDIR'), 'panoptes-utils', 'scripts', 'run_messaging_hub.py')
+    cmd = shutil.which('panoptes-messaging-hub')
+    assert cmd is not None
     args = [cmd]
     # Note that the other programs using these port pairs consider
     # them to be pub and sub, in that order, but the forwarder sees things
