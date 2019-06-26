@@ -6,6 +6,8 @@ from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
+# Below is needed for import
+from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
