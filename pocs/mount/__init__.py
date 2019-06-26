@@ -22,6 +22,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
         earth_location = site_details['earth_location']
 
     if mount_info is None:
+        logger.debug(f'No mount info provided, using values from config.')
         mount_info = config.get('mount')
 
     model = mount_info.get('model')
