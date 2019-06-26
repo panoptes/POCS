@@ -27,7 +27,6 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
 
     model = mount_info.get('model')
 
-    model = mount_info.get('brand')
     driver = mount_info.get('driver')
 
     # See if we have a serial connection
