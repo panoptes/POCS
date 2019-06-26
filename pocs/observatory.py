@@ -13,6 +13,8 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
+from pocs.scheduler import BaseScheduler
+
 from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.library import load_module
@@ -203,6 +205,23 @@ class Observatory(PanBase):
         """
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
+
+    def add_scheduler(self, scheduler):
+        """Add scheduler.
+
+        Args:
+            scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
+        """
+        if isinstance(scheduler, BaseScheduler):
+            self.logger.info('Adding scheduler')
+            self.scheduler = scheduler
+        else:
+            raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
+
+    def remove_scheduler(self):
+        """Remove scheduler. """
+        self.logger.info('Removing scheduler')
+        self.scheduler = None
 
 ##########################################################################
 # Methods

@@ -5,12 +5,14 @@ from astropy import units as u
 from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
-from pocs.scheduler.scheduler import BaseScheduler
+
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config.client import get_config
+
+from pocs.utils.location import create_location_from_config
 
 
 def create_scheduler_from_config(config_port=6563, observer=None):
@@ -26,8 +28,9 @@ def create_scheduler_from_config(config_port=6563, observer=None):
         return None
 
     if not observer:
-        logger.info("No valid Observer found.")
-        return None
+        logger.debug(f'No Observer provided, creating from config.')
+        site_details = create_location_from_config(config_port=config_port)
+        observer = site_details['observer']
 
     scheduler_type = scheduler_config.get('type', 'dispatch')
 

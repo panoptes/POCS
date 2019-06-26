@@ -3,6 +3,7 @@ import pytest
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from pocs.scheduler import create_scheduler_from_config
+from pocs.scheduler import BaseScheduler
 from pocs.utils.location import create_location_from_config
 
 
@@ -20,8 +21,8 @@ def test_bad_scheduler_fields_file(dynamic_config_server, config_port):
         create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
 
 
-def test_no_observer(dynamic_config_server, config_port):
-    assert create_scheduler_from_config(observer=None, config_port=config_port) is None
+def test_no_observer():
+    assert isinstance(create_scheduler_from_config(observer=None), BaseScheduler) is True
 
 
 def test_no_scheduler_in_config(dynamic_config_server, config_port):
