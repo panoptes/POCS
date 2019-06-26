@@ -11,7 +11,7 @@ before_install:
     - mkdir -p $PANDIR/logs
     - mkdir -p $PANDIR/astrometry/data
     - ln -s $POCS $PANDIR/POCS
-    - pip install -U pip python3-numpy
+    - pip install -U pip
     - pip install coveralls
     - cd $POCS
     - pip install -r requirements.txt
@@ -45,7 +45,7 @@ before_install:
     # Install astrometry.net
     - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
     - tar zxvf astrometry.net-0.78.tar.gz && cd astrometry.net-0.78
-    - make && make py && make install INSTALL_DIR=$PANDIR/astrometry PYTHON_SCRIPT="$HOME/miniconda/bin/python3"
+    - make && make py && make install INSTALL_DIR=$PANDIR/astrometry PYTHON_SCRIPT="$HOME/miniconda/bin/env/test-environment/bin/python3"
     - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 addons:
   apt:
