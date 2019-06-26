@@ -1,8 +1,7 @@
 import os
-
+import subprocess
 from collections import OrderedDict
 from datetime import datetime
-import subprocess
 from glob import glob
 
 from astroplan import Observer
@@ -11,22 +10,18 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs.base import PanBase
 import pocs.dome
+from pocs.base import PanBase
+from pocs.camera import AbstractCamera
 from pocs.images import Image
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
-from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
-from pocs.camera import AbstractCamera
 
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
@@ -59,8 +54,7 @@ class Observatory(PanBase):
         self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
-        self.scheduler = None
-        self._create_scheduler()
+        self.scheduler = scheduler
 
         self.current_offset_info = None
 
@@ -130,17 +124,48 @@ class Observatory(PanBase):
 
     @property
     def current_observation(self):
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot get current observation.')
+            return None
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        self.scheduler.current_observation = new_observation
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot set current observation.')
+        else:
+            self.scheduler.current_observation = new_observation
 
     @property
     def has_dome(self):
         return self.dome is not None
 
+    @property
+    def can_observe(self):
+        """A dynamic property indicating whether or not observations are possible.
 
+        This property will check to make sure that the following are present:
+          * Scheduler
+          * Cameras
+          * Mount
+
+        If any of the above are not present then a log message is generated and the property returns False.
+
+        Returns:
+            bool: True if observations are possible, False otherwise.
+        """
+        can_observe = True
+        if can_observe and self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot observe.')
+            can_observe = False
+        if can_observe and not self.has_cameras:
+            self.logger.info(f'Cameras not present, cannot observe.')
+            can_observe = False
+        if can_observe and self.mount is None:
+            self.logger.info(f'Mount not present, cannot observe.')
+            can_observe = False
+
+        return can_observe
 ##########################################################################
 # Device Getters/Setters
 ##########################################################################
@@ -202,6 +227,9 @@ class Observatory(PanBase):
         """
         status = {}
         try:
+
+            status['can_observe'] = self.can_observe
+
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
 
@@ -255,6 +283,10 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting observation for observatory")
 
+        if not self.scheduler:
+            self.logger.info(f'Scheduler not present, cannot get the next observation.')
+            return None
+
         # If observation list is empty or a reread is requested
         reread_fields_file = (
             self.scheduler.has_valid_observations is False or
@@ -305,6 +337,10 @@ class Observatory(PanBase):
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
+
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot finish cleanup.')
+            return
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -490,6 +526,7 @@ class Observatory(PanBase):
         Returns:
             dict: The standard headers
         """
+
         if observation is None:
             observation = self.current_observation
 
@@ -723,47 +760,3 @@ class Observatory(PanBase):
         self.mount = module.Mount(location=self.earth_location)
 
         self.logger.debug('Mount created')
-
-    def _create_scheduler(self):
-        """ Sets up the scheduler that will be used by the observatory """
-
-        scheduler_config = self.config.get('scheduler', {})
-        scheduler_type = scheduler_config.get('type', 'dispatch')
-
-        # Read the targets from the file
-        fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories'][
-                                   'targets'], fields_file)
-        self.logger.debug('Creating scheduler: {}'.format(fields_path))
-
-        if os.path.exists(fields_path):
-
-            try:
-                # Load the required module
-                module = load_module(
-                    'pocs.scheduler.{}'.format(scheduler_type))
-
-                obstruction_list = self.config['location'].get('obstructions', list())
-                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
-
-                horizon_line = horizon_utils.Horizon(
-                    obstructions=obstruction_list,
-                    default_horizon=default_horizon.value
-                )
-
-                # Simple constraint for now
-                constraints = [
-                    Altitude(horizon=horizon_line),
-                    MoonAvoidance(),
-                    Duration(default_horizon)
-                ]
-
-                # Create the Scheduler instance
-                self.scheduler = module.Scheduler(
-                    self.observer, fields_file=fields_path, constraints=constraints)
-                self.logger.debug("Scheduler created")
-            except ImportError as e:
-                raise error.NotFound(msg=e)
-        else:
-            raise error.NotFound(
-                msg="Fields file does not exist: {}".format(fields_file))
