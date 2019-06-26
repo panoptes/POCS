@@ -23,6 +23,7 @@ def create_scheduler_from_config(config, observer=None):
         return None
 
     if not observer:
+        logger.debug(f'No Observer provided, creating from config.')
         site_details = create_location_from_config(config)
         observer = site_details['observer']
 
