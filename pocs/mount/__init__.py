@@ -17,6 +17,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
         return None
 
     if earth_location is None:
+        logger.debug(f'No location provided, using values from config.')
         site_details = create_location_from_config(config)
         earth_location = site_details['earth_location']
 
