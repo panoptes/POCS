@@ -49,7 +49,7 @@ def test_remove_cameras(dynamic_config_server, config_port, observatory, cameras
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(config_server, config_port):
+def test_bad_site(dynamic_config_server, config_port):
     set_config('location', {}, port=config_port)
     with pytest.raises(error.PanError):
         Observatory(config_port=config_port)
