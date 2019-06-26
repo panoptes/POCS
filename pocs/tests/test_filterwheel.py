@@ -142,9 +142,17 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
                                       config_port=config_port)
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
     time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
-    assert caplog.records[-1].levelname == 'ERROR'  # Should have logged an ERROR by now
+
+    # Should have logged an ERROR by now
     # It raises a panoptes.utils.error.Timeout exception too, but because it's in another Thread it
     # doesn't get passes up to the calling code.
+    # Check the last couple of records for our message
+    for rec in caplog.records[-5:]:
+        if rec.levelname == 'ERROR':
+            assert rec.text == 'Timeout: Timeout waiting for filter wheel move to complete'
+            return  # Leave test
+
+    assert False  # If we get here then we didn't find ERROR message.
 
 
 @pytest.mark.parametrize("name,bidirectional, expected",
