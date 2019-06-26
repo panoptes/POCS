@@ -33,7 +33,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
     try:
         port = mount_info['serial']['port']
         if port is None or len(glob(port)) == 0:
-            msg = "Mount port({}) not available. ".format(port) + "Use simulator = mount for simulator. Exiting."
+            msg = f"Mount port ({port}) not available. Use simulator = mount for simulator."
             raise error.MountNotFound(msg=msg)
     except KeyError:
         # TODO(jamessynge): We should move the driver specific validation into the driver
