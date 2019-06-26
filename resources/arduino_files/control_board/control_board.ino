@@ -8,6 +8,14 @@
 #include "CharBuffer.h"
 #include "PinUtils.h"
 
+#include <ArduinoJson.h>
+
+// Please update the version identifier when you
+// make changes to this code. The value needs to
+// be in JSON format (i.e. quoted and escaped if
+// a string).
+#define VERSION_ID "\"2019-06-26\""
+
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 #define UNO 1 // 1 if board is Uno, 0 if it is a Micro
@@ -17,14 +25,14 @@
   // Digital Pins
   const int DS18_PIN = 13; // DS18B20 Temperature (OneWire)
   const int DHT_PIN = 12;  // DHT Temp & Humidity Pin
-  
+
   // Relays
   const int RELAY_0 = 11; // 0_0 PROFET-0 Channel 0 (A3 = 17)
   const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
   const int RELAY_2 = 4;  // 0_1 PROFET-1 Channel 0
   const int RELAY_3 = 7;  // 1_1 PROFET-1 Channel 1
   const int RELAY_4 = 8;  // 0_2 PROFET-2 Channel 0
-  
+
   // Current Sense
   const int IS_0 = A0; // (PROFET-0 A0 = 14)
   const int IS_1 = A1; // (PROFET-1 A1 = 15)
@@ -32,11 +40,11 @@
   const int ISENSE = A5; // INA169 DC Current Sensor
   const int ISENSEAC = A3; // AC Current Sensor
   const int VPS = A6; // V_DC_SENSE circuit to check power supply / battery voltage
-  
+
   // Channel select
   const int DSEL_0 = 2; // PROFET-0
   const int DSEL_1 = 6; // PROFET-1
-  
+
   // Enable Sensing
   const int DEN_0 = A4; // PROFET-0 (A4 = 18)
   const int DEN_1 = 5;  // PROFET-1
@@ -45,14 +53,14 @@
   // Digital Pins
   const int DS18_PIN = 13; // DS18B20 Temperature (OneWire)
   const int DHT_PIN = 7;  // DHT Temp & Humidity Pin
-  
+
   // Relays
   const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0
   const int RELAY_1 = 5;  // 1_0 PROFET-0 Channel 1
   const int RELAY_2 = 6;  // 0_1 PROFET-1 Channel 0
   const int RELAY_3 = 9;  // 1_1 PROFET-1 Channel 1
   const int RELAY_4 = 11;  // 0_2 PROFET-2 Channel 0
-  
+
   // Current Sense
   const int IS_0 = A2; // (PROFET-0 A0 = 14)
   const int IS_1 = A1; // (PROFET-1 A1 = 15)
@@ -60,11 +68,11 @@
   const int ISENSE = A10; // INA169 DC Current Sensor
   const int ISENSEAC = A5; // AC Current Sensor
   const int VPS = A6; // V_DC_SENSE circuit to check power supply / battery voltage
-  
+
   // Channel select
   const int DSEL_0 = 2; // PROFET-0
   const int DSEL_1 = 16; // PROFET-1
-  
+
   // Enable Sensing
   const int DEN_0 = 12; // PROFET-0 (A4 = 18)
   const int DEN_1 = 5;  // PROFET-1
@@ -97,9 +105,9 @@ void setup() {
   // Setup sense pins
   pinMode(IS_0, INPUT);
   pinMode(IS_1, INPUT);
-  pinMode(IS_2, INPUT);  
-  pinMode(ISENSE, INPUT);  
-  pinMode(ISENSEAC, INPUT);  
+  pinMode(IS_2, INPUT);
+  pinMode(ISENSE, INPUT);
+  pinMode(ISENSEAC, INPUT);
   pinMode(VPS, INPUT);
 
   analogReference(EXTERNAL);
@@ -108,105 +116,47 @@ void setup() {
   pinMode(DEN_0, OUTPUT);
   pinMode(DEN_1, OUTPUT);
   pinMode(DEN_2, OUTPUT);
-  
+
   // Setup relay pins
   pinMode(RELAY_0, OUTPUT);
   pinMode(RELAY_1, OUTPUT);
   pinMode(RELAY_2, OUTPUT);
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
-  
+
   // Turn on everything to start
   // Setup relay pins
   digitalWrite(RELAY_0, HIGH);
   digitalWrite(RELAY_1, HIGH);
   digitalWrite(RELAY_2, HIGH);
   digitalWrite(RELAY_3, HIGH);
-  digitalWrite(RELAY_4, HIGH);    
+  digitalWrite(RELAY_4, HIGH);
 
   dht_handler.Init();
-  
+
   //ENABLE DIAGNOSIS AND SELECT CHANNEL
   digitalWrite(DEN_0, HIGH);  // DEN_0 goes HIGH so Diagnosis enabled for PROFET0
   digitalWrite(DEN_1, HIGH);  // DEN_1 goes HIGH so Diagnosis enabled for PROFET1
   digitalWrite(DEN_2, HIGH);  // DEN_2 goes HIGH so Diagnosis enabled for PROFET2
-  
+
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
-  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
+  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1
 }
-
-// Accumulates a line, parses it and takes the requested action if it is valid.
-class SerialInputHandler {
-  public:
-    void Handle() {
-      while (Serial && Serial.available() > 0) {
-        int c = Serial.read();
-        if (wait_for_new_line_) {
-          if (IsNewLine(c)) {
-            wait_for_new_line_ = false;
-            input_buffer_.Reset();
-          }
-        } else if (IsNewLine(c)) {
-          ProcessInputBuffer();
-          wait_for_new_line_ = false;
-          input_buffer_.Reset();
-        } else if (isprint(c)) {
-          if (!input_buffer_.Append(static_cast<char>(c))) {
-            wait_for_new_line_ = true;
-          }
-        } else {
-          // Input is not an acceptable character.
-          wait_for_new_line_ = true;
-        }
-      }
-    }
-
-  private:
-    // Allow the input line to end with NL, CR NL or CR.
-    bool IsNewLine(int c) {
-      return c == '\n' || c == '\r';
-    }
-
-    void ProcessInputBuffer() {
-      uint8_t relay_index, new_state;
-      if (input_buffer_.ParseUInt8(&relay_index) &&
-          input_buffer_.MatchAndConsume(',') &&
-          input_buffer_.ParseUInt8(&new_state) &&
-          input_buffer_.Empty()) {
-            
-        int pin_num = relayArray[relay_index];
-        switch (new_state) {
-          case 0:
-            turn_pin_off(pin_num);
-            break;    
-          case 1:
-            turn_pin_on(pin_num);
-            break;
-          case 9:
-            toggle_pin(pin_num);
-            break;
-        }    
-      }
-    }
-
-    CharBuffer<8> input_buffer_;
-    bool wait_for_new_line_{false};
-} serial_input_handler;
 
 void loop() {
 
   // Read any serial input
   //    - Input will be two comma separated integers, the
-  //      first specifying the relayArray index and the second 
+  //      first specifying the relayArray index and the second
   //      the new desired state.
   //      Example serial input:
   //           0,1   # Turn relay index 0 on (pin RELAY_0)
   //           0,2   # Turn relay index 0 off
-  //           0,3   # Toggle relay index 0 
+  //           0,3   # Toggle relay index 0
   //           0,4   # Toggle relay index 0 w/ 30 sec delay
-  
+
   serial_input_handler.Handle();
-  
+
   delay(250);
 
   get_readings();
@@ -227,39 +177,47 @@ void get_readings() {
   read_dht_temp(temps, humidity);
   read_ds18b20_temp(temps);
 
-  Serial.print("{");
+  // Create our JsonDocument
+  // https://arduinojson.org/v6/assistant/
+ const size_t capacity = JSON_ARRAY_SIZE(4) + 2*JSON_OBJECT_SIZE(1) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(6) + JSON_OBJECT_SIZE(8);
+  DynamicJsonDocument doc(capacity);
 
-  Serial.print("\"name\":\"control_board\", \"millis\":");
-  Serial.print(millis());
+  JsonObject data = doc.createNestedObject("data");
 
-  Serial.print(", \"power\":{");
-  Serial.print("\"weather\":"); Serial.print(power[0]); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(power[1]); Serial.print(',');
-  Serial.print("\"computer\":"); Serial.print(power[2]); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(power[3]); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(power[4]);
-  Serial.print("},");
+  JsonObject data_control_board = data.createNestedObject("control_board");
+  data_control_board["name"] = "control_board";
+  data_control_board["ver"] = VERSION_ID;
 
-  Serial.print("\"currents\":{");
-  Serial.print("\"main\":"); Serial.print(voltages[0], 3); Serial.print(',');
-  Serial.print("\"weather\":"); Serial.print(voltages[1], 3); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(voltages[2], 3); Serial.print(',');
-  Serial.print("\"computer\":"); Serial.print(voltages[3], 3); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(voltages[4], 3); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(voltages[5], 3);
-  Serial.print("},");
+  JsonObject data_control_board_power = data_control_board.createNestedObject("power");
+  data_control_board_power["computer"] = power[0];
+  data_control_board_power["fan"] = power[1];
+  data_control_board_power["mount"] = power[2];
+  data_control_board_power["cameras"] = power[3];
+  data_control_board_power["weather"] = power[4];
+  data_control_board_power["main"] = 1;
 
-  Serial.print("\"temps\":{");
-  Serial.print("\"board\":"); Serial.print(temps[0], 2); Serial.print(',');
-  Serial.print("\"NUC\":"); Serial.print(temps[1], 2); Serial.print(',');
-  Serial.print("\"battery\":"); Serial.print(temps[2], 2); Serial.print(',');
-  Serial.print("\"lid\":"); Serial.print(temps[3], 2);
-  Serial.print("},");
+  JsonObject data_control_board_current = data_control_board.createNestedObject("current");
+  data_control_board_current["main"] = voltages[0];
+  data_control_board_current["fan"] = voltages[1];
+  data_control_board_current["mount"] = voltages[2];
+  data_control_board_current["cameras"] = voltages[3];
 
-  Serial.print(" \"humidity\":"); Serial.print(humidity[0]); Serial.print(',');
+  JsonObject data_control_board_amps = data_control_board.createNestedObject("amps");
+  data_control_board_amps["main"] = voltages[0];
+  data_control_board_amps["fan"] = voltages[1];
+  data_control_board_amps["mount"] = voltages[2];
+  data_control_board_amps["cameras"] = voltages[3];
 
+  data_control_board["humidity"] = humidity[0];
 
-  Serial.println("}");
+  JsonArray data_control_board_temperature = data_control_board.createNestedArray("temperature");
+  data_control_board_temperature.add(temps[0]);
+  data_control_board_temperature.add(temps[1]);
+  data_control_board_temperature.add(temps[2]);
+  data_control_board_temperature.add(temps[3]);
+  data_control_board["date"] = "2019-06-26T04:04:41 GMT";
+
+  serializeJson(doc, Serial);
 }
 
 // Due to limitations of the Arduino preprocessor, we must place the following all on one line:
@@ -295,18 +253,18 @@ void read_voltages(float voltages[]) {
   digitalWrite(DSEL_0, LOW);
   digitalWrite(DSEL_1, LOW);
 
-  delay(100);  
+  delay(100);
 
   float Diag0=analogRead(IS_0);
   float Diag1=analogRead(IS_1);
-  
+
 
   // Enabled channels 0_1 and 1_1
   digitalWrite(DSEL_0, HIGH);
   digitalWrite(DSEL_1, HIGH);
 
-  delay(100);  
-  
+  delay(100);
+
   float Diag3=analogRead(IS_0);
   float Diag4=analogRead(IS_1);
 
@@ -319,13 +277,13 @@ void read_voltages(float voltages[]) {
 
   float Iload0 = Diag0*5/1023*2360/1200; //conversion factor to compute Iload from sensed voltage
   float Iload1 = Diag1*5/1023*2360/1200;
-  float Iload2 = Diag2*5/1023*3200/1200; 
-  float Iload3 = Diag3*5/1023*2360/1200; 
+  float Iload2 = Diag2*5/1023*3200/1200;
+  float Iload3 = Diag3*5/1023*2360/1200;
   float Iload4 = Diag4*5/1023*2360/1200;
   float Iload5 = Diag5*5/1023;
   float Iload6 = Diag6*5/1023*0.18; //shows in AC (A)
   float Iload7 = Diag7*5/1023*3.45; //takes into account the voltage divider bridge
-  
+
   voltages[0] = Iload5;
   voltages[1] = Iload0;
   voltages[2] = Iload3;
@@ -355,7 +313,7 @@ void read_dht_temp(float temps[], float humidity[]) {
 
 void read_ds18b20_temp(float temps[]) {
 
-  sensors.requestTemperatures();  
+  sensors.requestTemperatures();
 
   for (int x = 0; x < NUM_DS18; x++) {
     // Store in x+1 because DHT11 stores in index 0
