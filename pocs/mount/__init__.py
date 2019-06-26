@@ -13,7 +13,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None):
     logger = get_root_logger()
 
     if 'mount' not in config:
-        logger.info("No mount in config")
+        logger.info("No mount information in config, cannot create.")
         return None
 
     if earth_location is None:
