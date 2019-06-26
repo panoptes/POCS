@@ -51,6 +51,6 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
     # Make the mount include site information
     mount = module.Mount(location=earth_location, *args, **kwags)
 
-    logger.debug('Mount created')
+    logger.debug('Mount created from config')
 
     return mount
