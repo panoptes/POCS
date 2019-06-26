@@ -116,15 +116,15 @@ def test_primary_camera_no_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
-def test_add_remove_scheduler(config, observatory, caplog):
-    conf = config.copy()
-    site_details = create_location_from_config(conf)
-    scheduler = create_scheduler_from_config(conf, site_details['observer'])
+def test_add_remove_scheduler(dynamic_config_server, config_port, observatory, caplog):
+    site_details = create_location_from_config()
+    scheduler = create_scheduler_from_config(observer=site_details['observer'])
     observatory.remove_scheduler()
     assert observatory.scheduler is None
     observatory.add_scheduler(scheduler)
     assert observatory.scheduler is not None
-    with pytest.raises(TypeError, message="Scheduler is not instance of BaseScheduler class, cannot add."):
+    with pytest.raises(TypeError,
+                       message="Scheduler is not instance of BaseScheduler class, cannot add."):
         observatory.add_scheduler("scheduler")
 
 
