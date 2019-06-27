@@ -124,7 +124,7 @@ def test_add_remove_scheduler(dynamic_config_server, config_port, observatory, c
     observatory.add_scheduler(scheduler)
     assert observatory.scheduler is not None
     with pytest.raises(TypeError,
-                       message="Scheduler is not instance of BaseScheduler class, cannot add."):
+                       match="Scheduler is not instance of BaseScheduler class, cannot add."):
         observatory.add_scheduler("scheduler")
 
 
