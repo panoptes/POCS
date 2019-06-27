@@ -13,6 +13,7 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.images import Image
+from pocs.mount.ioptron import Mount
 from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
@@ -219,6 +220,23 @@ class Observatory(PanBase):
         """Remove scheduler. """
         self.logger.info('Removing scheduler')
         self.scheduler = None
+
+    def add_mount(self, mount):
+        """Add mount.
+
+        Args:
+            mount (`pocs.mount.ioptron.Mount`): An instance of the `~Mount` class.
+        """
+        if isinstance(mount, Mount):
+            self.logger.info('Adding mount')
+            self.mount = mount
+        else:
+            raise TypeError("Mount is not instance of Mount class, cannot add.")
+
+    def remove_mount(self):
+        """Remove mount. """
+        self.logger.info('Removing mount')
+        self.mount = None
 
 ##########################################################################
 # Methods
