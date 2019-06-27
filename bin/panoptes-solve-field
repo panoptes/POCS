@@ -1,3 +1,5 @@
 #!/bin/bash
 
+echo "Running from POCS version of panoptes-solve-field"
+
 docker run --rm -it -v /var/panoptes:/var/panoptes gcr.io/panoptes-survey/panoptes-utils panoptes-solve-field "$@"
