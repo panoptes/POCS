@@ -12,8 +12,8 @@ from astropy.coordinates import get_sun
 
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
+from pocs.dome.bisque import Dome
 from pocs.images import Image
-from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import load_module
@@ -209,16 +209,33 @@ class Observatory(PanBase):
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
-        if isinstance(scheduler, BaseScheduler):
+        if isinstance(scheduler, sim):
             self.logger.info('Adding scheduler')
             self.scheduler = scheduler
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
     def remove_scheduler(self):
-        """Remove scheduler. """
+        """Remove scheduler."""
         self.logger.info('Removing scheduler')
         self.scheduler = None
+
+    def add_dome(self, dome):
+        """Add dome.
+
+        Args:
+            dome (`pocs.dome.bisque.Dome`): An instance of the `~Dome` class.
+        """
+        if isinstance(dome, Dome):
+            self.logger.info('Adding dome.')
+            self.dome = dome
+        else:
+            raise TypeError("Dome is not instance of Dome class, cannot add.")
+
+    def remove_dome(self):
+        """Remove dome."""
+        self.logger.info('Removing dome.')
+        self.dome = None
 
 ##########################################################################
 # Methods
