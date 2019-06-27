@@ -1,5 +1,13 @@
 #!/bin/bash -e
 
+# Update utils
+cd ${PANDIR}/panoptes-utils
+# WARNING temporary - change!!!!!!
+git pull origin move-to-panotpes-utils
+pip install -r requirements.txt
+
+cd ${PANDIR}/POCS
+
 # Install any updated requirements
 pip install -r requirements.txt
 
