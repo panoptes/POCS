@@ -1,11 +1,11 @@
 #!/bin/bash -e
 
 # Update utils
-cd ${PANDIR}/panoptes-utils
+cd "${PANDIR}/panoptes-utils"
 git pull origin develop
 pip install -r requirements.txt
 
-cd ${PANDIR}/POCS
+cd "${PANDIR}/POCS"
 
 # Install any updated requirements
 pip install -r requirements.txt
@@ -13,7 +13,7 @@ pip install -r requirements.txt
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START=.coveragerc
 # Die on first test for now
-coverage run $(which pytest) -xvrs --test-databases all
+coverage run "$(command -v pytest)" -xvrs --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then
