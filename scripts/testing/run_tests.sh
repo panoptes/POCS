@@ -2,8 +2,7 @@
 
 # Update utils
 cd ${PANDIR}/panoptes-utils
-# WARNING temporary - change!!!!!!
-git pull origin move-to-panotpes-utils
+git pull origin develop
 pip install -r requirements.txt
 
 cd ${PANDIR}/POCS
