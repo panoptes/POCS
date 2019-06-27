@@ -8,6 +8,7 @@ from astropy.time import Time
 import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -31,8 +32,10 @@ def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
+    dome = create_dome_from_config(config)
     obs = Observatory(config=config,
                       scheduler=scheduler,
+                      dome=dome,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
@@ -139,6 +142,18 @@ def test_primary_camera(observatory):
 def test_primary_camera_no_primary_camera(observatory):
     observatory._primary_camera = None
     assert observatory.primary_camera is not None
+
+
+def test_add_remove_scheduler(config, observatory, caplog):
+    conf = config.copy()
+    site_details = create_location_from_config(conf)
+    scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    observatory.remove_scheduler()
+    assert observatory.scheduler is None
+    observatory.add_scheduler(scheduler)
+    assert observatory.scheduler is not None
+    with pytest.raises(TypeError, message="Scheduler is not instance of BaseScheduler class, cannot add."):
+        observatory.add_scheduler("scheduler")
 
 
 def test_status(observatory):
@@ -388,9 +403,11 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_with_simulated_dome):
+def test_operate_dome(config_with_simulated_dome, config):
+    conf = config.copy()
     simulator = hardware.get_all_names(without=['dome', 'night'])
-    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
+    dome = create_dome_from_config(conf, logger=None)
+    observatory = Observatory(config=config_with_simulated_dome, dome=dome, simulator=simulator,
                               ignore_local_config=True)
     assert observatory.has_dome
     assert observatory.open_dome()

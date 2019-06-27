@@ -1,6 +1,6 @@
 import pytest
 
-from pocs.scheduler import create_scheduler_from_config
+from pocs.scheduler import create_scheduler_from_config, BaseScheduler
 from pocs.utils import error
 from pocs.utils.location import create_location_from_config
 
@@ -22,7 +22,7 @@ def test_bad_scheduler_fields_file(config):
 
 
 def test_no_observer(config):
-    assert create_scheduler_from_config(config, observer=None) is None
+    assert isinstance(create_scheduler_from_config(config, observer=None), BaseScheduler) is True
 
 
 def test_no_scheduler_in_config(config):
