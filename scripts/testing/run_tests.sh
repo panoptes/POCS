@@ -1,10 +1,5 @@
 #!/bin/bash -e
 
-# Update utils
-cd "${PANDIR}/panoptes-utils"
-git pull origin develop
-pip install -r requirements.txt
-
 cd "${PANDIR}/POCS"
 
 # Install any updated requirements
