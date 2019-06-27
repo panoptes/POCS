@@ -14,6 +14,7 @@ from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.dome.bisque import Dome
 from pocs.images import Image
+from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import load_module
@@ -209,7 +210,7 @@ class Observatory(PanBase):
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
-        if isinstance(scheduler, sim):
+        if isinstance(scheduler, BaseScheduler):
             self.logger.info('Adding scheduler')
             self.scheduler = scheduler
         else:
