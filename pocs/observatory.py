@@ -12,7 +12,7 @@ from astropy.coordinates import get_sun
 
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
-from pocs.dome.bisque import Dome
+from pocs.dome import AbstractDome
 from pocs.images import Image
 from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
@@ -225,13 +225,13 @@ class Observatory(PanBase):
         """Add dome.
 
         Args:
-            dome (`pocs.dome.bisque.Dome`): An instance of the `~Dome` class.
+            dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
         """
-        if isinstance(dome, Dome):
+        if isinstance(dome, AbstractDome):
             self.logger.info('Adding dome.')
             self.dome = dome
         else:
-            raise TypeError("Dome is not instance of Dome class, cannot add.")
+            raise TypeError("Dome is not instance of AbstractDome class, cannot add.")
 
     def remove_dome(self):
         """Remove dome."""
