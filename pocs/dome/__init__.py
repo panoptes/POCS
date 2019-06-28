@@ -6,7 +6,7 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.logger import get_root_logger
 
 
-def create_dome_from_config(config_port='6563', logger=None):
+def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -14,26 +14,46 @@ def create_dome_from_config(config_port='6563', logger=None):
     independent actuators, for example slit, rotation and vents. Those would need to be handled
     by a single dome driver class.
     """
-    config = get_config(port=config_port)
-
     if not logger:
         logger = get_root_logger()
 
-    if 'dome' not in config:
+    dome_config = get_config('dome', port=config_port)
+
+    if dome_config is None:
         logger.info('No dome in config.')
         return None
-    dome_config = config['dome']
-    if 'dome' in config.get('simulator', []):
-        brand = 'simulator'
-        driver = 'simulator'
-        dome_config['simulator'] = True
-    else:
-        brand = dome_config.get('brand')
-        driver = dome_config['driver']
+
+    brand = dome_config.get('brand')
+    driver = dome_config['driver']
+
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
     module = load_module('pocs.dome.{}'.format(driver))
-    dome = module.Dome(config=config, config_port=config_port)
+    dome = module.Dome(onfig_port=config_port, *args, **kwargs)
     logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
+
+    return dome
+
+
+def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
+    if not logger:
+        logger = get_root_logger()
+
+    dome_config = get_config('dome', port=config_port)
+
+    if dome_config is None:
+        logger.info('No dome in config.')
+        return None
+
+    brand = 'simulator'
+    driver = 'simulator'
+    dome_config['simulator'] = True
+
+    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+
+    module = load_module(f'pocs.dome.{driver}')
+    dome = module.Dome(config_port=config_port, *args, **kwargs)
+    logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
+
     return dome
 
 
