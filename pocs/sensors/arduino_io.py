@@ -7,8 +7,6 @@
 import collections
 import copy
 import serial
-import time
-from serial import serialutil
 import threading
 import traceback
 
@@ -149,10 +147,6 @@ class ArduinoIO(object):
         # can get and set the stop_running property.
         self._stop_running = threading.Event()
         self._logger.info('Created ArduinoIO instance for board {}', self.board)
-
-    def __del__(self):
-        if hasattr(self, '_logger'):
-            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
     @property
     def stop_running(self):
