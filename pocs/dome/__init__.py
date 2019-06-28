@@ -23,7 +23,7 @@ def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
         logger.info('No dome in config.')
         return None
 
-    brand = dome_config.get('brand')
+    brand = dome_config['brand']
     driver = dome_config['driver']
 
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
@@ -41,12 +41,12 @@ def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
     dome_config = get_config('dome', port=config_port)
 
     if dome_config is None:
-        logger.info('No dome in config.')
-        return None
-
-    brand = 'simulator'
-    driver = 'simulator'
-    dome_config['simulator'] = True
+        brand = 'simulator'
+        driver = 'simulator'
+        dome_config['simulator'] = True
+    else:
+        brand = dome_config['brand']
+        driver = dome_config['driver']
 
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
 
