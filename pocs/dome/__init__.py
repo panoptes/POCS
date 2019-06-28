@@ -40,15 +40,10 @@ def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
 
     dome_config = get_config('dome', port=config_port)
 
-    if dome_config is None:
-        brand = 'simulator'
-        driver = 'simulator'
-        dome_config['simulator'] = True
-    else:
-        brand = dome_config['brand']
-        driver = dome_config['driver']
+    brand = dome_config['brand']
+    driver = dome_config['driver']
 
-    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+    logger.debug('Creating dome simulator: brand={}, driver={}'.format(brand, driver))
 
     module = load_module(f'pocs.dome.{driver}')
     dome = module.Dome(config_port=config_port, *args, **kwargs)
