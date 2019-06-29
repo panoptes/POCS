@@ -4,7 +4,7 @@ usage() {
   echo -n "
 #############################################################
 # Transfer files to/from a Google Cloud Storage bucket.
-# 
+#
 # This script will call the underlying gsutil utility, using
 # the parallel options (-m) by default. This will also write
 # a manifest log into the directory which can be used for transfer
@@ -27,7 +27,7 @@ usage() {
 #     - 'PAN006/Hd189733/7bab97/20180327T071126/' # Specific observation
 #############################################################
  $ $(basename $0) FROM_PATH TO_PATH MANIFEST_FILE
- 
+
  Options:
   FROM_PATH     File(s) to be moved.
   TO_PATH     	Where file(s) are to be placed.
@@ -36,6 +36,12 @@ usage() {
 
  NOTE: $POCS/scripts/upload_image_dir.py may be more appropriate.
 
+ Example:
+    # Uplaod a sample file
+    scripts/transfer-files upload-example.txt gs://panoptes-temp-bucket/temp/
+
+    # Download directory to dest_temp with different manifest_file
+    scripts/transfer-files gs://panoptes-temp-bucket/temp/ dest_temp/ upload-log.txt
 "
 }
 
