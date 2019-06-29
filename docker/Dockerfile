@@ -27,13 +27,7 @@ RUN apt-get update \
     && /bin/bash gphoto2-updater.sh --stable \
     # arduino-cli
     && wget -q $arduino_url -O arduino-cli.tar.bz2 \
-    && bunzip2 arduino-cli.tar.bz2 \
-    && tar xof arduino-cli.tar \
-    && rm arduino-cli.tar \
-    # Don't know exact name of untarred file.
-    && ARDUINO_FILE="$(ls arduino-cli*)" \
-    # Rename so we do know.
-    && mv ${ARDUINO_FILE} arduino-cli \
+    && tar xvfj arduino-cli.tar.bz2 \
     && chmod +x arduino-cli \
     && mv arduino-cli /usr/local/bin/ \
     # Cleanup
