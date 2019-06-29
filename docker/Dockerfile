@@ -43,6 +43,8 @@ ARG which_pip=pip
 
 # POCS
 RUN cd ${POCS} \
+    # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
+    && $which_pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
     && $which_pip install --no-cache-dir --no-deps -r requirements.txt \
     && $which_pip install --no-cache-dir --no-deps -e . \
     # Link conf_files to $PANDIR
