@@ -37,7 +37,7 @@ usage() {
  NOTE: $POCS/scripts/upload_image_dir.py may be more appropriate.
 
  Example:
-    # Uplaod a sample file
+    # Upload a sample file
     scripts/transfer-files upload-example.txt gs://panoptes-temp-bucket/temp/
 
     # Download directory to dest_temp with different manifest_file
