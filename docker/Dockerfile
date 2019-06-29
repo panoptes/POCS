@@ -28,6 +28,10 @@ RUN apt-get update \
     # arduino-cli
     && wget -q $arduino_url -O arduino-cli.tar.bz2 \
     && tar xvfj arduino-cli.tar.bz2 \
+    # Don't know exact name of untarred file.
+    && ARDUINO_FILE="$(ls arduino-cli*)" \
+    # Rename so we do know.
+    && mv ${ARDUINO_FILE} arduino-cli \
     && chmod +x arduino-cli \
     && mv arduino-cli /usr/local/bin/ \
     # Cleanup

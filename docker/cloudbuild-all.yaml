@@ -28,7 +28,7 @@ steps:
   - '-f=docker/Dockerfile'
   - '--build-arg=arch=arm32v7'
   - '--build-arg=which_pip=/opt/conda/envs/panoptes-env/bin/pip'
-  - '--build-arg=arduino_url=https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linuxaarch64.tar.bz2'
+  - '--build-arg=arduino_url=https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linuxarm.tar.bz2'
   - '--tag=gcr.io/${PROJECT_ID}/pocs:arm32v7'
   - '.'
   waitFor: ['register-qemu']
