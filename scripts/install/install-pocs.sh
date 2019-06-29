@@ -39,11 +39,11 @@ usage() {
 "
 }
 
-if [ -z ${PANUSER} ]; then
+if [ -z "${PANUSER}" ]; then
     export PANUSER=$USER
     echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
 fi
-if [ -z ${PANDIR} ]; then
+if [ -z "${PANDIR}" ]; then
     export PANDIR='/var/panoptes'
     echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
 fi
@@ -70,74 +70,144 @@ case $key in
 esac
 done
 
+function command_exists {
+    # https://gist.github.com/gubatron/1eb077a1c5fcf510e8e5
+    # this should be a very portable way of checking if something is on the path
+    # usage: "if command_exists foo; then echo it exists; fi"
+  type "$1" &> /dev/null
+}
+
 do_install() {
+    clear
+
+    OS="$(uname -s)"
+    case "${OS}" in
+        Linux*)     machine=Linux;;
+        Darwin*)    machine=Mac;;
+        *)          machine="UNKNOWN:${unameOut}"
+    esac
+    echo ${machine}
+
+    LOGFILE="${PANDIR}/logs/install-pocs.log"
+
     echo "Installing PANOPTES software."
     echo "USER: ${PANUSER}"
+    echo "OS: ${OS}"
     echo "DIR: ${PANDIR}"
+    echo "Logfile: ${LOGFILE}"
 
-    if [[ ! -d ${PANDIR} ]] || [[ $(stat -c "%U" ${PANDIR}) -ne $USER ]]; then
+    # System time doesn't seem to be updating correctly for some reason.
+    # Perhaps just a VirtualBox issue but running on all linux.
+    if [[ "${OS}" = "Linux" ]]; then
+        sudo systemctl start systemd-timesyncd.service
+    fi
+
+    if [[ ! -d "${PANDIR}" ]]; then
         echo "Creating directories"
         # Make directories
-        sudo mkdir -p ${PANDIR}
-        sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR}
+        sudo mkdir -p "${PANDIR}"
+        sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 
-        mkdir -p ${PANDIR}/logs
-        mkdir -p ${PANDIR}/conf_files
-        mkdir -p ${PANDIR}/images
+        mkdir -p "${PANDIR}/logs"
+        mkdir -p "${PANDIR}/images"
+    else
+        echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
+        select yn in "Yes" "No"; do
+            case $yn in
+                Yes ) echo "Proceeding with existing directory"; break;;
+                No ) echo "Exiting"; exit 1;;
+            esac
+        done
     fi
 
     echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log."
 
     # apt: git, wget
     echo "Installing system dependencies"
-    sudo apt update &>> ${PANDIR}/logs/install-pocs.log
-    sudo apt --yes install wget git openssh-server byobu &>> ${PANDIR}/logs/install-pocs.log
+
+    if [[ "${OS}" = "Linux" ]]; then
+        sudo apt-get update >> "${LOGFILE}" 2>&1
+        sudo apt-get --yes install wget curl git openssh-server ack jq httpie byobu vim-nox zsh >> "${LOGFILE}" 2>&1
+    elif [[ "${OS}" = "Darwin" ]]; then
+        sudo brew update | sudo tee -a "${LOGFILE}"
+        sudo brew install wget curl git jq httpie | sudo tee -a "${LOGFILE}"
+    fi
 
     echo "Cloning PANOPTES source code."
     echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
 
     # Default user
-    read -p "Github User [panoptes]: " github_user
-    github_user=${github_user:-panoptes}
+    read -p "Github User [press Enter for default]: " github_user
+    github_user=${github_user:-wtgee}
     echo "Using repositories from user '${github_user}'."
 
-    cd ${PANDIR}
+    if [[ "${github_user}" = "wtgee" ]]; then
+        echo "Using development files from user 'wtgee' for now."
+    fi
 
+    cd "${PANDIR}"
     declare -a repos=("POCS" "PAWS" "panoptes-utils")
-
     for repo in "${repos[@]}"; do
         if [ ! -d "${PANDIR}/${repo}" ]; then
             echo "Cloning ${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
-            git clone https://github.com/${github_user}/${repo}.git
-
-            # TODO
-            # echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
+            git clone "https://github.com/${github_user}/${repo}.git" >> "${LOGFILE}" 2>&1
+            if [[ "${repo}" = "POCS" && "${github_user}" = "wtgee" ]]; then
+                echo "Getting docker branch 'new-docker'"
+                cd "${repo}" && git checkout new-docker
+                cd "${PANDIR}"
+            fi
         else
             echo "Repo ${repo} already exists on system."
         fi
     done
 
+    # Link env_file from POCS
+    ln -sf "${PANDIR}/POCS/docker/env_file" "${PANDIR}"
+    echo "source ${PANDIR}/env_file" >> "${HOME}/.bashrc"
+
+    # Link conf_files dir from POCS
+    ln -sf "${PANDIR}/POCS/conf_files" "${PANDIR}"
+
     # Get Docker
-    if ! hash docker; then
+    if ! command_exists docker; then
         echo "Installing Docker"
-        sh -c "$(wget https://get.docker.com -O -)"
-        sudo usermod -aG docker ${PANUSER}
-    fi
+        if [[ "${OS}" = "Linux" ]]; then
+            /bin/bash -c "$(wget -qO- https://get.docker.com)" &>> ${PANDIR}/logs/install-pocs.log
 
-    if ! hash docker-compose; then
-        # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
-        sudo curl -L --fail https://github.com/docker/compose/releases/download/1.24.0/run.sh -o /usr/local/bin/docker-compose
-        sudo chmod a+x /usr/local/bin/docker-compose
-    fi
+            if ! command_exists docker-compose; then
+                # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
+                sudo wget -q https://github.com/docker/compose/releases/download/1.24.0/run.sh -O /usr/local/bin/docker-compose
+                sudo chmod a+x /usr/local/bin/docker-compose
+                sudo docker pull docker/compose
+            fi
 
-    echo "Pulling POCS docker images"
-    sudo docker pull gcr.io/panoptes-survey/pocs
-    sudo docker pull gcr.io/panoptes-survey/paws
+            echo "Adding ${PANUSER} to docker group"
+            sudo usermod -aG docker "${PANUSER}" >> "${LOGFILE}" 2>&1
+        elif [[ "${OS}" = "Darwin" ]]; then
+            brew cask install docker
+            echo "Adding ${PANUSER} to docker group"
+            sudo dscl -aG docker "${PANUSER}"
+        fi
+
+        echo "Pulling POCS docker images"
+        sudo docker pull gcr.io/panoptes-survey/panoptes-utils
+        sudo docker pull gcr.io/panoptes-survey/pocs
+        sudo docker pull gcr.io/panoptes-survey/paws
+    else
+        echo "WARNING: Docker images not installed/downloaded."
+    fi
 
     echo "Please reboot your machine before using POCS."
 
+    read -p "Reboot now? [y/N]: " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        sudo reboot
+    fi
+
 }
+
 # wrapped up in a function so that we have some protection against only getting
 # half the file during "curl | sh" - copied from get.docker.com
 do_install
