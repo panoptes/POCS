@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import logging
@@ -10,8 +9,10 @@ import sys
 from tempfile import gettempdir
 import time
 from warnings import warn
+from contextlib import suppress
 
 from pocs.utils.config import load_config
+from collections.abc import Mapping
 
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
@@ -123,7 +124,7 @@ def logger_msg_formatter(fmt, args):
     # formatting methods to try based on the contents.
     method_names = []
     may_have_legacy_subst = format_has_legacy_style(fmt)
-    args_are_mapping = isinstance(args, collections.Mapping)
+    args_are_mapping = isinstance(args, Mapping)
     if '{' in fmt:
         # Looks modern.
         if args_are_mapping:
@@ -219,9 +220,11 @@ def get_root_logger(profile='panoptes', log_config=None):
             # KeyError in the for loop below if 'formatters' is missing.
             warn('formatters is missing from log_config!')
             warn(f'log_config: {log_config!r}')
-        for name, formatter in log_config['formatters'].items():
-            log_config['formatters'][name].setdefault('()', _UTCFormatter)
+
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+
+        # Make the log use UTC
+        logging.Formatter.converter = time.gmtime
     else:
         log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
 
@@ -251,12 +254,10 @@ def get_root_logger(profile='panoptes', log_config=None):
         # Use a relative path, so that if we move PANLOG the paths aren't broken.
         log_symlink = os.path.join(log_dir, '{}-{}.log'.format(invoked_script, handler))
         log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
-        try:
+        with suppress(FileNotFoundError):
             os.unlink(log_symlink)
-        except FileNotFoundError:  # pragma: no cover
-            pass
-        finally:
-            os.symlink(log_symlink_target, log_symlink)
+
+        os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)
@@ -276,8 +277,3 @@ def get_root_logger(profile='panoptes', log_config=None):
     # when the log rotates too!
     all_loggers[logger_key] = logger
     return logger
-
-
-class _UTCFormatter(logging.Formatter):
-    """ Simple class to convert times to UTC in the logger """
-    converter = time.gmtime

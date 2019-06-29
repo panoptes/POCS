@@ -73,7 +73,7 @@ class Camera(AbstractGPhotoCamera):
         Gathers various header information, sets the file path, and calls
         `take_exposure`. Also creates a `threading.Event` object and a
         `threading.Timer` object. The timer calls `process_exposure` after the
-        set amount of time is expired (`observation.exp_time + self.readout_time`).
+        set amount of time is expired (`observation.exptime + self.readout_time`).
 
         Note:
             If a `filename` is passed in it can either be a full path that includes
@@ -85,7 +85,7 @@ class Camera(AbstractGPhotoCamera):
                 describing the observation
             headers (dict): Header data to be saved along with the file
             filename (str, optional): Filename for saving, defaults to ISOT time stamp
-            **kwargs (dict): Optional keyword arguments (`exp_time`)
+            **kwargs (dict): Optional keyword arguments (`exptime`)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
@@ -93,13 +93,13 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
-        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                          headers,
-                                                                          filename,
-                                                                          *args,
-                                                                          **kwargs)
+        exptime, file_path, image_id, metadata = self._setup_observation(observation,
+                                                                         headers,
+                                                                         filename,
+                                                                         *args,
+                                                                         **kwargs)
 
-        proc = self.take_exposure(seconds=exp_time, filename=file_path)
+        proc = self.take_exposure(seconds=exptime, filename=file_path)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -109,14 +109,14 @@ class Camera(AbstractGPhotoCamera):
                 observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
-        wait_time = exp_time + self.readout_time
+        wait_time = exptime + self.readout_time
         t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
+    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
@@ -129,15 +129,6 @@ class Camera(AbstractGPhotoCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
         """
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
-
-        if isinstance(seconds, u.Quantity):
-            seconds = seconds.value
-
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
         run_cmd = [script_path, self.port, str(seconds), filename]
@@ -156,15 +147,12 @@ class Camera(AbstractGPhotoCamera):
             outs, errs = proc.communicate(timeout=10)
             if errs is not None:
                 self.logger.warning(errs)
-        else:
-            return proc
+        finally:
+            readout_args = (filename, header)
+            return readout_args
 
-    def _process_fits(self, file_path, info):
-        """
-        Converts the CR2 to a FITS file
-        """
-        self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=True)
-        # Replace the path name with the FITS file
-        info['file_path'] = fits_path
+    def _readout(self, cr2_path, info):
+        """Reads out the image as a CR2 and converts to FITS"""
+        self.logger.debug("Converting CR2 -> FITS: {}".format(cr2_path))
+        fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
         return fits_path

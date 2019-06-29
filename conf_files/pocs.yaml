@@ -18,7 +18,6 @@ location:
     latitude: 19.54 # Degrees
     longitude: -155.58 # Degrees
     elevation: 3400.0 # Meters
-    utc_offset: -10.00 # Hours
     horizon: 30 # Degrees; targets must be above this to be considered valid.
     flat_horizon: -6 # Degrees - Flats when sun between this and focus horizon.
     focus_horizon: -12 # Degrees - Dark enough to focus on stars.
@@ -35,7 +34,7 @@ directories:
     mounts: POCS/resources/mounts
 db: 
     name: panoptes
-    type: mongo
+    type: file
 scheduler:
     type: dispatch
     fields_file: simple.yaml

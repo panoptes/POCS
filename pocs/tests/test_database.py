@@ -4,14 +4,6 @@ from pocs.utils.error import InvalidCollection
 from pocs.utils.logger import get_root_logger
 
 
-def test_insert_and_get_current(db):
-    rec = {'test': 'insert'}
-    db.insert_current('config', rec)
-
-    record = db.get_current('config')
-    assert record['data']['test'] == rec['test']
-
-
 def test_insert_and_no_permanent(db):
     rec = {'test': 'insert'}
     id0 = db.insert_current('config', rec, store_permanently=False)
@@ -21,6 +13,14 @@ def test_insert_and_no_permanent(db):
 
     record = db.find('config', id0)
     assert record is None
+
+
+def test_insert_and_get_current(db):
+    rec = {'test': 'insert'}
+    db.insert_current('config', rec)
+
+    record = db.get_current('config')
+    assert record['data']['test'] == rec['test']
 
 
 def test_clear_current(db):

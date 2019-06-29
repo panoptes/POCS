@@ -481,7 +481,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 # Utility Methods
 ##########################################################################
 
-def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
+def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
 
     mount = pocs.observatory.mount
@@ -495,19 +495,19 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
 
     analyze_fn = None
 
-    print_info('At home position, taking {} sec exposure'.format(exp_time))
-    pocs.say('At home position, taking {} sec exposure'.format(exp_time))
+    print_info('At home position, taking {} sec exposure'.format(exptime))
+    pocs.say('At home position, taking {} sec exposure'.format(exptime))
     procs = dict()
     for cam_name, cam in pocs.observatory.cameras.items():
         fn = '{}/pole_{}.cr2'.format(base_dir, cam_name.lower())
-        proc = cam.take_exposure(seconds=exp_time, filename=fn)
+        proc = cam.take_exposure(seconds=exptime, filename=fn)
         procs[fn] = proc
         if cam.is_primary:
             analyze_fn = fn
 
     for fn, proc in procs.items():
         try:
-            outs, errs = proc.communicate(timeout=(exp_time + 15))
+            outs, errs = proc.communicate(timeout=(exptime + 15))
         except AttributeError:
             continue
         except KeyboardInterrupt:
@@ -538,7 +538,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
     print_info("Doing rotation test")
     pocs.say("Doing rotation test")
     mount.slew_to_home()
-    exp_time = 25
+    exptime = 25
     mount.move_direction(direction='west', seconds=11)
 
     rotate_fn = None
@@ -554,7 +554,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         for cam_name, cam in pocs.observatory.cameras.items():
             fn = '{}/rotation_{}_{}.cr2'.format(base_dir,
                                                 direction, cam_name.lower())
-            proc = cam.take_exposure(seconds=exp_time, filename=fn)
+            proc = cam.take_exposure(seconds=exptime, filename=fn)
             procs[fn] = proc
             if cam.is_primary:
                 rotate_fn = fn
@@ -565,7 +565,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         # Get exposures
         for fn, proc in procs.items():
             try:
-                outs, errs = proc.communicate(timeout=(exp_time + 15))
+                outs, errs = proc.communicate(timeout=(exptime + 15))
             except AttributeError:
                 continue
             except KeyboardInterrupt:
@@ -599,7 +599,7 @@ class DriftShell(Cmd):
     base_dir = '{}/images/drift_align'.format(os.getenv('PANDIR'))
 
     num_pics = 40
-    exp_time = 30
+    exptime = 30
 
     # Coordinates for different tests
     coords = {
@@ -643,16 +643,16 @@ class DriftShell(Cmd):
         try:
             direction = kwargs['direction']
             num_pics = int(kwargs['num_pics'])
-            exp_time = float(kwargs['exp_time'])
+            exptime = float(kwargs['exptime'])
         except Exception:
             print_warning(
-                'Drift test requires three arguments: direction, num_pics, exp_time')
+                'Drift test requires three arguments: direction, num_pics, exptime')
             return
 
         start_time = kwargs.get('start_time', current_time(flatten=True))
 
         print_info('{} drift test with {}x {}sec exposures'.format(
-            direction.capitalize(), num_pics, exp_time))
+            direction.capitalize(), num_pics, exptime))
 
         if direction:
             try:
@@ -666,7 +666,7 @@ class DriftShell(Cmd):
                     az=az,
                     loc=location,
                     num_exp=num_pics,
-                    exp_time=exp_time,
+                    exptime=exptime,
                     name=direction
                 )
 
@@ -683,7 +683,7 @@ class DriftShell(Cmd):
         args, kwargs = string_to_params(*arg)
 
         num_pics = int(kwargs.get('num_pics', self.num_pics))
-        exp_time = float(kwargs.get('exp_time', self.exp_time))
+        exptime = float(kwargs.get('exptime', self.exptime))
 
         print_info('Full drift test. Press Ctrl-c to interrupt')
 
@@ -695,8 +695,8 @@ class DriftShell(Cmd):
 
             print_info('Performing drift test: {}'.format(direction))
             try:
-                self.do_drift_test('direction={} num_pics={} exp_time={} start_time={}'.format(
-                    direction, num_pics, exp_time, start_time))
+                self.do_drift_test('direction={} num_pics={} exptime={} start_time={}'.format(
+                    direction, num_pics, exptime, start_time))
             except KeyboardInterrupt:
                 print_warning('Drift test interrupted')
                 break
@@ -832,7 +832,7 @@ def process_img(fn, start_time, remove_after=True):
         print_warning('Problem with adding to mongo: {}'.format(e))
 
 
-def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
+def get_observation(alt=None, az=None, loc=None, num_exp=25, exptime=30 * u.second, name=None):
     assert alt is not None
     assert az is not None
     assert loc is not None
@@ -842,10 +842,10 @@ def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.sec
 
     field = Field(name, coord)
 
-    if not isinstance(exp_time, u.Quantity):
-        exp_time *= u.second
+    if not isinstance(exptime, u.Quantity):
+        exptime *= u.second
 
-    obs = Observation(field, exp_time=exp_time,
+    obs = Observation(field, exptime=exptime,
                       min_nexp=num_exp, exp_set_size=1)
 
     return obs
