@@ -668,11 +668,10 @@ class POCS(PanStateMachine, PanBase):
 
         cmd_port = self.get_config('messaging.cmd_port')
         msg_port = self.get_config('messaging.msg_port')
-        messaging_host = self.get_config('messaging.messaging_host')
 
         def create_forwarder(port):
             try:
-                PanMessaging.create_forwarder(port, port + 1, host=messaging_host)
+                PanMessaging.create_forwarder(port, port + 1)
             except Exception:
                 pass
 
@@ -688,10 +687,10 @@ class POCS(PanStateMachine, PanBase):
         self._cmd_queue = multiprocessing.Queue()
         self._sched_queue = multiprocessing.Queue()
 
-        self._msg_publisher = PanMessaging.create_publisher(msg_port, host=messaging_host)
+        self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
         def check_message_loop(cmd_queue):
-            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1, host=messaging_host)
+            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
 
             poller = zmq.Poller()
             poller.register(cmd_subscriber.socket, zmq.POLLIN)
