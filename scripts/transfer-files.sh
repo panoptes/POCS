@@ -26,7 +26,7 @@ usage() {
 #     - 'PAN006/*/7bab97' # All images for unit, camera
 #     - 'PAN006/Hd189733/7bab97/20180327T071126/' # Specific observation
 #############################################################
- $ $(basename $0) FROM_PATH TO_PATH MANIFEST_FILE
+ $ $(basename "$0") FROM_PATH TO_PATH MANIFEST_FILE
 
  Options:
   FROM_PATH     File(s) to be moved.
