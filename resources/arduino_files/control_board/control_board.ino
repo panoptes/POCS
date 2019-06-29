@@ -1,4 +1,4 @@
-/* UPDATED CONTROL BOARD SCRIPT FOR 2018V ELECTRONICS */
+/* UPDATED CONTROL BOARD SCRIPT FOR 2019V ELECTRONICS */
 
 #include <stdlib.h>
 
@@ -6,7 +6,6 @@
 #include "DallasTemperature.h"
 #include "dht_handler.h"
 #include "CharBuffer.h"
-#include "PinUtils.h"
 
 #include <ArduinoJson.h>
 
@@ -147,15 +146,34 @@ void loop() {
 
   // Read any serial input
   //    - Input will be two comma separated integers, the
-  //      first specifying the relayArray index and the second
-  //      the new desired state.
+  //      first specifying the pin and the second the status
+  //      to change to (1/0). Cameras and debug led are
+  //      supported.
   //      Example serial input:
-  //           0,1   # Turn relay index 0 on (pin RELAY_0)
-  //           0,2   # Turn relay index 0 off
-  //           0,3   # Toggle relay index 0
-  //           0,4   # Toggle relay index 0 w/ 30 sec delay
+  //           4,1   # Turn pin 4 on
+  //          13,0   # Turn built-in led (pin 13) off
+  while (Serial.available() > 0) {
+    int pin_num = Serial.parseInt();
+    int pin_status = Serial.parseInt();
 
-  serial_input_handler.Handle();
+    switch (pin_num) {
+    case RELAY_1:
+    case RELAY_2:
+    case RELAY_3:
+    case RELAY_4:
+      if (pin_status == 1) {
+        turn_pin_on(pin_num);
+      } else if (pin_status == 0) {
+        turn_pin_off(pin_num);
+      } else if (pin_status == 9) {
+        toggle_pin(pin_num);
+      }
+      break;
+    case LED_BUILTIN:
+      digitalWrite(pin_num, pin_status);
+      break;
+    }
+  }
 
   delay(250);
 
@@ -167,8 +185,8 @@ void loop() {
 }
 
 void get_readings() {
-  float voltages[6];
-  int power[5];
+  float voltages[7];
+  int power[6];
   float temps[4];
   float humidity[1];
 
@@ -177,9 +195,16 @@ void get_readings() {
   read_dht_temp(temps, humidity);
   read_ds18b20_temp(temps);
 
+  // Is Mains power on? Check the AC sensor for any value above 0.
+  if(voltages[6] > 0.0){
+    power[5] = 1;
+  } else {
+    power[5] = 0;
+  }
+
   // Create our JsonDocument
   // https://arduinojson.org/v6/assistant/
- const size_t capacity = JSON_ARRAY_SIZE(4) + 2*JSON_OBJECT_SIZE(1) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(6) + JSON_OBJECT_SIZE(8);
+  const size_t capacity = JSON_ARRAY_SIZE(4) + 2*JSON_OBJECT_SIZE(1) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(6) + JSON_OBJECT_SIZE(8);
   DynamicJsonDocument doc(capacity);
 
   JsonObject data = doc.createNestedObject("data");
@@ -215,30 +240,9 @@ void get_readings() {
   data_control_board_temperature.add(temps[1]);
   data_control_board_temperature.add(temps[2]);
   data_control_board_temperature.add(temps[3]);
-  data_control_board["date"] = "2019-06-26T04:04:41 GMT";
 
   serializeJson(doc, Serial);
 }
-
-// Due to limitations of the Arduino preprocessor, we must place the following all on one line:
-template<class T, int size> void ReportCollection(const char* name, T(&handlers)[size]) {
-  // This is being added to a JSON dictionary, so print a comma
-  // before the quoted name, which is then followed by a colon.
-  Serial.print(", \"");
-  Serial.print(name);
-  Serial.print("\": {");
-  bool first = true;
-  for (auto& handler : handlers) {
-    if (first) {
-      first = false;
-    } else {
-      Serial.print(", ");
-    }
-    handler.Report();
-  }
-  Serial.print('}');
-}
-
 
 /* Read Voltages
 
@@ -331,3 +335,24 @@ void toggle_pin_delay(int pin_num) {
   delay(1000 * 30);
   turn_pin_on(pin_num);
 }
+
+void turn_pin_on(int pin_num) {
+  digitalWrite(pin_num, HIGH);
+}
+
+void turn_pin_off(int pin_num) {
+  digitalWrite(pin_num, LOW);
+}
+
+bool is_pin_on(int pin_num) {
+  return digitalRead(pin_num) != LOW;
+}
+
+void toggle_pin(int pin_num) {
+  digitalWrite(pin_num, !digitalRead(pin_num));
+}
+
+void toggle_led() {
+  toggle_pin(LED_BUILTIN);
+}
+
