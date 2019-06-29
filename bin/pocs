@@ -1,3 +1,0 @@
-#!/bin/bash -e
-
-docker exec -it peas-shell python $POCS/scripts/pocs-shell.py
