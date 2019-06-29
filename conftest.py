@@ -180,7 +180,7 @@ def static_config_port():
     """Used for the session-scoped config_server where no config values
     are expected to change during testing.
     """
-    return '6563'
+    return '6565'
 
 
 @pytest.fixture(scope='module')
