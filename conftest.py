@@ -22,7 +22,7 @@ from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
-from panoptes.utils.config.server import app
+from panoptes.utils.config.server import config_server_app
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -232,10 +232,10 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     def start_config_server():
         # Load the config items into the app config.
         for k, v in config_server_args.items():
-            app.config[k] = v
+            config_server_app.config[k] = v
 
         # Start the actual flask server.
-        app.run(host=config_host, port=static_config_port)
+        config_server_app.run(host=config_host, port=static_config_port)
 
     proc = Process(target=start_config_server)
     proc.start()
@@ -287,10 +287,10 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     def start_config_server():
         # Load the config items into the app config.
         for k, v in config_server_args.items():
-            app.config[k] = v
+            config_server_app.config[k] = v
 
         # Start the actual flask server.
-        app.run(host=config_host, port=config_port)
+        config_server_app.run(host=config_host, port=config_port)
 
     proc = Process(target=start_config_server)
     proc.start()
