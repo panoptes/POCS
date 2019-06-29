@@ -37,6 +37,10 @@ setup(name=PACKAGENAME,
       url=URL,
       packages=find_packages(exclude=['tests', 'test_*']),
       keywords=KEYWORDS,
+      scripts=[
+          'bin/pocs-shell',
+          'bin/peas-shell',
+      ],
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-cov'],
       classifiers=[
