@@ -22,7 +22,7 @@ from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
-from panoptes.utils.config.server import config_server_app
+from panoptes.utils.config.server import app as config_server_app
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
