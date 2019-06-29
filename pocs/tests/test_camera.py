@@ -13,6 +13,9 @@ from pocs.scheduler.observation import Observation
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
+from panoptes.utils.config.client import set_config
+
+from pocs.camera import create_cameras_from_config
 
 # Hardware specific imports
 from pocs.camera.simulator.dslr import Camera as SimCamera
@@ -50,6 +53,20 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         camera = SimSDKCamera(serial_number='SSC101', config_port=config_port)
 
     return camera
+
+
+# Create cameras from config - should fail without cameras
+def test_create_cameras_from_config():
+    with pytest.raises(error.PanError):
+        create_cameras_from_config()
+
+
+def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
+    set_config('cameras.auto_detect', False, port=config_port)
+    set_config('cameras.devices[0].port', '/dev/fake01', port=config_port)
+    set_config('cameras.devices[1].port', '/dev/fake02', port=config_port)
+    with pytest.raises(error.CameraNotFound):
+        create_cameras_from_config(config_port=config_port)
 
 
 # Hardware independent tests, mostly use simulator:

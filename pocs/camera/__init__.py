@@ -141,7 +141,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
             # Create the camera object
             cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
         except error.NotFound:
-            logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
+            logger.error(msg=f"Cannot find camera module with config: {device_config}")
         except Exception as e:
             logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
@@ -156,7 +156,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
             cameras[cam_name] = cam
 
     if len(cameras) == 0:
-        raise error.CameraNotFound(msg="No cameras available. Exiting.", exit=True)
+        raise error.CameraNotFound(msg="No cameras available")
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
