@@ -38,7 +38,6 @@ setup(name=PACKAGENAME,
       packages=find_packages(exclude=['tests', 'test_*']),
       keywords=KEYWORDS,
       setup_requires=['pytest-runner'],
-      scripts=['bin/panoptes-solve-field'],
       tests_require=['pytest', 'pytest-cov'],
       classifiers=[
           'Development Status :: 3 - Alpha',
