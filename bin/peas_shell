@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+
 import cmd
 import datetime
 import os
 import readline
 import sys
 
+from pytz import utc
 from astropy.utils import console
 from threading import Timer
 from pprint import pprint
@@ -74,9 +76,12 @@ class PanSensorShell(cmd.Cmd):
         print("{}:".format(device.upper()))
         pprint(rec)
         print_info('*' * 80)
+
+        # Display the age in seconds of the record
         if isinstance(rec.get('date'), datetime.datetime):
-            now = current_time(datetime=True)
-            age = (now - rec['date']).total_seconds()
+            now = current_time(datetime=True).astimezone(utc)
+            record_date = rec['date'].astimezone(utc)
+            age = (now - record_date).total_seconds()
             if age < 120:
                 print_info('{:.1f} seconds old'.format(age))
             else:
@@ -96,7 +101,7 @@ class PanSensorShell(cmd.Cmd):
             self.active_sensors[sensor] = {'reader': sensor, 'delay': delay}
 
     def do_disable_sensor(self, sensor):
-        """ Enable the given sensor """
+        """ Disable the given sensor """
         if hasattr(self, sensor) and sensor in self.active_sensors:
             del self.active_sensors[sensor]
 

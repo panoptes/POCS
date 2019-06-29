@@ -31,7 +31,7 @@ def observer(config):
 
 @pytest.fixture()
 def field_list():
-    return yaml.load("""
+    return yaml.full_load("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
@@ -54,7 +54,7 @@ def field_list():
         name: KIC 8462852
         position: 20h06m15.4536s +44d27m24.75s
         priority: 50
-        exp_time: 60
+        exptime: 60
         exp_set_size: 15
         min_nexp: 45
     -
@@ -65,7 +65,7 @@ def field_list():
         name: M42
         position: 05h35m17.2992s -05d23m27.996s
         priority: 25
-        exp_time: 240
+        exptime: 240
     -
         name: M44
         position: 08h40m24s +19d40m00.12s
@@ -174,7 +174,7 @@ def test_scheduler_add_bad_field(scheduler):
         scheduler.add_observation({
             'name': 'Duplicate Field',
             'position': '12h30m01s +08d08m08s',
-            'exp_time': -10
+            'exptime': -10
         })
 
     assert orig_length == len(scheduler.observations)
@@ -215,17 +215,17 @@ def test_scheduler_add_duplicate_field_different_name(scheduler):
     assert len(scheduler.observations) == orig_length + 2
 
 
-def test_scheduler_add_with_exp_time(scheduler):
+def test_scheduler_add_with_exptime(scheduler):
     orig_length = len(scheduler.observations)
 
     scheduler.add_observation({
         'name': 'Added Field',
         'position': '12h30m01s +08d08m08s',
-        'exp_time': '60'
+        'exptime': '60'
     })
 
     assert len(scheduler.observations) == orig_length + 1
-    assert scheduler.observations['Added Field'].exp_time == 60 * u.second
+    assert scheduler.observations['Added Field'].exptime == 60 * u.second
 
 
 def test_remove_field(scheduler):

@@ -1,6 +1,6 @@
 import os
 import matplotlib.colors as colours
-import matplotlib.pyplot as plt
+from matplotlib import cm as colormap
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -19,7 +19,7 @@ from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(plt.cm.inferno)
+palette = copy(colormap.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
@@ -523,7 +523,10 @@ class AbstractFocuser(PanBase):
 
             fig.tight_layout()
             fig.savefig(plot_path, transparent=False)
-            plt.close(fig)
+
+            # explicitly close and delete figure
+            fig.clf()
+            del fig
 
             self.logger.info('{} focus plot for camera {} written to {}'.format(
                 focus_type.capitalize(), self._camera, plot_path))
@@ -536,7 +539,7 @@ class AbstractFocuser(PanBase):
 
         return initial_focus, final_focus
 
-    def _fits_header(self, header):
+    def _add_fits_keywords(self, header):
         header.set('FOC-NAME', self.name, 'Focuser name')
         header.set('FOC-MOD', self.model, 'Focuser model')
         header.set('FOC-ID', self.uid, 'Focuser serial number')

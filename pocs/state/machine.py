@@ -315,7 +315,7 @@ class PanStateMachine(Machine):
 
         try:
             with open(state_table_file, 'r') as f:
-                state_table = yaml.load(f.read())
+                state_table = yaml.full_load(f.read())
         except Exception as err:
             raise error.InvalidConfig(
                 'Problem loading state table yaml file: {} {}'.format(err, state_table_file))

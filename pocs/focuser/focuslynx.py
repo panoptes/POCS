@@ -1,6 +1,7 @@
 import serial
 import time
 from warnings import warn
+from contextlib import suppress
 
 import astropy.units as u
 
@@ -72,11 +73,9 @@ class Focuser(AbstractFocuser):
             self.position = initial_position
 
     def __del__(self):
-        try:
+        with suppress(AttributeError):
             self._serial_port.close()
             self.logger.debug('Closed serial port {}'.format(self._port))
-        except AttributeError:
-            pass
 
     def __str__(self):
         return "{} {} ({}) on {}".format(self.name, self._focuser_number, self.uid, self.port)
@@ -334,8 +333,8 @@ class Focuser(AbstractFocuser):
                 response = str(self._serial_port.readline(), encoding='ascii').strip()
             return info
 
-    def _fits_header(self, header):
-        header = super()._fits_header(header)
+    def _add_fits_keywords(self, header):
+        header = super()._add_fits_keywords(header)
         header.set('FOC-MOD', self.model, 'Focuser device type')
         header.set('FOC-ID', self.uid, 'Focuser nickname')
         header.set('FOC-HW', self.hardware_version, 'Focuser device type')

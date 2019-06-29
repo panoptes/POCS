@@ -1,17 +1,20 @@
 import os
-import pytest
-
 import time
+
+import pytest
 from astropy import units as u
 from astropy.time import Time
 
-from pocs import hardware
 import pocs.version
+from pocs import hardware
+from pocs.camera import create_cameras_from_config
+from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
+from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
-from pocs.camera import create_cameras_from_config
 from pocs.utils import error
+from pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture
@@ -27,7 +30,12 @@ def simulator():
 @pytest.fixture
 def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
+    site_details = create_location_from_config(config)
+    scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
+    dome = create_dome_from_config(config)
     obs = Observatory(config=config,
+                      scheduler=scheduler,
+                      dome=dome,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
@@ -35,6 +43,18 @@ def observatory(config, simulator, images_dir):
         obs.add_camera(cam_name, cam)
 
     return obs
+
+
+def test_camera_already_exists(observatory, config):
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        observatory.add_camera(cam_name, cam)
+
+
+def test_remove_cameras(observatory, config):
+    cameras = create_cameras_from_config(config)
+    for cam_name, cam in cameras.items():
+        observatory.remove_camera(cam_name)
 
 
 def test_error_exit(config):
@@ -69,20 +89,17 @@ def test_bad_mount_driver(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-def test_bad_scheduler(config):
+def test_can_observe(config, caplog):
     conf = config.copy()
-    simulator = ['all']
-    conf['scheduler']['type'] = 'foobar'
-    with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
-def test_bad_scheduler_fields_file(config):
-    conf = config.copy()
-    simulator = ['all']
-    conf['scheduler']['fields_file'] = 'foobar'
-    with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+    obs = Observatory(config=conf)
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Scheduler not present, cannot observe."
+    site_details = create_location_from_config(conf)
+    obs.scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Cameras not present, cannot observe."
 
 
 def test_camera_wrong_type(config):
@@ -122,6 +139,23 @@ def test_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
+def test_primary_camera_no_primary_camera(observatory):
+    observatory._primary_camera = None
+    assert observatory.primary_camera is not None
+
+
+def test_add_remove_scheduler(config, observatory, caplog):
+    conf = config.copy()
+    site_details = create_location_from_config(conf)
+    scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    observatory.remove_scheduler()
+    assert observatory.scheduler is None
+    observatory.add_scheduler(scheduler)
+    assert observatory.scheduler is not None
+    with pytest.raises(TypeError, message="Scheduler is not instance of BaseScheduler class, cannot add."):
+        observatory.add_scheduler("scheduler")
+
+
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     status = observatory.status()
@@ -147,8 +181,8 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - \
-        observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('elevation').value == pytest.approx(
+        observatory.config['location']['elevation'].value, rel=1 * u.meter)
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
@@ -225,6 +259,16 @@ def test_get_observation(observatory):
     assert isinstance(observation, Observation)
 
     assert observatory.current_observation == observation
+
+
+def test_get_observation_no_scheduler(observatory):
+    observatory.scheduler = None
+    assert observatory.get_observation() is None
+
+
+def test_cleanup_observations_no_scheduler(observatory):
+    observatory.scheduler = None
+    assert observatory.cleanup_observations() is None
 
 
 @pytest.mark.with_camera
@@ -359,9 +403,11 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_with_simulated_dome):
+def test_operate_dome(config_with_simulated_dome, config):
+    conf = config.copy()
     simulator = hardware.get_all_names(without=['dome', 'night'])
-    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
+    dome = create_dome_from_config(conf, logger=None)
+    observatory = Observatory(config=config_with_simulated_dome, dome=dome, simulator=simulator,
                               ignore_local_config=True)
     assert observatory.has_dome
     assert observatory.open_dome()

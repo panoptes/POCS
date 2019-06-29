@@ -3,8 +3,11 @@ import subprocess
 import shutil
 from contextlib import suppress
 
-from matplotlib import pyplot as plt
 from warnings import warn
+
+from matplotlib import cm as colormap
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 from astropy.wcs import WCS
 from astropy.io.fits import open as open_fits
@@ -19,7 +22,7 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(plt.cm.inferno)
+palette = copy(colormap.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
@@ -142,7 +145,7 @@ def _make_pretty_from_fits(fname=None,
 
     if not title:
         field = header.get('FIELD', 'Unknown field')
-        exp_time = header.get('EXPTIME', 'Unknown exptime')
+        exptime = header.get('EXPTIME', 'Unknown exptime')
         filter_type = header.get('FILTER', 'Unknown filter')
 
         try:
@@ -158,14 +161,17 @@ def _make_pretty_from_fits(fname=None,
 
         date_time = date_time.replace('T', ' ', 1)
 
-        title = '{} ({}s {}) {}'.format(field, exp_time, filter_type, date_time)
+        title = '{} ({}s {}) {}'.format(field, exptime, filter_type, date_time)
 
     norm = ImageNormalize(interval=PercentileInterval(clip_percent), stretch=LogStretch())
 
-    fig = plt.figure(figsize=figsize, dpi=dpi)
+    fig = Figure()
+    FigureCanvas(fig)
+    fig.set_size_inches(*figsize)
+    fig.dpi = dpi
 
     if wcs.is_celestial:
-        ax = plt.subplot(projection=wcs)
+        ax = fig.add_subplot(1, 1, 1, projection=wcs)
         ax.coords.grid(True, color='white', ls='-', alpha=alpha)
 
         ra_axis = ax.coords['ra']
@@ -186,7 +192,7 @@ def _make_pretty_from_fits(fname=None,
             exclude_overlapping=True
         )
     else:
-        ax = plt.subplot()
+        ax = fig.add_subplot(111)
         ax.grid(True, color='white', ls='-', alpha=alpha)
 
         ax.set_xlabel('X / pixels')
@@ -194,11 +200,14 @@ def _make_pretty_from_fits(fname=None,
 
     im = ax.imshow(data, norm=norm, cmap=palette, origin='lower')
     fig.colorbar(im)
-    plt.title(title)
+    fig.suptitle(title)
 
     new_filename = fname.replace('.fits', '.jpg')
-    plt.savefig(new_filename, bbox_inches='tight')
-    plt.close()
+    fig.savefig(new_filename, bbox_inches='tight')
+
+    # explicitly close and delete figure
+    fig.clf()
+    del fig
 
     return new_filename
 

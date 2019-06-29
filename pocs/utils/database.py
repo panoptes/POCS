@@ -3,10 +3,12 @@ import os
 import pymongo
 import threading
 import weakref
+from contextlib import suppress
 from warnings import warn
 from uuid import uuid4
 from glob import glob
 from bson.objectid import ObjectId
+from pymongo.errors import ConnectionFailure
 
 from pocs.utils import current_time
 from pocs.utils import serializers as json_util
@@ -122,6 +124,8 @@ _shared_mongo_clients = weakref.WeakValueDictionary()
 def get_shared_mongo_client(host, port, connect):
     global _shared_mongo_clients
     key = (host, port, connect)
+
+    # Try to get previously stored client.
     try:
         client = _shared_mongo_clients[key]
         if client:
@@ -129,7 +133,14 @@ def get_shared_mongo_client(host, port, connect):
     except KeyError:
         pass
 
+    # No client available, try to create new one.
     client = pymongo.MongoClient(host, port, connect=connect)
+    try:
+        # See second Note in official api docs for MongoClient
+        # The ismaster command is cheap and does not require auth.
+        client.admin.command('ismaster')
+    except ConnectionFailure:  # pragma: no cover
+        raise ConnectionError(f'Mongo server not available')
 
     _shared_mongo_clients[key] = client
     return client
@@ -240,6 +251,9 @@ class PanMongoDB(AbstractPanDB):
             host (str, optional): hostname running MongoDB.
             port (int, optional): port running MongoDb.
             connect (bool, optional): Connect to mongo on create, defaults to True.
+
+        Raises:
+            ConnectionError: If the mongod server is not available.
         """
 
         super().__init__(**kwargs)
@@ -390,23 +404,28 @@ class PanFileDB(AbstractPanDB):
 
     def find(self, collection, obj_id):
         collection_fn = self._get_file(collection)
-        with open(collection_fn, 'r') as f:
-            for line in f:
-                # Note: We can speed this up for the case where the obj_id doesn't
-                # contain any characters that json would need to escape: first
-                # check if the line contains the obj_id; if not skip. Else, parse
-                # as json, and then check for the _id match.
-                obj = json_util.loads(line)
-                if obj['_id'] == obj_id:
-                    return obj
-        return None
-
-    def clear_current(self, type):
-        current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
         try:
-            os.remove(current_f)
+            with open(collection_fn, 'r') as f:
+                for line in f:
+                    # Note: We can speed this up for the case where the obj_id doesn't
+                    # contain any characters that json would need to escape: first
+                    # check if the line contains the obj_id; if not skip. Else, parse
+                    # as json, and then check for the _id match.
+                    obj = json_util.loads(line)
+                    if obj['_id'] == obj_id:
+                        return obj
         except FileNotFoundError:
-            pass
+            return None
+
+    def clear_current(self, record_type):
+        """Clears the current record of the given type.
+
+        Args:
+            record_type (str): The record type, e.g. 'weather', 'environment', etc.
+        """
+        current_f = self._get_file(record_type, permanent=False)
+        with suppress(FileNotFoundError):
+            os.remove(current_f)
 
     def _get_file(self, collection, permanent=True):
         if permanent:
