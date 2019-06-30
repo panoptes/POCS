@@ -11,8 +11,8 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
-const String BOARD_NAME "control_board";
-const String VERSION_ID "2019-07-01";
+const String BOARD_NAME = "control_board";
+const String VERSION_ID = "2019-07-01";
 
 /* Hardware Index
 
@@ -23,11 +23,11 @@ const String VERSION_ID "2019-07-01";
  V_in and GND pins. The relay next to the GND pin is therefore
  relay index 4.
 */
-const int COMPUTER_INDEX 0;
-const int MOUNT_INDEX 1;
-const int CAMERA_BOX_INDEX 2;
-const int WEATHER_INDEX 3;
-const int FAN_INDEX 4;
+const int COMPUTER_INDEX = 0;
+const int MOUNT_INDEX = 1;
+const int CAMERA_BOX_INDEX = 2;
+const int WEATHER_INDEX = 3;
+const int FAN_INDEX = 4;
 
 /* Pin setup
 
@@ -242,7 +242,7 @@ void get_readings() {
   // https://arduinojson.org/v6/assistant/
   const size_t capacity = JSON_ARRAY_SIZE(0) + 2*JSON_ARRAY_SIZE(1) +
                         JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) +
-                        2*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(6) +
+                        2*JSON_OBJECT_SIZE(3) + 5*JSON_OBJECT_SIZE(6) +
                         JSON_OBJECT_SIZE(7);
 
   DynamicJsonDocument doc(capacity);
@@ -284,13 +284,13 @@ void get_readings() {
   JsonArray sensors_1_humidity = sensors_1.createNestedArray("humidity");
 
   JsonArray sensors_1_temperature = sensors_1.createNestedArray("temperature");
-  for (int i = 0; i < NUM_DS18; i++) {
-    // Store in i+1 because DHT11 stores in index 0
-    sensors_1_temperature.add(temps[i+1]);
-  }
+  sensors_1_temperature.add(temps[1]);
+  sensors_1_temperature.add(temps[2]);
+  sensors_1_temperature.add(temps[3]);
 
+  // Write out the JSON document and a newline.
   serializeJson(doc, Serial);
-  Serial.println();
+  Serial.println(); // Add a newline
 }
 
 
@@ -310,10 +310,9 @@ void read_ds18b20_temp(float temps[]) {
 
   tempSensors.requestTemperatures();
 
-  for (int i = 0; i < NUM_DS18; i++) {
-    // Store in i+1 because DHT11 stores in index 0
-    temps[i+1] = tempSensors.getTempCByIndex(i);
-  }
+  temps[1] = tempSensors.getTempCByIndex(0);
+  temps[2] = tempSensors.getTempCByIndex(1);
+  temps[3] = tempSensors.getTempCByIndex(2);
 }
 
 /* Read Voltages
@@ -386,4 +385,5 @@ void read_power(int power_readings[]) {
   power_readings[WEATHER_INDEX] = digitalRead(relayArray[WEATHER_INDEX]);
   power_readings[FAN_INDEX] = digitalRead(relayArray[FAN_INDEX]);
 }
+
 
