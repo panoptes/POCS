@@ -6,6 +6,68 @@ different configurations. Some are here for legacy purposes.
 In general, you should only need two different files: one for the electronics
 inside the camera box, and one for the electronics inside the control box.
 
+
+## Current Versions
+
+### Camera Box
+
+The camera box has a few functions which the electronics support:
+
+* Relays for the two cameras.
+* Environmental sensors:
+    * Accelerometer
+    * DHT22 temperature/humidity
+
+#### camera_board
+
+Currently the only version of the camera board electronics. There might have been
+various updates to this file so if it is not working check the instructions to make
+sure you have the latest files for the latest design of the camera_board.
+
+### Control Box
+
+The electronics in the control box have undergone various iterations. Listed below
+are the various iterations and some desription of which version of the hardware
+they should be used with. Note that each type of board might also have updates to
+to it, but in general the latest board should always be used.
+
+The main functions of the control box are:
+
+* Relays:
+    * Camera box
+    * Mount
+    * Control computer (NUC)
+    * Weather Station
+    * Fan
+* AC main power sensing (depending on attached hardware)
+* Current sensing for relay channels (depending on iteration)
+* Environmental sensors:
+    * DHT22 temperature/humidity
+    * 3x DS18B20 temperature
+
+#### control_board
+
+Supports the custom PCB board with either an Arduino Uno or Arduino Micro.
+
+#### infineon_board
+
+Support just the Infineon 24V board with an attached Arduino Uno. This is the version
+used by PAN008 and is a simplified verson of the `control_board` above. It does
+*not* use the custom PCB that is specified in the instructions as of 2019-07-01.
+
+#### telemetry_board
+
+The first version (V0) of the custom PCB board for use with the Infineon and an
+Arduino Uno. In general this version should not be used unless you have specifically
+been told it is what you need.
+
+#### power_board
+
+Mostly the same as the `telemetry_board`. Mostly here for legacy purposes and should
+not be used unless you know you need it.
+
+## Using the Arduino files
+
 ### Compiling the sketch
 
 Using the `arduino-cli` command line tool, the sketch can be compiled using the
@@ -40,9 +102,9 @@ A fulle example would be:
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno control_board && sleep 2 && stty -F /dev/ttyACM0 -hupcl
 ```
 
-### Tools
+## Tools
 
-#### arduino-cli
+### arduino-cli
 
 The `arduino-cli` command is easily installed on Ubuntu and might already be present
 on your system. You can test if available with:
@@ -53,7 +115,7 @@ arduino-cli --version
 
 If not available, follow the instructions at: https://github.com/arduino/arduino-cli.
 
-#### Arduino Web IDE
+### Arduino Web IDE
 
 There is an online version of the Arduino IDE that is often easier than installing
 the desktop software. See: https://create.arduino.cc/.
