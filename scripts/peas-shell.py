@@ -34,6 +34,23 @@ class PanSensorShell(cmd.Cmd):
     captured_data = list()
     messaging = None
 
+    telemetry_relay_lookup = {
+        'fan': {'pin': 6, 'board': 'telemetry_board'},
+        'camera_box': {'pin': 7, 'board': 'telemetry_board'},
+        'weather': {'pin': 5, 'board': 'telemetry_board'},
+        'mount': {'pin': 4, 'board': 'telemetry_board'},
+        'cam_0': {'pin': 5, 'board': 'camera_board'},
+        'cam_1': {'pin': 6, 'board': 'camera_board'},
+    }
+
+    # NOTE: These are not pins but zero-based index numbers.
+    controlboard_relay_lookup = {
+        'mount': {'pin': 1, 'board': 'power_board'},
+        'fan': {'pin': 2, 'board': 'power_board'},
+        'weather': {'pin': 3, 'board': 'power_board'},
+        'camera_box': {'pin': 4, 'board': 'power_board'},
+    }
+
 
 ##################################################################################################
 # Generic Methods
@@ -163,50 +180,42 @@ class PanSensorShell(cmd.Cmd):
 # Relay Methods
 ##################################################################################################
 
-    def do_toggle_relay(self, *arg):
-        """ Toggle a relay
-
-        This will toggle a relay on the on the power board, switching off if on
-        and on if off.  Possible relays include:
-
-            * fan
-            * camera_box
-            * weather
-            * mount
-            * cam_0
-            * cam_0
-        """
+    def do_turn_off_relay(self, *arg):
+        """Turn on relay."""
         relay = arg[0]
-        telemetry_relay_lookup = {
-            'fan': {'pin': 6, 'board': 'telemetry_board'},
-            'camera_box': {'pin': 7, 'board': 'telemetry_board'},
-            'weather': {'pin': 5, 'board': 'telemetry_board'},
-            'mount': {'pin': 4, 'board': 'telemetry_board'},
-            'cam_0': {'pin': 5, 'board': 'camera_board'},
-            'cam_1': {'pin': 6, 'board': 'camera_board'},
-        }
-
-        # NOTE: These are not pins but index numbers
-        powerboard_relay_lookup = {
-            'mount': {'pin': 0, 'board': 'power_board'},
-            'fan': {'pin': 1, 'board': 'power_board'},
-            'weather': {'pin': 2, 'board': 'power_board'},
-            'camera_box': {'pin': 3, 'board': 'power_board'},
-        }
 
         if 'power_board' in self.environment.serial_readers:
-            relay_lookup = powerboard_relay_lookup
+            relay_lookup = self.controlboard_relay_lookup
         else:
-            relay_lookup = telemetry_relay_lookup
+            relay_lookup = self.telemetry_relay_lookup
 
         try:
             relay_info = relay_lookup[relay]
             serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
 
             serial_connection.ser.flushInput()
-            serial_connection.write("{},9".format(relay_info['pin']))
+            serial_connection.write("{},0\n".format(relay_info['pin']))
         except Exception as e:
-            print_warning("Problem toggling relay {}".format(relay))
+            print_warning("Problem turning relay off {}".format(relay))
+            print_warning(e)
+
+    def do_turn_on_relay(self, *arg):
+        """Turn off relay."""
+        relay = arg[0]
+
+        if 'power_board' in self.environment.serial_readers:
+            relay_lookup = self.controlboard_relay_lookup
+        else:
+            relay_lookup = self.telemetry_relay_lookup
+
+        try:
+            relay_info = relay_lookup[relay]
+            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+
+            serial_connection.ser.flushInput()
+            serial_connection.write("{},1\n".format(relay_info['pin']))
+        except Exception as e:
+            print_warning("Problem turning relay on {}".format(relay))
             print_warning(e)
 
     def complete_toggle_relay(self, text, line, begidx, endidx):
