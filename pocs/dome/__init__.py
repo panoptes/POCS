@@ -28,7 +28,7 @@ def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
 
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
     module = load_module('pocs.dome.{}'.format(driver))
-    dome = module.Dome(onfig_port=config_port, *args, **kwargs)
+    dome = module.Dome(config_port=config_port, *args, **kwargs)
     logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
 
     return dome

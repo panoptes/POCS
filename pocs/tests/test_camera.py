@@ -56,9 +56,9 @@ def camera(request, images_dir, dynamic_config_server, config_port):
 
 
 # Create cameras from config - should fail without cameras
-def test_create_cameras_from_config():
+def test_create_cameras_from_config(static_config_port):
     with pytest.raises(error.PanError):
-        create_cameras_from_config()
+        create_cameras_from_config(config_port=static_config_port)
 
 
 def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):

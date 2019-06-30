@@ -117,8 +117,9 @@ def test_primary_camera_no_primary_camera(observatory):
 
 
 def test_add_remove_scheduler(dynamic_config_server, config_port, observatory, caplog):
-    site_details = create_location_from_config()
-    scheduler = create_scheduler_from_config(observer=site_details['observer'])
+    site_details = create_location_from_config(config_port=config_port)
+    scheduler = create_scheduler_from_config(
+        observer=site_details['observer'], config_port=config_port)
     observatory.remove_scheduler()
     assert observatory.scheduler is None
     observatory.add_scheduler(scheduler)
@@ -381,7 +382,7 @@ def test_operate_dome(dynamic_config_server, config_port):
         'driver': 'simulator',
     }, port=config_port)
 
-    dome = create_dome_from_config(config_port)
+    dome = create_dome_from_config(config_port=config_port)
     observatory = Observatory(dome=dome, config_port=config_port)
 
     assert observatory.has_dome
