@@ -67,7 +67,7 @@ class ArduinoSerialMonitor(object):
 
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
-            msg_port = self.config['messaging']['msg_port']
+            msg_port = get_config('messaging.msg_port')
             self.messaging = PanMessaging.create_publisher(msg_port)
 
         self.messaging.send_message(topic, msg)

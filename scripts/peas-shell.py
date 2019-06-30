@@ -35,6 +35,7 @@ class PanSensorShell(cmd.Cmd):
     messaging = None
 
     telemetry_relay_lookup = {
+        'computer': {'pin': 8, 'board': 'telemetry_board'},
         'fan': {'pin': 6, 'board': 'telemetry_board'},
         'camera_box': {'pin': 7, 'board': 'telemetry_board'},
         'weather': {'pin': 5, 'board': 'telemetry_board'},
@@ -45,10 +46,11 @@ class PanSensorShell(cmd.Cmd):
 
     # NOTE: These are not pins but zero-based index numbers.
     controlboard_relay_lookup = {
-        'mount': {'pin': 1, 'board': 'power_board'},
-        'fan': {'pin': 2, 'board': 'power_board'},
-        'weather': {'pin': 3, 'board': 'power_board'},
-        'camera_box': {'pin': 4, 'board': 'power_board'},
+        'computer': {'pin': 0, 'board': 'control_board'},
+        'mount': {'pin': 1, 'board': 'control_board'},
+        'camera_box': {'pin': 2, 'board': 'control_board'},
+        'weather': {'pin': 3, 'board': 'control_board'},
+        'fan': {'pin': 4, 'board': 'control_board'},
     }
 
 
@@ -181,10 +183,20 @@ class PanSensorShell(cmd.Cmd):
 ##################################################################################################
 
     def do_turn_off_relay(self, *arg):
-        """Turn on relay."""
+        """Turn on relay.
+
+        The argument should be the name of the relay, i.e. on of:
+
+            * fan
+            * mount
+            * weather
+            * camera_box
+
+        The names must correspond to the entries in the lookup tables above.
+        """
         relay = arg[0]
 
-        if 'power_board' in self.environment.serial_readers:
+        if 'control_board' in self.environment.serial_readers:
             relay_lookup = self.controlboard_relay_lookup
         else:
             relay_lookup = self.telemetry_relay_lookup
@@ -196,14 +208,23 @@ class PanSensorShell(cmd.Cmd):
             serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},0\n".format(relay_info['pin']))
         except Exception as e:
-            print_warning("Problem turning relay off {}".format(relay))
+            print_warning(f"Problem turning relay off {relay} {e!r}")
             print_warning(e)
 
     def do_turn_on_relay(self, *arg):
-        """Turn off relay."""
+        """Turn off relay.
+
+        The argument should be the name of the relay, i.e. on of:
+
+            * fan
+            * mount
+            * weather
+            * camera_box
+
+        The names must correspond to the entries in the lookup tables above.
         relay = arg[0]
 
-        if 'power_board' in self.environment.serial_readers:
+        if 'control_board' in self.environment.serial_readers:
             relay_lookup = self.controlboard_relay_lookup
         else:
             relay_lookup = self.telemetry_relay_lookup
@@ -215,25 +236,48 @@ class PanSensorShell(cmd.Cmd):
             serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},1\n".format(relay_info['pin']))
         except Exception as e:
-            print_warning("Problem turning relay on {}".format(relay))
+            print_warning(f"Problem turning relay off {relay} {e!r}")
             print_warning(e)
+    """
 
-    def complete_toggle_relay(self, text, line, begidx, endidx):
+    def complete_turn_off_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
-        if 'power_board' in self.environment.serial_readers:
+        if 'control_board' in self.environment.serial_readers:
+            names = ['camera_box', 'fan', 'mount', 'weather']
+        else:
+            names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
+        return [name for name in names if name.startswith(text)]
+
+    def complete_turn_on_relay(self, text, line, begidx, endidx):
+        """Provide completions for relay names."""
+        if 'control_board' in self.environment.serial_readers:
             names = ['camera_box', 'fan', 'mount', 'weather']
         else:
             names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
         return [name for name in names if name.startswith(text)]
 
     def do_toggle_computer(self, *arg):
-        """Toggle the computer relay off and then on again."""
+        """Toggle the computer relay off and then on again after 30 seconds.
+
+        Note:
+
+            The time delay is set on the arduino and is blocking.
+        """
+        relay = 'computer'
+
+        if 'control_board' in self.environment.serial_readers:
+            relay_lookup = self.controlboard_relay_lookup
+        else:
+            relay_lookup = self.telemetry_relay_lookup
+
         try:
-            board = 'telemetry_board'
-            pin = 8
-            # Special command will toggle off, wait 30 seconds, then toggle on
-            self.environment.serial_readers[board]['reader'].write("{},0".format(pin))
+            relay_info = relay_lookup[relay]
+            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+
+            serial_connection.ser.reset_input_buffer()
+            serial_connection.write("{},9\n".format(relay_info['pin']))
         except Exception as e:
+            print_warning(f"Problem toggling computer: {e!r}")
             print_warning(e)
 
 ##################################################################################################
