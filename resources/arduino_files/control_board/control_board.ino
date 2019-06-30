@@ -18,17 +18,21 @@
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-// There are five relays from the Infineon board and the
-// numbers below should correspond to the zero-based index
-// number of the item plugged into each relay. The numbering
-// starts from the bottom of the board, *furthest* from the
-// V_in and GND pins. The relay next to the GND pin is therefore
-// relay index 4.
-#define int COMPUTER_RELAY = 0;
-#define int MOUNT_RELAY = 1;
-#define int CAMERA_BOX_RELAY = 2;
-#define int WEATHER_RELAY = 3;
-#define int FAN_RELAY = 4;
+/* Hardware Index
+
+ There are five relays from the Infineon board and the
+ numbers below should correspond to the zero-based index
+ number of the item plugged into each relay. The numbering
+ starts from the bottom of the board, *furthest* from the
+ V_in and GND pins. The relay next to the GND pin is therefore
+ relay index 4.
+
+*/
+#define int COMPUTER_INDEX = 0;
+#define int MOUNT_INDEX = 1;
+#define int CAMERA_BOX_INDEX = 2;
+#define int WEATHER_INDEX = 3;
+#define int FAN_INDEX = 4;
 
 #define UNO 1 // 1 if board is Uno, 0 if it is a Micro
 
@@ -93,10 +97,9 @@
 
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
-// Used to lookup the pin number from the relay index at top of file. The built-in
-// LED will be the last element.
+// Relay index. Used to look up appropriate relay for given hardware index.
 const int numRelays = 5;
-const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4, LED_BUILTIN};
+const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4};
 
 uint8_t sensors_address[NUM_DS18][8];
 
@@ -162,18 +165,17 @@ void loop() {
 
   // Read any serial input
   //    - Input will be two comma separated integers, the
-  //      first specifying the pin and the second the status
-  //      to change to (1/0). Cameras and debug led are
-  //      supported.
+  //      first specifying the relay index and the second the status
+  //      to change to (1/0). Cameras and debug LED are supported.
   //      Example serial input:
-  //           4,1   # Turn pin 4 on
+  //           4,1   # Turn relay 4 on
   //          13,0   # Turn built-in led (pin 13) off
   while (Serial.available() > 0) {
     int relay_number = Serial.parseInt();
     int relay_action = Serial.parseInt();
 
     // Don't allow toggle of computer
-    if(relay_number != COMPUTER_RELAY){
+    if(relay_number != COMPUTER_INDEX){
       // Lookup the actual pin number to use.
       int pin_num = relayArray[relay_number]
 
@@ -184,6 +186,8 @@ void loop() {
       } else if (pin_status == 9) {
         toggle_pin(pin_num);
       }
+    } elif(relay_number == LED_BUILTIN){
+      toggle_pin(LED_BUILTIN)
     }
   }
 
@@ -222,29 +226,36 @@ void get_readings() {
 
   // Create our JsonDocument
   // https://arduinojson.org/v6/assistant/
-  const size_t capacity = JSON_ARRAY_SIZE(0) + 2*JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) + 2*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(6);
+  const size_t capacity = JSON_ARRAY_SIZE(0) + 2*JSON_ARRAY_SIZE(1) +
+                          JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) +
+                          2*JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(6);
   DynamicJsonDocument doc(capacity);
 
   doc["name"] = BOARD_NAME;
   doc["version"] = VERSION_ID;
   doc["time"] = millis();
 
+  // Add the currents to the document.
   JsonObject current = doc.createNestedObject("current");
-  current["cameras"] = voltages[0];
-  current["fan"] = voltages[0];
-  current["main"] = voltages[0];
-  current["mount"] = voltages[0];
+  current["computer"] = voltages[COMPUTER_INDEX];
+  current["mount"] = voltages[MOUNT_INDEX];
+  current["camera_box"] = voltages[CAMERA_BOX_INDEX];
+  current["weater"] = voltages[WEATHER_INDEX];
+  current["fan"] = voltages[FAN_INDEX];
+  current["ac"] = voltages[7];
+  current["dc"] = voltages[5];
 
-  JsonObject power = doc.createNestedObject("power");
-  power["computer"] = power_readings[COMPUTER_RELAY];
-  power["mount"] = power_readings[MOUNT_RELAY];
-  power["camera_box"] = power_readings[CAMERA_BOX_RELAY];
-  power["weather"] = power_readings[WEATHER_RELAY];
-  power["relay"] = power_readings[FAN_RELAY];
+  // Add the power readings (on/off) to the document.
+  onObject power = doc.createNestedObject("power");
+  power["computer"] = power_readings[COMPUTER_INDEX];
+  power["mount"] = power_readings[MOUNT_INDEX];
+  power["camera_box"] = power_readings[CAMERA_BOX_INDEX];
+  power["weather"] = power_readings[WEATHER_INDEX];
+  power["fan"] = power_readings[FAN_INDEX];
   power["main"] = power_readings[5];
 
+  // Add the environment sensors to the document.
   JsonArray sensors = doc.createNestedArray("sensors");
-
   JsonObject sensors_0 = sensors.createNestedObject();
   sensors_0["name"] = "DHT";
   JsonArray sensors_0_humidity = sensors_0.createNestedArray("humidity");
@@ -299,58 +310,71 @@ https://www.arduino.cc/en/Reference/AnalogRead
  */
 void read_voltages(float voltages[]) {
 
-  // Enable channels 0_0 and 1_0 and get readings.
+  float analogToFiveVolts = 5/1023;
+
+  // conversion factor to compute Iload from sensed voltage.
+  // The two types of mosfets on the Infineion have different values.
+  // (wtgee) Empirical?
+  float convertLoad0 = analogToFiveVolts*2360/1200;
+  float convertLoad1 = analogToFiveVolts*3200/1200;
+
+  // Enable channels 0_0 and 1_0 and get readings. Index 0 and 1.
   digitalWrite(DSEL_0, LOW);
   digitalWrite(DSEL_1, LOW);
   delay(100);
   float Diag0=analogRead(IS_0);
   float Diag1=analogRead(IS_1);
+  float Iload0 = Diag0*convertLoad0;
+  float Iload1 = Diag1*convertLoad0;
 
-  // Enabled channels 0_1 and 1_1 and get readings.
+  // Enabled channels 0_1 and 1_1 and get readings. Index 2 and 3.
   digitalWrite(DSEL_0, HIGH);
   digitalWrite(DSEL_1, HIGH);
   delay(100);
-  float Diag3=analogRead(IS_0);
-  float Diag4=analogRead(IS_1);
+  float Diag2=analogRead(IS_0);
+  float Diag3=analogRead(IS_1);
+  float Iload2 = Diag2*convertLoad0;
+  float Iload3 = Diag3*convertLoad0;
 
-  // Get readings for top channel.
-  float Diag2=analogRead(IS_2);
+  // Get readings for top channel. Index 4.
+  float Diag4=analogRead(IS_2);
+  float Iload4 = Diag4*convertLoad1;
+
+  // DC sensor.
   float Diag5=analogRead(ISENSE);
+  float Iload5 = Diag5*analogToFiveVolts;
 
-  // Get AC sensor readings.
+  // AC sensor.
   float Diag6=analogRead(ISENSEAC);
   float Diag7=analogRead(VPS);
+  float Iload6 = Diag6*analogToFiveVolts*0.18; //shows in AC (A)
+  float Iload7 = Diag7*analogToFiveVolts*3.45; //takes into account the voltage divider bridge
 
-  float Iload0 = Diag0*5/1023*2360/1200; //conversion factor to compute Iload from sensed voltage
-  float Iload1 = Diag1*5/1023*2360/1200;
-  float Iload2 = Diag2*5/1023*3200/1200;
-  float Iload3 = Diag3*5/1023*2360/1200;
-  float Iload4 = Diag4*5/1023*2360/1200;
-  float Iload5 = Diag5*5/1023;
-  float Iload6 = Diag6*5/1023*0.18; //shows in AC (A)
-  float Iload7 = Diag7*5/1023*3.45; //takes into account the voltage divider bridge
-
-  voltages[0] = Iload5;
-  voltages[1] = Iload0;
-  voltages[2] = Iload3;
-  voltages[3] = Iload1;
+  // Channel sensing.
+  voltages[0] = Iload0;
+  voltages[1] = Iload1;
+  voltages[2] = Iload2;
+  voltages[3] = Iload3;
   voltages[4] = Iload4;
-  voltages[5] = Iload2;
-  voltages[6] = Iload6;
-  voltages[7] = Iload7;
+
+  // AC and DC sensing.
+  voltages[5] = Iload5; // DC
+  voltages[6] = Iload6; // AC
+  voltages[7] = Iload7; // AC w/ voltage divider
 }
 
-/* Read Power (i.e. is it on or off?)
+/* Hardware Index
 
-Simply read the current state of the pin .
+ Read Power (i.e. is it on or off?)
+ply read the current state of the pin .
+/o read_power(int power_readings[]) {
+  */
+  power_readings[COMPUTER_INDEX] = digitalRead(relayArray[COMPUTER_INDEX]);
+  power_readings[MOUNT_INDEX = digitalRead(relayArray[MOUNT_INDEX])
 
-*/
-void read_power(int power_readings[]) {
-  power_readings[COMPUTER_RELAY] = digitalRead(relayArray[COMPUTER_RELAY]);
-  power_readings[MOUNT_RELAY = digitalRead(relayArray[MOUNT_RELAY])
-  power_readings[CAMERA_BOX_RELAY = digitalRead(relayArray[CAMERA_BOX_RELAY])
-  power_readings[WEATHER_RELAY = digitalRead(relayArray[WEATHER_RELAY])
-  power_readings[FAN_RELAY = digitalRead(relayArray[FAN_RELAY])
+  power_readings[CAMERA_BOX_INDEX = digitalRead(relayArray[CAMERA_BOX_INDEX])
+  power_readings[WEATHER_INDEX = digitalRead(relayArray[WEATHER_INDEX])
+  power_readings[FAN_INDEX = digitalRead(relayArray[FAN_INDEX])
 }
 
 /************************************
