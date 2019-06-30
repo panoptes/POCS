@@ -11,10 +11,8 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
-#define BOARD_NAME "control_board"
-#define VERSION_ID "2019-06-26"
-
-#define DHTTYPE DHT22   // DHT 22  (AM2302)
+const String BOARD_NAME "control_board";
+const String VERSION_ID "2019-07-01";
 
 /* Hardware Index
 
@@ -25,14 +23,24 @@
  V_in and GND pins. The relay next to the GND pin is therefore
  relay index 4.
 */
+const int COMPUTER_INDEX 0;
+const int MOUNT_INDEX 1;
+const int CAMERA_BOX_INDEX 2;
+const int WEATHER_INDEX 3;
+const int FAN_INDEX 4;
 
-#define COMPUTER_INDEX 0
-#define MOUNT_INDEX 1
-#define CAMERA_BOX_INDEX 2
-#define WEATHER_INDEX 3
-#define FAN_INDEX 4
+/* Pin setup
 
+  The pin mappings below will depend on the particular microncontroller
+  that you have attached, most likely an Ardunio Uno or Arduino Micro.
 
+  The pin structure below is for associating an Ardunio Uno with the Infineon
+  relay board. For more information on the Infineon, see the technical documents at:
+
+  https://www.infineon.com/cms/en/product/evaluation-boards/24v_shield_btt6030/#!documents
+
+  Arduino Uno Pins
+*/
 // Digital Pins
 const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
 const int DHT_PIN = 10;  // DHT Temp & Humidity Pin
@@ -61,29 +69,39 @@ const int DEN_0 = A4; // PROFET-0 (A4 = 18)
 const int DEN_1 = 5;  // PROFET-1
 const int DEN_2 = 9;  // PROFET-2
 
+/* Sensors
+
+  Set up some information related to the attached sensors.
+*/
+
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
+const int numRelays = 5;
 
 // Relay index. Used to look up appropriate relay for given hardware index.
-const int numRelays = 5;
 const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4};
-
-uint8_t sensors_address[NUM_DS18][8];
 
 // Temperature chip I/O
 OneWire oneWire(DS18_PIN);
 DallasTemperature tempSensors(&oneWire);
 
 // Setup DHT22
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
 DHT dht(DHT_PIN, DHTTYPE);
 
-int led_value = LOW;
+/* Setup Function
+
+  Put the pins and sensors into their initial state.
+*/
 
 void setup() {
   Serial.begin(9600);
-  Serial.flush();
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB
+  }
 
   pinMode(LED_BUILTIN, OUTPUT);
 
+  // Start the environmental sensors.
   dht.begin();
   tempSensors.begin();
 
@@ -109,6 +127,10 @@ void setup() {
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
 
+  // Startup delay - in case of rapid power toggling, we don't
+  // want the relays to be turning on and off.
+  delay(3000);
+
   // Turn on everything to start
   // Setup relay pins
   digitalWrite(RELAY_0, HIGH);
@@ -121,9 +143,6 @@ void setup() {
   digitalWrite(DEN_0, HIGH);  // DEN_0 goes HIGH so Diagnosis enabled for PROFET0
   digitalWrite(DEN_1, HIGH);  // DEN_1 goes HIGH so Diagnosis enabled for PROFET1
   digitalWrite(DEN_2, HIGH);  // DEN_2 goes HIGH so Diagnosis enabled for PROFET2
-
-  digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
-  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1
 }
 
 /************************************
@@ -204,7 +223,7 @@ void loop() {
 void get_readings() {
   float voltages[7];
   int power_readings[6];
-  float temps[5];
+  float temps[NUM_DS18+1];
   float humidity[1];
 
   read_voltages(voltages);
@@ -222,8 +241,10 @@ void get_readings() {
   // Create our JsonDocument
   // https://arduinojson.org/v6/assistant/
   const size_t capacity = JSON_ARRAY_SIZE(0) + 2*JSON_ARRAY_SIZE(1) +
-                          JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) +
-                          2*JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(6);
+                        JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) +
+                        2*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(6) +
+                        JSON_OBJECT_SIZE(7);
+
   DynamicJsonDocument doc(capacity);
 
   doc["name"] = BOARD_NAME;
@@ -263,9 +284,9 @@ void get_readings() {
   JsonArray sensors_1_humidity = sensors_1.createNestedArray("humidity");
 
   JsonArray sensors_1_temperature = sensors_1.createNestedArray("temperature");
-  for (int x = 0; x < NUM_DS18; x++) {
-    // Store in x+1 because DHT11 stores in index 0
-    sensors_1_temperature.add(temps[x+1]);
+  for (int i = 0; i < NUM_DS18; i++) {
+    // Store in i+1 because DHT11 stores in index 0
+    sensors_1_temperature.add(temps[i+1]);
   }
 
   serializeJson(doc, Serial);
@@ -289,9 +310,9 @@ void read_ds18b20_temp(float temps[]) {
 
   tempSensors.requestTemperatures();
 
-  for (int x = 0; x < NUM_DS18; x++) {
-    // Store in x+1 because DHT11 stores in index 0
-    temps[x+1] = tempSensors.getTempCByIndex(x);
+  for (int i = 0; i < NUM_DS18; i++) {
+    // Store in i+1 because DHT11 stores in index 0
+    temps[i+1] = tempSensors.getTempCByIndex(i);
   }
 }
 
@@ -305,8 +326,9 @@ https://www.arduino.cc/en/Reference/AnalogRead
 void read_voltages(float voltages[]) {
 
   // Enable channels 0_0 and 1_0 and get readings. Index 0 and 1.
-  digitalWrite(DSEL_0, LOW);
-  digitalWrite(DSEL_1, LOW);
+  digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0.
+  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0.
+
   delay(100);
   float Diag0=analogRead(IS_0);
   float Diag2=analogRead(IS_1);
@@ -314,8 +336,8 @@ void read_voltages(float voltages[]) {
   float Iload2 = Diag2;
 
   // Enabled channels 0_1 and 1_1 and get readings. Index 2 and 3.
-  digitalWrite(DSEL_0, HIGH);
-  digitalWrite(DSEL_1, HIGH);
+  digitalWrite(DSEL_0, HIGH); // DSEL_0 HIGH reades PROFET 0_1
+  digitalWrite(DSEL_1, HIGH); // DSEL_1 HIGH reades PROFET 1_1
   delay(100);
   float Diag1=analogRead(IS_0);
   float Diag3=analogRead(IS_1);
