@@ -17,6 +17,18 @@
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
+// There are five relays from the Infineon board and the
+// numbers below should correspond to the zero-based index
+// number of the item plugged into each relay. The numbering
+// starts from the bottom of the board, *furthest* from the
+// V_in and GND pins. The relay next to the GND pin is therefore
+// relay index 4.
+#define int COMPUTER_RELAY = 0;
+#define int MOUNT_RELAY = 1;
+#define int CAMERA_BOX_RELAY = 2;
+#define int WEATHER_RELAY = 3;
+#define int FAN_RELAY = 4;
+
 #define UNO 1 // 1 if board is Uno, 0 if it is a Micro
 
 /* DECLARE PINS */
@@ -78,9 +90,11 @@
   const int DEN_2 = 9;  // PROFET-2
 #endif
 
-const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4};
-
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
+
+// Used to lookup the pin number from the relay index at top of file. The built-in
+// LED will be the last element.
+const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4, LED_BUILTIN};
 
 uint8_t sensors_address[NUM_DS18][8];
 
@@ -153,14 +167,14 @@ void loop() {
   //           4,1   # Turn pin 4 on
   //          13,0   # Turn built-in led (pin 13) off
   while (Serial.available() > 0) {
-    int pin_num = Serial.parseInt();
-    int pin_status = Serial.parseInt();
+    int relay_number = Serial.parseInt();
+    int relay_action = Serial.parseInt();
 
-    switch (pin_num) {
-    case RELAY_1:
-    case RELAY_2:
-    case RELAY_3:
-    case RELAY_4:
+    // Don't allow toggle of computer
+    if(relay_number != COMPUTER_RELAY){
+      // Lookup the actual pin number to use.
+      int pin_num = relayArray[relay_number]
+
       if (pin_status == 1) {
         turn_pin_on(pin_num);
       } else if (pin_status == 0) {
@@ -168,20 +182,45 @@ void loop() {
       } else if (pin_status == 9) {
         toggle_pin(pin_num);
       }
-      break;
-    case LED_BUILTIN:
-      digitalWrite(pin_num, pin_status);
-      break;
     }
   }
 
   delay(250);
 
+  // Do the actual work of reading all the sensors.
   get_readings();
 
-  // Simple heartbeat
+  // Simple LED heartbeat.
   toggle_led();
   delay(250);
+}
+
+/************************************
+* Sensor Functions
+*************************************/
+
+// Reading temperature or humidity takes about 250 milliseconds!
+// Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
+void read_dht_temp(float temps[], float humidity[]) {
+  dht_handler.Collect();
+
+  humidity[0] = dht_handler.humidity();
+  temps[0] = dht_handler.temperature();
+}
+
+/* Read DS18B20 Sensors
+
+Loop through the number of connected sensors and gather temperature.
+
+*/
+void read_ds18b20_temp(float temps[]) {
+
+  sensors.requestTemperatures();
+
+  for (int x = 0; x < NUM_DS18; x++) {
+    // Store in x+1 because DHT11 stores in index 0
+    temps[x+1] = sensors.getTempCByIndex(x);
+  }
 }
 
 void get_readings() {
@@ -253,30 +292,26 @@ https://www.arduino.cc/en/Reference/AnalogRead
  */
 void read_voltages(float voltages[]) {
 
-  // Enable channels 0_0 and 1_0
+  // Enable channels 0_0 and 1_0 and get readings.
   digitalWrite(DSEL_0, LOW);
   digitalWrite(DSEL_1, LOW);
-
   delay(100);
-
   float Diag0=analogRead(IS_0);
   float Diag1=analogRead(IS_1);
 
-
-  // Enabled channels 0_1 and 1_1
+  // Enabled channels 0_1 and 1_1 and get readings.
   digitalWrite(DSEL_0, HIGH);
   digitalWrite(DSEL_1, HIGH);
-
   delay(100);
-
   float Diag3=analogRead(IS_0);
   float Diag4=analogRead(IS_1);
 
+  // Get readings for top channel.
   float Diag2=analogRead(IS_2);
   float Diag5=analogRead(ISENSE);
 
+  // Get AC sensor readings.
   float Diag6=analogRead(ISENSEAC);
-
   float Diag7=analogRead(VPS);
 
   float Iload0 = Diag0*5/1023*2360/1200; //conversion factor to compute Iload from sensed voltage
@@ -298,6 +333,11 @@ void read_voltages(float voltages[]) {
   voltages[7] = Iload7;
 }
 
+/* Read Power (i.e. is it on or off?)
+
+Simply read the current state of the pin .
+
+*/
 void read_power(int power[]) {
   power[0] = digitalRead(RELAY_0);
   power[1] = digitalRead(RELAY_1);
@@ -306,28 +346,8 @@ void read_power(int power[]) {
   power[4] = digitalRead(RELAY_4);
 }
 
-// Reading temperature or humidity takes about 250 milliseconds!
-// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-void read_dht_temp(float temps[], float humidity[]) {
-  dht_handler.Collect();
-
-  humidity[0] = dht_handler.humidity();
-  temps[0] = dht_handler.temperature();
-}
-
-void read_ds18b20_temp(float temps[]) {
-
-  sensors.requestTemperatures();
-
-  for (int x = 0; x < NUM_DS18; x++) {
-    // Store in x+1 because DHT11 stores in index 0
-    temps[x+1] = sensors.getTempCByIndex(x);
-  }
-}
-
-
 /************************************
-* Utility Methods
+* Utility Functions
 *************************************/
 
 void toggle_pin_delay(int pin_num) {
@@ -351,8 +371,3 @@ bool is_pin_on(int pin_num) {
 void toggle_pin(int pin_num) {
   digitalWrite(pin_num, !digitalRead(pin_num));
 }
-
-void toggle_led() {
-  toggle_pin(LED_BUILTIN);
-}
-
