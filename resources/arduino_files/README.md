@@ -68,6 +68,37 @@ not be used unless you know you need it.
 
 ## Using the Arduino files
 
+In general you want to follow the steps outlined in the [`arduino-cli` instructions](https://github.com/arduino/arduino-cli).
+
+### Adding 3rd party libraries
+
+The instructions listed above show how to add libraries. Not all of the iterations
+listed above use all the libraries but it doesn't hurt to have them on your machine.
+
+```
+Name                    Installed       Location
+Adafruit_Unified_Sensor 1.0.3           sketchbook
+ArduinoJson             6.11.1          sketchbook
+DHT_sensor_library      1.3.4           sketchbook
+DallasTemperature       3.8.0           sketchbook
+OneWire                 2.3.4           sketchbook
+```
+
+These can be installed with:
+
+```bash
+arduino-cli lib install "Adafruit Unified Sensor"
+arduino-cli lib install "ArduinoJson"
+arduino-cli lib install "DHT sensor library"
+arduino-cli lib install "DallasTemperature"
+arduino-cli lib install "OneWire"
+```
+
+> Note: if you already have the library installed the above commands will show an
+error message, saying that the file alredy exists and cannot be installed. This is
+not really an "error" and can be ignored.
+
+
 ### Compiling the sketch
 
 Using the `arduino-cli` command line tool, the sketch can be compiled using the
