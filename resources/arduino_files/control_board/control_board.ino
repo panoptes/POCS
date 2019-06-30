@@ -13,6 +13,7 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
+#define BOARD_NAME "\"control_board\""
 #define VERSION_ID "\"2019-06-26\""
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
@@ -94,6 +95,7 @@ const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
 // Used to lookup the pin number from the relay index at top of file. The built-in
 // LED will be the last element.
+const int numRelays = 5;
 const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4, LED_BUILTIN};
 
 uint8_t sensors_address[NUM_DS18][8];
@@ -199,6 +201,71 @@ void loop() {
 * Sensor Functions
 *************************************/
 
+
+void get_readings() {
+  float voltages[7];
+  int power_readings[6];
+  float temps[4];
+  float humidity[1];
+
+  read_voltages(voltages);
+  read_power(power_readings);
+  read_dht_temp(temps, humidity);
+  read_ds18b20_temp(temps);
+
+  // Is Mains power on? Check the AC sensor for any value above 0.
+  if(voltages[6] > 0.0){
+    power_readings[5] = 1;
+  } else {
+    power_readings[5] = 0;
+  }
+
+  // Create our JsonDocument
+  // https://arduinojson.org/v6/assistant/
+  const size_t capacity = JSON_ARRAY_SIZE(0) + 2*JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(3) + 2*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(6);
+  DynamicJsonDocument doc(capacity);
+
+  doc["name"] = BOARD_NAME;
+  doc["version"] = VERSION_ID;
+  doc["time"] = millis();
+
+  JsonObject current = doc.createNestedObject("current");
+  current["cameras"] = voltages[0];
+  current["fan"] = voltages[0];
+  current["main"] = voltages[0];
+  current["mount"] = voltages[0];
+
+  JsonObject power = doc.createNestedObject("power");
+  power["computer"] = power_readings[COMPUTER_RELAY];
+  power["mount"] = power_readings[MOUNT_RELAY];
+  power["camera_box"] = power_readings[CAMERA_BOX_RELAY];
+  power["weather"] = power_readings[WEATHER_RELAY];
+  power["relay"] = power_readings[FAN_RELAY];
+  power["main"] = power_readings[5];
+
+  JsonArray sensors = doc.createNestedArray("sensors");
+
+  JsonObject sensors_0 = sensors.createNestedObject();
+  sensors_0["name"] = "DHT";
+  JsonArray sensors_0_humidity = sensors_0.createNestedArray("humidity");
+  sensors_0_humidity.add(humidity[0]);
+  JsonArray sensors_0_temperature = sensors_0.createNestedArray("temperature");
+  sensors_0_temperature.add(temps[0]);
+
+  JsonObject sensors_1 = sensors.createNestedObject();
+  sensors_1["name"] = "DS18B20";
+  JsonArray sensors_1_humidity = sensors_1.createNestedArray("humidity");
+
+  JsonArray sensors_1_temperature = sensors_1.createNestedArray("temperature");
+  for (int x = 0; x < NUM_DS18; x++) {
+    // Store in x+1 because DHT11 stores in index 0
+    sensors_1_temperature.add(temps[x+1]);
+  }
+
+  serializeJson(doc, Serial);
+}
+
+
 // Reading temperature or humidity takes about 250 milliseconds!
 // Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
 void read_dht_temp(float temps[], float humidity[]) {
@@ -221,66 +288,6 @@ void read_ds18b20_temp(float temps[]) {
     // Store in x+1 because DHT11 stores in index 0
     temps[x+1] = sensors.getTempCByIndex(x);
   }
-}
-
-void get_readings() {
-  float voltages[7];
-  int power[6];
-  float temps[4];
-  float humidity[1];
-
-  read_voltages(voltages);
-  read_power(power);
-  read_dht_temp(temps, humidity);
-  read_ds18b20_temp(temps);
-
-  // Is Mains power on? Check the AC sensor for any value above 0.
-  if(voltages[6] > 0.0){
-    power[5] = 1;
-  } else {
-    power[5] = 0;
-  }
-
-  // Create our JsonDocument
-  // https://arduinojson.org/v6/assistant/
-  const size_t capacity = JSON_ARRAY_SIZE(4) + 2*JSON_OBJECT_SIZE(1) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(6) + JSON_OBJECT_SIZE(8);
-  DynamicJsonDocument doc(capacity);
-
-  JsonObject data = doc.createNestedObject("data");
-
-  JsonObject data_control_board = data.createNestedObject("control_board");
-  data_control_board["name"] = "control_board";
-  data_control_board["ver"] = VERSION_ID;
-
-  JsonObject data_control_board_power = data_control_board.createNestedObject("power");
-  data_control_board_power["computer"] = power[0];
-  data_control_board_power["fan"] = power[1];
-  data_control_board_power["mount"] = power[2];
-  data_control_board_power["cameras"] = power[3];
-  data_control_board_power["weather"] = power[4];
-  data_control_board_power["main"] = 1;
-
-  JsonObject data_control_board_current = data_control_board.createNestedObject("current");
-  data_control_board_current["main"] = voltages[0];
-  data_control_board_current["fan"] = voltages[1];
-  data_control_board_current["mount"] = voltages[2];
-  data_control_board_current["cameras"] = voltages[3];
-
-  JsonObject data_control_board_amps = data_control_board.createNestedObject("amps");
-  data_control_board_amps["main"] = voltages[0];
-  data_control_board_amps["fan"] = voltages[1];
-  data_control_board_amps["mount"] = voltages[2];
-  data_control_board_amps["cameras"] = voltages[3];
-
-  data_control_board["humidity"] = humidity[0];
-
-  JsonArray data_control_board_temperature = data_control_board.createNestedArray("temperature");
-  data_control_board_temperature.add(temps[0]);
-  data_control_board_temperature.add(temps[1]);
-  data_control_board_temperature.add(temps[2]);
-  data_control_board_temperature.add(temps[3]);
-
-  serializeJson(doc, Serial);
 }
 
 /* Read Voltages
@@ -338,12 +345,12 @@ void read_voltages(float voltages[]) {
 Simply read the current state of the pin .
 
 */
-void read_power(int power[]) {
-  power[0] = digitalRead(RELAY_0);
-  power[1] = digitalRead(RELAY_1);
-  power[2] = digitalRead(RELAY_2);
-  power[3] = digitalRead(RELAY_3);
-  power[4] = digitalRead(RELAY_4);
+void read_power(int power_readings[]) {
+  power_readings[COMPUTER_RELAY] = digitalRead(relayArray[COMPUTER_RELAY]);
+  power_readings[MOUNT_RELAY = digitalRead(relayArray[MOUNT_RELAY])
+  power_readings[CAMERA_BOX_RELAY = digitalRead(relayArray[CAMERA_BOX_RELAY])
+  power_readings[WEATHER_RELAY = digitalRead(relayArray[WEATHER_RELAY])
+  power_readings[FAN_RELAY = digitalRead(relayArray[FAN_RELAY])
 }
 
 /************************************
