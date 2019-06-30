@@ -28,3 +28,8 @@ def test_create_mount_with_earth_location(config):
     site_details = create_location_from_config(conf)
     earth_location = site_details['earth_location']
     assert isinstance(create_mount_from_config(conf, earth_location=earth_location), AbstractMount) is True
+
+
+def test_create_mount_without_earth_location(config):
+    conf = config.copy()
+    assert isinstance(create_mount_from_config(conf, earth_location=None), AbstractMount) is True

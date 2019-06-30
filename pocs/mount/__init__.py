@@ -3,7 +3,6 @@ from glob import glob
 from pocs.mount.mount import AbstractMount  # pragma: no flakes
 from pocs.utils import error
 from pocs.utils import load_module
-from pocs.utils.error import MountNotFound
 from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
@@ -16,10 +15,10 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
     and the class must be called Mount.
 
     Args:
-        config: A dictionary of name to value, as produced by panoptes.utils.config.load_config.
+        config: A dictionary of name to value, as produced by `panoptes.utils.config.load_config`.
         mount_info: Optional param which overrides the 'mount' entry in config if provided.
             Useful for testing.
-        earth_location: astropy.coordinates.EarthLocation instance, representing the
+        earth_location: `astropy.coordinates.EarthLocation` instance, representing the
             location of the mount on the Earth. If not specified, the config must include the
             observatory's location (Latitude, Longitude and Altitude above mean sea level).
             Useful for testing.
@@ -27,11 +26,11 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
         **kwargs: Other keyword args will be passed to the concrete class specified in the config.
 
     Returns:
-        A class called Mount if the config (or mount_info) is complete. None if neither
+        An instance of the Mount class if the config (or mount_info) is complete. `None` if neither
         mount_info nor config['mount'] is provided.
 
     Raises:
-        MountNotFound: Missing the serial.port info for a mount which requires it (i.e. not
+        `error.MountNotFound`: Missing the serial.port info for a mount which requires it (i.e. not
             a Software Bisque mount).
     """
     logger = get_root_logger()
@@ -52,7 +51,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
     driver = mount_info.get('driver')
 
     if not driver or not isinstance(driver, str):
-        raise MountNotFound('Mount info in config is missing a driver name.')
+        raise error.MountNotFound('Mount info in config is missing a driver name.')
 
     # See if we have a serial connection
     try:
