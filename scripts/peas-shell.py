@@ -193,7 +193,7 @@ class PanSensorShell(cmd.Cmd):
             relay_info = relay_lookup[relay]
             serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
 
-            serial_connection.ser.flushInput()
+            serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},0\n".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem turning relay off {}".format(relay))
@@ -212,7 +212,7 @@ class PanSensorShell(cmd.Cmd):
             relay_info = relay_lookup[relay]
             serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
 
-            serial_connection.ser.flushInput()
+            serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},1\n".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem turning relay on {}".format(relay))
