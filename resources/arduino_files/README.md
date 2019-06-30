@@ -112,6 +112,12 @@ Where `<FOLDER_NAME>` corresponds to the folder containing the `.ino` file.  The
 `--fqbn` option depends on the specific Arduino you are using. See [Step 4](https://github.com/arduino/arduino-cli#step-4-find-and-install-the-right-core)
 of the `arduino-cli` instructions for more information.
 
+Example:
+
+```bash
+arduino-cli compile --fqbn arduino:avr:uno control_board
+```
+
 ### Uploading the sketch
 
 To upload the sketch you can use the following:
@@ -127,7 +133,7 @@ so that serial connections don't cause the board to reset itself. The `arduino-c
 command toggles the DTR setting because it is needed in order to upload the sketch
 correctly.
 
-A fulle example would be:
+Example:
 
 ```bash
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno control_board && sleep 2 && stty -F /dev/ttyACM0 -hupcl
