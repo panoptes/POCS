@@ -51,15 +51,17 @@ class ArduinoSerialMonitor(object):
                 }
 
     def _connect_serial(self, port):
-        self.logger.debug('Attempting to connect to serial port: {}'.format(port))
+        self.logger.info('Attempting to connect to serial port: {}'.format(port))
         serial_reader = SerialData(port=port, baudrate=9600)
-        try:
-            serial_reader.connect()
-            self.logger.debug('Connected to {}', port)
-            return serial_reader
-        except Exception:
-            self.logger.warning('Could not connect to port: {}'.format(port))
-            return None
+        if serial_reader.is_connected is False:
+            try:
+                serial_reader.connect()
+            except Exception:
+                self.logger.warning('Could not connect to port: {}'.format(port))
+                return None
+
+        self.logger.info('Connected to {}', port)
+        return serial_reader
 
     def disconnect(self):
         for sensor_name, reader_info in self.serial_readers.items():
