@@ -4,7 +4,7 @@ import sys
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
 from contextlib import suppress
-
+import logging
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
@@ -22,6 +22,7 @@ class ArduinoSerialMonitor(object):
 
     def __init__(self, auto_detect=False, *args, **kwargs):
         self.logger = get_root_logger()
+        self.logger.setLevel(logging.INFO)
 
         self.db = None
         self.messaging = None
