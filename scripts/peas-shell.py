@@ -24,8 +24,9 @@ class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
     intro = 'Welcome to PEAS Shell! Type ? for help'
     prompt = 'PEAS > '
-    environment = None
     weather = None
+    control_board = None
+    camera_board = None
     active_sensors = dict()
     db = PanDB()
     _keep_looping = False
@@ -67,7 +68,7 @@ class PanSensorShell(cmd.Cmd):
             console.color_print("{:>12s}: ".format('Loop Timer'),
                                 "default", "inactive", "yellow")
 
-        for sensor_name in ['environment', 'weather']:
+        for sensor_name in ['control_board', 'camera_board', 'weather']:
             if sensor_name in self.active_sensors:
                 console.color_print("{:>12s}: ".format(sensor_name.title()),
                                     "default", "active", "lightgreen")
@@ -107,7 +108,7 @@ class PanSensorShell(cmd.Cmd):
 
     def complete_last_reading(self, text, line, begidx, endidx):
         """Provide completions for sensor names."""
-        names = ['environment', 'weather']
+        names = list(self.active_sensors.keys())
         return [name for name in names if name.startswith(text)]
 
     def do_enable_sensor(self, sensor, delay=None):
@@ -146,7 +147,7 @@ class PanSensorShell(cmd.Cmd):
 
     def complete_toggle_debug(self, text, line, begidx, endidx):
         """Provide completions for toggling debug logging."""
-        names = ['environment', 'weather']
+        names = list(self.active_sensors.keys())
         return [name for name in names if name.startswith(text)]
 
 ##################################################################################################
@@ -159,16 +160,26 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         self.do_load_weather()
-        self.do_load_environment()
+        self.do_load_control_board()
+        self.do_load_camera_board()
 
-    def do_load_environment(self, *arg):
-        """ Load the arduino environment sensors """
+    def do_load_control_board(self, *arg):
+        """ Load the arduino control_board sensors """
         if self._keep_looping:
             print_error('The timer loop is already running.')
             return
-        print("Loading sensors")
-        self.environment = ArduinoSerialMonitor(auto_detect=False)
-        self.do_enable_sensor('environment', delay=1)
+        print("Loading control board sensor")
+        self.control_board = ArduinoSerialMonitor(sensor_name='control_board')
+        self.do_enable_sensor('control_board', delay=1)
+
+    def do_load_camera_board(self, *arg):
+        """ Load the arduino camera_board sensors """
+        if self._keep_looping:
+            print_error('The timer loop is already running.')
+            return
+        print("Loading camera board sensor")
+        self.camera_board = ArduinoSerialMonitor(sensor_name='camera_board')
+        self.do_enable_sensor('camera_board', delay=1)
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
@@ -200,14 +211,14 @@ class PanSensorShell(cmd.Cmd):
         """
         relay = arg[0]
 
-        if 'control_board' in self.environment.serial_readers:
+        if hasattr(self, 'control_board'):
             relay_lookup = self.controlboard_relay_lookup
         else:
             relay_lookup = self.telemetry_relay_lookup
 
         try:
             relay_info = relay_lookup[relay]
-            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+            serial_connection = self.control_board.serial_readers[relay_info['board']]['reader']
 
             serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},0\n".format(relay_info['pin']))
@@ -229,14 +240,14 @@ class PanSensorShell(cmd.Cmd):
     """
         relay = arg[0]
 
-        if 'control_board' in self.environment.serial_readers:
+        if hasattr(self, 'control_board'):
             relay_lookup = self.controlboard_relay_lookup
         else:
             relay_lookup = self.telemetry_relay_lookup
 
         try:
             relay_info = relay_lookup[relay]
-            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+            serial_connection = self.control_board.serial_readers[relay_info['board']]['reader']
 
             serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},1\n".format(relay_info['pin']))
@@ -246,7 +257,7 @@ class PanSensorShell(cmd.Cmd):
 
     def complete_turn_off_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
-        if 'control_board' in self.environment.serial_readers:
+        if hasattr(self, 'control_board'):
             names = ['camera_box', 'fan', 'mount', 'weather']
         else:
             names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
@@ -254,7 +265,7 @@ class PanSensorShell(cmd.Cmd):
 
     def complete_turn_on_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
-        if 'control_board' in self.environment.serial_readers:
+        if hasattr(self, 'control_board'):
             names = ['camera_box', 'fan', 'mount', 'weather']
         else:
             names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
@@ -269,14 +280,14 @@ class PanSensorShell(cmd.Cmd):
         """
         relay = 'computer'
 
-        if 'control_board' in self.environment.serial_readers:
+        if hasattr(self, 'control_board'):
             relay_lookup = self.controlboard_relay_lookup
         else:
             relay_lookup = self.telemetry_relay_lookup
 
         try:
             relay_info = relay_lookup[relay]
-            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+            serial_connection = self.control_board.serial_readers[relay_info['board']]['reader']
 
             serial_connection.ser.reset_input_buffer()
             serial_connection.write("{},9\n".format(relay_info['pin']))

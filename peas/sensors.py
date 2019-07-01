@@ -20,7 +20,7 @@ class ArduinoSerialMonitor(object):
     Values are updated in the mongo db.
     """
 
-    def __init__(self, auto_detect=False, *args, **kwargs):
+    def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):
         self.logger = get_root_logger()
         self.logger.setLevel(logging.INFO)
 
@@ -29,6 +29,10 @@ class ArduinoSerialMonitor(object):
 
         # Store each serial reader
         self.serial_readers = dict()
+
+        # Don't allow sensor_name and auto_detect
+        if sensor_name is not None:
+            auto_detect = False
 
         if auto_detect or get_config('environment.auto_detect', default=False):
             self.logger.debug('Performing auto-detect')
@@ -40,7 +44,10 @@ class ArduinoSerialMonitor(object):
                 }
         else:
             # Try to connect to a range of ports
-            for sensor_name, sensor_config in get_config('environment', default={}).items():
+            for name, sensor_config in get_config('environment', default={}).items():
+                if name != sensor_name:
+                    continue
+
                 with suppress(TypeError, KeyError):
                     port = sensor_config['serial_port']
 
