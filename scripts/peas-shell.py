@@ -222,6 +222,7 @@ class PanSensorShell(cmd.Cmd):
             * camera_box
 
         The names must correspond to the entries in the lookup tables above.
+    """
         relay = arg[0]
 
         if 'control_board' in self.environment.serial_readers:
@@ -238,7 +239,6 @@ class PanSensorShell(cmd.Cmd):
         except Exception as e:
             print_warning(f"Problem turning relay off {relay} {e!r}")
             print_warning(e)
-    """
 
     def complete_turn_off_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
