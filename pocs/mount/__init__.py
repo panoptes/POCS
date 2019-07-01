@@ -47,11 +47,11 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
         site_details = create_location_from_config(config)
         earth_location = site_details['earth_location']
 
-    model = mount_info.get('model')
     driver = mount_info.get('driver')
-
     if not driver or not isinstance(driver, str):
         raise error.MountNotFound('Mount info in config is missing a driver name.')
+
+    model = mount_info.get('model', driver)
 
     # See if we have a serial connection
     try:
