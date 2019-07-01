@@ -42,8 +42,8 @@ const int FAN_INDEX = 4;
   Arduino Uno Pins
 */
 // Digital Pins
-const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
-const int DHT_PIN = 10;  // DHT Temp & Humidity Pin
+const int DS18_PIN = 10; // DS18B20 Temperature (OneWire)
+const int DHT_PIN = 11;  // DHT Temp & Humidity Pin
 
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
@@ -134,10 +134,10 @@ void setup() {
   // Turn on everything to start
   // Setup relay pins
   digitalWrite(RELAY_0, HIGH);
-  digitalWrite(RELAY_1, HIGH);
-  digitalWrite(RELAY_2, HIGH);
-  digitalWrite(RELAY_3, HIGH);
-  digitalWrite(RELAY_4, HIGH);
+  //digitalWrite(RELAY_1, HIGH);
+  //digitalWrite(RELAY_2, HIGH);
+  //digitalWrite(RELAY_3, HIGH);
+  //digitalWrite(RELAY_4, HIGH);
 
   //ENABLE DIAGNOSIS AND SELECT CHANNEL
   digitalWrite(DEN_0, HIGH);  // DEN_0 goes HIGH so Diagnosis enabled for PROFET0
