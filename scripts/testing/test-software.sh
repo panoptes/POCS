@@ -12,10 +12,10 @@ grc tail -F ${PANDIR}/log/pytest-all.log
 
 The tests will start by updating: ${PANDIR}/POCS/requirements.txt
 
-Tests will begin in 10 seconds. Press Ctrl-c to cancel.
+Tests will begin in 5 seconds. Press Ctrl-c to cancel.
 EOF
 
-sleep 10;
+sleep 5;
 
 docker run --rm -it -v /var/panoptes/:/var/panoptes gcr.io/panoptes-survey/pocs scripts/testing/run-tests.sh
 
