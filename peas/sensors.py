@@ -102,7 +102,7 @@ class ArduinoSerialMonitor(object):
                 if not reading:
                     self.logger.debug('Unable to get reading from {}', sensor_name)
                     continue
-                self.logger.debug('Got sensor_value from {}', sensor_name)
+                self.logger.debug(f'{sensor_name}: {reading!r}')
                 time_stamp, data = reading
                 data['date'] = time_stamp
                 sensor_data[sensor_name] = data
