@@ -1,3 +1,10 @@
 #!/bin/bash -e
 
-docker exec -it pocs-shell python $POCS/scripts/pocs-shell.py
+DOCKER_NAME="pocs-shell"
+
+if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
+    echo "${DOCKER_NAME} not running. Start services with scripts/pocs-docker.sh"
+else
+    docker exec -it peas-shell python "${POCS}/scripts/${DOCKER_NAME}.py"
+fi
+
