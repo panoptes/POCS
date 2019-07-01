@@ -204,11 +204,7 @@ def images_dir(tmpdir_factory):
 
 @pytest.fixture(scope='session')
 def config_path():
-    return os.path.join(os.getenv('POCS'),
-                        'pocs',
-                        'tests',
-                        'pocs_testing.yaml'
-                        )
+    return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'pocs_testing.yaml')
 
 
 @pytest.fixture(scope='session')
