@@ -144,6 +144,10 @@ class PanSensorShell(cmd.Cmd):
             except Exception:
                 print_error("Can't change log level for {}".format(sensor))
 
+    def complete_toggle_debug(self, text, line, begidx, endidx):
+        """Provide completions for toggling debug logging."""
+        names = ['environment', 'weather']
+        return [name for name in names if name.startswith(text)]
 
 ##################################################################################################
 # Load Methods
