@@ -127,10 +127,10 @@ state_machine: simple_state_table
 ################################################################################
 environment:
     auto_detect: False
-  camera_board:
-      serial_port: /dev/ttyACM0
-  control_board:
-      serial_port: /dev/ttyACM1
+    camera_board:
+        serial_port: /dev/ttyACM0
+    control_board:
+        serial_port: /dev/ttyACM1
 
 ######################### Weather Station ######################################
 # Weather station options.
