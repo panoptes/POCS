@@ -6,7 +6,7 @@ cd "${PANDIR}/POCS"
 pip install -r requirements.txt
 
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
-export COVERAGE_PROCESS_START=.coveragerc
+export COVERAGE_PROCESS_START="${PANDIR}/panoptes-utils/.coveragerc"
 # Die on first test for now
 coverage run "$(command -v pytest)" -vrs --test-databases all
 
