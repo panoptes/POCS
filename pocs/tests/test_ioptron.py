@@ -7,6 +7,7 @@ from astropy import units as u
 
 from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
+from pocs.utils.location import create_location_from_config
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
@@ -45,21 +46,18 @@ class TestMount(object):
     """ Test the mount """
 
     @pytest.fixture(autouse=True)
-    def setup(self, config):
+    def setup(self):
 
-        self.config = config
+        # Don't use config_port because we use real live config_server
+        location = create_location_from_config()
 
-        location = self.config['location']
-
+        # Can't supply full location, need earth_location
         with pytest.raises(AssertionError):
             mount = Mount(location)
 
-        loc = EarthLocation(
-            lon=location['longitude'],
-            lat=location['latitude'],
-            height=location['elevation'])
+        earth_location = location['earth_location']
 
-        mount = Mount(loc)
+        mount = Mount(earth_location)
         assert mount is not None
 
         self.mount = mount
