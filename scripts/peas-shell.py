@@ -169,7 +169,7 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading control board sensor")
-        self.control_board = ArduinoSerialMonitor(sensor_name='control_board')
+        self.control_board = ArduinoSerialMonitor(sensor_name='control_board', db_type='file')
         self.do_enable_sensor('control_board', delay=1)
 
     def do_load_camera_board(self, *arg):
@@ -178,7 +178,7 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading camera board sensor")
-        self.camera_board = ArduinoSerialMonitor(sensor_name='camera_board')
+        self.camera_board = ArduinoSerialMonitor(sensor_name='camera_board', db_type='file')
         self.do_enable_sensor('camera_board', delay=1)
 
     def do_load_weather(self, *arg):
