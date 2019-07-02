@@ -9,6 +9,7 @@ from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from pocs.utils import error
 from pocs.utils import horizon as horizon_utils
 from pocs.utils import load_module
+from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
 
@@ -22,8 +23,9 @@ def create_scheduler_from_config(config, observer=None):
         return None
 
     if not observer:
-        logger.info("No valid Observer found.")
-        return None
+        logger.debug(f'No Observer provided, creating from config.')
+        site_details = create_location_from_config(config)
+        observer = site_details['observer']
 
     scheduler_config = config.get('scheduler', {})
     scheduler_type = scheduler_config.get('type', 'dispatch')
