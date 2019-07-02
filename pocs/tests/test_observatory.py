@@ -8,7 +8,7 @@ from astropy.time import Time
 import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
-from pocs.dome import create_dome_from_config
+from pocs.dome import create_dome_from_config, AbstractDome
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -154,6 +154,17 @@ def test_add_remove_scheduler(config, observatory, caplog):
     assert observatory.scheduler is not None
     with pytest.raises(TypeError, message="Scheduler is not instance of BaseScheduler class, cannot add."):
         observatory.add_scheduler("scheduler")
+
+
+def test_set_dome(config, observatory):
+    conf = config.copy()
+    dome = create_dome_from_config(conf)
+    observatory.set_dome(dome=None)
+    assert observatory.dome is None
+    observatory.set_dome(dome=dome)
+    assert isinstance(observatory.dome, AbstractDome) is True
+    with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
+        observatory.set_dome('dome')
 
 
 def test_status(observatory):
