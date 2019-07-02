@@ -28,7 +28,7 @@ class PanSensorShell(cmd.Cmd):
     control_board = None
     camera_board = None
     active_sensors = dict()
-    db = PanDB()
+    db = PanDB(db_type='file')
     _keep_looping = False
     _loop_delay = 60
     _timer = None
@@ -388,8 +388,8 @@ class PanSensorShell(cmd.Cmd):
             sensor = getattr(self, sensor_name)
             try:
                 sensor.capture(store_result=True, send_message=True)
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f'Problem storing captured data: {e!r}')
 
             self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
 

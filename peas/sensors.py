@@ -25,6 +25,10 @@ class ArduinoSerialMonitor(object):
         self.logger.setLevel(logging.INFO)
 
         self.db = None
+        if 'db_type' in kwargs:
+            self.logger.info(f"Setting up {kwargs['db_type']} type database")
+            self.db = PanDB(db_type=kwargs['db_type'])
+
         self.messaging = None
 
         # Store each serial reader
@@ -119,17 +123,18 @@ class ArduinoSerialMonitor(object):
                 if send_message:
                     self.send_message({'data': data}, topic='environment')
 
-                # Make a separate power entry
-                if 'power' in data:
-                    self.db.insert_current('power', data['power'])
+                if store_result and len(sensor_data) > 0:
+                    if self.db is None:
+                        self.db = PanDB()
+
+                    self.db.insert_current(sensor_name, data)
+
+                    # Make a separate power entry
+                    if 'power' in data:
+                        self.db.insert_current('power', data['power'])
 
             except Exception as e:
                 self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
-
-        if store_result and len(sensor_data) > 0:
-            if self.db is None:
-                self.db = PanDB()
-            self.db.insert_current('environment', sensor_data)
 
         return sensor_data
 
