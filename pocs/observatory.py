@@ -221,8 +221,8 @@ class Observatory(PanBase):
         self.logger.info('Removing scheduler')
         self.scheduler = None
 
-    def add_mount(self, mount):
-        """Add mount.
+    def set_mount(self, mount=None):
+        """Set's mount or remove's mount.
 
         Args:
             mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
@@ -230,13 +230,11 @@ class Observatory(PanBase):
         if isinstance(mount, AbstractMount):
             self.logger.info('Adding mount')
             self.mount = mount
+        elif mount is None:
+            self.logger.info('Removing mount')
+            self.mount = None
         else:
             raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
-
-    def remove_mount(self):
-        """Remove mount. """
-        self.logger.info('Removing mount')
-        self.mount = None
 
 ##########################################################################
 # Methods
