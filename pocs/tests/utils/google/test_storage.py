@@ -1,16 +1,20 @@
-import pytest
 import os
 import shutil
+
+import pytest
 
 from pocs.utils.error import GoogleCloudError
 from pocs.utils.google import is_authenticated
 from pocs.utils.google.storage import PanStorage, upload_observation_to_bucket
 
 
-pytestmark = pytest.mark.skipif(
-    not pytest.config.option.test_cloud_storage,
-    reason="Needs --test-cloud-storage to run."
-)
+@pytest.fixture
+def pytest_mark(request):
+    if (
+            not request.config.option.test_cloud_storage
+    ):
+        raise pytest.skip('Needs --test-cloud-storage to run.')
+
 
 pytestmark = pytest.mark.skipif(
     not is_authenticated(),
