@@ -200,6 +200,8 @@ do_install() {
         echo "WARNING: Docker images not installed/downloaded."
     fi
 
+    ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_ras"
+
     echo "Please reboot your machine before using POCS."
 
     read -p "Reboot now? [y/N]: " -r
