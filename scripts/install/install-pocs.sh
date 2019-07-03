@@ -200,7 +200,10 @@ do_install() {
         echo "WARNING: Docker images not installed/downloaded."
     fi
 
-    ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_ras"
+    # Add an SSH key if one doesn't exists
+    if [ ! -f "${HOME}/.ssh/id_rsa" ]; then
+        ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa";
+    fi
 
     echo "Please reboot your machine before using POCS."
 
