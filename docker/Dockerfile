@@ -3,21 +3,26 @@ ARG arch=amd64
 FROM gcr.io/panoptes-survey/panoptes-utils:$arch AS pocs-base
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
+ARG user=panoptes
 ARG pandir=/var/panoptes
 
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linux64.tar.bz2"
 
+ENV USER $user
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV SHELL /bin/bash
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
+ENV PANUSER $user
 
 COPY . ${POCS}
+
+USER root
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
         byobu \
         ffmpeg \
-        gcc \
-        pkg-config \
         libncurses5-dev \
         udev \
         vim-nox \
@@ -36,21 +41,20 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && rm gphoto2-updater.sh
 
-
 FROM pocs-base
-
-ARG which_pip=pip
 
 # POCS
 RUN cd ${POCS} \
     # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-    && $which_pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
-    && $which_pip install --no-cache-dir -Ur requirements.txt \
-    && $which_pip install --no-cache-dir -e . \
+    && /home/${USER}/conda/envs/${CONDA_ENV}/bin/pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
+    && /home/${USER}/conda/envs/${CONDA_ENV}/bin/pip install --no-cache-dir -Ur requirements.txt \
+    && /home/${USER}/conda/envs/${CONDA_ENV}/bin/pip install --no-cache-dir -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
 WORKDIR ${POCS}
+
+USER ${user}
 
 CMD ["/bin/zsh"]
 

@@ -41,11 +41,11 @@ usage() {
 
 if [ -z "${PANUSER}" ]; then
     export PANUSER=$USER
-    echo "export PANUSER=${PANUSER}" >> ${HOME}/.bashrc
+    echo "export PANUSER=${PANUSER}" >> ${HOME}/.zshrc
 fi
 if [ -z "${PANDIR}" ]; then
     export PANDIR='/var/panoptes'
-    echo "export PANDIR=${PANDIR}" >> ${HOME}/.bashrc
+    echo "export PANDIR=${PANDIR}" >> ${HOME}/.zshrc
 fi
 
 while [[ $# -gt 0 ]]
@@ -164,7 +164,7 @@ do_install() {
 
     # Link env_file from POCS
     ln -sf "${PANDIR}/POCS/docker/env_file" "${PANDIR}"
-    echo "source ${PANDIR}/env_file" >> "${HOME}/.bashrc"
+    echo "source ${PANDIR}/env_file" >> "${HOME}/.zshrc"
 
     # Link conf_files dir from POCS
     ln -sf "${PANDIR}/POCS/conf_files" "${PANDIR}"
