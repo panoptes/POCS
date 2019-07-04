@@ -7,7 +7,7 @@ from pocs.utils.location import create_location_from_config
 
 def test_bad_mount_port(config):
     conf = config.copy()
-    conf['mount']['serial']['port'] = '/dev/'
+    conf['mount']['serial']['port'] = 'foobar'
     with pytest.raises(MountNotFound):
         create_mount_from_config(conf)
 

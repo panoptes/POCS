@@ -67,7 +67,7 @@ def test_bad_site(simulator, config):
 def test_bad_mount_port(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = '/dev/'
+    conf['mount']['serial']['port'] = 'foobar'
     with pytest.raises(error.MountNotFound):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
