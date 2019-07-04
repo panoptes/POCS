@@ -162,7 +162,7 @@ def test_set_dome(config, observatory):
     observatory.set_dome(dome=None)
     assert observatory.dome is None
     observatory.set_dome(dome=dome)
-    assert isinstance(observatory.dome, AbstractDome) is True
+    assert observatory.has_dome is True
     with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
         observatory.set_dome('dome')
 
