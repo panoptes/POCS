@@ -53,16 +53,17 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
 
     model = mount_info.get('model', driver)
 
-    # See if we have a serial connection
-    try:
-        port = mount_info['serial']['port']
-        if port is None or len(glob(port)) == 0:
-            msg = f'Mount port ({port}) not available. Use simulator = mount for simulator.'
-            raise error.MountNotFound(msg=msg)
-    except KeyError:
-        if model != 'bisque':
-            msg = 'No port specified for mount in config file. Use simulator = mount for simulator. '
-            raise error.MountNotFound(msg=msg)
+    if driver != 'simulator' and model != 'simulator':
+        # See if we have a serial connection
+        try:
+            port = mount_info['serial']['port']
+            if port is None or len(glob(port)) == 0:
+                msg = f'Mount port ({port}) not available. Use simulator = mount for simulator.'
+                raise error.MountNotFound(msg=msg)
+        except KeyError:
+            if model != 'bisque':
+                msg = 'No port specified for mount in config file. Use simulator = mount for simulator. '
+                raise error.MountNotFound(msg=msg)
 
     logger.debug('Creating mount: {}'.format(model))
 
