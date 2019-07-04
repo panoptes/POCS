@@ -18,7 +18,7 @@ pyserial >= 3.1.1
 pytest >= 3.4.0
 python_dateutil
 PyYAML >= 5.1
-pyzmq
+pyzmq < 18.0.0
 readline
 requests
 scalpl
