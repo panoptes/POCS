@@ -156,8 +156,8 @@ def test_add_remove_scheduler(config, observatory, caplog):
         observatory.add_scheduler("scheduler")
 
 
-def test_set_dome(config):
-    conf = config.copy()
+def test_set_dome(config_with_simulated_dome):
+    conf = config_with_simulated_dome.copy()
     dome = create_dome_from_config(conf)
     obs = Observatory(config=conf, dome=dome)
     assert obs.has_dome is True

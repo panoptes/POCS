@@ -52,6 +52,7 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
+        self.logger.info('\tSetting up dome.')
         self.dome = dome
 
         self.logger.info('\tSetting up scheduler')
