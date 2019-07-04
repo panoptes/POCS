@@ -156,15 +156,17 @@ def test_add_remove_scheduler(config, observatory, caplog):
         observatory.add_scheduler("scheduler")
 
 
-def test_set_dome(config, observatory):
+def test_set_dome(config):
     conf = config.copy()
     dome = create_dome_from_config(conf)
-    observatory.set_dome(dome=None)
-    assert observatory.dome is None
-    observatory.set_dome(dome=dome)
-    assert observatory.has_dome is True
+    obs = Observatory(config=conf, dome=dome)
+    assert obs.has_dome is True
+    obs.set_dome()
+    assert obs.has_dome is False
+    obs.set_dome(dome=dome)
+    assert obs.has_dome is True
     with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
-        observatory.set_dome('dome')
+        obs.set_dome('dome')
 
 
 def test_status(observatory):
