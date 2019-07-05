@@ -32,6 +32,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
     Raises:
         `error.MountNotFound`: Missing the serial.port info for a mount which requires it (i.e. not
             a Software Bisque mount).
+        `error.MountNotFound`: Wrong model, it is not bisque and serial port is not specified.
     """
     logger = get_root_logger()
 
