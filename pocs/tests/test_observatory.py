@@ -57,14 +57,6 @@ def test_remove_cameras(observatory, config):
         observatory.remove_camera(cam_name)
 
 
-def test_error_exit(config):
-    # TODO Describe why this is expected to fail, and how it is different
-    # from the other tests, esp. test_bad_mount_port.
-    # pytest.set_trace()
-    with pytest.raises(SystemExit):
-        Observatory(ignore_local_config=True, config=config, simulator=['none'])
-
-
 def test_bad_site(simulator, config):
     conf = config.copy()
     conf['location'] = {}
@@ -75,8 +67,8 @@ def test_bad_site(simulator, config):
 def test_bad_mount_port(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = '/dev/'
-    with pytest.raises(SystemExit):
+    conf['mount']['serial']['port'] = 'foobar'
+    with pytest.raises(error.MountNotFound):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
@@ -85,7 +77,7 @@ def test_bad_mount_driver(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
     conf['mount']['driver'] = 'foobar'
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.MountNotFound):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
