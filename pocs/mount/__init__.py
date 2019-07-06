@@ -62,8 +62,9 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
                 msg = f'Mount port ({port}) not available. Use simulator = mount for simulator.'
                 raise error.MountNotFound(msg=msg)
         except KeyError:
+            # Note: see Issue #866
             if model != 'bisque':
-                msg = 'No port specified for mount in config file. Use simulator = mount for simulator. '
+                msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
                 raise error.MountNotFound(msg=msg)
 
     logger.debug('Creating mount: {}'.format(model))

@@ -204,7 +204,10 @@ class Observatory(PanBase):
         del self.cameras[cam_name]
 
     def set_scheduler(self, scheduler=None):
-        """Add's scheduler or remove's scheduler.
+        """Sets the scheduler for the `Observatory`.
+
+        Note:
+            The default argument of `None` will remove the current scheduler.
 
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
