@@ -224,7 +224,10 @@ class Observatory(PanBase):
         self.scheduler = None
 
     def set_dome(self, dome=None):
-        """Set's dome or remove's dome.
+        """Set's dome or remove the dome for the `Observatory`.
+        
+        Note:
+            The default argument of `None` will remove the current dome.
 
         Args:
             dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
