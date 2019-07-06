@@ -10,6 +10,16 @@ def conf_with_mount(config_with_simulated_mount):
     return config_with_simulated_mount.copy()
 
 
+def test_mount_not_in_config(config):
+    conf = config.copy()
+
+    # Remove mount info
+    del conf['mount']
+
+    with pytest.raises(MountNotFound):
+        create_mount_from_config(conf)
+
+
 def test_bad_mount_port(config):
     conf = config.copy()
     conf['mount']['serial']['port'] = 'foobar'
@@ -31,8 +41,10 @@ def test_bad_mount_driver(config):
 def test_create_mount_with_earth_location(conf_with_mount):
     site_details = create_location_from_config(conf_with_mount)
     earth_location = site_details['earth_location']
-    assert isinstance(create_mount_from_config(conf_with_mount, earth_location=earth_location), AbstractMount) is True
+    assert isinstance(create_mount_from_config(
+        conf_with_mount, earth_location=earth_location), AbstractMount) is True
 
 
 def test_create_mount_without_earth_location(conf_with_mount):
-    assert isinstance(create_mount_from_config(conf_with_mount, earth_location=None), AbstractMount) is True
+    assert isinstance(create_mount_from_config(
+        conf_with_mount, earth_location=None), AbstractMount) is True

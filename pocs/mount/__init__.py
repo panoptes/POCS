@@ -38,10 +38,10 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
 
     if mount_info is None:
         logger.debug('No mount info provided, using values from config.')
-        mount_info = config.get('mount')
-        if 'mount' not in config:
-            logger.info("No mount information in config, cannot create.")
-            return None
+        try:
+            mount_info = config['mount']
+        except KeyError:
+            raise error.MountNotFound('No mount information in config, cannot create.')
 
     if earth_location is None:
         logger.debug('No location provided, using values from config.')
@@ -54,7 +54,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
 
     model = mount_info.get('model', driver)
 
-    if driver != 'simulator' and model != 'simulator':
+    if driver != 'simulator':
         # See if we have a serial connection
         try:
             port = mount_info['serial']['port']
