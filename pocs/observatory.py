@@ -222,7 +222,10 @@ class Observatory(PanBase):
         self.scheduler = None
 
     def set_mount(self, mount=None):
-        """Set's mount or remove's mount.
+        """Sets the mount for the `Observatory`.
+        
+        Note:
+            The default argument of `None` will remove the current mount.
 
         Args:
             mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
