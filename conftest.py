@@ -260,6 +260,7 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     set_config('directories.images', images_dir, port=static_config_port)
 
     # Make everything a simulator
+    logger.info(f'Setting all hardware to use simulators')
     set_config('simulator', hardware.get_simulator_names(
         simulator=['all']), port=static_config_port)
 
@@ -315,7 +316,9 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator
-    set_config('simulator', hardware.get_simulator_names(simulator=['all']), port=config_port)
+    simulators = hardware.get_simulator_names(simulator=['all'])
+    logger.info(f'Setting all hardware to use simulators: {simulators}')
+    set_config('simulator', simulators, port=config_port)
 
     yield
     logger.critical(f'Killing config_server started with PID={proc.pid}')

@@ -59,7 +59,7 @@ def test_bad_mount_port(dynamic_config_server, config_port):
     # Remove mount simulator
     set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
 
-    set_config('mount.serial.port', '/dev/', port=config_port)
+    set_config('mount.serial.port', 'foobar', port=config_port)
     with pytest.raises(SystemExit):
         Observatory(config_port=config_port)
 
@@ -120,13 +120,13 @@ def test_add_remove_scheduler(dynamic_config_server, config_port, observatory, c
     site_details = create_location_from_config(config_port=config_port)
     scheduler = create_scheduler_from_config(
         observer=site_details['observer'], config_port=config_port)
-    observatory.remove_scheduler()
+    observatory.set_scheduler(scheduler=None)
     assert observatory.scheduler is None
-    observatory.add_scheduler(scheduler)
+    observatory.set_scheduler(scheduler=scheduler)
     assert observatory.scheduler is not None
     with pytest.raises(TypeError,
                        match="Scheduler is not instance of BaseScheduler class, cannot add."):
-        observatory.add_scheduler("scheduler")
+        observatory.set_scheduler('scheduler')
 
 
 def test_status(observatory):

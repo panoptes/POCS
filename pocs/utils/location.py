@@ -28,7 +28,9 @@ def create_location_from_config(config_port=6563, logger=None):
     logger.debug('Setting up site details')
 
     try:
-        config_site = get_config('location', port=config_port)
+        config_site = get_config('location', default=None, port=config_port)
+        if config_site is None:
+            raise error.PanError(msg='location information not found in config.')
 
         name = config_site.get('name', 'Nameless Location')
 
