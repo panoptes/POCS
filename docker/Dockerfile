@@ -46,9 +46,9 @@ FROM pocs-base
 # POCS
 RUN cd ${POCS} \
     # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-    && "/${USER}/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
-    && "/${USER}/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -Ur requirements.txt \
-    && "/${USER}/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -e . \
+    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
+    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -Ur requirements.txt \
+    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
