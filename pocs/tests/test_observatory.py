@@ -60,7 +60,7 @@ def test_bad_mount_port(dynamic_config_server, config_port):
     set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
 
     set_config('mount.serial.port', 'foobar', port=config_port)
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.MountNotFound):
         Observatory(config_port=config_port)
 
 
@@ -70,7 +70,7 @@ def test_bad_mount_driver(dynamic_config_server, config_port):
     set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
 
     set_config('mount.driver', 'foobar', port=config_port)
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.MountNotFound):
         Observatory(config_port=config_port)
 
 
