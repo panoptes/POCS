@@ -23,11 +23,13 @@ from pocs.utils.location import create_location_from_config
 
 def wait_for_running(sub, max_duration=30):
     """Given a message subscriber, wait for a RUNNING message."""
-    topic, msg_obj = sub.receive_message(timeout_ms=1000 * max_duration)
-    if msg_obj and 'RUNNING' == msg_obj.get('message'):
-        return True
-    else:
-        return False
+    timeout = CountdownTimer(max_duration)
+    while not timeout.expired():
+        topic, msg_obj = sub.receive_message(timeout_ms=5000)
+        if msg_obj and 'RUNNING' == msg_obj.get('message'):
+            return True
+
+    return False
 
 
 def wait_for_state(sub, state, max_duration=90):
@@ -60,12 +62,19 @@ def scheduler(dynamic_config_server, config_port, site_details):
                                         observer=site_details['observer'])
 
 
-@pytest.fixture
-def observatory(dynamic_config_server, config_port, cameras, scheduler, site_details):
+@pytest.fixture(scope='function')
+def observatory(dynamic_config_server, config_port, message_forwarder):
     """Return a valid Observatory instance with a specific config."""
-    obs = Observatory(scheduler=scheduler,
-                      config_port=config_port,
-                      )
+
+    set_config('messaging.cmd_port', message_forwarder['cmd_ports'][0], port=config_port)
+    set_config('messaging.msg_port', message_forwarder['msg_ports'][0], port=config_port)
+
+    site_details = create_location_from_config(config_port=config_port)
+    scheduler = create_scheduler_from_config(config_port=config_port,
+                                             observer=site_details['observer'])
+    cameras = create_simulator_cameras(config_port=config_port)
+
+    obs = Observatory(scheduler=scheduler, config_port=config_port)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
@@ -263,10 +272,8 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return topic, msg_obj
 
 
-def test_run_wait_until_safe(dynamic_config_server,
+def test_run_wait_until_safe(observatory,
                              config_port,
-                             observatory,
-                             message_forwarder,
                              cmd_publisher,
                              msg_subscriber
                              ):
@@ -308,7 +315,7 @@ def test_run_wait_until_safe(dynamic_config_server,
         # Wait for the RUNNING message,
         assert wait_for_running(msg_subscriber)
 
-        time.sleep(2)
+        time.sleep(5)
         # Insert a dummy weather record to break wait
         observatory.db.insert_current('weather', {'safe': True})
 
