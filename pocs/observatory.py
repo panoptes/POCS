@@ -206,22 +206,21 @@ class Observatory(PanBase):
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
 
-    def add_scheduler(self, scheduler):
-        """Add scheduler.
+    def set_scheduler(self, scheduler=None):
+        """Add's scheduler or remove's scheduler.
 
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
         if isinstance(scheduler, BaseScheduler):
-            self.logger.info('Adding scheduler')
+            self.logger.info('Adding scheduler.')
             self.scheduler = scheduler
+        elif scheduler is None:
+            self.logger.info('Removing scheduler.')
+            self.scheduler = None
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
-    def remove_scheduler(self):
-        """Remove scheduler."""
-        self.logger.info('Removing scheduler')
-        self.scheduler = None
 
     def set_dome(self, dome=None):
         """Set's dome or remove the dome for the `Observatory`.

@@ -65,3 +65,17 @@ def config_with_simulated_dome(config):
         },
     })
     return config
+
+
+@pytest.fixture
+def config_with_simulated_mount(config):
+    config.update({
+        'mount': {
+            'model': 'simulator',
+            'driver': 'simulator',
+            'serial': {
+                'port': 'simulator'
+            }
+        },
+    })
+    return config
