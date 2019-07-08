@@ -17,5 +17,6 @@ EOF
 
 sleep 5;
 
-docker run --rm -it -v /var/panoptes/:/var/panoptes gcr.io/panoptes-survey/pocs /bin/zsh -ic "scripts/testing/run-tests.sh"
+docker run --rm -it -v /var/panoptes/:/var/panoptes gcr.io/panoptes-survey/pocs \
+    /bin/zsh -ic "scripts/testing/run-tests.sh"
 

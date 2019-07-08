@@ -21,14 +21,13 @@ from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
 
 
-def wait_for_running(sub, max_duration=90):
+def wait_for_running(sub, max_duration=30):
     """Given a message subscriber, wait for a RUNNING message."""
-    timeout = CountdownTimer(max_duration)
-    while not timeout.expired():
-        topic, msg_obj = sub.receive_message()
-        if msg_obj and 'RUNNING' == msg_obj.get('message'):
-            return True
-    return False
+    topic, msg_obj = sub.receive_message(timeout_ms=1000 * max_duration)
+    if msg_obj and 'RUNNING' == msg_obj.get('message'):
+        return True
+    else:
+        return False
 
 
 def wait_for_state(sub, state, max_duration=90):
@@ -267,13 +266,11 @@ def wait_for_message(sub, type=None, attr=None, value=None):
 def test_run_wait_until_safe(dynamic_config_server,
                              config_port,
                              observatory,
+                             message_forwarder,
                              cmd_publisher,
-                             msg_subscriber,
-                             messaging_ports):
+                             msg_subscriber
+                             ):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-
-    set_config('messaging.cmd_port', messaging_ports['cmd_ports'][0], port=config_port)
-    set_config('messaging.msg_port', messaging_ports['msg_ports'][0], port=config_port)
 
     # Make sure DB is clear for current weather
     observatory.db.clear_current('weather')
@@ -448,13 +445,11 @@ def test_run_complete(dynamic_config_server, config_port, pocs):
 def test_run_power_down_interrupt(dynamic_config_server,
                                   config_port,
                                   observatory,
+                                  message_forwarder,
                                   cmd_publisher,
-                                  msg_subscriber,
-                                  messaging_ports):
+                                  msg_subscriber
+                                  ):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-
-    set_config('messaging.cmd_port', messaging_ports['cmd_ports'][0], port=config_port)
-    set_config('messaging.msg_port', messaging_ports['msg_ports'][0], port=config_port)
 
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
