@@ -389,7 +389,7 @@ class PanSensorShell(cmd.Cmd):
             try:
                 sensor.capture(store_result=True, send_message=True)
             except Exception as e:
-                self.logger.warning(f'Problem storing captured data: {e!r}')
+                print_warning(f'Problem storing captured data: {e!r}')
 
             self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
 
