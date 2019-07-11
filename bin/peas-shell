@@ -5,6 +5,6 @@ DOCKER_NAME="peas-shell"
 if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
     echo "${DOCKER_NAME} not running. Start services with scripts/pocs-docker.sh"
 else
-    docker exec -it peas-shell python "${POCS}/scripts/${DOCKER_NAME}.py"
+    docker exec -it peas-shell /bin/zsh -ic "python ${POCS}/scripts/${DOCKER_NAME}.py"
 fi
 
