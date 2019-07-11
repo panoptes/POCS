@@ -605,7 +605,7 @@ class AAGCloudSensor(object):
 
     def send_message(self, msg, topic='weather'):
         if self.messaging is None:
-            msg_port = self.config['messaging']['msg_port']
+            msg_port = self.get_config('messaging.msg_port')
             self.messaging = PanMessaging.create_publisher(msg_port)
 
         self.messaging.send_message(topic, msg)
