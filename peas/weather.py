@@ -18,9 +18,9 @@ from panoptes.utils.messaging import PanMessaging
 from .PID import PID
 
 
-def get_mongodb():
+def get_db(db_type='file'):
     from panoptes.utils.database import PanDB
-    return PanDB()
+    return PanDB(db_type=db_type)
 
 
 def movingaverage(interval, window_size):
@@ -111,7 +111,7 @@ class AAGCloudSensor(object):
 
         self.db = None
         if store_result:
-            self.db = get_mongodb()
+            self.db = get_db()
 
         self.messaging = None
 
@@ -253,7 +253,7 @@ class AAGCloudSensor(object):
         weather_data = dict()
 
         if self.db is None:
-            self.db = get_mongodb()
+            self.db = get_db()
         else:
             weather_data = self.update_weather()
             self.calculate_and_set_PWM()
