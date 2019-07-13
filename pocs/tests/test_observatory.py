@@ -140,11 +140,13 @@ def test_set_scheduler(config, observatory):
     conf = config.copy()
     site_details = create_location_from_config(conf)
     scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    assert observatory.scheduler is not None
     observatory.set_scheduler(scheduler=None)
     assert observatory.scheduler is None
     observatory.set_scheduler(scheduler=scheduler)
     assert observatory.scheduler is not None
-    with pytest.raises(TypeError, message='Scheduler is not instance of BaseScheduler class, cannot add.'):
+    err_msg = 'Scheduler is not instance of BaseScheduler class, cannot add.'
+    with pytest.raises(TypeError, message=err_msg):
         observatory.set_scheduler('scheduler')
 
 
