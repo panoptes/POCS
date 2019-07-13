@@ -221,10 +221,8 @@ class Observatory(PanBase):
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
-
     def set_dome(self, dome=None):
         """Set's dome or remove the dome for the `Observatory`.
-        
         Note:
             The default argument of `None` will remove the current dome.
 
