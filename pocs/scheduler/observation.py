@@ -42,8 +42,6 @@ class Observation(PanBase):
         """
         PanBase.__init__(self, *args, **kwargs)
 
-        self.logger.critical(f'Creating observation, PanBase created')
-
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
         assert exptime > 0.0, \
@@ -69,13 +67,11 @@ class Observation(PanBase):
         self._min_duration = self.exptime * self.min_nexp
         self._set_duration = self.exptime * self.exp_set_size
 
-        self.logger.critical(f'Getting images directories')
         self._image_dir = self.get_config('directories.images')
         self._seq_time = None
 
         self.merit = 0.0
 
-        self.logger.critical(f'Resetting observation')
         self.reset()
 
         self.logger.debug("Observation created: {}".format(self))
