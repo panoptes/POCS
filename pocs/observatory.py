@@ -223,7 +223,6 @@ class Observatory(PanBase):
 
     def set_mount(self, mount=None):
         """Sets the mount for the `Observatory`.
-        
         Note:
             The default argument of `None` will remove the current mount.
 
