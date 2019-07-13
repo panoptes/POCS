@@ -19,6 +19,7 @@ from pocs.observatory import Observatory
 from pocs.camera import create_cameras_from_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
+from pocs.mount import create_mount_from_config
 from panoptes.utils import current_time
 from panoptes.utils import string_to_params
 from panoptes.utils import error
@@ -151,7 +152,8 @@ class PocsShell(Cmd):
 
         try:
             cameras = create_cameras_from_config(simulator=simulator)
-            observatory = Observatory(simulator=simulator, cameras=cameras)
+            mount = create_mount_from_config()
+            observatory = Observatory(simulator=simulator, cameras=cameras, mount=mount)
             self.pocs = POCS(observatory, messaging=True)
             self.pocs.initialize()
         except error.PanError as e:
