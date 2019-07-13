@@ -7,6 +7,7 @@ from threading import Timer
 from panoptes.utils import current_time
 from panoptes.utils import CountdownTimer
 from panoptes.utils import error
+from panoptes.utils import get_quantity_value
 from panoptes.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
 
@@ -131,6 +132,9 @@ class Camera(AbstractGPhotoCamera):
             filename (str, optional): Image is saved to this filename
         """
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
+
+        # Make sure we have just the value, no units
+        seconds = get_quantity_value(seconds)
 
         run_cmd = [script_path, self.port, str(seconds), filename]
 
