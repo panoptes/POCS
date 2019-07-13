@@ -116,7 +116,7 @@ def test_primary_camera_no_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
-def test_add_remove_scheduler(dynamic_config_server, config_port, observatory, caplog):
+def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
     site_details = create_location_from_config(config_port=config_port)
     scheduler = create_scheduler_from_config(
         observer=site_details['observer'], config_port=config_port)
