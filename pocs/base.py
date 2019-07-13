@@ -23,6 +23,10 @@ class PanBase(object):
         if not self.logger:
             self.logger = get_root_logger()
 
+        simulators = self.get_config('simulator', default=False)
+        if simulators:
+            self.logger.critical(f'Using simulators: {simulators}')
+
         # Check to make sure config has some items we need
         self._check_config()
 

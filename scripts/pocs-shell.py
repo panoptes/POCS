@@ -29,6 +29,7 @@ from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.images import polar_alignment as polar_alignment_utils
 from panoptes.utils.database import PanDB
 from panoptes.utils.messaging import PanMessaging
+from panoptes.utils.config import client
 
 
 class PocsShell(Cmd):
@@ -142,19 +143,22 @@ class PocsShell(Cmd):
         if isinstance(simulator, str):
             simulator = [simulator]
 
-        # TODO(wtgee) Incorporate real power readings
-        if 'power' not in simulator:
-            simulator.append('power')
+        # Set whatever simulators were passed during setup
+        client.set_config('simulator', simulator)
+        # Retrieve what was set
+        simulators = client.get_config('simulator', default=list())
+        if len(simulators):
+            print_warning(f'Using simulators: {simulators}')
 
         if 'POCSTIME' in os.environ:
             print_warning("Clearing POCSTIME variable")
             del os.environ['POCSTIME']
 
         try:
-            cameras = create_cameras_from_config(simulator=simulator)
+            cameras = create_cameras_from_config()
             scheduler = create_scheduler_from_config()
 
-            observatory = Observatory(simulator=simulator, cameras=cameras, scheduler=scheduler)
+            observatory = Observatory(cameras=cameras, scheduler=scheduler)
             self.pocs = POCS(observatory, messaging=True)
             self.pocs.initialize()
         except error.PanError as e:

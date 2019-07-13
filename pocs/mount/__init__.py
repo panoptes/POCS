@@ -70,9 +70,11 @@ def create_mount_from_config(config_port='6563',
 
     # Check if we should be using a simulator
     use_simulator = 'mount' in get_config('simulator', default=[], port=config_port)
+    logger.debug(f'Mount is simulator: {use_simulator}')
 
     # Create simulator if requested
-    if use_simulator or driver == 'simulator':
+    if use_simulator or (driver == 'simulator'):
+        logger.debug(f'Creating mount simulator')
         return create_mount_simulator(config_port=config_port)
 
     # See if we have a serial connection
