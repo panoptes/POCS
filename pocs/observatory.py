@@ -238,9 +238,9 @@ class Observatory(PanBase):
         else:
             raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
 
-##########################################################################
-# Methods
-##########################################################################
+    ##########################################################################
+    # Methods
+    ##########################################################################
 
     def initialize(self):
         """Initialize the observatory and connected hardware """
