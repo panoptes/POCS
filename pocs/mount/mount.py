@@ -514,20 +514,30 @@ class AbstractMount(PanBase):
 
         return success
 
-    def slew_to_home(self):
-        """ Slews the mount to the home position.
+    def slew_to_home(self, blocking=False):
+        """Slews the mount to the home position.
 
         Note:
             Home position and Park position are not the same thing
 
         Returns:
             bool: indicating success
+
+        Args:
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
         """
         response = 0
+
+        block_time = 2  # seconds
 
         if not self.is_parked:
             self._target_coordinates = None
             response = self.query('slew_to_home')
+            if response and blocking:
+                while self.is_home is False:
+                    time.sleep(block_time)
+                    self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
         else:
             self.logger.info('Mount is parked')
 
