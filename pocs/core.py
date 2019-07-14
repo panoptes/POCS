@@ -369,7 +369,9 @@ class POCS(PanStateMachine, PanBase):
 
         # Check if we are using weather simulator
         simulator_values = self.get_config('simulator', default=[])
-        self.logger.critical(f'simulator_values: {simulator_values}')
+        if len(simulator_values):
+            self.logger.critical(f'simulator_values: {simulator_values}')
+
         if 'weather' in simulator_values:
             self.logger.debug("Weather simulator always safe")
             return True
