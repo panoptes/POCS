@@ -4,14 +4,13 @@ import os
 import sys
 import warnings
 
-from pandas.plotting import register_matplotlib_converters
-
 import time
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
 from timeloop import Timeloop
 import numpy as np
 import pandas as pd
+from pandas.plotting import register_matplotlib_converters
 
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
