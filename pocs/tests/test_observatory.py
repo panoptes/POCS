@@ -141,7 +141,8 @@ def test_set_dome(dynamic_config_server, config_port):
         'driver': 'simulator',
     }, port=config_port)
     dome = create_dome_simulator(config_port=config_port)
-    obs = Observatory(dome=dome)
+
+    obs = Observatory(dome=dome, config_port=config_port)
     assert obs.has_dome is True
     obs.set_dome()
     assert obs.has_dome is False
