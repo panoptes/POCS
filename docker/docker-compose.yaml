@@ -10,7 +10,7 @@ services:
       - "messaging-hub"
     volumes:
       - pandir:/var/panoptes
-    command: /bin/zsh -c "python scripts/plot_weather.py -f /var/panoptes/json_store/panoptes/weather.json --interval 300"
+    command: /bin/zsh -ic "python scripts/plot_weather.py -f /var/panoptes/json_store/panoptes/weather.json --interval 300"
   peas-shell:
     image: gcr.io/panoptes-survey/pocs
     container_name: peas-shell
