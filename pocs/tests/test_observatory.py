@@ -4,15 +4,15 @@ import pytest
 from astropy.time import Time
 
 import pocs.version
-from pocs import hardware
-from pocs.dome import AbstractDome
-from pocs.dome import create_dome_from_config
-from pocs.observatory import Observatory
-from pocs.scheduler.dispatch import Scheduler
-from pocs.scheduler.observation import Observation
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 
+from pocs import hardware
+from pocs.dome import AbstractDome
+from pocs.dome import create_dome_simulator
+from pocs.observatory import Observatory
+from pocs.scheduler.dispatch import Scheduler
+from pocs.scheduler.observation import Observation
 from pocs.camera import create_simulator_cameras
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
@@ -27,10 +27,10 @@ def cameras(dynamic_config_server, config_port):
 def observatory(dynamic_config_server, config_port, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
-    site_details = create_location_from_config(config_port)
-    scheduler = create_scheduler_from_config(config_port,
+    site_details = create_location_from_config(config_port=config_port)
+    scheduler = create_scheduler_from_config(config_port=config_port,
                                              observer=site_details['observer'])
-    dome = create_dome_from_config(config_port)
+    dome = create_dome_simulator(config_port=config_port)
     obs = Observatory(scheduler=scheduler,
                       dome=dome,
                       config_port=config_port)
@@ -130,10 +130,9 @@ def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
         observatory.set_scheduler('scheduler')
 
 
-def test_set_dome(config_with_simulated_dome):
-    conf = config_with_simulated_dome.copy()
-    dome = create_dome_from_config(conf)
-    obs = Observatory(config=conf, dome=dome)
+def test_set_dome(dynamic_config_server, config_port):
+    dome = create_dome_simulator(config_port=config_port)
+    obs = Observatory(dome=dome)
     assert obs.has_dome is True
     obs.set_dome()
     assert obs.has_dome is False
@@ -396,7 +395,7 @@ def test_operate_dome(dynamic_config_server, config_port):
         'driver': 'simulator',
     }, port=config_port)
 
-    dome = create_dome_from_config(config_port=config_port)
+    dome = create_dome_simulator(config_port=config_port)
     observatory = Observatory(dome=dome, config_port=config_port)
 
     assert observatory.has_dome
