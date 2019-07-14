@@ -82,7 +82,6 @@ def main(directory,
          remove_jpgs=False,
          overwrite=False,
          make_timelapse=False,
-         verbose=False,
          **kwargs):
     """Upload images from the given directory.
 
@@ -99,7 +98,6 @@ def main(directory,
                               remove_jpgs=remove_jpgs,
                               include_timelapse=make_timelapse,
                               timelapse_overwrite=overwrite,
-                              verbose=verbose,
                               **kwargs)
     except Exception as e:
         raise error.PanError('Cannot clean observation dir: {}'.format(e))
@@ -112,7 +110,7 @@ def main(directory,
             directory,
             include_files='*',
             exclude_files='upload_manifest.log',
-            verbose=verbose, **kwargs)
+            **kwargs)
 
     return directory
 
@@ -126,9 +124,9 @@ if __name__ == '__main__':
                         help='Directory to be cleaned and uploaded.')
     parser.add_argument('--upload', default=False, action='store_true',
                         help='If images should be uploaded, default False.')
-    parser.add_argument('--remove_jpgs', default=False, action='store_true',
+    parser.add_argument('--remove-jpgs', default=False, action='store_true',
                         help='If images should be removed after making timelapse, default False.')
-    parser.add_argument('--make_timelapse', action='store_true', default=False,
+    parser.add_argument('--make-timelapse', action='store_true', default=False,
                         help='Create a timelapse from the jpgs (requires ffmpeg), default False.')
     parser.add_argument('--overwrite', action='store_true', default=False,
                         help='Overwrite any existing files (such as timelapse), default False.')
@@ -140,5 +138,4 @@ if __name__ == '__main__':
         print("Directory does not exist:", args.directory)
 
     clean_dir = main(**vars(args))
-    if args.verbose:
-        print("Done cleaning for", clean_dir)
+    print("Done cleaning for", clean_dir)
