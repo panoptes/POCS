@@ -12,6 +12,7 @@ from astropy.coordinates import get_sun
 
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
+from pocs.dome import AbstractDome
 from pocs.images import Image
 from pocs.mount import AbstractMount
 from pocs.scheduler import BaseScheduler
@@ -52,6 +53,7 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
+        self.logger.info('\tSetting up dome.')
         self.dome = dome
 
         self.logger.info('\tSetting up scheduler')
@@ -62,9 +64,9 @@ class Observatory(PanBase):
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
-##########################################################################
-# Helper methods
-##########################################################################
+    ##########################################################################
+    # Helper methods
+    ##########################################################################
 
     def is_dark(self, horizon='observe', at_time=None):
         """If sun is below horizon.
@@ -90,9 +92,9 @@ class Observatory(PanBase):
 
         return is_dark
 
-##########################################################################
-# Properties
-##########################################################################
+    ##########################################################################
+    # Properties
+    ##########################################################################
 
     @property
     def sidereal_time(self):
@@ -167,9 +169,10 @@ class Observatory(PanBase):
             can_observe = False
 
         return can_observe
-##########################################################################
-# Device Getters/Setters
-##########################################################################
+
+    ##########################################################################
+    # Device Getters/Setters
+    ##########################################################################
 
     def add_camera(self, cam_name, camera):
         """Add camera to list of cameras as cam_name.
@@ -204,22 +207,40 @@ class Observatory(PanBase):
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
 
-    def add_scheduler(self, scheduler):
-        """Add scheduler.
+    def set_scheduler(self, scheduler=None):
+        """Sets the scheduler for the `Observatory`.
+
+        Note:
+            The default argument of `None` will remove the current scheduler.
 
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
         if isinstance(scheduler, BaseScheduler):
-            self.logger.info('Adding scheduler')
+            self.logger.info('Adding scheduler.')
             self.scheduler = scheduler
+        elif scheduler is None:
+            self.logger.info('Removing scheduler.')
+            self.scheduler = None
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
-    def remove_scheduler(self):
-        """Remove scheduler. """
-        self.logger.info('Removing scheduler')
-        self.scheduler = None
+    def set_dome(self, dome=None):
+        """Set's dome or remove the dome for the `Observatory`.
+        Note:
+            The default argument of `None` will remove the current dome.
+
+        Args:
+            dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
+        """
+        if isinstance(dome, AbstractDome):
+            self.logger.info('Adding dome.')
+            self.dome = dome
+        elif dome is None:
+            self.logger.info('Removing dome.')
+            self.dome = None
+        else:
+            raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
 
     def set_mount(self, mount=None):
         """Sets the mount for the `Observatory`.
@@ -683,9 +704,9 @@ class Observatory(PanBase):
             self.logger.info('Closed dome')
         return self.dome.close()
 
-##########################################################################
-# Private Methods
-##########################################################################
+    ##########################################################################
+    # Private Methods
+    ##########################################################################
 
     def _setup_location(self):
         """
@@ -775,7 +796,7 @@ class Observatory(PanBase):
                 port = mount_info['serial']['port']
                 if port is None or len(glob(port)) == 0:
                     msg = "Mount port({}) not available. ".format(port) \
-                        + "Use simulator = mount for simulator. Exiting."
+                          + "Use simulator = mount for simulator. Exiting."
                     raise error.MountNotFound(msg=msg)
             except KeyError:
                 # TODO(jamessynge): We should move the driver specific validation into the driver
@@ -784,7 +805,7 @@ class Observatory(PanBase):
                 # driver.
                 if model != 'bisque':
                     msg = "No port specified for mount in config file. " \
-                        + "Use simulator = mount for simulator. Exiting."
+                          + "Use simulator = mount for simulator. Exiting."
                     raise error.MountNotFound(msg=msg)
 
         self.logger.debug('Creating mount: {}'.format(model))
