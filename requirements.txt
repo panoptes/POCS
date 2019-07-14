@@ -24,6 +24,7 @@ requests
 scalpl
 scikit-image
 scipy
+timeloop
 transitions
 tweepy
 -e git://github.com/panoptes/panoptes-utils.git@develop#egg=panoptes-utils

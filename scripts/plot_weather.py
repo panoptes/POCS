@@ -753,15 +753,7 @@ if __name__ == '__main__':
                         help="Filename for data file")
     parser.add_argument("-o", "--plot_file", type=str, dest="plot_file", default=None,
                         help="Filename for generated plot")
-    parser.add_argument('--plotly-user', help="Username for plotly publishing")
-    parser.add_argument('--plotly-api-key', help="API for plotly publishing")
     args = parser.parse_args()
 
     wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
     wp.make_plot(args.plot_file)
-
-    if args.plotly_user and args.plotly_api_key:
-        from plotly import plotly
-        plotly.sign_in(args.plotly_user, args.plotly_api_key)
-        url = plotly.plot_mpl(wp.fig)
-        print('Plotly url: {}'.format(url))
