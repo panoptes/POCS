@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
-import numpy as np
 import os
-import pandas as pd
 import sys
 import warnings
 
+from pandas.plotting import register_matplotlib_converters
+
+import time
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
+from timeloop import Timeloop
+import numpy as np
+import pandas as pd
 
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
@@ -22,9 +26,13 @@ from astropy.time import Time
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
 
-from pocs.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.config.client import get_config
 from panoptes.utils.serializers import from_json
 
+logger = get_root_logger()
+
+register_matplotlib_converters()
 plt.ioff()
 plt.style.use('classic')
 
@@ -42,7 +50,7 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        config = load_config(config_files=['peas'])
+        config = get_config()
         self.cfg = config['weather']['plot']
         location_cfg = config.get('location', None)
 
@@ -64,7 +72,7 @@ class WeatherPlotter(object):
             self.date_string = date_string
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
-        print('Creating weather plotter for {}'.format(self.date_string))
+        logger.info('Creating weather plotter for {}'.format(self.date_string))
 
         self.twilights = self.get_twilights(location_cfg)
 
@@ -77,8 +85,7 @@ class WeatherPlotter(object):
         self.time = pd.to_datetime(self.table['date'].datetime)
         first = self.time[0].isoformat()
         last = self.time[-1].isoformat()
-        print('  Retrieved {} entries between {} and {}'.format(
-              len(self.table), first, last))
+        logger.debug(f'Retrieved {len(self.table)} entries between {first} and {last}')
 
         if self.today:
             self.current_values = self.table[-1]
@@ -89,10 +96,10 @@ class WeatherPlotter(object):
         # -------------------------------------------------------------------------
         # Plot a day's weather
         # -------------------------------------------------------------------------
-        print('  Setting up plot for time range: {} to {}'.format(
-              self.start.isoformat(), self.end.isoformat()))
+        logger.debug('Setting up plot for time range: {} to {}'.format(
+            self.start.isoformat(), self.end.isoformat()))
         if self.today:
-            print('  Will generate last hour plot for time range: {} to {}'.format(
+            logger.debug('  Will generate last hour plot for time range: {} to {}'.format(
                 self.lhstart.isoformat(), self.lhend.isoformat()))
         self.dpi = self.kwargs.get('dpi', 72)
         self.fig = plt.figure(figsize=(20, 12), dpi=self.dpi)
@@ -157,7 +164,7 @@ class WeatherPlotter(object):
             import pymongo
             from panoptes.utils.database import PanDB
 
-            print('  Retrieving data from Mongo database')
+            logger.debug('Retrieving data from Mongo database')
             db = PanDB()
             entries = [x for x in db.weather.find(
                 {'date': {'$gt': self.start, '$lt': self.end}}).sort([
@@ -180,7 +187,7 @@ class WeatherPlotter(object):
 
     def get_twilights(self, config=None):
         """ Determine sunrise and sunset times """
-        print('  Determining sunrise, sunset, and twilight times')
+        logger.debug('Determining sunrise, sunset, and twilight times')
 
         if config is None:
             from pocs.utils.config import load_config as pocs_config
@@ -224,7 +231,7 @@ class WeatherPlotter(object):
 
     def plot_ambient_vs_time(self):
         """ Ambient Temperature vs Time """
-        print('Plot Ambient Temperature vs. Time')
+        logger.debug('Plot Ambient Temperature vs. Time')
 
         t_axes = plt.axes(self.plot_positions[0][0])
         if self.today:
@@ -298,7 +305,7 @@ class WeatherPlotter(object):
 
     def plot_cloudiness_vs_time(self):
         """ Cloudiness vs Time """
-        print('Plot Temperature Difference vs. Time')
+        logger.debug('Plot Temperature Difference vs. Time')
         td_axes = plt.axes(self.plot_positions[1][0])
 
         sky_temp_C = self.table['sky_temp_C']
@@ -381,7 +388,7 @@ class WeatherPlotter(object):
 
     def plot_windspeed_vs_time(self):
         """ Windspeed vs Time """
-        print('Plot Wind Speed vs. Time')
+        logger.debug('Plot Wind Speed vs. Time')
         w_axes = plt.axes(self.plot_positions[2][0])
 
         wind_speed = self.table['wind_speed_KPH']
@@ -503,7 +510,7 @@ class WeatherPlotter(object):
     def plot_rain_freq_vs_time(self):
         """ Rain Frequency vs Time """
 
-        print('Plot Rain Frequency vs. Time')
+        logger.debug('Plot Rain Frequency vs. Time')
         rf_axes = plt.axes(self.plot_positions[3][0])
 
         rf_value = self.table['rain_frequency']
@@ -579,7 +586,7 @@ class WeatherPlotter(object):
     def plot_safety_vs_time(self):
         """ Plot Safety Values """
 
-        print('Plot Safe/Unsafe vs. Time')
+        logger.debug('Plot Safe/Unsafe vs. Time')
         safe_axes = plt.axes(self.plot_positions[4][0])
 
         safe_value = [int(x) for x in self.table['safe']]
@@ -641,7 +648,7 @@ class WeatherPlotter(object):
     def plot_pwm_vs_time(self):
         """ Plot Heater values """
 
-        print('Plot PWM Value vs. Time')
+        logger.debug('Plot PWM Value vs. Time')
         pwm_axes = plt.axes(self.plot_positions[5][0])
         plt.ylabel("Heater (%)")
         plt.ylim(self.cfg['pwm_limits'])
@@ -712,7 +719,7 @@ class WeatherPlotter(object):
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
 
-        print('Saving Figure: {}'.format(plot_filename))
+        logger.info('Saving weather plot: {}'.format(plot_filename))
         self.fig.savefig(
             plot_filename,
             dpi=self.dpi,
@@ -753,7 +760,31 @@ if __name__ == '__main__':
                         help="Filename for data file")
     parser.add_argument("-o", "--plot_file", type=str, dest="plot_file", default=None,
                         help="Filename for generated plot")
+    parser.add_argument('--interval', type=int, default=None,
+                        help='If provided, plot tevery <interval> seconds.')
     args = parser.parse_args()
 
     wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
-    wp.make_plot(args.plot_file)
+
+    # Run either once or in loop
+    if args.interval is None:
+        wp.make_plot(args.plot_file)
+    else:
+        # Start timer loop
+        timer_loop = Timeloop()
+
+        # Make a small helper function that is call in a timer loop
+        @timer_loop.job(interval=tdelta(seconds=args.interval))
+        def do_plot():
+            wp.make_plot(args.plot_file)
+
+        # Start the timer loop
+        timer_loop.start()
+
+        # Control the timer_loop
+        while True:
+            try:
+                time.sleep(1)  # Sleep on timer_loop, NOT on our function.
+            except KeyboardInterrupt:
+                timer_loop.stop()
+                break
