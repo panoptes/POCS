@@ -1,16 +1,101 @@
 #!/usr/bin/env python
 import os
+import re
 from glob import glob
 from contextlib import suppress
+
+import subprocess
+import shutil
 
 from panoptes.utils import error
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config.client import get_config
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images import make_timelapse
-from panoptes.utils.google.storage import upload_observation_to_bucket
 
 logger = get_root_logger()
+
+
+def upload_observation_to_bucket(pan_id,
+                                 dir_name,
+                                 include_files='*.fz',
+                                 bucket='panoptes-survey',
+                                 **kwargs):
+    """Upload an observation directory to google cloud storage.
+
+    This is a convenience function for bulk uploading an observation folder to a
+    bucket. This assumes that observations are placed within `/images/fields`
+    and follow the normal naming convention for observations.
+
+    Note:
+        This requires that the command line utility `gsutil` be installed
+        and that authentication has properly been set up.
+
+    TODO(wtgee): This could be merged into the PanStorage class.
+
+    Args:
+        pan_id (str): A string representing the unit id, e.g. PAN001.
+        dir_name (str): Full path to directory.
+        include_files (str, optional): Filename filter, defaults to
+            compressed FITS files '.fz'.
+        bucket (str, optional): The bucket to place the files in, defaults
+            to 'panoptes-survey'.
+        **kwargs: Optional keywords: verbose
+
+    Returns:
+        str: A string path used to search for files.
+    """
+    if os.path.exists(dir_name) is False:
+        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+
+    if re.match(r'PAN\d\d\d$', pan_id) is None:
+        raise Exception("Invalid PANID. Must be of the form 'PANnnn'. Got: {!r}".format(pan_id))
+
+    gsutil = shutil.which('gsutil')
+    if gsutil is None:  # pragma: no cover
+        raise Exception('Cannot find gsutil, skipping upload')
+
+    verbose = kwargs.get('verbose', False)
+
+    def _print(msg):
+        if verbose:
+            print(msg)
+
+    _print("Uploading {}".format(dir_name))
+
+    file_search_path = os.path.join(dir_name, include_files)
+    if glob(file_search_path):
+        # Get just the observation path
+        field_dir = dir_name.split('/fields/')[-1]
+        remote_path = os.path.normpath(os.path.join(
+            bucket,
+            pan_id,
+            field_dir
+        ))
+        destination = 'gs://{}/'.format(remote_path)
+
+        script_name = os.path.join(os.environ['POCS'], 'scripts', 'transfer-files.sh')
+        manifest_file = os.path.join(dir_name, 'upload_manifest.log')
+        run_cmd = [script_name, file_search_path, destination, manifest_file]
+
+        if pan_id == 'PAN000':
+            run_cmd = [gsutil, 'PAN000 upload should fail']
+
+        _print("Running: {}".format(run_cmd))
+
+        try:
+            completed_process = subprocess.run(
+                run_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            if completed_process.returncode != 0:
+                raise Exception(completed_process.stderr)
+        except Exception as e:
+            raise error.GoogleCloudError("Problem with upload: {}".format(e))
+
+    return file_search_path
 
 
 def clean_observation_dir(dir_name,
