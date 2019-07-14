@@ -55,13 +55,7 @@ def upload_observation_to_bucket(pan_id,
     if gsutil is None:  # pragma: no cover
         raise Exception('Cannot find gsutil, skipping upload')
 
-    verbose = kwargs.get('verbose', False)
-
-    def _print(msg):
-        if verbose:
-            print(msg)
-
-    _print("Uploading {}".format(dir_name))
+    logger.debug("Uploading {}".format(dir_name))
 
     file_search_path = os.path.join(dir_name, include_files)
     if glob(file_search_path):
@@ -81,7 +75,7 @@ def upload_observation_to_bucket(pan_id,
         if pan_id == 'PAN000':
             run_cmd = [gsutil, 'PAN000 upload should fail']
 
-        _print("Running: {}".format(run_cmd))
+        logger.debug("Running: {}".format(run_cmd))
 
         try:
             completed_process = subprocess.run(
