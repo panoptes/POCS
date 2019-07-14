@@ -5,6 +5,7 @@ from astropy.time import Time
 
 import pocs.version
 from pocs import hardware
+from pocs.dome import AbstractDome
 from pocs.dome import create_dome_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
@@ -127,6 +128,19 @@ def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
     with pytest.raises(TypeError,
                        match="Scheduler is not instance of BaseScheduler class, cannot add."):
         observatory.set_scheduler('scheduler')
+
+
+def test_set_dome(config_with_simulated_dome):
+    conf = config_with_simulated_dome.copy()
+    dome = create_dome_from_config(conf)
+    obs = Observatory(config=conf, dome=dome)
+    assert obs.has_dome is True
+    obs.set_dome()
+    assert obs.has_dome is False
+    obs.set_dome(dome=dome)
+    assert obs.has_dome is True
+    with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
+        obs.set_dome('dome')
 
 
 def test_status(observatory):
