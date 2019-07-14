@@ -30,6 +30,11 @@ def observatory(dynamic_config_server, config_port, cameras, images_dir):
     site_details = create_location_from_config(config_port=config_port)
     scheduler = create_scheduler_from_config(config_port=config_port,
                                              observer=site_details['observer'])
+
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
     dome = create_dome_simulator(config_port=config_port)
     obs = Observatory(scheduler=scheduler,
                       dome=dome,
@@ -131,6 +136,10 @@ def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
 
 
 def test_set_dome(dynamic_config_server, config_port):
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
     dome = create_dome_simulator(config_port=config_port)
     obs = Observatory(dome=dome)
     assert obs.has_dome is True
@@ -395,6 +404,10 @@ def test_operate_dome(dynamic_config_server, config_port):
         'driver': 'simulator',
     }, port=config_port)
 
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
     dome = create_dome_simulator(config_port=config_port)
     observatory = Observatory(dome=dome, config_port=config_port)
 

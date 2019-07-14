@@ -3,7 +3,6 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from pocs.base import PanBase
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
 from panoptes.utils.logger import get_root_logger
 
 
@@ -39,10 +38,11 @@ def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
     if not logger:
         logger = get_root_logger()
 
-    brand = 'Simulacrum'
-    driver = 'simulator'
+    dome_config = get_config('dome', port=config_port)
 
-    set_config('dome', dict(brand=brand, driver=driver), port=config_port)
+    brand = dome_config['brand']
+    driver = dome_config['driver']
+
     logger.debug('Creating dome simulator: brand={}, driver={}'.format(brand, driver))
 
     module = load_module(f'pocs.dome.{driver}')
