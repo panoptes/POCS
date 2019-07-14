@@ -420,11 +420,12 @@ class Observatory(PanBase):
                 # Block and wait for directory to finish
                 try:
                     outs, errs = clean_proc.communicate(timeout=3600)  # one hour
-                except subprocess.TimeoutExpired:  # pragma: no cover
+                except Exception as e:  # pragma: no cover
+                    self.logger.error(f'Error during cleanup_observations: {e!r}')
                     clean_proc.kill()
                     outs, errs = clean_proc.communicate(timeout=10)
-                    if errs is not None:
-                        self.logger.warning("Problem cleaning: {}".format(errs))
+                    if errs is not None and errs > '':
+                        self.logger.warning("upload_image_dir errs: {}".format(errs))
 
             self.logger.debug('Cleanup finished')
 
