@@ -763,10 +763,9 @@ if __name__ == '__main__':
                         help='If provided, plot tevery <interval> seconds.')
     args = parser.parse_args()
 
-    wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
-
     # Run either once or in loop
     if args.interval is None:
+        wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
         wp.make_plot(args.plot_file)
     else:
         # Start timer loop
@@ -775,6 +774,7 @@ if __name__ == '__main__':
         # Make a small helper function that is call in a timer loop
         @timer_loop.job(interval=tdelta(seconds=args.interval))
         def do_plot():
+            wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
             wp.make_plot(args.plot_file)
 
         # Start the timer loop
