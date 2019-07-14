@@ -5,5 +5,10 @@ DOCKER_NAME="pocs-shell"
 if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
     echo "${DOCKER_NAME} not running. Start services with scripts/pocs-docker.sh"
 else
-    docker exec -it "${DOCKER_NAME}" /bin/zsh -ic "$@"
+    if [ $# -eq 0 ]; then
+        echo "Starting shell on ${DOCKER_NAME}"
+        docker exec -it "${DOCKER_NAME}" /bin/zsh -i
+    else
+        docker exec -it "${DOCKER_NAME}" /bin/zsh -ic "$@"
+    fi
 fi
