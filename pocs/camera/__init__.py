@@ -113,7 +113,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
 
     device_info = camera_info['devices']
     for cam_num, device_config in enumerate(device_info):
-        cam_name = 'Cam{:02d}'.format(cam_num)
+        cam_name = device_config.setdefault('name', f'Cam{cam_num:02d}')
 
         # Check for proper connection method.
         model = device_config['model']
@@ -139,7 +139,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
             module = load_module(f'pocs.camera.{model}')
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
-            cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
+            cam = module.Camera(config_port=config_port, **device_config)
         except error.NotFound:
             logger.error(msg=f"Cannot find camera module with config: {device_config}")
         except Exception as e:
