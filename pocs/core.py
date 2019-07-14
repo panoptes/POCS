@@ -445,7 +445,11 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 raise KeyError('power')
 
-            has_power = bool(record['data'].get('main', False))
+            # Some control boards have this as `main`, some as `mains`.
+            has_power = False  # Assume not
+            for power_key in ['main', 'mains']:
+                with suppress(KeyError):
+                    has_power = bool(record['data'][power_key])
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
