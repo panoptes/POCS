@@ -9,6 +9,7 @@ jupyterlab
 matplotlib
 mocket
 numpy
+pandas
 panoptes-utils
 photutils
 psycopg2-binary
