@@ -28,7 +28,7 @@ class PanSensorShell(cmd.Cmd):
     control_board = None
     camera_board = None
     active_sensors = dict()
-    db = PanDB(db_type='file')
+    db = PanDB(db_type=get_config('db.type', default='file'))
     _keep_looping = False
     _loop_delay = 60
     _timer = None
@@ -169,7 +169,8 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading control board sensor")
-        self.control_board = ArduinoSerialMonitor(sensor_name='control_board', db_type='file')
+        self.control_board = ArduinoSerialMonitor(
+            sensor_name='control_board', db_type=get_config('db.type', default='file'))
         self.do_enable_sensor('control_board', delay=1)
 
     def do_load_camera_board(self, *arg):
@@ -178,7 +179,8 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading camera board sensor")
-        self.camera_board = ArduinoSerialMonitor(sensor_name='camera_board', db_type='file')
+        self.camera_board = ArduinoSerialMonitor(
+            sensor_name='camera_board', db_type=get_config('db.type', default='file'))
         self.do_enable_sensor('camera_board', delay=1)
 
     def do_load_weather(self, *arg):
