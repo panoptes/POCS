@@ -1,10 +1,80 @@
 #!/usr/bin/env python
 import os
+from glob import glob
+from contextlib import suppress
 
-from pocs.utils.config import load_config
-from panoptes.utils.images import clean_observation_dir
-from panoptes.utils.google.storage import upload_observation_to_bucket
 from panoptes.utils import error
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.config.client import get_config
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.images import make_timelapse
+from panoptes.utils.google.storage import upload_observation_to_bucket
+
+logger = get_root_logger()
+
+
+def clean_observation_dir(dir_name,
+                          remove_jpgs=False,
+                          include_timelapse=True,
+                          timelapse_overwrite=False,
+                          **kwargs):
+    """Clean an observation directory.
+    For the given `dir_name`, will:
+        * Compress FITS files
+        * Remove `.solved` files
+        * Create timelapse from JPG files if present (optional, default True)
+        * Remove JPG files (optional, default False).
+    Args:
+        dir_name (str): Full path to observation directory.
+        remove_jpgs (bool, optional): If JPGs should be removed after making timelapse,
+            default False.
+        include_timelapse (bool, optional): If a timelapse should be created, default True.
+        timelapse_overwrite (bool, optional): If timelapse file should be overwritten,
+            default False.
+        **kwargs: Can include `verbose`.
+    """
+
+    def _glob(s):
+        return glob(os.path.join(dir_name, s))
+
+    logger.info("Cleaning dir: {}".format(dir_name))
+
+    # Pack the fits files
+    logger.debug("Packing FITS files")
+    for f in _glob('*.fits'):
+        try:
+            fits_utils.fpack(f)
+        except Exception as e:  # pragma: no cover
+            logger.warning('Could not compress fits file: {!r}'.format(e))
+
+    # Remove .solved files
+    logger.debug('Removing .solved files')
+    for f in _glob('*.solved'):
+        with suppress(OSError):
+            os.remove(f)
+
+    try:
+        jpg_list = _glob('*.jpg')
+
+        if len(jpg_list) > 0:
+
+            # Create timelapse
+            if include_timelapse:
+                try:
+                    logger.debug('Creating timelapse for {}'.format(dir_name))
+                    video_file = make_timelapse(dir_name, overwrite=timelapse_overwrite)
+                    logger.debug('Timelapse created: {}'.format(video_file))
+                except Exception as e:
+                    logger.debug("Problem creating timelapse: {}".format(e))
+
+            # Remove jpgs
+            if remove_jpgs:
+                logger.debug('Removing jpgs')
+                for f in jpg_list:
+                    with suppress(OSError):
+                        os.remove(f)
+    except Exception as e:
+        logger.warning('Problem with cleanup creating timelapse: {!r}'.format(e))
 
 
 def main(directory,
@@ -19,17 +89,11 @@ def main(directory,
     See argparse help string below for details about parameters.
     """
 
-    def _print(msg):
-        if verbose:
-            print(msg)
-
-    config = load_config()
-    try:
-        pan_id = config['pan_id']
-    except KeyError:
+    pan_id = get_config('pan_id', default=None)
+    if pan_id is None:
         raise error.GoogleCloudError("Can't upload without a valid pan_id in the config")
 
-    _print("Cleaning observation directory: {}".format(directory))
+    logger.debug("Cleaning observation directory: {}".format(directory))
     try:
         clean_observation_dir(directory,
                               remove_jpgs=remove_jpgs,
@@ -41,7 +105,7 @@ def main(directory,
         raise error.PanError('Cannot clean observation dir: {}'.format(e))
 
     if upload:
-        _print("Uploading to storage bucket")
+        logger.debug("Uploading to storage bucket")
 
         upload_observation_to_bucket(
             pan_id,
