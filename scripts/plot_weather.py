@@ -9,6 +9,13 @@ import warnings
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
 
+from matplotlib import pyplot as plt
+from matplotlib.dates import DateFormatter
+from matplotlib.dates import HourLocator
+from matplotlib.dates import MinuteLocator
+from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import MultipleLocator
+
 from astropy.table import Table
 from astropy.time import Time
 
@@ -16,16 +23,8 @@ from astroplan import Observer
 from astropy.coordinates import EarthLocation
 
 from pocs.utils.config import load_config
-from panoptes.utils import serializers as json_util
+from panoptes.utils.serializers import from_json
 
-import matplotlib as mpl
-mpl.use('Agg')
-from matplotlib import pyplot as plt
-from matplotlib.dates import DateFormatter
-from matplotlib.dates import HourLocator
-from matplotlib.dates import MinuteLocator
-from matplotlib.ticker import FormatStrFormatter
-from matplotlib.ticker import MultipleLocator
 plt.ioff()
 plt.style.use('classic')
 
@@ -75,7 +74,7 @@ class WeatherPlotter(object):
             warnings.warn("No data")
             sys.exit(0)
 
-        self.time = pd.to_datetime(self.table['date'])
+        self.time = pd.to_datetime(self.table['date'].datetime)
         first = self.time[0].isoformat()
         last = self.time[-1].isoformat()
         print('  Retrieved {} entries between {} and {}'.format(
@@ -142,7 +141,7 @@ class WeatherPlotter(object):
                 weather_entries = list()
                 with open(data_file) as df:
                     for entry in df:
-                        rec0 = json_util.loads(entry)
+                        rec0 = from_json(entry)
                         weather_entries.append({**rec0['data']})
 
                 table = pd.DataFrame(weather_entries)
