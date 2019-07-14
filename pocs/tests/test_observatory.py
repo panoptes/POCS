@@ -31,14 +31,7 @@ def observatory(dynamic_config_server, config_port, cameras, images_dir):
     scheduler = create_scheduler_from_config(config_port=config_port,
                                              observer=site_details['observer'])
 
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    }, port=config_port)
-    dome = create_dome_simulator(config_port=config_port)
-    obs = Observatory(scheduler=scheduler,
-                      dome=dome,
-                      config_port=config_port)
+    obs = Observatory(scheduler=scheduler, config_port=config_port)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
