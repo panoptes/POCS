@@ -369,7 +369,9 @@ class POCS(PanStateMachine, PanBase):
 
         # Check if we are using weather simulator
         simulator_values = self.get_config('simulator', default=[])
-        self.logger.critical(f'simulator_values: {simulator_values}')
+        if len(simulator_values):
+            self.logger.critical(f'simulator_values: {simulator_values}')
+
         if 'weather' in simulator_values:
             self.logger.debug("Weather simulator always safe")
             return True
@@ -445,7 +447,11 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 raise KeyError('power')
 
-            has_power = bool(record['data'].get('main', False))
+            # Some control boards have this as `main`, some as `mains`.
+            has_power = False  # Assume not
+            for power_key in ['main', 'mains']:
+                with suppress(KeyError):
+                    has_power = bool(record['data'][power_key])
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
