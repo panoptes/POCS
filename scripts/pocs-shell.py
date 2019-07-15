@@ -5,7 +5,6 @@ import time
 import zmq
 
 from cmd import Cmd
-from subprocess import TimeoutExpired
 from pprint import pprint
 
 from astropy import units as u

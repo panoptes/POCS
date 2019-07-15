@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
+import os
 import cmd
 import datetime
-import os
 import readline
 import sys
 
