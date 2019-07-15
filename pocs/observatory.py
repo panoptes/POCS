@@ -13,6 +13,7 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.dome import AbstractDome
+from pocs.mount import AbstractMount
 from pocs.images import Image
 from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
@@ -240,6 +241,23 @@ class Observatory(PanBase):
             self.dome = None
         else:
             raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
+
+    def set_mount(self, mount=None):
+        """Sets the mount for the `Observatory`.
+        Note:
+            The default argument of `None` will remove the current mount.
+
+        Args:
+            mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
+        """
+        if isinstance(mount, AbstractMount):
+            self.logger.info('Adding mount')
+            self.mount = mount
+        elif mount is None:
+            self.logger.info('Removing mount')
+            self.mount = None
+        else:
+            raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
 
     ##########################################################################
     # Methods
