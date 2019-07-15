@@ -164,8 +164,8 @@ def test_set_dome(config_with_simulated_dome):
         obs.set_dome('dome')
 
 
-def test_set_mount(config):
-    conf = config.copy()
+def test_set_mount(config_with_simulated_mount):
+    conf = config_with_simulated_mount.copy()
     mount = create_mount_from_config(conf)
     obs = Observatory(config=conf, mount=mount)
     assert obs.mount is not None
