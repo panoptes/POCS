@@ -9,6 +9,7 @@ import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
 from pocs.dome import create_dome_from_config, AbstractDome
+from pocs.mount import create_mount_from_config, AbstractMount
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -161,6 +162,19 @@ def test_set_dome(config_with_simulated_dome):
     assert obs.has_dome is True
     with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
         obs.set_dome('dome')
+
+
+def test_set_mount(config):
+    conf = config.copy()
+    mount = create_mount_from_config(conf)
+    obs = Observatory(config=conf, mount=mount)
+    assert obs.mount is not None
+    obs.set_mount(mount=None)
+    assert obs.mount is None
+    obs.set_mount(mount=mount)
+    assert isinstance(obs.mount, AbstractMount) is True
+    with pytest.raises(TypeError, message='Mount is not instance of AbstractMount class, cannot add.'):
+        obs.set_mount(mount='mount')
 
 
 def test_status(observatory):
