@@ -141,7 +141,7 @@ def test_set_dome(dynamic_config_server, config_port):
     assert obs.has_dome is False
     obs.set_dome(dome=dome)
     assert obs.has_dome is True
-    with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
+    with pytest.raises(TypeError, message='Dome must be an AbstractDome class, cannot add.'):
         obs.set_dome('dome')
 
 
@@ -154,7 +154,7 @@ def test_set_mount(config_with_simulated_mount):
     assert obs.mount is None
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
-    with pytest.raises(TypeError, message='Mount is not instance of AbstractMount class, cannot add.'):
+    with pytest.raises(TypeError, message='Mount must be AbstractMount class, cannot add.'):
         obs.set_mount(mount='mount')
 
 
@@ -291,53 +291,6 @@ def test_observe(observatory):
 
     observatory.cleanup_observations()
     assert len(observatory.scheduler.observed_list) == 0
-
-
-# def test_cleanup_missing_config_keys(observatory):
-#     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
-
-#     observatory.get_observation()
-#     camera_events = observatory.observe()
-
-#     while not all([event.is_set() for name, event in camera_events.items()]):
-#         time.sleep(1)
-
-#     observatory.cleanup_observations()
-#     del observatory.config['panoptes_network']
-#     observatory.cleanup_observations()
-
-#     observatory.get_observation()
-
-#     observatory.cleanup_observations()
-#     del observatory.config['observations']['make_timelapse']
-#     observatory.cleanup_observations()
-
-#     observatory.get_observation()
-
-#     observatory.cleanup_observations()
-#     del observatory.config['observations']['keep_jpgs']
-#     observatory.cleanup_observations()
-
-#     observatory.get_observation()
-
-#     observatory.cleanup_observations()
-#     observatory.config['pan_id'] = 'PAN99999999'
-#     observatory.cleanup_observations()
-
-#     observatory.get_observation()
-
-#     observatory.cleanup_observations()
-#     del observatory.config['pan_id']
-#     observatory.cleanup_observations()
-
-#     observatory.get_observation()
-
-#     # Now use parameters
-#     observatory.cleanup_observations(
-#         upload_images=False,
-#         make_timelapse=False,
-#         keep_jpgs=True
-#     )
 
 
 def test_autofocus_disconnected(observatory):
