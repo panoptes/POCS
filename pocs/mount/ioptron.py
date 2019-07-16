@@ -167,7 +167,7 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, ra_direction='east', ra_seconds=11., dec_direction='north', dec_seconds=15.):
+    def park(self, ra_direction='west', ra_seconds=11., dec_direction='south', dec_seconds=15.):
         """Slews to the park position and parks the mount.
 
         This will first move the mount to the home position, then move the RA axis
@@ -183,11 +183,11 @@ class Mount(AbstractSerialMount):
 
         Args:
             ra_direction (str, optional): The direction to move the RA axis from
-                the home position.
+                the home position. Defaults to 'west' for northern hemisphere.
             ra_seconds (float, optional): The number of seconds at fastest move
                 speed to move the RA axis from the home position.
             dec_direction (str, optional): The direction to move the Dec axis
-                from the home position.
+                from the home position. Defaults to 'south' for northern hemisphere.
             dec_seconds (float, optional): The number of seconds at the fastest
                 move speed to move the Dec axis from the home position.
         """
