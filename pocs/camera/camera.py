@@ -350,8 +350,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         except Exception as e:  # pragma: no cover
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
+        self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, info)
-        self.logger.debug("Finished processing FITS.")
+        self.logger.debug(f'Finished FITS processing for {file_path}')
         with suppress(Exception):
             info['exptime'] = info['exptime'].value
 

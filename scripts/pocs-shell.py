@@ -335,6 +335,11 @@ Hardware names: {}   (or all for all hardware)'''.format(
         if self.ready is False:
             return
 
+        args, kwargs = string_to_params(*arg)
+
+        # Default to 30 seconds
+        exptime = kwargs.get('exptime', 30)
+
         start_time = current_time(flatten=True)
 
         base_dir = '{}/images/drift_align/{}'.format(
@@ -348,7 +353,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         mount.slew_to_home(blocking=True)
 
         # Polar Rotation
-        pole_fn = polar_rotation(self.pocs, base_dir=base_dir)
+        pole_fn = polar_rotation(self.pocs, exptime=exptime, base_dir=base_dir)
         pole_fn = pole_fn.replace('.cr2', '.fits')
 
         # Mount Rotation
@@ -364,7 +369,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         try:
             pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
         except Exception as e:
-            print_warning(f'Enable to solve pole image: {e!r}')
+            print_warning(f'Unable to solve pole image: {e!r}')
             print_warning("Will proceeed with rotation image but analysis not possible")
             pole_center = None
         else:
@@ -501,8 +506,8 @@ def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     try:
         img_utils.make_pretty_image(analyze_fn,
                                     title='Alignment Test - Celestial Pole',
+                                    link_latest=True,
                                     primary=True)
-        cr2_utils.cr2_to_fits(analyze_fn, remove_cr2=True)
     except AssertionError:
         print_warning(f"Can't make image for {analyze_fn}")
         pocs.say(f"Can't make image for {analyze_fn}")
@@ -531,18 +536,18 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         rotate_fn = f'{base_dir}/rotation_{direction}_{cam.name.lower()}.cr2'
         cam_event = cam.take_exposure(seconds=exptime, filename=rotate_fn)
 
-        while cam_event.is_set() is False:
-            time.sleep(2)
-
         # Move mount
         mount.move_direction(direction=direction, seconds=21)
+
+        while cam_event.is_set() is False:
+            time.sleep(2)
 
         # Get exposures
         try:
             img_utils.make_pretty_image(rotate_fn,
                                         title=f'Alignment Test - Rotate {direction}',
+                                        link_latest=True,
                                         primary=True)
-            cr2_utils.cr2_to_fits(rotate_fn, remove_cr2=True)
         except AssertionError:
             print_warning(f"Can't make image for {rotate_fn}")
             pocs.say(f"Can't make image for {rotate_fn}")
