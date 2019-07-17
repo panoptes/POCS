@@ -207,7 +207,7 @@ class Observatory(PanBase):
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
 
-    def set_scheduler(self, scheduler=None):
+    def set_scheduler(self, scheduler):
         """Sets the scheduler for the `Observatory`.
 
         Note:
@@ -225,7 +225,7 @@ class Observatory(PanBase):
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
-    def set_dome(self, dome=None):
+    def set_dome(self, dome):
         """Set's dome or remove the dome for the `Observatory`.
         Note:
             The default argument of `None` will remove the current dome.
@@ -242,7 +242,7 @@ class Observatory(PanBase):
         else:
             raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
 
-    def set_mount(self, mount=None):
+    def set_mount(self, mount):
         """Sets the mount for the `Observatory`.
         Note:
             The default argument of `None` will remove the current mount.
