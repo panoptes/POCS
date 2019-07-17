@@ -329,7 +329,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         # If passed an Event that signals the end of the exposure wait for it to be set
         if exposure_event is not None:
+            self.logger.debug(f'About to wait for exposure event on {self.name}')
             exposure_event.wait()
+            self.logger.debug(f'Done waiting for exposure event on {self.name}')
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
@@ -343,7 +345,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                               current_time(pretty=True))
 
         try:
-            self.logger.debug("Processing {}".format(image_title))
+            self.logger.debug("Processing {}".format(file_path))
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
                                         link_latest=info['is_primary'])

@@ -190,6 +190,7 @@ class Camera(AbstractGPhotoCamera):
             # Camera type specific readout function
             self._readout(*readout_args)
         finally:
+            self.logger.debug(f'Setting exposure event for {self.name}')
             self._is_exposing = False
             self._exposure_proc = None
             self._exposure_event.set()  # Make sure this gets set regardless of readout errors
