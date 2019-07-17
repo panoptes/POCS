@@ -146,6 +146,11 @@ def test_set_dome(dynamic_config_server, config_port):
 
 
 def test_set_mount(dynamic_config_server, config_port):
+    set_config('mount', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+        'model': 'simulator',
+    }, port=config_port)
     mount = create_mount_from_config(config_port=config_port)
     obs = Observatory(mount=mount)
     assert obs.mount is not None
