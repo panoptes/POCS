@@ -276,9 +276,12 @@ Hardware names: {}   (or all for all hardware)'''.format(
     def do_go_home(self, *arg):
         """Move the mount to home."""
         if self.ready is False:
+            print_info(f"POCS not ready, can't go home. Checking weather")
             if self.pocs.is_weather_safe() is False:
+                print_info(f'Weather is not safe, powering down.')
                 self.do_power_down()
 
+            print_info(f'Unable to go to home.')
             return
 
         try:
