@@ -145,10 +145,9 @@ def test_set_dome(dynamic_config_server, config_port):
         obs.set_dome('dome')
 
 
-def test_set_mount(config_with_simulated_mount):
-    conf = config_with_simulated_mount.copy()
-    mount = create_mount_from_config(conf)
-    obs = Observatory(config=conf, mount=mount)
+def test_set_mount(dynamic_config_server, config_port):
+    mount = create_mount_from_config(config_port=config_port)
+    obs = Observatory(mount=mount)
     assert obs.mount is not None
     obs.set_mount(mount=None)
     assert obs.mount is None
