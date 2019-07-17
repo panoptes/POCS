@@ -152,7 +152,7 @@ def test_set_mount(dynamic_config_server, config_port):
         'model': 'simulator',
     }, port=config_port)
     mount = create_mount_from_config(config_port=config_port)
-    obs = Observatory(mount=mount)
+    obs = Observatory(config_port=config_port)
     assert obs.mount is not None
     obs.set_mount(mount=None)
     assert obs.mount is None
