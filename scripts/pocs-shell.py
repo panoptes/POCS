@@ -67,6 +67,7 @@ class PocsShell(Cmd):
     def ready(self):
         """True if POCS is ready to observe, False otherwise."""
         if not self.is_setup:
+            print_info(f'Mount not setup, system not ready.')
             return False
 
         if self.pocs.observatory.mount.is_parked:
