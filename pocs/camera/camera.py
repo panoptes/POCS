@@ -345,7 +345,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                               current_time(pretty=True))
 
         try:
-            self.logger.debug("Processing {}".format(file_path))
+            self.logger.debug("Making pretty image for {}".format(file_path))
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
                                         link_latest=info['is_primary'])
