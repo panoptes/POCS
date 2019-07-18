@@ -1,0 +1,208 @@
+- 
+  name: TESS_SEC01_CAM01
+  position: 324.5670deg -33.1730deg
+  priority: 100
+- 
+  name: TESS_SEC01_CAM02
+  position: 338.5766deg -55.0789deg
+  priority: 100
+- 
+  name: TESS_SEC01_CAM03
+  position: 19.4927deg -71.9781deg
+  priority: 100
+- 
+  name: TESS_SEC01_CAM04
+  position: 90.0042deg -66.5647deg
+  priority: 100
+- 
+  name: TESS_SEC02_CAM01
+  position: 352.0795deg -23.0645deg
+  priority: 100
+- 
+  name: TESS_SEC02_CAM02
+  position: 5.6956deg -44.3080deg
+  priority: 100
+- 
+  name: TESS_SEC02_CAM03
+  position: 33.3558deg -62.1878deg
+  priority: 100
+- 
+  name: TESS_SEC02_CAM04
+  position: 90.0022deg -66.5654deg
+  priority: 100
+- 
+  name: TESS_SEC03_CAM01
+  position: 17.1728deg -12.2229deg
+  priority: 100
+- 
+  name: TESS_SEC03_CAM02
+  position: 28.4640deg -33.9055deg
+  priority: 100
+- 
+  name: TESS_SEC03_CAM03
+  position: 47.3926deg -53.8504deg
+  priority: 100
+- 
+  name: TESS_SEC03_CAM04
+  position: 89.9996deg -66.5654deg
+  priority: 100
+- 
+  name: TESS_SEC04_CAM01
+  position: 41.8084deg -2.7600deg
+  priority: 100
+- 
+  name: TESS_SEC04_CAM02
+  position: 49.8806deg -25.4686deg
+  priority: 100
+- 
+  name: TESS_SEC04_CAM03
+  position: 61.8676deg -47.5211deg
+  priority: 100
+- 
+  name: TESS_SEC04_CAM04
+  position: 89.9973deg -66.5649deg
+  priority: 100
+- 
+  name: TESS_SEC05_CAM01
+  position: 67.0563deg 3.5339deg
+  priority: 100
+- 
+  name: TESS_SEC05_CAM02
+  position: 71.1053deg -20.1344deg
+  priority: 100
+- 
+  name: TESS_SEC05_CAM03
+  position: 76.6971deg -43.6751deg
+  priority: 100
+- 
+  name: TESS_SEC05_CAM04
+  position: 89.9956deg -66.5642deg
+  priority: 100
+- 
+  name: TESS_SEC06_CAM01
+  position: 92.8145deg 5.4079deg
+  priority: 500
+- 
+  name: TESS_SEC06_CAM02
+  position: 92.3086deg -18.5869deg
+  priority: 500
+- 
+  name: TESS_SEC06_CAM03
+  position: 91.6247deg -42.5799deg
+  priority: 500
+- 
+  name: TESS_SEC06_CAM04
+  position: 89.9947deg -66.5632deg
+  priority: 500
+- 
+  name: TESS_SEC07_CAM01
+  position: 118.1810deg 2.5749deg
+  priority: 100
+- 
+  name: TESS_SEC07_CAM02
+  position: 113.2461deg -20.9331deg
+  priority: 100
+- 
+  name: TESS_SEC07_CAM03
+  position: 106.3563deg -44.2432deg
+  priority: 100
+- 
+  name: TESS_SEC07_CAM04
+  position: 89.9954deg -66.5621deg
+  priority: 100
+- 
+  name: TESS_SEC08_CAM01
+  position: 142.3675deg -4.1754deg
+  priority: 100
+- 
+  name: TESS_SEC08_CAM02
+  position: 133.6943deg -26.6971deg
+  priority: 100
+- 
+  name: TESS_SEC08_CAM03
+  position: 120.5958deg -48.4220deg
+  priority: 100
+- 
+  name: TESS_SEC08_CAM04
+  position: 89.9978deg -66.5616deg
+  priority: 100
+- 
+  name: TESS_SEC09_CAM01
+  position: 165.7044deg -13.4558deg
+  priority: 100
+- 
+  name: TESS_SEC09_CAM02
+  position: 154.0889deg -35.0441deg
+  priority: 100
+- 
+  name: TESS_SEC09_CAM03
+  position: 134.2662deg -54.7292deg
+  priority: 100
+- 
+  name: TESS_SEC09_CAM04
+  position: 90.0001deg -66.5617deg
+  priority: 100
+- 
+  name: TESS_SEC10_CAM01
+  position: 189.9002deg -23.8878deg
+  priority: 100
+- 
+  name: TESS_SEC10_CAM02
+  position: 176.1577deg -45.1375deg
+  priority: 100
+- 
+  name: TESS_SEC10_CAM03
+  position: 147.6953deg -62.8858deg
+  priority: 100
+- 
+  name: TESS_SEC10_CAM04
+  position: 90.0019deg -66.5620deg
+  priority: 100
+- 
+  name: TESS_SEC11_CAM01
+  position: 217.3031deg -33.7306deg
+  priority: 100
+- 
+  name: TESS_SEC11_CAM02
+  position: 203.4026deg -55.7183deg
+  priority: 100
+- 
+  name: TESS_SEC11_CAM03
+  position: 161.3942deg -72.6301deg
+  priority: 100
+- 
+  name: TESS_SEC11_CAM04
+  position: 90.0037deg -66.5622deg
+  priority: 100
+- 
+  name: TESS_SEC12_CAM01
+  position: 249.3404deg -40.2646deg
+  priority: 100
+- 
+  name: TESS_SEC12_CAM02
+  position: 241.5203deg -63.8197deg
+  priority: 100
+- 
+  name: TESS_SEC12_CAM03
+  position: 177.2960deg -83.3792deg
+  priority: 100
+- 
+  name: TESS_SEC12_CAM04
+  position: 90.0057deg -66.5627deg
+  priority: 100
+- 
+  name: TESS_SEC13_CAM01
+  position: 284.0498deg -40.8957deg
+  priority: 100
+- 
+  name: TESS_SEC13_CAM02
+  position: 289.5886deg -64.6822deg
+  priority: 100
+- 
+  name: TESS_SEC13_CAM03
+  position: 357.9380deg -85.4978deg
+  priority: 100
+- 
+  name: TESS_SEC13_CAM04
+  position: 90.0061deg -66.5638deg
+  priority: 100
