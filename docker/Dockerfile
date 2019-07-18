@@ -23,6 +23,7 @@ RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
         byobu \
         ffmpeg \
+        openssh-client \
         libncurses5-dev \
         udev \
         vim-nox \
