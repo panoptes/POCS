@@ -167,38 +167,55 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self):
-        """ Slews to the park position and parks the mount.
+    def park(self, ra_direction='west', ra_seconds=11., dec_direction='south', dec_seconds=15.):
+        """Slews to the park position and parks the mount.
+
+        This will first move the mount to the home position, then move the RA axis
+        in the direction specified at 0.9x sidereal rate (the fastest) for the number
+        of seconds requested. Then move the Dec axis in a similar manner. This should
+        be adjusted for the particular parking position desired.
 
         Note:
             When mount is parked no movement commands will be accepted.
 
         Returns:
             bool: indicating success
+
+        Args:
+            ra_direction (str, optional): The direction to move the RA axis from
+                the home position. Defaults to 'west' for northern hemisphere.
+            ra_seconds (float, optional): The number of seconds at fastest move
+                speed to move the RA axis from the home position.
+            dec_direction (str, optional): The direction to move the Dec axis
+                from the home position. Defaults to 'south' for northern hemisphere.
+            dec_seconds (float, optional): The number of seconds at the fastest
+                move speed to move the Dec axis from the home position.
         """
 
-        self.set_park_coordinates()
-        self.set_target_coordinates(self._park_coordinates)
+        if self.is_parked:
+            self.logger.info("Mount is parked")
+            return self._is_parked
 
-        response = self.query('park')
-
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        while not self._at_mount_park:
-            self.status()
+        self.slew_to_home()
+        while self.is_home is False:
             time.sleep(2)
+            self.logger.debug("Slewing to home...")
 
         # The mount is currently not parking in correct position so we manually move it there.
-        self.unpark()
         self.query('set_button_moving_rate', 9)
-        self.move_direction(direction='south', seconds=11.0)
+        self.move_direction(direction=ra_direction, seconds=ra_seconds)
+        while self.is_slewing:
+            time.sleep(2)
+            self.logger.debug("Slewing RA axis to park position...")
+        self.move_direction(direction=dec_direction, seconds=dec_seconds)
+        while self.is_slewing:
+            time.sleep(2)
+            self.logger.debug("Slewing Dec axis to park position...")
 
         self._is_parked = True
+        self.logger.debug(f'Mount parked: {self.is_parked}')
 
-        return response
+        return self._is_parked
 
 
 ##################################################################################################
