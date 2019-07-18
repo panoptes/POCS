@@ -47,22 +47,6 @@
   position: 270.0004deg, 66.5654deg
   priority: 100
 -
-  name: TESS_SEC16_CAM01
-  position: 336.0753deg, 44.1395deg
-  priority: 100
--
-  name: TESS_SEC16_CAM02
-  position: 307.8459deg, 61.5441deg
-  priority: 100
--
-  name: TESS_SEC16_CAM03
-  position: 252.9139deg, 65.4973deg
-  priority: 100
--
-  name: TESS_SEC16_CAM04
-  position: 214.0535deg, 51.5694deg
-  priority: 100
--
   name: TESS_SEC17_CAM01
   position: 17.3888deg, 26.8940deg
   priority: 100
