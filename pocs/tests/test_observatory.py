@@ -8,6 +8,8 @@ from astropy.time import Time
 import pocs.version
 from pocs import hardware
 from pocs.camera import create_cameras_from_config
+from pocs.dome import create_dome_from_config, AbstractDome
+from pocs.mount import create_mount_from_config, AbstractMount
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.dispatch import Scheduler
@@ -31,8 +33,10 @@ def observatory(config, simulator, images_dir):
     """Return a valid Observatory instance with a specific config."""
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
+    dome = create_dome_from_config(config)
     obs = Observatory(config=config,
                       scheduler=scheduler,
+                      dome=dome,
                       simulator=simulator,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
@@ -54,14 +58,6 @@ def test_remove_cameras(observatory, config):
         observatory.remove_camera(cam_name)
 
 
-def test_error_exit(config):
-    # TODO Describe why this is expected to fail, and how it is different
-    # from the other tests, esp. test_bad_mount_port.
-    # pytest.set_trace()
-    with pytest.raises(SystemExit):
-        Observatory(ignore_local_config=True, config=config, simulator=['none'])
-
-
 def test_bad_site(simulator, config):
     conf = config.copy()
     conf['location'] = {}
@@ -72,8 +68,8 @@ def test_bad_site(simulator, config):
 def test_bad_mount_port(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = '/dev/'
-    with pytest.raises(SystemExit):
+    conf['mount']['serial']['port'] = 'foobar'
+    with pytest.raises(error.MountNotFound):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
@@ -82,7 +78,7 @@ def test_bad_mount_driver(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
     conf['mount']['driver'] = 'foobar'
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.MountNotFound):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
@@ -139,6 +135,46 @@ def test_primary_camera(observatory):
 def test_primary_camera_no_primary_camera(observatory):
     observatory._primary_camera = None
     assert observatory.primary_camera is not None
+
+
+def test_set_scheduler(config, observatory):
+    conf = config.copy()
+    site_details = create_location_from_config(conf)
+    scheduler = create_scheduler_from_config(conf, site_details['observer'])
+    assert observatory.scheduler is not None
+    observatory.set_scheduler(scheduler=None)
+    assert observatory.scheduler is None
+    observatory.set_scheduler(scheduler=scheduler)
+    assert observatory.scheduler is not None
+    err_msg = 'Scheduler is not instance of BaseScheduler class, cannot add.'
+    with pytest.raises(TypeError, message=err_msg):
+        observatory.set_scheduler('scheduler')
+
+
+def test_set_dome(config_with_simulated_dome):
+    conf = config_with_simulated_dome.copy()
+    dome = create_dome_from_config(conf)
+    obs = Observatory(config=conf, dome=dome)
+    assert obs.has_dome is True
+    obs.set_dome()
+    assert obs.has_dome is False
+    obs.set_dome(dome=dome)
+    assert obs.has_dome is True
+    with pytest.raises(TypeError, message='Dome is not instance of AbstractDome class, cannot add.'):
+        obs.set_dome('dome')
+
+
+def test_set_mount(config_with_simulated_mount):
+    conf = config_with_simulated_mount.copy()
+    mount = create_mount_from_config(conf)
+    obs = Observatory(config=conf, mount=mount)
+    assert obs.mount is not None
+    obs.set_mount(mount=None)
+    assert obs.mount is None
+    obs.set_mount(mount=mount)
+    assert isinstance(obs.mount, AbstractMount) is True
+    with pytest.raises(TypeError, message='Mount is not instance of AbstractMount class, cannot add.'):
+        obs.set_mount(mount='mount')
 
 
 def test_status(observatory):
@@ -388,9 +424,11 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_with_simulated_dome):
+def test_operate_dome(config_with_simulated_dome, config):
+    conf = config.copy()
     simulator = hardware.get_all_names(without=['dome', 'night'])
-    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
+    dome = create_dome_from_config(conf, logger=None)
+    observatory = Observatory(config=config_with_simulated_dome, dome=dome, simulator=simulator,
                               ignore_local_config=True)
     assert observatory.has_dome
     assert observatory.open_dome()
