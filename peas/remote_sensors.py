@@ -5,11 +5,11 @@ from panoptes.utils import current_time
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
-from panoptes.serializers import from_json
+from panoptes.utils.serializers import from_json
 from panoptes.utils.messaging import PanMessaging
 
 
-class RemoteSerialMonitor(object):
+class RemoteMonitor(object):
     """Does a pull request on an endpoint to obtain a JSON document."""
 
     def __init__(self, endpoint_url=None, sensor_name=None, *args, **kwargs):
@@ -29,6 +29,9 @@ class RemoteSerialMonitor(object):
         if endpoint_url is None:
             # Get the config for the sensor
             endpoint_url = get_config(f'environment.{sensor_name}.url')
+
+        if not endpoint_url.beginswith('http'):
+            endpoint_url = f'http://{endpoint_url}'
 
         self.endpoint_url = endpoint_url
 
