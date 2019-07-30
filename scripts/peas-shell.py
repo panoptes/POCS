@@ -27,7 +27,9 @@ class PanSensorShell(cmd.Cmd):
     prompt = 'PEAS > '
     weather = None
     control_board = None
+    control_env_board = None
     camera_board = None
+    camera_env_board = None
     active_sensors = dict()
     db = PanDB(db_type=get_config('db.type', default='file'))
     _keep_looping = False
@@ -190,10 +192,10 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading control box environment board sensor")
-        self.control_board = RemoteMonitor(endpoint_url=get_config('environment.control_env_board.url'),
-                                           sensor_name='control_env_board',
-                                           db_type=get_config('db.type', default='file')
-                                           )
+        self.control_env_board = RemoteMonitor(endpoint_url=get_config('environment.control_env_board.url'),
+                                               sensor_name='control_env_board',
+                                               db_type=get_config('db.type', default='file')
+                                               )
         self.do_enable_sensor('control_env_board', delay=1)
 
     def do_load_camera_env_board(self, *arg):
@@ -202,10 +204,10 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading camera box environment board sensor")
-        self.control_board = RemoteMonitor(endpoint_url=get_config('environment.camera_env_board.url'),
-                                           sensor_name='camera_env_board',
-                                           db_type=get_config('db.type', default='file')
-                                           )
+        self.camera_env_board = RemoteMonitor(endpoint_url=get_config('environment.camera_env_board.url'),
+                                              sensor_name='camera_env_board',
+                                              db_type=get_config('db.type', default='file')
+                                              )
         self.do_enable_sensor('control_env_board', delay=1)
 
     def do_load_weather(self, *arg):

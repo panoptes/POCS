@@ -130,10 +130,6 @@ class ArduinoSerialMonitor(object):
                 if store_result and len(sensor_data) > 0:
                     self.db.insert_current(sensor_name, data)
 
-                    # Make a separate power entry
-                    if 'power' in data:
-                        self.db.insert_current('power', data['power'])
-
             except Exception as e:
                 self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
 
