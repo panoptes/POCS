@@ -34,7 +34,7 @@ class RemoteMonitor(object):
             # Get the config for the sensor
             endpoint_url = get_config(f'environment.{sensor_name}.url')
 
-        if not endpoint_url.beginswith('http'):
+        if not endpoint_url.startswith('http'):
             endpoint_url = f'http://{endpoint_url}'
 
         self.endpoint_url = endpoint_url
@@ -59,6 +59,7 @@ class RemoteMonitor(object):
             sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """
 
+        self.logger.debug(f'Capturing data from remote url: {self.endpoint_url}')
         sensor_data = from_json(requests.get(self.endpoint_url))
 
         sensor_data['date'] = current_time(flatten=True)
@@ -72,4 +73,5 @@ class RemoteMonitor(object):
             if 'power' in sensor_data:
                 self.db.insert_current('power', sensor_data['power'])
 
+        self.logger.debug(f'Remote data: {sensor_data}')
         return sensor_data
