@@ -24,10 +24,14 @@ class ArduinoSerialMonitor(object):
         self.logger = get_root_logger()
         self.logger.setLevel(logging.INFO)
 
+        # Setup the DB either from kwargs or config.
         self.db = None
+        db_type = get_config('db.type', default='file')
         if 'db_type' in kwargs:
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
-            self.db = PanDB(db_type=kwargs['db_type'])
+            db_type = kwargs.get('db_type', db_type)
+
+        self.db = PanDB(db_type=db_type)
 
         self.messaging = None
 
@@ -124,9 +128,6 @@ class ArduinoSerialMonitor(object):
                     self.send_message({'data': data}, topic='environment')
 
                 if store_result and len(sensor_data) > 0:
-                    if self.db is None:
-                        self.db = PanDB()
-
                     self.db.insert_current(sensor_name, data)
 
                     # Make a separate power entry
