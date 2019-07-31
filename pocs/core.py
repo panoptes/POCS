@@ -443,7 +443,7 @@ class POCS(PanStateMachine, PanBase):
 
         # Get current power readings from database
         try:
-            record = self.db.get_current('control_board')
+            record = self.db.get_current('power')
             if record is None:
                 raise KeyError('power')
 
@@ -451,7 +451,7 @@ class POCS(PanStateMachine, PanBase):
             has_power = False  # Assume not
             for power_key in ['main', 'mains']:
                 with suppress(KeyError):
-                    has_power = bool(record['data']['power'][power_key])
+                    has_power = bool(record['data'][power_key])
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
