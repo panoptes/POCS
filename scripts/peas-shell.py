@@ -192,7 +192,8 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading control box environment board sensor")
-        self.control_env_board = RemoteMonitor(endpoint_url=get_config('environment.control_env_board.url'),
+        endpoint_url = get_config('environment.control_env_board.url')
+        self.control_env_board = RemoteMonitor(endpoint_url=endpoint_url,
                                                sensor_name='control_env_board',
                                                db_type=get_config('db.type', default='file')
                                                )
@@ -204,11 +205,12 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
         print("Loading camera box environment board sensor")
-        self.camera_env_board = RemoteMonitor(endpoint_url=get_config('environment.camera_env_board.url'),
+        endpoint_url = get_config('environment.camera_env_board.url')
+        self.camera_env_board = RemoteMonitor(endpoint_url=endpoint_url,
                                               sensor_name='camera_env_board',
                                               db_type=get_config('db.type', default='file')
                                               )
-        self.do_enable_sensor('control_env_board', delay=1)
+        self.do_enable_sensor('camera_env_board', delay=1)
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
