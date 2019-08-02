@@ -373,7 +373,7 @@ class Observatory(PanBase):
         if keep_jpgs is None:
             keep_jpgs = self.get_config('observations.keep_jpgs', default=True)
 
-        process_script = 'upload_image_dir.py'
+        process_script = 'upload-image-dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
 
         if self.scheduler is None:
