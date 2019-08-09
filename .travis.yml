@@ -81,3 +81,5 @@ cache:
     - $PANDIR/astrometry/
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+after_failure:
+  - bash scripts/testing/failed-images-upload.sh ${POCS}/test_images/
