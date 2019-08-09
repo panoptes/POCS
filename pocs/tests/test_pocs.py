@@ -9,6 +9,7 @@ from pocs import hardware
 from pocs.camera import create_cameras_from_config
 from pocs.core import POCS
 from pocs.dome import create_dome_from_config
+from pocs.mount import create_mount_from_config
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils import CountdownTimer
@@ -56,10 +57,16 @@ def dome(config):
 
 
 @pytest.fixture(scope='function')
+def mount(config):
+    return create_mount_from_config(config)
+
+
+@pytest.fixture(scope='function')
 def observatory(config, db_type, cameras, scheduler, dome):
     observatory = Observatory(
         config=config,
         cameras=cameras,
+        mount=mount,
         scheduler=scheduler,
         dome=dome,
         simulator=['all'],

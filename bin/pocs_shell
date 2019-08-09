@@ -144,7 +144,7 @@ class PocsShell(Cmd):
         except Exception as e:
             print_warning("Can't start message publisher: {}".format(e))
 
-    def do_setup_pocs(self, *arg):
+    def do_setup_pocs(self, *arg, config):
         """Setup and initialize a POCS instance."""
         args, kwargs = string_to_params(*arg)
 
