@@ -15,6 +15,7 @@ def test_mount_not_in_config(config):
 
     # Remove mount info
     del conf['mount']
+
     with pytest.raises(MountNotFound):
         create_mount_from_config(conf)
 

@@ -78,7 +78,9 @@ def test_can_observe(config, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
-    obs.cameras = create_cameras_from_config(conf)
+    cameras = create_cameras_from_config(conf)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Mount not present, cannot observe."
