@@ -10,7 +10,7 @@ from pocs.utils.google.storage import PanStorage, upload_observation_to_bucket
 
 
 pytestmark = pytest.mark.skipif(
-    not _pytest.config.get_config().getoption('--test_cloud_storage'),
+    not _pytest.config.get_config().getoption('--test-cloud-storage'),
     reason="Needs --test-cloud-storage to run."
 )
 
