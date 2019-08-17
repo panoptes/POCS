@@ -118,8 +118,8 @@ def test_get_tracking_correction(mount):
         (None, 'south', 966.84, 'east'),
         (103.49, 'south', None, 'east'),
         # Too big
-        (99999.9, 'south', 966.84, 'east'),
-        (103.49, 'south', 99999.9, 'east'),
+        (99999.0, 'south', 966.84, 'east'),
+        (103.49, 'south', 99999.0, 'east'),
     ]
 
     for offset, correction in zip(offsets, corrections):
@@ -135,7 +135,7 @@ def test_get_tracking_correction(mount):
         dec_info = correction_info['dec']
         expected_correction = correction[0]
         if expected_correction is not None:
-            assert dec_info[1] == pytest.approx(expected_correction, rel=1e-2)
+            assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
             assert dec_info[2] == correction[1]
         else:
             assert dec_info == expected_correction
@@ -143,7 +143,7 @@ def test_get_tracking_correction(mount):
         ra_info = correction_info['ra']
         expected_correction = correction[2]
         if expected_correction is not None:
-            assert ra_info[1] == pytest.approx(expected_correction, rel=1e-2)
+            assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)
             assert ra_info[2] == correction[3]
         else:
             assert ra_info == expected_correction

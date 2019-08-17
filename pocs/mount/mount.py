@@ -391,12 +391,13 @@ class AbstractMount(PanBase):
 
             # Skip short corrections
             if offset_ms <= min_tracking_threshold:
-                self.logger.debug(f'Tracking threshold: {min_tracking_threshold} ms')
+                self.logger.debug(f'Min tracking threshold: {min_tracking_threshold} ms')
                 self.logger.debug(f'Requested tracking lower than threshold, skipping correction')
                 continue
 
             # Correct long offset
             if offset_ms > max_tracking_threshold:
+                self.logger.debug(f'Max tracking threshold: {max_tracking_threshold} ms')
                 offset_ms = max_tracking_threshold
 
             self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
