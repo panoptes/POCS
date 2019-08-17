@@ -49,7 +49,7 @@ mount:
         baudrate: 9600
     non_sidereal_available: True
 pointing:
-    auto_correct: False
+    auto_correct: True
     threshold: 500 # arcseconds ~ 50 pixels
     exptime: 30 # seconds
     max_iterations: 3
@@ -96,7 +96,7 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: True
+    image_storage: False
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:

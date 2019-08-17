@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ie
 
 DOCKER_NAME="pocs-shell"
 

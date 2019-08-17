@@ -12,6 +12,7 @@ from threading import Timer
 from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
+from peas.remote_sensors import RemoteMonitor
 from peas.weather import AAGCloudSensor
 
 from panoptes.utils.config.client import get_config
@@ -26,7 +27,9 @@ class PanSensorShell(cmd.Cmd):
     prompt = 'PEAS > '
     weather = None
     control_board = None
+    control_env_board = None
     camera_board = None
+    camera_env_board = None
     active_sensors = dict()
     db = PanDB(db_type=get_config('db.type', default='file'))
     _keep_looping = False
@@ -182,6 +185,32 @@ class PanSensorShell(cmd.Cmd):
         self.camera_board = ArduinoSerialMonitor(
             sensor_name='camera_board', db_type=get_config('db.type', default='file'))
         self.do_enable_sensor('camera_board', delay=1)
+
+    def do_load_control_env_board(self, *arg):
+        """ Load the arduino control_board sensors """
+        if self._keep_looping:
+            print_error('The timer loop is already running.')
+            return
+        print("Loading control box environment board sensor")
+        endpoint_url = get_config('environment.control_env_board.url')
+        self.control_env_board = RemoteMonitor(endpoint_url=endpoint_url,
+                                               sensor_name='control_env_board',
+                                               db_type=get_config('db.type', default='file')
+                                               )
+        self.do_enable_sensor('control_env_board', delay=1)
+
+    def do_load_camera_env_board(self, *arg):
+        """ Load the arduino control_board sensors """
+        if self._keep_looping:
+            print_error('The timer loop is already running.')
+            return
+        print("Loading camera box environment board sensor")
+        endpoint_url = get_config('environment.camera_env_board.url')
+        self.camera_env_board = RemoteMonitor(endpoint_url=endpoint_url,
+                                              sensor_name='camera_env_board',
+                                              db_type=get_config('db.type', default='file')
+                                              )
+        self.do_enable_sensor('camera_env_board', delay=1)
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """

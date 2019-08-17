@@ -208,12 +208,8 @@ class Observatory(PanBase):
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
 
-    def set_scheduler(self, scheduler=None):
+    def set_scheduler(self, scheduler):
         """Sets the scheduler for the `Observatory`.
-
-        Note:
-            The default argument of `None` will remove the current scheduler.
-
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
@@ -226,11 +222,8 @@ class Observatory(PanBase):
         else:
             raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
 
-    def set_dome(self, dome=None):
+    def set_dome(self, dome):
         """Set's dome or remove the dome for the `Observatory`.
-        Note:
-            The default argument of `None` will remove the current dome.
-
         Args:
             dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
         """
@@ -243,11 +236,8 @@ class Observatory(PanBase):
         else:
             raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
 
-    def set_mount(self, mount=None):
+    def set_mount(self, mount):
         """Sets the mount for the `Observatory`.
-        Note:
-            The default argument of `None` will remove the current mount.
-
         Args:
             mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
         """
@@ -383,7 +373,7 @@ class Observatory(PanBase):
         if keep_jpgs is None:
             keep_jpgs = self.get_config('observations.keep_jpgs', default=True)
 
-        process_script = 'upload_image_dir.py'
+        process_script = 'upload-image-dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
 
         if self.scheduler is None:
