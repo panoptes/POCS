@@ -43,13 +43,6 @@ def pytest_addoption(parser):
         default=False,
         help="If tests that require solving should be run")
     group.addoption(
-        "--test-cloud-storage",
-        action="store_true",
-        default=False,
-        dest="test_cloud_storage",
-        help="Tests cloud strorage functions." +
-        "Requires $PANOPTES_CLOUD_KEY to be set to path of valid json service key")
-    group.addoption(
         "--test-databases",
         nargs="+",
         default=['file'],
