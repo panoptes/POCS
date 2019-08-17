@@ -130,7 +130,51 @@ def test_get_tracking_correction(mount):
             offset[3] * u.arcsec
         )
         correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
-        print(correction_info)
+
+        dec_info = correction_info['dec']
+        expected_correction = correction[0]
+        if expected_correction is not None:
+            assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
+            assert dec_info[2] == correction[1]
+        else:
+            assert dec_info == expected_correction
+
+        ra_info = correction_info['ra']
+        expected_correction = correction[2]
+        if expected_correction is not None:
+            assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)
+            assert ra_info[2] == correction[3]
+        else:
+            assert ra_info == expected_correction
+
+
+def test_get_tracking_correction_custom(mount):
+
+    min_tracking = 105
+    max_tracking = 950
+
+    offsets = [
+        # HA, ΔRA, ΔDec, Magnitude
+        (2, -13.0881456, 1.4009, 12.154),
+        (2, -13.0881456, -1.4009, 12.154),
+    ]
+
+    corrections = [
+        (None, 'south', 950.0, 'east'),
+        (None, 'north', 950.0, 'east'),
+    ]
+
+    for offset, correction in zip(offsets, corrections):
+        pointing_ha = offset[0]
+        offset_info = OffsetError(
+            offset[1] * u.arcsec,
+            offset[2] * u.arcsec,
+            offset[3] * u.arcsec
+        )
+        correction_info = mount.get_tracking_correction(offset_info,
+                                                        pointing_ha,
+                                                        min_tracking_threshold=min_tracking,
+                                                        max_tracking_threshold=max_tracking)
 
         dec_info = correction_info['dec']
         expected_correction = correction[0]
