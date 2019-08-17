@@ -100,6 +100,12 @@ def test_get_tracking_correction(mount):
         (2, 13.0881456, 1.4009, 12.154),
         (14, -13.0881456, 1.4009, 12.154),
         (14, 13.0881456, 1.4009, 12.154),
+        # Too small
+        (2, -13.0881456, 0.4009, 2.154),
+        (2, 0.0881456, 1.4009, 2.154),
+        # Too big
+        (2, -13.0881456, 99999.4009, 2.154),
+        (2, -99999.0881456, 1.4009, 2.154),
     ]
 
     corrections = [
@@ -108,6 +114,12 @@ def test_get_tracking_correction(mount):
         (103.49, 'south', 966.84, 'west'),
         (103.49, 'north', 966.84, 'east'),
         (103.49, 'north', 966.84, 'west'),
+        # Too small
+        (None, 'south', 966.84, 'east'),
+        (103.49, 'south', None, 'east'),
+        # Too big
+        (99999.9, 'south', 966.84, 'east'),
+        (103.49, 'south', 99999.9, 'east'),
     ]
 
     for offset, correction in zip(offsets, corrections):
@@ -118,12 +130,20 @@ def test_get_tracking_correction(mount):
             offset[3] * u.arcsec
         )
         correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
+        print(correction_info)
 
         dec_info = correction_info['dec']
+        expected_correction = correction[0]
+        if expected_correction is not None:
+            assert dec_info[1] == pytest.approx(expected_correction, rel=1e-2)
+            assert dec_info[2] == correction[1]
+        else:
+            assert dec_info == expected_correction
+
         ra_info = correction_info['ra']
-
-        assert dec_info[1] == pytest.approx(correction[0], rel=1e-2)
-        assert dec_info[2] == correction[1]
-
-        assert ra_info[1] == pytest.approx(correction[2], rel=1e-2)
-        assert ra_info[2] == correction[3]
+        expected_correction = correction[2]
+        if expected_correction is not None:
+            assert ra_info[1] == pytest.approx(expected_correction, rel=1e-2)
+            assert ra_info[2] == correction[3]
+        else:
+            assert ra_info == expected_correction
