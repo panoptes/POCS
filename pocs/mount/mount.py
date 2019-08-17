@@ -76,6 +76,9 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
+        self.min_tracking_threshold = self.mount_config.get('min_tracking_threshold', 100)  # ms
+        self.max_tracking_threshold = self.mount_config.get('max_tracking_threshold', 99999)  # ms
+
         self._movement_speed = ''
 
         self._status_lookup = dict()
@@ -314,8 +317,8 @@ class AbstractMount(PanBase):
     def get_tracking_correction(self,
                                 offset_info,
                                 pointing_ha,
-                                min_tracking_threshold=100,
-                                max_tracking_threshold=99999
+                                min_tracking_threshold=None,
+                                max_tracking_threshold=None
                                 ):
         """Determine the needed tracking corrections from current position.
 
@@ -337,10 +340,10 @@ class AbstractMount(PanBase):
                 the direction of the Dec adjustment.
             min_tracking_threshold (int, optional): Minimum size of tracking
                 correction allowed in milliseconds. Tracking corrections lower
-                than this are ignored. Default 100ms.
+                than this are ignored. Default 100ms from `self.min_tracking_threshold`.
             max_tracking_threshold (int, optional): Maximum size of tracking
                 correction allowed in milliseconds. Tracking corrections higher
-                than this are ignored. Default 99999ms.
+                than this are ignored. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
             dict: Offset corrections for each axis as needed ::
@@ -356,6 +359,12 @@ class AbstractMount(PanBase):
             pier_side = 'west'
 
         self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
+
+        if min_tracking_threshold is None:
+            min_tracking_threshold = self.min_tracking_threshold
+
+        if max_tracking_threshold is None:
+            max_tracking_threshold = self.max_tracking_threshold
 
         axis_corrections = {
             'dec': None,
