@@ -2,7 +2,6 @@ import os
 import subprocess
 from collections import OrderedDict
 from datetime import datetime
-from glob import glob
 
 from astroplan import Observer
 from astropy import units as u
@@ -13,12 +12,11 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.dome import AbstractDome
-from pocs.mount import AbstractMount
 from pocs.images import Image
+from pocs.mount import AbstractMount
 from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import load_module
 
 
 class Observatory(PanBase):
@@ -27,7 +25,7 @@ class Observatory(PanBase):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
-        dates, mount, cameras, and weather station
+        dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         super().__init__(*args, **kwargs)
         self.logger.info('Initializing observatory')
@@ -39,6 +37,7 @@ class Observatory(PanBase):
         self.observer = None
         self._setup_location()
 
+        self.logger.info('\tAdding mount to Observatory.')
         self.mount = mount
         self.cameras = OrderedDict()
 
@@ -50,7 +49,9 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
+        self.logger.info('\tAdding dome to Observatory.')
         self.dome = dome
+        self.logger.info('\tAdding scheduler to Observatory.')
         self.scheduler = scheduler
         self.current_offset_info = None
 

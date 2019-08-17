@@ -67,7 +67,7 @@ def test_bad_site(simulator, config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-def test_can_observe(config, caplog):
+def test_cannot_observe(config, caplog):
     conf = config.copy()
     obs = Observatory(config=conf)
     assert obs.can_observe is False
