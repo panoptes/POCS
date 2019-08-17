@@ -11,7 +11,7 @@
 #         an official id. Update pocs_local.yaml with offical name once received.
 ################################################################################
 name: Generic PANOPTES Unit
-pan_id: PAN000   
+pan_id: PAN000
 
 location:
     name: Mauna Loa Observatory
@@ -32,7 +32,7 @@ directories:
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-db: 
+db:
     name: panoptes
     type: file
 scheduler:
@@ -48,6 +48,8 @@ mount:
         timeout: 0.
         baudrate: 9600
     non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
 pointing:
     auto_correct: False
     threshold: 500 # arcseconds ~ 50 pixels
@@ -68,7 +70,7 @@ messaging:
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
-# recorded by a single camera, with no slewing of the mount during the sequence; 
+# recorded by a single camera, with no slewing of the mount during the sequence;
 # there may be tracking adjustments during the observation.
 #
 # An example folder structure would be:
@@ -101,14 +103,14 @@ panoptes_network:
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
-        
+
 #Enable to output POCS messages to social accounts
 # social_accounts:
 #     twitter:
 #         consumer_key: [your_consumer_key]
 #         consumer_secret: [your_consumer_secret]
 #         access_token: [your_access_token]
-#         access_token_secret: [your_access_token_secret] 
+#         access_token_secret: [your_access_token_secret]
 #     slack:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
