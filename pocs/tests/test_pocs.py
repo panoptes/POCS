@@ -76,12 +76,12 @@ def observatory(config_with_simulated_mount, db_type, cameras, scheduler, dome, 
 
 
 @pytest.fixture(scope='function')
-def pocs(config_with_simulated_mount, observatory):
+def pocs(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
                 run_once=True,
-                config=config_with_simulated_mount,
+                config=config,
                 ignore_local_config=True)
 
     yield pocs
@@ -101,6 +101,25 @@ def pocs_with_dome(config_with_simulated_dome, db_type, dome):
     pocs = POCS(observatory,
                 run_once=True,
                 config=config_with_simulated_dome,
+                ignore_local_config=True)
+
+    yield pocs
+
+    pocs.power_down()
+
+
+@pytest.fixture(scope='function')
+def pocs_with_mount(config_with_simulated_mount, db_type, mount):
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    observatory = Observatory(config=config_with_simulated_mount,
+                              mount=mount,
+                              ignore_local_config=True,
+                              db_type=db_type
+                              )
+
+    pocs = POCS(observatory,
+                run_once=True,
+                config=config_with_simulated_mount,
                 ignore_local_config=True)
 
     yield pocs
@@ -166,21 +185,21 @@ def test_simple_simulator(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_weather_and_dark_simulator(pocs):
-    pocs.initialize()
+def test_is_weather_and_dark_simulator(pocs_with_mount):
+    pocs_with_mount.initialize()
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    assert pocs.is_dark() is True
+    assert pocs_with_mount.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs.is_dark() is True
+    assert pocs_with_mount.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    assert pocs.is_dark() is True
+    assert pocs_with_mount.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs.is_dark() is False
+    assert pocs_with_mount.is_dark() is False
 
-    assert pocs.is_weather_safe() is True
+    assert pocs_with_mount.is_weather_safe() is True
 
 
 def test_wait_for_events_timeout(pocs):
@@ -236,19 +255,19 @@ def test_wait_for_events_timeout(pocs):
     t2.cancel()
 
 
-def test_is_weather_safe_no_simulator(pocs):
-    pocs.initialize()
+def test_is_weather_safe_no_simulator(pocs_with_mount):
+    pocs_with_mount.initialize()
 
     # Set a specific time
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     # Insert a dummy weather record
-    pocs.db.insert_current('weather', {'safe': True})
-    assert pocs.is_weather_safe() is True
+    pocs_with_mount.db.insert_current('weather', {'safe': True})
+    assert pocs_with_mount.is_weather_safe() is True
 
     # Set a time 181 seconds later
     os.environ['POCSTIME'] = '2016-08-13 23:05:01'
-    assert pocs.is_weather_safe() is False
+    assert pocs_with_mount.is_weather_safe() is False
 
 
 def wait_for_message(sub, type=None, attr=None, value=None):
