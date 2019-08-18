@@ -57,12 +57,12 @@ def dome(config):
 
 
 @pytest.fixture(scope='function')
-def mount(config):
-    return create_mount_from_config(config)
+def mount(config_with_simulated_mount):
+    return create_mount_from_config(config_with_simulated_mount)
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type, cameras, scheduler, dome):
+def observatory(config, db_type, cameras, scheduler, dome, mount):
     observatory = Observatory(
         config=config,
         cameras=cameras,
