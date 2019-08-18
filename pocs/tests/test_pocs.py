@@ -76,12 +76,12 @@ def observatory(config, db_type, cameras, scheduler, dome, mount):
 
 
 @pytest.fixture(scope='function')
-def pocs(config, observatory):
+def pocs(config_with_simulated_mount, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
                 run_once=True,
-                config=config,
+                config=config_with_simulated_mount,
                 ignore_local_config=True)
 
     yield pocs
