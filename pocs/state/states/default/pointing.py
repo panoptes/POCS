@@ -1,3 +1,4 @@
+import numpy as np
 from pocs.images import Image
 
 MAX_EXTRA_TIME = 60  # second
@@ -67,14 +68,15 @@ def on_enter(event_data):
                 pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
                 pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
 
-                separation = pointing_image.pointing_error.magnitude.value
+                delta_ra = pointing_image.pointing_error.delta_ra.value
+                delta_dec = pointing_image.pointing_error.delta_dec.value
 
                 if should_correct is False:
                     pocs.logger.info("Pointing correction turned off, done with pointing.")
                     break
 
                 # Correct the pointing
-                if separation > pointing_threshold:
+                if np.abs(delta_ra) > pointing_threshold or np.abs(delta_dec) > pointing_threshold:
                     pocs.say("I'm still a bit away from the field so I'm going to get closer.")
 
                     # Tell the mount we are at the field, which is the center
@@ -93,6 +95,9 @@ def on_enter(event_data):
                             pocs.logger.debug("Slewing back to target")
                             pocs.observatory.mount.set_target_coordinates(observation.field)
                             pocs.observatory.mount.slew_to_target()
+                            while not pocs.observatory.mount.is_tracking:
+                                pocs.logger.debug("Slewing to target")
+                                pocs.sleep()
                 else:
                     pocs.logger.info("Separation is within pointing threshold.")
                     break
