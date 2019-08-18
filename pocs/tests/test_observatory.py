@@ -18,8 +18,9 @@ from pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture
-def observatory(config, images_dir):
+def observatory(config_with_simulated_mount, images_dir):
     """Return a valid Observatory instance with a specific config."""
+    config = config_with_simulated_mount
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
     dome = create_dome_from_config(config)
