@@ -78,9 +78,11 @@ class PanBase(object):
 
         for item in items_to_check:
             config_item = temp_config.get(item, None)
+            # Warn if not found.
             if config_item is None:
                 self.logger.critical(f'Problem looking up {item} in _check_config')
-            if len(config_item) == 0:
+            # Error if not found or empty.
+            if config_item is None or len(config_item) == 0:
                 sys.exit(f'{item} must be specified in config, exiting')
 
     def __getstate__(self):  # pragma: no cover
