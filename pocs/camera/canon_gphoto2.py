@@ -1,11 +1,12 @@
 import os
 import subprocess
 
-from astropy import units as u
 from threading import Event
 from threading import Timer
 
 from pocs.utils import current_time
+from pocs.utils import get_quantity_value
+from pocs.utils import CountdownTimer
 from pocs.utils import error
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
@@ -17,6 +18,10 @@ class Camera(AbstractGPhotoCamera):
         kwargs['readout_time'] = 6.0
         kwargs['file_extension'] = 'cr2'
         super().__init__(*args, **kwargs)
+
+        # Hold on to the exposure process for polling.
+        self._exposure_proc = None
+
         self.logger.debug("Connecting GPhoto2 camera")
         self.connect()
         self.logger.debug("{} connected".format(self.name))
@@ -91,7 +96,7 @@ class Camera(AbstractGPhotoCamera):
             threading.Event: An event to be set when the image is done processing
         """
         # To be used for marking when exposure is complete (see `process_exposure`)
-        camera_event = Event()
+        observation_event = Event()
 
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
@@ -99,7 +104,7 @@ class Camera(AbstractGPhotoCamera):
                                                                          *args,
                                                                          **kwargs)
 
-        proc = self.take_exposure(seconds=exptime, filename=file_path)
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -110,11 +115,12 @@ class Camera(AbstractGPhotoCamera):
 
         # Process the image after a set amount of time
         wait_time = exptime + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
+
+        t = Timer(wait_time, self.process_exposure, (metadata, observation_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
-        return camera_event
+        return observation_event
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
@@ -131,22 +137,20 @@ class Camera(AbstractGPhotoCamera):
         """
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
+        # Make sure we have just the value, no units.
+        seconds = get_quantity_value(seconds)
+
         run_cmd = [script_path, self.port, str(seconds), filename]
 
         # Take Picture
         try:
-            proc = subprocess.Popen(run_cmd,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    universal_newlines=True)
+            self._is_exposing = True
+            self._exposure_proc = subprocess.Popen(run_cmd,
+                                                   stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE,
+                                                   universal_newlines=True)
         except error.InvalidCommand as e:
             self.logger.warning(e)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Still waiting for camera")
-            proc.kill()
-            outs, errs = proc.communicate(timeout=10)
-            if errs is not None:
-                self.logger.warning(errs)
         finally:
             readout_args = (filename, header)
             return readout_args
@@ -156,3 +160,37 @@ class Camera(AbstractGPhotoCamera):
         self.logger.debug("Converting CR2 -> FITS: {}".format(cr2_path))
         fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
         return fits_path
+
+    def _process_fits(self, file_path, info):
+        """
+        Add FITS headers from info the same as images.cr2_to_fits()
+        """
+        file_path = file_path.replace('.cr2', '.fits')
+        return super()._process_fits(file_path, info)
+
+    def _poll_exposure(self, readout_args):
+        timer = CountdownTimer(duration=self._timeout)
+        try:
+            try:
+                # See if the command has finished.
+                while self._exposure_proc.poll() is None:
+                    # Sleep if not done yet.
+                    timer.sleep()
+            except subprocess.TimeoutExpired:
+                self.logger.warning(f'Timeout on exposure process for {self.name}')
+                self._exposure_proc.kill()
+                outs, errs = self._exposure_proc.communicate(timeout=10)
+                if errs is not None and errs > '':
+                    self.logger.error(f'Camera exposure errors: {errs}')
+        except (RuntimeError, error.PanError) as err:
+            # Error returned by driver at some point while polling
+            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            raise err
+        else:
+            # Camera type specific readout function
+            self._readout(*readout_args)
+        finally:
+            self.logger.debug(f'Setting exposure event for {self.name}')
+            self._is_exposing = False
+            self._exposure_proc = None
+            self._exposure_event.set()  # Make sure this gets set regardless of readout errors

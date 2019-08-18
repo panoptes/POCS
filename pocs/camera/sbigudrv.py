@@ -9,8 +9,6 @@ ctypes.Structures, plus a class (SBIGDriver) to load the library
 and call the single command function (SBIGDriver._send_command()).
 """
 import ctypes
-from ctypes.util import find_library
-from warnings import warn
 import time
 import threading
 import enum

@@ -17,7 +17,7 @@ class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
-        super().__init__(name, *args, **kwargs)
+        super().__init__(name=name, *args, **kwargs)
         self.connect()
         self.logger.info("{} initialised".format(self))
 
