@@ -12,12 +12,19 @@ import pytest
 import subprocess
 import time
 
+print("Work please before")
+from astropy.utils import iers
+iers.IERS_A_URL = 'file:///home/rabbit/Downloads/finals.all'
+iers.iers_auto_url = 'file:///home/rabbit/Downloads/finals.all'
+iers.iers_auto_url_mirror = 'file:///home/rabbit/Downloads/finals.all'
+print("Work please after")
 from pocs import hardware
 from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
+
 _can_connect_to_mongo = None
 _all_databases = ['mongo', 'file', 'memory']
 
