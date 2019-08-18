@@ -69,7 +69,6 @@ def observatory(config, db_type, cameras, scheduler, dome):
         mount=mount,
         scheduler=scheduler,
         dome=dome,
-        simulator=['all'],
         ignore_local_config=True,
         db_type=db_type
     )
@@ -93,9 +92,7 @@ def pocs(config, observatory):
 @pytest.fixture(scope='function')
 def pocs_with_dome(config_with_simulated_dome, db_type, dome):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    simulator = hardware.get_all_names(without=['dome'])
     observatory = Observatory(config=config_with_simulated_dome,
-                              simulator=simulator,
                               dome=dome,
                               ignore_local_config=True,
                               db_type=db_type
@@ -171,21 +168,18 @@ def test_simple_simulator(pocs):
 
 def test_is_weather_and_dark_simulator(pocs):
     pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is True
 
-    pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is False
 
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     assert pocs.is_weather_safe() is True
 
 
@@ -244,7 +238,6 @@ def test_wait_for_events_timeout(pocs):
 
 def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
-    pocs.config['simulator'] = ['camera', 'mount', 'night']
 
     # Set a specific time
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
@@ -282,8 +275,6 @@ def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
 
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
-        # Remove weather simulator, else it would always be safe.
-        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=5)
@@ -337,7 +328,6 @@ def test_unsafe_park(pocs):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'power']
     assert pocs.is_safe() is False
 
     assert pocs.state == 'parking'
@@ -352,8 +342,6 @@ def test_no_ac_power(pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
 
-    # Remove 'power' from simulator
-    pocs.config['simulator'].remove('power')
     pocs.initialize()
 
     # With simulator removed the power should fail
@@ -410,7 +398,6 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 
     pocs.initialize()
@@ -422,7 +409,6 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
