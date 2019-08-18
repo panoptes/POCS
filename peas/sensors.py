@@ -1,9 +1,9 @@
+import sys
+import logging
 
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
-
-import sys
 
 from pocs.utils.database import PanDB
 from pocs.utils.config import load_config
@@ -19,38 +19,49 @@ class ArduinoSerialMonitor(object):
     Values are updated in the mongo db.
     """
 
-    def __init__(self, auto_detect=False, *args, **kwargs):
+    def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):
         self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
+        # Sensors default to INFO level
+        self.logger.setLevel(logging.INFO)
 
-        assert 'environment' in self.config
-        assert type(self.config['environment']) is dict, \
-            self.logger.warning('Environment config variable not set correctly. No sensors listed')
-
+        # Setup the DB either from kwargs or config, default to 'file' type.
         self.db = None
+        db_type = self.config['db'].get('type', 'file')
+        if 'db_type' in kwargs:
+            self.logger.info(f"Setting up {kwargs['db_type']} type database")
+            db_type = kwargs.get('db_type', db_type)
+
+        self.db = PanDB(db_type=db_type)
+
         self.messaging = None
 
         # Store each serial reader
         self.serial_readers = dict()
 
+        # Don't allow sensor_name and auto_detect.
+        if sensor_name is not None:
+            auto_detect = False
+
         if auto_detect or self.config['environment'].get('auto_detect', False):
             self.logger.debug('Performing auto-detect')
             for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
-                self.logger.info('Found name "{}" on {}', sensor_name, serial_reader.name)
+                self.logger.info(f'Found name "{sensor_name}" on {serial_reader.name}')
                 self.serial_readers[sensor_name] = {
                     'reader': serial_reader,
                     'port': serial_reader.name,
                 }
         else:
-            # Try to connect to a range of ports
-            for sensor_name in self.config['environment'].keys():
-                try:
-                    port = self.config['environment'][sensor_name]['serial_port']
-                except TypeError:
-                    continue
-                except KeyError:
+            # Try to connect to a range of ports.
+            for name, sensor_config in self.config.get('environment', dict()).items():
+                # Skip unless name matches.
+                if name != sensor_name:
                     continue
 
+                if 'serial_port' not in sensor_config:
+                    continue
+
+                port = sensor_config['serial_port']
                 serial_reader = self._connect_serial(port)
                 self.serial_readers[sensor_name] = {
                     'reader': serial_reader,
@@ -58,15 +69,17 @@ class ArduinoSerialMonitor(object):
                 }
 
     def _connect_serial(self, port):
-        self.logger.debug('Attempting to connect to serial port: {}'.format(port))
+        self.logger.info(f'Attempting to connect to serial port: {port}')
         serial_reader = SerialData(port=port, baudrate=9600)
-        try:
-            serial_reader.connect()
-            self.logger.debug('Connected to {}', port)
-            return serial_reader
-        except Exception:
-            self.logger.warning('Could not connect to port: {}'.format(port))
-            return None
+        if serial_reader.is_connected is False:
+            try:
+                serial_reader.connect()
+            except Exception:
+                self.logger.warning(f'Could not connect to port: {port}')
+                return None
+
+        self.logger.info(f'Connected to {port}')
+        return serial_reader
 
     def disconnect(self):
         for sensor_name, reader_info in self.serial_readers.items():
@@ -75,7 +88,11 @@ class ArduinoSerialMonitor(object):
 
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
-            self.messaging = PanMessaging.create_publisher(6510)
+            try:
+                msg_port = self.config['messaging']['msg_port']
+                self.messaging = PanMessaging.create_publisher(msg_port)
+            except KeyError:
+                return
 
         self.messaging.send_message(topic, msg)
 
@@ -103,30 +120,28 @@ class ArduinoSerialMonitor(object):
         for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
-            self.logger.debug('ArduinoSerialMonitor.capture reading sensor {}', sensor_name)
+            self.logger.debug(f'ArduinoSerialMonitor.capture reading sensor {sensor_name}')
             try:
                 reading = reader.get_and_parse_reading()
                 if not reading:
-                    self.logger.debug('Unable to get reading from {}', sensor_name)
+                    self.logger.debug(f'Unable to get reading from {sensor_name}')
                     continue
-                self.logger.debug('Got sensor_value from {}', sensor_name)
+
+                self.logger.debug(f'Got sensor_value from {sensor_name}')
+                self.logger.debug(f'{sensor_name}: {reading!r}')
+
                 time_stamp, data = reading
                 data['date'] = time_stamp
                 sensor_data[sensor_name] = data
                 if send_message:
                     self.send_message({'data': data}, topic='environment')
 
-                # Make a separate power entry
-                if 'power' in data:
-                    self.db.insert_current('power', data['power'])
+                # Add values to db for each sensor.
+                if store_result and len(sensor_data) > 0:
+                    self.db.insert_current(sensor_name, data)
 
             except Exception as e:
                 self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
-
-        if store_result and len(sensor_data) > 0:
-            if self.db is None:
-                self.db = PanDB()
-            self.db.insert_current('environment', sensor_data)
 
         return sensor_data
 
