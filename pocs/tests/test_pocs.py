@@ -62,9 +62,9 @@ def mount(config_with_simulated_mount):
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db_type, cameras, scheduler, dome, mount):
+def observatory(config_with_simulated_mount, db_type, cameras, scheduler, dome, mount):
     observatory = Observatory(
-        config=config,
+        config=config_with_simulated_mount,
         cameras=cameras,
         mount=mount,
         scheduler=scheduler,
