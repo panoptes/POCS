@@ -77,7 +77,7 @@ class PanBase(object):
         ]
 
         for item in items_to_check:
-            config_item = self.config.get(item, None)
+            config_item = temp_config.get(item, None)
             if config_item is None:
                 self.logger.critical(f'Problem looking up {item} in _check_config')
             if len(config_item) == 0:
