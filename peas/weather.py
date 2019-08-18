@@ -18,9 +18,9 @@ from pocs.utils.messaging import PanMessaging
 from .PID import PID
 
 
-def get_mongodb():
+def get_db(db_type='file'):
     from pocs.utils.database import PanDB
-    return PanDB()
+    return PanDB(db_type=db_type)
 
 
 def movingaverage(interval, window_size):
@@ -101,7 +101,7 @@ class AAGCloudSensor(object):
 
     """
 
-    def __init__(self, serial_address=None, store_result=True):
+    def __init__(self, serial_address=None, store_result=True, db_type='file'):
         self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
 
@@ -112,7 +112,7 @@ class AAGCloudSensor(object):
 
         self.db = None
         if store_result:
-            self.db = get_mongodb()
+            self.db = get_db(db_type=db_type)
 
         self.messaging = None
 
@@ -248,18 +248,6 @@ class AAGCloudSensor(object):
                 self.serial_number = ''
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
-
-    def get_reading(self):
-        """ Calls commands to be performed each time through the loop """
-        weather_data = dict()
-
-        if self.db is None:
-            self.db = get_mongodb()
-        else:
-            weather_data = self.update_weather()
-            self.calculate_and_set_PWM()
-
-        return weather_data
 
     def send(self, send, delay=0.100):
 
@@ -606,7 +594,12 @@ class AAGCloudSensor(object):
 
     def send_message(self, msg, topic='weather'):
         if self.messaging is None:
-            self.messaging = PanMessaging.create_publisher(6510)
+            try:
+                msg_port = self.config['messaging']['msg_port']
+            except KeyError:
+                return
+
+            self.messaging = PanMessaging.create_publisher(msg_port)
 
         self.messaging.send_message(topic, msg)
 

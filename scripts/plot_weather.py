@@ -5,9 +5,11 @@ import os
 import pandas as pd
 import sys
 import warnings
+from contextlib import suppress
 
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
+from dateutil.parser import parse as date_parser
 
 from astropy.table import Table
 from astropy.time import Time
@@ -17,9 +19,8 @@ from astropy.coordinates import EarthLocation
 
 from pocs.utils.config import load_config
 from pocs.utils import serializers as json_util
+from pocs.utils import error
 
-import matplotlib as mpl
-mpl.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
 from matplotlib.dates import HourLocator
@@ -60,8 +61,7 @@ class WeatherPlotter(object):
 
         else:
             self.today = False
-            self.date = dt.strptime('{} 23:59:59'.format(date_string),
-                                    '%Y%m%dUT %H:%M:%S')
+            self.date = date_parser(f'{date_string} 23:59:59')
             self.date_string = date_string
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
@@ -142,8 +142,12 @@ class WeatherPlotter(object):
                 weather_entries = list()
                 with open(data_file) as df:
                     for entry in df:
-                        rec0 = json_util.loads(entry)
-                        weather_entries.append({**rec0['data']})
+                        try:
+                            rec0 = json_util.loads(entry)
+                            weather_entries.append({**rec0['data']})
+                        except Exception:
+                            # Skip invalid entries.
+                            pass
 
                 table = pd.DataFrame(weather_entries)
                 # Fix bad dtype conversion
@@ -302,9 +306,9 @@ class WeatherPlotter(object):
         print('Plot Temperature Difference vs. Time')
         td_axes = plt.axes(self.plot_positions[1][0])
 
-        sky_temp_C = self.table['sky_temp_C']
-        ambient_temp_C = self.table['ambient_temp_C']
-        sky_condition = self.table['sky_condition']
+        sky_temp_C = self.table['sky_temp_C'].filled(0)
+        ambient_temp_C = self.table['ambient_temp_C'].filled(0)
+        sky_condition = self.table['sky_condition'].filled(0)
 
         temp_diff = np.array(sky_temp_C) - np.array(ambient_temp_C)
 
@@ -385,10 +389,10 @@ class WeatherPlotter(object):
         print('Plot Wind Speed vs. Time')
         w_axes = plt.axes(self.plot_positions[2][0])
 
-        wind_speed = self.table['wind_speed_KPH']
+        wind_speed = self.table['wind_speed_KPH'].filled(0)
         wind_mavg = moving_average(wind_speed, 9)
         matime, wind_mavg = moving_averagexy(self.time, wind_speed, 9)
-        wind_condition = self.table['wind_condition']
+        wind_condition = self.table['wind_condition'].filled(0)
 
         w_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.5,
                          markersize=2, markeredgewidth=0,
@@ -507,8 +511,8 @@ class WeatherPlotter(object):
         print('Plot Rain Frequency vs. Time')
         rf_axes = plt.axes(self.plot_positions[3][0])
 
-        rf_value = self.table['rain_frequency']
-        rain_condition = self.table['rain_condition']
+        rf_value = self.table['rain_frequency'].filled(0)
+        rain_condition = self.table['rain_condition'].filled(0)
 
         rf_axes.plot_date(self.time, rf_value, 'ko-', label='Rain',
                           markersize=2, markeredgewidth=0,
