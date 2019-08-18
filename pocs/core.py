@@ -53,10 +53,10 @@ class POCS(PanStateMachine, PanBase):
             observatory,
             state_machine_file=None,
             messaging=False,
-            **kwargs):
+            *args, **kwargs):
 
         # Explicitly call the base classes in the order we want
-        PanBase.__init__(self, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         assert isinstance(observatory, Observatory)
 
@@ -77,6 +77,7 @@ class POCS(PanStateMachine, PanBase):
         if state_machine_file is None:
             state_machine_file = self.config.get('state_machine', 'simple_state_table')
 
+        self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Add observatory object, which does the bulk of the work
@@ -226,8 +227,7 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info(
-                "Shutting down {}, please be patient and allow for exit.", self.name)
+            self.logger.info(f'Shutting down {self.name}, please be patient and allow for exit.')
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -376,6 +376,9 @@ class POCS(PanStateMachine, PanBase):
         # Get current weather readings from database
         try:
             record = self.db.get_current('weather')
+            if record is None:
+                return False
+
             is_safe = record['data'].get('safe', False)
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
@@ -391,7 +394,7 @@ class POCS(PanStateMachine, PanBase):
         except Exception as e:  # pragma: no cover
             self.logger.error("Error checking weather: {}", e)
         else:
-            if age > stale:
+            if age >= stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
                 is_safe = False
 
@@ -439,7 +442,14 @@ class POCS(PanStateMachine, PanBase):
         # Get current power readings from database
         try:
             record = self.db.get_current('power')
-            has_power = bool(record['data'].get('main', False))
+            if record is None:
+                raise KeyError('power')
+
+            # Legacy control boards have `main`.
+            has_power = False  # Assume not
+            for power_key in ['main', 'mains']:
+                with suppress(KeyError):
+                    has_power = bool(record['data'][power_key])
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
@@ -637,7 +647,7 @@ class POCS(PanStateMachine, PanBase):
                 msg_obj = q.get_nowait()
                 call_method = msg_obj.get('message', '')
                 # Lookup and call the method
-                self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                self.logger.critical(f'Message received: {queue_type} {call_method}')
                 cmd_dispatch[queue_type][call_method]()
             except queue.Empty:
                 break
@@ -649,12 +659,12 @@ class POCS(PanStateMachine, PanBase):
                 break
 
     def _interrupt_and_park(self):
-        self.logger.info('Park interrupt received')
+        self.logger.critical('Park interrupt received')
         self._interrupted = True
         self.park()
 
     def _interrupt_and_shutdown(self):
-        self.logger.warning('Shutdown command received')
+        self.logger.critical('Shutdown command received')
         self._interrupted = True
         self.power_down()
 
@@ -670,13 +680,11 @@ class POCS(PanStateMachine, PanBase):
                 pass
 
         cmd_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(
-                cmd_port,), name='CmdForwarder')
+            target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
         msg_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(
-                msg_port,), name='MsgForwarder')
+            target=create_forwarder, args=(msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True

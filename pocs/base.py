@@ -70,15 +70,18 @@ class PanBase(object):
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
+        items_to_check = [
+            'directories',
+            'mount',
+            'state_machine'
+        ]
 
-        if 'directories' not in temp_config:
-            sys.exit('directories must be specified in config')
-
-        if 'mount' not in temp_config:
-            sys.exit('Mount must be specified in config')
-
-        if 'state_machine' not in temp_config:
-            sys.exit('State Table must be specified in config')
+        for item in items_to_check:
+            config_item = self.config.get(item, None)
+            if config_item is None:
+                self.logger.critical(f'Problem looking up {item} in _check_config')
+            if len(config_item) == 0:
+                sys.exit(f'{item} must be specified in config, exiting')
 
     def __getstate__(self):  # pragma: no cover
         d = dict(self.__dict__)
