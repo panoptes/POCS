@@ -127,6 +127,26 @@ def pocs_with_mount(config_with_simulated_mount, db_type, mount):
     pocs.power_down()
 
 
+@pytest.fixture(scope='function')
+def pocs_with_mount_and_dome(config_with_simulated_mount_and_dome, db_type, mount, dome):
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    observatory = Observatory(config=config_with_simulated_mount_and_dome,
+                              mount=mount,
+                              dome=dome,
+                              ignore_local_config=True,
+                              db_type=db_type
+                              )
+
+    pocs = POCS(observatory,
+                run_once=True,
+                config=config_with_simulated_mount_and_dome,
+                ignore_local_config=True)
+
+    yield pocs
+
+    pocs.power_down()
+
+
 def test_bad_pandir_env(pocs):
     pandir = os.getenv('PANDIR')
     os.environ['PANDIR'] = '/foo/bar'
@@ -185,21 +205,21 @@ def test_simple_simulator(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_weather_and_dark_simulator(pocs_with_mount):
-    pocs_with_mount.initialize()
+def test_is_weather_and_dark_simulator(pocs_with_mount_and_dome):
+    pocs_with_mount_and_dome.initialize()
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    assert pocs_with_mount.is_dark() is True
+    assert pocs_with_mount_and_dome.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs_with_mount.is_dark() is True
+    assert pocs_with_mount_and_dome.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    assert pocs_with_mount.is_dark() is True
+    assert pocs_with_mount_and_dome.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs_with_mount.is_dark() is False
+    assert pocs_with_mount_and_dome.is_dark() is False
 
-    assert pocs_with_mount.is_weather_safe() is True
+    assert pocs_with_mount_and_dome.is_weather_safe() is True
 
 
 def test_wait_for_events_timeout(pocs):
@@ -255,19 +275,19 @@ def test_wait_for_events_timeout(pocs):
     t2.cancel()
 
 
-def test_is_weather_safe_no_simulator(pocs_with_mount):
-    pocs_with_mount.initialize()
+def test_is_weather_safe_no_simulator(pocs_with_mount_and_dome):
+    pocs_with_mount_and_dome.initialize()
 
     # Set a specific time
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     # Insert a dummy weather record
-    pocs_with_mount.db.insert_current('weather', {'safe': True})
-    assert pocs_with_mount.is_weather_safe() is True
+    pocs_with_mount_and_dome.db.insert_current('weather', {'safe': True})
+    assert pocs_with_mount_and_dome.is_weather_safe() is True
 
     # Set a time 181 seconds later
     os.environ['POCSTIME'] = '2016-08-13 23:05:01'
-    assert pocs_with_mount.is_weather_safe() is False
+    assert pocs_with_mount_and_dome.is_weather_safe() is False
 
 
 def wait_for_message(sub, type=None, attr=None, value=None):
@@ -286,7 +306,7 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         return topic, msg_obj
 
 
-# def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
+    # def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
 #     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 #
 #     # Make sure DB is clear for current weather
@@ -335,56 +355,56 @@ def wait_for_message(sub, type=None, attr=None, value=None):
 #     assert pocs_thread.is_alive() is False
 
 
-def test_unsafe_park(pocs):
-    pocs.initialize()
-    assert pocs.is_initialized is True
+def test_unsafe_park(pocs_with_mount_and_dome):
+    pocs_with_mount_and_dome.initialize()
+    assert pocs_with_mount_and_dome.is_initialized is True
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    assert pocs.state == 'sleeping'
-    pocs.get_ready()
-    assert pocs.state == 'ready'
-    pocs.schedule()
-    assert pocs.state == 'scheduling'
+    assert pocs_with_mount_and_dome.state == 'sleeping'
+    pocs_with_mount_and_dome.get_ready()
+    assert pocs_with_mount_and_dome.state == 'ready'
+    pocs_with_mount_and_dome.schedule()
+    assert pocs_with_mount_and_dome.state == 'scheduling'
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs.is_safe() is False
+    assert pocs_with_mount_and_dome.is_safe() is False
 
-    assert pocs.state == 'parking'
-    pocs.set_park()
-    pocs.clean_up()
-    pocs.goto_sleep()
-    assert pocs.state == 'sleeping'
-    pocs.power_down()
+    assert pocs_with_mount_and_dome.state == 'parking'
+    pocs_with_mount_and_dome.set_park()
+    pocs_with_mount_and_dome.clean_up()
+    pocs_with_mount_and_dome.goto_sleep()
+    assert pocs_with_mount_and_dome.state == 'sleeping'
+    pocs_with_mount_and_dome.power_down()
 
 
-def test_no_ac_power(pocs):
+def test_no_ac_power(pocs_with_mount_and_dome):
     # Simulator makes AC power safe
-    assert pocs.has_ac_power() is True
+    assert pocs_with_mount_and_dome.has_ac_power() is True
 
-    pocs.initialize()
+    pocs_with_mount_and_dome.initialize()
 
     # With simulator removed the power should fail
-    assert pocs.has_ac_power() is False
+    assert pocs_with_mount_and_dome.has_ac_power() is False
 
     for v in [True, 12.4, 0., False]:
         has_power = bool(v)
 
         # Add a fake power entry in data base
-        pocs.db.insert_current('power', {'main': v})
+        pocs_with_mount_and_dome.db.insert_current('power', {'main': v})
 
         # Check for safe entry in database
-        assert pocs.has_ac_power() == has_power
-        assert pocs.is_safe() == has_power
+        assert pocs_with_mount_and_dome.has_ac_power() == has_power
+        assert pocs_with_mount_and_dome.is_safe() == has_power
 
         # Check for stale entry in database
-        assert pocs.has_ac_power(stale=0.1) is False
+        assert pocs_with_mount_and_dome.has_ac_power(stale=0.1) is False
 
         # But double check it still matches longer entry
-        assert pocs.has_ac_power() == has_power
+        assert pocs_with_mount_and_dome.has_ac_power() == has_power
 
         # Remove entry and try again
-        pocs.db.clear_current('power')
-        assert pocs.has_ac_power() is False
+        pocs_with_mount_and_dome.db.clear_current('power')
+        assert pocs_with_mount_and_dome.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):
@@ -399,8 +419,8 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
-def test_power_down_dome_while_running(pocs_with_dome):
-    pocs = pocs_with_dome
+def test_power_down_dome_while_running(pocs_with_mount_and_dome):
+    pocs = pocs_with_mount_and_dome
     assert pocs.connected is True
     assert pocs.observatory.has_dome
     assert not pocs.observatory.dome.is_connected
