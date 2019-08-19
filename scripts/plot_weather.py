@@ -63,11 +63,11 @@ class WeatherPlotter(object):
 
         else:
             self.today = False
-            self.date = date_parser('{date_string} 23:59:59')
+            self.date = date_parser(f'{date_string} 23:59:59')
             self.date_string = date_string
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
-        logger.info(f'Creating weather plotter for {date_string}')
+        logger.info(f'Creating weather plotter for {self.date_string}')
 
         self.location = create_location_from_config(config)
         self.twilights = self.get_twilights()
@@ -94,12 +94,12 @@ class WeatherPlotter(object):
         # Plot a day's weather
         # -------------------------------------------------------------------------
         start_time = f'{self.start:{self.date_format}}'
-        start_hour = f'{self.lhstart:{self.date_format}}'
         end_time = f'{self.end:{self.date_format}}'
-        end_hour = f'{self.lhend:{self.date_format}}'
 
         logger.debug(f'Setting up plot for time range: {start_time} to {end_time}')
         if self.today:
+            start_hour = f'{self.lhstart:{self.date_format}}'
+            end_hour = f'{self.lhend:{self.date_format}}'
             logger.debug(f'Will generate last hour plot: {start_hour} to {end_hour}')
 
         self.dpi = self.kwargs.get('dpi', 72)
