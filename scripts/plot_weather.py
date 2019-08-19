@@ -5,7 +5,6 @@ import os
 import pandas as pd
 import sys
 import warnings
-from contextlib import suppress
 
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
@@ -19,7 +18,6 @@ from astropy.coordinates import EarthLocation
 
 from pocs.utils.config import load_config
 from pocs.utils import serializers as json_util
-from pocs.utils import error
 
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
@@ -97,7 +95,7 @@ class WeatherPlotter(object):
                 self.lhstart.isoformat(), self.lhend.isoformat()))
         self.dpi = self.kwargs.get('dpi', 72)
         self.fig = plt.figure(figsize=(20, 12), dpi=self.dpi)
-#         self.axes = plt.gca()
+
         self.hours = HourLocator(byhour=range(24), interval=1)
         self.hours_fmt = DateFormatter('%H')
         self.mins = MinuteLocator(range(0, 60, 15))
@@ -758,15 +756,7 @@ if __name__ == '__main__':
                         help="Filename for data file")
     parser.add_argument("-o", "--plot_file", type=str, dest="plot_file", default=None,
                         help="Filename for generated plot")
-    parser.add_argument('--plotly-user', help="Username for plotly publishing")
-    parser.add_argument('--plotly-api-key', help="API for plotly publishing")
     args = parser.parse_args()
 
     wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
     wp.make_plot(args.plot_file)
-
-    if args.plotly_user and args.plotly_api_key:
-        from plotly import plotly
-        plotly.sign_in(args.plotly_user, args.plotly_api_key)
-        url = plotly.plot_mpl(wp.fig)
-        print('Plotly url: {}'.format(url))
