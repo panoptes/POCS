@@ -135,7 +135,7 @@ class AbstractFilterWheel(PanBase):
 
     def connect(self):
         """ Connect to filter wheel """
-        raise NotImplementError
+        raise NotImplementedError
 
     def move_to(self, position, blocking=False):
         """
