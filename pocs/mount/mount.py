@@ -36,9 +36,8 @@ class AbstractMount(PanBase):
 
     """
 
-    def __init__(self, location, commands=None, *args, **kwargs
-                 ):
-        super(AbstractMount, self).__init__(*args, **kwargs)
+    def __init__(self, location, commands=None, *args, **kwargs):
+        PanBase.__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items

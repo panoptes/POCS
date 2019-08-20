@@ -29,7 +29,7 @@ class AbstractFilterWheel(PanBase):
                  timeout=None,
                  serial_number='XXXXXX',
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         self._model = model
         self._name = name

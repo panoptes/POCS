@@ -10,7 +10,7 @@ class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, **kwargs):
+                 exp_set_size=10, priority=100, *args, **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -40,7 +40,7 @@ class Observation(PanBase):
                 (default: {100})
 
         """
-        PanBase.__init__(self)
+        PanBase.__init__(self, *args, **kwargs)
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 

@@ -17,7 +17,7 @@ class Mount(AbstractMount):
 
     def __init__(self, *args, **kwargs):
         """"""
-        super(Mount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
         template_dir = self.config['mount']['template_dir']

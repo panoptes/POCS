@@ -11,11 +11,7 @@ class Mount(AbstractMount):
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
+    def __init__(self, location, commands=dict(), *args, **kwargs):
 
         super().__init__(location, *args, **kwargs)
 

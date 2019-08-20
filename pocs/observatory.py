@@ -29,7 +29,7 @@ class Observatory(PanBase):
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
         self.logger.info('Initializing observatory')
 
         # Setup information about site location

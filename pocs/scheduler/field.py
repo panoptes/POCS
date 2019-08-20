@@ -6,7 +6,7 @@ from pocs.base import PanBase
 
 class Field(FixedTarget, PanBase):
 
-    def __init__(self, name, position, equinox='J2000', **kwargs):
+    def __init__(self, name, position, equinox='J2000', *args, **kwargs):
         """ An object representing an area to be observed
 
         A `Field` corresponds to an `~astroplan.ObservingBlock` and contains information
@@ -21,7 +21,7 @@ class Field(FixedTarget, PanBase):
                 `astroplan.ObservingBlock`
 
         """
-        PanBase.__init__(self)
+        PanBase.__init__(self, *args, **kwargs)
 
         # Force an equinox
         if equinox is None:
