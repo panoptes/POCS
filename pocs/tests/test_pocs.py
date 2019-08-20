@@ -81,6 +81,8 @@ def pocs(config, observatory):
 
     pocs = POCS(observatory,
                 run_once=True,
+                dome=dome,
+                mount=mount,
                 config=config,
                 ignore_local_config=True)
 
@@ -341,8 +343,7 @@ def wait_for_message(sub, type=None, attr=None, value=None):
 #     assert pocs_thread.is_alive() is False
 
 
-def test_unsafe_park(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_unsafe_park(pocs):
     pocs.initialize()
     assert pocs.is_initialized is True
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -410,8 +411,7 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
-def test_power_down_dome_while_running(pocs_with_dome):
-    pocs = pocs_with_dome
+def test_power_down_dome_while_running(pocs):
     assert pocs.connected is True
     assert pocs.observatory.has_dome
     assert not pocs.observatory.dome.is_connected
