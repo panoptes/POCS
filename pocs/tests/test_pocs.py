@@ -411,7 +411,8 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
-def test_power_down_dome_while_running(pocs):
+def test_power_down_dome_while_running(pocs_with_dome):
+    pocs = pocs_with_dome
     assert pocs.connected is True
     assert pocs.observatory.has_dome
     assert not pocs.observatory.dome.is_connected
