@@ -1,6 +1,7 @@
 import os
 import subprocess
 import shutil
+from copy import copy
 from contextlib import suppress
 
 from warnings import warn
@@ -14,7 +15,6 @@ from astropy.io.fits import open as open_fits
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from glob import glob
-from copy import copy
 from dateutil import parser as date_parser
 
 from pocs.utils import current_time
@@ -22,10 +22,23 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(colormap.inferno)
-palette.set_over('w', 1.0)
-palette.set_under('k', 1.0)
-palette.set_bad('g', 1.0)
+
+def get_palette(cmap='inferno'):
+    """Get a palette for drawing.
+
+    Returns a copy of the colormap palette with bad pixels marked.
+
+    Args:
+        cmap (str, optional): Colormap to use, default 'inferno'.
+
+    Returns:
+        `matplotlib.cm`: The colormap.
+    """
+    palette = copy(getattr(colormap, cmap))
+    palette.set_over('w', 1.0)
+    palette.set_under('k', 1.0)
+    palette.set_bad('g', 1.0)
+    return palette
 
 
 def make_images_dir():
