@@ -43,7 +43,8 @@ class PanStateMachine(Machine):
 
         states = [self._load_state(state) for state in state_machine_table.get('states', [])]
 
-        super(PanStateMachine, self).__init__(
+        Machine.__init__(
+            self,
             states=states,
             transitions=_transitions,
             initial=state_machine_table.get('initial'),
@@ -51,7 +52,8 @@ class PanStateMachine(Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            name="POCS State Machine"
+            name="POCS State Machine",
+            **kwargs
         )
 
         self._state_machine_table = state_machine_table
