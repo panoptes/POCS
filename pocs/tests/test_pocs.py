@@ -52,8 +52,8 @@ def scheduler(config):
 
 
 @pytest.fixture(scope='function')
-def dome(config):
-    return create_dome_from_config(config)
+def dome(config_with_simulated_dome):
+    return create_dome_from_config(config_with_simulated_dome)
 
 
 @pytest.fixture(scope='function')
@@ -411,8 +411,7 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
-def test_power_down_dome_while_running(pocs_with_dome):
-    pocs = pocs_with_dome
+def test_power_down_dome_while_running(pocs):
     assert pocs.connected is True
     assert pocs.observatory.has_dome
     assert not pocs.observatory.dome.is_connected
