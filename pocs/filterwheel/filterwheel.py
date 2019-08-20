@@ -21,6 +21,7 @@ class AbstractFilterWheel(PanBase):
             assumed. Default is None (no timeout).
         serial_number (str, optional): serial number of the filter wheel, default 'XXXXXX'
     """
+
     def __init__(self,
                  name='Generic Filter Wheel',
                  model='simulator',
@@ -166,7 +167,8 @@ class AbstractFilterWheel(PanBase):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         if self.camera and self.camera.is_exposing:
-            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring.".format(self)
+            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring.".format(
+                self)
             raise error.PanError(msg)
 
         position = self._parse_position(position)
@@ -225,7 +227,8 @@ class AbstractFilterWheel(PanBase):
                 raise ValueError(msg)
 
         if int_position < 1 or int_position > self.n_positions:
-            msg = "Position must be between 1 and {}, got {}".format(self.n_positions, int_position)
+            msg = "Position must be between 1 and {}, got {}".format(
+                self.n_positions, int_position)
             self.logger.error(msg)
             raise ValueError(msg)
 
