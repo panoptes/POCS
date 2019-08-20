@@ -188,18 +188,21 @@ def test_simple_simulator(pocs):
 def test_is_weather_and_dark_simulator(pocs_with_mount):
     pocs = pocs_with_mount
     pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is True
 
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.is_dark() is True
 
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     assert pocs.is_dark() is False
 
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     assert pocs.is_weather_safe() is True
 
 
@@ -259,6 +262,7 @@ def test_wait_for_events_timeout(pocs):
 def test_is_weather_safe_no_simulator(pocs_with_mount):
     pocs = pocs_with_mount
     pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'night']
 
     # Set a specific time
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
@@ -350,6 +354,7 @@ def test_unsafe_park(pocs_with_mount):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'power']
     assert pocs.is_safe() is False
 
     assert pocs.state == 'parking'
@@ -365,6 +370,8 @@ def test_no_ac_power(pocs_with_mount):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
 
+    # Remove 'power' from simulator
+    pocs.config['simulator'].remove('power')
     pocs.initialize()
 
     # With simulator removed the power should fail
@@ -403,8 +410,8 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
-def test_power_down_dome_while_running(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_power_down_dome_while_running(pocs_with_dome):
+    pocs = pocs_with_dome
     assert pocs.connected is True
     assert pocs.observatory.has_dome
     assert not pocs.observatory.dome.is_connected
@@ -421,6 +428,7 @@ def test_power_down_dome_while_running(pocs_with_mount):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
 
     pocs.initialize()
@@ -432,6 +440,7 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night', 'power']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
