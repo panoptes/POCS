@@ -211,7 +211,7 @@ def _make_pretty_from_fits(fname=None,
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
-    im = ax.imshow(data, norm=norm, cmap=palette, origin='lower')
+    im = ax.imshow(data, norm=norm, cmap=get_palette(), origin='lower')
     fig.colorbar(im)
     fig.suptitle(title)
 
