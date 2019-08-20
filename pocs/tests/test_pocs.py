@@ -292,55 +292,57 @@ def wait_for_message(sub, type=None, attr=None, value=None):
         if value and msg_obj[attr] != value:
             continue
         return topic, msg_obj
-#
-#
-# def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
-#     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
-#
-#     # Make sure DB is clear for current weather
-#     observatory.db.clear_current('weather')
-#
-#     def start_pocs():
-#         observatory.logger.info('start_pocs ENTER')
-#
-#         pocs = POCS(observatory,
-#                     messaging=True, safe_delay=5)
-#
-#         pocs.observatory.scheduler.clear_available_observations()
-#         pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-#                                                     'position': '20h06m15.4536s +44d27m24.75s',
-#                                                     'priority': '100',
-#                                                     'exptime': 2,
-#                                                     'min_nexp': 2,
-#                                                     'exp_set_size': 2,
-#                                                     })
-#
-#         pocs.initialize()
-#         pocs.logger.info('Starting observatory run')
-#         assert pocs.is_weather_safe() is False
-#         pocs.send_message('RUNNING')
-#         pocs.run(run_once=True, exit_when_done=True)
-#         assert pocs.is_weather_safe() is True
-#         pocs.power_down()
-#         observatory.logger.info('start_pocs EXIT')
-#
-#     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
-#     pocs_thread.start()
-#
-#     try:
-#         # Wait for the RUNNING message,
-#         assert wait_for_running(msg_subscriber)
-#
-#         time.sleep(2)
-#         # Insert a dummy weather record to break wait
-#         observatory.db.insert_current('weather', {'safe': True})
-#
-#         assert wait_for_state(msg_subscriber, 'scheduling')
-#     finally:
-#         cmd_publisher.send_message('POCS-CMD', 'shutdown')
-#         pocs_thread.join(timeout=30)
-#
-#     assert pocs_thread.is_alive() is False
+
+
+def test_run_wait_until_safe(observatory, cmd_publisher, msg_subscriber):
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
+    # Make sure DB is clear for current weather
+    observatory.db.clear_current('weather')
+
+    def start_pocs():
+        observatory.logger.info('start_pocs ENTER')
+        # Remove weather simulator, else it would always be safe.
+        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
+
+        pocs = POCS(observatory,
+                    messaging=True, safe_delay=5)
+
+        pocs.observatory.scheduler.clear_available_observations()
+        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
+                                                    'position': '20h06m15.4536s +44d27m24.75s',
+                                                    'priority': '100',
+                                                    'exptime': 2,
+                                                    'min_nexp': 2,
+                                                    'exp_set_size': 2,
+                                                    })
+
+        pocs.initialize()
+        pocs.logger.info('Starting observatory run')
+        assert pocs.is_weather_safe() is False
+        pocs.send_message('RUNNING')
+        pocs.run(run_once=True, exit_when_done=True)
+        assert pocs.is_weather_safe() is True
+        pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
+
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
+    pocs_thread.start()
+
+    try:
+        # Wait for the RUNNING message,
+        assert wait_for_running(msg_subscriber)
+
+        time.sleep(2)
+        # Insert a dummy weather record to break wait
+        observatory.db.insert_current('weather', {'safe': True})
+
+        assert wait_for_state(msg_subscriber, 'scheduling')
+    finally:
+        cmd_publisher.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
+
+    assert pocs_thread.is_alive() is False
 
 
 def test_unsafe_park(pocs):
