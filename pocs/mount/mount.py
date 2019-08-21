@@ -543,9 +543,9 @@ class AbstractMount(PanBase):
 
         return response
 
-    def slew_to_zero(self):
+    def slew_to_zero(self, blocking=False):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
+        self.slew_to_home(blocking=blocking)
 
     def park(self):
         """ Slews to the park position and parks the mount.
