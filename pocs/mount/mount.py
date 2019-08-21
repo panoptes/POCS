@@ -469,10 +469,7 @@ class AbstractMount(PanBase):
         """ Convenience method to first slew to the home position and then park.
         """
         if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
+            self.slew_to_home(blocking=True)
 
             # Reinitialize from home seems to always do the trick of getting us to
             # correct side of pier for parking
