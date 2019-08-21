@@ -7,9 +7,6 @@ import shutil
 import sys
 import warnings
 
-from astropy.utils import iers
-iers.IERS_A_URL = 'https://storage.googleapis.com/panoptes-resources/iers/ser7.dat'
-
 # Importing download_IERS_A can emit a scary warnings, so we suppress it.
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', message='Your version of the IERS Bulletin A')
