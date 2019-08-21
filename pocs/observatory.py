@@ -37,8 +37,7 @@ class Observatory(PanBase):
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\tAdding mount to Observatory.')
-        self.mount = mount
+        self.set_mount(mount)
         self.cameras = OrderedDict()
 
         if cameras:
@@ -49,10 +48,8 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
-        self.logger.info('\tAdding dome to Observatory.')
-        self.dome = dome
-        self.logger.info('\tAdding scheduler to Observatory.')
-        self.scheduler = scheduler
+        self.set_dome(dome)
+        self.set_scheduler(scheduler)
         self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']

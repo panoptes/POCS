@@ -12,14 +12,12 @@ import pytest
 import subprocess
 import time
 
-
 from pocs import hardware
 from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
-
 _can_connect_to_mongo = None
 _all_databases = ['mongo', 'file', 'memory']
 

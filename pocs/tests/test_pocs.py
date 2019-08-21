@@ -62,9 +62,9 @@ def mount(config_with_simulated_mount):
 
 
 @pytest.fixture(scope='function')
-def observatory(config_with_simulated_mount, db_type, cameras, scheduler, dome, mount):
+def observatory(config, db_type, cameras, scheduler, dome, mount):
     observatory = Observatory(
-        config=config_with_simulated_mount,
+        config=config,
         cameras=cameras,
         mount=mount,
         scheduler=scheduler,
@@ -103,25 +103,6 @@ def pocs_with_dome(config_with_simulated_dome, db_type, dome):
     pocs = POCS(observatory,
                 run_once=True,
                 config=config_with_simulated_dome,
-                ignore_local_config=True)
-
-    yield pocs
-
-    pocs.power_down()
-
-
-@pytest.fixture(scope='function')
-def pocs_with_mount(config_with_simulated_mount, db_type, mount):
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    observatory = Observatory(config=config_with_simulated_mount,
-                              mount=mount,
-                              ignore_local_config=True,
-                              db_type=db_type
-                              )
-
-    pocs = POCS(observatory,
-                run_once=True,
-                config=config_with_simulated_mount,
                 ignore_local_config=True)
 
     yield pocs
@@ -187,8 +168,8 @@ def test_simple_simulator(pocs):
     assert pocs.is_safe() is True
 
 
-def test_is_weather_and_dark_simulator(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_is_weather_and_dark_simulator(pocs):
+    pocs = pocs
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -261,8 +242,7 @@ def test_wait_for_events_timeout(pocs):
     t2.cancel()
 
 
-def test_is_weather_safe_no_simulator(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'night']
 
@@ -368,8 +348,7 @@ def test_unsafe_park(pocs):
     pocs.power_down()
 
 
-def test_no_ac_power(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_no_ac_power(pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
 
@@ -401,8 +380,7 @@ def test_no_ac_power(pocs_with_mount):
         assert pocs.has_ac_power() is False
 
 
-def test_power_down_while_running(pocs_with_mount):
-    pocs = pocs_with_mount
+def test_power_down_while_running(pocs):
     assert pocs.connected is True
     assert not pocs.observatory.has_dome
     pocs.initialize()
