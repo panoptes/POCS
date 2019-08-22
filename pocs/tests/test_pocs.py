@@ -81,7 +81,6 @@ def pocs(config, observatory):
 
     pocs = POCS(observatory,
                 run_once=True,
-                dome=dome,
                 mount=mount,
                 config=config,
                 ignore_local_config=True)
@@ -105,23 +104,6 @@ def pocs_with_dome(config_with_simulated_dome, db_type, dome):
                 config=config_with_simulated_dome,
                 ignore_local_config=True)
 
-    yield pocs
-
-    pocs.power_down()
-
-
-@pytest.fixture(scope='function')
-def pocs_with_mount(config_with_simulated_mount, db_type, mount):
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    observatory = Observatory(config=config_with_simulated_mount,
-                              mount=mount,
-                              ignore_local_config=True,
-                              db_type=db_type
-                              )
-    pocs = POCS(observatory,
-                run_once=True,
-                config=config_with_simulated_mount,
-                ignore_local_config=True)
     yield pocs
 
     pocs.power_down()
@@ -397,7 +379,7 @@ def test_no_ac_power(pocs):
         assert pocs.has_ac_power() is False
 
 
-def test_power_down_while_running(pocs_with_mount):
+def test_power_down_while_running(pocs):
     pocs = pocs_with_mount
     assert pocs.connected is True
     assert not pocs.observatory.has_dome
