@@ -14,7 +14,7 @@ class AbstractSerialMount(AbstractMount):
 
         Opens a connection to the serial device, if it is valid.
         """
-        super(AbstractSerialMount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Setup our serial connection at the given port
         try:
