@@ -1,15 +1,15 @@
 import os
 import matplotlib.colors as colours
 
+from threading import Event
+from threading import Thread
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 import numpy as np
 from scipy.ndimage import binary_dilation
 from astropy.modeling import models, fitting
-
-from threading import Event
-from threading import Thread
 
 from pocs.base import PanBase
 from panoptes.utils import current_time

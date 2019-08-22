@@ -21,8 +21,8 @@ class FilterWheel(AbstractFilterWheel):
             a Quantity with time units. If a numeric type without units is given seconds will be
             assumed. Default is 10 seconds.
         serial_number (str): serial number of the filter wheel
-        move_time (astropy.units.Quantity, optional): time to move the filter wheel by one position,
-            optional, default 1 second.
+        move_time (astropy.units.Quantity, optional): time to move the filter wheel by one
+            position, optional, default 1 second.
         move_bidirectional (bool, optional): if True will simulate filter wheel which can rotate in
             either direction, if False (default) will similate a filter wheel that only moves in
             one direction.

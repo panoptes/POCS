@@ -29,6 +29,7 @@ def create_mount_from_config(config_port='6563',
             location of the mount on the Earth. If not specified, the config must include the
             observatory's location (Latitude, Longitude and Altitude above mean sea level).
             Useful for testing.
+        logger (`logging`|None, optional): A python logging instance.
         *args: Other positional args will be passed to the concrete class specified in the config.
         **kwargs: Other keyword args will be passed to the concrete class specified in the config.
 
@@ -37,14 +38,13 @@ def create_mount_from_config(config_port='6563',
         mount_info nor config['mount'] is provided.
 
     Raises:
-        `error.MountNotFound`: Missing the serial.port info for a mount which requires it (i.e. not
-            a Software Bisque mount).
-        `error.MountNotFound`: Wrong model, it is not bisque and serial port is not specified.
+        error.MountNotFound: Exception raised when mount cannot be created
+            because of incorrect configuration.
     """
     if logger is None:
         logger = get_root_logger()
 
-    # If mount_info was not passed as parameter, check config.
+    # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
         logger.debug('No mount info provided, using values from config.')
         mount_info = get_config('mount', default=None, port=config_port)
@@ -53,7 +53,7 @@ def create_mount_from_config(config_port='6563',
         if mount_info is None:
             raise error.MountNotFound('No mount information in config, cannot create.')
 
-    # If earth_location was not passed as parameter, check config.
+    # If earth_location was not passed as a parameter, check config.
     if earth_location is None:
         logger.debug('No location provided, using values from config.')
 

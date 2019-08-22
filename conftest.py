@@ -328,6 +328,11 @@ def temp_file():
     os.unlink(temp_file)
 
 
+@pytest.fixture(scope="session")
+def db_name():
+    return 'panoptes_testing'
+
+
 class FakeLogger:
     def __init__(self):
         self.messages = []
@@ -384,8 +389,7 @@ def db_type(request, db_name):
     # If testing mongo, make sure we can connect, otherwise skip.
     if request.param == 'mongo' and not can_connect_to_mongo(db_name):
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
-    PanDB.permanently_erase_database(
-        request.param, 'panoptes_testing', really='Yes', dangerous='Totally')
+    PanDB.permanently_erase_database(request.param, db_name, really='Yes', dangerous='Totally')
     return request.param
 
 
@@ -397,8 +401,7 @@ def db(db_type, db_name):
 
 @pytest.fixture(scope='function')
 def memory_db(db_name):
-    PanDB.permanently_erase_database(
-        'memory', 'panoptes_testing', really='Yes', dangerous='Totally')
+    PanDB.permanently_erase_database('memory', db_name, really='Yes', dangerous='Totally')
     return PanDB(db_type='memory', db_name=db_name)
 
 
