@@ -1,12 +1,8 @@
 #!/bin/bash -e
 
-cd "${PANDIR}/panoptes-utils"
-# Install any updated requirements
-pip install -e ".[all]"
-
 # Install any updated requirements
 cd "${PANDIR}/POCS"
-pip install -r requirements.txt
+pip install -Ur requirements.txt
 
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START=.coveragerc
