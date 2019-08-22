@@ -17,7 +17,7 @@ class Mount(AbstractMount):
 
     def __init__(self, *args, **kwargs):
         """"""
-        super(Mount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
         template_dir = self.config['mount']['template_dir']
@@ -346,7 +346,7 @@ class Mount(AbstractMount):
             model = self.config['mount'].get('brand')
             if model is not None:
                 mount_dir = self.config['directories']['mounts']
-                conf_file = "{}/{}.yaml".format(mount_dir, model)
+                conf_file = f'{mount_dir}/{model}.yaml'
 
                 if os.path.isfile(conf_file):
                     self.logger.debug("Loading mount commands file: {}".format(conf_file))
