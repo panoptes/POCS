@@ -68,7 +68,6 @@ def observatory(config, db_type, cameras, scheduler, dome, mount):
         cameras=cameras,
         mount=mount,
         scheduler=scheduler,
-        dome=dome,
         ignore_local_config=True,
         db_type=db_type
     )
