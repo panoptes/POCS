@@ -380,7 +380,6 @@ def test_no_ac_power(pocs):
 
 
 def test_power_down_while_running(pocs):
-    pocs = pocs_with_mount
     assert pocs.connected is True
     assert not pocs.observatory.has_dome
     pocs.initialize()
