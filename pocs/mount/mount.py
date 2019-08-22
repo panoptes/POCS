@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from pocs.base import PanBase
 
 from pocs.utils import current_time
+from pocs.utils import CountdownTimer
 from pocs.utils import error
 
 
@@ -511,8 +512,8 @@ class AbstractMount(PanBase):
 
         return success
 
-    def slew_to_home(self, blocking=False):
-        """ Slews the mount to the home position.
+    def slew_to_home(self, blocking=False, timeout=180):
+        """Slews the mount to the home position.
 
         Note:
             Home position and Park position are not the same thing
@@ -520,21 +521,29 @@ class AbstractMount(PanBase):
         Args:
             blocking (bool, optional): If command should block while slewing to
                 home, default False.
+            timeout (int, optional): Maximum time spent slewing to home, default 180 seconds.
 
         Returns:
             bool: indicating success
         """
         response = 0
 
-        block_time = 2  # seconds
+        # Set up the timeout timer
+        timeout_timer = CountdownTimer(timeout)
+        block_time = 3  # seconds
 
         if not self.is_parked:
+            # Reset target coordinates
             self._target_coordinates = None
+            # Start the slew
             response = self.query('slew_to_home')
             if response and blocking:
                 while self.is_home is False:
-                    time.sleep(block_time)
+                    if timeout_timer.expired():
+                        self.logger.warning(f'slew_to_home timout: {timeout} seconds')
+                        break
                     self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
+                    timeout_timer.sleep(max_sleep=block_time)
         else:
             self.logger.info('Mount is parked')
 
