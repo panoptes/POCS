@@ -35,9 +35,13 @@ def get_palette(cmap='inferno'):
         `matplotlib.cm`: The colormap.
     """
     palette = copy(getattr(colormap, cmap))
+
+    # Mark bad pixels (e.g. saturated)
+    # when using vmin or vmax and a normalizer.
     palette.set_over('w', 1.0)
     palette.set_under('k', 1.0)
     palette.set_bad('g', 1.0)
+
     return palette
 
 
