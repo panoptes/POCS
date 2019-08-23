@@ -90,16 +90,19 @@ def pocs(config, observatory):
 
 
 @pytest.fixture(scope='function')
-def pocs_with_dome(config_with_simulated_dome, db_type, dome):
+def pocs_with_dome(config_with_simulated_dome, db_type, dome, mount):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     observatory = Observatory(config=config_with_simulated_dome,
                               dome=dome,
+                              mount=mount,
                               ignore_local_config=True,
                               db_type=db_type
                               )
 
     pocs = POCS(observatory,
                 run_once=True,
+                dome=dome,
+                mount=mount,
                 config=config_with_simulated_dome,
                 ignore_local_config=True)
 
