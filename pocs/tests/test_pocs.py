@@ -100,7 +100,6 @@ def pocs_with_dome(config_with_simulated_dome, db_type, dome, mount):
 
     pocs = POCS(observatory,
                 run_once=True,
-                mount=mount,
                 config=config_with_simulated_dome,
                 ignore_local_config=True)
 
