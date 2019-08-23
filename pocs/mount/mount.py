@@ -343,7 +343,7 @@ class AbstractMount(PanBase):
                 than this are ignored. Default 100ms from `self.min_tracking_threshold`.
             max_tracking_threshold (int, optional): Maximum size of tracking
                 correction allowed in milliseconds. Tracking corrections higher
-                than this are ignored. Default 99999ms from `self.max_tracking_threshold`.
+                than this are set to this value. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
             dict: Offset corrections for each axis as needed ::
@@ -407,6 +407,7 @@ class AbstractMount(PanBase):
             # Correct long offset
             if offset_ms > max_tracking_threshold:
                 self.logger.debug(f'Max tracking threshold: {max_tracking_threshold} ms')
+                self.logger.debug(f'Requested tracking higher than threshold, setting to threshold')
                 offset_ms = max_tracking_threshold
 
             self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
