@@ -80,7 +80,6 @@ def pocs(config, observatory):
 
     pocs = POCS(observatory,
                 run_once=True,
-                mount=mount,
                 config=config,
                 ignore_local_config=True)
 
