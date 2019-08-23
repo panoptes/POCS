@@ -443,7 +443,7 @@ class POCS(PanStateMachine, PanBase):
         try:
             record = self.db.get_current('power')
             if record is None:
-                raise KeyError('power')
+                self.logger.warning(f'No mains "power" reading found in database.')
 
             # Legacy control boards have `main`.
             has_power = False  # Assume not
