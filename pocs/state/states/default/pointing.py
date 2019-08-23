@@ -68,14 +68,14 @@ def on_enter(event_data):
                 pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
                 pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
 
-                delta_ra = pointing_image.pointing_error.delta_ra.value
-                delta_dec = pointing_image.pointing_error.delta_dec.value
-
                 if should_correct is False:
                     pocs.logger.info("Pointing correction turned off, done with pointing.")
                     break
 
-                # Correct the pointing
+                delta_ra = pointing_image.pointing_error.delta_ra.value
+                delta_dec = pointing_image.pointing_error.delta_dec.value
+
+                # Correct the pointing if either axis is off.
                 if np.abs(delta_ra) > pointing_threshold or np.abs(delta_dec) > pointing_threshold:
                     pocs.say("I'm still a bit away from the field so I'm going to get closer.")
 
@@ -99,7 +99,7 @@ def on_enter(event_data):
                                 pocs.logger.debug("Slewing to target")
                                 pocs.sleep()
                 else:
-                    pocs.logger.info("Separation is within pointing threshold.")
+                    pocs.logger.info("Separation is within pointing threshold, starting tracking.")
                     break
 
         pocs.next_state = 'tracking'
