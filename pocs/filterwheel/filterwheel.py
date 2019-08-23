@@ -21,6 +21,7 @@ class AbstractFilterWheel(PanBase):
             assumed. Default is None (no timeout).
         serial_number (str, optional): serial number of the filter wheel, default 'XXXXXX'
     """
+
     def __init__(self,
                  name='Generic Filter Wheel',
                  model='simulator',
@@ -134,7 +135,7 @@ class AbstractFilterWheel(PanBase):
 
     def connect(self):
         """ Connect to filter wheel """
-        raise NotImplementError
+        raise NotImplementedError
 
     def move_to(self, position, blocking=False):
         """
@@ -158,6 +159,7 @@ class AbstractFilterWheel(PanBase):
             and a serial number, e.g. the following selects a g band filter without having to
             know its full name.
 
+            >>> from pocs.filterwheel.filterwheel import AbstractFilterWheel as FilterWheel
             >>> fw = FilterWheel(filter_names=['u_12', 'g_04', 'r_09', 'i_20', 'z_07'])
             >>> fw_event = fw.move_to('g')
             >>> fw_event.wait()
@@ -166,7 +168,7 @@ class AbstractFilterWheel(PanBase):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
         if self.camera and self.camera.is_exposing:
-            msg = "Attempt to move filter wheel {} while camera is exposing, ignoring.".format(self)
+            msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
             raise error.PanError(msg)
 
         position = self._parse_position(position)
@@ -225,7 +227,7 @@ class AbstractFilterWheel(PanBase):
                 raise ValueError(msg)
 
         if int_position < 1 or int_position > self.n_positions:
-            msg = "Position must be between 1 and {}, got {}".format(self.n_positions, int_position)
+            msg = f'Position must be between 1 and {self.n_positions}, got {int_position}'
             self.logger.error(msg)
             raise ValueError(msg)
 
