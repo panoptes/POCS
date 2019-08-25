@@ -12,9 +12,8 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.dome import AbstractDome
-from pocs.mount import AbstractMount
-from pocs.mount import create_mount_from_config
 from pocs.images import Image
+from pocs.mount import AbstractMount
 from pocs.scheduler import BaseScheduler
 
 from panoptes.utils import current_time
@@ -23,11 +22,11 @@ from panoptes.utils import error
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, scheduler=None, dome=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
-        dates, mount, cameras, and weather station
+        dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         PanBase.__init__(self, *args, **kwargs)
         self.logger.info('Initializing observatory')
@@ -39,9 +38,7 @@ class Observatory(PanBase):
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\tSetting up mount')
-        self.mount = create_mount_from_config(**kwargs)
-
+        self.set_mount(mount)
         self.cameras = OrderedDict()
 
         if cameras:
@@ -50,12 +47,10 @@ class Observatory(PanBase):
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
-        self.logger.info('\tSetting up dome.')
-        self.dome = dome
-
-        self.logger.info('\tSetting up scheduler')
-        self.scheduler = scheduler
-
+        # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
+        # here compared to that for the mount.
+        self.set_dome(dome)
+        self.set_scheduler(scheduler)
         self.current_offset_info = None
 
         self._image_dir = self.get_config('directories.images')

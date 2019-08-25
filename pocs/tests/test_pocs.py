@@ -8,7 +8,9 @@ from astropy import units as u
 from pocs import hardware
 
 from pocs.core import POCS
+from pocs.dome import create_dome_simulator
 from pocs.dome import create_dome_from_config
+from pocs.mount import create_mount_from_config
 from pocs.observatory import Observatory
 from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
@@ -52,10 +54,6 @@ def site_details(dynamic_config_server, config_port):
     return create_location_from_config(config_port=config_port)
 
 
-def dome(dynamic_config_server, config_port, scope='function'):
-    return create_dome_from_config(config_port=config_port)
-
-
 @pytest.fixture(scope='function')
 def scheduler(dynamic_config_server, config_port, site_details):
     return create_scheduler_from_config(config_port=config_port,
@@ -81,6 +79,15 @@ def observatory(dynamic_config_server, config_port, message_forwarder):
     return obs
 
 
+def dome():
+    return create_dome_simulator()
+
+
+@pytest.fixture(scope='function')
+def mount(config_with_simulated_mount):
+    return create_mount_from_config(config_with_simulated_mount)
+
+
 @pytest.fixture(scope='function')
 def pocs(dynamic_config_server, config_port, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
@@ -100,7 +107,6 @@ def pocs_with_dome(dynamic_config_server, config_port, db_type, scheduler):
         'driver': 'simulator',
     }, port=config_port)
     set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
-
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     dome = create_dome_from_config(config_port)
     observatory = Observatory(scheduler=scheduler, dome=dome, config_port=config_port)

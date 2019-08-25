@@ -494,9 +494,6 @@ def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     pocs.say('Performing polar rotation test')
     mount.slew_to_home(blocking=True)
 
-    while not mount.is_home:
-        time.sleep(2)
-
     print_info('At home position, taking {} sec exposure'.format(exptime))
     pocs.say('At home position, taking {} sec exposure'.format(exptime))
 
@@ -598,8 +595,7 @@ class DriftShell(Cmd):
         try:
             self.pocs = POCS(simulator=simulator)
             self.pocs.initialize()
-        except error.PanError as e:
-
+        except error.PanError:
             pass
 
     def do_drift_test(self, *arg):

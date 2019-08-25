@@ -8,6 +8,7 @@ from pocs.base import PanBase
 
 from panoptes.utils import current_time
 from panoptes.utils import error
+from panoptes.utils import CountdownTimer
 
 
 class AbstractMount(PanBase):
@@ -469,10 +470,7 @@ class AbstractMount(PanBase):
         """ Convenience method to first slew to the home position and then park.
         """
         if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
+            self.slew_to_home(blocking=True)
 
             # Reinitialize from home seems to always do the trick of getting us to
             # correct side of pier for parking
@@ -514,11 +512,16 @@ class AbstractMount(PanBase):
 
         return success
 
-    def slew_to_home(self, blocking=False):
+    def slew_to_home(self, blocking=False, timeout=180):
         """Slews the mount to the home position.
 
         Note:
             Home position and Park position are not the same thing
+
+        Args:
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
+            timeout (int, optional): Maximum time spent slewing to home, default 180 seconds.
 
         Returns:
             bool: indicating success
@@ -529,23 +532,30 @@ class AbstractMount(PanBase):
         """
         response = 0
 
-        block_time = 2  # seconds
+        # Set up the timeout timer
+        timeout_timer = CountdownTimer(timeout)
+        block_time = 3  # seconds
 
         if not self.is_parked:
+            # Reset target coordinates
             self._target_coordinates = None
+            # Start the slew
             response = self.query('slew_to_home')
             if response and blocking:
                 while self.is_home is False:
-                    time.sleep(block_time)
+                    if timeout_timer.expired():
+                        self.logger.warning(f'slew_to_home timout: {timeout} seconds')
+                        break
                     self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
+                    timeout_timer.sleep(max_sleep=block_time)
         else:
             self.logger.info('Mount is parked')
 
         return response
 
-    def slew_to_zero(self):
+    def slew_to_zero(self, blocking=False):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
+        self.slew_to_home(blocking=blocking)
 
     def park(self):
         """ Slews to the park position and parks the mount.

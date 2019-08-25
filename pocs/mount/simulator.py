@@ -144,7 +144,7 @@ class Mount(AbstractMount):
             self.logger.debug("Setting next position to {}".format(next_position))
             setattr(self, next_position, True)
 
-    def slew_to_home(self):
+    def slew_to_home(self, blocking=False):
         """ Slews the mount to the home position.
 
         Note:

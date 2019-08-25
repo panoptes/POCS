@@ -9,6 +9,7 @@ from panoptes.utils.config.client import set_config
 
 from pocs import hardware
 from pocs.dome import create_dome_simulator
+from pocs.camera import create_cameras_from_config
 from pocs.mount import create_mount_from_config, AbstractMount
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
@@ -73,7 +74,7 @@ def test_bad_mount_driver(dynamic_config_server, config_port):
         Observatory(config_port=config_port)
 
 
-def test_can_observe(dynamic_config_server, config_port, caplog):
+def test_cannot_observe(dynamic_config_server, config_port, caplog):
     obs = Observatory(config_port=config_port)
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
@@ -84,6 +85,12 @@ def test_can_observe(dynamic_config_server, config_port, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
+    cameras = create_cameras_from_config(conf)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Mount not present, cannot observe."
 
 
 def test_camera_wrong_type(dynamic_config_server, config_port):
