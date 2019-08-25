@@ -8,12 +8,13 @@ from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 
 from pocs import hardware
-from pocs.dome import create_dome_simulator
-from pocs.camera import create_cameras_from_config
-from pocs.mount import create_mount_from_config, AbstractMount
+from pocs.mount import AbstractMount
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+
+from pocs.mount import create_mount_from_config
+from pocs.dome import create_dome_simulator
 from pocs.camera import create_simulator_cameras
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
@@ -66,7 +67,7 @@ def test_cannot_observe(dynamic_config_server, config_port, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
-    cameras = create_cameras_from_config(config_port=config_port)
+    cameras = create_simulator_cameras()
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
     assert obs.can_observe is False
