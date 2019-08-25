@@ -2,6 +2,7 @@
 
 # Install any updated requirements
 cd "${PANDIR}/POCS"
+pip install --no-deps --ignore-installed pip PyYAML
 pip install -Ur requirements.txt
 
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
