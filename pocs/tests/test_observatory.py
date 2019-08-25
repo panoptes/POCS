@@ -55,25 +55,6 @@ def test_bad_site(dynamic_config_server, config_port):
         Observatory(config_port=config_port)
 
 
-def test_bad_mount_port(dynamic_config_server, config_port):
-    # Remove mount simulator
-    set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
-
-    set_config('mount.serial.port', 'foobar', port=config_port)
-    with pytest.raises(error.MountNotFound):
-        Observatory(config_port=config_port)
-
-
-@pytest.mark.without_mount
-def test_bad_mount_driver(dynamic_config_server, config_port):
-    # Remove mount simulator
-    set_config('simulator', hardware.get_all_names(without='mount'), port=config_port)
-
-    set_config('mount.driver', 'foobar', port=config_port)
-    with pytest.raises(error.MountNotFound):
-        Observatory(config_port=config_port)
-
-
 def test_cannot_observe(dynamic_config_server, config_port, caplog):
     obs = Observatory(config_port=config_port)
     assert obs.can_observe is False
@@ -85,7 +66,7 @@ def test_cannot_observe(dynamic_config_server, config_port, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
-    cameras = create_cameras_from_config(conf)
+    cameras = create_cameras_from_config(config_port=config_port)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
     assert obs.can_observe is False
