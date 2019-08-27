@@ -14,19 +14,25 @@ from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 
 from pocs.mount import create_mount_from_config
+from pocs.mount import create_mount_simulator
 from pocs.dome import create_dome_simulator
-from pocs.camera import create_simulator_cameras
+from pocs.camera import create_camera_simulator
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture(scope='function')
 def cameras(dynamic_config_server, config_port):
-    return create_simulator_cameras(config_port=config_port)
+    return create_camera_simulator(config_port=config_port)
+
+
+@pytest.fixture(scope='function')
+def mount(dynamic_config_server, config_port):
+    return create_mount_simulator()
 
 
 @pytest.fixture
-def observatory(dynamic_config_server, config_port, cameras, images_dir):
+def observatory(dynamic_config_server, config_port, mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
     site_details = create_location_from_config(config_port=config_port)
@@ -34,6 +40,7 @@ def observatory(dynamic_config_server, config_port, cameras, images_dir):
                                              observer=site_details['observer'])
 
     obs = Observatory(scheduler=scheduler, config_port=config_port)
+    obs.set_mount(mount)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
@@ -67,7 +74,7 @@ def test_cannot_observe(dynamic_config_server, config_port, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
-    cameras = create_simulator_cameras()
+    cameras = create_camera_simulator()
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
     assert obs.can_observe is False
@@ -89,7 +96,7 @@ def test_camera_wrong_type(dynamic_config_server, config_port):
 
 
 def test_camera(dynamic_config_server, config_port):
-    cameras = create_simulator_cameras(config_port=config_port)
+    cameras = create_camera_simulator(config_port=config_port)
     obs = Observatory(cameras=cameras,
                       config_port=config_port)
     assert obs.has_cameras
@@ -140,18 +147,22 @@ def test_set_dome(dynamic_config_server, config_port):
 
 
 def test_set_mount(dynamic_config_server, config_port):
+
+    obs = Observatory(config_port=config_port)
+    assert obs.mount is None
+
+    obs.set_mount(mount=None)
+    assert obs.mount is None
+
     set_config('mount', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
         'model': 'simulator',
     }, port=config_port)
     mount = create_mount_from_config(config_port=config_port)
-    obs = Observatory(config_port=config_port)
-    assert obs.mount is not None
-    obs.set_mount(mount=None)
-    assert obs.mount is None
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
+
     err_msg = 'Mount is not instance of AbstractMount class, cannot add.'
     with pytest.raises(TypeError, message=err_msg):
         obs.set_mount(mount='mount')

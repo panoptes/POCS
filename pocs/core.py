@@ -247,7 +247,7 @@ class POCS(PanStateMachine, PanBase):
                         self.logger.info("Mount is parked, setting Parked state")
                         self.set_park()
 
-            if not self.observatory.mount.is_parked:
+            if self.observatory.mount and self.observatory.mount.is_parked is False:
                 self.logger.info('Mount not parked, parking')
                 self.observatory.mount.park()
 

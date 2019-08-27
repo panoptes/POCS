@@ -260,7 +260,8 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
-        self.mount.disconnect()
+        if self.mount:
+            self.mount.disconnect()
         if self.dome:
             self.dome.disconnect()
 

@@ -169,7 +169,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
     return cameras
 
 
-def create_simulator_cameras(num_cameras=2, config_port='6563', logger=None, **kwargs):
+def create_camera_simulator(num_cameras=2, config_port='6563', logger=None, **kwargs):
     """Create simulator camera object(s).
 
     Args:

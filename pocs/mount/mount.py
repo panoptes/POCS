@@ -90,7 +90,7 @@ class AbstractMount(PanBase):
         raise NotImplementedError
 
     def disconnect(self):
-        self.logger.info('Connecting to mount')
+        self.logger.info('Disconnecting mount')
         if not self.is_parked:
             self.park()
 

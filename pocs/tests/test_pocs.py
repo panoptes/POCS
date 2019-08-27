@@ -9,8 +9,6 @@ from pocs import hardware
 
 from pocs.core import POCS
 from pocs.dome import create_dome_simulator
-from pocs.dome import create_dome_from_config
-from pocs.mount import create_mount_from_config
 from pocs.observatory import Observatory
 from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
@@ -18,7 +16,8 @@ from panoptes.utils import error
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config.client import set_config
 
-from pocs.camera import create_simulator_cameras
+from pocs.mount import create_mount_simulator
+from pocs.camera import create_camera_simulator
 from pocs.scheduler import create_scheduler_from_config
 from pocs.utils.location import create_location_from_config
 
@@ -46,7 +45,12 @@ def wait_for_state(sub, state, max_duration=90):
 
 @pytest.fixture(scope='function')
 def cameras(dynamic_config_server, config_port):
-    return create_simulator_cameras(config_port=config_port)
+    return create_camera_simulator(config_port=config_port)
+
+
+@pytest.fixture(scope='function')
+def mount(dynamic_config_server, config_port):
+    return create_mount_simulator(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
@@ -61,31 +65,30 @@ def scheduler(dynamic_config_server, config_port, site_details):
 
 
 @pytest.fixture(scope='function')
-def observatory(dynamic_config_server, config_port, message_forwarder):
+def observatory(dynamic_config_server, config_port, message_forwarder,
+                cameras, mount, site_details, scheduler):
     """Return a valid Observatory instance with a specific config."""
 
     set_config('messaging.cmd_port', message_forwarder['cmd_ports'][0], port=config_port)
     set_config('messaging.msg_port', message_forwarder['msg_ports'][0], port=config_port)
 
-    site_details = create_location_from_config(config_port=config_port)
-    scheduler = create_scheduler_from_config(config_port=config_port,
-                                             observer=site_details['observer'])
-    cameras = create_simulator_cameras(config_port=config_port)
-
     obs = Observatory(scheduler=scheduler, config_port=config_port)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
+    obs.set_mount(mount)
+
     return obs
 
 
-def dome():
-    return create_dome_simulator()
-
-
 @pytest.fixture(scope='function')
-def mount(config_with_simulated_mount):
-    return create_mount_from_config(config_with_simulated_mount)
+def dome(config_port):
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
+
+    return create_dome_simulator(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
@@ -100,17 +103,10 @@ def pocs(dynamic_config_server, config_port, observatory):
 
 
 @pytest.fixture(scope='function')
-def pocs_with_dome(dynamic_config_server, config_port, db_type, scheduler):
+def pocs_with_dome(dynamic_config_server, config_port, pocs, dome):
     # Add dome to config
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    }, port=config_port)
-    set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    dome = create_dome_from_config(config_port)
-    observatory = Observatory(scheduler=scheduler, dome=dome, config_port=config_port)
-    pocs = POCS(observatory, config_port=config_port)
+    pocs.observatory.set_dome(dome)
     yield pocs
     pocs.power_down()
 
