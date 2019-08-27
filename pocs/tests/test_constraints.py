@@ -22,14 +22,14 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def observer():
     loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def horizon_line():
     obstruction_list = get_config('location.obstructions', default=list())
     default_horizon = get_config('location.horizon').value
@@ -41,7 +41,7 @@ def horizon_line():
     return horizon_line
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def field_list():
     return yaml.full_load("""
 -
@@ -83,12 +83,12 @@ def field_list():
 """)
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def field():
     return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def observation(field):
     return Observation(field)
 
