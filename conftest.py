@@ -328,11 +328,6 @@ def temp_file():
     os.unlink(temp_file)
 
 
-@pytest.fixture(scope="session")
-def db_name():
-    return 'panoptes_testing'
-
-
 class FakeLogger:
     def __init__(self):
         self.messages = []
