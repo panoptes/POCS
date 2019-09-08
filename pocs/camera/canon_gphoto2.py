@@ -49,8 +49,6 @@ class Camera(AbstractGPhotoCamera):
             '/main/imgsettings/iso': 1,                   # ISO 100
             '/main/settings/autopoweroff': 0,             # Don't power off
             '/main/settings/capturetarget': 0,            # Capture to RAM, for download
-            '/main/settings/datetime': 'now',             # Current datetime
-            '/main/settings/datetimeutc': 'now',          # Current datetime
             '/main/settings/reviewtime': 0,               # Screen off after taking pictures
         }
 
@@ -62,6 +60,8 @@ class Camera(AbstractGPhotoCamera):
             '/main/settings/artist': artist_name,
             '/main/settings/copyright': copyright,
             '/main/settings/ownername': owner_name,
+            '/main/settings/datetime': 'now',             # Current datetime
+            '/main/settings/datetimeutc': 'now',          # Current datetime
         }
 
         self.set_properties(prop2index, prop2value)
