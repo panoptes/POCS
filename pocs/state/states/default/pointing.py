@@ -95,9 +95,6 @@ def on_enter(event_data):
                             pocs.logger.debug("Slewing back to target")
                             pocs.observatory.mount.set_target_coordinates(observation.field)
                             pocs.observatory.mount.slew_to_target()
-                            while not pocs.observatory.mount.is_tracking:
-                                pocs.logger.debug("Slewing to target")
-                                pocs.sleep()
                 else:
                     pocs.logger.info("Separation is within pointing threshold, starting tracking.")
                     break
