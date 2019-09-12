@@ -436,7 +436,7 @@ class AbstractMount(PanBase):
 # Movement methods
 ##################################################################################################
 
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
+    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
         """ Slews to given coordinates.
 
         Note:
@@ -460,7 +460,7 @@ class AbstractMount(PanBase):
         if not self.is_parked:
             # Set the coordinates
             if self.set_target_coordinates(coords):
-                response = self.slew_to_target()
+                response = self.slew_to_target(*args, **kwargs)
             else:
                 self.logger.warning("Could not set target_coordinates")
 
