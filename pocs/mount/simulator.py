@@ -167,6 +167,7 @@ class Mount(AbstractMount):
         self.logger.debug("Query: {} {}".format(cmd, params))
         if cmd == 'slew_to_target':
             time.sleep(self._loop_delay)
+            self._is_tracking = True
 
         return True
 
