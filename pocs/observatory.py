@@ -2,7 +2,6 @@ import os
 import subprocess
 from collections import OrderedDict
 from datetime import datetime
-from glob import glob
 
 from astroplan import Observer
 from astropy import units as u
@@ -13,21 +12,20 @@ from astropy.coordinates import get_sun
 from pocs.base import PanBase
 from pocs.camera import AbstractCamera
 from pocs.dome import AbstractDome
-from pocs.mount import AbstractMount
 from pocs.images import Image
+from pocs.mount import AbstractMount
 from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import load_module
 
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, scheduler=None, dome=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
-        dates, mount, cameras, and weather station
+        dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         super().__init__(*args, **kwargs)
         self.logger.info('Initializing observatory')
@@ -39,10 +37,7 @@ class Observatory(PanBase):
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\tSetting up mount')
-        self.mount = None
-        self._create_mount()
-
+        self.set_mount(mount)
         self.cameras = OrderedDict()
 
         if cameras:
@@ -53,12 +48,8 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
-        self.logger.info('\tSetting up dome.')
-        self.dome = dome
-
-        self.logger.info('\tSetting up scheduler')
-        self.scheduler = scheduler
-
+        self.set_dome(dome)
+        self.set_scheduler(scheduler)
         self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']
@@ -762,56 +753,3 @@ class Observatory(PanBase):
                 location=self.earth_location, name=name, timezone=timezone)
         except Exception:
             raise error.PanError(msg='Bad site information')
-
-    def _create_mount(self, mount_info=None):
-        """Creates a mount object.
-
-        Details for the creation of the mount object are held in the
-        configuration file or can be passed to the method.
-
-        This method ensures that the proper mount type is loaded.
-
-        Args:
-            mount_info (dict):  Configuration items for the mount.
-
-        Returns:
-            pocs.mount:     Returns a sub-class of the mount type
-        """
-        if mount_info is None:
-            mount_info = self.config.get('mount')
-
-        model = mount_info.get('model')
-
-        if 'mount' in self.config.get('simulator', []):
-            model = 'simulator'
-            driver = 'simulator'
-            mount_info['simulator'] = True
-        else:
-            model = mount_info.get('brand')
-            driver = mount_info.get('driver')
-
-            # See if we have a serial connection
-            try:
-                port = mount_info['serial']['port']
-                if port is None or len(glob(port)) == 0:
-                    msg = "Mount port({}) not available. ".format(port) \
-                          + "Use simulator = mount for simulator. Exiting."
-                    raise error.MountNotFound(msg=msg)
-            except KeyError:
-                # TODO(jamessynge): We should move the driver specific validation into the driver
-                # module (e.g. module.create_mount_from_config). This means we have to adjust the
-                # definition of this method to return a validated but not fully initialized mount
-                # driver.
-                if model != 'bisque':
-                    msg = "No port specified for mount in config file. " \
-                          + "Use simulator = mount for simulator. Exiting."
-                    raise error.MountNotFound(msg=msg)
-
-        self.logger.debug('Creating mount: {}'.format(model))
-
-        module = load_module('pocs.mount.{}'.format(driver))
-
-        # Make the mount include site information
-        self.mount = module.Mount(location=self.earth_location)
-
-        self.logger.debug('Mount created')

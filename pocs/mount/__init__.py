@@ -7,7 +7,11 @@ from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
 
-def create_mount_from_config(config, mount_info=None, earth_location=None, *args, **kwargs):
+def create_mount_from_config(config,
+                             mount_info=None,
+                             earth_location=None,
+                             logger=None,
+                             *args, **kwargs):
     """Create a mount instance based on the provided config.
 
     Creates an instance of the AbstractMount sub-class in the module specified in the config.
@@ -22,6 +26,7 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
             location of the mount on the Earth. If not specified, the config must include the
             observatory's location (Latitude, Longitude and Altitude above mean sea level).
             Useful for testing.
+        logger (`logging`|None, optional): A python logging instance.
         *args: Other positional args will be passed to the concrete class specified in the config.
         **kwargs: Other keyword args will be passed to the concrete class specified in the config.
 
@@ -30,12 +35,13 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
         mount_info nor config['mount'] is provided.
 
     Raises:
-        `error.MountNotFound`: Missing the serial.port info for a mount which requires it (i.e. not
-            a Software Bisque mount).
-        `error.MountNotFound`: Wrong model, it is not bisque and serial port is not specified.
+        error.MountNotFound: Exception raised when mount cannot be created
+            because of incorrect configuration.
     """
-    logger = get_root_logger()
+    if logger is None:
+        logger = get_root_logger()
 
+    # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
         logger.debug('No mount info provided, using values from config.')
         try:
@@ -43,8 +49,11 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
         except KeyError:
             raise error.MountNotFound('No mount information in config, cannot create.')
 
+    # If earth_location was not passed as a paramter, check config.
     if earth_location is None:
         logger.debug('No location provided, using values from config.')
+
+        # Get detail from config.
         site_details = create_location_from_config(config)
         earth_location = site_details['earth_location']
 
@@ -53,23 +62,30 @@ def create_mount_from_config(config, mount_info=None, earth_location=None, *args
         raise error.MountNotFound('Mount info in config is missing a driver name.')
 
     model = mount_info.get('model', driver)
+    logger.debug(f'Mount: driver={driver} model={model}')
 
     if driver != 'simulator':
         # See if we have a serial connection
         try:
             port = mount_info['serial']['port']
+            logger.debug(f'Looking for mount {driver} on {port}.')
             if port is None or len(glob(port)) == 0:
                 msg = f'Mount port ({port}) not available. Use simulator = mount for simulator.'
                 raise error.MountNotFound(msg=msg)
         except KeyError:
             # Note: see Issue #866
-            if model != 'bisque':
+            if model == 'bisque':
+                logger.debug(f'Driver specifies a bisque mount type, no serial port needed.')
+            else:
                 msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
                 raise error.MountNotFound(msg=msg)
 
-    logger.debug('Creating mount: {}'.format(model))
+    logger.debug(f'Loading mount driver: pocs.mount.{driver}')
 
-    module = load_module('pocs.mount.{}'.format(driver))
+    try:
+        module = load_module('pocs.mount.{}'.format(driver))
+    except error.NotFound as e:
+        raise error.MountNotFound(e)
 
     # Make the mount include site information
     mount = module.Mount(config=config, location=earth_location, *args, **kwargs)

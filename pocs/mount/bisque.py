@@ -17,7 +17,7 @@ class Mount(AbstractMount):
 
     def __init__(self, *args, **kwargs):
         """"""
-        super(Mount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
         template_dir = self.config['mount']['template_dir']
@@ -203,11 +203,15 @@ class Mount(AbstractMount):
 
         return success
 
-    def slew_to_home(self):
+    def slew_to_home(self, blocking=False):
         """ Slews the mount to the home position.
 
         Note:
             Home position and Park position are not the same thing
+
+        Args:
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
 
         Returns:
             bool: indicating success
@@ -222,9 +226,9 @@ class Mount(AbstractMount):
 
         return response
 
-    def slew_to_zero(self):
+    def slew_to_zero(self, blocking=False):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
+        self.slew_to_home(blocking=blocking)
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -342,7 +346,7 @@ class Mount(AbstractMount):
             model = self.config['mount'].get('brand')
             if model is not None:
                 mount_dir = self.config['directories']['mounts']
-                conf_file = "{}/{}.yaml".format(mount_dir, model)
+                conf_file = f'{mount_dir}/{model}.yaml'
 
                 if os.path.isfile(conf_file):
                     self.logger.debug("Loading mount commands file: {}".format(conf_file))

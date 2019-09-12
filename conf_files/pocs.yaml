@@ -51,10 +51,10 @@ mount:
     min_tracking_threshold: 100 # ms
     max_tracking_threshold: 99999 # ms
 pointing:
-    auto_correct: False
-    threshold: 500 # arcseconds ~ 50 pixels
+    auto_correct: True
+    threshold: 100 # arcseconds ~ 10 pixels
     exptime: 30 # seconds
-    max_iterations: 3
+    max_iterations: 5
 cameras:
     auto_detect: True
     primary: 14d3bd
