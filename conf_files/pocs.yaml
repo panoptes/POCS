@@ -48,6 +48,8 @@ mount:
         timeout: 0.
         baudrate: 9600
     non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
 pointing:
     auto_correct: True
     threshold: 100 # arcseconds ~ 10 pixels
