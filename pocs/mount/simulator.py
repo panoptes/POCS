@@ -116,7 +116,6 @@ class Mount(AbstractMount):
         def trigger_tracking():
             self.logger.debug('Triggering mount simulator tracking')
             self._is_tracking = True
-            self._current_coordinates = self.get_target_coordinates()
 
         timer = Timer(slew_delay, trigger_tracking)
         timer.start()
@@ -127,6 +126,8 @@ class Mount(AbstractMount):
             # Cancel the timer and re-throw exception
             timer.cancel()
             raise error.Timeout
+
+        self._current_coordinates = self.get_target_coordinates()
 
         return success
 
