@@ -50,9 +50,9 @@ mount:
     non_sidereal_available: True
 pointing:
     auto_correct: True
-    threshold: 500 # arcseconds ~ 50 pixels
+    threshold: 100 # arcseconds ~ 10 pixels
     exptime: 30 # seconds
-    max_iterations: 3
+    max_iterations: 5
 cameras:
     auto_detect: True
     primary: 14d3bd

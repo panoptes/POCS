@@ -77,7 +77,7 @@ class POCS(PanStateMachine, PanBase):
         if state_machine_file is None:
             state_machine_file = self.get_config('state_machine', default='simple_state_table')
 
-        self.logger.info(f'Making POCS a PanStateMachine')
+        self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Add observatory object, which does the bulk of the work
@@ -227,7 +227,7 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info(f"Shutting down {self.name}, please be patient and allow for exit.")
+            self.logger.info(f'Shutting down {self.name}, please be patient and allow for exit.')
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -381,6 +381,7 @@ class POCS(PanStateMachine, PanBase):
             record = self.db.get_current('weather')
             if record is None:
                 return False
+
             is_safe = record['data'].get('safe', False)
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
@@ -445,9 +446,9 @@ class POCS(PanStateMachine, PanBase):
         try:
             record = self.db.get_current('power')
             if record is None:
-                raise KeyError('power')
+                self.logger.warning(f'No mains "power" reading found in database.')
 
-            # Some control boards have this as `main`, some as `mains`.
+            # Legacy control boards have `main`.
             has_power = False  # Assume not
             for power_key in ['main', 'mains']:
                 with suppress(KeyError):
@@ -649,7 +650,7 @@ class POCS(PanStateMachine, PanBase):
                 msg_obj = q.get_nowait()
                 call_method = msg_obj.get('message', '')
                 # Lookup and call the method
-                self.logger.critical('Message received: {} {}'.format(queue_type, call_method))
+                self.logger.critical(f'Message received: {queue_type} {call_method}')
                 cmd_dispatch[queue_type][call_method]()
             except queue.Empty:
                 break

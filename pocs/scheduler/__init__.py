@@ -60,7 +60,7 @@ def create_scheduler_from_config(config_port=6563, observer=None):
             constraints = [
                 Altitude(horizon=horizon_line, config_port=config_port),
                 MoonAvoidance(config_port=config_port),
-                Duration(default_horizon, config_port=config_port)
+                Duration(default_horizon, weight=5., config_port=config_port)
             ]
 
             # Create the Scheduler instance
