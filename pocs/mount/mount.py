@@ -518,6 +518,7 @@ class AbstractMount(PanBase):
             if success:
                 if blocking:
                     # Set up the timeout timer
+                    self.logger.debug(f'Setting slew timeout timer for {timeout} sec')
                     timeout_timer = CountdownTimer(timeout)
                     block_time = 3  # seconds
 
@@ -528,6 +529,8 @@ class AbstractMount(PanBase):
 
                         self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
                         timeout_timer.sleep(max_sleep=block_time)
+
+                    self.logger.debug(f'Done wtih slew_to_target block')
             else:
                 self.logger.warning('Problem with slew_to_target')
 

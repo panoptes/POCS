@@ -173,7 +173,7 @@ def test_slew_to_target_timeout(mount, target):
 
     assert mount.set_target_coordinates(target) is True
     with pytest.raises(error.Timeout):
-        assert mount.slew_to_target(blocking=True, timeout=1, loop_delay=30)
+        assert mount.slew_to_target(blocking=True, timeout=3, slew_delay=30)
 
 
 def test_slew_to_home(mount):
