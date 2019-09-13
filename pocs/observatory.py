@@ -513,7 +513,7 @@ class Observatory(PanBase):
 
         return self.current_offset_info
 
-    def update_tracking(self):
+    def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.
 
         The `current_offset_info` contains information about how far off
@@ -528,6 +528,14 @@ class Observatory(PanBase):
         Here we take the number of arcseconds that the mount is offset and,
         via the `mount.get_ms_offset`, find the number of milliseconds we
         should adjust in a given direction, one for each axis.
+
+        The minimum and maximum tracking corrections can be passed as keyword
+        arguments (`min_tracking_threshold=100` and `max_tracking_threshold=99999`)
+        or can be specified in the mount config settings.
+
+        Args:
+            **kwargs: Keyword arguments that are passed to `get_tracking_correction`
+                and `correct_tracking`.
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
@@ -544,11 +552,12 @@ class Observatory(PanBase):
             self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
             correction_info = self.mount.get_tracking_correction(
                 self.current_offset_info,
-                pointing_ha
+                pointing_ha,
+                **kwargs
             )
 
             try:
-                self.mount.correct_tracking(correction_info)
+                self.mount.correct_tracking(correction_info, **kwargs)
             except error.Timeout:
                 self.logger.warning("Timeout while correcting tracking")
 
