@@ -22,14 +22,14 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def observer(dynamic_config_server, config_port):
     loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def horizon_line(dynamic_config_server, config_port):
     obstruction_list = get_config('location.obstructions', default=list(), port=config_port)
     default_horizon = get_config('location.horizon', port=config_port).value
