@@ -17,20 +17,13 @@ ENV PANUSER $user
 
 COPY . ${POCS}
 
-USER root
-
 RUN apt-get update \
-    && apt-get install --no-install-recommends --yes \
-        byobu \
-        ffmpeg \
-        openssh-client \
-        libncurses5-dev \
-        udev \
-        vim-nox \
+    && apt-get install --no-install-recommends --yes ffmpeg libncurses5-dev udev \
     # GPhoto2
     && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh \
     && chmod +x gphoto2-updater.sh \
     && /bin/bash gphoto2-updater.sh --stable \
+    && rm gphoto2-updater.sh \
     # arduino-cli
     && wget -q $arduino_url -O arduino-cli.tar.bz2 \
     # Untar and capture output name (NOTE: assumes only one file).
@@ -38,18 +31,18 @@ RUN apt-get update \
     && mv "${ARDUINO_FILE}" /usr/local/bin/arduino-cli \
     && chmod +x /usr/local/bin/arduino-cli \
     # Cleanup
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm gphoto2-updater.sh
+    && apt-get autoremove --purge -y \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM pocs-base
 
 # POCS
 RUN cd ${POCS} \
     # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
-    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -Ur requirements.txt \
-    && "/${USER}/conda/envs/${CONDA_ENV}/bin/pip" install --no-cache-dir -e . \
+    && pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -e . \
     # Link conf_files to $PANDIR
     && ln -s ${POCS}/conf_files/ ${PANDIR}/
 
