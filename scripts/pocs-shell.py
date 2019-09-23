@@ -15,8 +15,6 @@ from astropy.utils import console
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
-from pocs.camera import create_cameras_from_config
-from pocs.scheduler import create_scheduler_from_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from panoptes.utils import current_time
@@ -24,11 +22,14 @@ from panoptes.utils import string_to_params
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.images import polar_alignment as polar_alignment_utils
 from panoptes.utils.database import PanDB
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import client
+
+from pocs.mount import create_mount_from_config
+from pocs.camera import create_cameras_from_config
+from pocs.scheduler import create_scheduler_from_config
 
 
 class PocsShell(Cmd):
@@ -155,10 +156,11 @@ class PocsShell(Cmd):
             del os.environ['POCSTIME']
 
         try:
+            mount = create_mount_from_config()
             cameras = create_cameras_from_config()
             scheduler = create_scheduler_from_config()
 
-            observatory = Observatory(cameras=cameras, scheduler=scheduler)
+            observatory = Observatory(mount=mount, cameras=cameras, scheduler=scheduler)
             self.pocs = POCS(observatory, messaging=True)
             self.pocs.initialize()
         except error.PanError as e:
