@@ -168,7 +168,12 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, ra_direction='west', ra_seconds=11., dec_direction='south', dec_seconds=15.):
+    def park(self,
+             ra_direction='west',
+             ra_seconds=11.,
+             dec_direction='south',
+             dec_seconds=15.,
+             *args, **kwargs):
         """Slews to the park position and parks the mount.
         This will first move the mount to the home position, then move the RA axis
         in the direction specified at 0.9x sidereal rate (the fastest) for the number
@@ -196,24 +201,20 @@ class Mount(AbstractSerialMount):
             self.logger.info("Mount is parked")
             return self._is_parked
 
-        self.slew_to_home()
-        while self.is_home is False:
-            time.sleep(2)
-            self.logger.debug(f'Slewing to home...')
+        if self.slew_to_home(blocking=True):
+            # The mount is currently not parking in correct position so we manually move it there.
+            self.query('set_button_moving_rate', 9)
+            self.move_direction(direction=ra_direction, seconds=ra_seconds)
+            while self.is_slewing:
+                time.sleep(2)
+                self.logger.debug("Slewing RA axis to park position...")
+            self.move_direction(direction=dec_direction, seconds=dec_seconds)
+            while self.is_slewing:
+                time.sleep(2)
+                self.logger.debug("Slewing Dec axis to park position...")
 
-        # The mount is currently not parking in correct position so we manually move it there.
-        self.query('set_button_moving_rate', 9)
-        self.move_direction(direction=ra_direction, seconds=ra_seconds)
-        while self.is_slewing:
-            time.sleep(2)
-            self.logger.debug("Slewing RA axis to park position...")
-        self.move_direction(direction=dec_direction, seconds=dec_seconds)
-        while self.is_slewing:
-            time.sleep(2)
-            self.logger.debug("Slewing Dec axis to park position...")
-
-        self._is_parked = True
-        self.logger.debug(f'Mount parked: {self.is_parked}')
+            self._is_parked = True
+            self.logger.debug(f'Mount parked: {self.is_parked}')
 
         return self._is_parked
 
