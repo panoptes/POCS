@@ -530,7 +530,7 @@ class AbstractMount(PanBase):
                         self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
                         timeout_timer.sleep(max_sleep=block_time)
 
-                    self.logger.debug(f'Done wtih slew_to_target block')
+                    self.logger.debug(f'Done with slew_to_target block')
             else:
                 self.logger.warning('Problem with slew_to_target')
 
