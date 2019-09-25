@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from pocs.base import PanBase
 
 from pocs.utils import current_time
+from pocs.utils import CountdownTimer
 from pocs.utils import error
 
 
@@ -76,6 +77,9 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
+        self.min_tracking_threshold = self.mount_config.get('min_tracking_threshold', 100)  # ms
+        self.max_tracking_threshold = self.mount_config.get('max_tracking_threshold', 99999)  # ms
+
         self._movement_speed = ''
 
         self._status_lookup = dict()
@@ -311,7 +315,12 @@ class AbstractMount(PanBase):
 
         return separation
 
-    def get_tracking_correction(self, offset_info, pointing_ha):
+    def get_tracking_correction(self,
+                                offset_info,
+                                pointing_ha,
+                                min_tracking_threshold=None,
+                                max_tracking_threshold=None
+                                ):
         """Determine the needed tracking corrections from current position.
 
         This method will determine the direction and number of milliseconds to
@@ -330,6 +339,12 @@ class AbstractMount(PanBase):
             pointing_ha (float): The Hour Angle (HA) of the mount at the
                 beginning of the observation sequence in degrees. This affects
                 the direction of the Dec adjustment.
+            min_tracking_threshold (int, optional): Minimum size of tracking
+                correction allowed in milliseconds. Tracking corrections lower
+                than this are ignored. Default 100ms from `self.min_tracking_threshold`.
+            max_tracking_threshold (int, optional): Maximum size of tracking
+                correction allowed in milliseconds. Tracking corrections higher
+                than this are set to this value. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
             dict: Offset corrections for each axis as needed ::
@@ -345,6 +360,12 @@ class AbstractMount(PanBase):
             pier_side = 'west'
 
         self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
+
+        if min_tracking_threshold is None:
+            min_tracking_threshold = self.min_tracking_threshold
+
+        if max_tracking_threshold is None:
+            max_tracking_threshold = self.max_tracking_threshold
 
         axis_corrections = {
             'dec': None,
@@ -376,17 +397,19 @@ class AbstractMount(PanBase):
                     delta_direction = 'east'
 
             offset_ms = abs(offset_ms.value)
+            self.logger.debug(f'Tracking offset: {offset_ms} ms')
 
             # Skip short corrections
-            if offset_ms <= 50:
+            if offset_ms <= min_tracking_threshold:
+                self.logger.debug(f'Min tracking threshold: {min_tracking_threshold} ms')
+                self.logger.debug(f'Requested tracking lower than threshold, skipping correction')
                 continue
 
-            # Ensure we don't try to move for too long
-            max_time = 99999
-
             # Correct long offset
-            if offset_ms > max_time:
-                offset_ms = max_time
+            if offset_ms > max_tracking_threshold:
+                self.logger.debug(f'Max tracking threshold: {max_tracking_threshold} ms')
+                self.logger.debug(f'Requested tracking higher than threshold, setting to threshold')
+                offset_ms = max_tracking_threshold
 
             self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
             axis_corrections[axis] = (offset, offset_ms, delta_direction)
@@ -469,10 +492,7 @@ class AbstractMount(PanBase):
         """ Convenience method to first slew to the home position and then park.
         """
         if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
+            self.slew_to_home(blocking=True)
 
             # Reinitialize from home seems to always do the trick of getting us to
             # correct side of pier for parking
@@ -514,28 +534,46 @@ class AbstractMount(PanBase):
 
         return success
 
-    def slew_to_home(self):
-        """ Slews the mount to the home position.
+    def slew_to_home(self, blocking=False, timeout=180):
+        """Slews the mount to the home position.
 
         Note:
             Home position and Park position are not the same thing
+
+        Args:
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
+            timeout (int, optional): Maximum time spent slewing to home, default 180 seconds.
 
         Returns:
             bool: indicating success
         """
         response = 0
 
+        # Set up the timeout timer
+        timeout_timer = CountdownTimer(timeout)
+        block_time = 3  # seconds
+
         if not self.is_parked:
+            # Reset target coordinates
             self._target_coordinates = None
+            # Start the slew
             response = self.query('slew_to_home')
+            if response and blocking:
+                while self.is_home is False:
+                    if timeout_timer.expired():
+                        self.logger.warning(f'slew_to_home timout: {timeout} seconds')
+                        break
+                    self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
+                    timeout_timer.sleep(max_sleep=block_time)
         else:
             self.logger.info('Mount is parked')
 
         return response
 
-    def slew_to_zero(self):
+    def slew_to_zero(self, blocking=False):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
+        self.slew_to_home(blocking=blocking)
 
     def park(self):
         """ Slews to the park position and parks the mount.
