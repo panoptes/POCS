@@ -34,7 +34,7 @@ class PanSensorShell(cmd.Cmd):
     captured_data = list()
     messaging = None
 
-    config = load_config(config_files=['peas'])
+    config = load_config(config_files=['pocs'])
 
 ##################################################################################################
 # Generic Methods
