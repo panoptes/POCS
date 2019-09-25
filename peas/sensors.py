@@ -10,6 +10,7 @@ from pocs.utils.config import load_config
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 from pocs.utils.rs232 import SerialData
+from pocs.utils import error
 
 
 class ArduinoSerialMonitor(object):
@@ -67,6 +68,9 @@ class ArduinoSerialMonitor(object):
                     'reader': serial_reader,
                     'port': port,
                 }
+
+        if len(self.serial_readers) == 0:
+            raise error.BadSerialConnection
 
     def _connect_serial(self, port):
         self.logger.info(f'Attempting to connect to serial port: {port}')
