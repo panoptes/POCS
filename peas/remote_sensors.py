@@ -58,6 +58,10 @@ class RemoteMonitor(object):
 
         self.logger.debug(f'Capturing data from remote url: {self.endpoint_url}')
         sensor_data = requests.get(self.endpoint_url).json()
+        if isinstance(sensor_data, list):
+            sensor_data = sensor_data[0]
+
+        self.logger.debug(f'Captured on {self.sensor_name}: {sensor_data!r}')
 
         sensor_data['date'] = current_time(flatten=True)
         if send_message:
