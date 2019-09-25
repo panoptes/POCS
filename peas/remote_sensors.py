@@ -2,6 +2,7 @@ import requests
 import logging
 
 from panoptes.utils import current_time
+from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
@@ -32,6 +33,8 @@ class RemoteMonitor(object):
         if endpoint_url is None:
             # Get the config for the sensor
             endpoint_url = get_config(f'environment.{sensor_name}.url')
+            if endpoint_url is None:
+                raise error.PanError(f'No endpoint_url for {sensor_name}')
 
         if not endpoint_url.startswith('http'):
             endpoint_url = f'http://{endpoint_url}'
@@ -44,7 +47,11 @@ class RemoteMonitor(object):
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
             msg_port = get_config('messaging.msg_port')
-            self.messaging = PanMessaging.create_publisher(msg_port)
+            try:
+                self.messaging = PanMessaging.create_publisher(msg_port)
+            except Exception as e:
+                self.logger.warning(f"Can't send sensor message: {e!r}")
+                return
 
         self.messaging.send_message(topic, msg)
 

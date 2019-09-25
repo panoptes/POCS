@@ -154,25 +154,55 @@ def remote_sensor_response():
     }
 
 
+@pytest.fixture
+def remote_sensor_response_power():
+    return {
+        "power": {
+            "mains": True
+        },
+    }
+
+
 @mocketize
-def test_remote_sensor(remote_sensor_response):
-    endpoint_url = 'http://192.168.1.241:8080'
-
-    remote_monitor = remote_sensors.RemoteMonitor(
-        sensor_name='test_remote',
-        endpoint_url=endpoint_url
-    )
-
+def test_remote_sensor(remote_sensor_response, remote_sensor_response_power):
+    endpoint_url_no_power = 'http://192.168.1.241:8081'
     # Set up mock
     Entry.single_register(
         Entry.GET,
-        endpoint_url,
+        endpoint_url_no_power,
         body=json.dumps(remote_sensor_response),
         headers={'content-type': 'application/json'}
     )
 
-    mocked_response = remote_monitor.capture(store_result=False, send_message=False)
+    remote_monitor = remote_sensors.RemoteMonitor(
+        sensor_name='test_remote',
+        endpoint_url=endpoint_url_no_power,
+        db_type='memory'
+    )
 
+    mocked_response = remote_monitor.capture(store_result=False)
     del mocked_response['date']
-
     assert remote_sensor_response == mocked_response
+
+    # Check caplog for disconnect
+    remote_monitor.disconnect()
+
+    # Check for 'power' entry in db
+    endpoint_url_with_power = 'http://192.168.1.241:8080'
+    # Set up mock
+    Entry.single_register(
+        Entry.GET,
+        endpoint_url_with_power,
+        body=json.dumps(remote_sensor_response_power),
+        headers={'content-type': 'application/json'}
+    )
+
+    power_monitor = remote_sensors.RemoteMonitor(
+        sensor_name='control_board',
+        endpoint_url=endpoint_url_with_power,
+        db_type='memory'
+    )
+
+    mocked_response = power_monitor.capture(send_message=False)
+    del mocked_response['date']
+    assert remote_sensor_response_power == mocked_response
