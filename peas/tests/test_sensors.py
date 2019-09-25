@@ -10,7 +10,8 @@ from mocket.mockhttp import Entry
 
 from peas import sensors as sensors_module
 from peas import remote_sensors
-from pocs.utils import rs232
+from panoptes.utils import error
+from panoptes.utils import rs232
 
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
@@ -206,3 +207,8 @@ def test_remote_sensor(remote_sensor_response, remote_sensor_response_power):
     mocked_response = power_monitor.capture(send_message=False)
     del mocked_response['date']
     assert remote_sensor_response_power == mocked_response
+
+
+def test_remote_sensor_no_endpoint():
+    with pytest.raises(error.PanError):
+        remote_sensors.RemoteMonitor(sensor_name='should_fail')
