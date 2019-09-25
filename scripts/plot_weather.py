@@ -43,7 +43,7 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        config = load_config(config_files=['peas'])
+        config = load_config(config_files=['pocs'])
         self.cfg = config['weather']['plot']
         location_cfg = config.get('location', None)
 

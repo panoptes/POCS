@@ -6,9 +6,8 @@ from astropy import units as u
 from astropy.time import Time
 
 import pocs.version
-from pocs import hardware
 from pocs.camera import create_cameras_from_config
-from pocs.dome import create_dome_from_config, AbstractDome
+from pocs.dome import create_dome_from_config
 from pocs.mount import create_mount_from_config, AbstractMount
 from pocs.observatory import Observatory
 from pocs.scheduler import create_scheduler_from_config
@@ -19,25 +18,17 @@ from pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture
-def simulator():
-    """ We assume everything runs on a simulator
-
-    Tests that require real hardware should be marked with the appropriate
-    fixture (see `conftest.py`)
-    """
-    return hardware.get_all_names(without=['night'])
-
-
-@pytest.fixture
-def observatory(config, simulator, images_dir):
+def observatory(config_with_simulated_mount, images_dir):
     """Return a valid Observatory instance with a specific config."""
+    config = config_with_simulated_mount
     site_details = create_location_from_config(config)
     scheduler = create_scheduler_from_config(config, observer=site_details['observer'])
     dome = create_dome_from_config(config)
+    mount = create_mount_from_config(config)
     obs = Observatory(config=config,
                       scheduler=scheduler,
                       dome=dome,
-                      simulator=simulator,
+                      mount=mount,
                       ignore_local_config=True)
     cameras = create_cameras_from_config(config)
     for cam_name, cam in cameras.items():
@@ -58,31 +49,14 @@ def test_remove_cameras(observatory, config):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(simulator, config):
+def test_bad_site(config):
     conf = config.copy()
     conf['location'] = {}
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+        Observatory(config=conf, ignore_local_config=True)
 
 
-def test_bad_mount_port(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['serial']['port'] = 'foobar'
-    with pytest.raises(error.MountNotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
-@pytest.mark.without_mount
-def test_bad_mount_driver(config):
-    conf = config.copy()
-    simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['driver'] = 'foobar'
-    with pytest.raises(error.MountNotFound):
-        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
-
-
-def test_can_observe(config, caplog):
+def test_cannot_observe(config, caplog):
     conf = config.copy()
     obs = Observatory(config=conf)
     assert obs.can_observe is False
@@ -93,23 +67,26 @@ def test_can_observe(config, caplog):
     assert obs.can_observe is False
     assert caplog.records[-1].levelname == "INFO" and caplog.records[
         -1].message == "Cameras not present, cannot observe."
+    cameras = create_cameras_from_config(conf)
+    for cam_name, cam in cameras.items():
+        obs.add_camera(cam_name, cam)
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+        -1].message == "Mount not present, cannot observe."
 
 
 def test_camera_wrong_type(config):
     conf = config.copy()
-    simulator = hardware.get_all_names(without=['camera'])
 
     with pytest.raises(AttributeError):
-        Observatory(simulator=simulator,
-                    cameras=[Time.now()],
+        Observatory(cameras=[Time.now()],
                     config=conf,
                     auto_detect=False,
                     ignore_local_config=True
                     )
 
     with pytest.raises(AssertionError):
-        Observatory(simulator=simulator,
-                    cameras={'Cam00': Time.now()},
+        Observatory(cameras={'Cam00': Time.now()},
                     config=conf,
                     auto_detect=False,
                     ignore_local_config=True
@@ -434,9 +411,8 @@ def test_no_dome(observatory):
 
 def test_operate_dome(config_with_simulated_dome, config):
     conf = config.copy()
-    simulator = hardware.get_all_names(without=['dome', 'night'])
     dome = create_dome_from_config(conf, logger=None)
-    observatory = Observatory(config=config_with_simulated_dome, dome=dome, simulator=simulator,
+    observatory = Observatory(config=config_with_simulated_dome, dome=dome,
                               ignore_local_config=True)
     assert observatory.has_dome
     assert observatory.open_dome()

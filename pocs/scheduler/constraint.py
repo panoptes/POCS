@@ -61,7 +61,7 @@ class Altitude(BaseConstraint):
             self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
             veto = True
         else:
-            score = 100
+            score = 1
         return veto, score * self.weight
 
     def __str__(self):
@@ -164,6 +164,7 @@ class AlreadyVisited(BaseConstraint):
     has already been visited before. If given `observation` has already been
     visited then it will not be considered for a call to become the `current observation`.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

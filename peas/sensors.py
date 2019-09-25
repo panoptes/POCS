@@ -20,7 +20,7 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):
-        self.config = load_config(config_files='peas')
+        self.config = load_config(config_files='pocs')
         self.logger = get_root_logger()
         # Sensors default to INFO level
         self.logger.setLevel(logging.INFO)
