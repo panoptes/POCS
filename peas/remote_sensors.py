@@ -1,12 +1,12 @@
 import requests
 import logging
 
-from panoptes.utils import current_time
-from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_root_logger
-from panoptes.utils.messaging import PanMessaging
+from pocs.utils import current_time
+from pocs.utils import error
+from pocs.utils.database import PanDB
+from pocs.utils.logger import get_root_logger
+from pocs.utils.messaging import PanMessaging
+from pocs.utils.config import load_config
 
 
 class RemoteMonitor(object):
@@ -16,9 +16,11 @@ class RemoteMonitor(object):
         self.logger = get_root_logger()
         self.logger.setLevel(logging.INFO)
 
+        self.config = load_config()
+
         # Setup the DB either from kwargs or config.
         self.db = None
-        db_type = get_config('db.type', default='file')
+        db_type = self.config.get('db.type', 'file')
         if 'db_type' in kwargs:
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
@@ -32,7 +34,7 @@ class RemoteMonitor(object):
 
         if endpoint_url is None:
             # Get the config for the sensor
-            endpoint_url = get_config(f'environment.{sensor_name}.url')
+            endpoint_url = self.config.get(f'environment.{sensor_name}.url', None)
             if endpoint_url is None:
                 raise error.PanError(f'No endpoint_url for {sensor_name}')
 
@@ -46,7 +48,7 @@ class RemoteMonitor(object):
 
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
-            msg_port = get_config('messaging.msg_port')
+            msg_port = self.config.get('messaging.msg_port')
             try:
                 self.messaging = PanMessaging.create_publisher(msg_port)
             except Exception as e:

@@ -11,7 +11,7 @@ from mocket.mockhttp import Entry
 from peas import sensors as sensors_module
 from peas import remote_sensors
 from pocs.utils import rs232
-from panoptes.utils import error
+from pocs.utils import error
 
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
@@ -199,7 +199,7 @@ def test_remote_sensor(remote_sensor_response, remote_sensor_response_power):
     )
 
     power_monitor = remote_sensors.RemoteMonitor(
-        sensor_name='control_board',
+        sensor_name='power',
         endpoint_url=endpoint_url_with_power,
         db_type='memory'
     )
