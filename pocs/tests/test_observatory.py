@@ -124,9 +124,9 @@ def test_set_scheduler(config, observatory):
     observatory.set_scheduler(scheduler=scheduler)
     assert observatory.scheduler is not None
     err_msg = 'Scheduler is not instance of BaseScheduler class, cannot add.'
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler('scheduler')
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler()
 
 
@@ -140,9 +140,9 @@ def test_set_dome(config_with_simulated_dome):
     obs.set_dome(dome=dome)
     assert obs.has_dome is True
     err_msg = 'Dome is not instance of AbstractDome class, cannot add.'
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_dome('dome')
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_dome()
 
 
@@ -156,9 +156,9 @@ def test_set_mount(config_with_simulated_mount):
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
     err_msg = 'Mount is not instance of AbstractMount class, cannot add.'
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_mount(mount='mount')
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_mount()
 
 
