@@ -10,8 +10,8 @@ from mocket.mockhttp import Entry
 
 from peas import sensors as sensors_module
 from peas import remote_sensors
+from pocs.utils import rs232
 from panoptes.utils import error
-from panoptes.utils import rs232
 
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
