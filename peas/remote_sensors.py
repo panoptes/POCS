@@ -15,6 +15,7 @@ class RemoteMonitor(object):
     def __init__(self, endpoint_url=None, sensor_name=None, *args, **kwargs):
         self.logger = get_root_logger()
         self.logger.setLevel(logging.INFO)
+        self.logger.info(f'Setting up remote sensor {sensor_name}')
 
         # Setup the DB either from kwargs or config.
         self.db = None
@@ -48,7 +49,6 @@ class RemoteMonitor(object):
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
             msg_port = get_config('messaging.msg_port')
-            self.messaging = PanMessaging.create_publisher(msg_port)
 
             try:
                 self.messaging = PanMessaging.create_publisher(msg_port)
