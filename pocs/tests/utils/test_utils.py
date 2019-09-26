@@ -12,6 +12,7 @@ from pocs.utils import load_module
 from pocs.utils import CountdownTimer
 from pocs.utils import error
 from pocs.camera import list_connected_cameras
+from pocs.utils.library import load_library as load_c_library
 
 
 def test_error(capsys):
@@ -39,6 +40,12 @@ def test_error(capsys):
 def test_bad_load_module():
     with pytest.raises(error.NotFound):
         load_module('FOOBAR')
+
+
+def test_load_c_library():
+    # Called without a `path` this will use find_library to locate libc.
+    libc = load_c_library('c')
+    assert libc._name[:4] == 'libc'
 
 
 def test_listify():
