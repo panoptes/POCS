@@ -1,6 +1,6 @@
 import pytest
 
-from pocs.utils import error
+from panoptes.utils import error
 from peas.sensors import ArduinoSerialMonitor
 
 
