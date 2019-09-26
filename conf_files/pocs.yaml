@@ -35,6 +35,7 @@ directories:
 db:
     name: panoptes
     type: file
+state_machine: simple_state_table
 scheduler:
     type: dispatch
     fields_file: simple.yaml
@@ -64,7 +65,6 @@ cameras:
     -
         model: canon_gphoto2
 messaging:
-    # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
 
@@ -114,8 +114,6 @@ panoptes_network:
 #     slack:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
-
-state_machine: simple_state_table
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.

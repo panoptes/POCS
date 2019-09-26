@@ -122,7 +122,8 @@ def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
     err_msg = 'Scheduler is not instance of BaseScheduler class, cannot add.'
     with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler('scheduler')
-    with pytest.raises(TypeError, message=err_msg):
+    err_msg = ".*missing 1 required positional argument.*"
+    with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler()
 
 
@@ -140,9 +141,10 @@ def test_set_dome(dynamic_config_server, config_port):
     obs.set_dome(dome=dome)
     assert obs.has_dome is True
     err_msg = 'Dome is not instance of AbstractDome class, cannot add.'
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_dome('dome')
-    with pytest.raises(TypeError, message=err_msg):
+    err_msg = ".*missing 1 required positional argument.*"
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_dome()
 
 
@@ -164,9 +166,10 @@ def test_set_mount(dynamic_config_server, config_port):
     assert isinstance(obs.mount, AbstractMount) is True
 
     err_msg = 'Mount is not instance of AbstractMount class, cannot add.'
-    with pytest.raises(TypeError, message=err_msg):
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_mount(mount='mount')
-    with pytest.raises(TypeError, message=err_msg):
+    err_msg = ".*missing 1 required positional argument.*"
+    with pytest.raises(TypeError, match=err_msg):
         obs.set_mount()
 
 

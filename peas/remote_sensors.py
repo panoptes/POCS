@@ -2,10 +2,10 @@ import requests
 import logging
 
 from panoptes.utils import current_time
+from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
-from panoptes.utils.serializers import from_json
 from panoptes.utils.messaging import PanMessaging
 
 
@@ -19,6 +19,7 @@ class RemoteMonitor(object):
         # Setup the DB either from kwargs or config.
         self.db = None
         db_type = get_config('db.type', default='file')
+
         if 'db_type' in kwargs:
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
@@ -33,6 +34,8 @@ class RemoteMonitor(object):
         if endpoint_url is None:
             # Get the config for the sensor
             endpoint_url = get_config(f'environment.{sensor_name}.url')
+            if endpoint_url is None:
+                raise error.PanError(f'No endpoint_url for {sensor_name}')
 
         if not endpoint_url.startswith('http'):
             endpoint_url = f'http://{endpoint_url}'
@@ -46,6 +49,12 @@ class RemoteMonitor(object):
         if self.messaging is None:
             msg_port = get_config('messaging.msg_port')
             self.messaging = PanMessaging.create_publisher(msg_port)
+
+            try:
+                self.messaging = PanMessaging.create_publisher(msg_port)
+            except Exception as e:
+                self.logger.warning(f"Can't send sensor message: {e!r}")
+                return
 
         self.messaging.send_message(topic, msg)
 
@@ -61,6 +70,10 @@ class RemoteMonitor(object):
 
         self.logger.debug(f'Capturing data from remote url: {self.endpoint_url}')
         sensor_data = requests.get(self.endpoint_url).json()
+        if isinstance(sensor_data, list):
+            sensor_data = sensor_data[0]
+
+        self.logger.debug(f'Captured on {self.sensor_name}: {sensor_data!r}')
 
         sensor_data['date'] = current_time(flatten=True)
         if send_message:

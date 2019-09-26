@@ -1,16 +1,17 @@
 import sys
+import logging
 
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
 from contextlib import suppress
-import logging
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.rs232 import SerialData
+from panoptes.utils import error
 
 
 class ArduinoSerialMonitor(object):
@@ -27,6 +28,7 @@ class ArduinoSerialMonitor(object):
         # Setup the DB either from kwargs or config.
         self.db = None
         db_type = get_config('db.type', default='file')
+
         if 'db_type' in kwargs:
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
@@ -43,9 +45,10 @@ class ArduinoSerialMonitor(object):
             auto_detect = False
 
         if auto_detect or get_config('environment.auto_detect', default=False):
+
             self.logger.debug('Performing auto-detect')
             for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
-                self.logger.info('Found name "{}" on {}', sensor_name, serial_reader.name)
+                self.logger.info(f'Found name "{sensor_name}" on {serial_reader.name}')
                 self.serial_readers[sensor_name] = {
                     'reader': serial_reader,
                     'port': serial_reader.name,
@@ -65,17 +68,20 @@ class ArduinoSerialMonitor(object):
                     'port': port,
                 }
 
+        if len(self.serial_readers) == 0:
+            raise error.BadSerialConnection
+
     def _connect_serial(self, port):
-        self.logger.info('Attempting to connect to serial port: {}'.format(port))
+        self.logger.info(f'Attempting to connect to serial port: {port}')
         serial_reader = SerialData(port=port, baudrate=9600)
         if serial_reader.is_connected is False:
             try:
                 serial_reader.connect()
             except Exception:
-                self.logger.warning('Could not connect to port: {}'.format(port))
+                self.logger.warning(f'Could not connect to port: {port}')
                 return None
 
-        self.logger.info('Connected to {}', port)
+        self.logger.info(f'Connected to {port}')
         return serial_reader
 
     def disconnect(self):
@@ -86,7 +92,10 @@ class ArduinoSerialMonitor(object):
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
             msg_port = get_config('messaging.msg_port')
-            self.messaging = PanMessaging.create_publisher(msg_port)
+            try:
+                self.messaging = PanMessaging.create_publisher(msg_port)
+            except Exception as e:
+                self.logger.warning(f'Problem creating messaging: {e!r}')
 
         self.messaging.send_message(topic, msg)
 
@@ -114,13 +123,15 @@ class ArduinoSerialMonitor(object):
         for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
-            self.logger.debug('ArduinoSerialMonitor.capture reading sensor {}', sensor_name)
+            self.logger.debug(f'ArduinoSerialMonitor.capture reading sensor {sensor_name}')
             try:
                 reading = reader.get_and_parse_reading()
                 if not reading:
-                    self.logger.debug('Unable to get reading from {}', sensor_name)
+                    self.logger.debug(f'Unable to get reading from {sensor_name}')
                     continue
+
                 self.logger.debug(f'{sensor_name}: {reading!r}')
+
                 time_stamp, data = reading
                 data['date'] = time_stamp
                 sensor_data[sensor_name] = data

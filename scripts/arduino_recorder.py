@@ -15,7 +15,7 @@ from panoptes.utils.messaging import PanMessaging
 
 
 def main(board, port, cmd_port, msg_port, db_type, db_name):
-    config = load_config(config_files=['peas'])
+    config = load_config(config_files=['pocs'])
     serial_config = config.get('environment', {}).get('serial', {})
     logger = get_root_logger()
     serial_data = arduino_io.open_serial_device(port, serial_config=serial_config, name=board)

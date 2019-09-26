@@ -3,9 +3,15 @@
 import collections
 import pytest
 import serial
+import json
+
+from mocket import mocketize
+from mocket.mockhttp import Entry
 
 from peas import sensors as sensors_module
+from peas import remote_sensors
 from panoptes.utils import rs232
+from panoptes.utils import error
 
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
@@ -24,7 +30,8 @@ def list_comports():
     return [
         SerDevInfo(device='bogus://', description='Not an arduino'),
         SerDevInfo(device='loop://', description='Some Arduino device'),
-        SerDevInfo(device='arduinosimulator://?board=telemetry&name=t1', description='Some Arduino device'),
+        SerDevInfo(device='arduinosimulator://?board=telemetry&name=t1',
+                   description='Some Arduino device'),
         SerDevInfo(device='arduinosimulator://?board=camera&name=c1', description='Arduino Micro'),
     ]
 
@@ -134,3 +141,74 @@ def test_auto_detect_arduino_devices(inject_list_comports, serial_handlers):
         assert v[ndx][1].is_connected is True
         v[ndx][1].disconnect()
         assert v[ndx][1].is_connected is False
+
+
+@pytest.fixture
+def remote_sensor_response():
+    return {
+        "data": {
+            "source": "sleeping",
+            "dest": "ready"
+        },
+        "type": "state",
+        "_id": "1fb89552-f335-4f14-a599-5cd507012c2d"
+    }
+
+
+@pytest.fixture
+def remote_sensor_response_power():
+    return {
+        "power": {
+            "mains": True
+        },
+    }
+
+
+@mocketize
+def test_remote_sensor(remote_sensor_response, remote_sensor_response_power):
+    endpoint_url_no_power = 'http://192.168.1.241:8081'
+    # Set up mock
+    Entry.single_register(
+        Entry.GET,
+        endpoint_url_no_power,
+        body=json.dumps(remote_sensor_response),
+        headers={'content-type': 'application/json'}
+    )
+
+    remote_monitor = remote_sensors.RemoteMonitor(
+        sensor_name='test_remote',
+        endpoint_url=endpoint_url_no_power,
+        db_type='memory'
+    )
+
+    mocked_response = remote_monitor.capture(store_result=False)
+    del mocked_response['date']
+    assert remote_sensor_response == mocked_response
+
+    # Check caplog for disconnect
+    remote_monitor.disconnect()
+
+    # Check for 'power' entry in db
+    endpoint_url_with_power = 'http://192.168.1.241:8080'
+    # Set up mock
+    Entry.single_register(
+        Entry.GET,
+        endpoint_url_with_power,
+        body=json.dumps(remote_sensor_response_power),
+        headers={'content-type': 'application/json'}
+    )
+
+    power_monitor = remote_sensors.RemoteMonitor(
+        sensor_name='power',
+        endpoint_url=endpoint_url_with_power,
+        db_type='memory'
+    )
+
+    mocked_response = power_monitor.capture(send_message=False)
+    del mocked_response['date']
+    assert remote_sensor_response_power == mocked_response
+
+
+def test_remote_sensor_no_endpoint():
+    with pytest.raises(error.PanError):
+        remote_sensors.RemoteMonitor(sensor_name='should_fail')

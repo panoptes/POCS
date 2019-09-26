@@ -141,10 +141,12 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
                                       timeout=0.2,
                                       config_port=config_port)
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
-    time.sleep(0.1)  # For some reason takes a moment for the error to get logged.
+    time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
 
-    # Should have logged an ERROR by now
-    # It raises a panoptes.utils.error.Timeout exception too, but because it's in another Thread it
+    # Collect the logs
+    levels = [rec.levelname for rec in caplog.records]
+    assert 'ERROR' in levels  # Should have logged an ERROR by now
+    # It raises a pocs.utils.error.Timeout exception too, but because it's in another Thread it
     # doesn't get passes up to the calling code.
     # Check the last couple of records for our message
     for rec in caplog.records[-5:]:
