@@ -12,7 +12,7 @@ from pocs.utils import load_module
 from pocs.utils import CountdownTimer
 from pocs.utils import error
 from pocs.camera import list_connected_cameras
-from pocs.utils.library import load_library
+from pocs.utils.library import load_library as load_c_library
 
 
 def test_error(capsys):
