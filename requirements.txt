@@ -4,7 +4,6 @@ dateparser
 Flask
 gcloud
 google-cloud-storage
-google-cloud-firestore
 jupyter-console
 jupyterlab
 matplotlib

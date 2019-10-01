@@ -6,26 +6,34 @@ services:
     container_name: peas-shell
     privileged: true
     network_mode: host
-    env_file: "${PANDIR:-/var/panoptes}/env_file"
+    env_file: "$PANDIR/.env"
     depends_on:
       - "messaging-hub"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/peas-shell to access
-    command: tail -f /dev/null
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail -f /dev/null"
   pocs-shell:
     image: gcr.io/panoptes-survey/pocs
     init: true
     container_name: pocs-shell
     privileged: true
     network_mode: host
-    env_file: "${PANDIR:-/var/panoptes}/env_file"
+    env_file: "$PANDIR/.env"
     depends_on:
       - "peas-shell"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: tail -f /dev/null
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail -f /dev/null"
 volumes:
     pandir:
       driver: local
