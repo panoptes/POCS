@@ -33,7 +33,7 @@ class ArduinoSerialMonitor(object):
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
 
-        self.db = PanDB(db_type=db_type)
+        self.db = PanDB(db_type=db_type, logger=self.logger)
 
         self.messaging = None
 
