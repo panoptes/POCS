@@ -317,6 +317,9 @@ class POCS(PanStateMachine, PanBase):
 
         safe = all(is_safe_values.values())
 
+        # Insert safety reading
+        self.db.insert_current('safety', is_safe_values)
+
         if not safe:
             if no_warning is False:
                 self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
