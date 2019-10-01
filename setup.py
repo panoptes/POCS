@@ -38,6 +38,7 @@ setup(name=PACKAGENAME,
       packages=find_packages(exclude=['tests', 'test_*']),
       keywords=KEYWORDS,
       scripts=[
+          'bin/pocs',
           'bin/pocs-shell',
           'bin/peas-shell',
       ],

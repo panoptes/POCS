@@ -9,7 +9,6 @@ jupyterlab
 matplotlib
 numpy
 pandas
-panoptes-utils
 photutils
 psycopg2-binary
 pycodestyle == 2.3.1

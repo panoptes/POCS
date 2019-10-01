@@ -16,7 +16,9 @@ services:
       - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
       - "localhost:6563"
       - "--"
-      - "tail -f /dev/null"
+      - "tail"
+      - "-f"
+      - "/dev/null"
   pocs-shell:
     image: gcr.io/panoptes-survey/pocs
     init: true
@@ -33,7 +35,9 @@ services:
       - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
       - "localhost:6563"
       - "--"
-      - "tail -f /dev/null"
+      - "tail"
+      - "-f"
+      - "/dev/null"
 volumes:
     pandir:
       driver: local
