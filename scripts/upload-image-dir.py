@@ -184,12 +184,15 @@ def main(directory,
     if upload:
         logger.debug("Uploading to storage bucket")
 
-        upload_observation_to_bucket(
-            pan_id,
-            directory,
-            include_files='*',
-            exclude_files='upload_manifest.log',
-            **kwargs)
+        try:
+            upload_observation_to_bucket(
+                pan_id,
+                directory,
+                include_files='*',
+                exclude_files='upload_manifest.log',
+                **kwargs)
+        except Exception as e:
+            logger.error(f'Error in uploading observations: {e!r}')
 
     return directory
 
