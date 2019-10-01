@@ -406,10 +406,10 @@ class Observatory(PanBase):
                     process_cmd.append('--upload')
 
                 if make_timelapse:
-                    process_cmd.append('--make_timelapse')
+                    process_cmd.append('--make-timelapse')
 
                 if keep_jpgs is False:
-                    process_cmd.append('--remove_jpgs')
+                    process_cmd.append('--remove-jpgs')
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,
@@ -422,12 +422,18 @@ class Observatory(PanBase):
                 # Block and wait for directory to finish
                 try:
                     outs, errs = clean_proc.communicate(timeout=3600)  # one hour
+                    if outs and outs > '':
+                        self.logger.info(f'Output from clean: {outs}')
+                    if errs and errs > '':
+                        self.logger.info(f'Errors from clean: {errs}')
                 except Exception as e:  # pragma: no cover
                     self.logger.error(f'Error during cleanup_observations: {e!r}')
                     clean_proc.kill()
                     outs, errs = clean_proc.communicate(timeout=10)
-                    if errs is not None and errs > '':
-                        self.logger.warning("upload_image_dir errs: {}".format(errs))
+                    if outs and outs > '':
+                        self.logger.info(f'Output from clean: {outs}')
+                    if errs and errs > '':
+                        self.logger.info(f'Errors from clean: {errs}')
 
             self.logger.debug('Cleanup finished')
 
