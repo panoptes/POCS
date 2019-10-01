@@ -13,7 +13,7 @@ from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
 from peas.remote_sensors import RemoteMonitor
-from peas.weather import AAGCloudSensor
+from aag.weather import AAGCloudSensor
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import current_time
@@ -218,10 +218,11 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
 
-        port = get_config('weather.aag_cloud.serial_port', default='/dev/ttyUSB0')
+        weather_config = get_config('weather.aag_cloud', default=dict())
+        port = weather_config.get('port', '/dev/ttyUSB0')
 
         print("Loading AAG Cloud Sensor on {}".format(port))
-        self.weather = AAGCloudSensor(serial_address=port, store_result=True)
+        self.weather = AAGCloudSensor(weather_config, serial_address=port, store_result=True)
         self.do_enable_sensor('weather')
 
 ##################################################################################################
