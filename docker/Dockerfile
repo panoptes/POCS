@@ -4,7 +4,7 @@ FROM gcr.io/panoptes-survey/panoptes-utils:$arch AS pocs-base
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pandir=/var/panoptes
-ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli-latest-linux64.tar.bz2"
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz"
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
@@ -21,9 +21,9 @@ RUN apt-get update \
     && /bin/bash gphoto2-updater.sh --stable \
     && rm gphoto2-updater.sh \
     # arduino-cli
-    && wget -q $arduino_url -O arduino-cli.tar.bz2 \
+    && wget -q $arduino_url -O arduino-cli.tar.gz \
     # Untar and capture output name (NOTE: assumes only one file).
-    && ARDUINO_FILE=$(tar xvfj arduino-cli.tar.bz2) \
+    && ARDUINO_FILE=$(tar xvfz arduino-cli.tar.gz) \
     && mv "${ARDUINO_FILE}" /usr/local/bin/arduino-cli \
     && chmod +x /usr/local/bin/arduino-cli \
     # POCS

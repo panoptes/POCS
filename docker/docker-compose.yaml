@@ -6,7 +6,7 @@ services:
     container_name: peas-shell
     privileged: true
     network_mode: host
-    env_file: "$PANDIR/.env"
+    env_file: $PANDIR/.env
     depends_on:
       - "messaging-hub"
     volumes:
@@ -25,7 +25,7 @@ services:
     container_name: pocs-shell
     privileged: true
     network_mode: host
-    env_file: "$PANDIR/.env"
+    env_file: $PANDIR/.env
     depends_on:
       - "peas-shell"
     volumes:
