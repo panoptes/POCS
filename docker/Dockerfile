@@ -23,8 +23,8 @@ RUN apt-get update \
     # arduino-cli
     && wget -q $arduino_url -O arduino-cli.tar.gz \
     # Untar and capture output name (NOTE: assumes only one file).
-    && ARDUINO_FILE=$(tar xvfz arduino-cli.tar.gz) \
-    && mv "${ARDUINO_FILE}" /usr/local/bin/arduino-cli \
+    && tar xvfz arduino-cli.tar.gz \
+    && mv arduino-cli /usr/local/bin/arduino-cli \
     && chmod +x /usr/local/bin/arduino-cli \
     # POCS
     && cd ${POCS} \
