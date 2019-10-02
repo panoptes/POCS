@@ -1,9 +1,38 @@
 version: '3.7'
 services:
+  aag-weather-reader:
+    image: gcr.io/panoptes-survey/aag-weather:latest
+    init: true
+    container_name: aag-weather-reader
+    privileged: true
+    network_mode: host
+    volumes:
+      - pandir:/var/panoptes
+    command:
+      - "python"
+      - "/app/scripts/read-aag.py"
+      - "--config-file"
+      - "/var/panoptes/conf_files/pocs_local.yaml"
+      - "--db-file"
+      - "/var/panoptes/json_store/panoptes/weather.db"
+      - "--store-result"
+      - "--verbose"
+  aag-weather-server:
+    image: gcr.io/panoptes-survey/aag-weather:latest
+    init: true
+    container_name: aag-weather-server
+    privileged: true
+    network_mode: host
+    environment:
+      - DB_NAME=/var/panoptes/json_store/panoptes/weather.db
+    command: ["flask", "run"]
+    volumes:
+      - pandir:/var/panoptes
   peas-shell:
     image: gcr.io/panoptes-survey/pocs
     init: true
     container_name: peas-shell
+    hostname: peas-shell
     privileged: true
     network_mode: host
     env_file: $PANDIR/.env
@@ -23,6 +52,7 @@ services:
     image: gcr.io/panoptes-survey/pocs
     init: true
     container_name: pocs-shell
+    hostname: pocs-shell
     privileged: true
     network_mode: host
     env_file: $PANDIR/.env
