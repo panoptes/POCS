@@ -14,7 +14,8 @@ ENV POCS ${PANDIR}/POCS
 COPY . ${POCS}
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends --yes gcc libncurses5-dev udev \
+    && apt-get install --no-install-recommends --yes \
+        gcc libncurses5-dev udev \
     # GPhoto2
     && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh \
     && chmod +x gphoto2-updater.sh \
@@ -43,7 +44,6 @@ RUN apt-get update \
         gcc \
         gettext \
         libltdl-dev \
-        libpopt-dev \
         libtool \
         libudev-dev \
         libusb-dev \
