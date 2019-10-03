@@ -1,23 +1,17 @@
 import os
-from copy import copy
-from threading import Event, Thread
-from abc import ABCMeta, abstractmethod
-
-import numpy as np
-from scipy.ndimage import binary_dilation
-from astropy.modeling import models, fitting
-
-import matplotlib.colors as colours
+from abc import ABCMeta
+from abs import abstractmethod
 
 from threading import Event
 from threading import Thread
 
-from matplotlib import cm as colormap
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.colors as colours
 
 import numpy as np
-from astropy.modeling import models, fitting
+from astropy.modeling import models
+from astropy.modelling import fitting
 from scipy.ndimage import binary_dilation
 
 
