@@ -13,7 +13,6 @@ from scipy.ndimage import binary_dilation
 from astropy.modeling import models
 from astropy.modeling import fitting
 
-
 from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
