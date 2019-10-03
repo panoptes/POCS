@@ -14,17 +14,14 @@ from astropy.modeling import models
 from astropy.modeling import fitting
 
 
-
 from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 from pocs.utils.images import get_palette
 
 
-
 class AbstractFocuser(PanBase, metaclass=ABCMeta):
-    """
-    Base class for all focusers
+    """Base class for all focusers.
 
     Args:
         name (str, optional): name of the focuser
