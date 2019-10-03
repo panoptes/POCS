@@ -1,7 +1,6 @@
 import os
 from abc import ABCMeta
-from abs import abstractmethod
-
+from abc import abstractmethod
 from threading import Event
 from threading import Thread
 
@@ -10,9 +9,10 @@ from matplotlib.figure import Figure
 import matplotlib.colors as colours
 
 import numpy as np
-from astropy.modeling import models
-from astropy.modelling import fitting
 from scipy.ndimage import binary_dilation
+from astropy.modeling import models
+from astropy.modeling import fitting
+
 
 
 from pocs.base import PanBase
