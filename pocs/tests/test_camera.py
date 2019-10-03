@@ -320,7 +320,7 @@ def test_disable_cooling(camera):
 
 def test_temperature_tolerance(camera):
     temp_tol = camera.temperature_tolerance
-    camera.temperature_tolerance = temp_tol + 1 * u.Celsius
+    camera.temperature_tolerance = temp_tol.value + 1
     assert camera.temperature_tolerance == temp_tol + 1 * u.Celsius
     camera.temperature_tolerance = temp_tol
     assert camera.temperature_tolerance == temp_tol
