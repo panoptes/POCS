@@ -7,8 +7,6 @@
 import collections
 import copy
 import serial
-import time
-from serial import serialutil
 import threading
 import traceback
 

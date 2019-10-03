@@ -8,18 +8,24 @@ from scipy.ndimage import binary_dilation
 from astropy.modeling import models, fitting
 
 import matplotlib.colors as colours
+
+from threading import Event
+from threading import Thread
+
 from matplotlib import cm as colormap
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
+import numpy as np
+from astropy.modeling import models, fitting
+from scipy.ndimage import binary_dilation
+
+
 from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
+from pocs.utils.images import get_palette
 
-palette = copy(colormap.inferno)
-palette.set_over('w', 1.0)
-palette.set_under('k', 1.0)
-palette.set_bad('g', 1.0)
 
 
 class AbstractFocuser(PanBase, metaclass=ABCMeta):
@@ -496,7 +502,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             ax1 = fig.add_subplot(3, 1, 1)
             im1 = ax1.imshow(initial_thumbnail, interpolation='none',
-                             cmap=palette, norm=colours.LogNorm())
+                             cmap=get_palette(), norm=colours.LogNorm())
             fig.colorbar(im1)
             ax1.set_title('Initial focus position: {}'.format(initial_focus))
 
@@ -524,7 +530,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(final_thumbnail, interpolation='none',
-                             cmap=palette, norm=colours.LogNorm())
+                             cmap=get_palette(), norm=colours.LogNorm())
             fig.colorbar(im3)
             ax3.set_title('Final focus position: {}'.format(final_focus))
             plot_path = os.path.join(file_path_root, '{}_focus.png'.format(focus_type))

@@ -1,9 +1,7 @@
 import os
-
+import subprocess
 from collections import OrderedDict
 from datetime import datetime
-import subprocess
-from glob import glob
 
 from astroplan import Observer
 from astropy import units as u
@@ -12,25 +10,22 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from pocs.base import PanBase
-import pocs.dome
+from pocs.camera import AbstractCamera
+from pocs.dome import AbstractDome
 from pocs.images import Image
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
-from pocs.scheduler.constraint import Altitude
+from pocs.mount import AbstractMount
+from pocs.scheduler import BaseScheduler
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import horizon as horizon_utils
-from pocs.utils import load_module
-from pocs.camera import AbstractCamera
 
 
 class Observatory(PanBase):
 
-    def __init__(self, cameras=None, *args, **kwargs):
+    def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
-        dates, mount, cameras, and weather station
+        dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         super().__init__(*args, **kwargs)
         self.logger.info('Initializing observatory')
@@ -42,10 +37,7 @@ class Observatory(PanBase):
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\tSetting up mount')
-        self.mount = None
-        self._create_mount()
-
+        self.set_mount(mount)
         self.cameras = OrderedDict()
 
         if cameras:
@@ -56,20 +48,16 @@ class Observatory(PanBase):
 
         # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
         # here compared to that for the mount.
-        self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
-
-        self.logger.info('\tSetting up scheduler')
-        self.scheduler = None
-        self._create_scheduler()
-
+        self.set_dome(dome)
+        self.set_scheduler(scheduler)
         self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
-##########################################################################
-# Helper methods
-##########################################################################
+    ##########################################################################
+    # Helper methods
+    ##########################################################################
 
     def is_dark(self, horizon='observe', at_time=None):
         """If sun is below horizon.
@@ -95,9 +83,9 @@ class Observatory(PanBase):
 
         return is_dark
 
-##########################################################################
-# Properties
-##########################################################################
+    ##########################################################################
+    # Properties
+    ##########################################################################
 
     @property
     def sidereal_time(self):
@@ -130,19 +118,52 @@ class Observatory(PanBase):
 
     @property
     def current_observation(self):
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot get current observation.')
+            return None
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        self.scheduler.current_observation = new_observation
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot set current observation.')
+        else:
+            self.scheduler.current_observation = new_observation
 
     @property
     def has_dome(self):
         return self.dome is not None
 
-##########################################################################
-# Device Getters/Setters
-##########################################################################
+    @property
+    def can_observe(self):
+        """A dynamic property indicating whether or not observations are possible.
+
+        This property will check to make sure that the following are present:
+          * Scheduler
+          * Cameras
+          * Mount
+
+        If any of the above are not present then a log message is generated and the property returns False.
+
+        Returns:
+            bool: True if observations are possible, False otherwise.
+        """
+        can_observe = True
+        if can_observe and self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot observe.')
+            can_observe = False
+        if can_observe and not self.has_cameras:
+            self.logger.info(f'Cameras not present, cannot observe.')
+            can_observe = False
+        if can_observe and self.mount is None:
+            self.logger.info(f'Mount not present, cannot observe.')
+            can_observe = False
+
+        return can_observe
+
+    ##########################################################################
+    # Device Getters/Setters
+    ##########################################################################
 
     def add_camera(self, cam_name, camera):
         """Add camera to list of cameras as cam_name.
@@ -177,9 +198,51 @@ class Observatory(PanBase):
         self.logger.debug('Removing {}'.format(cam_name))
         del self.cameras[cam_name]
 
-##########################################################################
-# Methods
-##########################################################################
+    def set_scheduler(self, scheduler):
+        """Sets the scheduler for the `Observatory`.
+        Args:
+            scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
+        """
+        if isinstance(scheduler, BaseScheduler):
+            self.logger.info('Adding scheduler.')
+            self.scheduler = scheduler
+        elif scheduler is None:
+            self.logger.info('Removing scheduler.')
+            self.scheduler = None
+        else:
+            raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
+
+    def set_dome(self, dome):
+        """Set's dome or remove the dome for the `Observatory`.
+        Args:
+            dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
+        """
+        if isinstance(dome, AbstractDome):
+            self.logger.info('Adding dome.')
+            self.dome = dome
+        elif dome is None:
+            self.logger.info('Removing dome.')
+            self.dome = None
+        else:
+            raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
+
+    def set_mount(self, mount):
+        """Sets the mount for the `Observatory`.
+        Args:
+            mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
+        """
+        if isinstance(mount, AbstractMount):
+            self.logger.info('Adding mount')
+            self.mount = mount
+        elif mount is None:
+            self.logger.info('Removing mount')
+            self.mount = None
+        else:
+            raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
+
+    ##########################################################################
+    # Methods
+    ##########################################################################
 
     def initialize(self):
         """Initialize the observatory and connected hardware """
@@ -201,6 +264,9 @@ class Observatory(PanBase):
         """
         status = {}
         try:
+
+            status['can_observe'] = self.can_observe
+
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
 
@@ -254,6 +320,10 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting observation for observatory")
 
+        if not self.scheduler:
+            self.logger.info(f'Scheduler not present, cannot get the next observation.')
+            return None
+
         # If observation list is empty or a reread is requested
         reread_fields_file = (
             self.scheduler.has_valid_observations is False or
@@ -304,6 +374,10 @@ class Observatory(PanBase):
 
         process_script = 'upload_image_dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
+
+        if self.scheduler is None:
+            self.logger.info(f'Scheduler not present, cannot finish cleanup.')
+            return
 
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -439,7 +513,7 @@ class Observatory(PanBase):
 
         return self.current_offset_info
 
-    def update_tracking(self):
+    def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.
 
         The `current_offset_info` contains information about how far off
@@ -454,6 +528,14 @@ class Observatory(PanBase):
         Here we take the number of arcseconds that the mount is offset and,
         via the `mount.get_ms_offset`, find the number of milliseconds we
         should adjust in a given direction, one for each axis.
+
+        The minimum and maximum tracking corrections can be passed as keyword
+        arguments (`min_tracking_threshold=100` and `max_tracking_threshold=99999`)
+        or can be specified in the mount config settings.
+
+        Args:
+            **kwargs: Keyword arguments that are passed to `get_tracking_correction`
+                and `correct_tracking`.
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
@@ -470,11 +552,12 @@ class Observatory(PanBase):
             self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
             correction_info = self.mount.get_tracking_correction(
                 self.current_offset_info,
-                pointing_ha
+                pointing_ha,
+                **kwargs
             )
 
             try:
-                self.mount.correct_tracking(correction_info)
+                self.mount.correct_tracking(correction_info, **kwargs)
             except error.Timeout:
                 self.logger.warning("Timeout while correcting tracking")
 
@@ -489,6 +572,7 @@ class Observatory(PanBase):
         Returns:
             dict: The standard headers
         """
+
         if observation is None:
             observation = self.current_observation
 
@@ -610,9 +694,9 @@ class Observatory(PanBase):
             self.logger.info('Closed dome')
         return self.dome.close()
 
-##########################################################################
-# Private Methods
-##########################################################################
+    ##########################################################################
+    # Private Methods
+    ##########################################################################
 
     def _setup_location(self):
         """
@@ -669,100 +753,3 @@ class Observatory(PanBase):
                 location=self.earth_location, name=name, timezone=timezone)
         except Exception:
             raise error.PanError(msg='Bad site information')
-
-    def _create_mount(self, mount_info=None):
-        """Creates a mount object.
-
-        Details for the creation of the mount object are held in the
-        configuration file or can be passed to the method.
-
-        This method ensures that the proper mount type is loaded.
-
-        Args:
-            mount_info (dict):  Configuration items for the mount.
-
-        Returns:
-            pocs.mount:     Returns a sub-class of the mount type
-        """
-        if mount_info is None:
-            mount_info = self.config.get('mount')
-
-        model = mount_info.get('model')
-
-        if 'mount' in self.config.get('simulator', []):
-            model = 'simulator'
-            driver = 'simulator'
-            mount_info['simulator'] = True
-        else:
-            model = mount_info.get('brand')
-            driver = mount_info.get('driver')
-
-            # See if we have a serial connection
-            try:
-                port = mount_info['serial']['port']
-                if port is None or len(glob(port)) == 0:
-                    msg = "Mount port({}) not available. ".format(port) \
-                        + "Use simulator = mount for simulator. Exiting."
-                    raise error.MountNotFound(msg=msg)
-            except KeyError:
-                # TODO(jamessynge): We should move the driver specific validation into the driver
-                # module (e.g. module.create_mount_from_config). This means we have to adjust the
-                # definition of this method to return a validated but not fully initialized mount
-                # driver.
-                if model != 'bisque':
-                    msg = "No port specified for mount in config file. " \
-                        + "Use simulator = mount for simulator. Exiting."
-                    raise error.MountNotFound(msg=msg)
-
-        self.logger.debug('Creating mount: {}'.format(model))
-
-        module = load_module('pocs.mount.{}'.format(driver))
-
-        # Make the mount include site information
-        self.mount = module.Mount(location=self.earth_location)
-
-        self.logger.debug('Mount created')
-
-    def _create_scheduler(self):
-        """ Sets up the scheduler that will be used by the observatory """
-
-        scheduler_config = self.config.get('scheduler', {})
-        scheduler_type = scheduler_config.get('type', 'dispatch')
-
-        # Read the targets from the file
-        fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories'][
-                                   'targets'], fields_file)
-        self.logger.debug('Creating scheduler: {}'.format(fields_path))
-
-        if os.path.exists(fields_path):
-
-            try:
-                # Load the required module
-                module = load_module(
-                    'pocs.scheduler.{}'.format(scheduler_type))
-
-                obstruction_list = self.config['location'].get('obstructions', list())
-                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
-
-                horizon_line = horizon_utils.Horizon(
-                    obstructions=obstruction_list,
-                    default_horizon=default_horizon.value
-                )
-
-                # Simple constraint for now
-                constraints = [
-                    Altitude(horizon=horizon_line),
-                    MoonAvoidance(),
-                    Duration(default_horizon)
-                ]
-
-                # Create the Scheduler instance
-                self.scheduler = module.Scheduler(
-                    self.observer, fields_file=fields_path, constraints=constraints)
-                self.logger.debug("Scheduler created")
-            except ImportError as e:
-                raise error.NotFound(msg=e)
-        else:
-            raise error.NotFound(
-                msg="Fields file does not exist: {}".format(fields_file))

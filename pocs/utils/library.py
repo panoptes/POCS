@@ -1,4 +1,5 @@
 import ctypes
+import ctypes.util
 
 from pocs.utils import error
 
