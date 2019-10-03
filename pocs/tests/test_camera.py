@@ -275,40 +275,68 @@ def test_get_temp(camera):
         assert temperature is not None
 
 
+def test_is_cooled(camera):
+    cooled_camera = camera.is_cooled_camera
+    assert cooled_camera is not None
+
+
 def test_set_target_temperature(camera):
-    try:
+    if camera.is_cooled_camera:
         camera._target_temperature = 10 * u.Celsius
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
-    else:
         assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
+    else:
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+
+
+def test_cooling_enabled(camera):
+    cooling_enabled = camera.cooling_enabled
+    if not camera.is_cooled_camera:
+        assert not cooling_enabled
 
 
 def test_enable_cooling(camera):
-    try:
+    if camera.is_cooled_camera:
         camera.cooling_enabled = True
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+        assert camera.cooling_enabled
     else:
-        assert camera.cooling_enabled is True
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
 
 
 def test_get_cooling_power(camera):
-    try:
+    if camera.is_cooled_camera:
         power = camera.cooling_power
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
-    else:
         assert power is not None
+    else:
+        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
 
 
 def test_disable_cooling(camera):
-    try:
+    if camera.is_cooled_camera:
         camera.cooling_enabled = False
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+        assert not camera.cooling_enabled
     else:
-        assert camera.cooling_enabled is False
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+
+
+def test_temperature_tolerance(camera):
+    temp_tol = camera.temperature_tolerance
+    camera.temperature_tolerance = temp_tol + 1 * u.Celsius
+    assert camera.temperature_tolerance == temp_tol + 1 * u.Celsius
+    camera.temperature_tolerance = temp_tol
+    assert camera.temperature_tolerance == temp_tol
+
+
+def test_is_temperature_stable(camera):
+    if camera.is_cooled_camera:
+        camera.target_temperature = camera.temperature
+        camera.cooling_enabled = True
+        time.sleep(1)
+        assert camera.is_temperature_stable
+        camera.cooling_enabled = False
+        assert not camera.is_temperature_stable
+        camera.cooling_enabled = True
+    else:
+        assert not camera.is_temperature_stable
 
 
 def test_exposure(camera, tmpdir):

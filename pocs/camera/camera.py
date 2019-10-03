@@ -216,8 +216,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def is_temperature_stable(self):
         """ True if image sensor temperature is stable, False if not.
-See also:
-    See `temperature_tolerance` for more information about the temperature stability.
+
+        See also: See `temperature_tolerance` for more information about the temperature stability.
         An uncooled camera, or cooled camera with cooling disabled, will always return False.
         """
         if self.is_cooled_camera and self.cooling_enabled:
