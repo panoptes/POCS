@@ -400,6 +400,7 @@ def test_exposure_scaling(camera, tmpdir):
         fits_path = str(tmpdir.join('test_exposure_scaling.fits'))
         camera.take_exposure(filename=fits_path, dark=True, blocking=True)
         image_data, image_header = fits.getdata(fits_path, header=True)
+        assert bit_depth == image_header['BITDEPTH'] * u.bit
         pad_bits = image_header['BITPIX'] - image_header['BITDEPTH']
         assert (image_data % 2**pad_bits).any()
 
