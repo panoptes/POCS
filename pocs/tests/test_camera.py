@@ -7,6 +7,7 @@ from copy import deepcopy
 from ctypes.util import find_library
 
 import astropy.units as u
+from astropy.io import fits
 
 from pocs.camera.simulator.dslr import Camera as SimCamera
 from pocs.camera.simulator.ccd import Camera as SimSDKCamera
@@ -383,6 +384,24 @@ def test_exposure_collision(camera, tmpdir):
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
     assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+
+
+def test_exposure_scaling(camera, tmpdir):
+    """Regression test for incorrect pixel value scaling.
+
+    Checks for zero padding of LSBs instead of MSBs, as encountered
+    with ZWO ASI cameras.
+    """
+    try:
+        bit_depth = camera.bit_depth
+    except AttributeError:
+        pytest.skip("Camera does not have bit_depth attribute")
+    else:
+        fits_path = str(tmpdir.join('test_exposure_scaling.fits'))
+        camera.take_exposure(filename=fits_path, dark=True, blocking=True)
+        image_data, image_header = fits.getdata(fits_path, header=True)
+        pad_bits = image_header['BITPIX'] = bit_depth
+        assert (image_data % 2**pad_bits).any()
 
 
 def test_exposure_no_filename(camera):
