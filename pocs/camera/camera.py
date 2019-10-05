@@ -713,7 +713,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 corresponding POCS submodule for this subcomponent, e.g. `pocs.focuser`.
         """
         if subcomponent:
-            base_module_name = "pocs.{}.{}".format(class_name.casefold(), class_name.casefold())
+            base_module_name = "pocs.{0}.{0}".format(class_name.casefold())
             try:
                 base_module = load_module(base_module_name)
             except AttributeError as err:
