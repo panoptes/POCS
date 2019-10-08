@@ -547,7 +547,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
         with suppress(AttributeError):
-            header.set('BITDEPTH', self.bit_depth, 'ADC bit depth')
+            header.set('BITDEPTH', get_quantity_value(self.bit_depth, u.bit), 'ADC bit depth')
 
         if self.focuser:
             header = self.focuser._add_fits_keywords(header)
