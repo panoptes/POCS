@@ -83,6 +83,21 @@ class ASIDriver(AbstractSDKDriver):
         self.logger.debug("Found {} connected ASI cameras".format(count))
         return count
 
+    def get_product_ids(self):
+        """Get product IDs of cameras supported by the SDK."""
+        n_pids = self._CDLL.ASIGetProductIDs(0)  # Call once to get number of product IDs
+        if n_pids > 0:
+            # Make array of C ints of required size.
+            product_ids = (ctypes.c_int * n_pids)()
+            # Call again to get product IDs. Should get same n_pids as before.
+            assert n_pids == self._CDLL.ASIGetProductIDs(ctypes.byref(product_ids))
+        else:
+            self.logger.error("Error getting supported camera product IDs from SDK.")
+            raise RuntimeError("ZWO SDK support 0 SDK products?")
+
+        self.logger.debug("Got {} supported camera product IDs from SDK.".format(n_pids))
+        return list(product_ids)
+
     def get_camera_property(self, camera_index):
         """ Get properties of the camera with given index """
         camera_info = CameraInfo()
@@ -91,6 +106,18 @@ class ASIDriver(AbstractSDKDriver):
             msg = "Error calling ASIGetCameraProperty: {}".format(ErrorCode(error_code).name)
             self.logger.error(msg)
             raise RuntimeError(msg)
+
+        pythonic_info = self._parse_info(camera_info)
+        self.logger.debug("Got info from camera {}, {}".format(pythonic_info['camera_ID'],
+                                                               pythonic_info['name']))
+        return pythonic_info
+
+    def get_camera_property_by_id(self, camera_ID):
+        """Get properties of the camera with a given integer ID."""
+        camera_info = CameraInfo()
+        self._call_function('ASIGetCameraPropertyByID',
+                            camera_ID,
+                            ctypes.byref(camera_info))
 
         pythonic_info = self._parse_info(camera_info)
         self.logger.debug("Got info from camera {}, {}".format(pythonic_info['camera_ID'],
@@ -256,6 +283,147 @@ class ASIDriver(AbstractSDKDriver):
         self.logger.debug("Set ROI start position of camera {} to ({}, {})".format(
             camera_ID, start_x, start_y))
 
+    def get_dropped_frames(self, camera_ID):
+        """Get the number of dropped frames during video capture."""
+        n_dropped_frames = ctypes.c_int()
+        self._call_function('ASIGetDroppedFrames',
+                            camera_ID,
+                            ctypes.byref(n_dropped_frames))
+        self.logger_debug("Camera {} has dropped {} frames.".format(camera_ID, n_dropped_frames))
+        return n_dropped_frames
+
+    def enable_dark_subtract(self, camera_ID, dark_file_path):
+        """Enable dark subtraction (not implemented).
+
+        You almost certainly wouldn't want to use this as it only works with images taken in
+        RGB8 format and only with dark frames saved as .BMP files. Far better to do dark
+        subtraction in post-processing.
+        """
+        raise NotImplementedError
+
+    def disable_dark_subtract(self, camera_ID):
+        """Disable dark subtraction.
+
+        May need to call this as dark current subtraction settings persist in the registry
+        on Windows.
+        """
+        self._call_function('ASIDisableDarkSubtract',
+                            camera_ID)
+        self.logger.debug("Dark subtraction on camera {} disabled.".format(camera_ID))
+
+    def pulse_guide_on(self, camera_ID, direction):
+        """Turn on PulseGuide on ST4 port of given camera in given direction."""
+        self._call_function('ASIPulseGuideOn',
+                            camera_ID,
+                            GuideDirection[direction])
+        dname = GuideDirection[direction].name
+        msg = f"PulseGuide on camera {camera_ID} on in direction {dname}."
+        self.logger.debug(msg}
+
+    def pulse_guide_off(self, camera_ID, direction):
+        """Turn off PulseGuide on ST4 port of given camera in given direction."""
+        self._call_function('ASIPulseGuideOff',
+                            camera_ID,
+                            GuideDirection[direction])
+        dname = GuideDirection[direction].name
+        msg = f"PulseGuide on camera {camera_ID} off in direction {dname}."
+        self.logger.debug(msg}
+
+    def get_gain_offset(self, camera_ID):
+        """Get pre-setting parameters."""
+        offset_highest_dr = ctypes.c_int()
+        offset_unity_gain = ctypes.c_int()
+        gain_lowest_rn = ctypes.c_int()
+        offset_lowest_rn = ctypes.c_int()
+        self._call_function('ASIGetGainOffset',
+                            camera_ID,
+                            ctypes.byref(offset_highest_dr),
+                            ctypes.byref(offset_unity_gain),
+                            ctypes.byref(gain_lowest_rn),
+                            ctypes.byref(offset_lowest_rn))
+        self.logger.debug('Got pre-setting parameters from camera {}.'.format(camera_ID))
+        return offset_highest_dr, offset_unity_gain, gain_lowest_rn, offset_lowest_rn
+
+    def get_camera_supported_mode(self, camera_ID):
+        """Get supported trigger modes for camera with given integer ID."""
+        modes_struct = SupportedMode()
+        self._call_function('ASIGetCameraSupportMode',
+                            camera_ID,
+                            ctypes.byref(modes_struct.modes))
+        supported_modes = []
+        for mode_int in modes_struct.modes:
+            if mode_int = CameraMode.END:
+                break
+            supported_modes.append(CameraMode(mode_int).name)
+
+        self.logger.debug("Got supported modes {} for camera {}".format(supported_modes,
+                                                                        camera_ID))
+        return supported_modes
+
+    def get_camera_mode(self, camera_ID):
+        """Get current trigger mode for camera with given integer ID."""
+        mode = ctypes.int()
+        self._call_function('ASIGetCameraMode',
+                            camera_ID,
+                            ctypes.byref(mode))
+        mode_name = CameraMode(mode).name
+        self.logger.debug('Camera {} is in trigger mode {}'.format(camera_ID, mode_name))
+        return mode_name
+
+    def set_camera_mode(self, camera_ID, mode_name):
+        """Set trigger mode for camera with given integer ID."""
+        mode = CamerMode[mode_name]
+        self._call_function('ASISetCameraMode',
+                            camera_ID,
+                            mode)
+        self.logger.debug('Set trigger mode of camera {} to {}.'.format(camera_ID, mode_name))
+
+    def send_soft_trigger(self, camera_ID, start_stop_signal):
+        """Send out a soft trigger on camera with given integer ID."""
+        self._call_function('ASISendSoftTrigger',
+                            camera_ID,
+                            int(bool(start_stop_signal)))
+        self.logger.debug('Soft trigger sent to camera {}.'format(camera_ID))
+
+    def get_serial_number(self, camera_ID):
+        """Get serial number of the camera with given integer ID.
+
+        The serial number is an array of 8 unsigned chars, the same as string ID.
+        """
+        struct_SN = ID()  # Same structure as string ID.
+        self._call_function('ASIGetSerialNumber',
+                            camera_ID,
+                            ctypes.byref(struct_SN))
+        bytes_SN = bytes(struct_SN.id)
+        serial_number = bytes_SN.decode()
+        self.logger.debug("Got serial number '{}' from camera {}".format(serial_number, camera_ID))
+        return serial_number
+
+    def get_trigger_output_io_conf(self, camera_ID):
+        """Get external trigger configuration of the camera with given integer ID."""
+        pin = ctypes.c_int()
+        pin_high = ctypes.c_int()
+        delay = ctypes.c_long()
+        duration = ctypes.c_long()
+        self._call_function('ASIGetTriggerOutputIOConf',
+                            camera_ID,
+                            ctypes.byref(pin),
+                            ctypes.bytef(pin_high),
+                            ctypes.byref(delay),
+                            ctypes.byref(duration))
+        self.logger.debug("Got trigger config from camera {}".format(camera_IF))
+        return TrigOutput(pin).name, bool(pin_high), int(delay), int(duration)
+
+    def set_trigger_ouput_io_conf(self, camera_ID, pin, pin_high, delay, duration):
+        """Set external trigger configuration of the camera with given integer ID."""
+        self._call_function('ASISetTriggerOutputIOConf',
+                            camera_ID,
+                            TrigOutput[pin],
+                            ctypes.c_int(pin_high),
+                            ctypes.c_long(delay),
+                            ctypes.c_long(duration))
+        self.logger.debug("Set trigger config of camera {}".format(camera_ID))
+
     def start_exposure(self, camera_ID):
         """ Start exposure on the camera with given integer ID """
         self._call_function('ASIStartExposure', camera_ID)
@@ -311,7 +479,7 @@ class ASIDriver(AbstractSDKDriver):
     # Private methods
 
     def _call_function(self, function_name, camera_ID, *args):
-        """ Utility functions for calling the functions that take return ErrorCode """
+        """ Utility function for calling the SDK functions that return ErrorCode """
         function = getattr(self._CDLL, function_name)
         error_code = function(ctypes.c_int(camera_ID), *args)
         if error_code != ErrorCode.SUCCESS:
@@ -440,7 +608,7 @@ boolean_controls = ('ANTI_DEW_HEATER',
 ####################################################################################################
 
 
-ID_MAX = 128  # Maximum value for camera integer ID (camaera_ID)
+ID_MAX = 128  # Maximum value for camera integer ID (camera_ID)
 
 
 @enum.unique
@@ -492,6 +660,14 @@ class CameraMode(enum.IntEnum):
     TRIG_LOW_LEVEL = enum.auto()
     END = -1
 
+
+@enum.unique
+class TrigOutput(enum.IntEnum):
+    """External trigger output."""
+
+    PINA = 0  # Only Pin A output
+    PINB = enum.auto()  # Only Pin B outoput
+    NONE = -1
 
 @enum.unique
 class ErrorCode(enum.IntEnum):

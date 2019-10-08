@@ -123,11 +123,11 @@ class Camera(AbstractSDKCamera):
     @gain.setter
     def gain(self, gain):
         self._control_setter('GAIN', gain)
+        self._refresh_info()  # This will update egain value in self.properties
 
     @property
     def egain(self):
-        """ Nominal value of the image sensor gain for the camera's current gain setting """
-        self._refresh_info()
+        """ Image sensor gain in e-/ADU for the current gain, as reported by the camera."""
         return self.properties['e_per_adu']
 
     @property
@@ -156,6 +156,7 @@ class Camera(AbstractSDKCamera):
         Camera._driver.init_camera(self._handle)
         self._control_info = Camera._driver.get_control_caps(self._handle)
         self._info['control_info'] = self._control_info  # control info accessible via properties
+        Camera._driver.disable_dark_subtract(self._handle)
         self._connected = True
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
@@ -291,11 +292,8 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)
         header.set('CAM-GAIN', self.gain, 'Internal units')
-        header.set('CAM-BITS', int(get_quantity_value(self.properties['bit_depth'], u.bit)),
-                   'ADC bit depth')
         header.set('XPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
         header.set('YPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
-        header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu), 'Electrons/ADU')
         return header
 
     def _refresh_info(self):

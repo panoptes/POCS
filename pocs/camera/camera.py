@@ -119,6 +119,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._file_extension
 
     @property
+    def egain(self):
+        """Image sensor gain in e-/ADU as reported by the camera."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
+    def bit_depth(self):
+        """ADC bit depth."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
     def ccd_temp(self):
         """
         Get current temperature of the camera's image sensor.
@@ -537,17 +547,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
         with suppress(NotImplementedError):
-            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
-        with suppress(NotImplementedError):
-            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
-        with suppress(NotImplementedError):
-            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+            # SBIG & ZWO cameras report their gain.
+            header.set('EGAIN', get_quantity_value(self.egain, u.electron/u.adu), 'Electrons/ADU')
+            # ZWO cameras have ADC bit depths with differ from BITPIX
+            header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
+            # Some non cooled cameras can still report the image sensor temperature
+            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
+        if self.is_cooled_camera:
+            header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
+                       'Degrees C')
+            header.set('COOL-POW', get_quantity_value(self.cooling_power, u.percent),
                        'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
-        with suppress(AttributeError):
-            header.set('BITDEPTH', get_quantity_value(self.bit_depth, u.bit), 'ADC bit depth')
+
 
         if self.focuser:
             header = self.focuser._add_fits_keywords(header)

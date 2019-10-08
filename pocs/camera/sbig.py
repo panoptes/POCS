@@ -33,6 +33,11 @@ class Camera(AbstractSDKCamera):
 # Properties
 
     @property
+    def egain(self):
+        """Image sensor gain in e-/ADU as reported by the camera."""
+        return self._info['readout modes']['RM_1X1']['gain']
+
+    @property
     def ccd_temp(self):
         """
         Current temperature of the camera's image sensor.
@@ -197,7 +202,5 @@ class Camera(AbstractSDKCamera):
                    'Microns')
         header.set('YPIXSZ', self._info['readout modes'][readout_mode]['pixel height'].value,
                    'Microns')
-        header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
-                   'Electrons/ADU')
 
         return header
