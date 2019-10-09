@@ -77,13 +77,13 @@ class ASIDriver(AbstractSDKDriver):
                 serial_number = self.get_serial_number(camera_ID)
             except RuntimeError as err:
                 # If at first you don't succeed, try, except, else, finally again.
-                self.logger.error(f"Error getting serial number: {err}")
+                self.logger.warning(f"Error getting serial number: {err}")
                 try:
                     string_ID = self.get_ID(camera_ID)
                 except RuntimeError as err:
-                    self.logger.error(f"Error getting string ID: {err}")
+                    self.logger.warning(f"Error getting string ID: {err}")
                     msg = f"Skipping ZWO ASI camera {camera_ID} with no serial number or string ID."
-                    self.logger.warning(msg)
+                    self.logger.error(msg)
                     break
                 else:
                     msg = f"Using string ID '{string_ID}' in place of serial number."
@@ -127,8 +127,7 @@ class ASIDriver(AbstractSDKDriver):
             raise RuntimeError(msg)
 
         pythonic_info = self._parse_info(camera_info)
-        self.logger.debug("Got info from camera {}, {}".format(pythonic_info['camera_ID'],
-                                                               pythonic_info['name']))
+        self.logger.debug("Got info from camera {camera_ID}, {name}".format(**pythonic_info))
         return pythonic_info
 
     def get_camera_property_by_id(self, camera_ID):
@@ -139,8 +138,7 @@ class ASIDriver(AbstractSDKDriver):
                             ctypes.byref(camera_info))
 
         pythonic_info = self._parse_info(camera_info)
-        self.logger.debug("Got info from camera {}, {}".format(pythonic_info['camera_ID'],
-                                                               pythonic_info['name']))
+        self.logger.debug("Got info from camera {camera_ID}, {name}".format(**pythonic_info))
         return pythonic_info
 
     def open_camera(self, camera_ID):

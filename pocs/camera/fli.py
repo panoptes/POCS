@@ -100,7 +100,7 @@ class Camera(AbstractSDKCamera):
             message = 'Could not connect to {} on {}!'.format(self.name, self._camera_address)
             raise error.PanError(message)
         self._get_camera_info()
-        self.model = self._info['camera model']
+        self.model = self.properties['camera model']
         self._connected = True
 
 # Private Methods
@@ -117,8 +117,8 @@ class Camera(AbstractSDKCamera):
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
         # Can later use this for windowed exposures.
         self._driver.FLISetImageArea(self._handle,
-                                     self._info['visible corners'][0],
-                                     self._info['visible corners'][1])
+                                     self.properties['visible corners'][0],
+                                     self.properties['visible corners'][1])
 
         # No on chip binning for now.
         self._driver.FLISetHBin(self._handle, bin_factor=1)
@@ -133,8 +133,8 @@ class Camera(AbstractSDKCamera):
         self._driver.FLIExposeFrame(self._handle)
 
         readout_args = (filename,
-                        self._info['visible width'],
-                        self._info['visible height'],
+                        self.properties['visible width'],
+                        self.properties['visible height'],
                         header)
         return readout_args
 
@@ -157,10 +157,10 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)
 
-        header.set('CAM-HW', self._info['hardware version'], 'Camera hardware version')
-        header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
-        header.set('XPIXSZ', self._info['pixel width'].value, 'Microns')
-        header.set('YPIXSZ', self._info['pixel height'].value, 'Microns')
+        header.set('CAM-HW', self.properties['hardware version'], 'Camera hardware version')
+        header.set('CAM-FW', self.properties['firmware version'], 'Camera firmware version')
+        header.set('XPIXSZ', self.properties['pixel width'].value, 'Microns')
+        header.set('YPIXSZ', self.properties['pixel height'].value, 'Microns')
 
         return header
 

@@ -35,7 +35,7 @@ class Camera(AbstractSDKCamera):
     @property
     def egain(self):
         """Image sensor gain in e-/ADU as reported by the camera."""
-        return self._info['readout modes']['RM_1X1']['gain']
+        return self.properties['readout modes']['RM_1X1']['gain']
 
     @property
     def ccd_temp(self):
@@ -197,10 +197,10 @@ class Camera(AbstractSDKCamera):
         # Unbinned. Need to chance if binning gets implemented.
         readout_mode = 'RM_1X1'
 
-        header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
-        header.set('XPIXSZ', self._info['readout modes'][readout_mode]['pixel width'].value,
+        header.set('CAM-FW', self.properties['firmware version'], 'Camera firmware version')
+        header.set('XPIXSZ', self.properties['readout modes'][readout_mode]['pixel width'].value,
                    'Microns')
-        header.set('YPIXSZ', self._info['readout modes'][readout_mode]['pixel height'].value,
+        header.set('YPIXSZ', self.properties['readout modes'][readout_mode]['pixel height'].value,
                    'Microns')
 
         return header
