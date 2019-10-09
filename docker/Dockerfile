@@ -43,10 +43,7 @@ RUN apt-get update \
         build-essential \
         gcc \
         gettext \
-        libltdl-dev \
         libtool \
-        libudev-dev \
-        libusb-dev \
         pkg-config \
     && apt-get autoremove --purge -y \
     && apt-get -y clean \
