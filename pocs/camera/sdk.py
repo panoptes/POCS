@@ -139,8 +139,8 @@ class AbstractSDKCamera(AbstractCamera):
     # Methods
 
     def _create_fits_header(self, seconds, dark):
-        header = super()._create__fits_header(seconds, dark)
-        header.set('CAM-SDK', self._Driver.version, 'Camera SDK version')
+        header = super()._create_fits_header(seconds, dark)
+        header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
         return header
 
     def __str__(self):
