@@ -391,7 +391,7 @@ class ASIDriver(AbstractSDKDriver):
 
     def set_camera_mode(self, camera_ID, mode_name):
         """Set trigger mode for camera with given integer ID."""
-        mode = CamerMode[mode_name]
+        mode = CameraMode[mode_name]
         self._call_function('ASISetCameraMode',
                             camera_ID,
                             mode)
