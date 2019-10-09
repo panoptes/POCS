@@ -337,7 +337,7 @@ class ASIDriver(AbstractSDKDriver):
                             GuideDirection[direction])
         dname = GuideDirection[direction].name
         msg = f"PulseGuide on camera {camera_ID} on in direction {dname}."
-        self.logger.debug(msg}
+        self.logger.debug(msg)
 
     def pulse_guide_off(self, camera_ID, direction):
         """Turn off PulseGuide on ST4 port of given camera in given direction."""
@@ -346,7 +346,7 @@ class ASIDriver(AbstractSDKDriver):
                             GuideDirection[direction])
         dname = GuideDirection[direction].name
         msg = f"PulseGuide on camera {camera_ID} off in direction {dname}."
-        self.logger.debug(msg}
+        self.logger.debug(msg)
 
     def get_gain_offset(self, camera_ID):
         """Get pre-setting parameters."""
@@ -371,7 +371,7 @@ class ASIDriver(AbstractSDKDriver):
                             ctypes.byref(modes_struct.modes))
         supported_modes = []
         for mode_int in modes_struct.modes:
-            if mode_int = CameraMode.END:
+            if mode_int == CameraMode.END:
                 break
             supported_modes.append(CameraMode(mode_int).name)
 
@@ -402,7 +402,7 @@ class ASIDriver(AbstractSDKDriver):
         self._call_function('ASISendSoftTrigger',
                             camera_ID,
                             int(bool(start_stop_signal)))
-        self.logger.debug('Soft trigger sent to camera {}.'format(camera_ID))
+        self.logger.debug('Soft trigger sent to camera {}.'.format(camera_ID))
 
     def get_serial_number(self, camera_ID):
         """Get serial number of the camera with given integer ID.
@@ -687,6 +687,7 @@ class TrigOutput(enum.IntEnum):
     PINA = 0  # Only Pin A output
     PINB = enum.auto()  # Only Pin B outoput
     NONE = -1
+
 
 @enum.unique
 class ErrorCode(enum.IntEnum):

@@ -548,7 +548,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('FILTER', self.filter_type)
         with suppress(NotImplementedError):
             # SBIG & ZWO cameras report their gain.
-            header.set('EGAIN', get_quantity_value(self.egain, u.electron/u.adu), 'Electrons/ADU')
+            header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu),
+                       'Electrons/ADU')
             # ZWO cameras have ADC bit depths with differ from BITPIX
             header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
             # Some non cooled cameras can still report the image sensor temperature
@@ -561,7 +562,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
-
 
         if self.focuser:
             header = self.focuser._add_fits_keywords(header)
