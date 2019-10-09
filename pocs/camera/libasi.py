@@ -40,7 +40,7 @@ class ASIDriver(AbstractSDKDriver):
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(name='ASICamera2', library_path=library_path, **kwargs)
-
+        self._product_ids = self.get_product_ids()  # Supported camera models
     # Methods
 
     def get_SDK_version(self):
@@ -55,7 +55,13 @@ class ASIDriver(AbstractSDKDriver):
         """Gets currently connected camera info.
 
         Returns:
-            dict: All currently connected camera string IDs with corresponding integer camera IDs.
+            dict: All currently connected camera serial numbers with corresponding integer
+                camera IDs.
+
+        Notes:
+            If a camera does not have a serial number it will attempt to fall back to string ID.
+            Cameras with neither serial number nor string ID will be left out of the dictionary
+            as they have no unique indentifier.
         """
         n_cameras = self.get_num_of_connected_cameras()
         if n_cameras == 0:
@@ -64,17 +70,30 @@ class ASIDriver(AbstractSDKDriver):
         # Get the IDs
         cameras = {}
         for camera_index in range(n_cameras):
-            # Can get IDs without opening cameras by parsing the 'name' string, which has the format
-            # "model(string_id)" if the string ID has been set, otherwise it is just the model name.
             info = self.get_camera_property(camera_index)
-            model, _, string_id = info['name'].partition('(')
-            if not string_id:
-                self.logger.warning("Found ZWO ASI camera with no ID set")
-                break
-            assert string_id.endswith(')'), self.logger.error("Expected ID enclosed in ()")
-            string_id = string_id[:-1]
-            cameras[string_id] = info['camera_ID']
+            camera_ID = info['camera_ID']
+            self.open_camera(camera_ID)
+            try:
+                serial_number = self.get_serial_number()
+            except RuntimeError as err:
+                # If at first you don't succeed, try, except, else, finally again.
+                self.logger.error(f"Error getting serial number: {err}")
+                try:
+                    string_ID = self.get_ID(camera_ID)
+                except RuntimeError as err:
+                    self.logger.error(f"Error getting string ID: {err}")
+                    msg = f"Skipping ZWO ASI camera {camera_ID} with no serial number or string ID."
+                    self.logger.warning(msg)
+                    break
+                else:
+                    msg = f"Using string ID '{string_ID}' in place of serial number."
+                    self.logger.warning(msg)
+                    serial_number = string_ID
+            finally:
+                self.close_camera(camera_ID)
 
+            cameras[serial_number] = camera_ID
+        self.logger.debug(f"Got camera serial numbers: {list(cameras.keys())}")
         return cameras
 
     def get_num_of_connected_cameras(self):
