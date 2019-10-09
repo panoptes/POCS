@@ -394,7 +394,7 @@ def test_exposure_scaling(camera, tmpdir):
     """
     try:
         bit_depth = camera.bit_depth
-    except AttributeError:
+    except NotImplementedError:
         pytest.skip("Camera does not have bit_depth attribute")
     else:
         fits_path = str(tmpdir.join('test_exposure_scaling.fits'))
