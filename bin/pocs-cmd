@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+USER_ID=$(id -u)
 DOCKER_NAME="pocs-shell"
 
 if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
@@ -7,8 +8,8 @@ if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
 else
     if [ $# -eq 0 ]; then
         echo "Starting shell on ${DOCKER_NAME}"
-        docker exec -it "${DOCKER_NAME}" /bin/zsh -i
+        docker exec --user "${USER_ID}" -it "${DOCKER_NAME}" /bin/zsh -i
     else
-        docker exec -it "${DOCKER_NAME}" /bin/zsh -ic "$@"
+        docker exec --user "${USER_ID}" -it "${DOCKER_NAME}" /bin/zsh -ic "$@"
     fi
 fi
