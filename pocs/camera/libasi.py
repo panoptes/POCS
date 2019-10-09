@@ -74,7 +74,7 @@ class ASIDriver(AbstractSDKDriver):
             camera_ID = info['camera_ID']
             self.open_camera(camera_ID)
             try:
-                serial_number = self.get_serial_number()
+                serial_number = self.get_serial_number(camera_ID)
             except RuntimeError as err:
                 # If at first you don't succeed, try, except, else, finally again.
                 self.logger.error(f"Error getting serial number: {err}")
