@@ -24,10 +24,25 @@ class Camera(AbstractSDKCamera):
                  gain=None,
                  image_type=None,
                  *args, **kwargs):
-        # ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
-        # camera_ID and, optionally, an 8 byte ID that can be written to the camera firmware
-        # by the user (using ASICap, or pocs.camera.libasi.ASIDriver.set_ID()). We will use
-        # the latter as a serial number string.
+        """
+        ZWO ASI Camera class
+
+        Args:
+            serial_number (str): camera serial number or user set ID (up to 8 bytes). See notes.
+            gain (int, optional): gain setting, using camera's internal units. If not given
+                the camera will use its current or default setting.
+            image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
+                or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
+                the camera's own default will be used.
+            *args, **kwargs: additional arguments to be passed to the parent classes.
+
+        Notes:
+            ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
+            camera_ID and, probably, an 8 byte serial number. Optionally they also have an
+            8 byte ID that can be written to the camera firmware by the user (using ASICap,
+            or pocs.camera.libasi.ASIDriver.set_ID()). The camera should be identified by
+            its serial number or, if it doesn't have one, by the user set ID.
+        """
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
         kwargs['timeout'] = kwargs.get('timeout', 0.5)
 
