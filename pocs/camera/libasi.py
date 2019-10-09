@@ -430,7 +430,7 @@ class ASIDriver(AbstractSDKDriver):
                             ctypes.bytef(pin_high),
                             ctypes.byref(delay),
                             ctypes.byref(duration))
-        self.logger.debug("Got trigger config from camera {}".format(camera_IF))
+        self.logger.debug("Got trigger config from camera {}".format(camera_ID))
         return TrigOutput(pin).name, bool(pin_high), int(delay), int(duration)
 
     def set_trigger_ouput_io_conf(self, camera_ID, pin, pin_high, delay, duration):
