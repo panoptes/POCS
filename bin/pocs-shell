@@ -3,6 +3,23 @@
 USER_ID=$(id -u)
 DOCKER_NAME="pocs-shell"
 
+INDEX_DIR=${INDEX_DIR:-${PANDIR}/astrometry/data}
+ASTROMETRY_URL=${ASTROMETRY_URL:-http://broiler.astrometry.net/~dstn/4200}
+
+# Look for index files
+index_count="$(find ${INDEX_DIR}/index*.fits | wc -l)"
+if [[ ${index_count} -eq 0  ]]; then
+    echo ""
+    echo "No astrometry index files found in ${INDEX_DIR}, downloading wide-field files."
+    echo ""
+    cd "${INDEX_DIR}"
+    for i in {4208..4219}; do
+        echo "Downloading index-${i}.fits"
+        wget -q "${ASTROMETRY_URL}/index-${i}.fits"
+    done
+    cd "${POCS}"
+fi
+
 if [ ! "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
     echo "${DOCKER_NAME} not running. Start services with scripts/pocs-docker.sh"
 else
