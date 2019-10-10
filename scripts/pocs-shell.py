@@ -34,7 +34,7 @@ from pocs.scheduler import create_scheduler_from_config
 
 
 # Download IERS data and astrometry index files
-Downloader.download_all_files()
+Downloader().download_all_files()
 
 
 class PocsShell(Cmd):
