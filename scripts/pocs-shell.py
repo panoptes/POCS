@@ -26,10 +26,15 @@ from panoptes.utils.images import polar_alignment as polar_alignment_utils
 from panoptes.utils.database import PanDB
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import client
+from panoptes.utils.data import Downloader
 
 from pocs.mount import create_mount_from_config
 from pocs.camera import create_cameras_from_config
 from pocs.scheduler import create_scheduler_from_config
+
+
+# Download IERS data and astrometry index files
+Downloader.download_all_files()
 
 
 class PocsShell(Cmd):
