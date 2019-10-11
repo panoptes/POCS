@@ -1,4 +1,3 @@
-astroplan
 astropy
 dateparser
 Flask
@@ -27,6 +26,4 @@ scipy
 timeloop
 transitions
 tweepy
--e git://github.com/panoptes/panoptes-utils.git@develop#egg=panoptes-utils
--e git://github.com/panoptes/aag-weather.git@master#egg=aagweather
 -e git://github.com/wtgee/astroplan.git@add-iers-conf#egg=astroplan
