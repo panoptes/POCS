@@ -5,7 +5,7 @@ from astropy.coordinates import EarthLocation
 
 from pocs.core import POCS
 from pocs.dome.bisque import Dome
-from pocs.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils import altaz_to_radec
 from panoptes.utils import current_time
 from panoptes.utils.theskyx import TheSkyX
@@ -16,8 +16,8 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
 
 
 @pytest.fixture
-def location():
-    config = load_config(ignore_local=False)
+def location(dynamic_config_server, config_port):
+    config = get_config(port=config_port)
     loc = config['location']
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
@@ -33,13 +33,13 @@ def target_down(location):
 
 
 @pytest.fixture
-def pocs(target):
+def pocs(target, dynamic_config_server, config_port):
     try:
         del os.environ['POCSTIME']
     except KeyError:
         pass
 
-    config = load_config(ignore_local=False)
+    config = get_config(port=config_port)
 
     pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True,
                 config=config, db='panoptes_testing', messaging=True)
