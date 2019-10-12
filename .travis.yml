@@ -14,4 +14,4 @@ script:
   $ci_env
   -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
   gcr.io/panoptes-survey/pocs
-  /bin/zsh -ci "scripts/testing/run-tests.sh"
+  scripts/testing/run-tests.sh
