@@ -503,7 +503,7 @@ class Observatory(PanBase):
             self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Store the offset information
-            self.db.insert('offset_info', {
+            self.db.insert_current('offset_info', {
                 'image_id': image_id,
                 'd_ra': self.current_offset_info.delta_ra.value,
                 'd_dec': self.current_offset_info.delta_dec.value,
