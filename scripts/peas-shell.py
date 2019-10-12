@@ -13,7 +13,6 @@ from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
 from peas.remote_sensors import RemoteMonitor
-from aag.weather import AAGCloudSensor
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import current_time
