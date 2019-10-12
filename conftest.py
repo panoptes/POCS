@@ -319,13 +319,12 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
 
 
 @pytest.fixture
-def temp_file():
-    temp_file = 'temp'
-    with open(temp_file, 'w') as f:
-        f.write('')
-
-    yield temp_file
-    os.unlink(temp_file)
+def temp_file(tmp_path):
+    d = tmp_path
+    d.mkdir()
+    f = d / 'temp'
+    yield f
+    os.unlink(f)
 
 
 class FakeLogger:
