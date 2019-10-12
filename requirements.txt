@@ -17,7 +17,7 @@ pyserial >= 3.1.1
 pytest >= 3.4.0
 python_dateutil
 PyYAML >= 5.1
-pyzmq < 18.0.0
+pyzmq
 readline
 requests
 responses
@@ -27,4 +27,4 @@ scipy
 timeloop
 transitions
 tweepy
-git://github.com/wtgee/astroplan.git@add-iers-conf#egg=astroplan
+git+git://github.com/wtgee/astroplan.git@add-iers-conf#egg=astroplan
