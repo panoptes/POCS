@@ -5,7 +5,7 @@ usage() {
 # Install POCS and friends.
 #
 # This script is designed to install the PANOPTES Observatory
-# Control System (POCS) on a cleanly install Ubuntu system.
+# Control System (POCS) on a cleanly installed Ubuntu system.
 #
 # The script will insure that Docker is installed, download the
 # latest Docker images (see list below) and clone a copy of the
@@ -138,14 +138,14 @@ do_install() {
 
     # Default user
     read -p "Github User [press Enter for default]: " github_user
-    github_user=${github_user:-wtgee}
+    github_user=${github_user:-panoptes}
     echo "Using repositories from user '${github_user}'."
 
-    if [[ "${github_user}" = "wtgee" ]]; then
-        echo "Using development files from user 'wtgee' for now."
+    if [[ "${github_user}" = "panoptes" ]]; then
+        echo "Using development files from user 'panoptes' for now."
     fi
 
-    GIT_BRANCH="utils-and-docker"
+    GIT_BRANCH="docker"
 
     cd "${PANDIR}"
     declare -a repos=("POCS" "PAWS" "panoptes-utils")
@@ -154,7 +154,7 @@ do_install() {
             echo "Cloning ${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
             git clone "https://github.com/${github_user}/${repo}.git" >> "${LOGFILE}" 2>&1
-            if [[ "${repo}" = "POCS" && "${github_user}" = "wtgee" ]]; then
+            if [[ "${repo}" = "POCS" && "${github_user}" = "panoptes" ]]; then
                 echo "Getting docker branch '$GIT_BRANCH'"
                 cd "${repo}" && git checkout $GIT_BRANCH
                 cd "${PANDIR}"
