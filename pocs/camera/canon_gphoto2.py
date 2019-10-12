@@ -60,7 +60,7 @@ class Camera(AbstractGPhotoCamera):
         }
 
         owner_name = 'Project PANOPTES'
-        artist_name = self.get_config('unit_id', default=owner_name)
+        artist_name = self.get_config('pan_id', default=owner_name)
         copyright = 'owner_name {}'.format(owner_name, current_time().datetime.year)
 
         prop2value = {
