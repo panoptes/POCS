@@ -6,8 +6,7 @@ services:
     container_name: aag-weather-reader
     privileged: true
     network_mode: host
-    restart_policy:
-      condition: on-failure
+    restart: on-failure
     volumes:
       - pandir:/var/panoptes
     command:
@@ -28,8 +27,7 @@ services:
     environment:
       - DB_NAME=/var/panoptes/json_store/panoptes/weather.db
     command: ["flask", "run"]
-    restart_policy:
-      condition: on-failure
+    restart: on-failure
     volumes:
       - pandir:/var/panoptes
   peas-shell:
