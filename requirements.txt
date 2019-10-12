@@ -27,4 +27,4 @@ scipy
 timeloop
 transitions
 tweepy
--e git://github.com/wtgee/astroplan.git@add-iers-conf#egg=astroplan
+git://github.com/wtgee/astroplan.git@add-iers-conf#egg=astroplan
