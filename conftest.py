@@ -321,7 +321,7 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
 @pytest.fixture
 def temp_file(tmp_path):
     d = tmp_path
-    d.mkdir()
+    d.mkdir(exist_ok=True)
     f = d / 'temp'
     yield f
     os.unlink(f)
