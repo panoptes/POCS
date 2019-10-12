@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   aag-weather-reader:
-    image: gcr.io/panoptes-survey/aag-weather:latest
+    image: gcr.io/panoptes-exp/aag-weather:latest
     init: true
     container_name: aag-weather-reader
     privileged: true
@@ -19,7 +19,7 @@ services:
       - "--store-result"
       - "--verbose"
   aag-weather-server:
-    image: gcr.io/panoptes-survey/aag-weather:latest
+    image: gcr.io/panoptes-exp/aag-weather:latest
     init: true
     container_name: aag-weather-server
     privileged: true
@@ -31,7 +31,7 @@ services:
     volumes:
       - pandir:/var/panoptes
   peas-shell:
-    image: gcr.io/panoptes-survey/pocs
+    image: gcr.io/panoptes-exp/pocs
     init: true
     container_name: peas-shell
     hostname: peas-shell
@@ -51,7 +51,7 @@ services:
       - "-f"
       - "/dev/null"
   pocs-shell:
-    image: gcr.io/panoptes-survey/pocs
+    image: gcr.io/panoptes-exp/pocs
     init: true
     container_name: pocs-shell
     hostname: pocs-shell
