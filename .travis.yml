@@ -5,13 +5,20 @@ python:
   - "3.6"
 services:
 - docker
+cache:
+  directories:
+    - $HOME/astrometry/data
 before_install:
 - ci_env=`bash <(curl -s https://codecov.io/env)`
-- docker pull gcr.io/panoptes-survey/pocs:amd64
+- docker pull gcr.io/panoptes-exp/pocs:amd64
+- docker run --rm -it
+  -v $HOME/astrometry/data:/var/panoptes/astrometry/data
+  gcr.io/panoptes-exp/pocs "python /var/panoptes/panoptes-utils/panoptes/utils/data.py"
 install: true
 script:
 - docker run -it
   $ci_env
   -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
-  gcr.io/panoptes-survey/pocs
+  -v $HOME/astrometry/data:/var/panoptes/astrometry/data
+  gcr.io/panoptes-exp/pocs
   scripts/testing/run-tests.sh
