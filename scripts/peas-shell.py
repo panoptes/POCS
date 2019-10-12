@@ -218,12 +218,14 @@ class PanSensorShell(cmd.Cmd):
             print_error('The timer loop is already running.')
             return
 
-        weather_config = get_config('weather.aag_cloud', default=dict())
-        port = weather_config.get('port', '/dev/ttyUSB0')
+        print("Loading weather reader endpoint")
+        endpoint_url = get_config('environment.weather.url')
+        self.weather = RemoteMonitor(endpoint_url=endpoint_url,
+                                     sensor_name='weather',
+                                     db_type=get_config('db.type', default='file')
+                                     )
+        self.do_enable_sensor('weather', delay=60)
 
-        print("Loading AAG Cloud Sensor on {}".format(port))
-        self.weather = AAGCloudSensor(weather_config, serial_address=port, store_result=True)
-        self.do_enable_sensor('weather')
 
 ##################################################################################################
 # Relay Methods
