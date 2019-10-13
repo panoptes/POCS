@@ -132,7 +132,7 @@ def test_make_log_dir(tmp_path, pocs):
     assert os.path.exists(log_dir) is False
 
     old_pandir = os.environ['PANDIR']
-    os.environ['PANDIR'] = tmp_path
+    os.environ['PANDIR'] = str(tmp_path.resolve())
     POCS.check_environment()
 
     assert os.path.exists(log_dir) is True
