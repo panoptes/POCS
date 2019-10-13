@@ -12,6 +12,7 @@ install: true
 script:
 - docker run -it
   $ci_env
+  -e LOCAL_USER_ID=0
   -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
   gcr.io/panoptes-exp/pocs
   scripts/testing/run-tests.sh
