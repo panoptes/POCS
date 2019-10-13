@@ -13,6 +13,5 @@ script:
 - docker run -it
   $ci_env
   -v $HOME:/var/panoptes/POCS
-  -v $HOME/astrometry/data:/var/panoptes/astrometry/data
   gcr.io/panoptes-exp/pocs
   scripts/testing/run-tests.sh
