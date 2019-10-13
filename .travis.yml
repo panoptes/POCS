@@ -5,12 +5,11 @@ python:
   - "3.6"
 services:
 - docker
-env:
-- LOCAL_USER_ID=$(id -u)
 cache:
   directories:
     - $HOME/astrometry/data
 before_install:
+- mkdir -p $HOME/astrometry/data
 - ci_env=`bash <(curl -s https://codecov.io/env)`
 - docker pull gcr.io/panoptes-exp/pocs:amd64
 - docker run --rm -it
