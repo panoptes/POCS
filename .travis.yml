@@ -13,7 +13,7 @@ before_install:
 - docker pull gcr.io/panoptes-exp/pocs:amd64
 - docker run --rm -it
   -v $HOME/astrometry/data:/var/panoptes/astrometry/data
-  gcr.io/panoptes-exp/pocs "python /var/panoptes/panoptes-utils/panoptes/utils/data.py"
+  gcr.io/panoptes-exp/pocs python /var/panoptes/panoptes-utils/panoptes/utils/data.py
 install: true
 script:
 - docker run -it
