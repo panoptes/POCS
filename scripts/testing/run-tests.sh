@@ -7,6 +7,7 @@ coverage run "$(command -v pytest)" -xvvrs --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then
+    chmod 777 .coverage*
     coverage combine
     bash <(curl -s https://codecov.io/bash)
 fi
