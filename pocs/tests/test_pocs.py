@@ -127,8 +127,8 @@ def test_bad_pocs_env(pocs):
     os.environ['POCS'] = pocs_dir
 
 
-def test_make_log_dir(pocs):
-    log_dir = "{}/logs".format(os.getcwd())
+def test_make_log_dir(tmp_path, pocs):
+    log_dir = tmp_path / 'logs'
     assert os.path.exists(log_dir) is False
 
     old_pandir = os.environ['PANDIR']
