@@ -7,15 +7,13 @@
 import collections
 import copy
 import serial
-import time
-from serial import serialutil
 import threading
 import traceback
 
-from pocs.utils.error import ArduinoDataError
-from pocs.utils.logger import get_root_logger
-from pocs.utils import CountdownTimer
-from pocs.utils import rs232
+from panoptes.utils.error import ArduinoDataError
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils import CountdownTimer
+from panoptes.utils import rs232
 
 
 def auto_detect_arduino_devices(ports=None, logger=None):
@@ -149,10 +147,6 @@ class ArduinoIO(object):
         # can get and set the stop_running property.
         self._stop_running = threading.Event()
         self._logger.info('Created ArduinoIO instance for board {}', self.board)
-
-    def __del__(self):
-        if hasattr(self, '_logger'):
-            self._logger.info('Deleting ArduinoIO instance for board {}', self.board)
 
     @property
     def stop_running(self):

@@ -1,6 +1,6 @@
 from astropy import units as u
 
-from pocs.utils import horizon as horizon_utils
+from panoptes.utils import horizon as horizon_utils
 from pocs.base import PanBase
 
 
@@ -20,7 +20,7 @@ class BaseConstraint(PanBase):
             *args (TYPE): Description
             **kwargs (TYPE): Description
         """
-        super(BaseConstraint, self).__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         assert isinstance(weight, float), \
             self.logger.error("Constraint weight must be a float greater than 0.0")

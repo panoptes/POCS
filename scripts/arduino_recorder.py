@@ -7,15 +7,15 @@ import serial
 import sys
 
 from pocs.sensors import arduino_io
-from pocs.utils import DelaySigTerm
 from pocs.utils.config import load_config
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import DelaySigTerm
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
 
 
 def main(board, port, cmd_port, msg_port, db_type, db_name):
-    config = load_config(config_files=['peas'])
+    config = load_config(config_files=['pocs'])
     serial_config = config.get('environment', {}).get('serial', {})
     logger = get_root_logger()
     serial_data = arduino_io.open_serial_device(port, serial_config=serial_config, name=board)
@@ -23,6 +23,7 @@ def main(board, port, cmd_port, msg_port, db_type, db_name):
     sub = PanMessaging.create_subscriber(cmd_port)
     pub = PanMessaging.create_publisher(msg_port)
     aio = arduino_io.ArduinoIO(board, serial_data, db, pub, sub)
+
     def request_to_stop_running(**kwargs):
         aio.stop_running = True
     with DelaySigTerm(callback=request_to_stop_running):
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     if args.port and not args.simulate:
         port = args.port
     elif args.simulate and not args.port:
-        serial.protocol_handler_packages.insert(0, 'pocs.serial_handlers')
+        serial.protocol_handler_packages.insert(0, 'panoptes.utils.tests.serial_handlers')
         port = 'arduinosimulator://?board=' + board.replace('_board', '')
     else:
         arg_error('Must specify exactly one of --port or --simulate')

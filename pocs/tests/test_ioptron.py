@@ -1,33 +1,35 @@
 import os
 import pytest
+from contextlib import suppress
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
 
 from pocs.images import OffsetError
 from pocs.mount.ioptron import Mount
-from pocs.utils.config import load_config
+from pocs.utils.location import create_location_from_config
+from panoptes.utils.config.client import get_config
+from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture
-def location():
-    config = load_config(ignore_local=True)
-    loc = config['location']
+def location(dynamic_config_server, config_port):
+    loc = get_config('location', port=config_port)
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture(scope="function")
-def mount(config, location):
-    try:
+def mount(dynamic_config_server, config_port, location):
+    with suppress(KeyError):
         del os.environ['POCSTIME']
-    except KeyError:
-        pass
 
-    config['mount'] = {
-        'brand': 'bisque',
-        'template_dir': 'resources/bisque',
-    }
-    return Mount(location=location, config=config)
+    set_config('mount',
+               {
+                   'brand': 'bisque',
+                   'template_dir': 'resources/bisque',
+               }, port=config_port)
+
+    return Mount(location=location, config_port=config_port)
 
 
 @pytest.mark.with_mount
@@ -44,21 +46,18 @@ class TestMount(object):
     """ Test the mount """
 
     @pytest.fixture(autouse=True)
-    def setup(self, config):
+    def setup(self):
 
-        self.config = config
+        # Don't use config_port because we use real live config_server
+        location = create_location_from_config()
 
-        location = self.config['location']
-
+        # Can't supply full location, need earth_location
         with pytest.raises(AssertionError):
             mount = Mount(location)
 
-        loc = EarthLocation(
-            lon=location['longitude'],
-            lat=location['latitude'],
-            height=location['elevation'])
+        earth_location = location['earth_location']
 
-        mount = Mount(loc)
+        mount = Mount(earth_location)
         assert mount is not None
 
         self.mount = mount

@@ -11,11 +11,18 @@ import os
 import pytest
 import subprocess
 import time
+import shutil
+
+from multiprocessing import Process
+from scalpl import Cut
 
 from pocs import hardware
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
+from panoptes.utils.config import load_config
+from panoptes.utils.config.client import set_config
+from panoptes.utils.config.server import app as config_server_app
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -110,7 +117,6 @@ def pytest_runtest_logstart(nodeid, location):
     """
     try:
         logger = get_root_logger()
-        logger.critical('')
         logger.critical('##########' * 8)
         logger.critical('     START TEST {}', nodeid)
         logger.critical('')
@@ -132,7 +138,6 @@ def pytest_runtest_logfinish(nodeid, location):
         logger = get_root_logger()
         logger.critical('')
         logger.critical('       END TEST {}', nodeid)
-        logger.critical('')
         logger.critical('##########' * 8)
     except Exception:
         pass
@@ -158,19 +163,168 @@ def pytest_runtest_logreport(report):
         pass
 
 
-@pytest.fixture
-def temp_file():
-    temp_file = 'temp'
-    with open(temp_file, 'w') as f:
-        f.write('')
-
-    yield temp_file
-    os.unlink(temp_file)
+@pytest.fixture(scope='session')
+def config_host():
+    return 'localhost'
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
+def static_config_port():
+    """Used for the session-scoped config_server where no config values
+    are expected to change during testing.
+    """
+    return '6563'
+
+
+@pytest.fixture(scope='module')
+def config_port():
+    """Used for the function-scoped config_server when it is required to change
+    config values during testing. See `dynamic_config_server` docs below.
+    """
+    return '4861'
+
+
+@pytest.fixture(scope='session')
 def db_name():
     return 'panoptes_testing'
+
+
+@pytest.fixture(scope='session')
+def images_dir(tmpdir_factory):
+    directory = tmpdir_factory.mktemp('images')
+    return str(directory)
+
+
+@pytest.fixture(scope='session')
+def config_path():
+    return os.path.join(os.getenv('POCS'), 'pocs', 'tests', 'pocs_testing.yaml')
+
+
+@pytest.fixture(scope='session')
+def config_server_args(config_path):
+    loaded_config = load_config(config_files=config_path, ignore_local=True)
+    return {
+        'config_file': config_path,
+        'auto_save': False,
+        'ignore_local': True,
+        'POCS': loaded_config,
+        'POCS_cut': Cut(loaded_config)
+    }
+
+
+@pytest.fixture(scope='session', autouse=True)
+def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
+
+    logger = get_root_logger()
+    logger.critical(f'Starting config_server for testing session')
+
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            config_server_app.config[k] = v
+
+        # Start the actual flask server.
+        config_server_app.run(host=config_host, port=static_config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
+    logger.info(f'config_server started with PID={proc.pid}')
+
+    # Give server time to start
+    time.sleep(1)
+
+    # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
+    unit_id = 'PAN000'
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    set_config('name', unit_name, port=static_config_port)
+    set_config('pan_id', unit_id, port=static_config_port)
+
+    logger.info(f'Setting testing database to {db_name}')
+    set_config('db.name', db_name, port=static_config_port)
+
+    fields_file = 'simulator.yaml'
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    set_config('scheduler.fields_file', fields_file, port=static_config_port)
+
+    # TODO(wtgee): determine if we need separate directories for each module.
+    logger.info(f'Setting temporary image directory for testing')
+    set_config('directories.images', images_dir, port=static_config_port)
+
+    # Make everything a simulator
+    logger.info(f'Setting all hardware to use simulators')
+    set_config('simulator', hardware.get_simulator_names(
+        simulator=['all']), port=static_config_port)
+
+    yield
+    logger.critical(f'Killing config_server started with PID={proc.pid}')
+    proc.terminate()
+
+
+@pytest.fixture(scope='function')
+def dynamic_config_server(config_host, config_port, config_server_args, images_dir, db_name):
+    """If a test requires changing the configuration we use a function-scoped testing
+    server. We only do this on tests that require it so we are not constantly starting and stopping
+    the config server unless necessary.  To use this, each test that requires it must use the
+    `dynamic_config_server` and `config_port` fixtures and must pass the `config_port` to all
+    instances that are created (propogated through PanBase).
+    """
+
+    logger = get_root_logger()
+    logger.critical(f'Starting config_server for testing function')
+
+    def start_config_server():
+        # Load the config items into the app config.
+        for k, v in config_server_args.items():
+            config_server_app.config[k] = v
+
+        # Start the actual flask server.
+        config_server_app.run(host=config_host, port=config_port)
+
+    proc = Process(target=start_config_server)
+    proc.start()
+
+    logger.info(f'config_server started with PID={proc.pid}')
+
+    # Give server time to start
+    time.sleep(1)
+
+    # Adjust various config items for testing
+    unit_name = 'Generic PANOPTES Unit'
+    unit_id = 'PAN000'
+    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    set_config('name', unit_name, port=config_port)
+    set_config('pan_id', unit_id, port=config_port)
+
+    logger.info(f'Setting testing database to {db_name}')
+    set_config('db.name', db_name, port=config_port)
+
+    fields_file = 'simulator.yaml'
+    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    set_config('scheduler.fields_file', fields_file, port=config_port)
+
+    # TODO(wtgee): determine if we need separate directories for each module.
+    logger.info(f'Setting temporary image directory for testing')
+    set_config('directories.images', images_dir, port=config_port)
+
+    # Make everything a simulator
+    simulators = hardware.get_simulator_names(simulator=['all'])
+    logger.info(f'Setting all hardware to use simulators: {simulators}')
+    set_config('simulator', simulators, port=config_port)
+
+    yield
+    logger.critical(f'Killing config_server started with PID={proc.pid}')
+    proc.terminate()
+
+
+@pytest.fixture
+def temp_file(tmp_path):
+    d = tmp_path
+    d.mkdir(exist_ok=True)
+    f = d / 'temp'
+    yield f
+    os.unlink(f)
 
 
 class FakeLogger:
@@ -261,7 +415,8 @@ def messaging_ports():
 
 @pytest.fixture(scope='function')
 def message_forwarder(messaging_ports):
-    cmd = os.path.join(os.getenv('POCS'), 'scripts', 'run_messaging_hub.py')
+    cmd = shutil.which('panoptes-messaging-hub')
+    assert cmd is not None
     args = [cmd]
     # Note that the other programs using these port pairs consider
     # them to be pub and sub, in that order, but the forwarder sees things
@@ -272,13 +427,33 @@ def message_forwarder(messaging_ports):
         args.append(str(sub))
         args.append(str(pub))
 
-    get_root_logger().info('message_forwarder fixture starting: {}', args)
-    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    logger = get_root_logger()
+    logger.info('message_forwarder fixture starting: {}', args)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # It takes a while for the forwarder to start, so allow for that.
     # TODO(jamessynge): Come up with a way to speed up these fixtures.
     time.sleep(3)
+    # If message forwarder doesn't start, tell us why.
+    if proc.poll() is not None:
+        outs, errs = proc.communicate(timeout=0.5)
+        logger.info(f'outs: {outs!r}')
+        logger.info(f'errs: {errs!r}')
+        assert False
+
     yield messaging_ports
-    proc.terminate()
+    # Make sure messager forwarder is still running at end.
+    assert proc.poll() is None
+
+    # Try to terminate, then communicate, then kill.
+    try:
+        proc.terminate()
+        outs, errs = proc.communicate(timeout=0.5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        outs, errs = proc.communicate()
+
+    # Make sure message forwarder was killed.
+    assert proc.poll() is not None
 
 
 @pytest.fixture(scope='function')

@@ -3,8 +3,8 @@ import threading
 from astropy import units as u
 
 from pocs.base import PanBase
-from pocs.utils import listify
-from pocs.utils import error
+from panoptes.utils import listify
+from panoptes.utils import error
 
 
 class AbstractFilterWheel(PanBase):
@@ -30,7 +30,7 @@ class AbstractFilterWheel(PanBase):
                  timeout=None,
                  serial_number='XXXXXX',
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         self._model = model
         self._name = name

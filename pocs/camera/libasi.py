@@ -5,8 +5,8 @@ import numpy as np
 from astropy import units as u
 
 from pocs.camera.sdk import AbstractSDKDriver
-from pocs.utils import error
-from pocs.utils import get_quantity_value
+from panoptes.utils import error
+from panoptes.utils import get_quantity_value
 
 ####################################################################################################
 #
@@ -35,7 +35,7 @@ class ASIDriver(AbstractSDKDriver):
             `~pocs.camera.libasi.ASIDriver`
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """

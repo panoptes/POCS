@@ -9,15 +9,15 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
-        super().__init__(name, *args, **kwargs)
+        super().__init__(name=name, *args, **kwargs)
         self.connect()
         self.logger.info("{} initialised".format(self))
 

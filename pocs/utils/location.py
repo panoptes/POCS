@@ -2,11 +2,12 @@ from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
-from pocs.utils import error
-from pocs.utils.logger import get_root_logger
+from panoptes.utils import error
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.config.client import get_config
 
 
-def create_location_from_config(config, logger=None):
+def create_location_from_config(config_port=6563, logger=None):
     """
      Sets up the site and location details.
 
@@ -16,7 +17,7 @@ def create_location_from_config(config, logger=None):
              * latitude
              * longitude
              * timezone
-             * presseure
+             * pressure
              * elevation
              * horizon
 
@@ -27,7 +28,9 @@ def create_location_from_config(config, logger=None):
     logger.debug('Setting up site details')
 
     try:
-        config_site = config.get('location')
+        config_site = get_config('location', default=None, port=config_port)
+        if config_site is None:
+            raise error.PanError(msg='location information not found in config.')
 
         name = config_site.get('name', 'Nameless Location')
 

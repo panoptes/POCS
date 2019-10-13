@@ -3,9 +3,9 @@ import yaml
 
 from transitions import State
 
-from pocs.utils import error
-from pocs.utils import listify
-from pocs.utils import load_module
+from panoptes.utils import error
+from panoptes.utils import listify
+from panoptes.utils.library import load_module
 
 can_graph = False
 try:  # pragma: no cover
@@ -43,16 +43,17 @@ class PanStateMachine(Machine):
 
         states = [self._load_state(state) for state in state_machine_table.get('states', [])]
 
-        super(PanStateMachine, self).__init__(
-            states=states,
-            transitions=_transitions,
-            initial=state_machine_table.get('initial'),
-            send_event=True,
-            before_state_change='before_state',
-            after_state_change='after_state',
-            auto_transitions=False,
-            name="POCS State Machine"
-        )
+        Machine.__init__(self,
+                         states=states,
+                         transitions=_transitions,
+                         initial=state_machine_table.get('initial'),
+                         send_event=True,
+                         before_state_change='before_state',
+                         after_state_change='after_state',
+                         auto_transitions=False,
+                         name="POCS State Machine",
+                         **kwargs
+                         )
 
         self._state_machine_table = state_machine_table
         self._next_state = None
@@ -347,7 +348,7 @@ class PanStateMachine(Machine):
         try:
             state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
 
-            image_dir = self.config['directories']['images']
+            image_dir = self.get_config('directories.images')
             os.makedirs('{}/state_images/'.format(image_dir), exist_ok=True)
 
             fn = '{}/state_images/{}.svg'.format(image_dir, state_id)

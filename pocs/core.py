@@ -12,12 +12,12 @@ from astropy import units as u
 from pocs.base import PanBase
 from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
-from pocs.utils import current_time
-from pocs.utils import get_free_space
-from pocs.utils import CountdownTimer
-from pocs.utils import listify
-from pocs.utils import error
-from pocs.utils.messaging import PanMessaging
+from panoptes.utils import current_time
+from panoptes.utils import get_free_space
+from panoptes.utils import CountdownTimer
+from panoptes.utils import listify
+from panoptes.utils import error
+from panoptes.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
@@ -60,10 +60,10 @@ class POCS(PanStateMachine, PanBase):
 
         assert isinstance(observatory, Observatory)
 
-        self.name = self.config.get('name', 'Generic PANOPTES Unit')
+        self.name = self.get_config('name', default='Generic PANOPTES Unit')
         self.logger.info('Initializing PANOPTES unit - {} - {}',
                          self.name,
-                         self.config['location']['name']
+                         self.get_config('location.name')
                          )
 
         self._processes = {}
@@ -75,7 +75,7 @@ class POCS(PanStateMachine, PanBase):
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
 
         if state_machine_file is None:
-            state_machine_file = self.config.get('state_machine', 'simple_state_table')
+            state_machine_file = self.get_config('state_machine', default='simple_state_table')
 
         self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
@@ -247,7 +247,7 @@ class POCS(PanStateMachine, PanBase):
                         self.logger.info("Mount is parked, setting Parked state")
                         self.set_park()
 
-            if not self.observatory.mount.is_parked:
+            if self.observatory.mount and self.observatory.mount.is_parked is False:
                 self.logger.info('Mount not parked, parking')
                 self.observatory.mount.park()
 
@@ -317,6 +317,9 @@ class POCS(PanStateMachine, PanBase):
 
         safe = all(is_safe_values.values())
 
+        # Insert safety reading
+        self.db.insert_current('safety', is_safe_values)
+
         if not safe:
             if no_warning is False:
                 self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
@@ -346,7 +349,7 @@ class POCS(PanStateMachine, PanBase):
 
         # Check simulator
         with suppress(KeyError):
-            if 'night' in self.config['simulator']:
+            if 'night' in self.get_config('simulator', default=[]):
                 is_dark = True
 
         self.logger.debug("Dark Check: {}".format(is_dark))
@@ -368,10 +371,13 @@ class POCS(PanStateMachine, PanBase):
         is_safe = False
 
         # Check if we are using weather simulator
-        with suppress(KeyError):
-            if 'weather' in self.config['simulator']:
-                self.logger.debug("Weather simulator always safe")
-                return True
+        simulator_values = self.get_config('simulator', default=[])
+        if len(simulator_values):
+            self.logger.critical(f'simulator_values: {simulator_values}')
+
+        if 'weather' in simulator_values:
+            self.logger.debug("Weather simulator always safe")
+            return True
 
         # Get current weather readings from database
         try:
@@ -434,10 +440,10 @@ class POCS(PanStateMachine, PanBase):
 
         # TODO(wtgee): figure out if we really want to simulate no power
         # Check if we are using power simulator
-        with suppress(KeyError):
-            if 'power' in self.config['simulator']:
-                self.logger.debug("AC power simulator always safe")
-                return True
+        simulator_values = self.get_config('simulator', default=[])
+        if 'power' in simulator_values:
+            self.logger.debug("AC power simulator always safe")
+            return True
 
         # Get current power readings from database
         try:
@@ -670,8 +676,8 @@ class POCS(PanStateMachine, PanBase):
 
     def _setup_messaging(self):
 
-        cmd_port = self.config['messaging']['cmd_port']
-        msg_port = self.config['messaging']['msg_port']
+        cmd_port = self.get_config('messaging.cmd_port')
+        msg_port = self.get_config('messaging.msg_port')
 
         def create_forwarder(port):
             try:

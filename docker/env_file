@@ -1,0 +1,3 @@
+PANDIR=/var/panoptes
+POCS=/var/panoptes/POCS
+PANLOG=/var/panoptes/logs

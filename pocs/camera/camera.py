@@ -13,15 +13,16 @@ from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import listify
+from panoptes.utils import images as img_utils
+from panoptes.utils import get_quantity_value
+from panoptes.utils import CountdownTimer
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.library import load_module
 from pocs.base import PanBase
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils import listify
-from pocs.utils import load_module
-from pocs.utils import images as img_utils
-from pocs.utils import get_quantity_value
-from pocs.utils import CountdownTimer
-from pocs.utils.images import fits as fits_utils
+
 from pocs.focuser import AbstractFocuser
 from pocs.filterwheel import AbstractFilterWheel
 
@@ -64,7 +65,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                  focuser=None,
                  filterwheel=None,
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         self.model = model
         self.port = port
@@ -328,7 +329,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         # If passed an Event that signals the end of the exposure wait for it to be set
         if exposure_event is not None:
+            self.logger.debug(f'About to wait for exposure event on {self.name}')
             exposure_event.wait()
+            self.logger.debug(f'Done waiting for exposure event on {self.name}')
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
@@ -342,15 +345,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                               current_time(pretty=True))
 
         try:
-            self.logger.debug("Processing {}".format(image_title))
+            self.logger.debug("Making pretty image for {}".format(file_path))
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
                                         link_latest=info['is_primary'])
         except Exception as e:  # pragma: no cover
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
+        self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, info)
-        self.logger.debug("Finished processing FITS.")
+        self.logger.debug(f'Finished FITS processing for {file_path}')
         with suppress(Exception):
             info['exptime'] = info['exptime'].value
 
@@ -588,7 +592,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             file_path = filename
 
-        unit_id = self.config['pan_id']
+        unit_id = self.get_config('pan_id')
 
         # Make the image_id
         image_id = '{}_{}_{}'.format(
@@ -632,6 +636,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
         fits_utils.update_observation_headers(file_path, info)
+        self.logger.debug("Finished FITS headers: {}".format(file_path))
+
         return file_path
 
     def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):
@@ -660,13 +666,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 try:
                     module = load_module(module_name)
                 except AttributeError as err:
-                    self.logger.critical("Couldn't import {} module {}!".format(
-                        class_name, module_name))
+                    self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
                 else:
                     subcomponent_kwargs = copy.copy(subcomponent)
-                    subcomponent_kwargs.update({'camera': self, 'config': self.config})
-                    setattr(self, sub_name, getattr(module, class_name)(**subcomponent_kwargs))
+                    subcomponent_kwargs.update({'camera': self})
+
+                    # Create the actual component
+                    subcomponent_object = getattr(module, class_name)
+                    subcomponent_instance = subcomponent_object(config_port=self._config_port,
+                                                                **subcomponent_kwargs)
+
+                    # Attach as attribute
+                    setattr(self, sub_name, subcomponent_instance)
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...

@@ -14,8 +14,8 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     # Get pointing parameters
-    pointing_config = pocs.config['pointing']
-    num_pointing_images = pointing_config.get('max_iterations', 3)
+    pointing_config = pocs.get_config('pointing')
+    num_pointing_images = int(pointing_config.get('max_iterations', 3))
     should_correct = pointing_config.get('auto_correct', False)
     pointing_threshold = pointing_config.get('threshold', 0.05)  # degrees
     exptime = pointing_config.get('exptime', 30)  # seconds
@@ -55,7 +55,8 @@ def on_enter(event_data):
                 pointing_id, pointing_path = observation.pointing_image
                 pointing_image = Image(
                     pointing_path,
-                    location=pocs.observatory.earth_location
+                    location=pocs.observatory.earth_location,
+                    config_port=pocs._config_port
                 )
                 pocs.logger.debug("Pointing image: {}".format(pointing_image))
 
