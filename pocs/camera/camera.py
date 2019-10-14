@@ -121,6 +121,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._file_extension
 
     @property
+    def egain(self):
+        """Image sensor gain in e-/ADU as reported by the camera."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
+    def bit_depth(self):
+        """ADC bit depth."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
     def temperature(self):
         """
         Get current temperature of the camera's image sensor.
@@ -600,9 +610,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             else:
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
+        with suppress(NotImplementedError):            # SBIG & ZWO cameras report their gain.
+            header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu),
+                       'Electrons/ADU')
+        with suppress(NotImplementedError):
+            # ZWO cameras have ADC bit depths with differ from BITPIX
+            header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
         with suppress(NotImplementedError):
             # Some non cooled cameras can still report the image sensor temperature
-            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
+            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
         if self.is_cooled_camera:
             header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
                        'Degrees C')
@@ -611,8 +627,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
-        with suppress(AttributeError):
-            header.set('BITDEPTH', self.bit_depth, 'ADC bit depth')
 
         for sub_name in self._subcomponent_names:
             subcomponent = getattr(self, sub_name)
