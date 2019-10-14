@@ -58,8 +58,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
-    sub_classes = {'Focuser', 'FilterWheel'}
-    sub_names = {sub_class.casefold() for sub_class in sub_classes}
+    _subcomponent_classes = {'Focuser', 'FilterWheel'}
+    _subcomponent_names = {sub_class.casefold() for sub_class in _subcomponent_classes}
 
     def __init__(self,
                  name='Generic Camera',
@@ -90,9 +90,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event.set()
         self._is_exposing = False
 
-        for sub_class in self.sub_classes:
-            self._create_subcomponent(subcomponent=kwargs.get(sub_class.casefold()),
-                                      class_name=sub_class)
+        for subcomponent_class in self._subcomponent_classes:
+            self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
+                                      class_name=subcomponent_class)
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -244,7 +244,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             return False
 
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
-        for sub_name in self.sub_names:
+        for sub_name in self._subcomponent_names:
             if getattr(self, sub_name) and not getattr(self, sub_name).is_ready:
                 return False
 
@@ -614,7 +614,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         with suppress(AttributeError):
             header.set('BITDEPTH', self.bit_depth, 'ADC bit depth')
 
-        for sub_name in self.sub_names:
+        for sub_name in self._subcomponent_names:
             subcomponent = getattr(self, sub_name)
             if subcomponent:
                 header = subcomponent._add_fits_keywords(header)
@@ -714,11 +714,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 will be used as the attribute name, and must also match the name of the
                 corresponding POCS submodule for this subcomponent, e.g. `pocs.focuser`.
         """
+        class_name_lower = class_name.casefold()
         if subcomponent:
-            base_module_name = "pocs.{0}.{0}".format(class_name.casefold())
+            base_module_name = "pocs.{0}.{0}".format(class_name_lower)
             try:
                 base_module = load_module(base_module_name)
-            except AttributeError as err:
+            except error.NotFound as err:
                 self.logger.critical("Couldn't import {} base class module {}!".format(
                     class_name, base_module_name))
                 raise err
@@ -726,29 +727,29 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             if isinstance(subcomponent, base_class):
                 self.logger.debug("{} received: {}".format(class_name, subcomponent))
-                setattr(self, class_name.casefold(), subcomponent)
-                getattr(self, class_name.casefold()).camera = self
+                setattr(self, class_name_lower, subcomponent)
+                getattr(self, class_name_lower).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(class_name.casefold(), subcomponent['model'])
+                module_name = 'pocs.{}.{}'.format(class_name_lower, subcomponent['model'])
                 try:
                     module = load_module(module_name)
-                except AttributeError as err:
+                except error.NotFound as err:
                     self.logger.critical("Couldn't import {} module {}!".format(
                         class_name, module_name))
                     raise err
                 subcomponent_kwargs = copy.deepcopy(subcomponent)
                 subcomponent_kwargs.update({'camera': self, 'config': self.config})
                 setattr(self,
-                        class_name.casefold(),
+                        class_name_lower,
                         getattr(module, class_name)(**subcomponent_kwargs))
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
                 self.logger.error("Expected either a {} instance or dict, got {}".format(
                     class_name, subcomponent))
-                setattr(self, class_name.casefold(), None)
+                setattr(self, class_name_lower, None)
         else:
-            setattr(self, class_name.casefold(), None)
+            setattr(self, class_name_lower, None)
 
     def __str__(self):
         name = self.name
@@ -758,7 +759,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         s = "{} ({}) on {}".format(name, self.uid, self.port)
 
         sub_count = 0
-        for sub_name in self.sub_names:
+        for sub_name in self._subcomponent_names:
             subcomponent = getattr(self, sub_name)
             if subcomponent:
                 if sub_count == 0:

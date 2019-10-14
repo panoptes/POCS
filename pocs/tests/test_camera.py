@@ -176,7 +176,7 @@ def test_sim_passed_focuser():
 
 
 def test_sim_bad_focuser():
-    with pytest.raises((AttributeError, ImportError, NotFound)):
+    with pytest.raises(NotFound):
         SimCamera(focuser={'model': 'NOTAFOCUSER'})
 
 
