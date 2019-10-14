@@ -405,14 +405,17 @@ class ASIDriver(AbstractSDKDriver):
     def get_serial_number(self, camera_ID):
         """Get serial number of the camera with given integer ID.
 
-        The serial number is an array of 8 unsigned chars, the same as string ID.
+        The serial number is an array of 8 unsigned chars, the same as string ID,
+        but it is interpreted differently. It is displayed in ASICAP as a 16 digit
+        hexadecimal number, so we will convert it the same 16 character string
+        representation.
         """
         struct_SN = ID()  # Same structure as string ID.
         self._call_function('ASIGetSerialNumber',
                             camera_ID,
                             ctypes.byref(struct_SN))
         bytes_SN = bytes(struct_SN.id)
-        serial_number = bytes_SN.decode()
+        serial_number = "".join(f"{b:02x}" for b in bytes_SN)
         self.logger.debug("Got serial number '{}' from camera {}".format(serial_number, camera_ID))
         return serial_number
 
