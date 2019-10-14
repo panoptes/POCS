@@ -618,7 +618,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
         with suppress(NotImplementedError):
             # Some non cooled cameras can still report the image sensor temperature
-            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
+            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
         if self.is_cooled_camera:
             header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
                        'Degrees C')
