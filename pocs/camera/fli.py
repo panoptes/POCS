@@ -18,9 +18,9 @@ class Camera(AbstractSDKCamera):
 
     def __init__(self,
                  name='FLI Camera',
-                 set_point=25 * u.Celsius,
+                 target_temperature=25 * u.Celsius,
                  *args, **kwargs):
-        kwargs['set_point'] = set_point
+        kwargs['target_temperature'] = target_temperature
         super().__init__(name, FLIDriver, *args, **kwargs)
         self.logger.info('{} initialised'.format(self))
 
@@ -34,32 +34,31 @@ class Camera(AbstractSDKCamera):
 # Properties
 
     @property
-    def ccd_temp(self):
+    def temperature(self):
         """
         Current temperature of the camera's image sensor.
         """
         return self._driver.FLIGetTemperature(self._handle)
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """
-        Current value of the CCD set point, the target temperature for the camera's
-        image sensor cooling control.
+        Current value of the target temperature for the camera's image sensor cooling control.
 
         Can be set by assigning an astropy.units.Quantity.
         """
-        return self._set_point
+        return self._target_temperature
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
-        if not isinstance(set_point, u.Quantity):
-            set_point = set_point * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
-        self._driver.FLISetTemperature(self._handle, set_point)
-        self._set_point = set_point
+    @target_temperature.setter
+    def target_temperature(self, target):
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
+        self._driver.FLISetTemperature(self._handle, target)
+        self._target_temperature = target
 
     @property
-    def ccd_cooling_enabled(self):
+    def cooling_enabled(self):
         """
         Current status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -67,14 +66,14 @@ class Camera(AbstractSDKCamera):
         """
         return True
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         # Cooling is always enabled on FLI cameras
         if not enable:
             raise error.NotSupported("Cannot disable cooling on {}".format(self.name))
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """
         Current power level of the camera's image sensor cooling system (as
         a percentage of the maximum).
@@ -101,6 +100,8 @@ class Camera(AbstractSDKCamera):
             raise error.PanError(message)
         self._get_camera_info()
         self.model = self.properties['camera model']
+        # All FLI camera models are cooled
+        self._is_cooled_camera = True
         self._connected = True
 
 # Private Methods

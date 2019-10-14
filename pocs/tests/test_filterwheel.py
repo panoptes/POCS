@@ -179,7 +179,10 @@ def test_move_exposing(tmpdir, caplog):
 def test_is_moving(filterwheel):
     filterwheel.position = 1
     assert not filterwheel.is_moving
+    assert filterwheel.is_ready
     e = filterwheel.move_to(2)
     assert filterwheel.is_moving
+    assert not filterwheel.is_ready
     e.wait()
     assert not filterwheel.is_moving
+    assert filterwheel.is_ready

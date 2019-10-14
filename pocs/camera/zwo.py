@@ -94,36 +94,36 @@ class Camera(AbstractSDKCamera):
         return self.properties['bit_depth']
 
     @property
-    def ccd_temp(self):
+    def temperature(self):
         """ Current temperature of the camera's image sensor """
         return self._control_getter('TEMPERATURE')[0]
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """ Current value of the target temperature for the camera's image sensor cooling control.
 
         Can be set by assigning an astropy.units.Quantity
         """
         return self._control_getter('TARGET_TEMP')[0]
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
-        if not isinstance(set_point, u.Quantity):
-            set_point = set_point * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
-        self._control_setter('TARGET_TEMP', set_point)
+    @target_temperature.setter
+    def target_temperature(self, target):
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
+        self._control_setter('TARGET_TEMP', target)
 
     @property
-    def ccd_cooling_enabled(self):
+    def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
         return self._control_getter('COOLER_ON')[0]
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         self._control_setter('COOLER_ON', enable)
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """ Current power level of the camera's image sensor cooling system (as a percentage). """
         return self._control_getter('COOLER_POWER_PERC')[0]
 
@@ -163,6 +163,8 @@ class Camera(AbstractSDKCamera):
         self._refresh_info()
         self._handle = self.properties['camera_ID']
         self.model, _, _ = self.properties['name'].partition('(')
+        if self.properties['has_cooler']:
+            self._is_cooled_camera = True
         if self.properties['is_color_camera']:
             self._filter_type = self.properties['bayer_pattern']
         else:

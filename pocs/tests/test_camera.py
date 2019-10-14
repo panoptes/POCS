@@ -69,7 +69,7 @@ def camera(request, images_dir):
             if camera_configs:
                 # Local config file camera section has a devices list
                 for camera_config in camera_configs:
-                    if camera_config['model'] == request.param[1]:
+                    if camera_config and camera_config['model'] == request.param[1]:
                         # Camera config is the right type
                         configs.append(camera_config)
 
@@ -176,7 +176,7 @@ def test_sim_passed_focuser():
 
 
 def test_sim_bad_focuser():
-    with pytest.raises((AttributeError, ImportError, NotFound)):
+    with pytest.raises(NotFound):
         SimCamera(focuser={'model': 'NOTAFOCUSER'})
 
 
@@ -269,47 +269,75 @@ def test_uid(camera):
 
 def test_get_temp(camera):
     try:
-        temperature = camera.ccd_temp
+        temperature = camera.temperature
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
     else:
         assert temperature is not None
 
 
-def test_set_set_point(camera):
-    try:
-        camera.ccd_set_point = 10 * u.Celsius
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+def test_is_cooled(camera):
+    cooled_camera = camera.is_cooled_camera
+    assert cooled_camera is not None
+
+
+def test_set_target_temperature(camera):
+    if camera.is_cooled_camera:
+        camera._target_temperature = 10 * u.Celsius
+        assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
-        assert abs(camera.ccd_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+
+
+def test_cooling_enabled(camera):
+    cooling_enabled = camera.cooling_enabled
+    if not camera.is_cooled_camera:
+        assert not cooling_enabled
 
 
 def test_enable_cooling(camera):
-    try:
-        camera.ccd_cooling_enabled = True
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    if camera.is_cooled_camera:
+        camera.cooling_enabled = True
+        assert camera.cooling_enabled
     else:
-        assert camera.ccd_cooling_enabled is True
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
 
 
 def test_get_cooling_power(camera):
-    try:
-        power = camera.ccd_cooling_power
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
-    else:
+    if camera.is_cooled_camera:
+        power = camera.cooling_power
         assert power is not None
+    else:
+        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
 
 
 def test_disable_cooling(camera):
-    try:
-        camera.ccd_cooling_enabled = False
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    if camera.is_cooled_camera:
+        camera.cooling_enabled = False
+        assert not camera.cooling_enabled
     else:
-        assert camera.ccd_cooling_enabled is False
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+
+
+def test_temperature_tolerance(camera):
+    temp_tol = camera.temperature_tolerance
+    camera.temperature_tolerance = temp_tol.value + 1
+    assert camera.temperature_tolerance == temp_tol + 1 * u.Celsius
+    camera.temperature_tolerance = temp_tol
+    assert camera.temperature_tolerance == temp_tol
+
+
+def test_is_temperature_stable(camera):
+    if camera.is_cooled_camera:
+        camera.target_temperature = camera.temperature
+        camera.cooling_enabled = True
+        time.sleep(1)
+        assert camera.is_temperature_stable
+        camera.cooling_enabled = False
+        assert not camera.is_temperature_stable
+        camera.cooling_enabled = True
+    else:
+        assert not camera.is_temperature_stable
 
 
 def test_exposure(camera, tmpdir):
@@ -322,6 +350,7 @@ def test_exposure(camera, tmpdir):
     exp_event = camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
     assert not exp_event.is_set()
+    assert not camera.is_ready
     # By default take_exposure is non-blocking, need to give it some time to complete.
     if isinstance(camera, FLICamera):
         time.sleep(10)
@@ -331,6 +360,7 @@ def test_exposure(camera, tmpdir):
     assert os.path.exists(fits_path)
     assert exp_event.is_set()
     assert not camera.is_exposing
+    assert camera.is_ready
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
