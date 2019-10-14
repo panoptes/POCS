@@ -85,7 +85,7 @@ class SBIGDriver(AbstractSDKDriver):
                                          self._bcd_to_string(driver_info_results.version))
         return version_string
 
-    def get_cameras(self):
+    def get_devices(self):
         """Gets currently connected camera inf.
 
         Returns:
