@@ -45,11 +45,81 @@ class EFWDriver(AbstractSDKDriver):
         """
         return {}
 
-    def get_num_of_connected_filterwheels(self):
-        """Get teh count of connected EFW filterwheels."""
+    def get_num(self):
+        """Get the count of connected EFW filterwheels."""
         count = self._CDLL.EFWGetNum()
         self.logger.debug(f"Found {count} connected EFW filterwheels.")
         return count
+
+    def get_ID(self, filterwheel_index):
+        """Get integer ID of filterwheel with a given index."""
+        filterwheel_ID = ctypes.c_int()
+        self._call_function('EFWGetID',
+                            filterwheel_index,
+                            ctypes.byref(filterwheel_ID))
+        self.logger.debug(f"Got filterwheel ID {filterwheel_ID} for index {filterwheel_index}.")
+        return filterwheel_ID.value
+
+    def open(self, filterwheel_ID):
+        """Open connection to filterwheel with given ID."""
+        self._call_function('EFWOpen',
+                            filterwheel_ID)
+        self.logger.debug(f"Connection to filterwheel {filterwheel_ID} opened.")
+
+    def get_property(self, filterwheel_ID):
+        """Get properties of filterwheel with given ID."""
+        filterwheel_info = EFWInfo()
+        self._call_function('EFWGetProperty',
+                            filterwheel_ID,
+                            ctypes.byref(filterwheel_info))
+        filterwheel_properties = self._parse_info(filterwheel_info)
+        self.logger.debug(f"Got properties from filterweel {filterwheel_ID}.")
+        return filterwheel_properties
+
+    def get_position(self, filterwheel_ID):
+        """Get current position of filterwheel with given ID."""
+        position = ctypes.c_int()
+        self._call_function('EFWGetPosition',
+                            filterwheel_ID,
+                            ctypes.byref(position))
+        self.logger.debug(f"Got position {position} from filterwheel {filterwheel_ID}.")
+        return position.value
+
+    def set_position(self, filterwheel_ID, position):
+        """Set position of filterwheel with given ID."""
+        self._call_function('EFWSetPosition',
+                            filterwheel_ID,
+                            ctypes.c_int(position))
+        self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
+
+    def get_direction(self, filterwheel_ID):
+        """Get current unidirectional/bidirectional setting of filterwheel with given ID."""
+        unidirectional = ctypes.c_bool()
+        self._call_function('EFWGetDirection',
+                            filterwheel_ID,
+                            ctypes.byref(unidirectional))
+        unidrectional = bool(unidirectional)
+        self.logger.debug(f"Got undirectional={unidirectional} from filterwheel {filterwheel_ID}.")
+        return unidirectional.value
+
+    def set_direction(self, filterwheel_ID, unidirectional):
+        """Set unidrectional/bidirectional for filterwheel with given ID."""
+        self._call_function('EFWSetDirection',
+                            filterwheel_ID,
+                            ctypes.c_bool(unidirectional))
+        self.logger.debug(f"Set unidirection={unidirectional} for filterwheel {filterwheel_ID}.")
+
+    def calibrate(self, filterwheel_ID):
+        """Calibrate filterwheel with given ID."""
+        self._call_function('EFWCalibrate',
+                            filterwheel_ID)
+        self.logger.debug(f"Calibrating filterwheel {filterwheel_ID}.")
+
+    def close(self, filterwheel_ID):
+        """Close connection to filterwheel with given ID."""
+        self._call_function('EFWClose',
+                            filterwheel_ID)
+        self.logger.debug(f"Connection to filterwheel {filterwheel_ID} closed.")
 
     # Private methods
 
@@ -62,11 +132,18 @@ class EFWDriver(AbstractSDKDriver):
             self.logger.error(msg)
             raise error.PanError(msg)
 
+    def _parse_info(self, filterwheel_info):
+        """Convert EFWInfo ctypes.Structure into a Pythonic dict."""
+        properties = {'id': filterwheel_info.id,
+                      'name': filterwheel_info.name.decode(),
+                      'slot_num': filterwheel_info.slot_num}
+        return properties
+
 
 class EFWInfo(ctypes.Structure):
     """Filterwheel info structure."""
 
-    _fields_ = [('filterwheel_ID', ctypes.c_int),
+    _fields_ = [('id', ctypes.c_int),
                 ('name', ctypes.c_char * 64),
                 ('slot_num', ctypes.c_int)]
 
