@@ -47,9 +47,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def get_devices(self):
-        """Convenience function to get a dictionary of all currently connected device UIDs
-        and their corresponding device nodes/handles/IDs.
-        """
+        """Get connected device UIDs and corresponding device nodes/handles/IDs."""
         raise NotImplementedError  # pragma: no cover
 
 
