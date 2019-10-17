@@ -44,7 +44,13 @@ class EFWDriver(AbstractSDKDriver):
         """Get connected device UIDs and corresponding device nodes/handles/IDs.
         """
         # EFW SDK has no way to access any unique identifier for connected filterwheels.
-        return {}
+        # Construct an ID (probably not deterministic, in general) from combination of
+        # product code and filterwheel ID.
+        n_filterwheels = self.get_num()  # Nothing works if you don't call this first.
+        products = self.get_product_ids()  # Will raise error.NotFound if no filterwheels
+        ids = [self.get_ID(i) for i in range(n_filterwheels)]
+        filterwheels = {f"{product}_{id}": id for product, id in zip(products, ids)}
+        return filterwheels
 
     def get_num(self):
         """Get the count of connected EFW filterwheels."""
@@ -59,7 +65,7 @@ class EFWDriver(AbstractSDKDriver):
             product_ids = (ctypes.c_int * n_filterwheels)()
             assert n_filterwheels == self._CDLL.EFWGetProductIDs(ctypes.byref(product_ids))
         else:
-            raise error.PanError("No connected EFW filterwheels.")
+            raise error.NotFound("No connected EFW filterwheels.")
         self.logger.debug(f"Got product IDs from {n_filterwheels} filterwheels.")
         return list(product_ids)
 

@@ -29,7 +29,7 @@ class ASIDriver(AbstractSDKDriver):
         argument, otherwise the ctypes.util.find_library function will be used to try to locate it.
 
         Args:
-            library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'
 
         Returns:
             `~pocs.camera.libasi.ASIDriver`
