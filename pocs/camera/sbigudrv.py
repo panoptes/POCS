@@ -255,19 +255,19 @@ class SBIGDriver(AbstractSDKDriver):
 
         return temp_status
 
-    def set_temp_regulation(self, handle, set_point, enabled):
-        set_point = get_quantity_value(set_point, unit=u.Celsius)
+    def set_temp_regulation(self, handle, target_temperature, enabled):
+        target_temperature = get_quantity_value(target_temperature, unit=u.Celsius)
 
         if enabled:
             enable_code = temperature_regulation_codes['REGULATION_ON']
         else:
             enable_code = temperature_regulation_codes['REGULATION_OFF']
 
-        set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
+        set_temp_params = SetTemperatureRegulationParams2(enable_code, target_temperature)
 
         # Use temperature regulation autofreeze, if available (might marginally reduce read noise).
         autofreeze_code = temperature_regulation_codes['REGULATION_ENABLE_AUTOFREEZE']
-        set_freeze_params = SetTemperatureRegulationParams2(autofreeze_code, set_point)
+        set_freeze_params = SetTemperatureRegulationParams2(autofreeze_code, target_temperature)
 
         with self._command_lock:
             self.set_handle(handle)
@@ -1199,7 +1199,7 @@ class GetCCDInfoResults4(ctypes.Structure):
     ctypes Structure to hold the results from the Get CCD Info command when used with
     requests 'CCD_INFO_EXTENDED2_IMAGING' or 'CCD_INFO_EXTENDED2_TRACKING'.
 
-    The capabilitiesBits is a bitmask, yay.
+    The capabilitiesBits is a bitmap, yay.
     """
     _fields_ = [('capabilities_b0', ctypes.c_int, 1),
                 ('capabilities_b1', ctypes.c_int, 1),

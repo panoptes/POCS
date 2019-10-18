@@ -48,7 +48,7 @@ def test_camera_association_on_init():
 
 def test_with_no_name():
     with pytest.raises(ValueError):
-        sim_filterwheel = SimFilterWheel()
+        SimFilterWheel()
 
 # Basic property getting and (not) setting
 
@@ -139,7 +139,10 @@ def test_move_timeout(caplog):
                                       timeout=0.2)
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
     time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
-    assert caplog.records[-1].levelname == 'ERROR'  # Should have logged an ERROR by now
+
+    # Collect the logs
+    levels = [rec.levelname for rec in caplog.records]
+    assert 'ERROR' in levels  # Should have logged an ERROR by now
     # It raises a pocs.utils.error.Timeout exception too, but because it's in another Thread it
     # doesn't get passes up to the calling code.
 
@@ -176,7 +179,10 @@ def test_move_exposing(tmpdir, caplog):
 def test_is_moving(filterwheel):
     filterwheel.position = 1
     assert not filterwheel.is_moving
+    assert filterwheel.is_ready
     e = filterwheel.move_to(2)
     assert filterwheel.is_moving
+    assert not filterwheel.is_ready
     e.wait()
     assert not filterwheel.is_moving
+    assert filterwheel.is_ready

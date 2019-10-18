@@ -2,6 +2,7 @@ import time
 import threading
 from contextlib import suppress
 
+import numpy as np
 from astropy import units as u
 from astropy.time import Time
 
@@ -23,10 +24,25 @@ class Camera(AbstractSDKCamera):
                  gain=None,
                  image_type=None,
                  *args, **kwargs):
-        # ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
-        # camera_ID and, optionally, an 8 byte ID that can be written to the camera firmware
-        # by the user (using ASICap, or pocs.camera.libasi.ASIDriver.set_ID()). We will use
-        # the latter as a serial number string.
+        """
+        ZWO ASI Camera class
+
+        Args:
+            serial_number (str): camera serial number or user set ID (up to 8 bytes). See notes.
+            gain (int, optional): gain setting, using camera's internal units. If not given
+                the camera will use its current or default setting.
+            image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
+                or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
+                the camera's own default will be used.
+            *args, **kwargs: additional arguments to be passed to the parent classes.
+
+        Notes:
+            ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
+            camera_ID and, probably, an 8 byte serial number. Optionally they also have an
+            8 byte ID that can be written to the camera firmware by the user (using ASICap,
+            or pocs.camera.libasi.ASIDriver.set_ID()). The camera should be identified by
+            its serial number or, if it doesn't have one, by the user set ID.
+        """
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
         kwargs['timeout'] = kwargs.get('timeout', 0.5)
 
@@ -73,36 +89,41 @@ class Camera(AbstractSDKCamera):
         Camera._driver.set_roi_format(self._handle, **roi_format)
 
     @property
-    def ccd_temp(self):
+    def bit_depth(self):
+        """ADC bit depth"""
+        return self.properties['bit_depth']
+
+    @property
+    def temperature(self):
         """ Current temperature of the camera's image sensor """
         return self._control_getter('TEMPERATURE')[0]
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """ Current value of the target temperature for the camera's image sensor cooling control.
 
         Can be set by assigning an astropy.units.Quantity
         """
         return self._control_getter('TARGET_TEMP')[0]
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
-        if not isinstance(set_point, u.Quantity):
-            set_point = set_point * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, set_point))
-        self._control_setter('TARGET_TEMP', set_point)
+    @target_temperature.setter
+    def target_temperature(self, target):
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
+        self._control_setter('TARGET_TEMP', target)
 
     @property
-    def ccd_cooling_enabled(self):
+    def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
         return self._control_getter('COOLER_ON')[0]
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         self._control_setter('COOLER_ON', enable)
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """ Current power level of the camera's image sensor cooling system (as a percentage). """
         return self._control_getter('COOLER_POWER_PERC')[0]
 
@@ -117,11 +138,11 @@ class Camera(AbstractSDKCamera):
     @gain.setter
     def gain(self, gain):
         self._control_setter('GAIN', gain)
+        self._refresh_info()  # This will update egain value in self.properties
 
     @property
     def egain(self):
-        """ Nominal value of the image sensor gain for the camera's current gain setting """
-        self._refresh_info()
+        """ Image sensor gain in e-/ADU for the current gain, as reported by the camera."""
         return self.properties['e_per_adu']
 
     @property
@@ -142,6 +163,8 @@ class Camera(AbstractSDKCamera):
         self._refresh_info()
         self._handle = self.properties['camera_ID']
         self.model, _, _ = self.properties['name'].partition('(')
+        if self.properties['has_cooler']:
+            self._is_cooled_camera = True
         if self.properties['is_color_camera']:
             self._filter_type = self.properties['bayer_pattern']
         else:
@@ -150,6 +173,7 @@ class Camera(AbstractSDKCamera):
         Camera._driver.init_camera(self._handle)
         self._control_info = Camera._driver.get_control_caps(self._handle)
         self._info['control_info'] = self._control_info  # control info accessible via properties
+        Camera._driver.disable_dark_subtract(self._handle)
         self._connected = True
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
@@ -203,6 +227,13 @@ class Camera(AbstractSDKCamera):
         start_time = time.monotonic()
         good_frames = 0
         bad_frames = 0
+
+        # Calculate number of bits that have been used to pad the raw data to RAW16 format.
+        if self.image_type == 'RAW16':
+            pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
+        else:
+            pad_bits = 0
+
         for frame_number in range(max_frames):
             if self._video_event.is_set():
                 break
@@ -216,6 +247,9 @@ class Camera(AbstractSDKCamera):
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
                 filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
+                # Fix 'raw' data scaling by changing from zero padding of LSBs
+                # to zero padding of MSBs.
+                video_data = np.right_shift(video_data, pad_bits)
                 fits_utils.write_fits(video_data, header, filename)
                 good_frames += 1
             else:
@@ -254,6 +288,12 @@ class Camera(AbstractSDKCamera):
             except RuntimeError as err:
                 raise error.PanError('Error getting image data from {}: {}'.format(self, err))
             else:
+                # Fix 'raw' data scaling by changing from zero padding of LSBs
+                # to zero padding of MSBs.
+                if self.image_type == 'RAW16':
+                    pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
+                    image_data = np.right_shift(image_data, pad_bits)
+
                 fits_utils.write_fits(image_data,
                                       header,
                                       filename,
@@ -269,11 +309,8 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)
         header.set('CAM-GAIN', self.gain, 'Internal units')
-        header.set('CAM-BITS', int(get_quantity_value(self.properties['bit_depth'], u.bit)),
-                   'ADC bit depth')
         header.set('XPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
         header.set('YPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')
-        header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu), 'Electrons/ADU')
         return header
 
     def _refresh_info(self):
