@@ -1,1 +1,1 @@
-from pocs.camera.simulator.ccd import Camera
+from pocs.camera.simulator_sdk.ccd import Camera
