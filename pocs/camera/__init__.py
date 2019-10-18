@@ -12,6 +12,7 @@ from pocs.utils.config import load_config
 
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
+from pocs.camera.simulator import ccd as simulator_sdk
 
 from pocs.utils import logger as logger_module
 
