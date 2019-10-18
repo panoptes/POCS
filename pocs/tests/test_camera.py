@@ -9,8 +9,8 @@ from ctypes.util import find_library
 import astropy.units as u
 from astropy.io import fits
 
-from pocs.camera.simulator.dslr import Camera as SimCamera
-from pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.simulator_sdk import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
