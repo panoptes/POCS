@@ -458,7 +458,7 @@ class AbstractMount(PanBase):
 # Movement methods
 ##################################################################################################
 
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
+    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
         """ Slews to given coordinates.
 
         Note:
@@ -482,7 +482,7 @@ class AbstractMount(PanBase):
         if not self.is_parked:
             # Set the coordinates
             if self.set_target_coordinates(coords):
-                response = self.slew_to_target()
+                response = self.slew_to_target(*args, **kwargs)
             else:
                 self.logger.warning("Could not set target_coordinates")
 
@@ -506,12 +506,22 @@ class AbstractMount(PanBase):
 
         self.logger.debug("Mount parked")
 
-    def slew_to_target(self):
-        """ Slews to the current _target_coordinates
+    def slew_to_target(self, blocking=False, timeout=180):
+        """ Slews to the currently assigned target coordinates.
+
+        Slews the mount to the coordinates that have been assigned by `~set_target_coordinates`.
+        If no coordinates have been set, do nothing and return `False`, otherwise
+        return response from the mount.
+
+        If `blocking=True` then wait for up to `timeout` seconds for the mount
+        to reach the `is_tracking` state. If a timeout occurs, raise a `pocs.error.Timeout`
+        exception.
 
         Args:
-            on_finish(method):  A callback method to be executed when mount has
-            arrived at destination
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
+            timeout (int, optional): Maximum time spent slewing to home, default
+                180 seconds.
 
         Returns:
             bool: indicating success
@@ -523,12 +533,26 @@ class AbstractMount(PanBase):
         elif not self.has_target:
             self.logger.info("Target Coordinates not set")
         else:
+            self.logger.debug('Slewing to target')
             success = self.query('slew_to_target')
 
             self.logger.debug("Mount response: {}".format(success))
             if success:
-                self.logger.debug('Slewing to target')
+                if blocking:
+                    # Set up the timeout timer
+                    self.logger.debug(f'Setting slew timeout timer for {timeout} sec')
+                    timeout_timer = CountdownTimer(timeout)
+                    block_time = 3  # seconds
 
+                    while self.is_tracking is False:
+                        if timeout_timer.expired():
+                            self.logger.warning(f'slew_to_target timout: {timeout} seconds')
+                            raise error.Timeout('Problem slewing to target')
+
+                        self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
+                        timeout_timer.sleep(max_sleep=block_time)
+
+                    self.logger.debug(f'Done with slew_to_target block')
             else:
                 self.logger.warning('Problem with slew_to_target')
 
