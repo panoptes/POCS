@@ -3,13 +3,11 @@ import pytest
 import os
 import time
 import glob
-from copy import deepcopy
 from ctypes.util import find_library
 
 import astropy.units as u
 from astropy.io import fits
 
-from pocs import hardware
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -20,6 +18,7 @@ from panoptes.utils.config.client import set_config
 from panoptes.utils.config import load_config
 
 from pocs.camera import create_cameras_from_config
+from pocs.camera import create_camera_simulator
 
 # Hardware specific imports
 from pocs.camera.simulator import Camera as SimCamera
@@ -99,27 +98,9 @@ def patterns(camera, images_dir):
     return patterns
 
 
-def test_create_cameras_from_config(config):
-    cameras = create_cameras_from_config(config)
+def test_create_camera_simulator():
+    cameras = create_camera_simulator()
     assert len(cameras) == 2
-
-
-def test_create_cameras_from_config_fail(config):
-    orig_config = deepcopy(config)
-    cameras = create_cameras_from_config(config)
-    assert len(cameras) == 2
-    simulator = hardware.get_all_names(without=['camera'])
-
-    config['cameras']['auto_detect'] = False
-    config['cameras']['devices'][0] = {
-        'port': '/dev/foobar',
-        'model': 'foobar'
-    }
-
-    cameras = create_cameras_from_config(config, simulator=simulator)
-    assert len(cameras) != 2
-
-    return camera
 
 
 def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
