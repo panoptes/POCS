@@ -1,4 +1,5 @@
 import time
+from threading import Timer
 
 from astropy import units as u
 
@@ -103,26 +104,25 @@ class Mount(AbstractMount):
 
         return super().get_ms_offset(offset, axis=axis)
 
-    def slew_to_target(self):
-        success = False
+    def slew_to_target(self, slew_delay=0.5, *args, **kwargs):
+        self._is_tracking = False
 
-        if self.is_parked:
-            self.logger.warning("Mount is parked")
-        elif not self.has_target:
-            self.logger.warning("Target Coordinates not set")
-        else:
+        # Set up a timer to trigger the `is_tracking` property.
+        def trigger_tracking():
+            self.logger.debug('Triggering mount simulator tracking')
+            self._is_tracking = True
 
-            self._is_slewing = True
-            self._is_tracking = False
-            self._is_home = False
+        timer = Timer(slew_delay, trigger_tracking)
+        timer.start()
 
-            time.sleep(self._loop_delay)
+        try:
+            success = super().slew_to_target(*args, **kwargs)
+        except error.Timeout:
+            # Cancel the timer and re-throw exception
+            timer.cancel()
+            raise error.Timeout
 
-            self.stop_slew()
-            self._state = 'Tracking'
-
-            self._current_coordinates = self.get_target_coordinates()
-            success = True
+        self._current_coordinates = self.get_target_coordinates()
 
         return success
 
@@ -177,7 +177,11 @@ class Mount(AbstractMount):
         return True
 
     def query(self, cmd, params=None):
-        self.logger.debug("Query: {} {}".format(cmd, params))
+        self.logger.debug(f"Query cmd: {cmd} params: {params!r}")
+        if cmd == 'slew_to_target':
+            time.sleep(self._loop_delay)
+
+        return True
 
     def write(self, cmd):
         self.logger.debug("Write: {}".format(cmd))

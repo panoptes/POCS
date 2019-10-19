@@ -166,6 +166,16 @@ def test_slew_to_target(mount, target):
     mount.get_current_coordinates() == parked_coords
 
 
+def test_slew_to_target_timeout(mount, target):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
+    mount.initialize(unpark=True)
+
+    assert mount.set_target_coordinates(target) is True
+    with pytest.raises(error.Timeout):
+        assert mount.slew_to_target(blocking=True, timeout=3, slew_delay=30)
+
+
 def test_slew_to_home(mount):
     mount.initialize()
 
