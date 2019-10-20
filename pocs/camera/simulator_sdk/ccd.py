@@ -40,6 +40,7 @@ class Camera(AbstractSDKCamera, Camera):
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._time_constant = 1.0
+        self._target_temperature = target_temperature
 
     @property
     def cooling_enabled(self):

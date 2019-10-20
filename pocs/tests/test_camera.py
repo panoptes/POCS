@@ -78,7 +78,6 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0], config_port=config_port)
 
-    camera.config['directories']['images'] = images_dir
     return camera
 
 
@@ -296,6 +295,7 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
+    assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.
     exp_event = camera.take_exposure(filename=fits_path)
