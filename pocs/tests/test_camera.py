@@ -347,7 +347,7 @@ def test_exposure(camera, tmpdir):
     fits_path = str(tmpdir.join('test_exposure.fits'))
     if camera.is_cooled_camera and camera.cooling_enabled is False:
         camera.cooling_enabled = True
-        time.sleep(4)
+        time.sleep(5)  # Give camera time to cool
     assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.
