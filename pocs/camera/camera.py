@@ -234,7 +234,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             at_target = abs(self.temperature - self.target_temperature) \
                 < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
-                self.logger.warning('Unstable CCD temperature in {}'.format(self))
+                self.logger.warning(f'Unstable CCD temperature in {self}.')
+                self.logger.warning(f'Cooling power is {self.cooling_power}.')
+                self.logger.warning(f'Temp={self.temperature} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
                 return False
             else:
                 return True

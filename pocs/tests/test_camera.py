@@ -295,6 +295,9 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
+    if camera.is_cooled_camera:
+        camera.cooling_enabled = True
+        time.sleep(4)
     assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.

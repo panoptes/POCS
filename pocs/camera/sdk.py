@@ -29,7 +29,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         """
         print(f'Creating AbstractSDKDriver camera: {kwargs!r}')
 
-        PanBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._CDLL = load_c_library(name=name, path=library_path, logger=self.logger)
         self._version = self.get_SDK_version()
         self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
