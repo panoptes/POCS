@@ -29,6 +29,7 @@ class Camera(AbstractSDKCamera, Camera):
                  driver=SDKDriver,
                  target_temperature=0 * u.Celsius,
                  *args, **kwargs):
+        kwargs['_target_temperature'] = target_temperature
         super().__init__(name, driver, *args, **kwargs)
 
         self._is_cooled_camera = True
