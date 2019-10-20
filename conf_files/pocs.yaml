@@ -11,7 +11,7 @@
 #         an official id. Update pocs_local.yaml with offical name once received.
 ################################################################################
 name: Generic PANOPTES Unit
-pan_id: PAN000   
+pan_id: PAN000
 
 location:
     name: Mauna Loa Observatory
@@ -32,9 +32,10 @@ directories:
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-db: 
+db:
     name: panoptes
     type: file
+state_machine: simple_state_table
 scheduler:
     type: dispatch
     fields_file: simple.yaml
@@ -48,11 +49,13 @@ mount:
         timeout: 0.
         baudrate: 9600
     non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
 pointing:
-    auto_correct: False
-    threshold: 500 # arcseconds ~ 50 pixels
+    auto_correct: True
+    threshold: 100 # arcseconds ~ 10 pixels
     exptime: 30 # seconds
-    max_iterations: 3
+    max_iterations: 5
 cameras:
     auto_detect: True
     primary: 14d3bd
@@ -62,13 +65,12 @@ cameras:
     -
         model: canon_gphoto2
 messaging:
-    # Must match ports in peas.yaml.
     cmd_port: 6500
     msg_port: 6510
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
-# recorded by a single camera, with no slewing of the mount during the sequence; 
+# recorded by a single camera, with no slewing of the mount during the sequence;
 # there may be tracking adjustments during the observation.
 #
 # An example folder structure would be:
@@ -101,16 +103,67 @@ panoptes_network:
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
-        
+
 #Enable to output POCS messages to social accounts
 # social_accounts:
 #     twitter:
 #         consumer_key: [your_consumer_key]
 #         consumer_secret: [your_consumer_secret]
 #         access_token: [your_access_token]
-#         access_token_secret: [your_access_token_secret] 
+#         access_token_secret: [your_access_token_secret]
 #     slack:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
 
-state_machine: simple_state_table
+
+######################### Environmental Sensors ################################
+# Configure the environmental sensors that are attached.
+#
+# Use `auto_detect: True` for most options. Or use a manual configuration:
+#
+#   camera_board:
+#       serial_port: /dev/ttyACM0
+#   control_board:
+#       serial_port: /dev/ttyACM1
+################################################################################
+environment:
+    auto_detect: False
+    camera_board:
+        serial_port: /dev/ttyACM0
+    control_board:
+        serial_port: /dev/ttyACM1
+
+######################### Weather Station ######################################
+# Weather station options.
+#
+# Configure the serial_port as necessary.
+#
+# Default thresholds should be okay for most locations.
+################################################################################
+weather:
+    aag_cloud:
+        serial_port: '/dev/ttyUSB1'
+        threshold_cloudy: -25
+        threshold_very_cloudy: -15.
+        threshold_windy: 50.
+        threshold_very_windy: 75.
+        threshold_gusty: 100.
+        threshold_very_gusty: 125.
+        threshold_wet: 2200.
+        threshold_rainy: 1800.
+        safety_delay: 15 ## minutes
+        heater:
+            low_temp: 0 ## deg C
+            low_delta: 6 ## deg C
+            high_temp: 20 ## deg C
+            high_delta: 4 ## deg C
+            min_power: 10 ## percent
+            impulse_temp: 10 ## deg C
+            impulse_duration: 60 ## seconds
+            impulse_cycle: 600 ## seconds
+    plot:
+        amb_temp_limits: [-5, 35]
+        cloudiness_limits: [-45, 5]
+        wind_limits: [0, 75]
+        rain_limits: [700, 3200]
+        pwm_limits: [-5, 105]

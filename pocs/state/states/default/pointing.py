@@ -1,3 +1,4 @@
+import numpy as np
 from pocs.images import Image
 
 MAX_EXTRA_TIME = 60  # second
@@ -34,8 +35,8 @@ def on_enter(event_data):
 
         # Loop over maximum number of pointing iterations
         for img_num in range(num_pointing_images):
-            pocs.logger.debug("Taking pointing image {}/{} on: {}",
-                              img_num, num_pointing_images, primary_camera)
+            pocs.logger.info(
+                f"Taking pointing image {img_num+1}/{num_pointing_images} on: {primary_camera}")
 
             # Start the exposure
             camera_event = primary_camera.take_observation(
@@ -67,14 +68,15 @@ def on_enter(event_data):
                 pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
                 pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
 
-                separation = pointing_image.pointing_error.magnitude.value
-
                 if should_correct is False:
                     pocs.logger.info("Pointing correction turned off, done with pointing.")
                     break
 
-                # Correct the pointing
-                if separation > pointing_threshold:
+                delta_ra = pointing_image.pointing_error.delta_ra.value
+                delta_dec = pointing_image.pointing_error.delta_dec.value
+
+                # Correct the pointing if either axis is off.
+                if np.abs(delta_ra) > pointing_threshold or np.abs(delta_dec) > pointing_threshold:
                     pocs.say("I'm still a bit away from the field so I'm going to get closer.")
 
                     # Tell the mount we are at the field, which is the center
@@ -92,9 +94,13 @@ def on_enter(event_data):
                         if observation.field is not None:
                             pocs.logger.debug("Slewing back to target")
                             pocs.observatory.mount.set_target_coordinates(observation.field)
-                            pocs.observatory.mount.slew_to_target()
+                            pocs.observatory.mount.slew_to_target(blocking=True)
+
+                    if img_num == (num_pointing_images - 1):
+                        pocs.logger.info(f'Separation outside threshold but at max corrections. ' +
+                                         'Will proceed to observations.')
                 else:
-                    pocs.logger.info("Separation is within pointing threshold.")
+                    pocs.logger.info("Separation is within pointing threshold, starting tracking.")
                     break
 
         pocs.next_state = 'tracking'

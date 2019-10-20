@@ -287,7 +287,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             return
 
         try:
-            self.pocs.observatory.mount.slew_to_home()
+            self.pocs.observatory.mount.slew_to_home(blocking=True)
         except Exception as e:
             print_warning('Problem slewing to home: {}'.format(e))
 
@@ -350,7 +350,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
         print_info("Moving to home position")
         self.pocs.say("Moving to home position")
-        mount.slew_to_home()
+        mount.slew_to_home(blocking=True)
 
         # Polar Rotation
         pole_fn = polar_rotation(self.pocs, base_dir=base_dir)
@@ -362,7 +362,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
         print_info("Moving back to home")
         self.pocs.say("Moving back to home")
-        mount.slew_to_home()
+        mount.slew_to_home(blocking=True)
 
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
@@ -488,10 +488,7 @@ def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
 
     print_info('Performing polar rotation test')
     pocs.say('Performing polar rotation test')
-    mount.slew_to_home()
-
-    while not mount.is_home:
-        time.sleep(2)
+    mount.slew_to_home(blocking=True)
 
     analyze_fn = None
 
@@ -537,7 +534,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
 
     print_info("Doing rotation test")
     pocs.say("Doing rotation test")
-    mount.slew_to_home()
+    mount.slew_to_home(blocking=True)
     exptime = 25
     mount.move_direction(direction='west', seconds=11)
 
@@ -719,7 +716,7 @@ class DriftShell(Cmd):
             return
 
         try:
-            self.pocs.observatory.mount.slew_to_home()
+            self.pocs.observatory.mount.slew_to_home(blocking=True)
         except Exception as e:
             print_warning('Problem slewing to home: {}'.format(e))
 
