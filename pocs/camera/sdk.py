@@ -121,11 +121,11 @@ class AbstractSDKCamera(AbstractCamera):
             self._filter_type = filter_type
 
         if target_temperature is not None:
+            self.target_temperature = target_temperature
             if self.is_cooled_camera:
-                self.target_temperature = target_temperature
                 self.cooling_enabled = True
             else:
-                msg = "Attempt to set target temperature on uncooled camera {}".format(self)
+                msg = "Setting a target temperature on uncooled camera {}".format(self)
                 self.logger.warning(msg)
 
     def __del__(self):
