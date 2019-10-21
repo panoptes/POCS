@@ -29,7 +29,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         """
         print(f'Creating AbstractSDKDriver camera: {kwargs!r}')
 
-        PanBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._CDLL = load_c_library(name=name, path=library_path, logger=self.logger)
         self._version = self.get_SDK_version()
         self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
@@ -45,14 +45,14 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
     @abstractmethod
     def get_SDK_version(self):
         """ Get the version of the SDK """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_cameras(self):
         """Convenience function to get a dictionary of all currently connected camera UIDs
         and their corresponding device nodes/handles/camera IDs.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class AbstractSDKCamera(AbstractCamera):
@@ -65,7 +65,7 @@ class AbstractSDKCamera(AbstractCamera):
                  driver=AbstractSDKDriver,
                  library_path=None,
                  filter_type=None,
-                 set_point=None,
+                 target_temperature=None,
                  *args, **kwargs):
         # Would usually use self.logger but that won't exist until after calling super().__init__(),
         # and don't want to do that until after the serial number and port have both been determined
@@ -120,9 +120,13 @@ class AbstractSDKCamera(AbstractCamera):
             # upstream of the CCD. Can be set manually here, or handled by a filterwheel attribute.
             self._filter_type = filter_type
 
-        if set_point is not None:
-            self.ccd_set_point = set_point
-            self.ccd_cooling_enabled = True
+        if target_temperature is not None:
+            self.target_temperature = target_temperature
+            if self.is_cooled_camera:
+                self.cooling_enabled = True
+            else:
+                msg = "Setting a target temperature on uncooled camera {}".format(self)
+                self.logger.warning(msg)
 
     def __del__(self):
         """ Attempt some clean up """
@@ -139,6 +143,11 @@ class AbstractSDKCamera(AbstractCamera):
         return self._info
 
     # Methods
+
+    def _create_fits_header(self, seconds, dark):
+        header = super()._create_fits_header(seconds, dark)
+        header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
+        return header
 
     def __str__(self):
         # SDK cameras don't have a port so just include the serial number in the string

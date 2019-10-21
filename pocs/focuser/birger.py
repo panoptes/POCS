@@ -6,6 +6,7 @@ from warnings import warn
 from contextlib import suppress
 
 from pocs.focuser import AbstractFocuser
+from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
@@ -43,7 +44,7 @@ error_messages = ('No error',
 
 class Focuser(AbstractFocuser):
     """
-    Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
+    Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
 
     Args:
         name (str, optional): default 'Birger Focuser'
@@ -134,6 +135,7 @@ class Focuser(AbstractFocuser):
             return
 
         Focuser._assigned_nodes.append(self.port)
+        self._is_moving = False
         self._initialise()
         if initial_position is not None:
             self.position = initial_position
@@ -164,7 +166,7 @@ class Focuser(AbstractFocuser):
     @AbstractFocuser.position.getter
     def position(self):
         """
-        Returns current focus position in the lens focus encoder units
+        Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('pf', response_length=1)
         return int(response[0].rstrip())
@@ -172,21 +174,21 @@ class Focuser(AbstractFocuser):
     @property
     def min_position(self):
         """
-        Returns position of close limit of focus travel, in encoder units
+        Returns position of close limit of focus travel, in encoder units.
         """
         return self._min_position
 
     @property
     def max_position(self):
         """
-        Returns position of far limit of focus travel, in encoder units
+        Returns position of far limit of focus travel, in encoder units.
         """
         return self._max_position
 
     @property
     def lens_info(self):
         """
-        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens)
+        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens).
         """
         return self._lens_info
 
@@ -200,9 +202,14 @@ class Focuser(AbstractFocuser):
     @property
     def hardware_version(self):
         """
-        Returns the hardware version of the Birger adaptor
+        Returns the hardware version of the Birger adaptor.
         """
         return self._hardware_version
+
+    @property
+    def is_moving(self):
+        """ True if the focuser is currently moving. """
+        return self._is_moving
 
 ##################################################################################################
 # Public Methods
@@ -257,19 +264,20 @@ class Focuser(AbstractFocuser):
         Returns:
             int: focuser position following the move, in encoder units.
 
-        Does not do any checking of the requested position but will warn if the lens reports hitting
-        a stop.
+        Does not do any checking of the requested position but will warn if the lens reports
+        hitting a stop.
         """
-        response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
-        if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
-                self, response[0].rstrip()))
-        else:
-            r = response[0][4:].rstrip()
-            self.logger.debug("Moved to {} encoder units".format(r[:-2]))
-            if r[-1] == '1':
-                self.logger.warning('{} reported hitting a focus stop'.format(self))
-            return int(r[:-2])
+        self._is_moving = True
+        try:
+            response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+            new_position = self._parse_move_response(response)
+        finally:
+            # Birger move commands block until the move is finished, so if the command has
+            # returned then the focuser is no longer moving.
+            self._is_moving = False
+
+        self.logger.debug("Moved to encoder position {}".format(new_position))
+        return new_position
 
     def move_by(self, increment):
         """
@@ -279,21 +287,22 @@ class Focuser(AbstractFocuser):
             increment (int): distance to move the focuser, in encoder units.
 
         Returns:
-            int: focuser position following the move, in encoder units.
+            int: distance moved, in encoder units.
 
         Does not do any checking of the requested increment but will warn if the lens reports
         hitting a stop.
         """
-        response = self._send_command('mf{:d}'.format(increment), response_length=1)
-        if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(
-                self, response[0].rstrip()))
-        else:
-            r = response[0][4:].rstrip()
-            self.logger.debug("Moved by {} encoder units".format(r[:-2]))
-            if r[-1] == '1':
-                self.logger.warning('{} reported hitting a focus stop'.format(self))
-            return int(r[:-2])
+        self._is_moving = True
+        try:
+            response = self._send_command('mf{:d}'.format(int(increment)), response_length=1)
+            moved_by = self._parse_move_response(response)
+        finally:
+            # Birger move commands block until the move is finished, so if the command has
+            # returned then the focuser is no longer moving.
+            self._is_moving = False
+
+        self.logger.debug("Moved by {} encoder units".format(moved_by))
+        return moved_by
 
 ##################################################################################################
 # Private Methods
@@ -370,6 +379,21 @@ class Focuser(AbstractFocuser):
                         error_match.group(), self))
 
         return response
+
+    def _parse_move_response(self, response):
+        try:
+            response = response[0].rstrip()
+            reply = response[:4]
+            amount = int(response[4:-2])
+            hit_limit = bool(int(response[-1]))
+            assert reply == "DONE"
+        except (IndexError, AssertionError):
+            raise error.PanError("{} got response '{}', expected 'DONENNNNN,N'!".format(self,
+                                                                                        response))
+        if hit_limit:
+            self.logger.warning('{} reported hitting a focus stop'.format(self))
+
+        return amount
 
     def _initialise(self):
         # Get serial number. Note, this is the serial number of the Birger adaptor,

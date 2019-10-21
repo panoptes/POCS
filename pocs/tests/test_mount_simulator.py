@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 
 from pocs.mount.simulator import Mount
 from panoptes.utils.config.client import get_config
+from panoptes.utils import error
 from panoptes.utils import altaz_to_radec
 
 
@@ -164,6 +165,16 @@ def test_slew_to_target(mount, target):
     mount.park()
     assert mount.is_parked is True
     mount.get_current_coordinates() == parked_coords
+
+
+def test_slew_to_target_timeout(mount, target):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
+    mount.initialize(unpark=True)
+
+    assert mount.set_target_coordinates(target) is True
+    with pytest.raises(error.Timeout):
+        assert mount.slew_to_target(blocking=True, timeout=3, slew_delay=30)
 
 
 def test_slew_to_home(mount):

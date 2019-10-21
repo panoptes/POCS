@@ -6,6 +6,7 @@ import glob
 from ctypes.util import find_library
 
 import astropy.units as u
+from astropy.io import fits
 
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
@@ -14,15 +15,18 @@ from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
+from panoptes.utils.config import load_config
 
 from pocs.camera import create_cameras_from_config
+from pocs.camera import create_camera_simulator
 
 # Hardware specific imports
-from pocs.camera.simulator.dslr import Camera as SimCamera
-from pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.simulator_sdk.ccd import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
+from pocs.camera.zwo import Camera as ZWOCamera
 
 
 params = [SimCamera, SimCamera, SimCamera, SimSDKCamera]
@@ -48,17 +52,54 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro'],
                                         'move_time': 0.1,
-                                        'timeout': 0.5}, config_port=config_port)
+                                        'timeout': 0.5},
+                           config_port=config_port)
     elif request.param[1] == 'simulator_sdk':
         camera = SimSDKCamera(serial_number='SSC101', config_port=config_port)
+    else:
+        # Load the local config file and look for camera configurations of the specified type
+        configs = []
+        local_config = load_config('pocs_local', ignore_local=True)
+        camera_info = local_config.get('cameras')
+        if camera_info:
+            # Local config file has a cameras section
+            camera_configs = camera_info.get('devices')
+            if camera_configs:
+                # Local config file camera section has a devices list
+                for camera_config in camera_configs:
+                    if camera_config and camera_config['model'] == request.param[1]:
+                        # Camera config is the right type
+                        configs.append(camera_config)
+
+        if not configs:
+            pytest.skip(
+                "Found no {} configs in pocs_local.yaml, skipping tests".format(request.param[1]))
+
+        # Create and return an camera based on the first config
+        camera = request.param[0](**configs[0], config_port=config_port)
 
     return camera
 
 
-# Create cameras from config - should fail without cameras
-def test_create_cameras_from_config():
-    with pytest.raises(error.PanError):
-        create_cameras_from_config()
+@pytest.fixture(scope='module')
+def counter(camera):
+    return {'value': 0}
+
+
+@pytest.fixture(scope='module')
+def patterns(camera, images_dir):
+    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                      ('*_final.' + camera.file_extension)),
+                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                          'fine_focus.png'),
+                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
+                                            'coarse_focus.png')}
+    return patterns
+
+
+def test_create_camera_simulator():
+    cameras = create_camera_simulator()
+    assert len(cameras) == 2
 
 
 def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
@@ -178,47 +219,75 @@ def test_uid(camera):
 
 def test_get_temp(camera):
     try:
-        temperature = camera.ccd_temp
+        temperature = camera.temperature
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
     else:
         assert temperature is not None
 
 
-def test_set_set_point(camera):
-    try:
-        camera.ccd_set_point = 10 * u.Celsius
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+def test_is_cooled(camera):
+    cooled_camera = camera.is_cooled_camera
+    assert cooled_camera is not None
+
+
+def test_set_target_temperature(camera):
+    if camera.is_cooled_camera:
+        camera._target_temperature = 10 * u.Celsius
+        assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
-        assert abs(camera.ccd_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+
+
+def test_cooling_enabled(camera):
+    cooling_enabled = camera.cooling_enabled
+    if not camera.is_cooled_camera:
+        assert not cooling_enabled
 
 
 def test_enable_cooling(camera):
-    try:
-        camera.ccd_cooling_enabled = True
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    if camera.is_cooled_camera:
+        camera.cooling_enabled = True
+        assert camera.cooling_enabled
     else:
-        assert camera.ccd_cooling_enabled is True
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
 
 
 def test_get_cooling_power(camera):
-    try:
-        power = camera.ccd_cooling_power
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
-    else:
+    if camera.is_cooled_camera:
+        power = camera.cooling_power
         assert power is not None
+    else:
+        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
 
 
 def test_disable_cooling(camera):
-    try:
-        camera.ccd_cooling_enabled = False
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    if camera.is_cooled_camera:
+        camera.cooling_enabled = False
+        assert not camera.cooling_enabled
     else:
-        assert camera.ccd_cooling_enabled is False
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+
+
+def test_temperature_tolerance(camera):
+    temp_tol = camera.temperature_tolerance
+    camera.temperature_tolerance = temp_tol.value + 1
+    assert camera.temperature_tolerance == temp_tol + 1 * u.Celsius
+    camera.temperature_tolerance = temp_tol
+    assert camera.temperature_tolerance == temp_tol
+
+
+def test_is_temperature_stable(camera):
+    if camera.is_cooled_camera:
+        camera.target_temperature = camera.temperature
+        camera.cooling_enabled = True
+        time.sleep(1)
+        assert camera.is_temperature_stable
+        camera.cooling_enabled = False
+        assert not camera.is_temperature_stable
+        camera.cooling_enabled = True
+    else:
+        assert not camera.is_temperature_stable
 
 
 def test_exposure(camera, tmpdir):
@@ -226,11 +295,16 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
+    if camera.is_cooled_camera and camera.cooling_enabled is False:
+        camera.cooling_enabled = True
+        time.sleep(5)  # Give camera time to cool
+    assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.
     exp_event = camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
     assert not exp_event.is_set()
+    assert not camera.is_ready
     # By default take_exposure is non-blocking, need to give it some time to complete.
     if isinstance(camera, FLICamera):
         time.sleep(10)
@@ -240,6 +314,7 @@ def test_exposure(camera, tmpdir):
     assert os.path.exists(fits_path)
     assert exp_event.is_set()
     assert not camera.is_exposing
+    assert camera.is_ready
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
@@ -293,6 +368,25 @@ def test_exposure_collision(camera, tmpdir):
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
     assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+
+
+def test_exposure_scaling(camera, tmpdir):
+    """Regression test for incorrect pixel value scaling.
+
+    Checks for zero padding of LSBs instead of MSBs, as encountered
+    with ZWO ASI cameras.
+    """
+    try:
+        bit_depth = camera.bit_depth
+    except NotImplementedError:
+        pytest.skip("Camera does not have bit_depth attribute")
+    else:
+        fits_path = str(tmpdir.join('test_exposure_scaling.fits'))
+        camera.take_exposure(filename=fits_path, dark=True, blocking=True)
+        image_data, image_header = fits.getdata(fits_path, header=True)
+        assert bit_depth == image_header['BITDEPTH'] * u.bit
+        pad_bits = image_header['BITPIX'] - image_header['BITDEPTH']
+        assert (image_data % 2**pad_bits).any()
 
 
 def test_exposure_no_filename(camera):

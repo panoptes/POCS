@@ -23,9 +23,6 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
 from pocs.base import PanBase
 
-from pocs.focuser import AbstractFocuser
-from pocs.filterwheel import AbstractFilterWheel
-
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
 
@@ -40,7 +37,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
-        set_point (astropy.units.Quantity): image sensor cooling target temperature.
+        target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
+        temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
         gain (int): The gain setting of the camera (ZWO cameras only).
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
         timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
@@ -48,6 +46,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+        is_cooled_camera (bool): True if camera has image sensor cooling capability.
+        is_temperature_stable (bool): True if image sensor temperature is stable.
+        is_exposing (bool): True if an exposure is currently under way, otherwise False.
 
     Notes:
         The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
@@ -57,15 +58,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
+    _subcomponent_classes = {'Focuser', 'FilterWheel'}
+    _subcomponent_names = {sub_class.casefold() for sub_class in _subcomponent_classes}
+
     def __init__(self,
                  name='Generic Camera',
                  model='simulator',
                  port=None,
                  primary=False,
-                 focuser=None,
-                 filterwheel=None,
                  *args, **kwargs):
-        PanBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.model = model
         self.port = port
@@ -77,6 +79,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._readout_time = kwargs.get('readout_time', 5.0)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+        # Default is uncooled camera. Should be set to True if appropriate in camera connect()
+        # method, based on info received from camera.
+        self._is_cooled_camera = False
+        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
 
         self._connected = False
         self._current_observation = None
@@ -84,14 +90,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event.set()
         self._is_exposing = False
 
-        self._create_subcomponent(subcomponent=focuser,
-                                  sub_name='focuser',
-                                  class_name='Focuser',
-                                  base_class=AbstractFocuser)
-        self._create_subcomponent(subcomponent=filterwheel,
-                                  sub_name='filterwheel',
-                                  class_name='FilterWheel',
-                                  base_class=AbstractFilterWheel)
+        for subcomponent_class in self._subcomponent_classes:
+            self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
+                                      class_name=subcomponent_class)
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -120,28 +121,37 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._file_extension
 
     @property
-    def ccd_temp(self):
+    def egain(self):
+        """Image sensor gain in e-/ADU as reported by the camera."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
+    def bit_depth(self):
+        """ADC bit depth."""
+        raise NotImplementedError  # pragma: no cover
+
+    @property
+    def temperature(self):
         """
         Get current temperature of the camera's image sensor.
 
         Note: this only needs to be implemented for cameras which can provided this information,
         e.g. those with cooled image sensors.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
-    def ccd_set_point(self):
+    def target_temperature(self):
         """
-        Get current value of the CCD set point, the target temperature for the camera's
-        image sensor cooling control.
+        Get current value of the target temperature for the camera's image sensor cooling control.
 
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
-    @ccd_set_point.setter
-    def ccd_set_point(self, set_point):
+    @target_temperature.setter
+    def target_temperature(self, target_temperature):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -149,10 +159,28 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
-    def ccd_cooling_enabled(self):
+    def temperature_tolerance(self):
+        """
+        Get current value of the image sensor temperature tolerance.
+
+        If the image sensor temperature differs from the target temperature by more than the
+        temperature tolerance then the temperature is not considered stable (by
+        is_temperature_stable) and, for cooled cameras, is_ready will report False.
+        """
+        return self._temperature_tolerance
+
+    @temperature_tolerance.setter
+    def temperature_tolerance(self, temperature_tolerance):
+        """ Set the value of the image sensor temperature tolerance. """
+        if not isinstance(temperature_tolerance, u.Quantity):
+            temperature_tolerance = temperature_tolerance * u.Celsius
+        self._temperature_tolerance = temperature_tolerance
+
+    @property
+    def cooling_enabled(self):
         """
         Get current status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -161,18 +189,18 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         return False
 
-    @ccd_cooling_enabled.setter
-    def ccd_cooling_enabled(self, enable):
+    @cooling_enabled.setter
+    def cooling_enabled(self, enable):
         """
         Set status of the camera's image sensor cooling system (enabled/disabled).
 
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
-    def ccd_cooling_power(self):
+    def cooling_power(self):
         """
         Get current power level of the camera's image sensor cooling system (typically as
         a percentage of the maximum).
@@ -180,7 +208,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @property
     def filter_type(self):
@@ -191,13 +219,60 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             return self._filter_type
 
     @property
+    def is_cooled_camera(self):
+        """ True if camera has image sensor cooling capability """
+        return self._is_cooled_camera
+
+    @property
+    def is_temperature_stable(self):
+        """ True if image sensor temperature is stable, False if not.
+
+        See also: See `temperature_tolerance` for more information about the temperature stability.
+        An uncooled camera, or cooled camera with cooling disabled, will always return False.
+        """
+        if self.is_cooled_camera and self.cooling_enabled:
+            at_target = abs(self.temperature - self.target_temperature) \
+                < self.temperature_tolerance
+            if not at_target or self.cooling_power == 100 * u.percent:
+                self.logger.warning(f'Unstable CCD temperature in {self}.')
+                self.logger.warning(f'Cooling power is {self.cooling_power}.')
+                self.logger.warning(f'Temp={self.temperature} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """ True if an exposure is currently under way, otherwise False. """
         return self._is_exposing
+
+    @property
+    def is_ready(self):
+        """ True if camera is ready to start another exposure, otherwise False. """
+        # For cooled camera expect stable temperature before taking exposure
+        if self.is_cooled_camera and not self.is_temperature_stable:
+            return False
+
+        # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
+        for sub_name in self._subcomponent_names:
+            if getattr(self, sub_name) and not getattr(self, sub_name).is_ready:
+                return False
+
+        # Make sure there isn't an exposure already in progress.
+        if self.is_exposing:
+            return False
+
+        return True
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    @abstractmethod
+    def connect(self):
+        raise NotImplementedError  # pragma: no cover
 
     def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
@@ -329,9 +404,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         # If passed an Event that signals the end of the exposure wait for it to be set
         if exposure_event is not None:
-            self.logger.debug(f'About to wait for exposure event on {self.name}')
             exposure_event.wait()
-            self.logger.debug(f'Done waiting for exposure event on {self.name}')
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
@@ -493,7 +566,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             tuple|list: Any arguments required by the camera-specific `_readout`
                 method, which should be implemented at the same time as this method.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def _readout(self, filename=None):
@@ -508,7 +581,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             method should at a minimum implement the described parameters.
 
         """
-        pass
+        pass  # pragma: no cover
 
     def _poll_exposure(self, readout_args):
         timer = CountdownTimer(duration=self._timeout)
@@ -540,21 +613,28 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             else:
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
+        with suppress(NotImplementedError):            # SBIG & ZWO cameras report their gain.
+            header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu),
+                       'Electrons/ADU')
         with suppress(NotImplementedError):
-            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
+            # ZWO cameras have ADC bit depths with differ from BITPIX
+            header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
         with suppress(NotImplementedError):
-            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
-        with suppress(NotImplementedError):
-            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+            # Some non cooled cameras can still report the image sensor temperature
+            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
+        if self.is_cooled_camera:
+            header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
+                       'Degrees C')
+            header.set('COOL-POW', get_quantity_value(self.cooling_power, u.percent),
                        'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
-        if self.focuser:
-            header = self.focuser._add_fits_keywords(header)
-        if self.filterwheel:
-            header = self.filterwheel._add_fits_keywords(header)
+        for sub_name in self._subcomponent_names:
+            subcomponent = getattr(self, sub_name)
+            if subcomponent:
+                header = subcomponent._add_fits_keywords(header)
 
         return header
 
@@ -640,53 +720,54 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return file_path
 
-    def _create_subcomponent(self, subcomponent, sub_name, class_name, base_class):
+    def _create_subcomponent(self, subcomponent, class_name):
         """
         Creates a subcomponent as an attribute of the camera. Can do this from either an instance
         of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
         subcomponent class' constructor.
 
         Args:
-            subcomponent (instance of class_name | dict): the subcomponent object, or the keyword
+            subcomponent (instance of sub_name | dict): the subcomponent object, or the keyword
                 arguments required to create it.
-            sub_name (str): name of the subcomponent, e.g. 'focuser'. Will be used as the attribute
-                name, and must also match the name corresponding POCS submodule for this
-                subcomponent, e.g. `pocs.focuser`
-            class_name (str): name of the subcomponent class, e.g. 'Focuser'
-            base_class (class): the base class for the subcomponent, e.g.
-                `pocs.focuser.AbtractFocuser`, used to check whether subcomponent is an instance.
+            class_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version
+                will be used as the attribute name, and must also match the name of the
+                corresponding POCS submodule for this subcomponent, e.g. `pocs.focuser`.
         """
+        class_name_lower = class_name.casefold()
         if subcomponent:
+            base_module_name = "pocs.{0}.{0}".format(class_name_lower)
+            try:
+                base_module = load_module(base_module_name)
+            except error.NotFound as err:
+                self.logger.critical("Couldn't import {} base class module {}!".format(
+                    class_name, base_module_name))
+                raise err
+            base_class = getattr(base_module, "Abstract{}".format(class_name))
+
             if isinstance(subcomponent, base_class):
                 self.logger.debug("{} received: {}".format(class_name, subcomponent))
-                setattr(self, sub_name, subcomponent)
-                getattr(self, sub_name).camera = self
+                setattr(self, class_name_lower, subcomponent)
+                getattr(self, class_name_lower).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(sub_name, subcomponent['model'])
+                module_name = 'pocs.{}.{}'.format(class_name_lower, subcomponent['model'])
                 try:
                     module = load_module(module_name)
-                except AttributeError as err:
+                except error.NotFound as err:
                     self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
-                else:
-                    subcomponent_kwargs = copy.copy(subcomponent)
-                    subcomponent_kwargs.update({'camera': self})
-
-                    # Create the actual component
-                    subcomponent_object = getattr(module, class_name)
-                    subcomponent_instance = subcomponent_object(config_port=self._config_port,
-                                                                **subcomponent_kwargs)
-
-                    # Attach as attribute
-                    setattr(self, sub_name, subcomponent_instance)
+                subcomponent_kwargs = copy.deepcopy(subcomponent)
+                subcomponent_kwargs.update({'camera': self})
+                setattr(self,
+                        class_name_lower,
+                        getattr(module, class_name)(**subcomponent_kwargs))
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
                 self.logger.error("Expected either a {} instance or dict, got {}".format(
                     class_name, subcomponent))
-                setattr(self, sub_name, None)
+                setattr(self, class_name_lower, None)
         else:
-            setattr(self, sub_name, None)
+            setattr(self, class_name_lower, None)
 
     def __str__(self):
         name = self.name
@@ -695,12 +776,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         s = "{} ({}) on {}".format(name, self.uid, self.port)
 
-        if self.focuser:
-            s += ' with {}'.format(self.focuser.name)
-            if self.filterwheel:
-                s += ' & {}'.format(self.filterwheel.name)
-        elif self.filterwheel:
-            s += ' with {}'.format(self.filterwheel.name)
+        sub_count = 0
+        for sub_name in self._subcomponent_names:
+            subcomponent = getattr(self, sub_name)
+            if subcomponent:
+                if sub_count == 0:
+                    s += " with {}".format(subcomponent.name)
+                else:
+                    s += " & {}".format(subcomponent.name)
+                sub_count += 1
 
         return s
 

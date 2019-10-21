@@ -1,4 +1,5 @@
 import threading
+from abc import ABCMeta, abstractmethod
 
 from astropy import units as u
 
@@ -7,7 +8,7 @@ from panoptes.utils import listify
 from panoptes.utils import error
 
 
-class AbstractFilterWheel(PanBase):
+class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     """
     Base class for all filter wheels
 
@@ -76,9 +77,15 @@ class AbstractFilterWheel(PanBase):
         return self._connected
 
     @property
+    @abstractmethod
     def is_moving(self):
         """ Is the filterwheel currently moving """
         raise NotImplementedError
+
+    @property
+    def is_ready(self):
+        # A filterwheel is 'ready' if it isn't currently moving.
+        return not self.is_moving
 
     @property
     def camera(self):
@@ -107,6 +114,7 @@ class AbstractFilterWheel(PanBase):
         return self._n_positions
 
     @property
+    @abstractmethod
     def position(self):
         """ Current integer position of the filter wheel """
         raise NotImplementedError
@@ -133,6 +141,7 @@ class AbstractFilterWheel(PanBase):
 # Methods
 ##################################################################################################
 
+    @abstractmethod
     def connect(self):
         """ Connect to filter wheel """
         raise NotImplementedError
@@ -192,6 +201,7 @@ class AbstractFilterWheel(PanBase):
 # Private methods
 ##################################################################################################
 
+    @abstractmethod
     def _move_to(self, position, move_event):
         raise NotImplementedError
 
