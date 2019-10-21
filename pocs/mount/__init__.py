@@ -8,7 +8,7 @@ from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
 
-def create_mount_from_config(config,
+def create_mount_from_config(config=None,
                              mount_info=None,
                              earth_location=None,
                              logger=None,
