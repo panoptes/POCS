@@ -20,6 +20,11 @@ def test_mount_not_in_config(config):
         create_mount_from_config(conf)
 
 
+def test_mount_no_config_param():
+    mount = create_mount_from_config()
+    assert mount
+
+
 def test_bad_mount_port(config):
     conf = config.copy()
     conf['mount']['serial']['port'] = 'foobar'
