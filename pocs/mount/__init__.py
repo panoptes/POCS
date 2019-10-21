@@ -78,7 +78,7 @@ def create_mount_from_config(config,
                 raise error.MountNotFound(msg=msg)
         except KeyError:
             # Note: see Issue #866
-            if model == 'bisque':
+            if driver == 'bisque':
                 logger.debug(f'Driver specifies a bisque mount type, no serial port needed.')
             else:
                 msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
