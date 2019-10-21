@@ -192,8 +192,7 @@ def create_cameras_from_config(config=None, logger=None, **kwargs):
             cameras[cam_name] = cam
 
     if len(cameras) == 0:
-        raise error.CameraNotFound(
-            msg="No cameras available. Exiting.", exit=True)
+        raise error.CameraNotFound(msg="No cameras available")
 
     # If no camera was specified as primary use the first
     if primary_camera is None:
