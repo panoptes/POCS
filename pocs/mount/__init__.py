@@ -1,6 +1,7 @@
 from glob import glob
 
 from pocs.mount.mount import AbstractMount  # pragma: no flakes
+from pocs.utils.config import load_config
 from pocs.utils import error
 from pocs.utils import load_module
 from pocs.utils.location import create_location_from_config
@@ -40,6 +41,9 @@ def create_mount_from_config(config,
     """
     if logger is None:
         logger = get_root_logger()
+
+    if not config:
+        config = load_config(**kwargs)
 
     # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
