@@ -1,4 +1,7 @@
+import time
+
 import pytest
+from threading import Thread
 
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
@@ -27,10 +30,11 @@ def focuser(request):
             if camera_configs:
                 # Local config file camera section has a devices list
                 for camera_config in camera_configs:
-                    focuser_config = camera_config.get('focuser', None)
-                    if focuser_config and focuser_config['model'] == request.param[1]:
-                        # Camera config has a focuser section, and it's the right type
-                        focuser_configs.append(focuser_config)
+                    if camera_config:
+                        focuser_config = camera_config.get('focuser', None)
+                        if focuser_config and focuser_config['model'] == request.param[1]:
+                            # Camera config has a focuser section, and it's the right type
+                            focuser_configs.append(focuser_config)
 
         if not focuser_configs:
             pytest.skip(
@@ -75,6 +79,19 @@ def test_move_by(focuser, tolerance):
     increment = -13
     focuser.move_by(increment)
     assert focuser.position == pytest.approx((previous_position + increment), abs=tolerance)
+
+
+def test_is_ready(focuser):
+    move_thread = Thread(target=focuser.move_by, args=[13])
+    assert not focuser.is_moving
+    assert focuser.is_ready
+    move_thread.start()
+    time.sleep(0.01)
+    assert focuser.is_moving
+    assert not focuser.is_ready
+    move_thread.join()
+    assert not focuser.is_moving
+    assert focuser.is_ready
 
 
 def test_position_setter(focuser, tolerance):

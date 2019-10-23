@@ -6,6 +6,7 @@ ALL_NAMES = sorted([
     'mount',
     'night',
     'power',
+    'sensors',
     'theskyx',
     'weather',
 ])

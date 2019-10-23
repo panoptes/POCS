@@ -35,8 +35,8 @@ def on_enter(event_data):
 
         # Loop over maximum number of pointing iterations
         for img_num in range(num_pointing_images):
-            pocs.logger.debug("Taking pointing image {}/{} on: {}",
-                              img_num, num_pointing_images, primary_camera)
+            pocs.logger.info(
+                f"Taking pointing image {img_num+1}/{num_pointing_images} on: {primary_camera}")
 
             # Start the exposure
             camera_event = primary_camera.take_observation(
@@ -94,7 +94,11 @@ def on_enter(event_data):
                         if observation.field is not None:
                             pocs.logger.debug("Slewing back to target")
                             pocs.observatory.mount.set_target_coordinates(observation.field)
-                            pocs.observatory.mount.slew_to_target()
+                            pocs.observatory.mount.slew_to_target(blocking=True)
+
+                    if img_num == (num_pointing_images - 1):
+                        pocs.logger.info(f'Separation outside threshold but at max corrections. ' +
+                                         'Will proceed to observations.')
                 else:
                     pocs.logger.info("Separation is within pointing threshold, starting tracking.")
                     break

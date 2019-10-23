@@ -1,16 +1,17 @@
 import os
-import matplotlib.colors as colours
-
+from abc import ABCMeta
+from abc import abstractmethod
 from threading import Event
 from threading import Thread
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.colors as colours
 
 import numpy as np
-from astropy.modeling import models, fitting
 from scipy.ndimage import binary_dilation
-
+from astropy.modeling import models
+from astropy.modeling import fitting
 
 from pocs.base import PanBase
 from pocs.utils import current_time
@@ -18,9 +19,8 @@ from pocs.utils.images import focus as focus_utils
 from pocs.utils.images import get_palette
 
 
-class AbstractFocuser(PanBase):
-    """
-    Base class for all focusers
+class AbstractFocuser(PanBase, metaclass=ABCMeta):
+    """Base class for all focusers.
 
     Args:
         name (str, optional): name of the focuser
@@ -138,20 +138,31 @@ class AbstractFocuser(PanBase):
         else:
             self._camera = camera
 
-    @property
+    @abstractmethod
     def min_position(self):
         """ Get position of close limit of focus travel, in encoder units """
         raise NotImplementedError
 
-    @property
+    @abstractmethod
     def max_position(self):
         """ Get position of far limit of focus travel, in encoder units """
         raise NotImplementedError
+
+    @abstractmethod
+    def is_moving(self):
+        """ True if the focuser is currently moving. """
+        raise NotImplementedError
+
+    @property
+    def is_ready(self):
+        # A focuser is 'ready' if it is not currently moving.
+        return not self.is_moving
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
+    @abstractmethod
     def move_to(self, position):
         """ Move focuser to new encoder position """
         raise NotImplementedError
