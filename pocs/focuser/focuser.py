@@ -76,23 +76,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         else:
             self._position = int(initial_position)
 
-        if autofocus_range:
-            self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
-        else:
-            self.autofocus_range = None
-
-        if autofocus_step:
-            self.autofocus_step = (int(autofocus_step[0]), int(autofocus_step[1]))
-        else:
-            self.autofocus_step = None
-
-        self.autofocus_seconds = autofocus_seconds
-        self.autofocus_size = autofocus_size
-        self.autofocus_keep_files = autofocus_keep_files
-        self.autofocus_take_dark = autofocus_take_dark
-        self.autofocus_merit_function = autofocus_merit_function
-        self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
-        self.autofocus_mask_dilations = autofocus_mask_dilations
+        self._set_autofocus_parameters(autofocus_range,
+                                       autofocus_step,
+                                       autofocus_seconds,
+                                       autofocus_size,
+                                       autofocus_keep_files,
+                                       autofocus_take_dark,
+                                       autofocus_merit_function,
+                                       autofocus_merit_function_kwargs,
+                                       autofocus_mask_dilations)
 
         self._camera = camera
 
@@ -542,6 +534,35 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_event.set()
 
         return initial_focus, final_focus
+
+    def _set_autofocus_parameters(self,
+                                  autofocus_range,
+                                  autofocus_step,
+                                  autofocus_seconds,
+                                  autofocus_size,
+                                  autofocus_keep_files,
+                                  autofocus_take_dark,
+                                  autofocus_merit_function,
+                                  autofocus_merit_function_kwargs,
+                                  autofocus_mask_dilations):
+        # Moved to a separate private method to make it possible to override.
+        if autofocus_range:
+            self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
+        else:
+            self.autofocus_range = None
+
+        if autofocus_step:
+            self.autofocus_step = (int(autofocus_step[0]), int(autofocus_step[1]))
+        else:
+            self.autofocus_step = None
+
+        self.autofocus_seconds = autofocus_seconds
+        self.autofocus_size = autofocus_size
+        self.autofocus_keep_files = autofocus_keep_files
+        self.autofocus_take_dark = autofocus_take_dark
+        self.autofocus_merit_function = autofocus_merit_function
+        self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
+        self.autofocus_mask_dilations = autofocus_mask_dilations
 
     def _add_fits_keywords(self, header):
         header.set('FOC-NAME', self.name, 'Focuser name')
