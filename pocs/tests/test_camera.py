@@ -202,7 +202,7 @@ def test_sim_file_extension():
 
 def test_sim_readout_time():
     sim_camera = SimCamera()
-    assert sim_camera.readout_time == 5.0
+    assert sim_camera.readout_time == 1.0
     sim_camera = SimCamera(readout_time=2.0)
     assert sim_camera.readout_time == 2.0
 

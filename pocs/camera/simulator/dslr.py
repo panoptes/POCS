@@ -1,5 +1,6 @@
 import os
 import random
+import time
 
 from threading import Timer
 
@@ -17,6 +18,7 @@ class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
+        kwargs['readout_time'] = kwargs.get('readout_time', 1.0 * u.second)
         super().__init__(name, *args, **kwargs)
         self.connect()
         self.logger.info("{} initialised".format(self))
@@ -71,6 +73,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
+        time.sleep(self.readout_time)
         fits_utils.write_fits(fake_data, header, filename, self.logger)
 
     def _process_fits(self, file_path, info):

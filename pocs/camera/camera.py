@@ -76,7 +76,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self._filter_type = kwargs.get('filter_type', 'RGGB')
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
-        self._readout_time = kwargs.get('readout_time', 5.0)
+        self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
