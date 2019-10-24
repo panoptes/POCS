@@ -33,16 +33,6 @@ class Camera(AbstractSDKCamera, Camera):
         kwargs.update({'target_temperature': target_temperature})
         super().__init__(name, driver, *args, **kwargs)
 
-        self._is_cooled_camera = True
-        self._cooling_enabled = False
-        self._temperature = 25 * u.Celsius
-        self._max_temp = 25 * u.Celsius
-        self._min_temp = -15 * u.Celsius
-        self._temp_var = 0.2 * u.Celsius
-        self._last_temp = 25 * u.Celsius
-        self._last_time = time.monotonic()
-        self._time_constant = 1.0
-
     @property
     def cooling_enabled(self):
         return self._cooling_enabled
@@ -90,3 +80,15 @@ class Camera(AbstractSDKCamera, Camera):
                                  (self._max_temp - self._min_temp))
         else:
             return 0.0
+
+    def connect(self):
+        self._is_cooled_camera = True
+        self._cooling_enabled = False
+        self._temperature = 25 * u.Celsius
+        self._max_temp = 25 * u.Celsius
+        self._min_temp = -15 * u.Celsius
+        self._temp_var = 0.2 * u.Celsius
+        self._last_temp = 25 * u.Celsius
+        self._last_time = time.monotonic()
+        self._time_constant = 1.0
+        self._connected = True
