@@ -7,6 +7,8 @@ import shutil
 import sys
 import warnings
 
+from pocs.utils import listify
+
 # Importing download_IERS_A can emit a scary warnings, so we suppress it.
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', message='Your version of the IERS Bulletin A')
@@ -100,6 +102,7 @@ def main():
         '--folder',
         help='Destination folder for astrometry indices. Default: {}'.format(DEFAULT_DATA_FOLDER),
         default=DEFAULT_DATA_FOLDER)
+    parser.add_argument('--iers-url', default=None, help='List of IERS url')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -134,7 +137,7 @@ def main():
         keep_going=args.keep_going or not args.no_keep_going,
         narrow_field=args.narrow_field,
         wide_field=args.wide_field or not args.no_wide_field)
-    return dl.download_all_files()
+    return dl.download_all_files(iers_urls=listify(args.iers_url))
 
 
 if __name__ == '__main__':
