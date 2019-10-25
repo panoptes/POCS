@@ -42,11 +42,11 @@ class Downloader:
         self.narrow_field = narrow_field
         self.keep_going = keep_going
 
-    def download_all_files(self):
+    def download_all_files(self, iers_urls=None):
         """Downloads the files according to the attributes of this object."""
         result = True
         try:
-            download_IERS_A()
+            download_IERS_A(urls=iers_urls)
         except Exception as e:
             if not self.keep_going:
                 raise e

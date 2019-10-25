@@ -1,4 +1,4 @@
-astroplan
+-e git+git://github.com/wtgee/astroplan@add-iers-conf#egg=astroplan
 astropy
 dateparser
 Flask
