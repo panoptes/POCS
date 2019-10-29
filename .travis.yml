@@ -65,7 +65,7 @@ install:
   - pip install -r requirements.txt
   - pip install -r docs/requirements.txt
   - pip install -e .
-  - python pocs/utils/data.py --folder="$PANDIR/astrometry/data" --iers-url="https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
+  - python pocs/utils/data.py --folder="$PANDIR/astrometry/data" --iers-url="${IERS_URL}"
 script:
   - export BOARD="arduino:avr:micro"
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
