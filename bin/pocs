@@ -34,31 +34,15 @@ if [ "${START}" = 'help' ] || [ "${START}" = '-h' ] || [ "${START}" = '--help' ]
 	exit 1
 fi
 
-#Array storing container names
-docker_names=("pocs-shell" "peas-shell" "messaging-hub" "config-server" "aag-weather-reader" "aag-weather-server")
+if [ "$(docker ps -q -f name="pocs-shell")" ] || [ "$(docker ps -q -f name="peas-shell")" ] || [ "$(docker ps -q -f name="messaging-hub")" ] || [ "$(docker ps -q -f name="config-server")" ] || [ "$(docker ps -q -f name="aag-weather-reader")" ] || [ "$(docker ps -q -f name="aag-weather-server")" ]; then
+	echo "At least one PANOPTES docker container is already running! Manually kill docker containers with docker kill <container name> if needed."
+        exit 1
+fi
 
-let counter=6
-#While loop that checks to see if any docker containers are running
-while [ "${counter}" > 0 ]
-do
-        element=$(($counter - 1))
-        DOCKER_NAME=${docker_names[$element]}
-	#If running
-        if [ "$(docker ps -q -f name=${DOCKER_NAME})" ]; then
-                echo "At least one docker container is already running! Manually kill docker containers with docker kill <container name> if needed."
-                exit 1
-	#if not running
-        else
-	#I placed this in an else statement instead of keeping it outside the while loop since I was running into an 
-	#error where the while loop exits the bash script and stops the containers from stopping.
-                cd /var/panoptes
-                docker-compose \
-                   --project-directory "${PANDIR}" \
-                        -f panoptes-utils/docker/docker-compose.yaml \
-                        -f PAWS/docker/docker-compose.yaml \
-                        -f POCS/docker/docker-compose.yaml \
-                        -p panoptes "$@"
-                exit
-        fi
-        let counter=$counter-1
-done
+cd "$PANDIR"
+docker-compose \
+   --project-directory "${PANDIR}" \
+        -f panoptes-utils/docker/docker-compose.yaml \
+        -f PAWS/docker/docker-compose.yaml \
+        -f POCS/docker/docker-compose.yaml \
+                -p panoptes "$@"
