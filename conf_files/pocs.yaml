@@ -117,13 +117,17 @@ panoptes_network:
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.
-#
+# 
 # Use `auto_detect: True` for most options. Or use a manual configuration:
 #
 #   camera_board:
 #       serial_port: /dev/ttyACM0
 #   control_board:
 #       serial_port: /dev/ttyACM1
+#
+# With the aag-weather repo cloned to the $PANDIR directory, a url can be 
+# specified to allow the PEAS shell to use AAG CloudWatcher data.
+#
 ################################################################################
 environment:
     auto_detect: False
@@ -131,13 +135,17 @@ environment:
         serial_port: /dev/ttyACM0
     control_board:
         serial_port: /dev/ttyACM1
-
+    weather:
+        url: http://127.0.0.1:5000/latest.json
+        
 ######################### Weather Station ######################################
 # Weather station options.
 #
 # Configure the serial_port as necessary.
 #
 # Default thresholds should be okay for most locations.
+# If using the AAG repository, be sure to configure the weather station according
+# to the README.MD file in the aag-weather-repository.
 ################################################################################
 weather:
     aag_cloud:
