@@ -34,6 +34,17 @@ if [ "${START}" = 'help' ] || [ "${START}" = '-h' ] || [ "${START}" = '--help' ]
 	exit 1
 fi
 
+#Patch could be improved by using for loops to test for all docker containers
+#in case the user manually kills pocs-shell. Also the if statement should be true
+#if the string doesn't have characters
+
+#exit script before trying to start containers if containers are running
+docker_ps=$(docker ps -q -f name=pocs-shell)
+if [ "$docker_ps" = "87d6fde2a139" ]; then 
+	echo "Docker containers are already running! Manually kill docker containers with docker kill <container name> if needed."
+	exit 1
+fi
+
 cd "$PANDIR"
 docker-compose \
     --project-directory "${PANDIR}" \
