@@ -25,6 +25,12 @@ usage() {
 
     # Run the software tests (no hardware)
     $POCS/scripts/pocs-docker.sh up
+    
+    #Start specific docker containers in the back ground with
+    $POCS/scripts/pocs-docker.sh up --no-deps -d <container name> 
+    
+    #Manually stop docker containers in the with
+    docker stop <container name> 
 "
 }
 
@@ -34,16 +40,24 @@ if [ "${START}" = 'help' ] || [ "${START}" = '-h' ] || [ "${START}" = '--help' ]
 	exit 1
 fi
 
-if [ "$(docker ps -q -f name="pocs-shell")" ] || [ "$(docker ps -q -f name="peas-shell")" ] || [ "$(docker ps -q -f name="messaging-hub")" ] || [ "$(docker ps -q -f name="config-server")" ] || [ "$(docker ps -q -f name="aag-weather-reader")" ] || [ "$(docker ps -q -f name="aag-weather-server")" ]; then
-	echo "At least one PANOPTES docker container is already running! Manually stop docker containers with docker stop <container name> if needed."
-	echo "If an single docker container needs to be started do so with bin/pocs up --no-deps <container name>."
-        exit 1
-fi
-
+PARAMS="$@"   
+    
 cd "$PANDIR"
-docker-compose \
-   --project-directory "${PANDIR}" \
-        -f panoptes-utils/docker/docker-compose.yaml \
-        -f PAWS/docker/docker-compose.yaml \
-        -f POCS/docker/docker-compose.yaml \
-                -p panoptes "$@"
+CMD="docker-compose \
+    --project-directory ${PANDIR} \
+    -f panoptes-utils/docker/docker-compose.yaml \
+    -f PAWS/docker/docker-compose.yaml \
+    -f POCS/docker/docker-compose.yaml \
+    -p panoptes"
+    
+# If user only asked to start, check if already running and if so use "-d" option.
+if [[ "$PARAMS" == "up" ]]; then
+    if [[ ! -z $(eval "${CMD} ps -q") ]]; then
+        echo "Some containers already running, using -d to only start non-running containers."
+	echo "For more info on managing docker containers manually, run bin/pocs."
+        PARAMS="up -d"    
+    fi    
+fi    
+    
+# Run the docker-compose command with user params.
+eval "${CMD} ${PARAMS}"
