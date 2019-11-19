@@ -52,7 +52,7 @@ CMD="docker-compose \
     
 # If user only asked to start, check if already running and if so use "-d" option.
 if [[ "$PARAMS" == "up" ]]; then
-    if [[ ! -z $(eval "${CMD} ps -q") ]]; then
+    if [[ ! -z $(eval "${CMD} top") ]]; then
         echo "Some containers already running, using -d to only start non-running containers."
 	 echo "For more info on managing docker containers manually, run bin/pocs --help".
         PARAMS="up -d"    
