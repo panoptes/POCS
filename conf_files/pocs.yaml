@@ -15,13 +15,13 @@ pan_id: PAN000
 
 location:
     name: Mauna Loa Observatory
-    latitude: 19.54 deg
-    longitude: -155.58 deg
-    elevation: 3400.0 m
-    horizon: 30 deg # targets must be above this to be considered valid.
-    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
-    focus_horizon: -12 deg # Dark enough to focus on stars.
-    observe_horizon: -18 deg # Sun below this limit to observe.
+    latitude: 19.54 deg # Degrees
+    longitude: -155.58 deg # Degrees
+    elevation: 3400.0 m # Meters
+    horizon: 30 deg # Degrees; targets must be above this to be considered valid.
+    flat_horizon: -6 deg # Degrees - Flats when sun between this and focus horizon.
+    focus_horizon: -12 deg # Degrees - Dark enough to focus on stars.
+    observe_horizon: -18 deg # Degrees - Sun below this limit to observe.
     timezone: US/Hawaii
     gmt_offset: -600 # Offset in minutes from GMT during.
                      # standard time (not daylight saving).
@@ -91,14 +91,14 @@ observations:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
+# See $POCS/pocs/utils/google/README.md for details about authentication.
 #
 # Options to change:
 #   image_storage: If images should be uploaded to Google Cloud Storage.
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: False
+    image_storage: True
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
@@ -115,19 +115,16 @@ panoptes_network:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
 
+
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.
-# 
+#
 # Use `auto_detect: True` for most options. Or use a manual configuration:
 #
 #   camera_board:
 #       serial_port: /dev/ttyACM0
 #   control_board:
 #       serial_port: /dev/ttyACM1
-#
-# With the aag-weather repo cloned to the $PANDIR directory, a url can be 
-# specified to allow the PEAS shell to use AAG CloudWatcher data.
-#
 ################################################################################
 environment:
     auto_detect: False
@@ -136,16 +133,14 @@ environment:
     control_board:
         serial_port: /dev/ttyACM1
     weather:
-        url: http://127.0.0.1:5000/latest.json
-        
+     url: http://127.0.0.1:5000/latest.json
+
 ######################### Weather Station ######################################
 # Weather station options.
 #
 # Configure the serial_port as necessary.
 #
 # Default thresholds should be okay for most locations.
-# If using the AAG repository, be sure to configure the weather station according
-# to the README.MD file in the aag-weather-repository.
 ################################################################################
 weather:
     aag_cloud:
