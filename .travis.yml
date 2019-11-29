@@ -64,6 +64,11 @@ install:
   - cd $POCS
   - pip install -r requirements.txt
   - pip install -r docs/requirements.txt
+  - echo '\
+    [utils.iers.iers]
+    iers_auto_url = https://storage.googleapis.com/panoptes-resources/iers/ser7.dat
+    iers_auto_url_mirror = https://storage.googleapis.com/panoptes-resources/iers/ser7.dat
+  ' >> $HOME/.astropy/config/astropy.cfg
   - pip install -e .
   - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
