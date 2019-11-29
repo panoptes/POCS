@@ -1,4 +1,4 @@
-astroplan
+git+git://github.com/astropy/astroplan@master#egg=astroplan
 astropy>=3.2.3
 dateparser
 Flask
