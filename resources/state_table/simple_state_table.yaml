@@ -2,17 +2,23 @@
 name: default
 initial: sleeping
 states:
-    - parked
-    - sleeping
-    - housekeeping
-    - ready
-    - scheduling
-    - slewing
-    - pointing
-    - tracking
-    - observing
-    - analyzing
-    - parking
+    parking:
+        tags: always_safe
+    parked:
+        tags: always_safe
+    sleeping:
+        tags: always_safe
+    housekeeping:
+        tags: always_safe
+    ready:
+        tags: always_safe
+    scheduling:
+        tags: always_safe
+    slewing:
+    pointing:
+    tracking:
+    observing:
+    analyzing:
 transitions:
     -
         source:
@@ -90,7 +96,7 @@ transitions:
     -
         source: observing
         dest: observing
-        trigger: observe        
+        trigger: observe
         conditions: mount_is_tracking
     -
         source: analyzing
