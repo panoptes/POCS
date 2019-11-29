@@ -232,7 +232,7 @@ class PanStateMachine(Machine):
             bool:   Latest safety flag
         """
 
-        self.logger.debug(f"Checking safety for {event_data!r}")
+        self.logger.debug(f"Checking safety for {event_data.transition}")
 
         if event_data is None:
             return self.is_safe()
