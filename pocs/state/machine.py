@@ -1,7 +1,7 @@
 import os
 import yaml
 
-from transitions import State
+from transitions.extensions.states import Tags as MachineState
 
 from pocs.utils import error
 from pocs.utils import listify
@@ -41,7 +41,12 @@ class PanStateMachine(Machine):
         _transitions = [self._load_transition(transition)
                         for transition in state_machine_table['transitions']]
 
-        states = [self._load_state(state) for state in state_machine_table.get('states', [])]
+        # Add the tag
+        states = [
+            self._load_state(state, state_info=state_info)
+            for state, state_info
+            in state_machine_table.get('states', dict()).items()
+        ]
 
         super(PanStateMachine, self).__init__(
             states=states,
@@ -227,13 +232,20 @@ class PanStateMachine(Machine):
             bool:   Latest safety flag
         """
 
-        self.logger.debug("Checking safety for {}".format(event_data.event.name))
+        self.logger.debug(f"Checking safety for {event_data.transition}")
+
+        if event_data is None:
+            return self.is_safe()
+
+        dest_state_name = event_data.transition.dest
+        dest_state = self.get_state(dest_state_name)
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in [
-                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
-            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
+        if dest_state.is_always_safe:
+            self.logger.debug(f"Always safe to move to {dest_state_name}")
             is_safe = True
+        elif dest_state.is_at_twilight:
+            is_safe = self.is_safe(horizon='flat')
         else:
             is_safe = self.is_safe()
 
@@ -366,7 +378,7 @@ class PanStateMachine(Machine):
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 
-    def _load_state(self, state):
+    def _load_state(self, state, state_info=None):
         self.logger.debug("Loading state: {}".format(state))
         s = None
         try:
@@ -385,8 +397,10 @@ class PanStateMachine(Machine):
                 "Added `on_enter` method from {} {}".format(
                     state_module, on_enter_method))
 
-            self.logger.debug("Created state")
-            s = State(name=state)
+            if state_info is None:
+                state_info = dict()
+            self.logger.debug(f"Creating state={state} with {state_info}")
+            s = MachineState(name=state, **state_info)
 
             s.add_callback('enter', '_update_status')
 
