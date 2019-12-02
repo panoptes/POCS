@@ -43,7 +43,7 @@ class PanStateMachine(Machine):
 
         # Add the tag
         states = [
-            self._load_state(state, state_info)
+            self._load_state(state, state_info=state_info)
             for state, state_info
             in state_machine_table.get('states', dict()).items()
         ]
@@ -378,7 +378,7 @@ class PanStateMachine(Machine):
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 
-    def _load_state(self, state, state_info):
+    def _load_state(self, state, state_info=None):
         self.logger.debug("Loading state: {}".format(state))
         s = None
         try:
