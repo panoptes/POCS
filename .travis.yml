@@ -65,6 +65,9 @@ install:
   - pip install -r requirements.txt
   - pip install -r docs/requirements.txt
   - pip install -e .
+  # Force creation of config file.
+  - python -c "import astroplan"
+  # Custom IERS urls in config file.
   - |
     echo "\
 
@@ -72,6 +75,7 @@ install:
     iers_auto_url = https://storage.googleapis.com/panoptes-resources/iers/ser7.dat
     iers_auto_url_mirror = https://storage.googleapis.com/panoptes-resources/iers/ser7.dat
     " >> $HOME/.astropy/config/astropy.cfg
+  # Download IERS and astroetry.net files.
   - python pocs/utils/data.py --folder $PANDIR/astrometry/data
 script:
   - export BOARD="arduino:avr:micro"
