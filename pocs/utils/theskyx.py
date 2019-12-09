@@ -50,12 +50,14 @@ class TheSkyX(object):
 
     def read(self, timeout=5):
         try:
-            self.socket.settimeout(timeout)
+            #self.socket.settimeout(timeout)
             response = None
             err = None
 
             try:
-                response = self.socket.recv(2048).decode()
+                #response = self.socket.recv(2048).decode()
+                msg, ancdata, flags, addr = self.socket.recvmsg(1024)
+                response = msg.decode()
                 if '|' in response:
                     response, err = response.split('|')
 
@@ -67,7 +69,8 @@ class TheSkyX(object):
                         raise error.TheSkyXKeyError("Invalid TheSkyX key")
 
                     raise error.TheSkyXError(err)
-            except socket.timeout:  # pragma: no cover
+            except socket.timeout as e:  # pragma: no cover
+                self.logger.warning(f'Error on read: {e!r}')
                 raise error.TheSkyXTimeout()
 
             return response

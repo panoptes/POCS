@@ -587,13 +587,13 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             time.sleep(sleep_delay)
 
-    def wait_until_safe(self):
+    def wait_until_safe(self, **kwargs):
         """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe(no_warning=True):
+        while not self.is_safe(no_warning=True, **kwargs):
             self.sleep(delay=self._safe_delay)
 
 ##################################################################################################

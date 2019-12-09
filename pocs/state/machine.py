@@ -129,8 +129,8 @@ class PanStateMachine(Machine):
 
                 # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
-                    if self.is_safe() is not True:
-                        self.wait_until_safe()
+                    if self.is_safe(horizon='flat') is not True:
+                        self.wait_until_safe(horizon='flat')
 
                 try:
                     state_changed = self.goto_next_state()
