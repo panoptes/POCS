@@ -18,7 +18,7 @@ location:
     latitude: 19.54 deg # Degrees
     longitude: -155.58 deg # Degrees
     elevation: 3400.0 m # Meters
-    horizon: 30 deg # Degrees; targets must be above this to be considered valid.
+    horizon: 30 deg # Degrees - targets must be above this to be considered valid.
     flat_horizon: -6 deg # Degrees - Flats when sun between this and focus horizon.
     focus_horizon: -12 deg # Degrees - Dark enough to focus on stars.
     observe_horizon: -18 deg # Degrees - Sun below this limit to observe.
