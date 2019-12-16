@@ -700,7 +700,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         }
         metadata.update(headers)
 
-        exptime = kwargs.pop('exptime', observation.exptime.value)
+        exptime = kwargs.get('exptime', observation.exptime.value)
         # The exptime header data is set as part of observation but can
         # be override by passed parameter so update here.
         metadata['exptime'] = exptime
