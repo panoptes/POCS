@@ -20,6 +20,13 @@ def test_mount_not_in_config(config):
         create_mount_from_config(conf)
 
 
+@pytest.mark.without_mount
+def test_mount_no_config_param():
+    # Will fail because it's not a simulator and no real mount attached
+    with pytest.raises(MountNotFound):
+        create_mount_from_config()
+
+
 def test_bad_mount_port(config):
     conf = config.copy()
     conf['mount']['serial']['port'] = 'foobar'

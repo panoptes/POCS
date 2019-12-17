@@ -2,6 +2,7 @@ import math
 import random
 import time
 
+from contextlib import suppress
 import astropy.units as u
 
 from pocs.camera.simulator import Camera
@@ -29,17 +30,8 @@ class Camera(AbstractSDKCamera, Camera):
                  driver=SDKDriver,
                  target_temperature=0 * u.Celsius,
                  *args, **kwargs):
+        kwargs.update({'target_temperature': target_temperature})
         super().__init__(name, driver, *args, **kwargs)
-
-        self._is_cooled_camera = True
-        self._cooling_enabled = False
-        self._temperature = 25 * u.Celsius
-        self._max_temp = 25 * u.Celsius
-        self._min_temp = -15 * u.Celsius
-        self._temp_var = 0.2 * u.Celsius
-        self._last_temp = 25 * u.Celsius
-        self._last_time = time.monotonic()
-        self._time_constant = 1.0
 
     @property
     def cooling_enabled(self):
@@ -57,7 +49,9 @@ class Camera(AbstractSDKCamera, Camera):
 
     @target_temperature.setter
     def target_temperature(self, target):
-        self._last_temp = self.temperature
+        # Upon init the camera won't have an existing temperature.
+        with suppress(AttributeError):
+            self._last_temp = self.temperature
         self._last_time = time.monotonic()
         if not isinstance(target, u.Quantity):
             target = target * u.Celsius
@@ -86,3 +80,15 @@ class Camera(AbstractSDKCamera, Camera):
                                  (self._max_temp - self._min_temp))
         else:
             return 0.0
+
+    def connect(self):
+        self._is_cooled_camera = True
+        self._cooling_enabled = False
+        self._temperature = 25 * u.Celsius
+        self._max_temp = 25 * u.Celsius
+        self._min_temp = -15 * u.Celsius
+        self._temp_var = 0.2 * u.Celsius
+        self._last_temp = 25 * u.Celsius
+        self._last_time = time.monotonic()
+        self._time_constant = 1.0
+        self._connected = True

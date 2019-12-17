@@ -1,13 +1,14 @@
 from glob import glob
 
 from pocs.mount.mount import AbstractMount  # pragma: no flakes
+from pocs.utils.config import load_config
 from pocs.utils import error
 from pocs.utils import load_module
 from pocs.utils.location import create_location_from_config
 from pocs.utils.logger import get_root_logger
 
 
-def create_mount_from_config(config,
+def create_mount_from_config(config=None,
                              mount_info=None,
                              earth_location=None,
                              logger=None,
@@ -40,6 +41,9 @@ def create_mount_from_config(config,
     """
     if logger is None:
         logger = get_root_logger()
+
+    if not config:
+        config = load_config(**kwargs)
 
     # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
@@ -74,7 +78,7 @@ def create_mount_from_config(config,
                 raise error.MountNotFound(msg=msg)
         except KeyError:
             # Note: see Issue #866
-            if model == 'bisque':
+            if driver == 'bisque':
                 logger.debug(f'Driver specifies a bisque mount type, no serial port needed.')
             else:
                 msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
