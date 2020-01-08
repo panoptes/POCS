@@ -196,7 +196,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             if response.lower().startswith('y'):
                 self.pocs = None
                 print_info("POCS instance discarded. Remember to park the mount later.")
-            elif response == "n" or response == "no":
+            elif response.lower().startswith('n'):
                 print("Keeping POCS instance.")
             else:
                 print("A 'yes' or 'no' response is required")
