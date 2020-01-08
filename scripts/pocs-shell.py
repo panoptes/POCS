@@ -191,7 +191,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         Does NOT park the mount, nor execute power_down.
         """
         if self.pocs.observatory.mount.is_parked is False:
-            print("ATTENTION: The mount is not in the parked position and reset_pocs will not move the mount to park position!")
+            print_warning("ATTENTION: The mount is not in the parked position and reset_pocs will not move the mount to park position!")
             response = input("The unit could be damaged if it is not parked before sunrise. Execute reset_pocs anyway?[y/n]")
             if response == "y" or response == "yes":
                 self.pocs = None
