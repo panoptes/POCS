@@ -195,7 +195,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             response = input("The unit could be damaged if it is not parked before sunrise. Execute reset_pocs anyway?[y/n]")
             if response.lower().startswith('y'):
                 self.pocs = None
-                print("POCS instance discarded. Remember to park the mount later.")
+                print_info("POCS instance discarded. Remember to park the mount later.")
             elif response == "n" or response == "no":
                 print("Keeping POCS instance.")
             else:
