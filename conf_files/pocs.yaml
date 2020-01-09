@@ -91,14 +91,14 @@ observations:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $POCS/pocs/utils/google/README.md for details about authentication.
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
 #
 # Options to change:
 #   image_storage: If images should be uploaded to Google Cloud Storage.
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: True
+    image_storage: False
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
