@@ -9,8 +9,8 @@ from ctypes.util import find_library
 import astropy.units as u
 from astropy.io import fits
 
-from pocs.camera.simulator.dslr import Camera as SimCamera
-from pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from pocs.camera.simulator import Camera as SimCamera
+from pocs.camera.simulator_sdk import Camera as SimSDKCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.fli import Camera as FLICamera
@@ -202,7 +202,7 @@ def test_sim_file_extension():
 
 def test_sim_readout_time():
     sim_camera = SimCamera()
-    assert sim_camera.readout_time == 5.0
+    assert sim_camera.readout_time == 1.0
     sim_camera = SimCamera(readout_time=2.0)
     assert sim_camera.readout_time == 2.0
 
@@ -345,6 +345,10 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
+    if camera.is_cooled_camera and camera.cooling_enabled is False:
+        camera.cooling_enabled = True
+        time.sleep(5)  # Give camera time to cool
+    assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.
     exp_event = camera.take_exposure(filename=fits_path)

@@ -13,6 +13,12 @@ def test_bad_scheduler_type(config):
         create_scheduler_from_config(conf, observer=site_details['observer'])
 
 
+def test_mount_no_config_param():
+    # Will fail because it's not a simulator and no real mount attached
+    scheduler = create_scheduler_from_config()
+    assert scheduler
+
+
 def test_bad_scheduler_fields_file(config):
     conf = config.copy()
     conf['scheduler']['fields_file'] = 'foobar'

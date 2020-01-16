@@ -4,14 +4,16 @@ import yaml
 
 from pocs.core import POCS
 from pocs.observatory import Observatory
+
 from pocs.utils import error
 
 
 @pytest.fixture
 def observatory():
-    observatory = Observatory(simulator=['all'])
+    """Return a valid Observatory instance with a specific config."""
+    obs = Observatory()
 
-    yield observatory
+    return obs
 
 
 def test_bad_state_machine_file():
@@ -24,6 +26,12 @@ def test_load_bad_state(observatory):
 
     with pytest.raises(error.InvalidConfig):
         pocs._load_state('foo')
+
+
+def test_load_state_info(observatory):
+    pocs = POCS(observatory)
+
+    pocs._load_state('ready', state_info={'tags': ['at_twilight']})
 
 
 def test_state_machine_absolute(temp_file):
