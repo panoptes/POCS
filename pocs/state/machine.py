@@ -38,14 +38,14 @@ class PanStateMachine(Machine):
         self._state_table_name = state_machine_table.get('name', 'default')
         self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
-        # Setup Transitions
+        # Setup Transitions.
         _transitions = [self._load_transition(transition)
                         for transition in state_machine_table['transitions']]
 
         # States can require the horizon to be at a certain level.
         self._horizon_lookup = dict()
 
-        # Add the tag
+        # Setup States.
         states = [
             self._load_state(state, state_info=state_info)
             for state, state_info
@@ -54,6 +54,7 @@ class PanStateMachine(Machine):
 
         self.logger.debug(f'Horizon limits: {self._horizon_lookup!r}')
 
+        # Create state machine.
         super(PanStateMachine, self).__init__(
             states=states,
             transitions=_transitions,
