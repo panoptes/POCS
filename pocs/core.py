@@ -410,8 +410,11 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
+        req_space = required_space.to(u.gigabyte)
         free_space = get_free_space()
-        return free_space.value >= required_space.to(u.gigabyte).value
+        self.logger.debug(f'Disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')
+
+        return free_space.value >= req_space.value
 
     def has_ac_power(self, stale=90):
         """Check for system AC power.
