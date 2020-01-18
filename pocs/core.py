@@ -276,7 +276,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe'):
+    def is_safe(self, no_warning=False, horizon='observe', **kwargs):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -478,7 +478,7 @@ class POCS(PanStateMachine, PanBase):
 # Convenience Methods
 ##################################################################################################
 
-    def sleep(self, delay=2.5, with_status=True):
+    def sleep(self, delay=2.5, with_status=True, **kwargs):
         """ Send POCS to sleep
 
         Loops for `delay` number of seconds. If `delay` is more than 10.0 seconds,
@@ -587,14 +587,14 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             time.sleep(sleep_delay)
 
-    def wait_until_safe(self):
+    def wait_until_safe(self, **kwargs):
         """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe(no_warning=True):
-            self.sleep(delay=self._safe_delay)
+        while not self.is_safe(no_warning=True, **kwargs):
+            self.sleep(delay=self._safe_delay, **kwargs)
 
 ##################################################################################################
 # Class Methods
