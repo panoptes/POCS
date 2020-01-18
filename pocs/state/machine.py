@@ -42,12 +42,17 @@ class PanStateMachine(Machine):
         _transitions = [self._load_transition(transition)
                         for transition in state_machine_table['transitions']]
 
+        # States can require the horizon to be at a certain level.
+        self._horizon_lookup = dict()
+
         # Add the tag
         states = [
             self._load_state(state, state_info=state_info)
             for state, state_info
             in state_machine_table.get('states', dict()).items()
         ]
+
+        self.logger.debug(f'Horizon limits: {self._horizon_lookup!r}')
 
         super(PanStateMachine, self).__init__(
             states=states,
@@ -65,9 +70,6 @@ class PanStateMachine(Machine):
         self._keep_running = False
         self._run_once = kwargs.get('run_once', False)
         self._do_states = True
-
-        # States can require the horizon to be at a certain level.
-        self._horizon_lookup = dict()
 
         self.logger.debug("State machine created")
 
@@ -402,6 +404,12 @@ class PanStateMachine(Machine):
 
             if state_info is None:
                 state_info = dict()
+
+            # Add horizon if state requires.
+            with suppress(KeyError):
+                self._horizon_lookup[state] = state_info['horizon']
+                del state_info['horizon']
+
             self.logger.debug(f"Creating state={state} with {state_info}")
             s = MachineState(name=state, **state_info)
 
@@ -411,10 +419,6 @@ class PanStateMachine(Machine):
                 s.add_callback('enter', '_update_graph')
 
             s.add_callback('enter', 'on_enter_{}'.format(state))
-
-            # Add horizon if state requires.
-            with suppress(KeyError):
-                self._horizon_lookup[state] = state_info['horizon']
 
         except Exception as e:
             raise error.InvalidConfig("Can't load state modules: {}\t{}".format(state, e))
