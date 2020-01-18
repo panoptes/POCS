@@ -1,5 +1,5 @@
-git+git://github.com/astropy/astroplan@master#egg=astroplan
-astropy>=3.2.3
+astroplan>=0.6
+astropy>=4.0.0
 dateparser
 Flask
 gcloud
