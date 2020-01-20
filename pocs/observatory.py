@@ -263,13 +263,13 @@ class Observatory(PanBase):
         """Get status information for various parts of the observatory
         """
         status = {}
+
+        status['can_observe'] = self.can_observe
+
+        t = current_time()
+        local_time = str(datetime.now()).split('.')[0]
+
         try:
-
-            status['can_observe'] = self.can_observe
-
-            t = current_time()
-            local_time = str(datetime.now()).split('.')[0]
-
             if self.mount.is_initialized:
                 status['mount'] = self.mount.status()
                 status['mount']['current_ha'] = self.observer.target_hour_angle(
@@ -277,15 +277,24 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
                         t, self.mount.get_target_coordinates())
+        except Exception as e:  # pragma: no cover
+            self.logger.warning(f"Can't get mount status: {e!r}")
 
+        try:
             if self.dome:
                 status['dome'] = self.dome.status
+        except Exception as e:  # pragma: no cover
+            self.logger.warning(f"Can't get dome status: {e!r}")
 
+        try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
                 status['observation']['field_ha'] = self.observer.target_hour_angle(
                     t, self.current_observation.field)
+        except Exception as e:  # pragma: no cover
+            self.logger.warning(f"Can't get observation status: {e!r}")
 
+        try:
             evening_astro_time = self.observer.twilight_evening_astronomical(t, which='next')
             morning_astro_time = self.observer.twilight_morning_astronomical(t, which='next')
 
@@ -303,7 +312,7 @@ class Observatory(PanBase):
             }
 
         except Exception as e:  # pragma: no cover
-            self.logger.warning("Can't get observatory status: {}".format(e))
+            self.logger.warning(f"Can't get time status: {e!r}")
 
         return status
 
