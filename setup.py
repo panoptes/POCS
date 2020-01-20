@@ -87,10 +87,8 @@ setup(name=PACKAGENAME,
       # $ pip install -e .[dev,test]
       install_requires=modules['required'],
       scripts=[
-          'bin/cr2-to-jpg',
-          'bin/panoptes-config-server',
-          'bin/panoptes-messaging-hub',
-          'bin/panoptes-solve-field',
+          'bin/pocs_shell',
+          'bin/peas_shell',
       ],
       extras_require={
           'google': modules['google'],
