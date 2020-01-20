@@ -416,7 +416,6 @@ class POCS(PanStateMachine, PanBase):
         req_space = required_space.to(u.gigabyte)
         free_space = get_free_space()
 
-        # See if
         space_is_low = free_space.value <= (req_space.value * low_space_percent)
         has_space = free_space.value >= req_space.value
 
