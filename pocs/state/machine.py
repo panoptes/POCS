@@ -1,6 +1,7 @@
 import os
 import yaml
 
+from contextlib import suppress
 from transitions.extensions.states import Tags as MachineState
 
 from pocs.utils import error
@@ -37,17 +38,23 @@ class PanStateMachine(Machine):
         self._state_table_name = state_machine_table.get('name', 'default')
         self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
-        # Setup Transitions
+        # Setup Transitions.
         _transitions = [self._load_transition(transition)
                         for transition in state_machine_table['transitions']]
 
-        # Add the tag
+        # States can require the horizon to be at a certain level.
+        self._horizon_lookup = dict()
+
+        # Setup States.
         states = [
             self._load_state(state, state_info=state_info)
             for state, state_info
             in state_machine_table.get('states', dict()).items()
         ]
 
+        self.logger.debug(f'Horizon limits: {self._horizon_lookup!r}')
+
+        # Create state machine.
         super(PanStateMachine, self).__init__(
             states=states,
             transitions=_transitions,
@@ -127,10 +134,9 @@ class PanStateMachine(Machine):
             # If we are processing the states
             if self.do_states:
 
-                # If sleeping, wait until safe (or interrupt)
-                if self.state == 'sleeping':
-                    if self.is_safe() is not True:
-                        self.wait_until_safe()
+                # Wait for horizon level if state requires.
+                with suppress(KeyError):
+                    self.wait_until_safe(horizon=self._horizon_lookup[self.state])
 
                 try:
                     state_changed = self.goto_next_state()
@@ -399,6 +405,12 @@ class PanStateMachine(Machine):
 
             if state_info is None:
                 state_info = dict()
+
+            # Add horizon if state requires.
+            with suppress(KeyError):
+                self._horizon_lookup[state] = state_info['horizon']
+                del state_info['horizon']
+
             self.logger.debug(f"Creating state={state} with {state_info}")
             s = MachineState(name=state, **state_info)
 
