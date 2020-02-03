@@ -302,11 +302,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # pop exptime from kwarg as its now in exptime
         exptime = kwargs.pop('exptime', observation.exptime.value)
-        
+
         # Move the filerwheel into position
         if (self.filterwheel is not None) & (observation.filter_name is not None):
             self.filterwheel.move_to(observation.filter_name)
-        
+
         exposure_event = self.take_exposure(seconds=exptime, filename=file_path,
                                             **kwargs)
 
@@ -361,10 +361,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
                 self)
             raise error.PanError(msg)
-            
+
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
-            
+
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
         header = self._create_fits_header(seconds, dark)
@@ -375,7 +375,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Clear event now to prevent any other exposures starting before this one is finished.
         self._exposure_event.clear()
-                                   
+
         try:
             # Camera type specific exposure set up and start
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)

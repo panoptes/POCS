@@ -77,7 +77,7 @@ class Observation(PanBase):
         self.merit = 0.0
 
         self.reset()
-
+        
         self.logger.debug("Observation created: {}".format(self))
 
 
