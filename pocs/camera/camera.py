@@ -705,6 +705,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # be override by passed parameter so update here.
         metadata['exptime'] = exptime
 
+        # Prepare the filterwheel
         if self.filterwheel is not None:
 
             # Check that the filterwheel is ready
