@@ -21,7 +21,7 @@ class EFWDriver(AbstractSDKDriver):
         argument, otherwise the ctypes.util.find_library function will be used to try to locate it.
 
         Args:
-            library_path (str, optional): path to the libary e.g. '/usr/local/lib/libEFWFilter.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libEFWFilter.so'
 
         Returns:
             `~pocs.filter.libefw.EFWDriver`

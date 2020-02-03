@@ -13,15 +13,15 @@ class FilterWheel(AbstractFilterWheel):
     Class for ZWO filter wheels.
 
     Args:
-        name (str, optional): name of the filter wheel
-        model (str, optional): model of the filter wheel
+        name (str, optional): name of the filter wheel.
+        model (str, optional): model of the filter wheel.
         camera (pocs.camera.camera.AbstractCamera): camera that this filterwheel is associated with.
-        filter_names (list of str): names of the filters installed at each filterwheel position
+        filter_names (list of str): names of the filters installed at each filterwheel position.
         timeout (u.Quantity, optional): maximum time to wait for a move to complete. Should be
             a Quantity with time units. If a numeric type without units is given seconds will be
             assumed. Default is 10 seconds.
-        serial_number (str): serial number of the filter wheel
-        library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so
+        serial_number (str): serial number of the filter wheel.
+        library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'.
     """
 
     _driver = None
@@ -73,7 +73,6 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """Connect to filter wheel."""
-
 
         self._handle = self.camera._handle
 
