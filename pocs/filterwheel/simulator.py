@@ -85,9 +85,9 @@ class FilterWheel(AbstractFilterWheel):
 # Private methods
 ##################################################################################################
 
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         if self._moving:
-            move_event.set()
+            self._move_event.set()
             msg = "Attempt to move filter wheel when already moving"
             self.logger.error(msg)
             raise RuntimeError(msg)
@@ -103,23 +103,22 @@ class FilterWheel(AbstractFilterWheel):
 
         move = threading.Timer(interval=move_duration,
                                function=self._complete_move,
-                               args=(position, move_event))
+                               args=(position,))
         self._position = float('nan')
         self._moving = True
         move.start()
 
         if move_duration > self._timeout:
             timeout_timer = threading.Timer(interval=self._timeout,
-                                            function=self._timeout_move,
-                                            args=(move_event,))
+                                            function=self._timeout_move)
             timeout_timer.start()
 
-    def _complete_move(self, position, move_event):
+    def _complete_move(self, position):
         self._moving = False
         self._position = position
-        move_event.set()
+        self._move_event.set()
 
-    def _timeout_move(self, move_event):
-        move_event.set()
+    def _timeout_move(self):
+        self._move_event.set()
         msg = "Timeout waiting for filter wheel move to complete"
         raise error.Timeout(msg)
