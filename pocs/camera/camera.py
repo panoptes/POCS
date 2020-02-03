@@ -715,7 +715,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if (self.filterwheel is not None) and (observation.filter_name is not None):
 
             # Move filterwheel if necessary
-            self.filterwheel.move_to(observation.filter_name, blocking=True)
+            try:
+                self.filterwheel.move_to(observation.filter_name, blocking=True)
+            except Exception as e:
+                self.logger.error(f'Error moving filterwheel to {observation.filter_name}: {e}')
+                raise(e)
 
             # Store the filter name in metadata
             metadata['filter_name'] = observation.filter_name
