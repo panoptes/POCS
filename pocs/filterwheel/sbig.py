@@ -103,7 +103,7 @@ class FilterWheel(AbstractFilterWheel):
         SBIG filter wheels initialise and calibrate themselves on power up.
         """
         results = self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
-        self.logger.info("{} reinitialised".format(self))
+        self.logger.info("{} recalibrated".format(self))
 
 ##################################################################################################
 # Private methods

@@ -28,7 +28,7 @@ class FilterWheel(AbstractFilterWheel):
 
     def __init__(self,
                  name='ZWO Filter Wheel',
-                 model='sbig',
+                 model='zwo',
                  camera=None,
                  filter_names=None,
                  timeout=10 * u.second,
@@ -73,13 +73,12 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """Connect to filter wheel."""
-        
+
 
         self._handle = self.camera._handle
 
         info = self._driver.cfw_get_info(self._handle)
         self._model = info['model']
-        self._firmware_version = info['firmware_version']
         self._n_positions = info['n_positions']
         if len(self.filter_names) != self.n_positions:
             msg = "Number of names in filter_names ({}) doesn't".format(len(self.filter_names)) + \
@@ -95,7 +94,7 @@ class FilterWheel(AbstractFilterWheel):
         Reinitialises/recalibrates the filter wheel.
         """
         self._driver.calibrate(self._handle)
-        self.logger.info("{} reinitialised".format(self))
+        self.logger.info("{} recalibrated".format(self))
 
 ##################################################################################################
 # Private methods

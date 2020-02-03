@@ -116,8 +116,8 @@ class EFWDriver(AbstractSDKDriver):
         self._call_function('EFWGetDirection',
                             filterwheel_ID,
                             ctypes.byref(unidirectional))
-        unidrectional = bool(unidirectional)
-        self.logger.debug(f"Got undirectional={unidirectional} from filterwheel {filterwheel_ID}.")
+        unidirectional = bool(unidirectional)
+        self.logger.debug(f"Got unidirectional={unidirectional} from filterwheel {filterwheel_ID}.")
         return unidirectional.value
 
     def set_direction(self, filterwheel_ID, unidirectional):
