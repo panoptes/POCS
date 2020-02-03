@@ -708,7 +708,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Prepare the filterwheel
         if self.filterwheel is not None:
 
-            # Check that the filterwheel is ready
+            # Check that the filterwheel is not moving
             if self.filterwheel.is_moving:
 
                 msg = f'Attempt to prepare observation on {self} while' \
