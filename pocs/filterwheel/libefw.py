@@ -41,15 +41,22 @@ class EFWDriver(AbstractSDKDriver):
         return "Unknown"
 
     def get_devices(self):
-        """Get connected device UIDs and corresponding device nodes/handles/IDs.
+        """Get connected device 'UIDs' and corresponding device nodes/handles/IDs.
+
+        EFW SDK has no way to access any unique identifier for connected filterwheels.
+        Instead we construct an ID from combination of filterwheel name, number of
+        positions and integer ID. This will probably not be deterministic, in general,
+        and is only guaranteed to be unique between mutliple filterwheels on a single
+        computer.
         """
-        # EFW SDK has no way to access any unique identifier for connected filterwheels.
-        # Construct an ID (probably not deterministic, in general) from combination of
-        # product code and filterwheel ID.
         n_filterwheels = self.get_num()  # Nothing works if you don't call this first.
-        products = self.get_product_ids()  # Will raise error.NotFound if no filterwheels
-        ids = [self.get_ID(i) for i in range(n_filterwheels)]
-        filterwheels = {f"{product}_{fw_id}": fw_id for product, fw_id in zip(products, ids)}
+        filterwheels = []
+        for i in range(n_filterwheels):
+            fw_id = self.get_ID(i)
+            self.open(fw_id)
+            info = self.get_property(fw_id)
+            self.close(fw_id)
+            filterwheels.append(f"{info['name']}_{info['slot_num']}_{fw_id}")
         return filterwheels
 
     def get_num(self):
@@ -59,15 +66,23 @@ class EFWDriver(AbstractSDKDriver):
         return count
 
     def get_product_ids(self):
-        """Get product IDs of connected EFW filterwheels."""
+        """Get product IDs of supported(?) EFW filterwheels.
+
+        The SDK documentation does not explain that the product IDs returned by this function are,
+        but from experiment and analogy with a similar function in the ASI camera SDK it appears
+        this is a list of the product IDs of the filterwheels that the SDK supports, not the
+        product IDs of the connected filterwheels. There appears to be no way to obtain the
+        product IDs of the connected filterwheel(s).
+        """
         n_filterwheels = self._CDLL.EFWGetProductIDs(0)
         if n_filterwheels > 0:
             product_ids = (ctypes.c_int * n_filterwheels)()
             assert n_filterwheels == self._CDLL.EFWGetProductIDs(ctypes.byref(product_ids))
         else:
             raise error.NotFound("No connected EFW filterwheels.")
-        self.logger.debug(f"Got product IDs from {n_filterwheels} filterwheels.")
-        return list(product_ids)
+        product_ids = list(product_ids)
+        self.logger.debug(f"Got supported product IDs: {product_ids}")
+        return product_ids
 
     def get_ID(self, filterwheel_index):
         """Get integer ID of filterwheel with a given index."""
@@ -75,8 +90,9 @@ class EFWDriver(AbstractSDKDriver):
         self._call_function('EFWGetID',
                             filterwheel_index,
                             ctypes.byref(filterwheel_ID))
+        filterwheel_ID = filterwheel_ID.value
         self.logger.debug(f"Got filterwheel ID {filterwheel_ID} for index {filterwheel_index}.")
-        return filterwheel_ID.value
+        return filterwheel_ID
 
     def open(self, filterwheel_ID):
         """Open connection to filterwheel with given ID."""
@@ -91,7 +107,7 @@ class EFWDriver(AbstractSDKDriver):
                             filterwheel_ID,
                             ctypes.byref(filterwheel_info))
         filterwheel_properties = self._parse_info(filterwheel_info)
-        self.logger.debug(f"Got properties from filterweel {filterwheel_ID}.")
+        self.logger.debug(f"Got properties from filterwheel {filterwheel_ID}.")
         return filterwheel_properties
 
     def get_position(self, filterwheel_ID):
@@ -116,16 +132,15 @@ class EFWDriver(AbstractSDKDriver):
         self._call_function('EFWGetDirection',
                             filterwheel_ID,
                             ctypes.byref(unidirectional))
-        unidirectional = bool(unidirectional)
         self.logger.debug(f"Got unidirectional={unidirectional} from filterwheel {filterwheel_ID}.")
-        return unidirectional.value
+        return unidirectional
 
     def set_direction(self, filterwheel_ID, unidirectional):
         """Set unidrectional/bidirectional for filterwheel with given ID."""
         self._call_function('EFWSetDirection',
                             filterwheel_ID,
                             ctypes.c_bool(unidirectional))
-        self.logger.debug(f"Set unidirection={unidirectional} for filterwheel {filterwheel_ID}.")
+        self.logger.debug(f"Set unidirectional={unidirectional} for filterwheel {filterwheel_ID}.")
 
     def calibrate(self, filterwheel_ID):
         """Calibrate filterwheel with given ID."""
