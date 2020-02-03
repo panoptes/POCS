@@ -712,7 +712,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # be override by passed parameter so update here.
         metadata['exptime'] = exptime
 
-
         if (self.filterwheel is not None) and (observation.filter_name is not None):
 
             # Move filterwheel if necessary
