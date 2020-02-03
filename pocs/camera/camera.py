@@ -354,12 +354,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
-        # Check that the filterwheel is ready
-        if self.filterwheel and self.filterwheel.is_moving:
-            msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
-                self)
-            raise error.PanError(msg)
-
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
@@ -712,14 +706,25 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # be override by passed parameter so update here.
         metadata['exptime'] = exptime
 
-        if (self.filterwheel is not None) and (observation.filter_name is not None):
+        if (self.filterwheel is not None):
+
+            # Check that the filterwheel is ready
+            if self.filterwheel.is_moving:
+
+                msg = f'Attempt to prepare observation on {self} while' \
+                        ' filterwheel is moving, ignoring.'
+                self.logger.error(msg)
+                raise error.PanError(msg)
 
             # Move filterwheel if necessary
-            try:
-                self.filterwheel.move_to(observation.filter_name, blocking=True)
-            except Exception as e:
-                self.logger.error(f'Error moving filterwheel to {observation.filter_name}: {e}')
-                raise(e)
+            if observation.filter_name is not None:
+
+                try:
+                    self.filterwheel.move_to(observation.filter_name, blocking=True)
+                except Exception as e:
+                    self.logger.error(f'Error moving filterwheel on {self} to' \
+                                      f' {observation.filter_name}: {e}')
+                    raise(e)
 
             # Store the filter name in metadata
             metadata['filter_name'] = observation.filter_name
