@@ -304,7 +304,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # Move the filerwheel into position
-        if (self.filterwheel is not None) & (observation.filter_name is not None):
+        if (self.filterwheel is not None) and (observation.filter_name is not None):
             self.filterwheel.move_to(observation.filter_name)
 
         exposure_event = self.take_exposure(seconds=exptime, filename=file_path,
