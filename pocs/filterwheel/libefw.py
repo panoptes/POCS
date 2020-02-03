@@ -1,9 +1,11 @@
 import ctypes
 import enum
+import threading
 
 from pocs.camera.sdk import AbstractSDKDriver
 from pocs.utils import error
 from pocs.utils.library import load_library
+from pocs.utils import CountdownTimer
 
 
 class EFWDriver(AbstractSDKDriver):
@@ -119,12 +121,34 @@ class EFWDriver(AbstractSDKDriver):
         self.logger.debug(f"Got position {position} from filterwheel {filterwheel_ID}.")
         return position.value
 
-    def set_position(self, filterwheel_ID, position):
-        """Set position of filterwheel with given ID."""
+    def set_position(self, filterwheel_ID, position, move_event=None, timeout=None):
+        """Set position of filterwheel with given ID.
+
+        This function returns immediately after starting the move but spawns a thread to poll the
+        filter wheel until the move completes (see _efw_poll method for details). This thread will
+        log the result of the move, and optionally set a threading.Event to signal that it has
+        completed.
+
+        Args:
+            filterwheel_ID (int): integer ID of the filterwheel that is moving.
+            position (int): position to move the filter wheel. Must an integer >= 0.
+            move_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should be
+                a Quantity with time units. If a numeric type without units is given seconds will be
+                assumed.
+
+        Raises:
+            pocs.utils.error.PanError: raised if the driver returns an error starting the move.
+        """
+        self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
+        # This will raise errors if the filterwheel is already moving, or position is not valid.
         self._call_function('EFWSetPosition',
                             filterwheel_ID,
                             ctypes.c_int(position))
-        self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
+        poll_thread = threading.Thread(target=self._efw_poll,
+                                       args=(filterwheel_ID, position, move_event, timeout),
+                                       daemon=True)
+        poll_thread.start()
 
     def get_direction(self, filterwheel_ID):
         """Get current unidirectional/bidirectional setting of filterwheel with given ID."""
@@ -155,6 +179,67 @@ class EFWDriver(AbstractSDKDriver):
         self.logger.debug(f"Connection to filterwheel {filterwheel_ID} closed.")
 
     # Private methods
+
+    def _efw_poll(self, filterwheel_ID, position, move_event, timeout):
+        """
+        Polls filter wheel until the current move is complete.
+
+        Also monitors for errors while polling and checks position after the move is complete.
+        Optionally sets a threading.Event to signal the end of the move. Has an optional timeout
+        to raise an TimeoutError is the move takes longer than expected.
+
+        Args:
+            filterwheel_ID (int): integer ID of the filterwheel that is moving.
+            position (int): position to move the filter wheel. Must be an integer >= 0.
+            move_event (threading.Event, optional): Event to set once the move is complete
+            timeout (u.Quantity, optional): maximum time to wait for the move to complete. Should
+                be a Quantity with time units. If a numeric type without units is given seconds
+                will be assumed.
+
+            Raises:
+                pocs.utils.error.PanError: raised if the driver returns an error or if the final
+                    position is not as expected.
+                pocs.utils.error.Timeout: raised if the move does not end within the period of
+                    time specified by the timeout argument.
+        """
+        if timeout is not None:
+            timer = CountdownTimer(duration=timeout)
+
+        try:
+            # No status query function in the SDK. Only way to check on progress of move
+            # is to keep issuing the same move command until we stop getting the MOVING
+            # error code back.
+            error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID),
+                                                   ctypes.c_int(position))
+            while error_code == ErrorCode.MOVING:
+                if timer.expired():
+                    msg = "Timeout waiting for filterwheel {} to move to {}".format(
+                        filterwheel_ID, position)
+                    raise error.Timeout(msg)
+                time.sleep(0.1)
+                error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID),
+                                                       ctypes.c_int(position))
+
+            if error_code != ErrorCode.SUCCESS:
+                # Got some sort of error while polling.
+                msg = "Error while moving filterwheel {} to {}: {}".format(
+                    filterwheel_ID, position, Errorcode(error_code).name)
+                self.logger.error(msg)
+                raise error.PanError(msg)
+
+            final_position = self.get_position(filterwheel_ID)
+            if final_position != position:
+                msg = "Tried to move filterwheel {} to {}, but ended up at {}.".format(
+                    filterwheel_ID, position, final_position)
+                self.logger.error(msg)
+                raise error.PanError(msg)
+        else:
+            self.logger.debug(f"Filter wheel {filterwheel_ID} moved to {position}.")
+        finally:
+            # Regardless must always set the Event when the move has stopped.
+            if move_event is not None:
+                move_event.set()
+
 
     def _call_function(self, function_name, filterwheel_ID, *args):
         """Utility function for calling the SDK functions that return ErrorCode."""

@@ -65,7 +65,7 @@ class FilterWheel(AbstractFilterWheel):
     @property
     def is_moving(self):
         """ Is the filterwheel currently moving """
-        raise NotImplementedError
+        return not self._move_event.is_set()
 
 ##################################################################################################
 # Methods
@@ -74,11 +74,13 @@ class FilterWheel(AbstractFilterWheel):
     def connect(self):
         """Connect to filter wheel."""
 
-        self._handle = self.camera._handle
+        self._handle = 0
 
-        info = self._driver.cfw_get_info(self._handle)
-        self._model = info['model']
-        self._n_positions = info['n_positions']
+        self._driver.open(self._handle)
+        info = self._driver.get_property(self._handle)
+        self._model = info['name']
+        self._n_positions = info['slot_num']
+
         if len(self.filter_names) != self.n_positions:
             msg = "Number of names in filter_names ({}) doesn't".format(len(self.filter_names)) + \
                 " match number of positions in filter wheel ({})".format(self.n_positions)
@@ -99,5 +101,10 @@ class FilterWheel(AbstractFilterWheel):
 # Private methods
 ##################################################################################################
 
-    def _move_to(self, position, move_event):
-        self._driver.set_position(self._handle, self._parse_position(position))
+    def _move_to(self, position):
+        # Filterwheel class used 1 based position numbering,
+        # ZWO EFW driver uses 0 based position numbering.
+        self._driver.set_position(filterwheel_ID=self._handle,
+                                  position=self._parse_position(position) - 1,
+                                  move_event=self._move_event,
+                                  timeout=self._timeout)

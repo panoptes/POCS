@@ -109,10 +109,10 @@ class FilterWheel(AbstractFilterWheel):
 # Private methods
 ##################################################################################################
 
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         self._driver.cfw_goto(handle=self._handle,
                               position=position,
-                              cfw_event=move_event,
+                              cfw_event=self._move_event,
                               timeout=self._timeout)
 
     def _add_fits_keywords(self, header):
