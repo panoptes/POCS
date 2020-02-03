@@ -305,8 +305,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        exposure_event = self.take_exposure(seconds=exptime, filename=file_path,
-                                            **kwargs)
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
