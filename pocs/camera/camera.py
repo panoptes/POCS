@@ -303,7 +303,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # pop exptime from kwarg as its now in exptime
         exptime = kwargs.pop('exptime', observation.exptime.value)
         
-        # Now move the filerwheel into position
+        # Move the filerwheel into position
         if (self.filterwheel is not None) & (observation.filter_name is not None):
             self.filterwheel.move_to(observation.filter_name)
         
