@@ -23,10 +23,13 @@ def load_library(name, path=None, mode=ctypes.DEFAULT_MODE, logger=None):
         ctypes.CDLL
 
     Raises:
-        pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+        pocs.utils.error.NotFound: raised if library_path not given & find_library fails to
             locate the library.
         OSError: raises if the ctypes.CDLL loader cannot load the library.
     """
+    if mode is None:
+        # Interpret a value of None as the default.
+        mode = ctypes.DEFAULT_MODE
     # Open library
     if logger:
         logger.debug("Opening {} library".format(name))
