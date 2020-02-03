@@ -10,7 +10,7 @@ class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, **kwargs):
+                 exp_set_size=10, priority=100, filter_name=None, **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -38,6 +38,8 @@ class Observation(PanBase):
                 (default: {10})
             priority {int} -- Overall priority for field, with 1.0 being highest
                 (default: {100})
+            filter_name {str} -- Name of the filter to be used. If specified,
+            will override the default filter name (default: {None}).
 
         """
         PanBase.__init__(self)
@@ -63,6 +65,8 @@ class Observation(PanBase):
         self.pointing_images = OrderedDict()
 
         self.priority = float(priority)
+        
+        self.filter_name = filter_name
 
         self._min_duration = self.exptime * self.min_nexp
         self._set_duration = self.exptime * self.exp_set_size

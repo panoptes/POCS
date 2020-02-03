@@ -302,7 +302,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # pop exptime from kwarg as its now in exptime
         exptime = kwargs.pop('exptime', observation.exptime.value)
-        exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
+        
+        exposure_event = self.take_exposure(seconds=exptime, filename=file_path,
+                                            filter_name=observation.filter_name,
+                                            **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -326,6 +329,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       filename=None,
                       dark=False,
                       blocking=False,
+                      filter_name=None,
                       *args,
                       **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -350,11 +354,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
-        if self.filterwheel and self.filterwheel.is_moving:
-            msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
-                self)
-            raise error.PanError(msg)
-
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
@@ -368,7 +367,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Clear event now to prevent any other exposures starting before this one is finished.
         self._exposure_event.clear()
-
+           
+        # Check that the filterwheel is ready
+        if self.filterwheel and self.filterwheel.is_moving:
+            msg = "Attempt to start exposure on {} while filterwheel is moving, ignoring.".format(
+                self)
+            raise error.PanError(msg)
+            
+        # Now move the filerwheel into position
+        if (self.filterwheel is not None) & (filter_name is not None):
+            self.filterwheel.move_to(filter_name)
+            
         try:
             # Camera type specific exposure set up and start
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
