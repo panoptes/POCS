@@ -467,6 +467,14 @@ def test_exposure_moving(camera, tmpdir):
     assert not os.path.exists(fits_path_2)
 
 
+def test_move_filterwheel(camera, images_dir):
+    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    observation = Observation(field, exptime=1.5*u.second, filter_name='deux')
+    observation.seq_time = '19991231T235959'
+    camera.take_observation(observation, headers={})
+    time.sleep(7)
+
+
 def test_exposure_timeout(camera, tmpdir, caplog):
     """
     Tests response to an exposure timeout

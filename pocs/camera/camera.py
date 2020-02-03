@@ -295,6 +295,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # To be used for marking when exposure is complete (see `process_exposure`)
         observation_event = threading.Event()
 
+        # Setup the observation
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
                                                                          filename,
@@ -303,10 +304,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # pop exptime from kwarg as its now in exptime
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
-        # Move the filerwheel into position
-        if (self.filterwheel is not None) and (observation.filter_name is not None):
-            self.filterwheel.move_to(observation.filter_name)
-
+        # start the exposure
         exposure_event = self.take_exposure(seconds=exptime, filename=file_path,
                                             **kwargs)
 
@@ -713,6 +711,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # The exptime header data is set as part of observation but can
         # be override by passed parameter so update here.
         metadata['exptime'] = exptime
+
+
+        if (self.filterwheel is not None) and (observation.filter_name is not None):
+
+            # Move filterwheel if necessary
+            self.filterwheel.move_to(observation.filter_name, blocking=True)
+
+            # Store the filter name in metadata
+            metadata['filter_name'] = observation.filter_name
 
         return exptime, file_path, image_id, metadata
 
