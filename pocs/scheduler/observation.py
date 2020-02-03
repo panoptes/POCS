@@ -39,7 +39,7 @@ class Observation(PanBase):
             priority {int} -- Overall priority for field, with 1.0 being highest
                 (default: {100})
             filter_name {str} -- Name of the filter to be used. If specified,
-            will override the default filter name (default: {None}).
+                will override the default filter name (default: {None}).
 
         """
         PanBase.__init__(self)
