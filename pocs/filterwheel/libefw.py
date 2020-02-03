@@ -49,7 +49,7 @@ class EFWDriver(AbstractSDKDriver):
         n_filterwheels = self.get_num()  # Nothing works if you don't call this first.
         products = self.get_product_ids()  # Will raise error.NotFound if no filterwheels
         ids = [self.get_ID(i) for i in range(n_filterwheels)]
-        filterwheels = {f"{product}_{id}": id for product, id in zip(products, ids)}
+        filterwheels = {f"{product}_{fw_id}": fw_id for product, fw_id in zip(products, ids)}
         return filterwheels
 
     def get_num(self):
