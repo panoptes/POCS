@@ -726,8 +726,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e}')
                     raise(e)
 
-            # Store the filter name in metadata
-            metadata['filter_name'] = observation.filter_name
+                # Store the filter name in metadata
+                metadata['filter_name'] = observation.filter_name
 
         return exptime, file_path, image_id, metadata
 
