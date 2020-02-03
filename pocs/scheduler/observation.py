@@ -65,7 +65,7 @@ class Observation(PanBase):
         self.pointing_images = OrderedDict()
 
         self.priority = float(priority)
-        
+
         self.filter_name = filter_name
 
         self._min_duration = self.exptime * self.min_nexp
@@ -77,7 +77,7 @@ class Observation(PanBase):
         self.merit = 0.0
 
         self.reset()
-        
+
         self.logger.debug("Observation created: {}".format(self))
 
 
