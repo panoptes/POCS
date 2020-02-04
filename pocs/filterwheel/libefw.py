@@ -49,17 +49,17 @@ class EFWDriver(AbstractSDKDriver):
         EFW SDK has no way to access any unique identifier for connected filterwheels.
         Instead we construct an ID from combination of filterwheel name, number of
         positions and integer ID. This will probably not be deterministic, in general,
-        and is only guaranteed to be unique between mutliple filterwheels on a single
+        and is only guaranteed to be unique between multiple filterwheels on a single
         computer.
         """
         n_filterwheels = self.get_num()  # Nothing works if you don't call this first.
-        filterwheels = []
+        filterwheels = {}
         for i in range(n_filterwheels):
             fw_id = self.get_ID(i)
             self.open(fw_id)
             info = self.get_property(fw_id)
             self.close(fw_id)
-            filterwheels.append(f"{info['name']}_{info['slot_num']}_{fw_id}")
+            filterwheels[f"{info['name']}_{info['slot_num']}_{fw_id}"] = fw_id
         return filterwheels
 
     def get_num(self):

@@ -51,6 +51,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         self._connected = False
         # Some filter wheels needs this to track whether they are moving or not.
         self._move_event = threading.Event()
+        self._move_event.set()
 
         self.logger.debug('Filter wheel created: {}'.format(self))
 

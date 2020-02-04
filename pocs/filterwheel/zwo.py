@@ -1,11 +1,11 @@
-import threading
-import math
+from contextlib import suppress
 
 from astropy import units as u
 
 from pocs.filterwheel import AbstractFilterWheel
 from pocs.filterwheel.libefw import EFWDriver
 from pocs.camera.camera import AbstractCamera
+from pocs.utils import error
 
 
 class FilterWheel(AbstractFilterWheel):
@@ -25,9 +25,14 @@ class FilterWheel(AbstractFilterWheel):
         unidirectional (bool, optional): If True filterwheel will only rotate in one direction, if
             False filterwheel will move in either to get to the requested position via the
             shortest path. Default is True in order to improve repeatability.
+        device_name (str, optional): If multiple filterwheels are connected to a single computer
+            'device name' (e.g. 'EFW_7_0') can be used to select the desired one. See docstring
+            of `pocs.filterwheel.libefw.EFWDriver.get_devices()` for details.
     """
 
     _driver = None
+    _filter_wheels = {}
+    _assigned_filterwheels = set()
 
     def __init__(self,
                  name='ZWO Filter Wheel',
@@ -38,6 +43,7 @@ class FilterWheel(AbstractFilterWheel):
                  serial_number=None,
                  library_path=None,
                  unidirectional=True,
+                 device_name=None,
                  *args, **kwargs):
         if camera and not isinstance(camera, AbstractCamera):
             msg = f"Camera must be an instance of pocs.camera.camera.AbstractCamera, got {camera}."
@@ -55,8 +61,16 @@ class FilterWheel(AbstractFilterWheel):
             # Initialise the driver if it hasn't already been done
             FilterWheel._driver = EFWDriver(library_path=library_path)
 
+        self._device_name = device_name
         self.connect()
         self.is_unidirectional = unidirectional
+
+    def __del__(self):
+        """Attempt some clean up."""
+        with suppress(AttributeError):
+            device_name = self._device_name
+            FilterWheel._assigned_filterwheels.discard(device_name)
+            self.logger.debug('Removed {} from assigned filterwheels list'.format(device_name))
 
 ##################################################################################################
 # Properties
@@ -78,7 +92,7 @@ class FilterWheel(AbstractFilterWheel):
 
     # ZWO filterwheels can be set to be unidirectional or bidirectional.
     @is_unidirectional.setter
-    def is_unidirectiona(self, unidirectional):
+    def is_unidirectional(self, unidirectional):
         self._driver.set_direction(self._handle, bool(unidirectional))
 
 ##################################################################################################
@@ -87,9 +101,39 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """Connect to filter wheel."""
+        # Scan for connected filterwheels. This needs to be done at least once before
+        # opening a connectio.
+        FilterWheel._filterwheels = self._driver.get_devices()
 
-        self._handle = 0
+        if len(FilterWheel._filterwheels) == 0:
+            msg = "No ZWO filterwheels found."
+            self.logger.error(msg)
+            raise error.NotFound(msg)
 
+        if self._device_name:
+            self.logger.debug(f"Looking for filterwheel with device name '{self._device_name}'.")
+            if self._device_name not in FilterWheel._filterwheels:
+                msg = f"No filterwheel with device name '{self._device_name}'."
+                self.logger.error(msg)
+                raise error.NotFound(msg)
+            if self._device_name in FilterWheel._assigned_filterwheels:
+                msg = f"Filterwheel '{self._device_name}' already in use."
+                self.logger.error(msg)
+                raise error.PanError(msg)
+        else:
+            self.logger.debug("No device name specified, claiming 1st available filterwheel.")
+            for device_name in FilterWheel._filterwheels:
+                if device_name not in FilterWheel._assigned_filterwheels:
+                    self._device_name = device_name
+                    break
+            if not self._device_name:
+                msg = "All filterwheels already in use."
+                self.logger.error(msg)
+                raise error.PanError(msg)
+
+        self.logger.debug(f"Claiming filterwheel '{self._device_name}'.")
+        FilterWheel._assigned_filterwheels.add(self._device_name)
+        self._handle = FilterWheel._filterwheels[self._device_name]
         self._driver.open(self._handle)
         info = self._driver.get_property(self._handle)
         self._model = info['name']
