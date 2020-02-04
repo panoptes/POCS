@@ -22,6 +22,9 @@ class FilterWheel(AbstractFilterWheel):
             assumed. Default is 10 seconds.
         serial_number (str): serial number of the filter wheel.
         library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'.
+        unidirectional (bool, optional): If True filterwheel will only rotate in one direction, if
+            False filterwheel will move in either to get to the requested position via the
+            shortest path. Default is True in order to improve repeatability.
     """
 
     _driver = None
@@ -34,6 +37,7 @@ class FilterWheel(AbstractFilterWheel):
                  timeout=10 * u.second,
                  serial_number=None,
                  library_path=None,
+                 unidirectional=True,
                  *args, **kwargs):
         if camera and not isinstance(camera, AbstractCamera):
             msg = f"Camera must be an instance of pocs.camera.camera.AbstractCamera, got {camera}."
@@ -52,6 +56,7 @@ class FilterWheel(AbstractFilterWheel):
             FilterWheel._driver = EFWDriver(library_path=library_path)
 
         self.connect()
+        self.is_unidirectional = unidirectional
 
 ##################################################################################################
 # Properties
@@ -66,6 +71,15 @@ class FilterWheel(AbstractFilterWheel):
     def is_moving(self):
         """ Is the filterwheel currently moving """
         return not self._move_event.is_set()
+
+    @property
+    def is_unidirectional(self):
+        return self._driver.get_direction(self._handle)
+
+    # ZWO filterwheels can be set to be unidirectional or bidirectional.
+    @is_unidirectional.setter
+    def is_unidirectiona(self, unidirectional):
+        self._driver.set_direction(self._handle, bool(unidirectional))
 
 ##################################################################################################
 # Methods

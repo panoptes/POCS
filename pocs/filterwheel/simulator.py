@@ -23,9 +23,9 @@ class FilterWheel(AbstractFilterWheel):
         serial_number (str): serial number of the filter wheel
         move_time (astropy.units.Quantity, optional): time to move the filter wheel by one
             position, optional, default 1 second.
-        move_bidirectional (bool, optional): if True will simulate filter wheel which can rotate in
-            either direction, if False (default) will similate a filter wheel that only moves in
-            one direction.
+        unidirectional (bool, optional): If True filterwheel will only rotate in one direction, if
+            False filterwheel will move in either to get to the requested position via the
+            shortest path. Default is True.
     """
 
     def __init__(self,
@@ -36,7 +36,7 @@ class FilterWheel(AbstractFilterWheel):
                  timeout=10 * u.second,
                  serial_number=None,
                  move_time=1 * u.second,
-                 move_bidirectional=False,
+                 unidirectional=True,
                  *args, **kwargs):
         super().__init__(name=name,
                          model=model,
@@ -49,7 +49,7 @@ class FilterWheel(AbstractFilterWheel):
             self._move_time = move_time.to(u.second).value
         else:
             self._move_time = move_time
-        self._move_birectional = bool(move_bidirectional)
+        self._unidirectional = bool(unidirectional)
         self.connect()
         self.logger.info("Filter wheel {} initialised".format(self))
 

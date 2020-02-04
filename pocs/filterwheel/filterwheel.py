@@ -139,6 +139,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def current_filter(self, filter_name):
         self.move_to(filter_name, blocking=True)
 
+    @property
+    def is_unidirectional(self):
+        return self._unidirectional
+
 ##################################################################################################
 # Methods
 ##################################################################################################

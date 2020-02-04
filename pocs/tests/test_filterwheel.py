@@ -147,13 +147,13 @@ def test_move_timeout(caplog):
     # doesn't get passes up to the calling code.
 
 
-@pytest.mark.parametrize("name,bidirectional, expected",
-                         [("monodirectional", False, 0.3),
-                          ("bidirectional", True, 0.1)])
-def test_move_times(name, bidirectional, expected):
+@pytest.mark.parametrize("name, unidirectional, expected",
+                         [("unidirectional", True, 0.3),
+                          ("bidirectional", False, 0.1)])
+def test_move_times(name, unidirectional, expected):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
-                                     move_bidirectional=bidirectional,
+                                     unidirectional=unidirectional,
                                      timeout=0.5 * u.second)
     sim_filterwheel.position = 1
     assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == \

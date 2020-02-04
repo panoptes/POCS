@@ -44,6 +44,9 @@ class FilterWheel(AbstractFilterWheel):
                          timeout=timeout,
                          serial_number=serial_number,
                          *args, **kwargs)
+        # All SBIG filterwheels unidirectional?
+        self._unidirectional = True
+
 
 ##################################################################################################
 # Properties
