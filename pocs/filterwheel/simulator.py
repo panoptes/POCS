@@ -93,12 +93,12 @@ class FilterWheel(AbstractFilterWheel):
             raise RuntimeError(msg)
 
         move_distance = position - self.position
-        if self._move_birectional:
-            # Filter wheel can move either direction, just need magnitude of the move.
-            move_distance = abs(move_distance)
-        else:
+        if self.is_unidirectional:
             # Filter wheel can only move one way, will have to go the long way around for -ve moves
             move_distance = move_distance % self._n_positions
+        else:
+            # Filter wheel can move either direction, just need magnitude of the move.
+            move_distance = abs(move_distance)
         move_duration = move_distance * self._move_time
 
         move = threading.Timer(interval=move_duration,
