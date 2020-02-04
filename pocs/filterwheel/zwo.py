@@ -28,6 +28,8 @@ class FilterWheel(AbstractFilterWheel):
         device_name (str, optional): If multiple filterwheels are connected to a single computer
             'device name' (e.g. 'EFW_7_0') can be used to select the desired one. See docstring
             of `pocs.filterwheel.libefw.EFWDriver.get_devices()` for details.
+        initial_filter (str or int): Name of filter (or integer position) to move to when
+            initialising filter.
     """
 
     _driver = None
@@ -44,6 +46,7 @@ class FilterWheel(AbstractFilterWheel):
                  library_path=None,
                  unidirectional=True,
                  device_name=None,
+                 initial_filter=None,
                  *args, **kwargs):
         if camera and not isinstance(camera, AbstractCamera):
             msg = f"Camera must be an instance of pocs.camera.camera.AbstractCamera, got {camera}."
@@ -64,6 +67,8 @@ class FilterWheel(AbstractFilterWheel):
         self._device_name = device_name
         self.connect()
         self.is_unidirectional = unidirectional
+        if initial_filter:
+            self.move_to(initial_filter, blocking=True)
 
     def __del__(self):
         """Attempt some clean up."""
