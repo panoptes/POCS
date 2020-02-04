@@ -1,6 +1,7 @@
 import ctypes
 import enum
 import threading
+import time
 
 from pocs.camera.sdk import AbstractSDKDriver
 from pocs.utils import error
@@ -118,7 +119,6 @@ class EFWDriver(AbstractSDKDriver):
         self._call_function('EFWGetPosition',
                             filterwheel_ID,
                             ctypes.byref(position))
-        self.logger.debug(f"Got position {position} from filterwheel {filterwheel_ID}.")
         return position.value
 
     def set_position(self, filterwheel_ID, position, move_event=None, timeout=None):
@@ -156,6 +156,7 @@ class EFWDriver(AbstractSDKDriver):
         self._call_function('EFWGetDirection',
                             filterwheel_ID,
                             ctypes.byref(unidirectional))
+        unidirectional = unidirectional.value
         self.logger.debug(f"Got unidirectional={unidirectional} from filterwheel {filterwheel_ID}.")
         return unidirectional
 
@@ -212,7 +213,7 @@ class EFWDriver(AbstractSDKDriver):
             error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID),
                                                    ctypes.c_int(position))
             while error_code == ErrorCode.MOVING:
-                if timer.expired():
+                if timeout is not None and timer.expired():
                     msg = "Timeout waiting for filterwheel {} to move to {}".format(
                         filterwheel_ID, position)
                     raise error.Timeout(msg)
@@ -223,7 +224,7 @@ class EFWDriver(AbstractSDKDriver):
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
                 msg = "Error while moving filterwheel {} to {}: {}".format(
-                    filterwheel_ID, position, Errorcode(error_code).name)
+                    filterwheel_ID, position, ErrorCode(error_code).name)
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
@@ -233,13 +234,12 @@ class EFWDriver(AbstractSDKDriver):
                     filterwheel_ID, position, final_position)
                 self.logger.error(msg)
                 raise error.PanError(msg)
-        else:
+
             self.logger.debug(f"Filter wheel {filterwheel_ID} moved to {position}.")
         finally:
             # Regardless must always set the Event when the move has stopped.
             if move_event is not None:
                 move_event.set()
-
 
     def _call_function(self, function_name, filterwheel_ID, *args):
         """Utility function for calling the SDK functions that return ErrorCode."""
