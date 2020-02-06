@@ -353,6 +353,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
+        # Check that the filterwheel is not moving
+        """
+        if self.filterwheel is not None:
+            if self.filterwheel.is_moving:
+                msg = f'Attempt to prepare observation on {self} while' \
+                        ' filterwheel is moving, ignoring.'
+                self.logger.error(msg)
+                raise error.PanError(msg)
+        """
+        if not self.is_ready:
+            msg = f"Attempt to start exposure on {self} while not ready, ignoring!"
+            raise error.PanError(msg)
+
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
@@ -639,6 +652,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if headers is None:
             headers = {}
 
+        # Move the filterwheel if necessary
+        if (self.filterwheel is not None) and (observation.filter_name is not None):
+
+            try:
+                self.filterwheel.move_to(observation.filter_name, blocking=True)
+            except Exception as e:
+                self.logger.error(f'Error moving filterwheel on {self} to' \
+                                  f' {observation.filter_name}: {e}')
+                raise(e)
+
         start_time = headers.get('start_time', current_time(flatten=True))
 
         if not observation.seq_time:
@@ -686,6 +709,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time
         )
 
+        # The exptime header data is set as part of observation but can
+        # be override by passed parameter so update here.
+        exptime = kwargs.get('exptime', observation.exptime.value)
+
         # Camera metadata
         metadata = {
             'camera_name': self.name,
@@ -697,37 +724,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'is_primary': self.is_primary,
             'sequence_id': sequence_id,
             'start_time': start_time,
+            'exptime':exptime
         }
+        if observation.filter_name is not None:
+            metadata['filter_name'] = observation.filter_name
         metadata.update(headers)
-
-        exptime = kwargs.get('exptime', observation.exptime.value)
-        # The exptime header data is set as part of observation but can
-        # be override by passed parameter so update here.
-        metadata['exptime'] = exptime
-
-        # Prepare the filterwheel
-        if self.filterwheel is not None:
-
-            # Check that the filterwheel is not moving
-            if self.filterwheel.is_moving:
-
-                msg = f'Attempt to prepare observation on {self} while' \
-                        ' filterwheel is moving, ignoring.'
-                self.logger.error(msg)
-                raise error.PanError(msg)
-
-            # Move filterwheel if necessary
-            if observation.filter_name is not None:
-
-                try:
-                    self.filterwheel.move_to(observation.filter_name, blocking=True)
-                except Exception as e:
-                    self.logger.error(f'Error moving filterwheel on {self} to' \
-                                      f' {observation.filter_name}: {e}')
-                    raise(e)
-
-                # Store the filter name in metadata
-                metadata['filter_name'] = observation.filter_name
 
         return exptime, file_path, image_id, metadata
 
