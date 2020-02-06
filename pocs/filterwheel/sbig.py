@@ -44,8 +44,6 @@ class FilterWheel(AbstractFilterWheel):
                          timeout=timeout,
                          serial_number=serial_number,
                          *args, **kwargs)
-        # All SBIG filterwheels unidirectional?
-        self._unidirectional = True
 
 
 ##################################################################################################
@@ -72,6 +70,11 @@ class FilterWheel(AbstractFilterWheel):
         if status['status'] == 'UNKNOWN':
             self.logger.warning("{} returned 'UNKNOWN' status".format(self))
         return bool(status['status'] == 'BUSY')
+
+    @property
+    def is_unidirectional(self):
+        # All SBIG filterwheels unidirectional?
+        return True
 
 ##################################################################################################
 # Methods

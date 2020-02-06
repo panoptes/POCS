@@ -106,6 +106,10 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """Connect to filter wheel."""
+        if self.is_connected:
+            self.logger.warning("Already connected.")
+            return
+
         # Scan for connected filterwheels. This needs to be done at least once before
         # opening a connectio.
         FilterWheel._filterwheels = self._driver.get_devices()

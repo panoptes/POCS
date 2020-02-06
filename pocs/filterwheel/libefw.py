@@ -53,13 +53,25 @@ class EFWDriver(AbstractSDKDriver):
         computer.
         """
         n_filterwheels = self.get_num()  # Nothing works if you don't call this first.
+        if n_filterwheels < 1:
+            raise error.NotFound("No ZWO EFW filterwheels found.")
+
         filterwheels = {}
         for i in range(n_filterwheels):
             fw_id = self.get_ID(i)
-            self.open(fw_id)
-            info = self.get_property(fw_id)
-            self.close(fw_id)
-            filterwheels[f"{info['name']}_{info['slot_num']}_{fw_id}"] = fw_id
+            try:
+                self.open(fw_id)
+            except error.PanError as err:
+                msg = f"Error opening filterwheel {fw_id}."
+                self.logger.error(msg)
+            else:
+                info = self.get_property(fw_id)
+                filterwheels[f"{info['name']}_{info['slot_num']}_{fw_id}"] = fw_id
+            finally:
+                self.close(fw_id)
+        if not filterwheels:
+            self.logger.warning("Could not get properties of any EFW filterwheels.")
+
         return filterwheels
 
     def get_num(self):

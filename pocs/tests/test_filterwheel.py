@@ -186,3 +186,13 @@ def test_is_moving(filterwheel):
     e.wait()
     assert not filterwheel.is_moving
     assert filterwheel.is_ready
+
+
+def test_move_moving(filterwheel, caplog):
+    filterwheel.move_to(1, blocking=True)
+    e = filterwheel.move_to(4)
+    with pytest.raises(error.PanError):
+        filterwheel.position = 1
+    assert caplog.records[-1].levelname == 'ERROR'
+    e.wait()
+    assert filterwheel.position == 4

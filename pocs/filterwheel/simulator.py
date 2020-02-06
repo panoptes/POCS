@@ -69,6 +69,10 @@ class FilterWheel(AbstractFilterWheel):
         """ Is the filterwheel currently moving """
         return self._moving
 
+    @property
+    def is_unidirectional(self):
+        return self._unidirectional
+
 ##################################################################################################
 # Methods
 ##################################################################################################

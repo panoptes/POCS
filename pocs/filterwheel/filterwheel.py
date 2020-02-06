@@ -87,8 +87,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @property
     def is_ready(self):
-        # A filterwheel is 'ready' if it isn't currently moving.
-        return not self.is_moving
+        # A filterwheel is 'ready' if it is connected and isn't currently moving.
+        return self.is_connected and not self.is_moving
 
     @property
     def camera(self):
@@ -142,7 +142,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @property
     def is_unidirectional(self):
-        return self._unidirectional
+        raise NotImplementedError
 
 ##################################################################################################
 # Methods
@@ -189,9 +189,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             raise error.PanError(msg)
 
         if self.is_moving:
-            msg = f'Attempt to move filter wheel {self} while already moving. Waiting.'
-            self.logger.warning(msg)
-            self._move_event.wait()
+            msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
+            raise error.PanError(msg)
 
         position = self._parse_position(position)
         self.logger.info("Moving {} to position {} ({})".format(
