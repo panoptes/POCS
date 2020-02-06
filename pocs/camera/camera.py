@@ -650,7 +650,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 self.filterwheel.move_to(observation.filter_name, blocking=True)
             except Exception as e:
-                self.logger.error(f'Error moving filterwheel on {self} to' \
+                self.logger.error(f'Error moving filterwheel on {self} to'
                                   f' {observation.filter_name}: {e}')
                 raise(e)
 
@@ -716,7 +716,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'is_primary': self.is_primary,
             'sequence_id': sequence_id,
             'start_time': start_time,
-            'exptime':exptime
+            'exptime': exptime
         }
         if observation.filter_name is not None:
             metadata['filter_name'] = observation.filter_name

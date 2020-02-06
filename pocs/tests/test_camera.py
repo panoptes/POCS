@@ -496,7 +496,7 @@ def test_observation(camera, images_dir):
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
-    observation = Observation(field, exptime=1.5*u.second, filter_name='deux')
+    observation = Observation(field, exptime=1.5 * u.second, filter_name='deux')
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
