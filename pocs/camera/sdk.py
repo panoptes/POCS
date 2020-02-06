@@ -23,7 +23,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
             library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            pocs.utils.error.NotFound: raised if library_path not given & find_library fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
@@ -46,10 +46,8 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def get_cameras(self):
-        """Convenience function to get a dictionary of all currently connected camera UIDs
-        and their corresponding device nodes/handles/camera IDs.
-        """
+    def get_devices(self):
+        """Get connected device UIDs and corresponding device nodes/handles/IDs."""
         raise NotImplementedError  # pragma: no cover
 
 
@@ -92,7 +90,7 @@ class AbstractSDKCamera(AbstractCamera):
         if not my_class._cameras:
             # No cached camera details, need to probe for connected cameras
             # This will raise a PanError if there are no cameras.
-            my_class._cameras = my_class._driver.get_cameras()
+            my_class._cameras = my_class._driver.get_devices()
             logger.debug("Connected {}s: {}".format(name, my_class._cameras))
 
         if serial_number in my_class._cameras:

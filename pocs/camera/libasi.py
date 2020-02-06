@@ -29,13 +29,13 @@ class ASIDriver(AbstractSDKDriver):
         argument, otherwise the ctypes.util.find_library function will be used to try to locate it.
 
         Args:
-            library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'
 
         Returns:
             `~pocs.camera.libasi.ASIDriver`
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            pocs.utils.error.NotFound: raised if library_path not given & find_library fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
@@ -51,7 +51,7 @@ class ASIDriver(AbstractSDKDriver):
         version = version.replace(', ', '.')  # Format the version string properly
         return version
 
-    def get_cameras(self):
+    def get_devices(self):
         """Gets currently connected camera info.
 
         Returns:

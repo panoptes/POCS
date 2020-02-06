@@ -73,7 +73,7 @@ class FLIDriver(AbstractSDKDriver):
         self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
         return version.value.decode('ascii')
 
-    def get_cameras(self):
+    def get_devices(self):
         """Gets currently connected camera info.
 
         Returns:

@@ -85,7 +85,7 @@ class SBIGDriver(AbstractSDKDriver):
                                          self._bcd_to_string(driver_info_results.version))
         return version_string
 
-    def get_cameras(self):
+    def get_devices(self):
         """Gets currently connected camera inf.
 
         Returns:
@@ -561,8 +561,8 @@ class SBIGDriver(AbstractSDKDriver):
         try:
             query = self.cfw_query(handle, model)
             while query['status'] == 'BUSY':
-                if timer.expired():
-                    msg = "Timeout waiting for filter wheel on {} move to {} to complete".format(
+                if timeout is not None and timer.expired():
+                    msg = "Timeout waiting for filter wheel {} to move to {}".format(
                         handle, position)
                     raise error.Timeout(msg)
                 time.sleep(0.1)

@@ -17,7 +17,7 @@ class SDKDriver(AbstractSDKDriver):
     def get_SDK_version(self):
         return "Simulated SDK Driver v0.001"
 
-    def get_cameras(self):
+    def get_devices(self):
         cameras = {'SSC007': 'DEV_USB0',
                    'SSC101': 'DEV_USB1',
                    'SSC999': 'DEV_USB2'}
