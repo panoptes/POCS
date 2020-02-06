@@ -353,7 +353,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
-        # Check that the filterwheel is not moving
+        # Check that the camera (and subcomponents) is ready
         if not self.is_ready:
             msg = f"Attempt to start exposure on {self} while not ready, ignoring!"
             raise error.PanError(msg)
