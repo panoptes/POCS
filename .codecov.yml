@@ -16,5 +16,7 @@ ignore:
   - "pocs/mount/ioptron.py"
   - "pocs/focuser/birger.py"
   - "pocs/focuser/focuslynx.py"
+  - "pocs/filterwheel/libefw.py"
   - "pocs/filterwheel/sbig.py"
+  - "pocs/filterwheel/zwo.py"
   - "peas/weather.py"
