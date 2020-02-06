@@ -71,7 +71,7 @@ class EFWDriver(AbstractSDKDriver):
     def get_product_ids(self):
         """Get product IDs of supported(?) EFW filterwheels.
 
-        The SDK documentation does not explain that the product IDs returned by this function are,
+        The SDK documentation does not explain what the product IDs returned by this function are,
         but from experiment and analogy with a similar function in the ASI camera SDK it appears
         this is a list of the product IDs of the filterwheels that the SDK supports, not the
         product IDs of the connected filterwheels. There appears to be no way to obtain the
