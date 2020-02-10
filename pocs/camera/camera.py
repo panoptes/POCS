@@ -645,14 +645,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             headers = {}
 
         # Move the filterwheel if necessary
-        if (self.filterwheel is not None) and (observation.filter_name is not None):
+        if self.filterwheel is not None:
 
-            try:
-                self.filterwheel.move_to(observation.filter_name, blocking=True)
-            except Exception as e:
-                self.logger.error(f'Error moving filterwheel on {self} to'
-                                  f' {observation.filter_name}: {e}')
-                raise(e)
+            if observation.filter_name is not None:
+
+                try:
+                    # Move the filterwheel
+                    self.filterwheel.move_to(observation.filter_name, blocking=True)
+                except Exception as e:
+                    self.logger.error(f'Error moving filterwheel on {self} to'
+                                      f' {observation.filter_name}: {e}')
+                    raise(e)
+
+            else:
+                self.logger.info(f'Filter {observation.filter_name} requested by'
+                    ' observation but {self} has no filterwheel, using {self.filter_type}.')
 
         start_time = headers.get('start_time', current_time(flatten=True))
 
@@ -719,7 +726,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'exptime': exptime
         }
         if observation.filter_name is not None:
-            metadata['filter_name'] = observation.filter_name
+            metadata['filter_request'] = observation.filter_name
         metadata.update(headers)
 
         return exptime, file_path, image_id, metadata
