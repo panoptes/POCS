@@ -659,7 +659,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             else:
                 self.logger.info(f'Filter {observation.filter_name} requested by'
-                    ' observation but {self} has no filterwheel, using {self.filter_type}.')
+                                 ' observation but {self} has no filterwheel, using'
+                                 ' {self.filter_type}.')
 
         start_time = headers.get('start_time', current_time(flatten=True))
 
