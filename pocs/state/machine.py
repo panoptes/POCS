@@ -133,10 +133,11 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
-
                 # Wait for horizon level if state requires.
                 with suppress(KeyError):
-                    self.wait_until_safe(horizon=self._horizon_lookup[self.state])
+                    horizon_limit = self._horizon_lookup[self.state]
+                    self.logger.info(f'Horizon limit for {self.state}: {horizon_limit}')
+                    self.wait_until_safe(horizon=horizon_limit)
 
                 try:
                     state_changed = self.goto_next_state()
@@ -246,14 +247,15 @@ class PanStateMachine(Machine):
         dest_state_name = event_data.transition.dest
         dest_state = self.get_state(dest_state_name)
 
+        # See if the state requires a certain horizon limit.
+        required_horizon = self._horizon_lookup.get(dest_state_name, 'observe')
+
         # It's always safe to be in some states
         if dest_state.is_always_safe:
             self.logger.debug(f"Always safe to move to {dest_state_name}")
             is_safe = True
-        elif dest_state.is_at_twilight:
-            is_safe = self.is_safe(horizon='flat')
         else:
-            is_safe = self.is_safe()
+            is_safe = self.is_safe(horizon=required_horizon)
 
         return is_safe
 
