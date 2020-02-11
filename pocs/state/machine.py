@@ -135,9 +135,9 @@ class PanStateMachine(Machine):
             if self.do_states:
                 # Wait for horizon level if state requires.
                 with suppress(KeyError):
-                    horizon_limit = self._horizon_lookup[self.state]
-                    self.logger.info(f'Horizon limit for {self.state}: {horizon_limit}')
-                    self.wait_until_safe(horizon=horizon_limit)
+                    required_horizon = self._horizon_lookup[self.state]
+                    self.logger.info(f'Horizon limit for {self.state}: {required_horizon}')
+                    self.wait_until_safe(horizon=required_horizon)
 
                 try:
                     state_changed = self.goto_next_state()
