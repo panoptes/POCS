@@ -45,6 +45,7 @@ class FilterWheel(AbstractFilterWheel):
                          serial_number=serial_number,
                          *args, **kwargs)
 
+
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -69,6 +70,11 @@ class FilterWheel(AbstractFilterWheel):
         if status['status'] == 'UNKNOWN':
             self.logger.warning("{} returned 'UNKNOWN' status".format(self))
         return bool(status['status'] == 'BUSY')
+
+    @property
+    def is_unidirectional(self):
+        # All SBIG filterwheels unidirectional?
+        return True
 
 ##################################################################################################
 # Methods
@@ -97,22 +103,22 @@ class FilterWheel(AbstractFilterWheel):
         self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
-    def reinitialise(self):
+    def recalibrate(self):
         """
-        Reinitialises/calibrates the filter wheel. It should not be necessary to call this as
+        Reinitialises/recalibrates the filter wheel. It should not be necessary to call this as
         SBIG filter wheels initialise and calibrate themselves on power up.
         """
         results = self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
-        self.logger.info("{} reinitialised".format(self))
+        self.logger.info("{} recalibrated".format(self))
 
 ##################################################################################################
 # Private methods
 ##################################################################################################
 
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         self._driver.cfw_goto(handle=self._handle,
                               position=position,
-                              cfw_event=move_event,
+                              cfw_event=self._move_event,
                               timeout=self._timeout)
 
     def _add_fits_keywords(self, header):

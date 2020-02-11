@@ -49,6 +49,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self._timeout = timeout
         self._serial_number = serial_number
         self._connected = False
+        # Some filter wheels needs this to track whether they are moving or not.
+        self._move_event = threading.Event()
+        self._move_event.set()
 
         self.logger.debug('Filter wheel created: {}'.format(self))
 
@@ -84,8 +87,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @property
     def is_ready(self):
-        # A filterwheel is 'ready' if it isn't currently moving.
-        return not self.is_moving
+        # A filterwheel is 'ready' if it is connected and isn't currently moving.
+        return self.is_connected and not self.is_moving
 
     @property
     def camera(self):
@@ -137,6 +140,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def current_filter(self, filter_name):
         self.move_to(filter_name, blocking=True)
 
+    @property
+    def is_unidirectional(self):
+        raise NotImplementedError
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -176,26 +183,30 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             'g_04'
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
+
         if self.camera and self.camera.is_exposing:
             msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
+            raise error.PanError(msg)
+
+        if self.is_moving:
+            msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
             raise error.PanError(msg)
 
         position = self._parse_position(position)
         self.logger.info("Moving {} to position {} ({})".format(
             self, position, self.filter_names[position - 1]))
-        move_event = threading.Event()
 
         if position == self.position:
-            # Don't go nowhere
-            move_event.set()
-            return move_event
+            # Already at requested position, don't go nowhere.
+            return self._move_event
 
-        self._move_to(position, move_event)  # Private method to actually perform the move.
+        self._move_event.clear()
+        self._move_to(position)  # Private method to actually perform the move.
 
         if blocking:
-            move_event.wait()
+            self._move_event.wait()
 
-        return move_event
+        return self._move_event
 
 ##################################################################################################
 # Private methods

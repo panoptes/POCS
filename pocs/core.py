@@ -276,7 +276,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe'):
+    def is_safe(self, no_warning=False, horizon='observe', **kwargs):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -400,18 +400,31 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, required_space=0.25 * u.gigabyte):
+    def has_free_space(self, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB)
 
         Args:
             required_space (u.gigabyte, optional): Amount of free space required
-            for operation
+                for operation
+            low_space_percent (float, optional): Give warning if space is less
+                than this times the required space, default 1.5, i.e.,
+                the logs will show a warning at `.25 GB * 1.5 = 0.375 GB`.
 
         Returns:
             bool: True if enough space
         """
+        req_space = required_space.to(u.gigabyte)
         free_space = get_free_space()
-        return free_space.value >= required_space.to(u.gigabyte).value
+
+        space_is_low = free_space.value <= (req_space.value * low_space_percent)
+        has_space = free_space.value >= req_space.value
+
+        if not has_space:
+            self.logger.error(f'No disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')
+        elif space_is_low:
+            self.logger.warning(f'Low disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')
+
+        return has_space
 
     def has_ac_power(self, stale=90):
         """Check for system AC power.
@@ -478,7 +491,7 @@ class POCS(PanStateMachine, PanBase):
 # Convenience Methods
 ##################################################################################################
 
-    def sleep(self, delay=2.5, with_status=True):
+    def sleep(self, delay=2.5, with_status=True, **kwargs):
         """ Send POCS to sleep
 
         Loops for `delay` number of seconds. If `delay` is more than 10.0 seconds,
@@ -587,14 +600,14 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             time.sleep(sleep_delay)
 
-    def wait_until_safe(self):
+    def wait_until_safe(self, **kwargs):
         """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe(no_warning=True):
-            self.sleep(delay=self._safe_delay)
+        while not self.is_safe(no_warning=True, **kwargs):
+            self.sleep(delay=self._safe_delay, **kwargs)
 
 ##################################################################################################
 # Class Methods

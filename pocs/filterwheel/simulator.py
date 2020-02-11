@@ -23,9 +23,9 @@ class FilterWheel(AbstractFilterWheel):
         serial_number (str): serial number of the filter wheel
         move_time (astropy.units.Quantity, optional): time to move the filter wheel by one
             position, optional, default 1 second.
-        move_bidirectional (bool, optional): if True will simulate filter wheel which can rotate in
-            either direction, if False (default) will similate a filter wheel that only moves in
-            one direction.
+        unidirectional (bool, optional): If True filterwheel will only rotate in one direction, if
+            False filterwheel will move in either to get to the requested position via the
+            shortest path. Default is True.
     """
 
     def __init__(self,
@@ -36,7 +36,7 @@ class FilterWheel(AbstractFilterWheel):
                  timeout=10 * u.second,
                  serial_number=None,
                  move_time=1 * u.second,
-                 move_bidirectional=False,
+                 unidirectional=True,
                  *args, **kwargs):
         super().__init__(name=name,
                          model=model,
@@ -49,7 +49,7 @@ class FilterWheel(AbstractFilterWheel):
             self._move_time = move_time.to(u.second).value
         else:
             self._move_time = move_time
-        self._move_birectional = bool(move_bidirectional)
+        self._unidirectional = bool(unidirectional)
         self.connect()
         self.logger.info("Filter wheel {} initialised".format(self))
 
@@ -69,6 +69,10 @@ class FilterWheel(AbstractFilterWheel):
         """ Is the filterwheel currently moving """
         return self._moving
 
+    @property
+    def is_unidirectional(self):
+        return self._unidirectional
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -85,41 +89,40 @@ class FilterWheel(AbstractFilterWheel):
 # Private methods
 ##################################################################################################
 
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         if self._moving:
-            move_event.set()
+            self._move_event.set()
             msg = "Attempt to move filter wheel when already moving"
             self.logger.error(msg)
             raise RuntimeError(msg)
 
         move_distance = position - self.position
-        if self._move_birectional:
-            # Filter wheel can move either direction, just need magnitude of the move.
-            move_distance = abs(move_distance)
-        else:
+        if self.is_unidirectional:
             # Filter wheel can only move one way, will have to go the long way around for -ve moves
             move_distance = move_distance % self._n_positions
+        else:
+            # Filter wheel can move either direction, just need magnitude of the move.
+            move_distance = abs(move_distance)
         move_duration = move_distance * self._move_time
 
         move = threading.Timer(interval=move_duration,
                                function=self._complete_move,
-                               args=(position, move_event))
+                               args=(position,))
         self._position = float('nan')
         self._moving = True
         move.start()
 
         if move_duration > self._timeout:
             timeout_timer = threading.Timer(interval=self._timeout,
-                                            function=self._timeout_move,
-                                            args=(move_event,))
+                                            function=self._timeout_move)
             timeout_timer.start()
 
-    def _complete_move(self, position, move_event):
+    def _complete_move(self, position):
         self._moving = False
         self._position = position
-        move_event.set()
+        self._move_event.set()
 
-    def _timeout_move(self, move_event):
-        move_event.set()
+    def _timeout_move(self):
+        self._move_event.set()
         msg = "Timeout waiting for filter wheel move to complete"
         raise error.Timeout(msg)
