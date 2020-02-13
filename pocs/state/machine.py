@@ -128,17 +128,21 @@ class PanStateMachine(Machine):
 
         while self.keep_running and self.connected:
             state_changed = False
+            self.logger.info(f'Run loop: {self.state}')
+            self.logger.info(f'Horizon limits: {self._horizon_lookup}')
 
             self.check_messages()
 
             # If we are processing the states
             if self.do_states:
                 # Wait for horizon level if state requires.
+                self.logger.warning(f'Checking horizon limits for next state: {self.next_state}')
                 with suppress(KeyError):
-                    required_horizon = self._horizon_lookup[self.state]
+                    required_horizon = self._horizon_lookup[self.next_state]
                     self.logger.info(f'Horizon limit for {self.state}: {required_horizon}')
                     self.wait_until_safe(horizon=required_horizon)
 
+                self.logger.warning('Going to next state')
                 try:
                     state_changed = self.goto_next_state()
                 except Exception as e:
