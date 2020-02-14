@@ -4,6 +4,7 @@ import shutil
 import signal
 import time
 
+from pytz import utc
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
@@ -77,8 +78,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
         _time = _time.isot.split('.')[0].replace('T', ' ')
 
     if datetime:
-        # Add UTC timezone
-        _time = _time.to_datetime()
+        _time = _time.to_datetime(timezone=utc)
 
     return _time
 
