@@ -1,53 +1,34 @@
 import sys
+from requests.exceptions import ConnectionError
 
-from pocs import hardware
 from pocs import __version__
-from pocs.utils import config
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-
-# Global vars
-_config = None
-
-
-def reset_global_config():
-    """Reset the global _config to None.
-
-    Globals such as _config make tests non-hermetic. Enable conftest.py to clear _config
-    in an explicit fashion.
-    """
-    global _config
-    _config = None
+from panoptes.utils.database import PanDB
+from panoptes.utils.config import client
+from panoptes.utils.logger import get_root_logger
 
 
 class PanBase(object):
 
     """ Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, config).
+    Defines common properties for each class (e.g. logger, db).
     """
 
-    def __init__(self, *args, **kwargs):
-        # Load the default and local config files
-        global _config
-        if _config is None:
-            ignore_local_config = kwargs.get('ignore_local_config', False)
-            _config = config.load_config(ignore_local=ignore_local_config)
-
+    def __init__(self, config_port='6563', *args, **kwargs):
         self.__version__ = __version__
 
-        # Update with run-time config
-        if 'config' in kwargs:
-            _config.update(kwargs['config'])
-
-        self._check_config(_config)
-        self.config = _config
+        self._config_port = config_port
 
         self.logger = kwargs.get('logger')
         if not self.logger:
             self.logger = get_root_logger()
 
-        self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
+        simulators = self.get_config('simulator', default=False)
+        if simulators:
+            self.logger.critical(f'Using simulators: {simulators}')
+
+        # Check to make sure config has some items we need
+        self._check_config()
 
         # Get passed DB or set up new connection
         _db = kwargs.get('db', None)
@@ -56,20 +37,35 @@ class PanBase(object):
             db_type = kwargs.get('db_type', None)
             db_name = kwargs.get('db_name', None)
 
-            if db_type is not None:
-                self.config['db']['type'] = db_type
-            if db_name is not None:
-                self.config['db']['name'] = db_name
-
-            db_type = self.config['db']['type']
-            db_name = self.config['db']['name']
+            db_type = self.get_config('db.type')
+            db_name = self.get_config('db.name')
 
             _db = PanDB(db_type=db_type, db_name=db_name, logger=self.logger)
 
         self.db = _db
 
-    def _check_config(self, temp_config):
+    def get_config(self, *args, **kwargs):
+        """Thin-wrapper around client based get_config that sets default port.
+
+        See `panoptes.utils.config.client.get_config` for more information.
+
+        Args:
+            *args: Passed to get_client
+            **kwargs: Passed to get_client
+        """
+        config_value = None
+        try:
+            config_value = client.get_config(port=self._config_port, *args, **kwargs)
+        except ConnectionError as e:
+            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+        except Exception as e:
+            self.logger.critical(f'Exception connecting to config_server: {e!r}')
+
+        return config_value
+
+    def _check_config(self):
         """ Checks the config file for mandatory items """
+
         items_to_check = [
             'directories',
             'mount',
@@ -77,21 +73,9 @@ class PanBase(object):
         ]
 
         for item in items_to_check:
-            config_item = temp_config.get(item, None)
-            # Warn if not found.
+            config_item = self.get_config(item, default={})
             if config_item is None:
                 self.logger.critical(f'Problem looking up {item} in _check_config')
-            # Error if not found or empty.
+                self.logger.critical(f'Using {self._config_port}')
             if config_item is None or len(config_item) == 0:
                 sys.exit(f'{item} must be specified in config, exiting')
-
-    def __getstate__(self):  # pragma: no cover
-        d = dict(self.__dict__)
-
-        if 'logger' in d:
-            del d['logger']
-
-        if 'db' in d:
-            del d['db']
-
-        return d

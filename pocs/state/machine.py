@@ -4,9 +4,9 @@ import yaml
 from contextlib import suppress
 from transitions.extensions.states import Tags as MachineState
 
-from pocs.utils import error
-from pocs.utils import listify
-from pocs.utils import load_module
+from panoptes.utils import error
+from panoptes.utils import listify
+from panoptes.utils.library import load_module
 
 can_graph = False
 try:  # pragma: no cover
@@ -129,8 +129,6 @@ class PanStateMachine(Machine):
         while self.keep_running and self.connected:
             state_changed = False
             self.logger.info(f'Run loop: {self.state}')
-            self.logger.info(f'Horizon limits: {self._horizon_lookup}')
-
             self.check_messages()
 
             # If we are processing the states
@@ -371,7 +369,7 @@ class PanStateMachine(Machine):
         try:
             state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
 
-            image_dir = self.config['directories']['images']
+            image_dir = self.get_config('directories.images')
             os.makedirs('{}/state_images/'.format(image_dir), exist_ok=True)
 
             fn = '{}/state_images/{}.svg'.format(image_dir, state_id)

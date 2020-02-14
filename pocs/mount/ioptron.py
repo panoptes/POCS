@@ -4,8 +4,8 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from pocs.utils import current_time
-from pocs.utils import error as error
+from panoptes.utils import current_time
+from panoptes.utils import error as error
 from pocs.mount.serial import AbstractSerialMount
 
 
@@ -150,7 +150,6 @@ class Mount(AbstractSerialMount):
 
             expected_version = self.commands.get('version').get('response')
             expected_mount_info = self.commands.get('mount_info').get('response')
-            # expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron
@@ -175,6 +174,7 @@ class Mount(AbstractSerialMount):
              dec_seconds=15.,
              *args, **kwargs):
         """Slews to the park position and parks the mount.
+
         This will first move the mount to the home position, then move the RA axis
         in the direction specified at 0.9x sidereal rate (the fastest) for the number
         of seconds requested. Then move the Dec axis in a similar manner. This should
@@ -195,7 +195,6 @@ class Mount(AbstractSerialMount):
 
         Returns:
             bool: indicating success
-        """
 
         if self.is_parked:
             self.logger.info("Mount is parked")
@@ -270,7 +269,7 @@ class Mount(AbstractSerialMount):
         # Time
         self.query('disable_daylight_savings')
 
-        gmt_offset = self.config.get('location').get('gmt_offset', 0)
+        gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.query('set_gmt_offset', gmt_offset)
 
         now = current_time() + gmt_offset * u.minute

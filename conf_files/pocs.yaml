@@ -15,13 +15,13 @@ pan_id: PAN000
 
 location:
     name: Mauna Loa Observatory
-    latitude: 19.54 # Degrees
-    longitude: -155.58 # Degrees
-    elevation: 3400.0 # Meters
-    horizon: 30 # Degrees; targets must be above this to be considered valid.
-    flat_horizon: -6 # Degrees - Flats when sun between this and focus horizon.
-    focus_horizon: -12 # Degrees - Dark enough to focus on stars.
-    observe_horizon: -18 # Degrees - Sun below this limit to observe.
+    latitude: 19.54 deg
+    longitude: -155.58 deg
+    elevation: 3400.0 m
+    horizon: 30 deg # targets must be above this to be considered valid.
+    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+    focus_horizon: -12 deg # Dark enough to focus on stars.
+    observe_horizon: -18 deg # Sun below this limit to observe.
     timezone: US/Hawaii
     gmt_offset: -600 # Offset in minutes from GMT during.
                      # standard time (not daylight saving).
@@ -91,14 +91,14 @@ observations:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $POCS/pocs/utils/google/README.md for details about authentication.
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
 #
 # Options to change:
 #   image_storage: If images should be uploaded to Google Cloud Storage.
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: True
+    image_storage: False
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
@@ -114,7 +114,6 @@ panoptes_network:
 #     slack:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
-
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.

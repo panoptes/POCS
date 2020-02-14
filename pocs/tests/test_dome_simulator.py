@@ -1,42 +1,23 @@
-import copy
 import pytest
 
-import pocs.dome
 from pocs.dome import simulator
+from pocs.dome import create_dome_simulator
+
+from panoptes.utils.config.client import set_config
 
 
-# Yields two different dome controllers configurations,
-# both with the pocs.dome.simulator.Dome class, but one
-# overriding the specified driver with the simulator,
-# the other explicitly specified.
-@pytest.fixture(scope="function", params=[False, True])
-def dome(request, config):
-    config = copy.deepcopy(config)
-    is_simulator = request.param
-    if is_simulator:
-        config.update({
-            'dome': {
-                'brand': 'Astrohaven',
-                'driver': 'astrohaven',
-            },
-            'simulator': ['something', 'dome', 'another'],
-        })
-    else:
-        config.update({
-            'dome': {
-                'brand': 'Simulacrum',
-                'driver': 'simulator',
-            },
-        })
-        del config['simulator']
-    the_dome = pocs.dome.create_dome_from_config(config)
+@pytest.fixture(scope="function")
+def dome(dynamic_config_server, config_port):
+
+    set_config('dome', {
+        'brand': 'Simulacrum',
+        'driver': 'simulator',
+    }, port=config_port)
+
+    the_dome = create_dome_simulator(config_port=config_port)
+
     yield the_dome
-    if is_simulator:
-        # Should have marked the dome as being simulated.
-        assert config['dome']['simulator']
-    else:
-        # Doesn't know that a simulator was specified.
-        assert 'simulator' not in config['dome']
+
     the_dome.disconnect()
 
 

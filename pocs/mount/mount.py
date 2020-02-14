@@ -6,9 +6,9 @@ from astropy.coordinates import SkyCoord
 
 from pocs.base import PanBase
 
-from pocs.utils import current_time
-from pocs.utils import CountdownTimer
-from pocs.utils import error
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import CountdownTimer
 
 
 class AbstractMount(PanBase):
@@ -43,7 +43,7 @@ class AbstractMount(PanBase):
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
-        self.mount_config = self.config.get('mount')
+        self.mount_config = self.get_config('mount')
 
         self.logger.debug("Mount config: {}".format(self.mount_config))
 
@@ -93,7 +93,7 @@ class AbstractMount(PanBase):
         raise NotImplementedError
 
     def disconnect(self):
-        self.logger.info('Connecting to mount')
+        self.logger.info('Disconnecting mount')
         if not self.is_parked:
             self.park()
 
@@ -571,6 +571,10 @@ class AbstractMount(PanBase):
 
         Returns:
             bool: indicating success
+
+        Args:
+            blocking (bool, optional): If command should block while slewing to
+                home, default False.
         """
         response = 0
 

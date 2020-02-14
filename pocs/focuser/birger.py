@@ -6,7 +6,7 @@ from warnings import warn
 from contextlib import suppress
 
 from pocs.focuser import AbstractFocuser
-from pocs.utils import error
+from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')

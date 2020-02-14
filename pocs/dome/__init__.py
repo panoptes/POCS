@@ -1,11 +1,12 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from pocs.base import PanBase
-import pocs.utils
-import pocs.utils.logger as logger_module
+from panoptes.utils.library import load_module
+from panoptes.utils.config.client import get_config
+from panoptes.utils.logger import get_root_logger
 
 
-def create_dome_from_config(config, logger=None):
+def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -14,22 +15,40 @@ def create_dome_from_config(config, logger=None):
     by a single dome driver class.
     """
     if not logger:
-        logger = logger_module.get_root_logger()
-    if 'dome' not in config:
+        logger = get_root_logger()
+
+    dome_config = get_config('dome', port=config_port)
+
+    if dome_config is None:
         logger.info('No dome in config.')
         return None
-    dome_config = config['dome']
-    if 'dome' in config.get('simulator', []):
-        brand = 'simulator'
-        driver = 'simulator'
-        dome_config['simulator'] = True
-    else:
-        brand = dome_config.get('brand')
-        driver = dome_config['driver']
+
+    brand = dome_config['brand']
+    driver = dome_config['driver']
+
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
-    module = pocs.utils.load_module('pocs.dome.{}'.format(driver))
-    dome = module.Dome(config=config)
+    module = load_module('pocs.dome.{}'.format(driver))
+    dome = module.Dome(config_port=config_port, *args, **kwargs)
     logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
+
+    return dome
+
+
+def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
+    if not logger:
+        logger = get_root_logger()
+
+    dome_config = get_config('dome', port=config_port)
+
+    brand = dome_config['brand']
+    driver = dome_config['driver']
+
+    logger.debug('Creating dome simulator: brand={}, driver={}'.format(brand, driver))
+
+    module = load_module(f'pocs.dome.{driver}')
+    dome = module.Dome(config_port=config_port, *args, **kwargs)
+    logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
+
     return dome
 
 
@@ -53,8 +72,8 @@ class AbstractDome(PanBase):
         caller doesn't need to know the params needed by a specific type of
         dome interface class.
         """
-        super().__init__(*args, **kwargs)
-        self._dome_config = self.config['dome']
+        PanBase.__init__(self, *args, **kwargs)
+        self._dome_config = self.get_config('dome')
 
         # Sub-class directly modifies this property to record changes.
         self._is_connected = False

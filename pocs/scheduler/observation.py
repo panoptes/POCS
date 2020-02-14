@@ -10,7 +10,7 @@ class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, filter_name=None, **kwargs):
+                 exp_set_size=10, priority=100, *args, **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -42,7 +42,7 @@ class Observation(PanBase):
                 will override the default filter name (default: {None}).
 
         """
-        PanBase.__init__(self)
+        PanBase.__init__(self, *args, **kwargs)
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
@@ -71,7 +71,7 @@ class Observation(PanBase):
         self._min_duration = self.exptime * self.min_nexp
         self._set_duration = self.exptime * self.exp_set_size
 
-        self._image_dir = self.config['directories']['images']
+        self._image_dir = self.get_config('directories.images')
         self._seq_time = None
 
         self.merit = 0.0

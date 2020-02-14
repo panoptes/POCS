@@ -9,10 +9,10 @@ import threading
 import time
 
 from pocs.sensors import arduino_io
-import pocs.utils.error as error
-from pocs.utils.logger import get_root_logger
-from pocs.utils import CountdownTimer
-from pocs.utils import rs232
+import panoptes.utils.error as error
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils import CountdownTimer
+from panoptes.utils import rs232
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description manufacturer')
 
@@ -20,10 +20,10 @@ SerDevInfo = collections.namedtuple('SerDevInfo', 'device description manufactur
 @pytest.fixture(scope='function')
 def serial_handlers():
     # Install our test handlers for the duration.
-    serial.protocol_handler_packages.insert(0, 'pocs.serial_handlers')
+    serial.protocol_handler_packages.insert(0, 'panoptes.utils.tests.serial_handlers')
     yield True
     # Remove our test handlers.
-    serial.protocol_handler_packages.remove('pocs.serial_handlers')
+    serial.protocol_handler_packages.remove('panoptes.utils.tests.serial_handlers')
 
 
 def get_serial_port_info():

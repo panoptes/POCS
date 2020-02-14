@@ -1,12 +1,12 @@
 import requests
 import logging
 
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils.database import PanDB
-from pocs.utils.logger import get_root_logger
-from pocs.utils.messaging import PanMessaging
-from pocs.utils.config import load_config
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config
+from panoptes.utils.database import PanDB
+from panoptes.utils.logger import get_root_logger
+from panoptes.utils.messaging import PanMessaging
 
 
 class RemoteMonitor(object):
@@ -15,12 +15,12 @@ class RemoteMonitor(object):
     def __init__(self, endpoint_url=None, sensor_name=None, *args, **kwargs):
         self.logger = get_root_logger()
         self.logger.setLevel(logging.INFO)
-
-        self.config = load_config()
+        self.logger.info(f'Setting up remote sensor {sensor_name}')
 
         # Setup the DB either from kwargs or config.
         self.db = None
-        db_type = self.config.get('db.type', 'file')
+        db_type = get_config('db.type', default='file')
+
         if 'db_type' in kwargs:
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
@@ -34,7 +34,7 @@ class RemoteMonitor(object):
 
         if endpoint_url is None:
             # Get the config for the sensor
-            endpoint_url = self.config.get(f'environment.{sensor_name}.url', None)
+            endpoint_url = get_config(f'environment.{sensor_name}.url')
             if endpoint_url is None:
                 raise error.PanError(f'No endpoint_url for {sensor_name}')
 
@@ -48,7 +48,8 @@ class RemoteMonitor(object):
 
     def send_message(self, msg, topic='environment'):
         if self.messaging is None:
-            msg_port = self.config.get('messaging.msg_port')
+            msg_port = get_config('messaging.msg_port')
+
             try:
                 self.messaging = PanMessaging.create_publisher(msg_port)
             except Exception as e:
@@ -59,8 +60,10 @@ class RemoteMonitor(object):
 
     def capture(self, store_result=True, send_message=True):
         """Read JSON from endpoint url and capture data.
+
         Note:
             Currently this doesn't do any processing or have a callback.
+
         Returns:
             sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """

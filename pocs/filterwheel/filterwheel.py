@@ -4,8 +4,8 @@ from abc import ABCMeta, abstractmethod
 from astropy import units as u
 
 from pocs.base import PanBase
-from pocs.utils import listify
-from pocs.utils import error
+from panoptes.utils import listify
+from panoptes.utils import error
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):

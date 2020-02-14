@@ -7,8 +7,8 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from string import Template
 
-from pocs.utils import error
-from pocs.utils import theskyx
+from panoptes.utils import error
+from panoptes.utils import theskyx
 
 from pocs.mount import AbstractMount
 
@@ -20,7 +20,7 @@ class Mount(AbstractMount):
         super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
-        template_dir = self.config['mount']['template_dir']
+        template_dir = self.get_config('mount.template_dir')
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
@@ -343,10 +343,10 @@ class Mount(AbstractMount):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.config['mount'].get('brand')
+            model = self.get_config('mount.brand')
             if model is not None:
-                mount_dir = self.config['directories']['mounts']
-                conf_file = f'{mount_dir}/{model}.yaml'
+                mount_dir = self.get_config('directories.mounts')
+                conf_file = f"{mount_dir}/{model}.yaml"
 
                 if os.path.isfile(conf_file):
                     self.logger.debug("Loading mount commands file: {}".format(conf_file))

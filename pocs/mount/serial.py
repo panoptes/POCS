@@ -1,8 +1,8 @@
 import os
 import yaml
 
-from pocs.utils import error
-from pocs.utils import rs232
+from panoptes.utils import error
+from panoptes.utils import rs232
 
 from pocs.mount import AbstractMount
 
@@ -18,13 +18,14 @@ class AbstractSerialMount(AbstractMount):
 
         # Setup our serial connection at the given port
         try:
-            serial_config = self.config['mount']['serial']
+            serial_config = self.get_config('mount.serial')
             self.serial = rs232.SerialData(**serial_config)
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")
         except KeyError:
             self.logger.critical(
-                'No serial config specified, cannot create mount\n {}', self.config['mount'])
+                'No serial config specified, cannot create mount {}',
+                self.get_config('mount'))
         except Exception as e:
             self.logger.critical(e)
 
@@ -175,9 +176,9 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.config['mount'].get('brand')
+            model = self.get_config('mount.brand')
             if model is not None:
-                mount_dir = self.config['directories']['mounts']
+                mount_dir = self.get_config('directories.mounts')
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):

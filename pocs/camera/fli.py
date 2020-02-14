@@ -7,8 +7,8 @@ from astropy import units as u
 from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.libfli import FLIDriver
 from pocs.camera import libfliconstants as c
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import error
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import error
 
 
 class Camera(AbstractSDKCamera):

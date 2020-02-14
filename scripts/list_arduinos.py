@@ -3,7 +3,7 @@
 import sys
 
 from pocs.sensors import arduino_io
-from pocs.utils import rs232
+from panoptes.utils import rs232
 
 
 # Support testing by just listing the available devices.

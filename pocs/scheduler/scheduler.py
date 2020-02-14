@@ -8,8 +8,8 @@ from astropy import units as u
 from astropy.coordinates import get_moon
 
 from pocs.base import PanBase
-from pocs.utils import error
-from pocs.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import current_time
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 
@@ -56,7 +56,7 @@ class BaseScheduler(PanBase):
         self._current_observation = None
         self.observed_list = OrderedDict()
 
-        if not self.config['scheduler'].get('check_file', False):
+        if not self.get_config('scheduler.check_file', default=False):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
@@ -232,17 +232,22 @@ class BaseScheduler(PanBase):
             field_config['exptime'] = float(field_config['exptime']) * u.second
 
         self.logger.debug("Adding {} to scheduler", field_config['name'])
-        field = Field(field_config['name'], field_config['position'])
+        field = Field(field_config['name'], field_config['position'],
+                      config_port=self._config_port)
+        self.logger.debug("Created {} Field", field_config['name'])
 
         try:
-            obs = Observation(field, **field_config)
-        except Exception:
-            raise error.InvalidObservation(
-                "Skipping invalid field config: {}".format(field_config))
+            self.logger.debug(f"Creating observation for {field_config!r}")
+            obs = Observation(field, config_port=self._config_port, **field_config)
+            self.logger.debug(f"Observation created {obs}")
+        except Exception as e:
+            raise error.InvalidObservation(f"Skipping invalid field config: {field_config!r} {e!r}")
         else:
+            self.logger.debug(f"Checking if {field.name} in self._observations")
             if field.name in self._observations:
                 self.logger.debug("Overriding existing entry for {}".format(field.name))
             self._observations[field.name] = obs
+            self.logger.debug(f"{obs} added")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
@@ -276,11 +281,11 @@ class BaseScheduler(PanBase):
                 except AssertionError:
                     self.logger.debug("Skipping duplicate field.")
                 except Exception as e:
-                    self.logger.warning("Error adding field: {}", e)
+                    self.logger.warning(f"Error adding field: {e!r}")
 
     def set_common_properties(self, time):
 
-        horizon_limit = self.config['location'].get('observe_horizon', -18 * u.degree)
+        horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
         self.common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
             'moon': get_moon(time, self.observer.location),

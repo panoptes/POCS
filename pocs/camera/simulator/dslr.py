@@ -10,8 +10,8 @@ from astropy import units as u
 from astropy.io import fits
 
 from pocs.camera import AbstractCamera
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):

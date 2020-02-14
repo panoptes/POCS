@@ -13,15 +13,15 @@ from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 
+from panoptes.utils import current_time
+from panoptes.utils import error
+from panoptes.utils import listify
+from panoptes.utils import images as img_utils
+from panoptes.utils import get_quantity_value
+from panoptes.utils import CountdownTimer
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.library import load_module
 from pocs.base import PanBase
-from pocs.utils import current_time
-from pocs.utils import error
-from pocs.utils import listify
-from pocs.utils import load_module
-from pocs.utils import images as img_utils
-from pocs.utils import get_quantity_value
-from pocs.utils import CountdownTimer
-from pocs.utils.images import fits as fits_utils
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -234,7 +234,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             at_target = abs(self.temperature - self.target_temperature) \
                 < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
-                self.logger.warning('Unstable CCD temperature in {}'.format(self))
+                self.logger.warning(f'Unstable CCD temperature in {self}.')
+                self.logger.warning(f'Cooling power is {self.cooling_power}.')
+                self.logger.warning(f'Temp={self.temperature} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
                 return False
             else:
                 return True
@@ -421,15 +423,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                               current_time(pretty=True))
 
         try:
-            self.logger.debug("Processing {}".format(image_title))
+            self.logger.debug("Making pretty image for {}".format(file_path))
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
                                         link_latest=info['is_primary'])
         except Exception as e:  # pragma: no cover
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
+        self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, info)
-        self.logger.debug("Finished processing FITS.")
+        self.logger.debug(f'Finished FITS processing for {file_path}')
         with suppress(Exception):
             info['exptime'] = info['exptime'].value
 
@@ -619,15 +622,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu),
                        'Electrons/ADU')
         with suppress(NotImplementedError):
-            # ZWO cameras have ADC bit depths with differ from BITPIX
-            header.set('BITDEPTH', int(get_quantity_value(self.bit_depth, u.bit)), 'ADC bit depth')
+==== BASE ====
+            header.set('CCD-TEMP', get_quantity_value(self.ccd_temp, u.Celsius), 'Degrees C')
         with suppress(NotImplementedError):
-            # Some non cooled cameras can still report the image sensor temperature
-            header.set('CCD-TEMP', get_quantity_value(self.temperature, u.Celsius), 'Degrees C')
-        if self.is_cooled_camera:
-            header.set('SET-TEMP', get_quantity_value(self.target_temperature, u.Celsius),
-                       'Degrees C')
-            header.set('COOL-POW', get_quantity_value(self.cooling_power, u.percent),
+            header.set('SET-TEMP', get_quantity_value(self.ccd_set_point, u.Celsius), 'Degrees C')
+        with suppress(NotImplementedError):
+            header.set('COOL-POW', get_quantity_value(self.ccd_cooling_power, u.percent),
+==== BASE ====
                        'Percentage')
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
@@ -692,7 +693,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             file_path = filename
 
-        unit_id = self.config['pan_id']
+        unit_id = self.get_config('pan_id')
 
         # Make the image_id
         image_id = '{}_{}_{}'.format(
@@ -738,6 +739,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
         fits_utils.update_observation_headers(file_path, info)
+        self.logger.debug("Finished FITS headers: {}".format(file_path))
+
         return file_path
 
     def _create_subcomponent(self, subcomponent, class_name):
@@ -773,11 +776,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 try:
                     module = load_module(module_name)
                 except error.NotFound as err:
-                    self.logger.critical("Couldn't import {} module {}!".format(
-                        class_name, module_name))
+                    self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
                 subcomponent_kwargs = copy.deepcopy(subcomponent)
-                subcomponent_kwargs.update({'camera': self, 'config': self.config})
+                subcomponent_kwargs.update({'camera': self})
                 setattr(self,
                         class_name_lower,
                         getattr(module, class_name)(**subcomponent_kwargs))

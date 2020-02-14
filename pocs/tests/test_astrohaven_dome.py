@@ -1,28 +1,29 @@
 # Test the Astrohaven dome interface using a simulated dome controller.
 
-import copy
 import pytest
 import serial
 
-import pocs.dome
+from pocs import hardware
 from pocs.dome import astrohaven
+from pocs.dome import create_dome_simulator
+
+from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope='function')
-def dome(config):
+def dome(dynamic_config_server, config_port):
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('pocs.dome')
 
     # Modify the config so that the dome uses the right controller and port.
-    config = copy.deepcopy(config)
-    dome_config = config.setdefault('dome', {})
-    dome_config.update({
+    set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
+    set_config('dome', {
         'brand': 'Astrohaven',
         'driver': 'astrohaven',
         'port': 'astrohaven_simulator://',
-    })
-    del config['simulator']
-    the_dome = pocs.dome.create_dome_from_config(config)
+    }, port=config_port)
+    the_dome = create_dome_simulator(config_port=config_port)
+
     yield the_dome
     try:
         the_dome.disconnect()

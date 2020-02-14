@@ -1,4 +1,4 @@
-from pocs import utils as pocs_utils
+from panoptes.utils import error
 
 MAX_EXTRA_TIME = 60  # seconds
 
@@ -20,7 +20,7 @@ def on_enter(event_data):
         camera_events = list(camera_events_info.values())
         pocs.wait_for_events(camera_events, maximum_duration, event_type='observing')
 
-    except pocs_utils.error.Timeout:
+    except error.Timeout:
         pocs.logger.warning(
             "Timeout while waiting for images. Something wrong with camera, going to park.")
     except Exception as e:

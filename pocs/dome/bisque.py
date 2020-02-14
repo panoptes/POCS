@@ -5,7 +5,7 @@ import time
 from string import Template
 
 import pocs.dome
-import pocs.utils.theskyx
+import panoptes.utils.theskyx
 
 
 class Dome(pocs.dome.AbstractDome):
@@ -14,7 +14,7 @@ class Dome(pocs.dome.AbstractDome):
     def __init__(self, *args, **kwargs):
         """"""
         super().__init__(*args, **kwargs)
-        self.theskyx = pocs.utils.theskyx.TheSkyX()
+        self.theskyx = panoptes.utils.theskyx.TheSkyX()
 
         template_dir = kwargs.get('template_dir',
                                   self.config['dome']['template_dir'])
