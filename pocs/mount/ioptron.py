@@ -195,6 +195,7 @@ class Mount(AbstractSerialMount):
 
         Returns:
             bool: indicating success
+        """
 
         if self.is_parked:
             self.logger.info("Mount is parked")
