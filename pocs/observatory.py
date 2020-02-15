@@ -15,8 +15,9 @@ from pocs.dome import AbstractDome
 from pocs.images import Image
 from pocs.mount import AbstractMount
 from pocs.scheduler import BaseScheduler
-from pocs.utils import current_time
-from pocs.utils import error
+
+from panoptes.utils import current_time
+from panoptes.utils import error
 
 
 class Observatory(PanBase):
@@ -27,7 +28,7 @@ class Observatory(PanBase):
         Starts up the observatory. Reads config file, sets up location,
         dates and weather station. Adds cameras, scheduler, dome and mount.
         """
-        super().__init__(*args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
         self.logger.info('Initializing observatory')
 
         # Setup information about site location
@@ -52,29 +53,32 @@ class Observatory(PanBase):
         self.set_scheduler(scheduler)
         self.current_offset_info = None
 
-        self._image_dir = self.config['directories']['images']
+        self._image_dir = self.get_config('directories.images')
         self.logger.info('\t Observatory initialized')
 
     ##########################################################################
     # Helper methods
     ##########################################################################
 
-    def is_dark(self, horizon='observe', at_time=None):
+    def is_dark(self, horizon='observe', default_dark=-18 * u.degree, at_time=None):
         """If sun is below horizon.
 
         Args:
             horizon (str, optional): Which horizon to use, 'flat', 'focus', or
                 'observe' (default).
+            default_dark (`astropy.unit.Quantity`, optional): The default horizon
+                for when it is considered "dark". Default is astronomical twilight,
+                -18 degrees.
             at_time (None or `astropy.time.Time`, optional): Time at which to
                 check if dark, defaults to now.
+
+        Returns:
+            bool: If it is dark or not.
         """
         if at_time is None:
             at_time = current_time()
-        try:
-            horizon_deg = self.config['location']['{}_horizon'.format(horizon)]
-        except KeyError:
-            self.logger.info(f"Can't find {horizon}_horizon, using -18°")
-            horizon_deg = -18 * u.degree
+
+        horizon_deg = self.get_config(f'location.{horizon}_horizon', default=default_dark)
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
         if not is_dark:
@@ -143,7 +147,8 @@ class Observatory(PanBase):
           * Cameras
           * Mount
 
-        If any of the above are not present then a log message is generated and the property returns False.
+        If any of the above are not present then a log message is generated and
+        the property returns False.
 
         Returns:
             bool: True if observations are possible, False otherwise.
@@ -255,7 +260,8 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
-        self.mount.disconnect()
+        if self.mount:
+            self.mount.disconnect()
         if self.dome:
             self.dome.disconnect()
 
@@ -337,7 +343,7 @@ class Observatory(PanBase):
         reread_fields_file = (
             self.scheduler.has_valid_observations is False or
             kwargs.get('reread_fields_file', False) or
-            self.config['scheduler'].get('check_file', False)
+            self.get_config('scheduler.check_file', default=False)
         )
 
         # This will set the `current_observation`
@@ -364,24 +370,15 @@ class Observatory(PanBase):
                 on local hard drive, default to config item `observations.keep_jpgs` then True.
         """
         if upload_images is None:
-            try:
-                upload_images = self.config.get('panoptes_network', {})['image_storage']
-            except KeyError:
-                upload_images = False
+            upload_images = self.get_config('panoptes_network.image_storage', default=False)
 
         if make_timelapse is None:
-            try:
-                make_timelapse = self.config['observations']['make_timelapse']
-            except KeyError:
-                make_timelapse = True
+            make_timelapse = self.get_config('observations.make_timelapse', default=True)
 
         if keep_jpgs is None:
-            try:
-                keep_jpgs = self.config['observations']['keep_jpgs']
-            except KeyError:
-                keep_jpgs = True
+            keep_jpgs = self.get_config('observations.keep_jpgs', default=True)
 
-        process_script = 'upload_image_dir.py'
+        process_script = 'upload-image-dir.py'
         process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
 
         if self.scheduler is None:
@@ -392,7 +389,7 @@ class Observatory(PanBase):
             self.logger.debug("Housekeeping for {}".format(observation))
 
             observation_dir = os.path.join(
-                self.config['directories']['images'],
+                self._image_dir,
                 'fields',
                 observation.field.field_name
             )
@@ -418,10 +415,10 @@ class Observatory(PanBase):
                     process_cmd.append('--upload')
 
                 if make_timelapse:
-                    process_cmd.append('--make_timelapse')
+                    process_cmd.append('--make-timelapse')
 
                 if keep_jpgs is False:
-                    process_cmd.append('--remove_jpgs')
+                    process_cmd.append('--remove-jpgs')
 
                 # Start the subprocess in background and collect proc object.
                 clean_proc = subprocess.Popen(process_cmd,
@@ -434,11 +431,18 @@ class Observatory(PanBase):
                 # Block and wait for directory to finish
                 try:
                     outs, errs = clean_proc.communicate(timeout=3600)  # one hour
-                except subprocess.TimeoutExpired:  # pragma: no cover
+                    if outs and outs > '':
+                        self.logger.info(f'Output from clean: {outs}')
+                    if errs and errs > '':
+                        self.logger.info(f'Errors from clean: {errs}')
+                except Exception as e:  # pragma: no cover
+                    self.logger.error(f'Error during cleanup_observations: {e!r}')
                     clean_proc.kill()
                     outs, errs = clean_proc.communicate(timeout=10)
-                    if errs is not None:
-                        self.logger.warning("Problem cleaning: {}".format(errs))
+                    if outs and outs > '':
+                        self.logger.info(f'Output from clean: {outs}')
+                    if errs and errs > '':
+                        self.logger.info(f'Errors from clean: {errs}')
 
             self.logger.debug('Cleanup finished')
 
@@ -496,7 +500,8 @@ class Observatory(PanBase):
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            current_image = Image(image_path, location=self.earth_location)
+            current_image = Image(image_path, location=self.earth_location,
+                                  config_port=self._config_port)
 
             solve_info = current_image.solve_field(skip_solved=False)
 
@@ -507,7 +512,7 @@ class Observatory(PanBase):
             self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Store the offset information
-            self.db.insert('offset_info', {
+            self.db.insert_current('offset_info', {
                 'image_id': image_id,
                 'd_ra': self.current_offset_info.delta_ra.value,
                 'd_dec': self.current_offset_info.delta_dec.value,
@@ -604,7 +609,7 @@ class Observatory(PanBase):
             'longitude': self.location.get('longitude').value,
             'moon_fraction': self.observer.moon_illumination(t0),
             'moon_separation': field.coord.separation(moon).value,
-            'observer': self.config.get('name', ''),
+            'observer': self.get_config('name', default=''),
             'origin': 'Project PANOPTES',
             'tracking_rate_ra': self.mount.tracking_rate,
         }
@@ -725,7 +730,7 @@ class Observatory(PanBase):
         self.logger.debug('Setting up site details of observatory')
 
         try:
-            config_site = self.config.get('location')
+            config_site = self.get_config('location')
 
             name = config_site.get('name', 'Nameless Location')
 
@@ -760,5 +765,5 @@ class Observatory(PanBase):
                 lat=latitude, lon=longitude, height=elevation)
             self.observer = Observer(
                 location=self.earth_location, name=name, timezone=timezone)
-        except Exception:
-            raise error.PanError(msg='Bad site information')
+        except Exception as e:
+            raise error.PanError(msg=f'Bad site information: {e!r}')

@@ -87,8 +87,9 @@ setup(name=PACKAGENAME,
       # $ pip install -e .[dev,test]
       install_requires=modules['required'],
       scripts=[
-          'bin/pocs_shell',
-          'bin/peas_shell',
+          'bin/pocs',
+          'bin/pocs-shell',
+          'bin/peas-shell',
       ],
       extras_require={
           'google': modules['google'],

@@ -1,0 +1,80 @@
+version: '3.7'
+services:
+  aag-weather-reader:
+    image: gcr.io/panoptes-exp/aag-weather:latest
+    init: true
+    container_name: aag-weather-reader
+    privileged: true
+    network_mode: host
+    restart: on-failure
+    volumes:
+      - pandir:/var/panoptes
+    command:
+      - "python"
+      - "/app/scripts/read-aag.py"
+      - "--config-file"
+      - "/var/panoptes/conf_files/pocs_local.yaml"
+      - "--db-file"
+      - "/var/panoptes/json_store/panoptes/weather.db"
+      - "--store-result"
+      - "--verbose"
+  aag-weather-server:
+    image: gcr.io/panoptes-exp/aag-weather:latest
+    init: true
+    container_name: aag-weather-server
+    privileged: true
+    network_mode: host
+    environment:
+      - DB_NAME=/var/panoptes/json_store/panoptes/weather.db
+    command: ["flask", "run"]
+    restart: on-failure
+    volumes:
+      - pandir:/var/panoptes
+  peas-shell:
+    image: gcr.io/panoptes-exp/pocs
+    init: true
+    container_name: peas-shell
+    hostname: peas-shell
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/.env
+    depends_on:
+      - "messaging-hub"
+    volumes:
+      - pandir:/var/panoptes
+    # No-op to keep machine running, use $POCS/bin/peas-shell to access
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail"
+      - "-f"
+      - "/dev/null"
+  pocs-shell:
+    image: gcr.io/panoptes-exp/pocs
+    init: true
+    container_name: pocs-shell
+    hostname: pocs-shell
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/.env
+    depends_on:
+      - "peas-shell"
+    volumes:
+      - pandir:/var/panoptes
+    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail"
+      - "-f"
+      - "/dev/null"
+volumes:
+    pandir:
+      driver: local
+      driver_opts:
+        type: none
+        device: /var/panoptes
+        o: bind
+

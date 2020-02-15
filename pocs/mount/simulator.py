@@ -3,8 +3,8 @@ from threading import Timer
 
 from astropy import units as u
 
-from pocs.utils import current_time
-from pocs.utils import error
+from panoptes.utils import current_time
+from panoptes.utils import error
 from pocs.mount import AbstractMount
 
 
@@ -13,17 +13,13 @@ class Mount(AbstractMount):
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
+    def __init__(self, location, commands=dict(), *args, **kwargs):
 
         super().__init__(location, *args, **kwargs)
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop_delay = self.config.get('loop_delay', 0.01)
+        self._loop_delay = self.get_config('loop_delay', default=0.01)
 
         self.set_park_coordinates()
         self._current_coordinates = self._park_coordinates

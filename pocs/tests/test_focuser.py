@@ -3,19 +3,21 @@ import time
 import pytest
 from threading import Thread
 
+from panoptes.utils.config import load_config
+
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
 from pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from pocs.camera.simulator import Camera
-from pocs.utils.config import load_config
 
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
 ids = ['simulator', 'birger', 'focuslynx']
 
-
 # Ugly hack to access id inside fixture
-@pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
-def focuser(request):
+
+
+@pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
+def focuser(request, dynamic_config_server, config_port):
     if request.param[0] == SimFocuser:
         # Simulated focuser, just create one and return it
         return request.param[0]()
@@ -42,10 +44,10 @@ def focuser(request):
                     request.param[1]))
 
         # Create and return a Focuser based on the first config
-        return request.param[0](**focuser_configs[0])
+        return request.param[0](**focuser_configs[0], config_port=config_port)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tolerance(focuser):
     """
     Tolerance for confirming focuser has moved to the requested position. The Birger may be
@@ -130,7 +132,8 @@ def test_camera_init():
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = Camera(focuser={'model': 'simulator',
+                                 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid

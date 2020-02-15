@@ -1,9 +1,9 @@
 import random
 
-import pocs.dome
+from pocs.dome import AbstractDome
 
 
-class Dome(pocs.dome.AbstractDome):
+class Dome(AbstractDome):
     """Simulator for a Dome controller."""
 
     def __init__(self, *args, **kwargs):

@@ -10,21 +10,21 @@ from astropy.time import Time
 from collections import namedtuple
 
 from pocs.base import PanBase
-from pocs.utils.images import fits as fits_utils
+from panoptes.utils.images import fits as fits_utils
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 
 
 class Image(PanBase):
 
-    def __init__(self, fits_file, wcs_file=None, location=None):
+    def __init__(self, fits_file, wcs_file=None, location=None, *args, **kwargs):
         """Object to represent a single image from a PANOPTES camera.
 
         Args:
             fits_file (str): Name of FITS file to be read (can be .fz)
             wcs_file (str, optional): Name of FITS file to use for WCS
         """
-        super().__init__()
+        PanBase.__init__(self, *args, **kwargs)
         assert os.path.exists(fits_file), self.logger.warning(
             'File does not exist: {}'.format(fits_file))
 
@@ -55,7 +55,7 @@ class Image(PanBase):
 
         # Location Information
         if location is None:
-            cfg_loc = self.config['location']
+            cfg_loc = self.get_config('location')
             location = EarthLocation(lat=cfg_loc['latitude'],
                                      lon=cfg_loc['longitude'],
                                      height=cfg_loc['elevation'],

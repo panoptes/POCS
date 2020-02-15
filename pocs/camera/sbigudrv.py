@@ -9,8 +9,6 @@ ctypes.Structures, plus a class (SBIGDriver) to load the library
 and call the single command function (SBIGDriver._send_command()).
 """
 import ctypes
-from ctypes.util import find_library
-from warnings import warn
 import time
 import threading
 import enum
@@ -20,9 +18,9 @@ from numpy.ctypeslib import as_ctypes
 from astropy import units as u
 
 from pocs.camera.sdk import AbstractSDKDriver
-from pocs.utils import error
-from pocs.utils import CountdownTimer
-from pocs.utils import get_quantity_value
+from panoptes.utils import error
+from panoptes.utils import CountdownTimer
+from panoptes.utils import get_quantity_value
 
 ################################################################################
 # Main SBIGDriver class
@@ -50,7 +48,7 @@ class SBIGDriver(AbstractSDKDriver):
             `~pocs.camera.sbigudrv.SBIGDriver`
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
@@ -552,7 +550,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error or if the final status and position
                 are not as expected.
-            pocs.utils.error.Timeout: raised if the move does not end within the period of time
+            panoptes.utils.error.Timeout: raised if the move does not end within the period of time
                 specified by the timeout argument.
         """
         if timeout is not None:

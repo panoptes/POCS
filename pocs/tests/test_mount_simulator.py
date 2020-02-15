@@ -6,13 +6,14 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
 from pocs.mount.simulator import Mount
-from pocs.utils import altaz_to_radec
-from pocs.utils import error
+from panoptes.utils.config.client import get_config
+from panoptes.utils import error
+from panoptes.utils import altaz_to_radec
 
 
 @pytest.fixture
-def location(config):
-    loc = config['location']
+def location(dynamic_config_server, config_port):
+    loc = get_config('location', port=config_port)
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
@@ -21,14 +22,14 @@ def target(location):
     return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
 
 
-def test_no_location():
+def test_no_location(dynamic_config_server, config_port):
     with pytest.raises(TypeError):
-        Mount()
+        Mount(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
-def mount(location):
-    return Mount(location=location)
+def mount(dynamic_config_server, config_port, location):
+    return Mount(location=location, config_port=config_port)
 
 
 def test_connect(mount):
@@ -82,8 +83,8 @@ def test_status(mount):
     assert 'mount_target_ra' in status2
 
 
-def test_update_location_no_init(mount, config):
-    loc = config['location']
+def test_update_location_no_init(dynamic_config_server, config_port, mount):
+    loc = get_config('location', port=config_port)
 
     location2 = EarthLocation(
         lon=loc['longitude'],
@@ -96,8 +97,8 @@ def test_update_location_no_init(mount, config):
         mount.location = location2
 
 
-def test_update_location(mount, config):
-    loc = config['location']
+def test_update_location(dynamic_config_server, config_port, mount):
+    loc = get_config('location', port=config_port)
 
     mount.initialize()
 

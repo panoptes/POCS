@@ -3,13 +3,13 @@ from contextlib import suppress
 
 from pocs.base import PanBase
 from pocs.camera.camera import AbstractCamera
-from pocs.utils import error
-from pocs.utils.library import load_library
-from pocs.utils.logger import get_root_logger
+from panoptes.utils import error
+from panoptes.utils.library import load_c_library
+from panoptes.utils.logger import get_root_logger
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
-    def __init__(self, name, library_path=None, **kwargs):
+    def __init__(self, name, library_path=None, *args, **kwargs):
         """Base class for all camera SDK interfaces.
 
         On construction loads the shared object/dynamically linked version of the camera SDK
@@ -23,12 +23,12 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
             library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_library fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(**kwargs)
-        self._CDLL = load_library(name=name, path=library_path, logger=self.logger)
+        self._CDLL = load_c_library(name=name, path=library_path, logger=self.logger)
         self._version = self.get_SDK_version()
         self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
 

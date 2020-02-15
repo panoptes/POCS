@@ -8,9 +8,9 @@ from astropy.time import Time
 
 from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.libasi import ASIDriver
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import error
-from pocs.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import error
+from panoptes.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):

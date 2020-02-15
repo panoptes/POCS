@@ -18,20 +18,21 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import AlreadyVisited
 
-from pocs.utils import horizon as horizon_utils
+from panoptes.utils.config.client import get_config
+from panoptes.utils import horizon as horizon_utils
 
 
-@pytest.fixture
-def observer(config):
-    loc = config['location']
+@pytest.fixture(scope='function')
+def observer(dynamic_config_server, config_port):
+    loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture
-def horizon_line(config):
-    obstruction_list = config['location'].get('obstructions', list())
-    default_horizon = config['location'].get('horizon').value
+@pytest.fixture(scope='function')
+def horizon_line(dynamic_config_server, config_port):
+    obstruction_list = get_config('location.obstructions', default=list(), port=config_port)
+    default_horizon = get_config('location.horizon', port=config_port).value
 
     horizon_line = horizon_utils.Horizon(
         obstructions=obstruction_list,
@@ -40,7 +41,7 @@ def horizon_line(config):
     return horizon_line
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def field_list():
     return yaml.full_load("""
 -
@@ -82,12 +83,12 @@ def field_list():
 """)
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def field():
     return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def observation(field):
     return Observation(field)
 
@@ -240,9 +241,12 @@ def test_already_visited(observer):
 
     time = Time('2016-08-13 10:00:00')
 
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
-    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
+    # HD189733
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))
+    # Hat-P-16
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))
+    # Sabik
+    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))
 
     observed_list = OrderedDict()
 

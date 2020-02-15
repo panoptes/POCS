@@ -14,9 +14,9 @@ from astropy.modeling import models
 from astropy.modeling import fitting
 
 from pocs.base import PanBase
-from pocs.utils import current_time
-from pocs.utils.images import focus as focus_utils
-from pocs.utils.images import get_palette
+from panoptes.utils import current_time
+from panoptes.utils.images import focus as focus_utils
+from panoptes.utils.images.plot import get_palette
 
 
 class AbstractFocuser(PanBase, metaclass=ABCMeta):
@@ -62,7 +62,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                  autofocus_merit_function_kwargs=None,
                  autofocus_mask_dilations=None,
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+        PanBase.__init__(self, *args, **kwargs)
 
         self.model = model
         self.port = port
@@ -329,7 +330,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                           focus_type, self._camera, initial_focus)
 
         # Set up paths for temporary focus files, and plots if requested.
-        image_dir = self.config['directories']['images']
+        image_dir = self.get_config('directories.images')
         start_time = current_time(flatten=True)
         file_path_root = os.path.join(image_dir,
                                       'focus',

@@ -3,8 +3,8 @@ import tweepy
 import requests
 import unittest.mock
 
-from pocs.utils.social_twitter import SocialTwitter
-from pocs.utils.social_slack import SocialSlack
+from panoptes.utils.social_twitter import SocialTwitter
+from panoptes.utils.social_slack import SocialSlack
 
 
 @pytest.fixture(scope='module')

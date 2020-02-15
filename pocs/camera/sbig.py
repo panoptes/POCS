@@ -5,8 +5,8 @@ from astropy import units as u
 from pocs.camera.sdk import AbstractSDKCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
 from pocs.camera.sbigudrv import SBIGDriver
-from pocs.utils.images import fits as fits_utils
-from pocs.utils import error
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils import error
 
 
 class Camera(AbstractSDKCamera):

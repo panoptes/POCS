@@ -5,8 +5,8 @@ import threading
 import time
 
 from pocs.dome import astrohaven
-from pocs.tests import serial_handlers
-import pocs.utils.logger
+from panoptes.utils.tests import serial_handlers
+import panoptes.utils.logger
 
 Protocol = astrohaven.Protocol
 CLOSED_POSITION = 0
@@ -182,7 +182,7 @@ class AstrohavenPLCSimulator:
 class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger = panoptes.utils.logger.get_root_logger()
         self.plc_thread = None
         self.command_queue = queue.Queue(maxsize=50)
         self.status_queue = queue.Queue(maxsize=1000)

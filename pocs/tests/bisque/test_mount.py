@@ -5,18 +5,18 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from pocs.mount.bisque import Mount
-from pocs.utils import altaz_to_radec
-from pocs.utils import current_time
-from pocs.utils.config import load_config
-from pocs.utils.theskyx import TheSkyX
+from panoptes.utils.config.client import get_config
+from panoptes.utils import altaz_to_radec
+from panoptes.utils import current_time
+from panoptes.utils.theskyx import TheSkyX
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
                                 reason="TheSkyX is not connected")
 
 
 @pytest.fixture
-def location():
-    config = load_config(ignore_local=False)
+def location(dynamic_config_server, config_port):
+    config = get_config(port=config_port)
     loc = config['location']
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 

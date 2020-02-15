@@ -1,19 +1,17 @@
 import os
 import pytest
-import yaml
 
 from pocs.core import POCS
 from pocs.observatory import Observatory
-
-from pocs.utils import error
+from panoptes.utils import error
+from panoptes.utils.serializers import to_yaml
 
 
 @pytest.fixture
-def observatory():
-    """Return a valid Observatory instance with a specific config."""
-    obs = Observatory()
+def observatory(dynamic_config_server, config_port):
+    observatory = Observatory(simulator=['all'], config_port=config_port)
 
-    return obs
+    yield observatory
 
 
 def test_bad_state_machine_file():
@@ -21,8 +19,8 @@ def test_bad_state_machine_file():
         POCS.load_state_table(state_table_name='foo')
 
 
-def test_load_bad_state(observatory):
-    pocs = POCS(observatory)
+def test_load_bad_state(dynamic_config_server, config_port, observatory):
+    pocs = POCS(observatory, config_port=config_port)
 
     with pytest.raises(error.InvalidConfig):
         pocs._load_state('foo')
@@ -39,7 +37,7 @@ def test_state_machine_absolute(temp_file):
     assert isinstance(state_table, dict)
 
     with open(temp_file, 'w') as f:
-        f.write(yaml.dump(state_table))
+        f.write(to_yaml(state_table))
 
     file_path = os.path.abspath(temp_file)
     assert POCS.load_state_table(state_table_name=file_path)

@@ -4,8 +4,8 @@ from abc import ABCMeta, abstractmethod
 from astropy import units as u
 
 from pocs.base import PanBase
-from pocs.utils import listify
-from pocs.utils import error
+from panoptes.utils import listify
+from panoptes.utils import error
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -49,6 +49,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self._timeout = timeout
         self._serial_number = serial_number
         self._connected = False
+
         # Some filter wheels needs this to track whether they are moving or not.
         self._move_event = threading.Event()
         self._move_event.set()
