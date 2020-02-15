@@ -78,8 +78,13 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0], config_port=config_port)
 
-    camera.config['directories']['images'] = images_dir
-    return camera
+    yield camera
+
+    # Teardown
+
+    # Explicitly remove the simulator SDK from the assigned list.
+    if request.param[1] == 'simulator_sdk':
+        type(camera)._assigned_cameras.discard(camera.uid)
 
 
 @pytest.fixture(scope='module')
@@ -152,7 +157,7 @@ def test_sim_file_extension(dynamic_config_server, config_port):
 
 def test_sim_readout_time(dynamic_config_server, config_port):
     sim_camera = SimCamera(config_port=config_port)
-    assert sim_camera.readout_time == 5.0
+    assert sim_camera.readout_time == 1.0
     sim_camera = SimCamera(readout_time=2.0, config_port=config_port)
     assert sim_camera.readout_time == 2.0
 

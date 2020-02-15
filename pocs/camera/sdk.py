@@ -1,3 +1,4 @@
+import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
@@ -120,6 +121,7 @@ class AbstractSDKCamera(AbstractCamera):
             if self.is_cooled_camera:
                 self.target_temperature = target_temperature
                 self.cooling_enabled = True
+                time.sleep(5)  # allow for cooling
                 msg = f"Set target temperature {target_temperature} & enabled cooling on {self}."
                 self.logger.debug(msg)
             else:
