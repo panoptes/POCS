@@ -3,11 +3,6 @@
 export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START=.coveragerc
 
-
-python "${PANDIR}/panoptes-utils/panoptes/utils/data.py --no-wide-field --no-narrow-field"
-
-cd $POCS
-
 # Die on first test for now
 coverage run "$(command -v pytest)" -xvvrst --test-databases file
 
