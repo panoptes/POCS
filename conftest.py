@@ -23,6 +23,10 @@ from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import app as config_server_app
+from panoptes.utils.data import Downloader
+
+# Download IERS data and astrometry index files
+Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
 
