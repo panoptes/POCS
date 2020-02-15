@@ -87,12 +87,12 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         type(camera)._assigned_cameras.discard(camera.uid)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def counter(camera):
     return {'value': 0}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def patterns(camera, images_dir):
     patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
                                       ('*_final.' + camera.file_extension)),
