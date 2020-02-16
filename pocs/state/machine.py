@@ -63,7 +63,8 @@ class PanStateMachine(Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            name="POCS State Machine"
+            name="POCS State Machine",
+            **kwargs
         )
 
         self._state_machine_table = state_machine_table

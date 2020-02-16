@@ -263,7 +263,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         return header
 
     def __str__(self):
-        if self.camera:
-            return "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
-        else:
-            return "{} ({})".format(self.name, self.uid)
+        try:
+            if self.camera:
+                s = "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
+            else:
+                s = "{} ({})".format(self.name, self.uid)
+        except Exception:
+            s = str(self.__class__)
+
+        return s

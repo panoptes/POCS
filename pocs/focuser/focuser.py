@@ -573,4 +573,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         return header
 
     def __str__(self):
-        return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        try:
+            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+        except Exception:
+            s = str(__class__)
+
+        return s

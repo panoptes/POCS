@@ -4,7 +4,7 @@ export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START=.coveragerc
 
 # Die on first test for now
-coverage run "$(command -v pytest)" -xvvrst --test-databases file
+coverage run "$(command -v pytest)" -xvvrst --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then
