@@ -318,6 +318,7 @@ class POCS(PanStateMachine, PanBase):
         safe = all(is_safe_values.values())
 
         # Insert safety reading
+        self.logger.warning(f'SENDING SAFETY TO DB: {is_safe_values!r}')
         self.db.insert_current('safety', is_safe_values)
 
         if not safe:
@@ -346,10 +347,12 @@ class POCS(PanStateMachine, PanBase):
         # See if dark - we check this first because we want to know
         # the sun position even if using a simulator.
         is_dark = self.observatory.is_dark(horizon=horizon)
+        self.logger.debug(f'Observatory is_dark: {is_dark}')
 
         # Check simulator
         with suppress(KeyError):
             if 'night' in self.get_config('simulator', default=[]):
+                self.logger.debug(f'Using night simulator')
                 is_dark = True
 
         self.logger.debug("Dark Check: {}".format(is_dark))
@@ -423,7 +426,9 @@ class POCS(PanStateMachine, PanBase):
         free_space = get_free_space()
 
         space_is_low = free_space.value <= (req_space.value * low_space_percent)
-        has_space = free_space.value >= req_space.value
+
+        # Explicitly cast to bool (instead of numpy.bool)
+        has_space = bool(free_space.value >= req_space.value)
 
         if not has_space:
             self.logger.error(f'No disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')

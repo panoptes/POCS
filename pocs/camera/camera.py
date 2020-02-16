@@ -782,7 +782,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
                 subcomponent_kwargs = copy.deepcopy(subcomponent)
-                subcomponent_kwargs.update({'camera': self})
+                subcomponent_kwargs.update({'camera': self, 'config_port': self._config_port})
                 setattr(self,
                         class_name_lower,
                         getattr(module, class_name)(**subcomponent_kwargs))
@@ -796,21 +796,24 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             setattr(self, class_name_lower, None)
 
     def __str__(self):
-        name = self.name
-        if self.is_primary:
-            name += ' [Primary]'
+        try:
+            name = self.name
+            if self.is_primary:
+                name += ' [Primary]'
 
-        s = "{} ({}) on {}".format(name, self.uid, self.port)
+            s = "{} ({}) on {}".format(name, self.uid, self.port)
 
-        sub_count = 0
-        for sub_name in self._subcomponent_names:
-            subcomponent = getattr(self, sub_name)
-            if subcomponent:
-                if sub_count == 0:
-                    s += " with {}".format(subcomponent.name)
-                else:
-                    s += " & {}".format(subcomponent.name)
-                sub_count += 1
+            sub_count = 0
+            for sub_name in self._subcomponent_names:
+                subcomponent = getattr(self, sub_name)
+                if subcomponent:
+                    if sub_count == 0:
+                        s += " with {}".format(subcomponent.name)
+                    else:
+                        s += " & {}".format(subcomponent.name)
+                    sub_count += 1
+        except Exception:
+            s = str(self.__class__)
 
         return s
 
