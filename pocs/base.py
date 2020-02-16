@@ -23,7 +23,9 @@ class PanBase(object):
         if not self.logger:
             self.logger = get_root_logger()
 
-        simulators = self.get_config('simulator', default=False)
+        self.logger.warning(f'POCS config_port setup: {self.__class__} {self._config_port}')
+
+        simulators = self.get_config('simulator', default=[])
         if simulators:
             self.logger.critical(f'Using simulators: {simulators}')
 
@@ -55,7 +57,9 @@ class PanBase(object):
         """
         config_value = None
         try:
+            self.logger.warning(f'POCS get_config _config_port: {self._config_port} {args!r} {kwargs!r}')
             config_value = client.get_config(port=self._config_port, *args, **kwargs)
+            self.logger.warning(f'Asked for: {args!r} {kwargs!r} Received: {config_value}')
         except ConnectionError as e:
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
         except Exception as e:

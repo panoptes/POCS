@@ -95,9 +95,11 @@ def dome(config_port):
 
 @pytest.fixture(scope='function')
 def pocs(dynamic_config_server, config_port, observatory):
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
+    observatory.logger.warning(f'Setting POCS config_port {config_port}')
     pocs = POCS(observatory, run_once=True, config_port=config_port)
+    observatory.logger.warning(f'POCS._config_port {pocs._config_port}')
 
     yield pocs
 
@@ -107,7 +109,7 @@ def pocs(dynamic_config_server, config_port, observatory):
 @pytest.fixture(scope='function')
 def pocs_with_dome(dynamic_config_server, config_port, pocs, dome):
     # Add dome to config
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
     pocs.observatory.set_dome(dome)
     yield pocs
     pocs.power_down()
@@ -196,18 +198,23 @@ def test_simple_simulator(pocs, caplog):
 
 def test_is_weather_and_dark_simulator(dynamic_config_server, config_port, pocs):
     pocs.initialize()
+
+    # Night simulator
     set_config('simulator', ['camera', 'mount', 'weather', 'night'], port=config_port)
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
+    assert pocs.is_dark() is True
+    os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is True
 
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-    assert pocs.is_dark() is True
+    pocs.logger.warning(pocs._config_port)
+    pocs.logger.warning(pocs.get_config('simulator'))
 
+    # No night simulator
     set_config('simulator', ['camera', 'mount', 'weather'], port=config_port)
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    pocs.logger.warning(pocs.get_config('simulator'))
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
-
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is False
 
     set_config('simulator', ['camera', 'mount', 'weather', 'night'], port=config_port)
@@ -272,14 +279,14 @@ def test_is_weather_safe_no_simulator(dynamic_config_server, config_port, pocs):
     set_config('simulator', ['camera', 'mount', 'night'], port=config_port)
 
     # Set a specific time
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
 
     # Insert a dummy weather record
     pocs.db.insert_current('weather', {'safe': True})
     assert pocs.is_weather_safe() is True
 
     # Set a time 181 seconds later
-    os.environ['POCSTIME'] = '2016-08-13 23:05:01'
+    os.environ['POCSTIME'] = '2020-01-01 18:05:01'
     assert pocs.is_weather_safe() is False
 
 
@@ -304,7 +311,7 @@ def test_run_wait_until_safe(observatory,
                              cmd_publisher,
                              msg_subscriber
                              ):
-    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
     # Make sure DB is clear for current weather
     observatory.db.clear_current('weather')
@@ -356,7 +363,7 @@ def test_run_wait_until_safe(observatory,
 def test_unsafe_park(dynamic_config_server, config_port, pocs):
     pocs.initialize()
     assert pocs.is_initialized is True
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
     assert pocs.state == 'sleeping'
     pocs.get_ready()
     assert pocs.state == 'ready'
@@ -364,7 +371,7 @@ def test_unsafe_park(dynamic_config_server, config_port, pocs):
     assert pocs.state == 'scheduling'
 
     # My time goes fast...
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
     set_config('simulator', hardware.get_all_names(without=['night']), port=config_port)
 
     assert pocs.is_safe() is False
@@ -439,7 +446,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 
 def test_run_no_targets_and_exit(dynamic_config_server, config_port, pocs):
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
     set_config('simulator', hardware.get_all_names(), port=config_port)
 
     pocs.state = 'sleeping'
@@ -452,7 +459,7 @@ def test_run_no_targets_and_exit(dynamic_config_server, config_port, pocs):
 
 
 def test_run_complete(dynamic_config_server, config_port, pocs):
-    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
     set_config('simulator', hardware.get_all_names(), port=config_port)
 
     pocs.state = 'sleeping'
@@ -482,7 +489,7 @@ def test_run_power_down_interrupt(dynamic_config_server,
                                   cmd_publisher,
                                   msg_subscriber
                                   ):
-    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
@@ -542,7 +549,7 @@ def test_pocs_park_to_ready_with_observations(pocs):
 
 def test_pocs_park_to_ready_without_observations(pocs):
 
-    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
     assert pocs.is_safe() is True
     assert pocs.state == 'sleeping'
