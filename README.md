@@ -17,6 +17,22 @@ Welcome to POCS documentation!
 
 > If you are here shopping for [GSoC 2020](https://summerofcode.withgoogle.com/) please make sure to contact the PANOPTES team before doing any work. Also check the [GSoC 2020 Project Page](https://projectpanoptes.org/gsoc-2020/) for updates.
 
+Milestones Roadmap:
+
+`v0.7.0` Items related to preparing the docker branch for merge. Basically work being done right now. To be completed Feb/March 2020.  
+`v0.8.0` Merge of `docker` into `develop` and backwards-incompatible breaking changes to POCS. To be completed March 2020.  
+`v1.0.0` The real deal.  Merge of `develop` into `master`. Summer 2020?  
+
+Things are labelled as `v1.0.0` if they are at some unspecified point in the future but ideally within about 6 months.  Issues labelled with this milestone should either be dealt with or removed as stale by the due date.  
+
+The distinction between `0.7.0` and `0.8.0` is a little fuzzy right now since it's all happening rapidly. The more important target is probably `v0.8.0`.
+
+Basically, "things that need to happen now to get stuff working" should be `v0.7.0` or `v0.8.0` depending on how quickly that needs to happen.
+
+"Things that will/can happen after the docker migration" should be `v1.0.0`.
+
+"Things that don't really have a due date and are probably minor (but might be major, they are just not critical for now)" should be `v1.0.0`
+
 ## :warning: :warning:
 
 
