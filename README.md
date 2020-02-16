@@ -11,6 +11,15 @@ Welcome to POCS documentation!
 
 <!-- <img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" /> -->
 
+## :warning: :warning:
+
+> (Feb. 2020) There is currently an [open PR](https://github.com/panoptes/POCS/pull/951) that will be a mostly backwards-incompatible change with current POCS and the information below. 
+
+> If you are here shopping for [GSoC 2020](https://summerofcode.withgoogle.com/) please make sure to contact the PANOPTES team before doing any work. Also check the [GSoC 2020 Project Page](https://projectpanoptes.org/gsoc-2020/) for updates.
+
+## :warning: :warning:
+
+
 # Overview
 
 [PANOPTES](http://projectpanoptes.org) is an open source citizen science project 
