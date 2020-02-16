@@ -115,6 +115,17 @@ def pocs_with_dome(dynamic_config_server, config_port, pocs, dome):
     pocs.power_down()
 
 
+@pytest.fixture(scope='module')
+def valid_observation():
+    return {'name': 'HIP 36850',
+            'position': '113.65 deg +31.887 deg',
+            'priority': '100',
+            'exptime': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+            }
+
+
 def test_bad_pandir_env(pocs):
     pandir = os.getenv('PANDIR')
     os.environ['PANDIR'] = '/foo/bar'
@@ -307,6 +318,7 @@ def wait_for_message(sub, type=None, attr=None, value=None):
 
 
 def test_run_wait_until_safe(observatory,
+                             valid_observation,
                              config_port,
                              cmd_publisher,
                              msg_subscriber
@@ -324,13 +336,7 @@ def test_run_wait_until_safe(observatory,
         pocs = POCS(observatory, messaging=True, safe_delay=5, config_port=config_port)
 
         pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                    'position': '20h06m15.4536s +44d27m24.75s',
-                                                    'priority': '100',
-                                                    'exptime': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
-                                                    })
+        pocs.observatory.scheduler.add_observation(valid_observation)
 
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
@@ -348,8 +354,9 @@ def test_run_wait_until_safe(observatory,
         # Wait for the RUNNING message,
         assert wait_for_running(msg_subscriber)
 
-        time.sleep(5)
+        time.sleep(10)
         # Insert a dummy weather record to break wait
+        observatory.logger.warning(f'Inserting safe weather reading')
         observatory.db.insert_current('weather', {'safe': True})
 
         assert wait_for_state(msg_subscriber, 'scheduling')
@@ -458,7 +465,7 @@ def test_run_no_targets_and_exit(dynamic_config_server, config_port, pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run_complete(dynamic_config_server, config_port, pocs):
+def test_run_complete(dynamic_config_server, config_port, pocs, valid_observation):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
     set_config('simulator', hardware.get_all_names(), port=config_port)
 
@@ -466,13 +473,7 @@ def test_run_complete(dynamic_config_server, config_port, pocs):
     pocs._do_states = True
 
     pocs.observatory.scheduler.clear_available_observations()
-    pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                        'position': '20h06m15.4536s +44d27m24.75s',
-                                                        'priority': '100',
-                                                        'exptime': 2,
-                                                        'min_nexp': 2,
-                                                        'exp_set_size': 2,
-                                                })
+    pocs.observatory.scheduler.add_observation(valid_observation)
 
     pocs.initialize()
     assert pocs.is_initialized is True
@@ -485,6 +486,7 @@ def test_run_complete(dynamic_config_server, config_port, pocs):
 def test_run_power_down_interrupt(dynamic_config_server,
                                   config_port,
                                   observatory,
+                                  valid_observation,
                                   message_forwarder,
                                   cmd_publisher,
                                   msg_subscriber
@@ -496,13 +498,7 @@ def test_run_power_down_interrupt(dynamic_config_server,
         pocs = POCS(observatory, messaging=True, config_port=config_port)
         pocs.initialize()
         pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                    'position': '20h06m15.4536s +44d27m24.75s',
-                                                    'priority': '100',
-                                                    'exptime': 2,
-                                                    'min_nexp': 2,
-                                                    'exp_set_size': 2,
-                                                    })
+        pocs.observatory.scheduler.add_observation(valid_observation)
         pocs.logger.info('Starting observatory run')
         pocs.run()
         pocs.power_down()
