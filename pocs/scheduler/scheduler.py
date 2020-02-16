@@ -10,6 +10,7 @@ from astropy.coordinates import get_moon
 from pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import current_time
+from panoptes.utils import get_quantity_value
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 
@@ -229,7 +230,8 @@ class BaseScheduler(PanBase):
             field_config (dict): Configuration items for `Observation`
         """
         if 'exptime' in field_config:
-            field_config['exptime'] = float(field_config['exptime']) * u.second
+            field_config['exptime'] = get_quantity_value(
+                field_config['exptime'], unit=u.second) * u.second
 
         self.logger.debug("Adding {} to scheduler", field_config['name'])
         field = Field(field_config['name'], field_config['position'],
@@ -241,7 +243,7 @@ class BaseScheduler(PanBase):
             obs = Observation(field, config_port=self._config_port, **field_config)
             self.logger.debug(f"Observation created {obs}")
         except Exception as e:
-            raise error.InvalidObservation(f"Skipping invalid field config: {field_config!r} {e!r}")
+            raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
         else:
             self.logger.debug(f"Checking if {field.name} in self._observations")
             if field.name in self._observations:
