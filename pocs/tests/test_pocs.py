@@ -97,12 +97,8 @@ def dome(config_port):
 def pocs(dynamic_config_server, config_port, observatory):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
-    observatory.logger.warning(f'Setting POCS config_port {config_port}')
     pocs = POCS(observatory, run_once=True, config_port=config_port)
-    observatory.logger.warning(f'POCS._config_port {pocs._config_port}')
-
     yield pocs
-
     pocs.power_down()
 
 
