@@ -213,12 +213,8 @@ def test_is_weather_and_dark_simulator(dynamic_config_server, config_port, pocs)
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is True
 
-    pocs.logger.warning(pocs._config_port)
-    pocs.logger.warning(pocs.get_config('simulator'))
-
     # No night simulator
     set_config('simulator', ['camera', 'mount', 'weather'], port=config_port)
-    pocs.logger.warning(pocs.get_config('simulator'))
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
