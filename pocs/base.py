@@ -23,11 +23,9 @@ class PanBase(object):
         if not self.logger:
             self.logger = get_root_logger()
 
-        self.logger.warning(f'POCS config_port setup: {self.__class__} {self._config_port}')
-
         simulators = self.get_config('simulator', default=[])
         if simulators:
-            self.logger.critical(f'Using simulators: {simulators}')
+            self.logger.warning(f'Using simulators: {simulators}')
 
         # Check to make sure config has some items we need
         self._check_config()

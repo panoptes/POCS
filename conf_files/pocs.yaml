@@ -132,6 +132,8 @@ environment:
         serial_port: /dev/ttyACM0
     control_board:
         serial_port: /dev/ttyACM1
+    weather:
+        url: http://localhost:5000/latest.json
 
 ######################### Weather Station ######################################
 # Weather station options.

@@ -190,6 +190,25 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
         Does NOT park the mount, nor execute power_down.
         """
+        if self.pocs is None:
+            print_info("POCS does not have an instance. Create one using 'setup_pocs'.")
+            return
+        elif self.pocs.observatory.mount and not self.pocs.observatory.mount.is_parked:
+            print_warning("ATTENTION: The mount is not in the parked position!")
+            print_warning("ATTENTION: reset_pocs will not move the mount to park position!")
+            print_warning("ATTENTION: The unit could be damaged if not parked before sunrise.")
+            while True:
+                response = input("Execute reset_pocs anyway [y/n]?")
+                if response.lower().startswith('y'):
+                    self.pocs = None
+                    print_info("POCS instance discarded. Remember to park the mount later.")
+                    break
+                elif response.lower().startswith('n'):
+                    print_info("Keeping POCS instance.")
+                    break
+                else:
+                    print("A 'yes' or 'no' response is required")
+
         self.pocs = None
 
     def do_run_pocs(self, *arg):

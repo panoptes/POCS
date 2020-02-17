@@ -58,7 +58,7 @@ class Altitude(BaseConstraint):
         # minimum elevation for that azimuth
         min_alt = self.horizon_line[target_az]
         if target_alt < min_alt:
-            self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
+            self.logger.debug(f"\t\tBelow minimum altitude: {target_alt:.02f} < {min_alt:.02f}")
             veto = True
         else:
             score = 1
