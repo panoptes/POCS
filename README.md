@@ -17,6 +17,8 @@ Welcome to POCS documentation!
 
 > If you are here shopping for [GSoC 2020](https://summerofcode.withgoogle.com/) please make sure to contact the PANOPTES team before doing any work. Also check the [GSoC 2020 Project Page](https://projectpanoptes.org/gsoc-2020/) for updates.
 
+> See also the [issues in our panoptes-utils](https://github.com/panoptes/panoptes-utils/issues) repository for some tasks that can be worked on immediately without too much interference from this merge process.
+
 Milestones Roadmap:
 
 `v0.7.0` Items related to preparing the docker branch for merge. Basically work being done right now. To be completed Feb/March 2020.  
