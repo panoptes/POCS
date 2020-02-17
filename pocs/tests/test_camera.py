@@ -116,6 +116,12 @@ def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_
         create_cameras_from_config(config_port=config_port)
 
 
+def test_create_cameras_from_config_autodetect(dynamic_config_server, config_port):
+    set_config('cameras.auto_detect', True, port=config_port)
+    with pytest.raises(error.CameraNotFound):
+        create_cameras_from_config(config_port=config_port)
+
+
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser(dynamic_config_server, config_port):

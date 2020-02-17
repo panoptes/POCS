@@ -92,11 +92,11 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
         logger.debug("Auto-detecting ports for cameras")
         try:
             ports = list_connected_cameras()
-        except Exception as e:
+        except error.PanError as e:
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.PanError(
+            raise error.CameraNotFound(
                 msg="No cameras detected. For testing, use camera simulator.")
         else:
             logger.debug("Detected Ports: {}".format(ports))
