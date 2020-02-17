@@ -44,6 +44,7 @@ docs/_static
 .project
 .pydevproject
 .settings
+.vscode*
 
 # Pycharm editor project files
 .idea
