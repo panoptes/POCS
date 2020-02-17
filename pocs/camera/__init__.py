@@ -232,9 +232,9 @@ def create_camera_simulator(num_cameras=2, config_port='6563', logger=None, **kw
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
-        except error.NotFound:
+        except error.NotFound:  # pragma: no cover
             logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
             is_primary = ''
