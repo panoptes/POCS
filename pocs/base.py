@@ -57,13 +57,9 @@ class PanBase(object):
         """
         config_value = None
         try:
-            self.logger.warning(f'POCS get_config _config_port: {self._config_port} {args!r} {kwargs!r}')
             config_value = client.get_config(port=self._config_port, *args, **kwargs)
-            self.logger.warning(f'Asked for: {args!r} {kwargs!r} Received: {config_value}')
-        except ConnectionError as e:
+        except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
-        except Exception as e:
-            self.logger.critical(f'Exception connecting to config_server: {e!r}')
 
         return config_value
 
@@ -78,8 +74,5 @@ class PanBase(object):
 
         for item in items_to_check:
             config_item = self.get_config(item, default={})
-            if config_item is None:
-                self.logger.critical(f'Problem looking up {item} in _check_config')
-                self.logger.critical(f'Using {self._config_port}')
             if config_item is None or len(config_item) == 0:
                 sys.exit(f'{item} must be specified in config, exiting')
