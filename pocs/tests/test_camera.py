@@ -24,6 +24,7 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
+from panoptes.utils.logger import get_root_logger
 
 from pocs.camera import create_cameras_from_config
 from pocs.camera import create_camera_simulator
@@ -107,11 +108,24 @@ def test_create_camera_simulator():
     cameras = create_camera_simulator()
     assert len(cameras) == 2
 
+    logger = get_root_logger()
+    cameras = create_camera_simulator(logger=logger)
+    assert len(cameras) == 2
+
+    with pytest.raises(error.CameraNotFound):
+        create_camera_simulator(num_cameras=0)
+
 
 def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
     set_config('cameras.auto_detect', False, port=config_port)
     set_config('cameras.devices[0].port', '/dev/fake01', port=config_port)
     set_config('cameras.devices[1].port', '/dev/fake02', port=config_port)
+    with pytest.raises(error.CameraNotFound):
+        create_cameras_from_config(config_port=config_port)
+
+
+def test_create_cameras_from_config_autodetect(dynamic_config_server, config_port):
+    set_config('cameras.auto_detect', True, port=config_port)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config(config_port=config_port)
 

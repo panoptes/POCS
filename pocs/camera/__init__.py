@@ -92,11 +92,11 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
         logger.debug("Auto-detecting ports for cameras")
         try:
             ports = list_connected_cameras()
-        except Exception as e:
+        except error.PanError as e:
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.PanError(
+            raise error.CameraNotFound(
                 msg="No cameras detected. For testing, use camera simulator.")
         else:
             logger.debug("Detected Ports: {}".format(ports))
@@ -232,9 +232,9 @@ def create_camera_simulator(num_cameras=2, config_port='6563', logger=None, **kw
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
-        except error.NotFound:
+        except error.NotFound:  # pragma: no cover
             logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
             is_primary = ''
