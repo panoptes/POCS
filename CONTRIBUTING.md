@@ -62,9 +62,10 @@ for more info._
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-   - Line length is set at 100 characters instead of 80.
+   - Line length is set at 120 characters instead of 80.
    - It is recommended to have your editor auto-format code whenever you save a file 
-      rather than attempt to go back and change an entire file all at once.
+      rather than attempt to go back and change an entire file all at once. There are 
+      many plugins that exist for this.
    - You can also use
      [yapf (Yet Another Python Formatter)](https://github.com/google/yapf)
      for which POCS includes a style file (.style.yapf). For example:
