@@ -533,7 +533,7 @@ def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     try:
         img_utils.make_pretty_image(analyze_fn,
                                     title='Alignment Test - Celestial Pole',
-                                    link_latest=True,
+                                    link_path=os.path.expandvars('$PANDIR/images/latest.jpg'),
                                     primary=True)
     except AssertionError:
         print_warning(f"Can't make image for {analyze_fn}")
@@ -573,7 +573,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         try:
             img_utils.make_pretty_image(rotate_fn,
                                         title=f'Alignment Test - Rotate {direction}',
-                                        link_latest=True,
+                                        link_path=os.path.expandvars('$PANDIR/images/latest.jpg'),
                                         primary=True)
         except AssertionError:
             print_warning(f"Can't make image for {rotate_fn}")
