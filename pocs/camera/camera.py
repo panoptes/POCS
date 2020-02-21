@@ -425,9 +425,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         try:
             self.logger.debug("Making pretty image for {}".format(file_path))
+            if info['is_primary']:
+                # This should be in the config somewhere.
+                link_path = os.path.expandvars('$PANDIR/images/latest.jpg')
+
             img_utils.make_pretty_image(file_path,
                                         title=image_title,
-                                        link_latest=info['is_primary'])
+                                        link_path=link_path)
         except Exception as e:  # pragma: no cover
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
