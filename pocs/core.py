@@ -312,8 +312,12 @@ class POCS(PanStateMachine, PanBase):
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
 
-        # Hard-drive space
-        is_safe_values['free_space'] = self.has_free_space()
+        # Hard-drive space in root
+        is_safe_values['free_space_root'] = self.has_free_space()
+        
+        # Hard-drive space in images
+        images_dir = self.config['directories']['images']
+        is_safe_values['free_space_images'] = self.has_free_space(images_dir)        
 
         safe = all(is_safe_values.values())
 
@@ -400,7 +404,7 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
+    def has_free_space(self, required_space=0.25 * u.gigabyte, low_space_percent=1.5, *args, **kwargs):
         """Does hard drive have disk space (>= 0.5 GB)
 
         Args:
@@ -414,7 +418,7 @@ class POCS(PanStateMachine, PanBase):
             bool: True if enough space
         """
         req_space = required_space.to(u.gigabyte)
-        free_space = get_free_space()
+        free_space = get_free_space(**kwargs)
 
         space_is_low = free_space.value <= (req_space.value * low_space_percent)
         has_space = free_space.value >= req_space.value

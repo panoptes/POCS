@@ -194,7 +194,7 @@ def listify(obj):
         return obj if isinstance(obj, (list, type(None))) else [obj]
 
 
-def get_free_space(dir=None):
+def get_free_space(directory=None):
     """Return the amoung of freespace in gigabytes for given dir.
 
     .. doctest::
@@ -204,16 +204,16 @@ def get_free_space(dir=None):
         <Quantity ... Gbyte>
 
     Args:
-        dir (str, optional): Path to directory. If None defaults to $PANDIR.
+        directory (str, optional): Path to directory. If None defaults to $PANDIR.
 
     Returns:
         astropy.units.Quantity: The number of gigabytes avialable in folder.
 
     """
-    if dir is None:
-        dir = os.getenv('PANDIR')
+    if directory is None:
+        directory = os.getenv('PANDIR')
 
-    _, _, free_space = shutil.disk_usage(dir)
+    _, _, free_space = shutil.disk_usage(directory)
     free_space = (free_space * u.byte).to(u.gigabyte)
     return free_space
 
