@@ -313,7 +313,7 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values['good_weather'] = self.is_weather_safe()
 
         # Hard-drive space in root
-        is_safe_values['free_space_root'] = self.has_free_space()
+        is_safe_values['free_space_root'] = self.has_free_space('/')
         
         # Hard-drive space in images
         images_dir = self.config['directories']['images']
