@@ -35,6 +35,7 @@ directories:
 db:
     name: panoptes
     type: file
+    folder: json_store
 state_machine: simple_state_table
 scheduler:
     type: dispatch
