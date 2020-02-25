@@ -31,6 +31,7 @@ for more info._
    - Set the "upstream" branch to `panoptes`:
        - `cd POCS`
        - `git remote add upstream https://github.com/panoptes/POCS.git`
+       - `git fetch upstream`
    - Use a topic branch within your fork to make changes. All of our repositories have a 
       default branch of `develop` when you first clone them, but your work should be in a 
       separate branch (see note below). Your branch should almost always be based off of 
