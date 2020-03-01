@@ -65,7 +65,8 @@ modules = {
         'pycodestyle==2.3.1',
         'pytest>=3.6',
         'pytest-cov',
-        'pytest-remotedata>=0.3.1'
+        'pytest-remotedata>=0.3.1',
+        'responses'
     ],
 }
 
