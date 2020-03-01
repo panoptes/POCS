@@ -301,7 +301,7 @@ class PanStateMachine(Machine):
     def after_state(self, event_data):
         """ Called after each state.
 
-        Updates the mongodb collection for state stats.
+        Updates the database collection for state stats.
 
         Args:
             event_data(transitions.EventData):  Contains informaton about the event

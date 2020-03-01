@@ -52,7 +52,7 @@ if __name__ == '__main__':
         default=6510,
         help='Port (e.g. 6510) to which to publish readings.')
     parser.add_argument(
-        '--db-type', dest='db_type', default='file', help='Database type (mongo or file).')
+        '--db-type', dest='db_type', default='file', help='Database type (file).')
     parser.add_argument('--db-name', dest='db_name', default='panoptes', help='Database name.')
     args = parser.parse_args()
 

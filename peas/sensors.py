@@ -17,7 +17,7 @@ class ArduinoSerialMonitor(object):
     """Monitors the serial lines and tries to parse any data recevied as JSON.
 
     Checks for the `camera_box` and `computer_box` entries in the config and tries to connect.
-    Values are updated in the mongo db.
+    Values are updated in the database.
     """
 
     def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):

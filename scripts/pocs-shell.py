@@ -819,7 +819,7 @@ def process_img(fn, start_time, remove_after=True):
             except Exception as e:
                 print_warning('Problem removing file: {}'.format(e))
     except Exception as e:
-        print_warning('Problem with adding to mongo: {}'.format(e))
+        print_warning('Problem with adding to database: {}'.format(e))
 
 
 def get_observation(alt=None, az=None, loc=None, num_exp=25, exptime=30 * u.second, name=None):

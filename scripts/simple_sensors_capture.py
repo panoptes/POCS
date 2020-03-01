@@ -4,7 +4,7 @@ from bson import json_util
 from peas.sensors import ArduinoSerialMonitor
 
 
-def main(loop=True, delay=1., filename=None, use_mongo=True, send_message=True, verbose=False):
+def main(loop=True, delay=1., filename=None, send_message=True, verbose=False):
     # Weather object
     monitor = ArduinoSerialMonitor(auto_detect=False)
 
@@ -13,7 +13,7 @@ def main(loop=True, delay=1., filename=None, use_mongo=True, send_message=True, 
 
             while True:
                 try:
-                    data = monitor.capture(use_mongo=use_mongo, send_message=send_message)
+                    data = monitor.capture(send_message=send_message)
 
                     if len(data.keys()) > 0:
                         f.write(json_util.dumps(data) + '\n')
@@ -42,8 +42,6 @@ if __name__ == '__main__':
                         help="If should keep reading, defaults to True")
     parser.add_argument("-d", "--delay", dest="delay", default=1.0, type=float,
                         help="Interval to read sensors")
-    parser.add_argument("--use-mongo", dest="use_mongo", default=False, action='store_true',
-                        help="Store to mongo")
     parser.add_argument("--send-message", dest="send_message", default=False, action='store_true',
                         help="Send zmq message")
     parser.add_argument("--filename", default="simple_sensor_capture.json",

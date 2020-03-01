@@ -398,8 +398,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         Processes the exposure.
 
-        If the camera is a primary camera, extract the jpeg image and save metadata to mongo
-        `current` collection. Saves metadata to mongo `observations` collection for all images.
+        If the camera is a primary camera, extract the jpeg image and save metadata to database
+        `current` collection. Saves metadata to `observations` collection for all images.
 
         Args:
             info (dict): Header metadata saved for the image

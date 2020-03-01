@@ -29,9 +29,6 @@ modules = {
         'gcloud',
         'google-cloud-storage',
     ],
-    'mongo': [
-        'pymongo>=3.2.2',
-    ],
     'dev': [
         'jupyter-console',
         'jupyterlab',
@@ -94,7 +91,6 @@ setup(name=PACKAGENAME,
       ],
       extras_require={
           'google': modules['google'],
-          'mongo': modules['mongo'],
           'dev': modules['dev'],
           'social': modules['social'],
           'testing': modules['testing'],
