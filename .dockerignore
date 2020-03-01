@@ -1,5 +1,10 @@
 docs/*
 .git/*
+.cache
+.eggs
+.vscode
+__pycache__
+*.egg-info
 
 # PANOPTES specific files
 conf_files/*_local.yaml
@@ -12,6 +17,10 @@ sftp-config.json
 # emacs backups
 *~
 \#*\#
+
+# ignore all markdown files (md) beside all README*.md
+*.md
+!README*.md
 
 # TeX products
 *.aux
