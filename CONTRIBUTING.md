@@ -20,21 +20,32 @@ for more info._
 
 * Pre-requisites
    - Ensure you have a [github account.](https://github.com/join)
+   - [Setup ssh access for github](https://help.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
    - If the change you wish to make is not already an
      [Issue in the project](https://github.com/panoptes/POCS/issues),
      please create one specifying the need.
 * Process
-   - Create a fork of the repository and use a topic branch within your fork to make changes.
-      - All of our repositories have a default branch of `develop` when you first clone them, but
-      your work should be in a separate branch.
+   - Create a fork of the repository via github (button in top-right).
+   - Clone your fork to your local system:
+       - `git clone git@github.com:YOUR-GITHUB-NAME/POCS.git`
+   - Set the "upstream" branch to `panoptes`:
+       - `cd POCS`
+       - `git remote add upstream https://github.com/panoptes/POCS.git`
+       - `git fetch upstream`
+   - Use a topic branch within your fork to make changes. All of our repositories have a
+      default branch of `develop` when you first clone them, but your work should be in a
+      separate branch (see note below). Your branch should almost always be based off of
+      the `upstream/develop` branch:
       - Create a branch with a descriptive name, e.g.:
-         - `git checkout -b new-camera-simulator`
-         - `git checkout -b issue-28`
+         - `git checkout -b new-camera-simulator upstream/develop`
+         - `git checkout -b issue-28 upstream/develop`
    - Ensure that your code meets this project's standards (see Testing and Code Formatting below).
          - Run `python setup.py test` from the `$POCS` directory before pushing to github
-   - Squash your commits so they only reflect meaningful changes.
-   - Submit a pull request to the repository, be sure to reference the issue number it
-      addresses.
+   - Submit a pull request to the repository, be sure to reference the issue number it addresses.
+
+
+   > Note: See ["A successful Git branching model"](https://nvie.com/posts/a-successful-git-branching-model/) for details
+   on how the repository is structured.
 
 
 # Setting up Local Environment
@@ -54,7 +65,8 @@ for more info._
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
    - Line length is set at 100 characters instead of 80.
    - It is recommended to have your editor auto-format code whenever you save a file
-      rather than attempt to go back and change an entire file all at once.
+      rather than attempt to go back and change an entire file all at once. There are
+      many plugins that exist for this.
    - You can also use
      [yapf (Yet Another Python Formatter)](https://github.com/google/yapf)
      for which POCS includes a style file (.style.yapf). For example:
