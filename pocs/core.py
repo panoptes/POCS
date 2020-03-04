@@ -392,10 +392,7 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
-                              is_safe,
-                              age,
-                              timestamp)
+            self.logger.debug(f"Weather Safety: {is_safe} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
             self.logger.warning("No record found in DB: {}", e)
@@ -477,10 +474,7 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Power Safety: {} [{:.0f} sec old - {:%Y-%m-%d %H:%M:%S}]",
-                              has_power,
-                              age,
-                              timestamp)
+            self.logger.debug(f"Power Safety: {has_power} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
             self.logger.warning("No record found in DB: {}", e)

@@ -40,19 +40,19 @@ class Shutter(object):
         if input_char in self.open_commands:
             if self.is_open:
                 return (False, self.is_open_char)
-            self.logger.info('Opening side %s, starting position %r' % (self.side, self.position))
+            self.logger.info(f'Opening side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_OPEN_INCREMENT)
             if self.is_open:
-                self.logger.info('Opened side %s' % self.side)
+                self.logger.info(f'Opened side {self.side}')
                 return (True, self.is_open_char)
             return (True, input_char)
         elif input_char in self.close_commands:
             if self.is_closed:
                 return (False, self.is_closed_char)
-            self.logger.info('Closing side %s, starting position %r' % (self.side, self.position))
+            self.logger.info(f'Closing side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_CLOSED_INCREMENT)
             if self.is_closed:
-                self.logger.info('Closed side %s' % self.side)
+                self.logger.info(f'Closed side {self.side}')
                 return (True, self.is_closed_char)
             return (True, input_char)
         else:
@@ -116,7 +116,7 @@ class AstrohavenPLCSimulator:
                 return
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
-            self.logger.info('AstrohavenPLCSimulator.run remaining=%r' % remaining)
+            self.logger.info(f'AstrohavenPLCSimulator.run remaining={remaining}')
             if remaining <= 0:
                 self.do_output()
                 continue
