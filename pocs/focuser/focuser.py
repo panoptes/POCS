@@ -16,6 +16,7 @@ from astropy.modeling import fitting
 from pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils.images import focus as focus_utils
+from panoptes.utils.images import mask_saturated
 from panoptes.utils.images.plot import get_palette
 
 
@@ -349,9 +350,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                                         keep_file=True,
                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_thumb = focus_utils.mask_saturated(dark_thumb, threshold=0.3)
+                dark_thumb = mask_saturated(dark_thumb, threshold=0.3)
             except TypeError:
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
+            except Exception as e:
+                self.logger.warning(f'Problem getting dark: {e!r}')
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
         initial_fn = "{}_{}_{}.{}".format(initial_focus,
@@ -393,7 +396,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            masks[i] = focus_utils.mask_saturated(thumbnail).mask
+            masks[i] = mask_saturated(thumbnail).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             thumbnails[i] = thumbnail
@@ -473,8 +476,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             seconds, file_path, thumbnail_size, keep_file=True)
 
         if make_plots:
-            initial_thumbnail = focus_utils.mask_saturated(initial_thumbnail)
-            final_thumbnail = focus_utils.mask_saturated(final_thumbnail)
+            initial_thumbnail = mask_saturated(initial_thumbnail)
+            final_thumbnail = mask_saturated(final_thumbnail)
             if dark_thumb is not None:
                 initial_thumbnail = initial_thumbnail - dark_thumb
                 final_thumbnail = final_thumbnail - dark_thumb
