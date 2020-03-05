@@ -3,7 +3,7 @@ from glob import glob
 
 from pocs.mount.mount import AbstractMount  # pragma: no flakes
 from pocs.utils.location import create_location_from_config
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config

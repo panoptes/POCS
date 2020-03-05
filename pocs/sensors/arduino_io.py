@@ -11,7 +11,7 @@ import threading
 import traceback
 
 from panoptes.utils.error import ArduinoDataError
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils import CountdownTimer
 from panoptes.utils import rs232
 

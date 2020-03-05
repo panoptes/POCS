@@ -10,7 +10,7 @@ import time
 
 from pocs.sensors import arduino_io
 import panoptes.utils.error as error
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils import CountdownTimer
 from panoptes.utils import rs232
 

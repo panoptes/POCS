@@ -20,8 +20,8 @@ from multiprocessing import Process
 from scalpl import Cut
 
 from pocs import hardware
+from pocs.utils.logger import get_logger
 from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
@@ -33,7 +33,7 @@ Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
 
-logger = get_logger(serialize=False)
+logger = get_logger()
 
 
 def pytest_addoption(parser):

@@ -8,7 +8,7 @@ import subprocess
 import shutil
 
 from panoptes.utils import error
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images import make_timelapse

@@ -11,7 +11,7 @@ from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 
 from pocs.utils.location import create_location_from_config

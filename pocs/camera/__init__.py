@@ -7,7 +7,7 @@ from astropy import units as u
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
 
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module

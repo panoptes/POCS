@@ -6,7 +6,7 @@ from pocs.base import PanBase
 from pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):

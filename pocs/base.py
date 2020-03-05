@@ -4,7 +4,7 @@ from requests.exceptions import ConnectionError
 from pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
-from panoptes.utils.logger import get_logger
+from pocs.utils.logger import get_logger
 
 
 class PanBase(object):
@@ -19,7 +19,7 @@ class PanBase(object):
 
         self._config_port = config_port
 
-        self.logger = get_logger(serialize=False)
+        self.logger = get_logger()
 
         simulators = self.get_config('simulator', default=[])
         if simulators:
