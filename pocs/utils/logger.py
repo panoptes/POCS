@@ -43,7 +43,7 @@ def get_logger(profile='panoptes',
     log_dir = os.path.normpath(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    console_fmt = "<lvl>{level:.1s}</lvl> <blue>{time:MM-DD HH:mm:ss.ss!UTC} ({time:HH:mm:ss.ss})</blue> | {name: ^15} | {function: ^15} | {line: >3} | <lvl>{message}</lvl>"
+    formatter = ConsoleFormatter()
 
     console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
     full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
@@ -52,7 +52,7 @@ def get_logger(profile='panoptes',
         sink=console_log_path,
         rotation='11:30',
         retention=1,
-        format=console_fmt,
+        format=formatter.format,
         enqueue=True,  # multiprocessing
         colorize=True,
         backtrace=True,
@@ -78,3 +78,22 @@ def get_logger(profile='panoptes',
     )
 
     return logger
+
+
+class ConsoleFormatter:
+
+    """Custom formatter to have dynamic widths for logging.
+
+    See https://loguru.readthedocs.io/en/stable/resources/recipes.html#dynamically-formatting-messages-to-properly-align-values-with-padding
+
+    """
+
+    def __init__(self):
+        self.padding = 0
+        self.fmt = "<lvl>{level:.1s}</lvl> <blue>{time:MM-DD HH:mm:ss.ss!UTC} ({time:HH:mm:ss.ss})</blue> | {name} {function}:{line}{extra[padding]} | <lvl>{message}</lvl>\n"
+
+    def format(self, record):
+        length = len("{name}:{function}:{line}".format(**record))
+        self.padding = max(self.padding, length)
+        record["extra"]["padding"] = " " * (self.padding - length)
+        return self.fmt
