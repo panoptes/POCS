@@ -139,9 +139,9 @@ def create_cameras_from_config(config_port='6563', **kwargs):
             # Create the camera object
             cam = module.Camera(config_port=config_port, **device_config)
         except error.NotFound:
-            logger.error(msg=f"Cannot find camera module with config: {device_config}")
+            logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
-            logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
+            logger.error(f"Cannot create camera type: {device_config['model']} {e}")
         else:
             is_primary = ''
             if camera_info.get('primary', '') == cam.uid:
@@ -230,9 +230,9 @@ def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
             # Create the camera object
             cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
         except error.NotFound:  # pragma: no cover
-            logger.error(msg="Cannot find camera module: {}".format(device_config['model']))
+            logger.error("Cannot find camera module: {}".format(device_config['model']))
         except Exception as e:  # pragma: no cover
-            logger.error(msg="Cannot create camera type: {} {}".format(device_config['model'], e))
+            logger.error("Cannot create camera type: {} {}".format(device_config['model'], e))
         else:
             is_primary = ''
             if cam_num == 0:

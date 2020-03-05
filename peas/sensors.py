@@ -155,10 +155,9 @@ class ArduinoSerialMonitor(object):
 def auto_detect_arduino_devices(comports=None):
     if comports is None:
         comports = find_arduino_devices()
-    logger = get_root_logger()
     result = []
     for port in comports:
-        v = detect_board_on_port(port, logger)
+        v = detect_board_on_port(port)
         if v:
             result.append(v)
     return result

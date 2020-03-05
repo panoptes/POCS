@@ -20,10 +20,9 @@ def auto_detect_arduino_devices(ports=None):
     """Returns a list of tuples of (board_name, port)."""
     if ports is None:
         ports = get_arduino_ports()
-    logger = get_root_logger()
     result = []
     for port in ports:
-        board_name = detect_board_on_port(port, logger)
+        board_name = detect_board_on_port(port)
         if board_name:
             result.append((board_name, port))
     return result

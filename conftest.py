@@ -9,10 +9,13 @@
 import copy
 import os
 import pytest
+from _pytest.logging import caplog as _caplog
+import logging
 import subprocess
 import time
 import shutil
 
+from contextlib import suppress
 from multiprocessing import Process
 from scalpl import Cut
 
@@ -470,3 +473,16 @@ def tiny_fits_file(data_dir):
 @pytest.fixture(scope='session')
 def noheader_fits_file(data_dir):
     return os.path.join(data_dir, 'noheader.fits')
+
+
+@pytest.fixture
+def caplog(_caplog):
+    class PropogateHandler(logging.Handler):
+        def emit(self, record):
+            logging.getLogger(record.name).handle(record)
+
+    logger = get_root_logger()
+    handler_id = logger.add(PropogateHandler(), format="{message}")
+    yield _caplog
+    with suppress(ValueError):
+        logger.remove(handler_id)

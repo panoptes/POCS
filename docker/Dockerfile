@@ -1,6 +1,6 @@
 ARG arch=amd64
 
-FROM gcr.io/panoptes-exp/panoptes-utils:$arch AS pocs-base
+FROM gcr.io/panoptes-exp/panoptes-utils:latest AS pocs-base
 MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
 
 ARG pandir=/var/panoptes
