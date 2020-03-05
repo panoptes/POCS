@@ -11,7 +11,7 @@ import threading
 import traceback
 
 from panoptes.utils.error import ArduinoDataError
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils import CountdownTimer
 from panoptes.utils import rs232
 
@@ -51,7 +51,7 @@ def detect_board_on_port(port):
         line of JSON from the port, parse it and find a 'name'
         attribute in the top-level object. Else returns None.
     """
-    logger = get_root_logger()
+    logger = get_logger()
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     serial_reader = None
     try:
@@ -136,7 +136,7 @@ class ArduinoIO(object):
         self._db = db
         self._pub = pub
         self._sub = sub
-        self._logger = get_root_logger()
+        self._logger = get_logger()
         self._last_reading = None
         self._report_next_reading = True
         self._cmd_topic = "{}:commands".format(board)

@@ -11,7 +11,7 @@ from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 
 from pocs.utils.location import create_location_from_config
@@ -20,7 +20,7 @@ from pocs.utils.location import create_location_from_config
 def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwargs):
     """ Sets up the scheduler that will be used by the observatory """
 
-    logger = get_root_logger()
+    logger = get_logger()
 
     scheduler_config = get_config('scheduler', default=None, port=config_port)
     logger.info(f'scheduler_config: {scheduler_config!r}')

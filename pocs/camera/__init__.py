@@ -7,7 +7,7 @@ from astropy import units as u
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
 
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
@@ -64,7 +64,7 @@ def create_cameras_from_config(config_port='6563', **kwargs):
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    logger = get_root_logger()
+    logger = get_logger()
 
     config = get_config(port=config_port)
 
@@ -185,7 +185,7 @@ def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    logger = get_root_logger()
+    logger = get_logger()
 
     cameras = OrderedDict()
 

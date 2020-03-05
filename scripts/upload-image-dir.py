@@ -8,12 +8,12 @@ import subprocess
 import shutil
 
 from panoptes.utils import error
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images import make_timelapse
 
-logger = get_root_logger()
+logger = get_logger()
 
 
 def upload_observation_to_bucket(pan_id,

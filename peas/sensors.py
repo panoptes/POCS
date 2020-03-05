@@ -7,7 +7,7 @@ from serial.tools.list_ports import comports as list_comports
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils import error
@@ -21,7 +21,7 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):
-        self.logger = get_root_logger()
+        self.logger = get_logger()
         # Sensors default to INFO level
         self.logger.setLevel(logging.INFO)
 
@@ -181,7 +181,7 @@ def detect_board_on_port(port):
         port, parse it and find a 'name' attribute in the top-level object.
         Else returns None.
     """
-    logger = get_root_logger()
+    logger = get_logger()
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     try:
         serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)

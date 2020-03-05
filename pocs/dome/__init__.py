@@ -3,7 +3,9 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from pocs.base import PanBase
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def create_dome_from_config(config_port='6563', *args, **kwargs):
@@ -14,7 +16,6 @@ def create_dome_from_config(config_port='6563', *args, **kwargs):
     independent actuators, for example slit, rotation and vents. Those would need to be handled
     by a single dome driver class.
     """
-    logger = get_root_logger()
 
     dome_config = get_config('dome', port=config_port)
 
@@ -34,7 +35,6 @@ def create_dome_from_config(config_port='6563', *args, **kwargs):
 
 
 def create_dome_simulator(config_port=6563, *args, **kwargs):
-    logger = get_root_logger()
 
     dome_config = get_config('dome', port=config_port)
 

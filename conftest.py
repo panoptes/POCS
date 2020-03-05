@@ -21,7 +21,7 @@ from scalpl import Cut
 
 from pocs import hardware
 from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
@@ -32,6 +32,8 @@ from panoptes.utils.data import Downloader
 Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
+
+logger = get_logger(serialize=False)
 
 
 def pytest_addoption(parser):
@@ -121,7 +123,6 @@ def pytest_runtest_logstart(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     try:
-        logger = get_root_logger()
         logger.critical('##########' * 8)
         logger.critical('     START TEST {}', nodeid)
         logger.critical('')
@@ -140,7 +141,6 @@ def pytest_runtest_logfinish(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     try:
-        logger = get_root_logger()
         logger.critical('')
         logger.critical('       END TEST {}', nodeid)
         logger.critical('##########' * 8)
@@ -153,7 +153,6 @@ def pytest_runtest_logreport(report):
     if report.skipped or report.outcome != 'failed':
         return
     try:
-        logger = get_root_logger()
         logger.critical('')
         logger.critical('  TEST {} FAILED during {}\n\n{}\n', report.nodeid, report.when,
                         report.longreprtext)
@@ -220,7 +219,6 @@ def config_server_args(config_path):
 @pytest.fixture(scope='session', autouse=True)
 def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
 
-    logger = get_root_logger()
     logger.critical(f'Starting config_server for testing session')
 
     def start_config_server():
@@ -276,7 +274,6 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     instances that are created (propogated through PanBase).
     """
 
-    logger = get_root_logger()
     logger.critical(f'Starting config_server for testing function')
 
     def start_config_server():
@@ -382,7 +379,6 @@ def message_forwarder(messaging_ports):
         args.append(str(sub))
         args.append(str(pub))
 
-    logger = get_root_logger()
     logger.info('message_forwarder fixture starting: {}', args)
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # It takes a while for the forwarder to start, so allow for that.
@@ -481,7 +477,6 @@ def caplog(_caplog):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
-    logger = get_root_logger()
     handler_id = logger.add(PropogateHandler(), format="{message}")
     yield _caplog
     with suppress(ValueError):

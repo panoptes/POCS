@@ -3,8 +3,10 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from panoptes.utils import error
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
+
+logger = get_logger()
 
 
 def create_location_from_config(config_port=6563):
@@ -22,7 +24,6 @@ def create_location_from_config(config_port=6563):
              * horizon
 
      """
-    logger = get_root_logger()
 
     logger.debug('Setting up site details')
 

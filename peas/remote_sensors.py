@@ -5,7 +5,7 @@ from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.messaging import PanMessaging
 
 
@@ -13,7 +13,7 @@ class RemoteMonitor(object):
     """Does a pull request on an endpoint to obtain a JSON document."""
 
     def __init__(self, endpoint_url=None, sensor_name=None, *args, **kwargs):
-        self.logger = get_root_logger()
+        self.logger = get_logger()
         self.logger.setLevel(logging.INFO)
         self.logger.info(f'Setting up remote sensor {sensor_name}')
 

@@ -3,11 +3,13 @@ from glob import glob
 
 from pocs.mount.mount import AbstractMount  # pragma: no flakes
 from pocs.utils.location import create_location_from_config
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
+
+logger = get_logger()
 
 
 def create_mount_from_config(config_port='6563',
@@ -39,7 +41,6 @@ def create_mount_from_config(config_port='6563',
         error.MountNotFound: Exception raised when mount cannot be created
             because of incorrect configuration.
     """
-    logger = get_root_logger()
 
     # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
@@ -104,7 +105,6 @@ def create_mount_from_config(config_port='6563',
 
 
 def create_mount_simulator(config_port='6563', *args, **kwargs):
-    logger = get_root_logger()
 
     # Remove mount simulator
     current_simulators = get_config('simulator', default=[], port=config_port)

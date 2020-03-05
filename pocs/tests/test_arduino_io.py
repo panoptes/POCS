@@ -10,7 +10,7 @@ import time
 
 from pocs.sensors import arduino_io
 import panoptes.utils.error as error
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils import CountdownTimer
 from panoptes.utils import rs232
 
@@ -382,7 +382,7 @@ def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subs
             assert not aio.stop_running
 
             # And we should be able to send it the command over the command messaging system.
-            get_root_logger().debug('Sending shutdown command')
+            get_logger().debug('Sending shutdown command')
             cmd_publisher.send_message(cmd_topic, dict(command='shutdown'))
             # stop_running should still be False since we've not yet called handle_commands.
             assert not aio.stop_running
@@ -394,8 +394,8 @@ def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subs
                 aio.handle_commands()
                 if aio.stop_running:
                     break
-                get_root_logger().debug('Shutdown not handled yet')
-                get_root_logger().debug('ArduinoIO.stop_running == {!r}', aio.stop_running)
+                get_logger().debug('Shutdown not handled yet')
+                get_logger().debug('ArduinoIO.stop_running == {!r}', aio.stop_running)
 
             assert aio.stop_running
 

@@ -6,7 +6,7 @@ from pocs.base import PanBase
 from pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
-from panoptes.utils.logger import get_root_logger
+from panoptes.utils.logger import get_logger
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
@@ -67,8 +67,8 @@ class AbstractSDKCamera(AbstractCamera):
         # Would usually use self.logger but that won't exist until after calling super().__init__(),
         # and don't want to do that until after the serial number and port have both been determined
         # in order to avoid log entries with misleading values. To enable logging during the device
-        # scanning phase use get_root_logger() instead.
-        logger = get_root_logger()
+        # scanning phase use get_logger() instead.
+        logger = get_logger()
 
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
         # which is some form of unique ID readable via the camera SDK.
