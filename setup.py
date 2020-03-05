@@ -26,28 +26,25 @@ modules = {
     'required': [
         'astroplan>=0.6',
         'astropy>=4.0.0',
+        'codecov',  # testing
+        'coverage',  # testing
+        'coveralls',  # testing
         'matplotlib',
+        'mocket',  # testing
         'numpy',
         'pandas',
         'panoptes-utils>=0.2.1',
+        'pycodestyle==2.3.1',  # testing
         'pyserial>=3.1.1',
+        'pytest-cov',  # testing
+        'pytest-remotedata>=0.3.1',  # testing
+        'pytest>=3.6',  # testing
         'PyYAML>=5.1',
         'readline',
-        'responses',
         'requests',
+        'responses',  # testing
         'scipy',
         'transitions',
-    ],
-    'testing': [
-        'codecov',
-        'coverage',
-        'coveralls',
-        'mocket',
-        'pycodestyle==2.3.1',
-        'pytest>=3.6',
-        'pytest-cov',
-        'pytest-remotedata>=0.3.1',
-        'responses'
     ],
 }
 
@@ -62,16 +59,13 @@ setup(name=PACKAGENAME,
       keywords=KEYWORDS,
       python_requires='>=3.6',
       setup_requires=['pytest-runner'],
-      tests_require=modules['testing'],
+      tests_require=modules['required'],
       install_requires=modules['required'],
       scripts=[
           'bin/pocs',
           'bin/pocs-shell',
           'bin/peas-shell',
       ],
-      extras_require={
-          'testing': modules['testing'],
-      },
       packages=find_namespace_packages(exclude=['tests', 'test_*']),
       classifiers=[
           'Development Status :: 3 - Alpha',

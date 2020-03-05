@@ -1,5 +1,4 @@
 import sys
-import logging
 
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
@@ -22,8 +21,6 @@ class ArduinoSerialMonitor(object):
 
     def __init__(self, sensor_name=None, auto_detect=False, *args, **kwargs):
         self.logger = get_logger()
-        # Sensors default to INFO level
-        self.logger.setLevel(logging.INFO)
 
         # Setup the DB either from kwargs or config.
         self.db = None
