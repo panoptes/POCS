@@ -6,7 +6,7 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.logger import get_root_logger
 
 
-def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
+def create_dome_from_config(config_port='6563', *args, **kwargs):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -14,8 +14,7 @@ def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
     independent actuators, for example slit, rotation and vents. Those would need to be handled
     by a single dome driver class.
     """
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
 
     dome_config = get_config('dome', port=config_port)
 
@@ -34,9 +33,8 @@ def create_dome_from_config(config_port='6563', logger=None, *args, **kwargs):
     return dome
 
 
-def create_dome_simulator(config_port=6563, logger=None, *args, **kwargs):
-    if not logger:
-        logger = get_root_logger()
+def create_dome_simulator(config_port=6563, *args, **kwargs):
+    logger = get_root_logger()
 
     dome_config = get_config('dome', port=config_port)
 

@@ -13,7 +13,6 @@ from panoptes.utils.config.client import set_config
 def create_mount_from_config(config_port='6563',
                              mount_info=None,
                              earth_location=None,
-                             logger=None,
                              *args, **kwargs):
     """Create a mount instance based on the provided config.
 
@@ -29,7 +28,6 @@ def create_mount_from_config(config_port='6563',
             location of the mount on the Earth. If not specified, the config must include the
             observatory's location (Latitude, Longitude and Altitude above mean sea level).
             Useful for testing.
-        logger (`logging`|None, optional): A python logging instance.
         *args: Other positional args will be passed to the concrete class specified in the config.
         **kwargs: Other keyword args will be passed to the concrete class specified in the config.
 
@@ -41,8 +39,7 @@ def create_mount_from_config(config_port='6563',
         error.MountNotFound: Exception raised when mount cannot be created
             because of incorrect configuration.
     """
-    if logger is None:
-        logger = get_root_logger()
+    logger = get_root_logger()
 
     # If mount_info was not passed as a paramter, check config.
     if mount_info is None:
@@ -106,9 +103,8 @@ def create_mount_from_config(config_port='6563',
     return mount
 
 
-def create_mount_simulator(config_port='6563', logger=None, *args, **kwargs):
-    if not logger:
-        logger = get_root_logger()
+def create_mount_simulator(config_port='6563', *args, **kwargs):
+    logger = get_root_logger()
 
     # Remove mount simulator
     current_simulators = get_config('simulator', default=[], port=config_port)

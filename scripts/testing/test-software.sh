@@ -17,6 +17,8 @@ EOF
 
 sleep 5;
 
-docker run --rm -it -v /var/panoptes/:/var/panoptes gcr.io/panoptes-survey/pocs \
-    /bin/zsh -ic "scripts/testing/run-tests.sh"
-
+docker run --rm -it \
+    -e LOCAL_USER_ID=$(id -u) \
+    -v /var/panoptes/:/var/panoptes/ \
+    gcr.io/panoptes-exp/pocs:latest \
+    "${PANDIR}/POCS/scripts/testing/run-tests.sh"

@@ -7,7 +7,7 @@ from astropy import units as u
 from pocs.camera.camera import AbstractCamera  # pragma: no flakes
 from pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
 
-from panoptes.utils import logger as logger_module
+from panoptes.utils.logger import get_root_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
@@ -42,7 +42,7 @@ def list_connected_cameras():
     return ports
 
 
-def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
+def create_cameras_from_config(config_port='6563', **kwargs):
     """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
@@ -50,7 +50,6 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
 
     Args:
         config_port (str, optional): config_server port, default '6563'.
-        logger (None, optional): A logger object.
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
             automatically discover the ports.
@@ -65,8 +64,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    if not logger:
-        logger = logger_module.get_root_logger()
+    logger = get_root_logger()
 
     config = get_config(port=config_port)
 
@@ -169,7 +167,7 @@ def create_cameras_from_config(config_port='6563', logger=None, **kwargs):
     return cameras
 
 
-def create_camera_simulator(num_cameras=2, config_port='6563', logger=None, **kwargs):
+def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
     """Create simulator camera object(s).
 
     Args:
@@ -187,8 +185,7 @@ def create_camera_simulator(num_cameras=2, config_port='6563', logger=None, **kw
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    if not logger:
-        logger = logger_module.get_root_logger()
+    logger = get_root_logger()
 
     cameras = OrderedDict()
 

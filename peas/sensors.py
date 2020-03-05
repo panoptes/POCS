@@ -152,11 +152,10 @@ class ArduinoSerialMonitor(object):
         return sensor_data
 
 
-def auto_detect_arduino_devices(comports=None, logger=None):
+def auto_detect_arduino_devices(comports=None):
     if comports is None:
         comports = find_arduino_devices()
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
     result = []
     for port in comports:
         v = detect_board_on_port(port, logger)
@@ -176,15 +175,14 @@ def find_arduino_devices():
     return [p.device for p in comports if 'Arduino' in p.description]
 
 
-def detect_board_on_port(port, logger=None):
+def detect_board_on_port(port):
     """Open a port and determine which type of board its producing output.
 
     Returns: (name, serial_reader) if we can read a line of JSON from the
         port, parse it and find a 'name' attribute in the top-level object.
         Else returns None.
     """
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     try:
         serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)

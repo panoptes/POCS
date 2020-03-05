@@ -1,10 +1,9 @@
 #!/bin/bash -e
 
-export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
-export COVERAGE_PROCESS_START=.coveragerc
+export PYTHONPATH="${PYTHONPATH}:${PANDIR}/POCS/scripts/coverage"
+export COVERAGE_PROCESS_START="${PANDIR}/POCS/.coveragerc"
 
-# Die on first test for now
-coverage run "$(command -v pytest)" -xvvrst --test-databases all
+coverage run "$(command -v pytest)" -vv -rfes --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then

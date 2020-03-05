@@ -29,7 +29,7 @@ modules = {
         'matplotlib',
         'numpy',
         'pandas',
-        'panoptes-utils>=0.2.0',
+        'panoptes-utils>=0.2.1',
         'pyserial>=3.1.1',
         'PyYAML>=5.1',
         'readline',

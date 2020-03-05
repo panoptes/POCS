@@ -16,12 +16,11 @@ from panoptes.utils import CountdownTimer
 from panoptes.utils import rs232
 
 
-def auto_detect_arduino_devices(ports=None, logger=None):
+def auto_detect_arduino_devices(ports=None):
     """Returns a list of tuples of (board_name, port)."""
     if ports is None:
         ports = get_arduino_ports()
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
     result = []
     for port in ports:
         board_name = detect_board_on_port(port, logger)
@@ -46,15 +45,14 @@ def get_arduino_ports():
     ]
 
 
-def detect_board_on_port(port, logger=None):
+def detect_board_on_port(port):
     """Determine which type of board is attached to the specified port.
 
     Returns: Name of the board (e.g. 'camera_board') if we can read a
         line of JSON from the port, parse it and find a 'name'
         attribute in the top-level object. Else returns None.
     """
-    if not logger:
-        logger = get_root_logger()
+    logger = get_root_logger()
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     serial_reader = None
     try:

@@ -7,7 +7,7 @@ from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config.client import get_config
 
 
-def create_location_from_config(config_port=6563, logger=None):
+def create_location_from_config(config_port=6563):
     """
      Sets up the site and location details.
 
@@ -22,8 +22,7 @@ def create_location_from_config(config_port=6563, logger=None):
              * horizon
 
      """
-    if logger is None:
-        logger = get_root_logger()
+    logger = get_root_logger()
 
     logger.debug('Setting up site details')
 
