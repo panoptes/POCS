@@ -274,7 +274,7 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     instances that are created (propogated through PanBase).
     """
 
-    logger.critical(f'Starting config_server for testing function')
+    logger.trace(f'Starting config_server for testing function')
 
     def start_config_server():
         # Load the config items into the app config.
@@ -287,7 +287,7 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     proc = Process(target=start_config_server)
     proc.start()
 
-    logger.info(f'config_server started with PID={proc.pid}')
+    logger.trace(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -295,28 +295,28 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    logger.trace(f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.info(f'Setting testing database to {db_name}')
+    logger.trace(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
-    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.trace(f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.info(f'Setting temporary image directory for testing')
+    logger.trace(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator
     simulators = hardware.get_simulator_names(simulator=['all'])
-    logger.info(f'Setting all hardware to use simulators: {simulators}')
+    logger.trace(f'Setting all hardware to use simulators: {simulators}')
     set_config('simulator', simulators, port=config_port)
 
     yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
+    logger.trace(f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
 
