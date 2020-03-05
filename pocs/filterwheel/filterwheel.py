@@ -187,10 +187,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         if self.camera and self.camera.is_exposing:
             msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
+            self.logger.error(msg)
             raise error.PanError(msg)
 
         if self.is_moving:
             msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
+            self.logger.error(msg)
             raise error.PanError(msg)
 
         position = self._parse_position(position)

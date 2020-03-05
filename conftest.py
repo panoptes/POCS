@@ -6,8 +6,8 @@
 # In addition, there are fixtures defined here that are available to
 # all tests, not just those in pocs/tests.
 
-import copy
 import os
+import copy
 import pytest
 from _pytest.logging import caplog as _caplog
 import logging
@@ -33,7 +33,7 @@ Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
 
-logger = get_logger()
+logger = get_logger(stderr=True, full_log_file=None)
 
 
 def pytest_addoption(parser):
@@ -219,7 +219,7 @@ def config_server_args(config_path):
 @pytest.fixture(scope='session', autouse=True)
 def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
 
-    logger.critical(f'Starting config_server for testing session')
+    logger.trace(f'Starting config_server for testing session')
 
     def start_config_server():
         # Load the config items into the app config.
@@ -232,7 +232,7 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     proc = Process(target=start_config_server)
     proc.start()
 
-    logger.info(f'config_server started with PID={proc.pid}')
+    logger.trace(f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -240,28 +240,28 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.info(f'Setting testing name and unit_id to {unit_id}')
+    logger.trace(f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=static_config_port)
     set_config('pan_id', unit_id, port=static_config_port)
 
-    logger.info(f'Setting testing database to {db_name}')
+    logger.trace(f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=static_config_port)
 
     fields_file = 'simulator.yaml'
-    logger.info(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.trace(f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=static_config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.info(f'Setting temporary image directory for testing')
+    logger.trace(f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=static_config_port)
 
     # Make everything a simulator
-    logger.info(f'Setting all hardware to use simulators')
+    logger.trace(f'Setting all hardware to use simulators')
     set_config('simulator', hardware.get_simulator_names(
         simulator=['all']), port=static_config_port)
 
     yield
-    logger.critical(f'Killing config_server started with PID={proc.pid}')
+    logger.trace(f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
 

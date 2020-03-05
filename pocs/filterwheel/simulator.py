@@ -82,7 +82,6 @@ class FilterWheel(AbstractFilterWheel):
         self._serial_number = 'SW{:04d}'.format(random.randint(0, 9999))
         self._position = 1
         self._moving = False
-        self.logger.info("Filter wheel {} initialised".format(self))
         self._connected = True
 
 ##################################################################################################
@@ -125,4 +124,5 @@ class FilterWheel(AbstractFilterWheel):
     def _timeout_move(self):
         self._move_event.set()
         msg = "Timeout waiting for filter wheel move to complete"
+        self.logger.error(msg)
         raise error.Timeout(msg)

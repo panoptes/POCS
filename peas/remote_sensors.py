@@ -1,5 +1,4 @@
 import requests
-import logging
 
 from panoptes.utils import current_time
 from panoptes.utils import error
@@ -14,7 +13,6 @@ class RemoteMonitor(object):
 
     def __init__(self, endpoint_url=None, sensor_name=None, *args, **kwargs):
         self.logger = get_logger()
-        self.logger.setLevel(logging.INFO)
         self.logger.info(f'Setting up remote sensor {sensor_name}')
 
         # Setup the DB either from kwargs or config.

@@ -137,11 +137,11 @@ def test_move_bad_name(filterwheel):
 
 def test_move_timeout(dynamic_config_server, config_port, caplog):
     slow_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
-                                      move_time=0.1,
+                                      move_time=0.5,
                                       timeout=0.2,
                                       config_port=config_port)
     slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
-    time.sleep(0.001)  # For some reason takes a moment for the error to get logged.
+    time.sleep(0.5)  # For some reason takes a moment for the error to get logged.
 
     # Collect the logs
     levels = [rec.levelname for rec in caplog.records]
@@ -163,9 +163,9 @@ def test_move_times(dynamic_config_server, config_port, name, unidirectional, ex
     assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == \
         pytest.approx(0.1, rel=4e-2)
     assert timeit("sim_filterwheel.position = 4", number=1, globals=locals()) == \
-        pytest.approx(0.2, rel=4e-2)
+        pytest.approx(0.2, rel=5e-2)
     assert timeit("sim_filterwheel.position = 3", number=1, globals=locals()) == \
-        pytest.approx(expected, rel=4e-2)
+        pytest.approx(expected, rel=6e-2)
 
 
 def test_move_exposing(dynamic_config_server, config_port, tmpdir, caplog):
