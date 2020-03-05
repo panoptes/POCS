@@ -329,39 +329,6 @@ def temp_file(tmp_path):
     os.unlink(f)
 
 
-class FakeLogger:
-    def __init__(self):
-        self.messages = []
-        pass
-
-    def _add(self, name, *args):
-        msg = [name]
-        assert len(args) == 1
-        assert isinstance(args[0], tuple)
-        msg.append(args[0])
-        self.messages.append(msg)
-
-    def debug(self, *args):
-        self._add('debug', args)
-
-    def info(self, *args):
-        self._add('info', args)
-
-    def warning(self, *args):
-        self._add('warning', args)
-
-    def error(self, *args):
-        self._add('error', args)
-
-    def critical(self, *args):
-        self._add('critical', args)
-
-
-@pytest.fixture(scope='function')
-def fake_logger():
-    return FakeLogger()
-
-
 @pytest.fixture(scope='function', params=_all_databases)
 def db_type(request, db_name):
 
@@ -375,8 +342,7 @@ def db_type(request, db_name):
 
 @pytest.fixture(scope='function')
 def db(db_type, db_name):
-    return PanDB(
-        db_type=db_type, db_name=db_name, logger=get_root_logger(), connect=True)
+    return PanDB(db_type=db_type, db_name=db_name, connect=True)
 
 
 @pytest.fixture(scope='function')

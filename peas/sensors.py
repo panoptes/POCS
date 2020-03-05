@@ -33,7 +33,7 @@ class ArduinoSerialMonitor(object):
             self.logger.info(f"Setting up {kwargs['db_type']} type database")
             db_type = kwargs.get('db_type', db_type)
 
-        self.db = PanDB(db_type=db_type, logger=self.logger)
+        self.db = PanDB(db_type=db_type)
 
         self.messaging = None
 
@@ -47,7 +47,7 @@ class ArduinoSerialMonitor(object):
         if auto_detect or get_config('environment.auto_detect', default=False):
 
             self.logger.debug('Performing auto-detect')
-            for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
+            for (sensor_name, serial_reader) in auto_detect_arduino_devices():
                 self.logger.info(f'Found name "{sensor_name}" on {serial_reader.name}')
                 self.serial_readers[sensor_name] = {
                     'reader': serial_reader,

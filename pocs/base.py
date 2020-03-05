@@ -19,9 +19,7 @@ class PanBase(object):
 
         self._config_port = config_port
 
-        self.logger = kwargs.get('logger')
-        if not self.logger:
-            self.logger = get_root_logger()
+        self.logger = get_root_logger()
 
         simulators = self.get_config('simulator', default=[])
         if simulators:
@@ -40,7 +38,7 @@ class PanBase(object):
             db_type = self.get_config('db.type')
             db_name = self.get_config('db.name')
 
-            _db = PanDB(db_type=db_type, db_name=db_name, logger=self.logger)
+            _db = PanDB(db_type=db_type, db_name=db_name)
 
         self.db = _db
 

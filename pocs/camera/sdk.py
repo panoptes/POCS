@@ -29,7 +29,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(**kwargs)
-        self._CDLL = load_c_library(name=name, path=library_path, logger=self.logger)
+        self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()
         self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
 

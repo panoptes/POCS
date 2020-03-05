@@ -219,7 +219,7 @@ def test_create_simulator_small_read_buffer(serial_handlers):
 
 def test_detect_board_on_port_invalid_port():
     """detect_board_on_port will fail if the port is bogus."""
-    assert arduino_io.detect_board_on_port(' not a valid port ', logger=get_root_logger()) is None
+    assert arduino_io.detect_board_on_port(' not a valid port ') is None
 
 
 def test_detect_board_on_port_not_a_board():
@@ -227,7 +227,7 @@ def test_detect_board_on_port_not_a_board():
 
     Detection will fail because loop:// handler doesn't print anything.
     """
-    assert arduino_io.detect_board_on_port('loop://', logger=get_root_logger()) is None
+    assert arduino_io.detect_board_on_port('loop://') is None
 
 
 def test_detect_board_on_port_no_handler_installed():
@@ -267,7 +267,7 @@ def test_get_arduino_ports(inject_get_serial_port_info):
 # --------------------------------------------------------------------------------------------------
 
 
-def test_auto_detect_arduino_devices(inject_get_serial_port_info, serial_handlers, fake_logger):
+def test_auto_detect_arduino_devices(inject_get_serial_port_info, serial_handlers):
     v = arduino_io.auto_detect_arduino_devices()
     assert len(v) == 2
     for ndx, (board, name) in enumerate([('telemetry', 't1'), ('camera', 'c1')]):
@@ -277,7 +277,7 @@ def test_auto_detect_arduino_devices(inject_get_serial_port_info, serial_handler
         assert v[ndx][1] == expected
 
     # Confirm that params are handled properly
-    u = arduino_io.auto_detect_arduino_devices(ports=[v[0][1]], logger=fake_logger)
+    u = arduino_io.auto_detect_arduino_devices(ports=[v[0][1]])
     assert len(u) == 1
     assert u[0] == v[0]
 

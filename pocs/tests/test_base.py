@@ -3,7 +3,6 @@ import pytest
 from pocs.base import PanBase
 
 from panoptes.utils.config.client import set_config
-from panoptes.utils.logger import get_root_logger
 from panoptes.utils.database import PanDB
 
 
@@ -26,7 +25,7 @@ def test_state_machine_in_config(dynamic_config_server, config_port):
 
 
 def test_with_logger(dynamic_config_server, config_port):
-    PanBase(config_port=config_port, logger=get_root_logger())
+    PanBase(config_port=config_port)
 
 
 def test_with_db(dynamic_config_server, config_port):

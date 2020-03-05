@@ -10,16 +10,14 @@ from pocs.sensors import arduino_io
 from pocs.utils.config import load_config
 from panoptes.utils import DelaySigTerm
 from panoptes.utils.database import PanDB
-from panoptes.utils.logger import get_root_logger
 from panoptes.utils.messaging import PanMessaging
 
 
 def main(board, port, cmd_port, msg_port, db_type, db_name):
     config = load_config(config_files=['pocs'])
     serial_config = config.get('environment', {}).get('serial', {})
-    logger = get_root_logger()
     serial_data = arduino_io.open_serial_device(port, serial_config=serial_config, name=board)
-    db = PanDB(db_type=db_type, db_name=db_name, logger=logger).db
+    db = PanDB(db_type=db_type, db_name=db_name).db
     sub = PanMessaging.create_subscriber(cmd_port)
     pub = PanMessaging.create_publisher(msg_port)
     aio = arduino_io.ArduinoIO(board, serial_data, db, pub, sub)
