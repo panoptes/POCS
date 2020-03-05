@@ -236,8 +236,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(f'Cooling power is {self.cooling_power}.')
-                self.logger.warning(f'Temp={self.temperature} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
+                self.logger.warning(f'Cooling power is {self.cooling_power:.02f}.')
+                self.logger.warning(f'Temp={self.temperature:.02f} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
                 return False
             else:
                 return True
@@ -552,7 +552,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
+        thumbnail = None
+        try:
+            thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
+        except Exception as e:
+            self.logger.warning(f'Problem getting thumbnail: {e!r}')
         return thumbnail
 
     @abstractmethod
