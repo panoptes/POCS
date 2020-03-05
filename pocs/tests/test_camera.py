@@ -313,9 +313,10 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
-    if camera.is_cooled_camera and camera.cooling_enabled is False:
-        camera.cooling_enabled = True
-        time.sleep(5)  # Give camera time to cool
+    # Allow for cooling
+    if camera.is_cooled_camera and camera.cooling_enabled:
+        while camera.is_temperature_stable is False:
+            time.sleep(0.5)
 
     assert camera.is_ready
     assert not camera.is_exposing
@@ -375,6 +376,11 @@ def test_exposure_collision(camera, tmpdir):
     Tests attempting to take an exposure while one is already in progress.
     With the SBIG cameras this will generate warning but still should work. Don't do this though!
     """
+    # Allow for cooling
+    if camera.is_cooled_camera and camera.cooling_enabled:
+        while camera.is_temperature_stable is False:
+            time.sleep(0.5)
+
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
