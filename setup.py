@@ -40,7 +40,7 @@ modules = {
         'matplotlib',
         'numpy',
         'pandas',
-        'panoptes-utils',
+        'panoptes-utils>=0.2.0',
         'photutils',
         'pyserial>=3.1.1',
         'python_dateutil',
