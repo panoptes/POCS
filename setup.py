@@ -47,6 +47,7 @@ modules = {
         'PyYAML>=5.1',
         'pyzmq<18.0.0',
         'readline',
+        'responses',
         'requests',
         'scipy',
         'transitions',
