@@ -36,7 +36,6 @@ modules = {
     'required': [
         'astroplan>=0.6',
         'astropy>=4.0.0',
-        'dateparser',
         'matplotlib',
         'numpy',
         'pandas',
@@ -45,7 +44,6 @@ modules = {
         'pyserial>=3.1.1',
         'python_dateutil',
         'PyYAML>=5.1',
-        'pyzmq>=19.0.0',
         'readline',
         'responses',
         'requests',
