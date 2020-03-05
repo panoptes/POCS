@@ -50,6 +50,10 @@ class Camera(AbstractSDKCamera):
 
         super().__init__(name, ASIDriver, *args, **kwargs)
 
+        # Increase default temperature_tolerance for ZWO cameras because the
+        # default value is too low for their temperature resolution.
+        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.6 * u.Celsius)
+
         if gain:
             self.gain = gain
 
