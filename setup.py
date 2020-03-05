@@ -3,8 +3,6 @@
 
 from setuptools import setup, find_namespace_packages
 
-import itertools
-
 from configparser import ConfigParser
 from distutils.command.build_py import build_py
 
@@ -25,14 +23,6 @@ PACKAGENAME = metadata.get('package_name', 'packagename')
 URL = metadata.get('url', 'http://projectpanoptes.org')
 
 modules = {
-    'google': [
-        'gcloud',
-        'google-cloud-storage',
-    ],
-    'dev': [
-        'jupyter-console',
-        'jupyterlab',
-    ],
     'required': [
         'astroplan>=0.6',
         'astropy>=4.0.0',
@@ -40,9 +30,7 @@ modules = {
         'numpy',
         'pandas',
         'panoptes-utils>=0.2.0',
-        'photutils',
         'pyserial>=3.1.1',
-        'python_dateutil',
         'PyYAML>=5.1',
         'readline',
         'responses',
@@ -75,10 +63,6 @@ setup(name=PACKAGENAME,
       python_requires='>=3.6',
       setup_requires=['pytest-runner'],
       tests_require=modules['testing'],
-      # List additional groups of dependencies here (e.g. development
-      # dependencies). You can install these using the following syntax,
-      # for example:
-      # $ pip install -e .[dev,test]
       install_requires=modules['required'],
       scripts=[
           'bin/pocs',
@@ -86,10 +70,7 @@ setup(name=PACKAGENAME,
           'bin/peas-shell',
       ],
       extras_require={
-          'google': modules['google'],
-          'dev': modules['dev'],
           'testing': modules['testing'],
-          'all': list(set(itertools.chain.from_iterable(modules.values())))
       },
       packages=find_namespace_packages(exclude=['tests', 'test_*']),
       classifiers=[
