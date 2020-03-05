@@ -45,15 +45,12 @@ modules = {
         'pyserial>=3.1.1',
         'python_dateutil',
         'PyYAML>=5.1',
-        'pyzmq<18.0.0',
+        'pyzmq>=19.0.0',
         'readline',
         'responses',
         'requests',
         'scipy',
         'transitions',
-    ],
-    'social': [
-        'tweepy',
     ],
     'testing': [
         'codecov',
@@ -93,7 +90,6 @@ setup(name=PACKAGENAME,
       extras_require={
           'google': modules['google'],
           'dev': modules['dev'],
-          'social': modules['social'],
           'testing': modules['testing'],
           'all': list(set(itertools.chain.from_iterable(modules.values())))
       },
