@@ -366,38 +366,38 @@ def test_arduino_io_shutdown(serial_handlers, memory_db, msg_publisher, msg_subs
     port = 'arduinosimulator://?board=' + board
     board = board + '_board'
     with open_serial_device(port) as ser:
-            aio = arduino_io.ArduinoIO(board, ser, memory_db, msg_publisher, cmd_subscriber)
+        aio = arduino_io.ArduinoIO(board, ser, memory_db, msg_publisher, cmd_subscriber)
 
-            # Ask it to stop working. Just records the request in a private variable,
-            # but if we'd been running it in a separate process this is how we'd get it
-            # to shutdown cleanly; the alternative would be to kill the process.
-            cmd_topic = board + ':commands'
-            assert cmd_topic == aio._cmd_topic
+        # Ask it to stop working. Just records the request in a private variable,
+        # but if we'd been running it in a separate process this is how we'd get it
+        # to shutdown cleanly; the alternative would be to kill the process.
+        cmd_topic = board + ':commands'
+        assert cmd_topic == aio._cmd_topic
 
-            # Direct manipulation of stop_running should work.
-            assert not aio.stop_running
-            aio.stop_running = True
-            assert aio.stop_running
-            aio.stop_running = False
-            assert not aio.stop_running
+        # Direct manipulation of stop_running should work.
+        assert not aio.stop_running
+        aio.stop_running = True
+        assert aio.stop_running
+        aio.stop_running = False
+        assert not aio.stop_running
 
-            # And we should be able to send it the command over the command messaging system.
-            get_logger().debug('Sending shutdown command')
-            cmd_publisher.send_message(cmd_topic, dict(command='shutdown'))
-            # stop_running should still be False since we've not yet called handle_commands.
-            assert not aio.stop_running
+        # And we should be able to send it the command over the command messaging system.
+        get_logger().debug('Sending shutdown command')
+        cmd_publisher.send_message(cmd_topic, dict(command='shutdown'))
+        # stop_running should still be False since we've not yet called handle_commands.
+        assert not aio.stop_running
 
-            # On a lightly loaded system, the send_message will work quickly, so that
-            # the first call to handle_commands receives it, but it might take longer
-            # sometimes.
-            for _ in range(10):
-                aio.handle_commands()
-                if aio.stop_running:
-                    break
-                get_logger().debug('Shutdown not handled yet')
-                get_logger().debug('ArduinoIO.stop_running == {!r}', aio.stop_running)
+        # On a lightly loaded system, the send_message will work quickly, so that
+        # the first call to handle_commands receives it, but it might take longer
+        # sometimes.
+        for _ in range(10):
+            aio.handle_commands()
+            if aio.stop_running:
+                break
+            get_logger().debug('Shutdown not handled yet')
+            get_logger().debug('ArduinoIO.stop_running == {!r}', aio.stop_running)
 
-            assert aio.stop_running
+        assert aio.stop_running
 
 
 def test_arduino_io_write_line(serial_handlers, memory_db, msg_publisher, msg_subscriber,
