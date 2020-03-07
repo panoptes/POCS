@@ -98,7 +98,7 @@ def get_logger(profile='panoptes',
         logger.add(
             sink=full_log_path,
             rotation='11:31',
-            retention='3 days',
+            retention='7 days',
             compression='gz',
             enqueue=True,  # multiprocessing
             serialize=True,
