@@ -1,11 +1,37 @@
+# CHANGELOG
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+- [CHANGELOG](#changelog)
+  - [[0.7.0] - 2020-04-07](#070---2020-04-07)
+- [Removed](#removed)
+  - [[0.6.2] - 2018-09-27](#062---2018-09-27)
+    - [Fixed](#fixed)
+    - [Changed](#changed)
+    - [Added](#added)
+    - [Removed](#removed-1)
+  - [[0.6.1] - 2018-09-20](#061---2018-09-20)
+    - [Fixed](#fixed-1)
+    - [Changed](#changed-1)
+    - [Added](#added-1)
+  - [[0.6.0] - 2017-12-30](#060---2017-12-30)
+    - [Changed](#changed-2)
+    - [Added](#added-2)
+    - [Removed](#removed-2)
+  - [[0.5.1] - 2017-12-02](#051---2017-12-02)
+    - [Added](#added-3)
+
 ## [0.7.0] - 2020-04-07
 
-Well if you thought 9 months between releases was a long time, how about 18 months! :)
-This version has a lot of breaking changes and is not backwards compatible with previous
-versions. The release is a stepping stone on the way to `0.8.0` and (eventually!) a `1.0.0`.
+If you thought 9 months between releases was a long time, how about 18 months! :) This version has a lot of breaking changes and is not backwards compatible with previous versions. The release is a stepping stone on the way to `0.8.0` and (eventually!) a `1.0.0`.
 
-The entire repo has been redesigned to support docker images. This comes with a
-number of changes, including the refactoring of many items into the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils.git) repo.
+The entire repo has been redesigned to support docker images. This comes with a number of changes, including the refactoring of many items into the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils.git) repo.
+
+# Removed
+
+* **Breaking** Config: Items related to the configuration system have been moved to the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server) in `panoptes-utils` repo.
 
 ## [0.6.2] - 2018-09-27
 

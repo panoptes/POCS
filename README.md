@@ -1,5 +1,4 @@
-PANOPTES Observatory Control System
-==================================
+# PANOPTES Observatory Control System
 
 <p align="center">
 <img src="https://projectpanoptes.org/uploads/2018/12/16/pan-logo.png" alt="PANOPTES logo" style="border: 1px solid;" width="400px" />  
