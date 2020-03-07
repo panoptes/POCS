@@ -20,7 +20,7 @@ class BaseConstraint(PanBase):
             *args (TYPE): Description
             **kwargs (TYPE): Description
         """
-        PanBase.__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
 
         assert isinstance(weight, float), \
             self.logger.error("Constraint weight must be a float greater than 0.0")

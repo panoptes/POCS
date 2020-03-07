@@ -39,7 +39,7 @@ class BaseScheduler(PanBase):
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
         """
-        PanBase.__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
 
         assert isinstance(observer, Observer)
 

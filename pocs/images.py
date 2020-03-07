@@ -24,9 +24,8 @@ class Image(PanBase):
             fits_file (str): Name of FITS file to be read (can be .fz)
             wcs_file (str, optional): Name of FITS file to use for WCS
         """
-        PanBase.__init__(self, *args, **kwargs)
-        assert os.path.exists(fits_file), self.logger.warning(
-            'File does not exist: {}'.format(fits_file))
+        super().__init__(*args, **kwargs)
+        assert os.path.exists(fits_file), self.logger.warning('File does not exist: {fits_file}')
 
         file_path, file_ext = os.path.splitext(fits_file)
         assert file_ext in ['.fits', '.fz'], \
