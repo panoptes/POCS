@@ -1,5 +1,0 @@
-image.aspect        : 1  # to get images with square pixels
-image.origin        : 'lower'
-image.interpolation : none
-
-figure.figsize      : 15,10
