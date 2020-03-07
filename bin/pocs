@@ -45,6 +45,7 @@ cd "$PANDIR"
 CMD="docker-compose \
     --project-directory ${PANDIR} \
     -f panoptes-utils/docker/docker-compose.yaml \
+    -f POCS/docker/docker-compose-aag.yaml \
     -f POCS/docker/docker-compose.yaml \
     -p panoptes"
 
