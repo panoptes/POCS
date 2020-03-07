@@ -19,6 +19,7 @@ sleep 5;
 
 docker run --rm -it \
     -e LOCAL_USER_ID=$(id -u) \
-    -v /var/panoptes/:/var/panoptes/ \
+    -v /var/panoptes/POCS:/var/panoptes/POCS \
+    -v /var/panoptes/logs:/var/panoptes/logs \
     gcr.io/panoptes-exp/pocs:latest \
-    "${PANDIR}/POCS/scripts/testing/run-tests.sh"
+    "${POCS}/scripts/testing/run-tests.sh"
