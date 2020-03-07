@@ -4,34 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- [CHANGELOG](#changelog)
-  - [[0.7.0] - 2020-04-07](#070---2020-04-07)
-- [Removed](#removed)
-  - [[0.6.2] - 2018-09-27](#062---2018-09-27)
-    - [Fixed](#fixed)
-    - [Changed](#changed)
-    - [Added](#added)
-    - [Removed](#removed-1)
-  - [[0.6.1] - 2018-09-20](#061---2018-09-20)
-    - [Fixed](#fixed-1)
-    - [Changed](#changed-1)
-    - [Added](#added-1)
-  - [[0.6.0] - 2017-12-30](#060---2017-12-30)
-    - [Changed](#changed-2)
-    - [Added](#added-2)
-    - [Removed](#removed-2)
-  - [[0.5.1] - 2017-12-02](#051---2017-12-02)
-    - [Added](#added-3)
-
 ## [0.7.0] - 2020-04-07
 
 If you thought 9 months between releases was a long time, how about 18 months! :) This version has a lot of breaking changes and is not backwards compatible with previous versions. The release is a stepping stone on the way to `0.8.0` and (eventually!) a `1.0.0`.
 
 The entire repo has been redesigned to support docker images. This comes with a number of changes, including the refactoring of many items into the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils.git) repo.
 
-# Removed
+There are a lot of changes included in this release, highlights below:
 
-* **Breaking** Config: Items related to the configuration system have been moved to the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server) in `panoptes-utils` repo.
+### Added
+
+* Docker :whale: :grinning: :tada: (#951).
+* Storing an explicit `safety` collection in the database.
+* Configuration file specific for testing rather than relying on `pocs.yaml`.
+* Convenience scripts for running tests inside docker container: `scripts/testing/test-software.sh`
+
+### Changed
+
+* :warning: **breaking** Config: Items related to the configuration system have been moved to the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server) in `panoptes-utils` repo.
+  * The main interface for POCS related items is through `self.get_config`, which can take a key and a default, e.g. `self.get_config('mount.horizon', default='30 deg')`.
+  * Test writing is affected and is currently more difficult than would be ideal. An updated test writing document will be following this release.
+* :warning: **breaking** Logging: Logging has changed to [`loguru`](https://github.com/Delgan/loguru) and has been greatly simplified:
+  * `get_root_logger` has been replaced by `get_logger`.
+  * The `per-run` logs have been removed and have been replaced by two logs files:
+    * `$PANDIR/logs/panoptes.log`: Log file meant for watching on the command line (via `tail`) or for otherwise human-readable logs. Rotated daily at 11:30 am. Only the previous days' log is retained.
+    * `$PANDIR/logs/panoptes_YYYYMMDD.log`: Log file meant for archive or information gathering. Stored in JSON format for ingestion into log analysis service. Rotated daily at 11:30 and stored in a compressed file for 7 days. Future updates will add option to upload to google servers.
+  * `loguru` provides two new log levels:
+    * `trace`: one level below `debug`.
+    * `success`: one level above `info`.
+* Lots of conversions to `f-strings`.
+
+### Removed
+
+* Cleanup of any stale or unused code.
+* All `mongo` related code.
+* Weather related items. These have been moved to [`aag-weather`](https://github.com/panoptes/aag-weather).
+* All notebook tutorials in favor of [`panoptes-tutorials`](https://github.com/panoptes/panoptes-tutorials).
 
 ## [0.6.2] - 2018-09-27
 
