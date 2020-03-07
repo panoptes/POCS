@@ -71,4 +71,4 @@ class PanBase(object):
         for item in items_to_check:
             config_item = self.get_config(item, default={})
             if config_item is None or len(config_item) == 0:
-                sys.exit(f'{item} must be specified in config, exiting')
+                sys.exit(f"'{item}' must be specified in config, exiting")

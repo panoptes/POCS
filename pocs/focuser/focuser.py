@@ -64,7 +64,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                  autofocus_mask_dilations=None,
                  *args, **kwargs):
 
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.model = model
         self.port = port

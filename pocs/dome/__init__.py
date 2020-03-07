@@ -70,7 +70,7 @@ class AbstractDome(PanBase):
         caller doesn't need to know the params needed by a specific type of
         dome interface class.
         """
-        super.__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._dome_config = self.get_config('dome')
 
         # Sub-class directly modifies this property to record changes.

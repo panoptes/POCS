@@ -21,7 +21,7 @@ class Field(FixedTarget, PanBase):
                 `astroplan.ObservingBlock`
 
         """
-        super().__init__(self, *args, **kwargs)
+        PanBase.__init__(self, *args, **kwargs)
 
         # Force an equinox
         if equinox is None:

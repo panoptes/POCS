@@ -42,7 +42,7 @@ class Observation(PanBase):
                 will override the default filter name (default: {None}).
 
         """
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
