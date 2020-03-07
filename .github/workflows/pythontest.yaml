@@ -1,4 +1,4 @@
-name: Test Python Package
+name: Test Python
 
 on: [push, pull_request]
 jobs:
