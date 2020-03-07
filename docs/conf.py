@@ -11,26 +11,20 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+#
 import os
 import sys
-from recommonmark.parser import CommonMarkParser
-
-# The docs are built on the ReadTheDocs website in a virtualenv
-# the we don't necessarily control. The below line is used to
-# add POCS to the path without installing or our usual env vars.
-sys.path.insert(0, os.path.abspath('../'))
-
-from pocs.version import __version__
+sys.path.insert(0, os.path.abspath('../../panoptes'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'POCS'
-copyright = '2018, Project PANOPTES Team'
+project = 'PANOPTES Utils'
+copyright = '2020, PANOPTES Team'
 author = 'PANOPTES Team'
 
 # The short X.Y version
-version = __version__
+version = ''
 # The full version, including alpha/beta/rc tags
 release = ''
 
@@ -45,22 +39,27 @@ release = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'matplotlib.sphinxext.plot_directive',
+    'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
+    'sphinx.ext.napoleon',
+    'm2r'
 ]
+
+default_role = 'any'
+
+napoleon_include_init_with_doc = True
+
+plot_include_source = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-source_parsers = {'.md': CommonMarkParser}
-
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -80,11 +79,11 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+# This pattern also affects html_static_path and html_extra_path.
+exclude_patterns = ['*tests*']
 
 # The name of the Pygments (syntax highlighting) style to use.
-# pygments_style = 'sphinx'
+pygments_style = 'lovelace'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -92,29 +91,23 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+
 html_theme = 'sphinx_rtd_theme'
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-html_theme_options = {
-    'logo_only': True,
-    'style_external_links': True,
-    # Toc options
-    'collapse_navigation': True,
-    'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
-}
+# html_theme_options = {}
+
+
+html_logo = '_static/pan-title-black-transparent.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
-html_logo = '_static/pan-title-black-transparent.png'
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -130,7 +123,7 @@ html_logo = '_static/pan-title-black-transparent.png'
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'PANOPTESdoc'
+htmlhelp_basename = 'POCSdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -157,7 +150,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PANOPTES.tex', 'PANOPTES Documentation',
+    (master_doc, 'pocs.tex', 'POCS Documentation',
      'PANOPTES Team', 'manual'),
 ]
 
@@ -167,7 +160,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'panoptes', 'PANOPTES Documentation',
+    (master_doc, 'pocs', 'POCS Documentation',
      [author], 1)
 ]
 
@@ -178,10 +171,28 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'PANOPTES', 'PANOPTES Documentation',
-     author, 'PANOPTES', 'One line description of project.',
+    (master_doc, 'PANOPTES', 'POCS Documentation',
+     author, 'PANOPTES', 'PANOPTES Observatory Control System',
      'Miscellaneous'),
 ]
+
+
+# -- Options for Epub output -------------------------------------------------
+
+# Bibliographic Dublin Core info.
+epub_title = project
+
+# The unique identifier of the text. This can be a ISBN number
+# or the project homepage.
+#
+# epub_identifier = ''
+
+# A unique identification for the text.
+#
+# epub_uid = ''
+
+# A list of files that should not be packed into the epub file.
+epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
@@ -190,10 +201,14 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/', None),
+    'python': ('https://docs.python.org/3/', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'astroplan': ('https://astroplan.readthedocs.io/en/latest/', None),
+    'NumPy': ('https://docs.scipy.org/doc/numpy/', None),
+    'SciPy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'matplotlib': ('https://matplotlib.org', None),
 }
+
 
 # -- Options for todo extension ----------------------------------------------
 
