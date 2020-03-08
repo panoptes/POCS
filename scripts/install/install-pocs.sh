@@ -13,19 +13,12 @@ usage() {
 #
 # Docker Images:
 #
-#   gcr.io/panoptes-survey/pocs
-#   gcr.io/panoptes-survey/paws
+#   ${DOCKER_BASE}/panoptes-utils
+#   ${DOCKER_BASE}/pocs
 #
-# Github Repositories:
-#
-# The script will ask for a github user name in order to install
-# forked versions of the repos if you are actively developing the
-# software. otherwise the default user (panotpes) is okay for
-# running the unit.
-#
-#   github.com/panoptes/POCS
-#   github.com/panoptes/PAWS
-#   github.com/panoptes/panoptes-utils
+# The script will ask for a github user name. If you are a developer
+# you can enter your github username to work from your fork. Otherwise
+# the default user (panoptes) is okay for running the unit.
 #
 # The script has been tested with a fresh install of Ubuntu 19.04
 # but may work on other linux systems.
@@ -38,6 +31,8 @@ usage() {
             environment variable.
 "
 }
+
+DOCKER_BASE="gcr.io/panoptes-exp"
 
 if [ -z "${PANUSER}" ]; then
     export PANUSER=$USER
@@ -103,13 +98,15 @@ do_install() {
     fi
 
     if [[ ! -d "${PANDIR}" ]]; then
-        echo "Creating directories"
+        echo "Creating directories in ${PANDIR}"
         # Make directories
         sudo mkdir -p "${PANDIR}"
         sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 
         mkdir -p "${PANDIR}/logs"
         mkdir -p "${PANDIR}/images"
+        mkdir -p "${PANDIR}/conf_files"
+        mkdir -p "${PANDIR}/.key"
     else
         echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
         select yn in "Yes" "No"; do
@@ -141,11 +138,7 @@ do_install() {
     github_user=${github_user:-panoptes}
     echo "Using repositories from user '${github_user}'."
 
-    if [[ "${github_user}" = "panoptes" ]]; then
-        echo "Using development files from user 'panoptes' for now."
-    fi
-
-    GIT_BRANCH="docker"
+    GIT_BRANCH="develop"
 
     cd "${PANDIR}"
     declare -a repos=("POCS" "PAWS" "panoptes-utils")
@@ -154,22 +147,16 @@ do_install() {
             echo "Cloning ${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
             git clone "https://github.com/${github_user}/${repo}.git" >> "${LOGFILE}" 2>&1
-            if [[ "${repo}" = "POCS" && "${github_user}" = "panoptes" ]]; then
-                echo "Getting docker branch '$GIT_BRANCH'"
-                cd "${repo}" && git checkout $GIT_BRANCH
-                cd "${PANDIR}"
-            fi
         else
             echo "Repo ${repo} already exists on system."
         fi
     done
 
     # Link env_file from POCS
-    ln -sf "${PANDIR}/POCS/docker/env_file" "${PANDIR}"
-    echo "source ${PANDIR}/env_file" >> "${HOME}/.zshrc"
-
-    # Link conf_files dir from POCS
-    ln -sf "${PANDIR}/POCS/conf_files" "${PANDIR}"
+    if ! test -f "${PANDIR}/.env"; then
+        ln -sf "${PANDIR}/POCS/docker/env_file" "${PANDIR}/.env"
+        echo "source ${PANDIR}/.env" >> "${HOME}/.zshrc"
+    fi
 
     # Get Docker
     if ! command_exists docker; then
@@ -179,7 +166,7 @@ do_install() {
 
             if ! command_exists docker-compose; then
                 # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
-                sudo wget -q https://github.com/docker/compose/releases/download/1.24.0/run.sh -O /usr/local/bin/docker-compose
+                sudo wget -q https://github.com/docker/compose/releases/download/1.25.4/docker-compose-`uname -s`-`uname -m` -O /usr/local/bin/docker-compose
                 sudo chmod a+x /usr/local/bin/docker-compose
                 sudo docker pull docker/compose
             fi
@@ -193,15 +180,16 @@ do_install() {
         fi
 
         echo "Pulling POCS docker images"
-        sudo docker pull gcr.io/panoptes-survey/panoptes-utils
-        sudo docker pull gcr.io/panoptes-survey/pocs
-        sudo docker pull gcr.io/panoptes-survey/paws
+        sudo docker pull "${DOCKER_BASE}/panoptes-utils"
+        sudo docker pull "${DOCKER_BASE}/pocs"
+        sudo docker pull "${DOCKER_BASE}/aag-weather"
     else
         echo "WARNING: Docker images not installed/downloaded."
     fi
 
     # Add an SSH key if one doesn't exists
     if [ ! -f "${HOME}/.ssh/id_rsa" ]; then
+        echo "Looks like you don't have an SSH key set up yet, adding one now."
         ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa";
     fi
 
