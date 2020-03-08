@@ -7,12 +7,12 @@ services:
 - docker
 before_install:
 - ci_env=`bash <(curl -s https://codecov.io/env)`
-- docker pull gcr.io/panoptes-exp/pocs:amd64
+- docker pull gcr.io/panoptes-exp/pocs:latest
 install: true
 script:
 - docker run -it
   $ci_env
   -e LOCAL_USER_ID=0
   -v $TRAVIS_BUILD_DIR:/var/panoptes/POCS
-  gcr.io/panoptes-exp/pocs
+  gcr.io/panoptes-exp/pocs:latest
   scripts/testing/run-tests.sh
