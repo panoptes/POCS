@@ -16,8 +16,8 @@ POCS
 ----
 
 POCS is in charge of controlling a PANOPTES unit (which is considered to be an
-"observatory"), acting like its' "brains" to determine what actions the unit should
-take.
+"observatory"), acting like its brains in order to determine what actions the unit
+should take.
 
 .. image:: _static/pocs-graph.png
 
@@ -26,10 +26,13 @@ possible ``States`` (e.g., ``observing``, ``slewing``, ``parking``).
 
 The `Observatory` interacts with various pieces of hardware through an abstraction
 layer (HAL). This means you can call ``pocs.observatory.mount.park`` and the attached
-mount should be able to park itself regardless of what type of mount it is.
+mount should be able to park itself regardless of what type of mount it is (each brand
+has specific ways it can communicate).
 
 It is also possible to manually control POCS, in which cause you become the "brains"
 and take over the logic from the FSM.
+
+For more information see the POCS Overview.
 
 PANOPTES
 --------
