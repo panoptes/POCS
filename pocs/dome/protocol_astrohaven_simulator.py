@@ -40,19 +40,19 @@ class Shutter(object):
         if input_char in self.open_commands:
             if self.is_open:
                 return (False, self.is_open_char)
-            self.logger.info(f'Opening side {self.side}, starting position {self.position}')
+            self.logger.debug(f'Opening side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_OPEN_INCREMENT)
             if self.is_open:
-                self.logger.info(f'Opened side {self.side}')
+                self.logger.debug(f'Opened side {self.side}')
                 return (True, self.is_open_char)
             return (True, input_char)
         elif input_char in self.close_commands:
             if self.is_closed:
                 return (False, self.is_closed_char)
-            self.logger.info(f'Closing side {self.side}, starting position {self.position}')
+            self.logger.debug(f'Closing side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_CLOSED_INCREMENT)
             if self.is_closed:
-                self.logger.info(f'Closed side {self.side}')
+                self.logger.debug(f'Closed side {self.side}')
                 return (True, self.is_closed_char)
             return (True, input_char)
         else:
@@ -139,7 +139,7 @@ class AstrohavenPLCSimulator:
         c = self.next_output_code
         if not c:
             c = self.compute_state()
-            self.logger.info('AstrohavenPLCSimulator.compute_state -> {!r}', c)
+            self.logger.debug('AstrohavenPLCSimulator.compute_state -> {!r}', c)
         self.next_output_code = None
         # We drop output if the queue is full.
         if not self.status_queue.full():
@@ -147,7 +147,7 @@ class AstrohavenPLCSimulator:
             self.next_output_time = datetime.datetime.now() + self.delta
 
     def handle_input(self, c):
-        self.logger.info('AstrohavenPLCSimulator.handle_input {!r}', c)
+        self.logger.debug('AstrohavenPLCSimulator.handle_input {!r}', c)
         (a_acted, a_resp) = self.shutter_a.handle_input(c)
         (b_acted, b_resp) = self.shutter_b.handle_input(c)
         # Use a_resp if a_acted or if there is no b_resp
@@ -256,7 +256,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             if timeout_obj.expired():
                 break
         response = bytes(response)
-        self.logger.info('AstrohavenSerialSimulator.read({}) -> {!r}', size, response)
+        self.logger.debug('AstrohavenSerialSimulator.read({}) -> {!r}', size, response)
         return response
 
     @property
