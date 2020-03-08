@@ -12,5 +12,4 @@ def on_enter(event_data):
         pocs.logger.error("Failed to open the dome while entering state 'ready'")
         pocs.next_state = 'parking'
     else:
-        pocs.observatory.mount.unpark()
         pocs.next_state = 'scheduling'

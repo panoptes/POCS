@@ -136,26 +136,33 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
+
+                # BEFORE TRANSITION
+
                 # Wait for horizon level if state requires.
-                self.logger.warning(f'Checking horizon limits for next state: {self.next_state}')
+                self.logger.info(f'Checking horizon limits for next state: {self.next_state}')
                 with suppress(KeyError):
                     required_horizon = self._horizon_lookup[self.next_state]
                     self.logger.info(f'Horizon limit for {self.state}: {required_horizon}')
                     self.wait_until_safe(horizon=required_horizon)
 
-                self.logger.warning('Going to next state')
+                # ENTER STATE
+
+                self.logger.info('Going to next state')
                 try:
+                    # The state's `on_enter` logic will be performed here.
                     state_changed = self.goto_next_state()
                 except Exception as e:
-                    self.logger.warning("Problem going from {} to {}, exiting loop [{!r}]".format(
+                    self.logger.critical("Problem going from {} to {}, exiting loop [{!r}]".format(
                         self.state, self.next_state, e))
                     self.stop_states()
                     break
 
+                # AFTER TRANSITION
+
                 # If we didn't successfully transition, sleep a while then try again
                 if not state_changed:
-                    self.logger.warning("Failed to transition from {} to {}",
-                                        self.state, self.next_state)
+                    self.logger.warning(f"Failed to move from {self.state} to {self.next_state}")
                     if self.is_safe() is False:
                         self.logger.warning(
                             "Conditions have become unsafe; setting next state to 'parking'")
@@ -287,30 +294,19 @@ class PanStateMachine(Machine):
     def before_state(self, event_data):
         """ Called before each state.
 
-        Starts collecting stats on this particular state, which are saved during
-        the call to `after_state`.
-
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug(
-            "Before calling {} from {} state".format(
-                event_data.event.name,
-                event_data.state.name))
+        self.logger.debug(f"Changing state from {event_data.state.name} to {event_data.event.name}")
 
     def after_state(self, event_data):
         """ Called after each state.
-
-        Updates the database collection for state stats.
 
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
 
-        self.logger.debug(
-            "After calling {}. Now in {} state".format(
-                event_data.event.name,
-                event_data.state.name))
+        self.logger.debug(f"After {event_data.event.name}. Now in {event_data.state.name} state")
 
 
 ##################################################################################################

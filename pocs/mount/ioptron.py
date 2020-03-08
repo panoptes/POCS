@@ -88,11 +88,6 @@ class Mount(AbstractSerialMount):
 ##################################################################################################
 
     @property
-    def is_parked(self):
-        """ bool: Mount parked status. """
-        return self._is_parked
-
-    @property
     def is_home(self):
         """ bool: Mount home status. """
         self._is_home = 'Stopped - Zero Position' in self.status().get('state', '')
@@ -206,12 +201,12 @@ class Mount(AbstractSerialMount):
             self.query('set_button_moving_rate', 9)
             self.move_direction(direction=ra_direction, seconds=ra_seconds)
             while self.is_slewing:
-                time.sleep(2)
                 self.logger.debug("Slewing RA axis to park position...")
+                time.sleep(3)
             self.move_direction(direction=dec_direction, seconds=dec_seconds)
             while self.is_slewing:
-                time.sleep(2)
                 self.logger.debug("Slewing Dec axis to park position...")
+                time.sleep(3)
 
             self._is_parked = True
             self.logger.debug(f'Mount parked: {self.is_parked}')
