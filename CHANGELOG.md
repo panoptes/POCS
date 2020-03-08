@@ -14,13 +14,15 @@ There are a lot of changes included in this release, highlights below:
 
 ### Added
 
-* Docker :whale: :grinning: :tada: (#951).
 * Storing an explicit `safety` collection in the database.
 * Configuration file specific for testing rather than relying on `pocs.yaml`.
 * Convenience scripts for running tests inside docker container: `scripts/testing/test-software.sh`
 
 ### Changed
 
+* Docker as default :whale: :grinning: :tada: (#951).
+  * Weather items have moved to [`aag-weather`](https://github.com/panoptes/aag-weather).
+    * Two docker containers run from the `aag-weather` image and have a `docker/docker-compose-aag.yaml` file to start.
 * :warning: **breaking** Config: Items related to the configuration system have been moved to the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server) in `panoptes-utils` repo.
   * The main interface for POCS related items is through `self.get_config`, which can take a key and a default, e.g. `self.get_config('mount.horizon', default='30 deg')`.
   * Test writing is affected and is currently more difficult than would be ideal. An updated test writing document will be following this release.

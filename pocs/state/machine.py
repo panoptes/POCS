@@ -398,13 +398,11 @@ class PanStateMachine(Machine):
             ))
 
             # Get the `on_enter` method
-            self.logger.debug("Checking {}".format(state_module))
+            self.logger.debug(f"Checking {state_module}")
 
             on_enter_method = getattr(state_module, 'on_enter')
             setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-            self.logger.debug(
-                "Added `on_enter` method from {} {}".format(
-                    state_module, on_enter_method))
+            self.logger.debug(f"Added `on_enter` method from {state_module} {on_enter_method}")
 
             if state_info is None:
                 state_info = dict()
