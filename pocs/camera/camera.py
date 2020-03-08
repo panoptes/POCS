@@ -428,6 +428,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         try:
             self.logger.debug("Making pretty image for {}".format(file_path))
+            link_path = None
             if info['is_primary']:
                 # This should be in the config somewhere.
                 link_path = os.path.expandvars('$PANDIR/images/latest.jpg')

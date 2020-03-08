@@ -33,6 +33,7 @@ jobs:
       run: |
         docker pull gcr.io/panoptes-exp/pocs:latest
     - name: Test with pytest in pocs container
+      timeout-minutes: 60
       run: |
         ci_env=`bash <(curl -s https://codecov.io/env)`
         docker run -i \
