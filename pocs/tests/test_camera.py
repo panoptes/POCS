@@ -258,9 +258,7 @@ def test_set_target_temperature(camera):
 
 
 def test_cooling_enabled(camera):
-    cooling_enabled = camera.cooling_enabled
-    if not camera.is_cooled_camera:
-        assert not cooling_enabled
+    assert camera.cooling_enabled == camera.is_cooled_camera
 
 
 def test_enable_cooling(camera):
