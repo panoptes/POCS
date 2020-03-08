@@ -108,26 +108,29 @@ class ArduinoIO(object):
     """Supports reading from and writing to Arduinos.
 
     The readings (python dictionaries) are recorded in a PanDB collection in
-    following form:
-        {'name': self.board, 'timestamp': t, 'data': reading}
+    the following form:
+
+    ```
+        {
+          'name': self.board,
+          'timestamp': t,
+          'data': reading
+        }
+    ```
+
     """
 
     def __init__(self, board, serial_data, db, pub, sub):
         """Initialize for board on device.
 
         Args:
-            board:
-                The name of the board, used as the name of the database
+            board: The name of the board, used as the name of the database
                 table/collection to write to, and the name of the messaging
                 topics for readings or relay commands.
-            serial_data:
-                A SerialData instance connected to the board.
-            db:
-                The PanDB instance in which to record reading.
-            pub:
-                PanMessaging publisher to which to write messages.
-            sub:
-                PanMessaging subscriber from which to read relay change
+            serial_data: A SerialData instance connected to the board.
+            db: The PanDB instance in which to record reading.
+            pub: PanMessaging publisher to which to write messages.
+            sub: PanMessaging subscriber from which to read relay change
                 instructions.
         """
         self.board = board.lower()

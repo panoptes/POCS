@@ -7,7 +7,7 @@ import serial
 import sys
 
 from pocs.sensors import arduino_io
-from pocs.utils.config import load_config
+from panoptes.utils.config import load_config
 from panoptes.utils import DelaySigTerm
 from panoptes.utils.database import PanDB
 from panoptes.utils.messaging import PanMessaging

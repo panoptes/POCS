@@ -6,12 +6,6 @@ pocs.state package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-   pocs.state.states
 
 Submodules
 ----------

@@ -146,7 +146,7 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
     # Collect the logs
     levels = [rec.levelname for rec in caplog.records]
     assert 'ERROR' in levels  # Should have logged an ERROR by now
-    # It raises a pocs.utils.error.Timeout exception too, but because it's in another Thread it
+    # It raises a panoptes.utils.error.Timeout exception too, but because it's in another Thread it
     # doesn't get passes up to the calling code.
 
 

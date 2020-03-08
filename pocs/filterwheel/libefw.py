@@ -4,15 +4,15 @@ import threading
 import time
 
 from pocs.camera.sdk import AbstractSDKDriver
-from pocs.utils import error
-from pocs.utils.library import load_library
-from pocs.utils import CountdownTimer
+from panoptes.utils import error
+from panoptes.utils.library import load_c_library
+from panoptes.utils import CountdownTimer
 
 
 class EFWDriver(AbstractSDKDriver):
     # Because ZWO EFW library isn't linked properly have to manually load libudev
     # in global mode first, otherwise get undefined symbol errors.
-    _libudev = load_library('udev', mode=ctypes.RTLD_GLOBAL)
+    _libudev = load_c_library('udev', mode=ctypes.RTLD_GLOBAL)
 
     def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO EFW library interface.
@@ -30,9 +30,9 @@ class EFWDriver(AbstractSDKDriver):
             `~pocs.filter.libefw.EFWDriver`
 
         Raises:
-            pocs.utils.error.NotFound: raised if library_path not given & find_library fails to
+            `panoptes.utils.error.NotFound`: raised if library_path not given & find_library fails to
                 locate the library.
-            OSError: raises if the ctypes.CDLL loader cannot load the library.
+            `OSError`: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(name='EFWFilter', library_path=library_path, **kwargs)
 
@@ -62,8 +62,7 @@ class EFWDriver(AbstractSDKDriver):
             try:
                 self.open(fw_id)
             except error.PanError as err:
-                msg = f"Error opening filterwheel {fw_id}."
-                self.logger.error(msg)
+                self.logger.error(f"Error opening filterwheel {fw_id}. {err!r}")
             else:
                 info = self.get_property(fw_id)
                 filterwheels[f"{info['name']}_{info['slot_num']}_{fw_id}"] = fw_id
@@ -150,7 +149,7 @@ class EFWDriver(AbstractSDKDriver):
                 assumed.
 
         Raises:
-            pocs.utils.error.PanError: raised if the driver returns an error starting the move.
+            `panoptes.utils.error.PanError`: raised if the driver returns an error starting the move.
         """
         self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
         # This will raise errors if the filterwheel is already moving, or position is not valid.
@@ -210,9 +209,9 @@ class EFWDriver(AbstractSDKDriver):
                 will be assumed.
 
             Raises:
-                pocs.utils.error.PanError: raised if the driver returns an error or if the final
+                `panoptes.utils.error.PanError`: raised if the driver returns an error or if the final
                     position is not as expected.
-                pocs.utils.error.Timeout: raised if the move does not end within the period of
+                `panoptes.utils.error.Timeout`: raised if the move does not end within the period of
                     time specified by the timeout argument.
         """
         if timeout is not None:

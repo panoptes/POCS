@@ -32,11 +32,14 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     of type 'X'; that is up to the code working with the config to create drivers for real or
     simulated hardware.
 
-    This function is intended to be called from PanBase or similar, which receives kwargs that
-    may include simulator, config or both. For example:
+    This function is intended to be called from `PanBase` or similar, which receives kwargs that
+    may include simulator, config or both. For example::
+
            get_simulator_names(config=self.config, kwargs=kwargs)
-    Or:
-           get_simulator_names(simulator=simulator, config=self.config)
+
+            # Or:
+
+            get_simulator_names(simulator=simulator, config=self.config)
 
     The reason this function doesn't just take **kwargs as its sole arg is that we need to allow
     for the case where the caller is passing in simulator (or config) twice, once on its own,
@@ -44,13 +47,10 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     to be passed in twice.
 
     Args:
-        simulator:
-            An explicit list of names of hardware to be simulated (i.e. hardware drivers
+        simulator: An explicit list of names of hardware to be simulated (i.e. hardware drivers
             to be replaced with simulators).
-        kwargs:
-            The kwargs passed in to the caller, which is inspected for an arg called 'simulator'.
-        config:
-            Dictionary created from pocs.yaml or similar.
+        kwargs: The kwargs passed in to the caller, which is inspected for an arg called 'simulator'.
+        config: Dictionary created from pocs.yaml or similar.
 
     Returns:
         List of names of the hardware to be simulated.

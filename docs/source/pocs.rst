@@ -30,4 +30,3 @@ Submodules
    pocs.hardware
    pocs.images
    pocs.observatory
-   pocs.version
