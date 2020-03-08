@@ -107,4 +107,10 @@ def get_logger(profile='panoptes',
             level='TRACE')
         LOGGER_INFO.handlers.add('archive')
 
+    # Customize colors
+    logger.level('TRACE', color='<cyan>')
+    logger.level('DEBUG', color='<white>')
+    logger.level('INFO', color='<green><bold>')
+    logger.level('SUCCESS', color='<cyan><bold>')
+
     return logger
