@@ -1,46 +1,17 @@
 pocs.focuser package
 ====================
 
+.. automodule:: pocs.focuser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
-pocs.focuser.birger module
---------------------------
+.. toctree::
 
-.. automodule:: pocs.focuser.birger
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.focuser.focuser module
----------------------------
-
-.. automodule:: pocs.focuser.focuser
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.focuser.focuslynx module
------------------------------
-
-.. automodule:: pocs.focuser.focuslynx
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.focuser.simulator module
------------------------------
-
-.. automodule:: pocs.focuser.simulator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: pocs.focuser
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   pocs.focuser.birger
+   pocs.focuser.focuser
+   pocs.focuser.focuslynx
+   pocs.focuser.simulator

@@ -1,29 +1,21 @@
 pocs.state package
 ==================
 
+.. automodule:: pocs.state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
 .. toctree::
 
-    pocs.state.states
+   pocs.state.states
 
 Submodules
 ----------
 
-pocs.state.machine module
--------------------------
+.. toctree::
 
-.. automodule:: pocs.state.machine
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: pocs.state
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   pocs.state.machine

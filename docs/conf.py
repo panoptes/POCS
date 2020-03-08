@@ -14,7 +14,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../panoptes'))
+sys.path.insert(0, os.path.abspath('../pocs'))
+sys.path.insert(0, os.path.abspath('../peas'))
 
 
 # -- Project information -----------------------------------------------------
@@ -150,8 +151,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pocs.tex', 'POCS Documentation',
-     'PANOPTES Team', 'manual'),
+    (master_doc, 'pocs.tex', 'POCS Documentation', 'PANOPTES Team', 'manual'),
 ]
 
 
@@ -160,8 +160,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pocs', 'POCS Documentation',
-     [author], 1)
+    (master_doc, 'pocs', 'POCS Documentation', [author], 1)
 ]
 
 

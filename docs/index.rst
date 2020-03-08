@@ -15,19 +15,17 @@ including the science case and resources for interested individuals, see the
 
 .. seealso::
 
-	This is the documentation for the software that controls a running 
-	PANOPTES robotic observatory. This will mostly be useful for developers 
-	working on the control software itself. Normal operating usage of POCS 
+	This is the documentation for the software that controls a running
+	PANOPTES robotic observatory. This will mostly be useful for developers
+	working on the control software itself. Normal operating usage of POCS
 	doesn't require knowledge of the documentation here.
 
-	If you are interested in how to operate a PANOPTES unit, please see the 
-	`User's Guide <https://projectpanoptes.org/instructions.html>`_.
-
-	.. todo:: User's guide?
+	If you are interested in how to operate a PANOPTES unit, please see the
+	`Community Forum <https://forum.projectpanoptes.org>`_.
 
 .. toctree::
    :maxdepth: 3
-
+   :caption: Contents:
    panoptes-overview
    pocs-overview
 
@@ -35,15 +33,15 @@ including the science case and resources for interested individuals, see the
 Project Links
 -------------
 
-- PANOPTES Homepage: https://projectpanoptes.org
-- Forum: https://forum.projectpanoptes.org
+* PANOPTES Homepage: https://projectpanoptes.org
+* Forum: https://forum.projectpanoptes.org
 
 POCS Details
 ------------
 * `Source Code <http://github.com/panoptes/POCS>`_
-* `Release History <https://github.com/panoptes/POCS/blob/develop/Changelog.md>`_
+* `Release History <https://github.com/panoptes/POCS/blob/master/CHANGELOG.md>`_
 * `Known Issues <https://github.com/panoptes/POCS/issues>`_
-* `License <https://github.com/panoptes/POCS/blob/develop/LICENSE.txt>`_
+* `License <https://github.com/panoptes/POCS/blob/master/LICENSE.txt>`_
 
 Index
 -----

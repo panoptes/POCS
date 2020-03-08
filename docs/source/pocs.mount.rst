@@ -1,54 +1,18 @@
 pocs.mount package
 ==================
 
+.. automodule:: pocs.mount
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
-pocs.mount.bisque module
-------------------------
+.. toctree::
 
-.. automodule:: pocs.mount.bisque
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.mount.ioptron module
--------------------------
-
-.. automodule:: pocs.mount.ioptron
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.mount.mount module
------------------------
-
-.. automodule:: pocs.mount.mount
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.mount.serial module
-------------------------
-
-.. automodule:: pocs.mount.serial
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pocs.mount.simulator module
----------------------------
-
-.. automodule:: pocs.mount.simulator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: pocs.mount
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   pocs.mount.bisque
+   pocs.mount.ioptron
+   pocs.mount.mount
+   pocs.mount.serial
+   pocs.mount.simulator

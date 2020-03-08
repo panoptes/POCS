@@ -32,6 +32,7 @@ There are a lot of changes included in this release, highlights below:
   * `loguru` provides two new log levels:
     * `trace`: one level below `debug`.
     * `success`: one level above `info`.
+* :warning: **breaking** Mount: unparking has been moved from the `ready` to the `slewing` state. This fixes a problem where after waiting 10 minutes for observation check, the mount would move from park to home to park without checking weather safety.
 * Lots of conversions to `f-strings`.
 
 ### Removed
