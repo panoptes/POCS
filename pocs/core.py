@@ -184,7 +184,7 @@ class POCS(PanStateMachine, PanBase):
             msg(str): Message to be sent to topic PANCHAT.
         """
         if self.has_messaging is False:
-            self.logger.info('Unit says: {}', msg)
+            self.logger.success('Unit says: {}', msg)
         self.send_message(msg, topic='PANCHAT')
 
     def send_message(self, msg, topic='POCS'):
@@ -244,7 +244,7 @@ class POCS(PanStateMachine, PanBase):
             if self.state == 'parking':
                 if self.observatory.mount.is_connected:
                     if self.observatory.mount.is_parked:
-                        self.logger.info("Mount is parked, setting Parked state")
+                        self.logger.info("Mount is parked, setting state to 'parked'")
                         self.set_park()
 
             if self.observatory.mount and self.observatory.mount.is_parked is False:

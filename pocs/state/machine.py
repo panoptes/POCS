@@ -306,7 +306,7 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains informaton about the event
         """
 
-        self.logger.debug(f"After {event_data.event.name}. Now in {event_data.state.name} state")
+        self.logger.debug(f"After {event_data.event.name} transition. In {event_data.state.name} state")
 
 
 ##################################################################################################

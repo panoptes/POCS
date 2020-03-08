@@ -424,7 +424,7 @@ def test_power_down_while_running(pocs):
     assert pocs.state == 'ready'
     pocs.power_down()
 
-    assert pocs.state == 'parked'
+    assert pocs.observatory.mount.is_parked
     assert pocs.connected is False
 
 
@@ -439,7 +439,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
     assert pocs.state == 'ready'
     pocs.power_down()
 
-    assert pocs.state == 'parked'
+    assert pocs.observatory.mount.is_parked
     assert pocs.connected is False
     assert not pocs.observatory.dome.is_connected
 
