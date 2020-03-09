@@ -32,6 +32,7 @@ jobs:
     - name: Pull pocs image
       run: |
         docker pull gcr.io/panoptes-exp/pocs:latest
+    - run: mkdir -p /logs
     - name: Test with pytest in pocs container
       timeout-minutes: 60
       run: |
@@ -41,5 +42,11 @@ jobs:
           -e LOCAL_USER_ID=$(id -u) \
           -e TRAVIS=true \
           -v $(pwd):/var/panoptes/POCS \
+          -v /logs:/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
+    - uses: actions/upload-artifact@v1
+      if: failure()
+      with:
+        name: log-files
+        path: /logs/panoptes.log
