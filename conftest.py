@@ -316,8 +316,10 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     set_config('simulator', simulators, port=config_port)
 
     yield
-    logger.trace(f'Killing config_server started with PID={proc.pid}')
+    pid = proc.pid
     proc.terminate()
+    time.sleep(0.1)
+    logger.trace(f'Killed config_server started with PID={pid}')
 
 
 @pytest.fixture
