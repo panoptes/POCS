@@ -43,11 +43,14 @@ jobs:
           -v logs:/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
-    - uses: actions/upload-artifact@v1
-      if: failure()
-      with:
-        name: log-files
-        path: logs/panoptes.log
+    - if: failure()
+      run: /
+        ls -lhrst logs/
+    # - uses: actions/upload-artifact@v1
+    #   if: failure()
+    #   with:
+    #     name: log-files
+    #     path: logs/panoptes.log
     - name: Upload coverage
       run: /
         coverage combine

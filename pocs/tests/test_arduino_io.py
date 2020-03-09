@@ -93,6 +93,10 @@ def open_serial_device(*args, **kwargs):
         ser.disconnect()
 
 
+def test_fail():
+    print('Looking for logs in all the wrong places.')
+    assert False
+
 # --------------------------------------------------------------------------------------------------
 # Basic tests of FakeArduinoSerialHandler.
 
