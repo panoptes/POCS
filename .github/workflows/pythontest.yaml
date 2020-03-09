@@ -40,7 +40,7 @@ jobs:
           -e LOCAL_USER_ID=$(id -u) \
           -e TRAVIS=true \
           -v $(pwd):/var/panoptes/POCS \
-          -v ./logs:/var/panoptes/logs \
+          -v logs:/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
     - uses: actions/upload-artifact@v1
