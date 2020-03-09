@@ -44,10 +44,10 @@ jobs:
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
     - name: Look at log dir
+      if: failure()
       run: |
         ls -lhrst logs/
     # - uses: actions/upload-artifact@v1
-    #   if: failure()
     #   with:
     #     name: log-files
     #     path: logs/panoptes.log
