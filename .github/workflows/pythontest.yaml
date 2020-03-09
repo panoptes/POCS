@@ -38,6 +38,7 @@ jobs:
           $ci_env \
           -e LOCAL_USER_ID=$(id -u) \
           -v $(pwd):/var/panoptes/POCS \
+          -v $(pwd):/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
     - name: Upload log files
