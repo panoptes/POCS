@@ -34,7 +34,7 @@ jobs:
       timeout-minutes: 60
       run: |
         ci_env=`bash <(curl -s https://codecov.io/env)`
-        docker run -it \
+        docker run -i \
           $ci_env \
           -e LOCAL_USER_ID=$(id -u) \
           -v $(pwd):/var/panoptes/POCS \
