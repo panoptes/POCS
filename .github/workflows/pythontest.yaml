@@ -30,30 +30,19 @@ jobs:
     - name: Pull pocs image
       run: |
         docker pull gcr.io/panoptes-exp/pocs:latest
-    - run: |
-        mkdir logs
-        echo "Hello?" > logs/hello.txt
     - name: Test with pytest in pocs container
       timeout-minutes: 60
       run: |
         ci_env=`bash <(curl -s https://codecov.io/env)`
-        docker run -i \
+        docker run -it \
           $ci_env \
           -e LOCAL_USER_ID=$(id -u) \
-          -e TRAVIS=true \
           -v $(pwd):/var/panoptes/POCS \
-          -v logs:/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
-    - name: Look at log dir
+    - name: Upload log files
+      uses: actions/upload-artifact@v1
       if: failure()
-      run: |
-        ls -lhrst logs/
-    - uses: actions/upload-artifact@v1
-      with:
-        name: hello
-        path: logs/hello.txt
-    - uses: actions/upload-artifact@v1
       with:
         name: log-files
         path: logs/panoptes.log
