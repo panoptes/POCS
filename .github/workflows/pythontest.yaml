@@ -47,7 +47,7 @@ jobs:
       with:
         name: log-files
         path: panoptes.log
-    - name: Upload coverage
+    - name: Upload coverage on success
       run: |
         coverage combine
         bash <(curl -s https://codecov.io/bash)
