@@ -3,7 +3,7 @@
 export PYTHONPATH="${PYTHONPATH}:${PANDIR}/POCS/scripts/coverage"
 export COVERAGE_PROCESS_START="${PANDIR}/POCS/.coveragerc"
 
-coverage run "$(command -v pytest)" -vv -rfes --test-databases all
+coverage run "$(command -v pytest)" -x -vv -rfes --test-databases all
 
 # Only worry about coverage if on travis.
 if [[ $TRAVIS ]]; then
