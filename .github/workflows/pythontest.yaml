@@ -49,5 +49,6 @@ jobs:
         path: panoptes.log
     - name: Upload coverage on success
       run: |
+        pip install coverage
         coverage combine
         bash <(curl -s https://codecov.io/bash)
