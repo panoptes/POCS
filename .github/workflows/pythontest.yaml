@@ -30,7 +30,7 @@ jobs:
     - name: Pull pocs image
       run: |
         docker pull gcr.io/panoptes-exp/pocs:latest
-    - run: mkdir -p ./logs
+    - run: mkdir logs
     - name: Test with pytest in pocs container
       timeout-minutes: 60
       run: |
@@ -47,4 +47,8 @@ jobs:
       if: failure()
       with:
         name: log-files
-        path: ./logs/panoptes.log
+        path: logs/panoptes.log
+    - name: Upload coverage
+      run: /
+        coverage combine
+        bash <(curl -s https://codecov.io/bash)
