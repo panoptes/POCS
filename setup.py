@@ -33,7 +33,7 @@ modules = {
         'mocket',  # testing
         'numpy',
         'pandas',
-        'panoptes-utils>=0.2.2',
+        'panoptes-utils>=0.2.3',
         'pycodestyle==2.3.1',  # testing
         'pyserial>=3.1.1',
         'pytest-cov',  # testing

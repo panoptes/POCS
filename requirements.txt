@@ -5,7 +5,7 @@
 #    pip-compile
 #
 astroplan==0.6            # via panoptes-utils, pocs (setup.py)
-astropy==4.0              # via astroplan, panoptes-utils, photutils, pocs (setup.py)
+astropy==4.0              # via astroplan, panoptes-utils, pocs (setup.py)
 attrs==19.3.0             # via pytest
 certifi==2019.9.11        # via requests
 chardet==3.0.4            # via requests
@@ -14,28 +14,24 @@ codecov==2.0.16           # via panoptes-utils, pocs (setup.py)
 coverage==5.0.3           # via codecov, coveralls, panoptes-utils, pocs (setup.py), pytest-cov
 coveralls==1.11.1         # via panoptes-utils, pocs (setup.py)
 cycler==0.10.0            # via matplotlib
-decorator==4.4.0          # via mocket, networkx
+decorator==4.4.0          # via mocket
 docopt==0.6.2             # via coveralls
 flask==1.1.1              # via panoptes-utils
 idna==2.8                 # via requests
-imageio==2.6.1            # via scikit-image
 importlib-metadata==1.5.0  # via pluggy, pytest
 itsdangerous==1.1.0       # via flask
 jinja2==2.10.3            # via flask
 kiwisolver==1.1.0         # via matplotlib
 loguru==0.4.1             # via panoptes-utils
 markupsafe==1.1.1         # via jinja2
-matplotlib==3.1.1         # via panoptes-utils, pocs (setup.py), scikit-image
+matplotlib==3.1.1         # via panoptes-utils, pocs (setup.py)
 mocket==3.8.4             # via panoptes-utils, pocs (setup.py)
 more-itertools==8.2.0     # via pytest
-networkx==2.3             # via scikit-image
-numpy==1.17.2             # via astroplan, astropy, imageio, matplotlib, pandas, panoptes-utils, photutils, pocs (setup.py), pywavelets, scipy
+numpy==1.17.2             # via astroplan, astropy, matplotlib, pandas, panoptes-utils, pocs (setup.py), scipy
 oauthlib==3.1.0           # via requests-oauthlib
 packaging==20.3           # via pytest
 pandas==0.25.1            # via pocs (setup.py)
-panoptes-utils==0.2.2     # via pocs (setup.py)
-photutils==0.7.1          # via panoptes-utils
-pillow==6.2.0             # via imageio, scikit-image
+panoptes-utils==0.2.3     # via pocs (setup.py)
 pluggy==0.13.1            # via pytest
 py==1.8.1                 # via pytest
 pycodestyle==2.3.1        # via panoptes-utils, pocs (setup.py)
@@ -46,10 +42,8 @@ pytest-cov==2.8.1         # via panoptes-utils, pocs (setup.py)
 pytest-remotedata==0.3.2  # via panoptes-utils, pocs (setup.py)
 pytest==5.3.5             # via panoptes-utils, pocs (setup.py), pytest-cov, pytest-remotedata
 python-dateutil==2.8.0    # via matplotlib, pandas, panoptes-utils
-python-json-logger==0.1.11  # via panoptes-utils
 python-magic==0.4.15      # via mocket
 pytz==2019.3              # via astroplan, pandas
-pywavelets==1.0.3         # via scikit-image
 pyyaml==5.1.2             # via panoptes-utils, pocs (setup.py)
 pyzmq==19.0.0             # via panoptes-utils
 readline==6.2.4.1         # via pocs (setup.py)
@@ -59,8 +53,7 @@ responses==0.10.12        # via pocs (setup.py)
 ruamel.yaml.clib==0.2.0   # via ruamel.yaml
 ruamel.yaml==0.16.5       # via panoptes-utils
 scalpl==0.3.0             # via panoptes-utils
-scikit-image==0.16.1      # via panoptes-utils
-scipy==1.3.1              # via panoptes-utils, pocs (setup.py), scikit-image
+scipy==1.3.1              # via panoptes-utils, pocs (setup.py)
 six==1.12.0               # via astroplan, cycler, mocket, packaging, pytest-remotedata, python-dateutil, responses, transitions, tweepy
 transitions==0.7.1        # via pocs (setup.py)
 tweepy==3.8.0             # via panoptes-utils
