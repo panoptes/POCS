@@ -381,6 +381,7 @@ def test_exposure_collision(camera, tmpdir):
 
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
+    assert camera.is_ready
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     with pytest.raises(error.PanError):
         camera.take_exposure(1 * u.second, filename=fits_path_2)
