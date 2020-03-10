@@ -19,7 +19,6 @@ from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 
-from panoptes.utils import CountdownTimer
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
@@ -79,14 +78,7 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0], config_port=config_port)
 
-    # Wait for camera to be ready for 10 seconds
-    ready_timer = CountdownTimer(30)
-    while not camera.is_ready and not ready_timer.expired():
-        ready_timer.sleep(0.5)
-
-    camera.logger.info(f'Camera ({camera}) ready time left: {ready_timer.time_left():.02f}')
     assert camera.is_ready
-
     yield camera
 
     # Teardown
