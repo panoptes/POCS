@@ -69,6 +69,8 @@ class Camera(AbstractSDKCamera, Camera):
 
         delta_temp = limit_temp - self._last_temp
         temperature = limit_temp - delta_temp * math.exp(-delta_time)
+        add_temp = random.uniform(-self._temp_var / 2, self._temp_var / 2)
+        self.logger.debug(f'Simulator randomly adding {add_temp:.02f}° C')
         temperature += random.uniform(-self._temp_var / 2, self._temp_var / 2)
 
         return temperature
