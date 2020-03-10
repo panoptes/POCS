@@ -89,7 +89,7 @@ class Camera(AbstractSDKCamera, Camera):
         self._temperature = 25 * u.Celsius
         self._max_temp = 25 * u.Celsius
         self._min_temp = -15 * u.Celsius
-        self._temp_var = 0.1 * u.Celsius
+        self._temp_var = 0.05 * u.Celsius
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._time_constant = 1.0
