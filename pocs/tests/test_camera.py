@@ -81,9 +81,10 @@ def camera(request, images_dir, dynamic_config_server, config_port):
 
     # Wait for camera to be ready for 10 seconds
     ready_timer = CountdownTimer(30)
-    while camera.is_ready is False and ready_timer.expired() is False:
+    while not camera.is_ready and not ready_timer.expired():
         ready_timer.sleep(0.5)
-    camera.logger.info(f'Camera ({camera}) ready time left: {ready_timer.time_left()}')
+
+    camera.logger.info(f'Camera ({camera}) ready time left: {ready_timer.time_left():.02f}')
     assert camera.is_ready
 
     yield camera
