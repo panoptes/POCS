@@ -33,7 +33,7 @@ Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
 
-logger = get_logger(stderr=True, full_log_file=None)
+logger = get_logger(stderr=True, full_log_file=None, log_level='TRACE')
 
 
 def pytest_addoption(parser):
