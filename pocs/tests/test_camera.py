@@ -19,6 +19,7 @@ from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 
+from panoptes.utils import CountdownTimer
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
@@ -77,6 +78,12 @@ def camera(request, images_dir, dynamic_config_server, config_port):
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0], config_port=config_port)
+
+    # Wait for camera to be ready for 10 seconds
+    ready_timer = CountdownTimer(10)
+    while camera.is_ready is False and ready_timer.expired() is False:
+        ready_timer.sleep(0.5)
+    assert camera.is_ready
 
     yield camera
 
@@ -311,12 +318,7 @@ def test_exposure(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_exposure.fits'))
-    # Allow for cooling
-    if camera.is_cooled_camera and camera.cooling_enabled:
-        while camera.is_temperature_stable is False:
-            time.sleep(0.5)
 
-    assert camera.is_ready
     assert not camera.is_exposing
     # A one second normal exposure.
     exp_event = camera.take_exposure(filename=fits_path)
@@ -368,7 +370,6 @@ def test_exposure_dark(camera, tmpdir):
     assert header['IMAGETYP'] == 'Dark Frame'
 
 
-@pytest.mark.filterwarnings('ignore:Attempt to start exposure')
 def test_exposure_collision(camera, tmpdir):
     """
     Tests attempting to take an exposure while one is already in progress.
@@ -381,7 +382,6 @@ def test_exposure_collision(camera, tmpdir):
 
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
-    assert camera.is_ready
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     with pytest.raises(error.PanError):
         camera.take_exposure(1 * u.second, filename=fits_path_2)

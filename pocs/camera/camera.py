@@ -254,7 +254,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ True if camera is ready to start another exposure, otherwise False. """
         # For cooled camera expect stable temperature before taking exposure
         if self.is_cooled_camera and not self.is_temperature_stable:
-            self.logger.debug('Camera not ready, cooled: {self.is_cooled_camera} stable: {self.is_temperature_stable}')
+            self.logger.debug(f'Camera not ready, cooled: {self.is_cooled_camera} stable: {self.is_temperature_stable}')
             return False
 
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
