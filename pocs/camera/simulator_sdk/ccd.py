@@ -71,7 +71,7 @@ class Camera(AbstractSDKCamera, Camera):
         temperature = limit_temp - delta_temp * math.exp(-delta_time)
         add_temp = random.uniform(-self._temp_var / 2, self._temp_var / 2)
         temperature += random.uniform(-self._temp_var / 2, self._temp_var / 2)
-        self.logger.debug(f"Temp adding {add_temp:.02f}° C \t Total: {temperature:.02f}° C")
+        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f}")
 
         return temperature
 
