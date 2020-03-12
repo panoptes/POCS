@@ -79,7 +79,7 @@ def camera(request, images_dir, dynamic_config_server, config_port):
         camera = request.param[0](**configs[0], config_port=config_port)
 
     assert camera.is_ready
-    self.logger.debug(f'Yielding camera {camera}')
+    camera.logger.debug(f'Yielding camera {camera}')
     yield camera
 
     # Teardown
