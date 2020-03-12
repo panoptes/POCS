@@ -90,6 +90,7 @@ def get_logger(profile='panoptes',
                 colorize=True,
                 backtrace=True,
                 diagnose=True,
+                compression='gz',
                 level=log_level)
             LOGGER_INFO.handlers.add('console')
 
