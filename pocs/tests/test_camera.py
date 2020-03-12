@@ -84,10 +84,6 @@ def camera(request, images_dir, dynamic_config_server, config_port):
 
     # Teardown
 
-    # Explicitly remove the simulator SDK from the assigned list.
-    if request.param[1] == 'simulator_sdk':
-        type(camera)._assigned_cameras.discard(camera.uid)
-
 
 @pytest.fixture(scope='function')
 def counter(camera):
