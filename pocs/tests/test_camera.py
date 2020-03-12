@@ -83,6 +83,7 @@ def camera(request, images_dir, dynamic_config_server, config_port):
     yield camera
 
     # Teardown
+    del camera
 
 
 @pytest.fixture(scope='function')
