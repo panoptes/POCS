@@ -41,14 +41,9 @@ jobs:
           -v $(pwd):/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
-    - name: Upload coverage on success
-      if: success()
-      run: |
-        ls -lhrsta
-        bash <(curl -s https://codecov.io/bash)
     - name: Create log file artifact
       uses: actions/upload-artifact@v1
-      if: always()
+      if: failure() or cancel()
       with:
         name: log-files
         path: panoptes.log
