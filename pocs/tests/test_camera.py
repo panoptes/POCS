@@ -82,8 +82,10 @@ def camera(request, images_dir, dynamic_config_server, config_port):
     camera.logger.debug(f'Yielding camera {camera}')
     yield camera
 
-    # Teardown
-    del camera
+    # Explicitly remove the simulator SDK from the assigned list.
+    camera.logger.debug(f'Assigned cameras: {type(camera)._assigned_cameras!r}')
+    if request.param[1] == 'simulator_sdk':
+        type(camera)._assigned_cameras.discard(camera.uid)
 
 
 @pytest.fixture(scope='function')
