@@ -43,7 +43,7 @@ jobs:
           scripts/testing/run-tests.sh
     - name: Create log file artifact
       uses: actions/upload-artifact@v1
-      if: failure() or cancel()
+      if: failure() or cancelled()
       with:
         name: log-files
         path: panoptes.log
