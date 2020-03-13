@@ -10,9 +10,4 @@ coverage run "$(command -v pytest)" -x -vv -rfes --test-databases all
 echo "Combining coverage"
 coverage combine
 
-# Send coverage report.
-if [[ -z "${COVERAGE}" ]]; then
-    bash <(curl -s https://codecov.io/bash)
-fi
-
 exit 0

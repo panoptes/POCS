@@ -18,4 +18,3 @@ ignore:
   - "pocs/filterwheel/libefw.py"
   - "pocs/filterwheel/sbig.py"
   - "pocs/filterwheel/zwo.py"
-  - "peas/weather.py"
