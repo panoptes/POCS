@@ -4,6 +4,7 @@ import os
 import time
 import glob
 from ctypes.util import find_library
+from contextlib import suppress
 
 import astropy.units as u
 from astropy.io import fits
@@ -82,8 +83,9 @@ def camera(request, images_dir, dynamic_config_server, config_port):
     camera.logger.debug(f'Yielding camera {camera}')
     yield camera
 
+    with suppress(AttributeError):
+        camera.logger.debug(f'Assigned cameras: {type(camera)._assigned_cameras!r}')
     # Explicitly remove the simulator SDK from the assigned list.
-    camera.logger.debug(f'Assigned cameras: {type(camera)._assigned_cameras!r}')
     if request.param[1] == 'simulator_sdk':
         type(camera)._assigned_cameras.discard(camera.uid)
 
