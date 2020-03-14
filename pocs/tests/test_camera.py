@@ -81,6 +81,7 @@ def camera(request, dynamic_config_server, config_port):
     assert camera.is_ready
     yield camera
 
+    # simulator_sdk needs this explictly removed for some reason.
     with suppress(AttributeError):
         type(camera)._assigned_cameras.discard(camera.uid)
 
