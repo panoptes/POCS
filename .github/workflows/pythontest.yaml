@@ -33,9 +33,7 @@ jobs:
     - name: Test with pytest in pocs container
       timeout-minutes: 60
       run: |
-        ci_env=`bash <(curl -s https://codecov.io/env)`
         docker run -i \
-          $ci_env \
           -e LOCAL_USER_ID=$(id -u) \
           -v $(pwd):/var/panoptes/POCS \
           -v $(pwd):/var/panoptes/logs \
@@ -50,6 +48,7 @@ jobs:
     - name: Upload coverage on success
       if: success()
       run: |
+        ls -lhrst .coverage
         bash <(curl -s https://codecov.io/bash)
     - name: Create log file artifact
       uses: actions/upload-artifact@v1
