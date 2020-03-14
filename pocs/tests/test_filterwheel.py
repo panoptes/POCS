@@ -164,7 +164,7 @@ def test_move_times(dynamic_config_server, config_port, name, unidirectional, ex
         pytest.approx(expected, rel=6e-2)
 
 
-def test_move_exposing(dynamic_config_server, config_port, tmpdir, caplog):
+def test_move_exposing(dynamic_config_server, config_port, tmpdir):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']},
                            config_port=config_port)
@@ -173,7 +173,6 @@ def test_move_exposing(dynamic_config_server, config_port, tmpdir, caplog):
     with pytest.raises(error.PanError):
         # Attempt to move while camera is exposing
         sim_camera.filterwheel.move_to(2, blocking=True)
-    assert caplog.records[-1].levelname == 'ERROR'
     assert sim_camera.filterwheel.position == 1  # Should not have moved
     exp_event.wait()
 
