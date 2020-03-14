@@ -14,6 +14,7 @@ class PanLogger:
     def __init__(self):
         self.padding = 0
         self.fmt = "<lvl>{level:.1s}</lvl> <light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</> <blue>({time:HH:mm:ss.ss})</> | <c>{name} {function}:{line}{extra[padding]}</c> | <lvl>{message}</lvl>\n"
+        self.handlers = dict()
 
     def format(self, record):
         length = len("{name}:{function}:{line}".format(**record))
@@ -67,27 +68,26 @@ def get_logger(profile='panoptes',
     log_dir = os.path.normpath(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    # If we are using POCS logger then we are opinoninated about loggers, so clobber all existing.
-    logger.remove()
-
     # Log file for tailing on the console.
-    console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
-    logger.add(
-        console_log_path,
-        rotation='11:30',
-        retention=1,
-        format=LOGGER_INFO.format,
-        enqueue=True,  # multiprocessing
-        colorize=True,
-        backtrace=True,
-        diagnose=True,
-        compression='gz',
-        level=log_level)
+    if 'console' not in LOGGER_INFO.handlers:
+        console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
+        console_id = logger.add(
+            console_log_path,
+            rotation='11:30',
+            retention=1,
+            format=LOGGER_INFO.format,
+            enqueue=True,  # multiprocessing
+            colorize=True,
+            backtrace=True,
+            diagnose=True,
+            compression='gz',
+            level=log_level)
+        LOGGER_INFO.handlers['console'] = console_id
 
     # Log file for ingesting into log file service.
-    if full_log_file:
+    if full_log_file and 'archive' not in LOGGER_INFO.handlers:
         full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
-        logger.add(
+        archive_id = logger.add(
             full_log_path,
             rotation='11:31',
             retention='7 days',
@@ -97,6 +97,7 @@ def get_logger(profile='panoptes',
             backtrace=True,
             diagnose=True,
             level='TRACE')
+        LOGGER_INFO.handlers['archive'] = archive_id
 
     # Customize colors
     logger.level('TRACE', color='<cyan>')

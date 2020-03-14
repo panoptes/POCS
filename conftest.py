@@ -484,7 +484,6 @@ def caplog(_caplog):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
-    logger.add(sys.stderr, format='{message}')
     handler_id = logger.add(PropogateHandler(), format="{message}")
     yield _caplog
     with suppress(ValueError):

@@ -1,5 +1,4 @@
 import time
-import os
 import pytest
 
 from pocs.utils.logger import get_logger
@@ -13,8 +12,7 @@ def profile():
 def test_base_logger(caplog, profile, tmp_path):
     logger = get_logger(log_dir=str(tmp_path),
                         full_log_file=None,
-                        profile=profile,
-                        stderr=False)
+                        profile=profile)
     logger.debug('Hello')
     time.sleep(0.5)
     assert caplog.records[-1].message == 'Hello'

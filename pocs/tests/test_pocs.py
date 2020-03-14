@@ -152,7 +152,7 @@ def test_make_log_dir(tmp_path, pocs):
     os.environ['PANDIR'] = old_pandir
 
 
-def test_simple_simulator(pocs, caplog):
+def test_simple_simulator(pocs):
     assert isinstance(pocs, POCS)
 
     assert pocs.is_initialized is not True
@@ -171,34 +171,6 @@ def test_simple_simulator(pocs, caplog):
     pocs.state = 'foo'
 
     assert pocs._lookup_trigger() == 'parking'
-
-    caplog.records.clear()
-    assert pocs.has_free_space()
-    # Check that no messages were generated.
-    assert not any([
-        rec.levelname not in ['WARNING', 'ERROR']
-        for rec in caplog.records
-    ])
-
-    # Test low disk space warning by requiring fraction of currently available space.
-    current_space = (shutil.disk_usage(os.getenv('PANDIR')).free * u.byte).to(u.gigabyte)
-    assert pocs.has_free_space(required_space=current_space * 0.8)
-    # Check that it generated an error message.
-    assert any([
-        rec.levelname == 'WARNING' and 'Low disk space' in rec.message
-        for rec in caplog.records
-    ])
-
-    caplog.records.clear()
-
-    # Test no disk space with some ridiculous requirement (dated 2020 for posterity).
-    assert not pocs.has_free_space(required_space=1e9 * u.gigabyte)
-    # Check that it generated an error message.
-    assert any([
-        rec.levelname == 'ERROR' and 'No disk space' in rec.message
-        for rec
-        in caplog.records
-    ])
 
     assert pocs.is_safe()
 
