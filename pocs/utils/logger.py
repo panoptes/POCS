@@ -14,7 +14,6 @@ class PanLogger:
     def __init__(self):
         self.padding = 0
         self.fmt = "<lvl>{level:.1s}</lvl> <light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</> <blue>({time:HH:mm:ss.ss})</> | <c>{name} {function}:{line}{extra[padding]}</c> | <lvl>{message}</lvl>\n"
-        self.handlers = set()
 
     def format(self, record):
         length = len("{name}:{function}:{line}".format(**record))
@@ -30,13 +29,14 @@ def get_logger(profile='panoptes',
                console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
                log_dir=None,
-               log_level='DEBUG',
-               stderr=False):
+               log_level='DEBUG'):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
     Two log files are created, one suitable for viewing on the console (via `tail`)
     and a full log file suitable for archive and later inspection. The full log
     file is serialized into JSON.
+
+    Note: This clobbers all existing loggers and forces the two files.
 
     Note: The `log_dir` is determined first from `$PANLOG` if it exists, then
       `$PANDIR/logs` if `$PANDIR` exists, otherwise defaults to `.`.
@@ -54,16 +54,11 @@ def get_logger(profile='panoptes',
         log_level (str, optional): Log level for console output, defaults to 'DEBUG'.
             Note that it should be a string that matches standard `logging` levels and
             also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`).
-        stderr (bool, optional): If logs should also be output on `stderr` instead of
-            to a file. This is similar to default python logging. For POCS it is preferable
-            to write to a file and then tail the file but this is needed for testing and
-            might be useful (or annoying) in a console.
 
     Returns:
         `loguru.logger`: A configured instance of the logger.
     """
 
-    # Create the directory for the per-run files.
     if log_dir is None:
         try:
             log_dir = os.environ['PANLOG']
@@ -72,32 +67,28 @@ def get_logger(profile='panoptes',
     log_dir = os.path.normpath(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    # Record the handlers
-    logger._handlers = dict()
+    # If we are using POCS logger then we are opinoninated about loggers, so clobber all existing.
+    logger.remove()
 
-    if stderr is False:
-        with suppress(ValueError):
-            logger.remove(0)
+    # Log file for tailing on the console.
+    console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
+    logger.add(
+        console_log_path,
+        rotation='11:30',
+        retention=1,
+        format=LOGGER_INFO.format,
+        enqueue=True,  # multiprocessing
+        colorize=True,
+        backtrace=True,
+        diagnose=True,
+        compression='gz',
+        level=log_level)
 
-        if 'console' not in LOGGER_INFO.handlers:
-            console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
-            logger.add(
-                sink=console_log_path,
-                rotation='11:30',
-                retention=1,
-                format=LOGGER_INFO.format,
-                enqueue=True,  # multiprocessing
-                colorize=True,
-                backtrace=True,
-                diagnose=True,
-                compression='gz',
-                level=log_level)
-            LOGGER_INFO.handlers.add('console')
-
-    if 'archive' not in LOGGER_INFO.handlers and full_log_file is not None:
+    # Log file for ingesting into log file service.
+    if full_log_file:
         full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
         logger.add(
-            sink=full_log_path,
+            full_log_path,
             rotation='11:31',
             retention='7 days',
             compression='gz',
@@ -106,12 +97,11 @@ def get_logger(profile='panoptes',
             backtrace=True,
             diagnose=True,
             level='TRACE')
-        LOGGER_INFO.handlers.add('archive')
 
     # Customize colors
     logger.level('TRACE', color='<cyan>')
     logger.level('DEBUG', color='<white>')
-    logger.level('INFO', color='<green><bold>')
+    logger.level('INFO', color='<light-blue><bold>')
     logger.level('SUCCESS', color='<cyan><bold>')
 
     return logger

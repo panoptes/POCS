@@ -90,10 +90,10 @@ def test_filter_names(filterwheel):
 
 def test_move_number(filterwheel):
     assert filterwheel.position == 1
-    e = filterwheel.move_to(2)
+    e = filterwheel.move_to(4)
     assert math.isnan(filterwheel.position)  # position is NaN while between filters
     e.wait()
-    assert filterwheel.position == 2
+    assert filterwheel.position == 4
     e = filterwheel.move_to(3, blocking=True)
     assert e.is_set()
     assert filterwheel.position == 3
@@ -140,14 +140,11 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
                                       move_time=0.5,
                                       timeout=0.2,
                                       config_port=config_port)
-    slow_filterwheel.position = 4  # Move should take 0.3 seconds, more than timeout.
-    time.sleep(0.5)  # For some reason takes a moment for the error to get logged.
+    with pytest.raises(error.Timeout):
+        # Move should take 0.3 seconds, more than timeout.
+        slow_filterwheel.position = 4
 
-    # Collect the logs
-    levels = [rec.levelname for rec in caplog.records]
-    assert 'ERROR' in levels  # Should have logged an ERROR by now
-    # It raises a panoptes.utils.error.Timeout exception too, but because it's in another Thread it
-    # doesn't get passes up to the calling code.
+    assert slow_filterwheel.position != 4
 
 
 @pytest.mark.parametrize("name, unidirectional, expected",

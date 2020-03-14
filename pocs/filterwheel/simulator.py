@@ -112,9 +112,14 @@ class FilterWheel(AbstractFilterWheel):
         move.start()
 
         if move_duration > self._timeout:
-            timeout_timer = threading.Timer(interval=self._timeout,
-                                            function=self._timeout_move)
-            timeout_timer.start()
+            move.join(timeout=self._timeout)
+            # If still alive then kill and raise timeout
+            if move.is_alive():
+                self._move_event.set()
+                self._moving = False
+                msg = "Timeout waiting for filter wheel move to complete"
+                self.logger.error(msg)
+                raise error.Timeout(msg)
 
     def _complete_move(self, position):
         self._moving = False

@@ -23,70 +23,65 @@ from pocs.scheduler.observation import Observation
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
-from panoptes.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
 from pocs.camera import create_cameras_from_config
 from pocs.camera import create_camera_simulator
 
-params = [SimCamera, SimCamera, SimCamera, SimSDKCamera, SBIGCamera, FLICamera, ZWOCamera]
-ids = ['simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
-       'sbig', 'fli', 'zwo']
+
+focuser_params = {
+    'model': 'simulator',
+    'focus_port': '/dev/ttyFAKE',
+    'initial_position': 20000,
+    'autofocus_range': (40, 80),
+    'autofocus_step': (10, 20),
+    'autofocus_seconds': 0.1,
+    'autofocus_size': 500,
+    'autofocus_keep_files': False
+}
+
+filterwheel_params = {
+    'model': 'simulator',
+    'filter_names': ['one', 'deux', 'drei', 'quattro'],
+    'move_time': 0.1,
+    'timeout': 0.5
+}
+
+serial_number_params = 'SSC101'
 
 
-# Ugly hack to access id inside fixture
-@pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
-def camera(request, images_dir, dynamic_config_server, config_port):
-    if request.param[1] == 'simulator':
-        camera = SimCamera(config_port=config_port)
-    elif request.param[1] == 'simulator_focuser':
-        camera = SimCamera(focuser={'model': 'simulator',
-                                    'focus_port': '/dev/ttyFAKE',
-                                    'initial_position': 20000,
-                                    'autofocus_range': (40, 80),
-                                    'autofocus_step': (10, 20),
-                                    'autofocus_seconds': 0.1,
-                                    'autofocus_size': 500,
-                                    'autofocus_keep_files': False},
-                           config_port=config_port)
-    elif request.param[1] == 'simulator_filterwheel':
-        camera = SimCamera(filterwheel={'model': 'simulator',
-                                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                                        'move_time': 0.1,
-                                        'timeout': 0.5},
-                           config_port=config_port)
-    elif request.param[1] == 'simulator_sdk':
-        camera = SimSDKCamera(serial_number='SSC101', config_port=config_port)
+@pytest.fixture(scope='function', params=[
+    pytest.param([SimCamera, dict()]),
+    pytest.param([SimCamera, dict(focuser=focuser_params)]),
+    pytest.param([SimCamera, dict(filterwheel=filterwheel_params)]),
+    pytest.param([SimSDKCamera, dict(serial_number=serial_number_params)]),
+    pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
+    pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
+    pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
+], ids=[
+    'simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
+    'sbig', 'fli', 'zwo'
+])
+def camera(request, dynamic_config_server, config_port):
+    CamClass = request.param[0]
+    cam_params = request.param[1]
+
+    if isinstance(cam_params, dict):
+        # Simulator
+        camera = CamClass(config_port=config_port, **cam_params)
     else:
-        # Load the local config file and look for camera configurations of the specified type
-        configs = []
-        local_config = load_config('pocs_local', ignore_local=True)
-        camera_info = local_config.get('cameras')
-        if camera_info:
-            # Local config file has a cameras section
-            camera_configs = camera_info.get('devices')
-            if camera_configs:
-                # Local config file camera section has a devices list
-                for camera_config in camera_configs:
-                    if camera_config and camera_config['model'] == request.param[1]:
-                        # Camera config is the right type
-                        configs.append(camera_config)
+        # Lookup real hardware device name in real life config server.
+        for cam_config in get_config('cameras.devices'):
+            if cam_config['model'] == cam_params:
+                camera = CamClass(**cam_config)
+                break
 
-        if not configs:
-            pytest.skip(
-                "Found no {} configs in pocs_local.yaml, skipping tests".format(request.param[1]))
-
-        # Create and return an camera based on the first config
-        camera = request.param[0](**configs[0], config_port=config_port)
-
-    assert camera.is_ready
     camera.logger.debug(f'Yielding camera {camera}')
+    assert camera.is_ready
     yield camera
 
     with suppress(AttributeError):
-        camera.logger.debug(f'Assigned cameras: {type(camera)._assigned_cameras!r}')
-    # Explicitly remove the simulator SDK from the assigned list.
-    if request.param[1] == 'simulator_sdk':
         type(camera)._assigned_cameras.discard(camera.uid)
 
 

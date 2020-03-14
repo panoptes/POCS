@@ -92,5 +92,5 @@ class Camera(AbstractSDKCamera, Camera):
         self._temp_var = 0.05 * u.Celsius
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
-        self._time_constant = 1.0
+        self._time_constant = 0.25
         self._connected = True

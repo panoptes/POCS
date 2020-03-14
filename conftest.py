@@ -7,6 +7,7 @@
 # all tests, not just those in pocs/tests.
 
 import os
+import sys
 import copy
 import pytest
 from _pytest.logging import caplog as _caplog
@@ -33,7 +34,8 @@ Downloader(wide_field=False, narrow_field=False).download_all_files()
 
 _all_databases = ['file', 'memory']
 
-logger = get_logger(stderr=True, full_log_file=None, log_level='TRACE')
+logger = get_logger(full_log_file=None)
+logger.level("testing", no=15, icon="🤖", color="<YELLOW><black>")
 
 
 def pytest_addoption(parser):
@@ -123,9 +125,9 @@ def pytest_runtest_logstart(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     try:
-        logger.critical('##########' * 8)
-        logger.critical('     START TEST {}', nodeid)
-        logger.critical('')
+        logger.log('testing', '##########' * 8)
+        logger.log('testing', f'     START TEST {nodeid}')
+        logger.log('testing', '')
     except Exception:
         pass
 
@@ -141,9 +143,9 @@ def pytest_runtest_logfinish(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     try:
-        logger.critical('')
-        logger.critical('       END TEST {}', nodeid)
-        logger.critical('##########' * 8)
+        logger.log('testing', '')
+        logger.log('testing', f'       END TEST {nodeid}')
+        logger.log('testing', '##########' * 8)
     except Exception:
         pass
 
@@ -153,16 +155,19 @@ def pytest_runtest_logreport(report):
     if report.skipped or report.outcome != 'failed':
         return
     try:
-        logger.critical('')
-        logger.critical('  TEST {} FAILED during {}\n\n{}\n', report.nodeid, report.when,
-                        report.longreprtext)
-        cnt = 15
+        logger.log('testing', '')
+        logger.log('testing', f'''  TEST {report.nodeid} FAILED during {report.when}
+
+            {report.longreprtext}
+        ''')
         if report.capstdout:
-            logger.critical('{}Captured stdout during {}{}\n{}\n', '= ' * cnt, report.when,
-                            ' =' * cnt, report.capstdout)
+            logger.log('testing', f'''=============== Captured stdout during {report.when}
+                {report.capstdout}
+            ===============''')
         if report.capstderr:
-            logger.critical('{}Captured stderr during {}{}\n{}\n', '* ' * cnt, report.when,
-                            ' *' * cnt, report.capstderr)
+            logger.log('testing', f'''=============== Captured stdout during {report.when}
+                {report.capstderr}
+            ===============''')
     except Exception:
         pass
 
@@ -219,7 +224,7 @@ def config_server_args(config_path):
 @pytest.fixture(scope='session', autouse=True)
 def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
 
-    logger.trace(f'Starting config_server for testing session')
+    logger.log('testing', f'Starting config_server for testing session')
 
     def start_config_server():
         # Load the config items into the app config.
@@ -232,7 +237,7 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     proc = Process(target=start_config_server)
     proc.start()
 
-    logger.trace(f'config_server started with PID={proc.pid}')
+    logger.log('testing', f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -240,28 +245,28 @@ def static_config_server(config_host, static_config_port, config_server_args, im
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.trace(f'Setting testing name and unit_id to {unit_id}')
+    logger.log('testing', f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=static_config_port)
     set_config('pan_id', unit_id, port=static_config_port)
 
-    logger.trace(f'Setting testing database to {db_name}')
+    logger.log('testing', f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=static_config_port)
 
     fields_file = 'simulator.yaml'
-    logger.trace(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.log('testing', f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=static_config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.trace(f'Setting temporary image directory for testing')
+    logger.log('testing', f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=static_config_port)
 
     # Make everything a simulator
-    logger.trace(f'Setting all hardware to use simulators')
+    logger.log('testing', f'Setting all hardware to use simulators')
     set_config('simulator', hardware.get_simulator_names(
         simulator=['all']), port=static_config_port)
 
     yield
-    logger.trace(f'Killing config_server started with PID={proc.pid}')
+    logger.log('testing', f'Killing config_server started with PID={proc.pid}')
     proc.terminate()
 
 
@@ -274,7 +279,7 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     instances that are created (propogated through PanBase).
     """
 
-    logger.trace(f'Starting config_server for testing function')
+    logger.log('testing', f'Starting config_server for testing function')
 
     def start_config_server():
         # Load the config items into the app config.
@@ -287,7 +292,7 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     proc = Process(target=start_config_server)
     proc.start()
 
-    logger.trace(f'config_server started with PID={proc.pid}')
+    logger.log('testing', f'config_server started with PID={proc.pid}')
 
     # Give server time to start
     time.sleep(1)
@@ -295,31 +300,31 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     # Adjust various config items for testing
     unit_name = 'Generic PANOPTES Unit'
     unit_id = 'PAN000'
-    logger.trace(f'Setting testing name and unit_id to {unit_id}')
+    logger.log('testing', f'Setting testing name and unit_id to {unit_id}')
     set_config('name', unit_name, port=config_port)
     set_config('pan_id', unit_id, port=config_port)
 
-    logger.trace(f'Setting testing database to {db_name}')
+    logger.log('testing', f'Setting testing database to {db_name}')
     set_config('db.name', db_name, port=config_port)
 
     fields_file = 'simulator.yaml'
-    logger.trace(f'Setting testing scheduler fields_file to {fields_file}')
+    logger.log('testing', f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
     # TODO(wtgee): determine if we need separate directories for each module.
-    logger.trace(f'Setting temporary image directory for testing')
+    logger.log('testing', f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
     # Make everything a simulator
     simulators = hardware.get_simulator_names(simulator=['all'])
-    logger.trace(f'Setting all hardware to use simulators: {simulators}')
+    logger.log('testing', f'Setting all hardware to use simulators: {simulators}')
     set_config('simulator', simulators, port=config_port)
 
     yield
     pid = proc.pid
     proc.terminate()
     time.sleep(0.1)
-    logger.trace(f'Killed config_server started with PID={pid}')
+    logger.log('testing', f'Killed config_server started with PID={pid}')
 
 
 @pytest.fixture
@@ -473,12 +478,13 @@ def noheader_fits_file(data_dir):
     return os.path.join(data_dir, 'noheader.fits')
 
 
-@pytest.fixture
+@pytest.fixture()
 def caplog(_caplog):
     class PropogateHandler(logging.Handler):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
+    logger.add(sys.stderr, format='{message}')
     handler_id = logger.add(PropogateHandler(), format="{message}")
     yield _caplog
     with suppress(ValueError):
