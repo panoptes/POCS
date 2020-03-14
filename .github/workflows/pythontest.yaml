@@ -42,8 +42,7 @@ jobs:
     - name: Upload coverage on success
       if: success()
       run: |
-        ls -lhrst .coverage
-        bash <(curl -s https://codecov.io/bash)
+        bash <(curl -s https://codecov.io/bash) -f .coverage
     - name: Create log file artifact
       uses: actions/upload-artifact@v1
       if: always()
