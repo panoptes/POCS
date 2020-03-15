@@ -11,6 +11,6 @@ echo "Combining coverage"
 coverage combine
 
 # Show basic report
-coverage report -m --skip-covered
+coverage report --skip-covered
 
 exit 0

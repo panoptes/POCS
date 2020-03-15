@@ -1,18 +1,32 @@
 [run]
 branch = True
+
 concurrency =
     multiprocessing
     threading
     subprocess
+
 source =
     peas
     pocs
+
 parallel = True
 
 [report]
+precision = 2
+show_missing = True
+skip_covered = True
 exclude_lines =
     pragma: no cover
 
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if __name__ == .__main__.:
+
 ignore_errors = True
+
 omit =
-    tests/*
+    */tests/*

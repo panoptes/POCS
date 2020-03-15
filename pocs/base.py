@@ -1,4 +1,3 @@
-import sys
 from requests.exceptions import ConnectionError
 
 from pocs import __version__

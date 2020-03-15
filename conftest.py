@@ -7,7 +7,6 @@
 # all tests, not just those in pocs/tests.
 
 import os
-import sys
 import copy
 import pytest
 from _pytest.logging import caplog as _caplog
