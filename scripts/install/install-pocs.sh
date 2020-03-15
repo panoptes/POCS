@@ -26,7 +26,7 @@ usage() {
  $ $(basename $0) [--user panoptes] [--pandir /var/panoptes]
 
  Options:
-  USER      The default user. This is saved as the PANUSER environment variable.
+  USER      The PANUSER environment variable, defaults to 'panoptes'.
   PANDIR    Default install directory, defaults to /var/panoptes. Saved as PANDIR
             environment variable.
 "
@@ -35,7 +35,7 @@ usage() {
 DOCKER_BASE="gcr.io/panoptes-exp"
 
 if [ -z "${PANUSER}" ]; then
-    export PANUSER=$USER
+    export PANUSER='panoptes'
     echo "export PANUSER=${PANUSER}" >> ${HOME}/.zshrc
 fi
 if [ -z "${PANDIR}" ]; then
@@ -97,6 +97,7 @@ do_install() {
         sudo systemctl start systemd-timesyncd.service
     fi
 
+    # Directories
     if [[ ! -d "${PANDIR}" ]]; then
         echo "Creating directories in ${PANDIR}"
         # Make directories
@@ -116,8 +117,6 @@ do_install() {
             esac
         done
     fi
-
-    echo "Log files will be stored in ${PANDIR}/logs/install-pocs.log."
 
     # apt: git, wget
     echo "Installing system dependencies"
@@ -141,7 +140,7 @@ do_install() {
     GIT_BRANCH="develop"
 
     cd "${PANDIR}"
-    declare -a repos=("POCS" "PAWS" "panoptes-utils")
+    declare -a repos=("POCS" "panoptes-utils")
     for repo in "${repos[@]}"; do
         if [ ! -d "${PANDIR}/${repo}" ]; then
             echo "Cloning ${repo}"
@@ -180,9 +179,9 @@ do_install() {
         fi
 
         echo "Pulling POCS docker images"
-        sudo docker pull "${DOCKER_BASE}/panoptes-utils"
-        sudo docker pull "${DOCKER_BASE}/pocs"
-        sudo docker pull "${DOCKER_BASE}/aag-weather"
+        sudo docker pull "${DOCKER_BASE}/panoptes-utils:latest"
+        sudo docker pull "${DOCKER_BASE}/pocs:latest"
+        sudo docker pull "${DOCKER_BASE}/aag-weather:latest"
     else
         echo "WARNING: Docker images not installed/downloaded."
     fi
