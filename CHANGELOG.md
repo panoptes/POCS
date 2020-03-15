@@ -17,6 +17,7 @@ There are a lot of changes included in this release, highlights below:
 * Storing an explicit `safety` collection in the database.
 * Configuration file specific for testing rather than relying on `pocs.yaml`.
 * Convenience scripts for running tests inside docker container: `scripts/testing/test-software.sh`
+* GitHub Actions testing and coverage upload.
 
 ### Changed
 
@@ -41,6 +42,7 @@ There are a lot of changes included in this release, highlights below:
 
 * Cleanup of any stale or unused code.
 * All `mongo` related code.
+* Consolidate configration files: `.pycodestyle.cfg`, `.coveragerc` into `setup.cfg`.
 * Weather related items. These have been moved to [`aag-weather`](https://github.com/panoptes/aag-weather).
 * All notebook tutorials in favor of [`panoptes-tutorials`](https://github.com/panoptes/panoptes-tutorials).
 
