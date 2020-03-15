@@ -126,7 +126,7 @@ class Camera(AbstractGPhotoCamera):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
-            See `scripts/take_pic.sh`
+            See `scripts/take-pic.sh`
 
             Tested With:
                 * Canon EOS 100D
@@ -135,7 +135,7 @@ class Camera(AbstractGPhotoCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
         """
-        script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
+        script_path = os.path.expandvars('$POCS/scripts/take-pic.sh')
 
         # Make sure we have just the value, no units
         seconds = get_quantity_value(seconds)

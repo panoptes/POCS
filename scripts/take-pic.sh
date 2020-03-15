@@ -3,16 +3,16 @@
 usage() {
   echo -n "##################################################
 # Take a picture via gphoto2.
-# 
+#
 # This will change the camera setting to bulb and then take
 # an exposure for the requested amount of time.
-# 
+#
 # This script has only been tested with Canon EOS100D models
 # but should be generic to any gphoto2 camera that supports
 # bulb settings.
 ##################################################
  $ $(basename $0) PORT EXPTIME OUTFILE
- 
+
  Options:
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.
   EXPTIME           Exposure time in seconds, should be greater than 1 second.
@@ -20,7 +20,7 @@ usage() {
   OUTFILE           Output filename with approrpiate extension, e.g. .cr2 for Canon.
 
  Example:
-  scripts/take_pic.sh usb:001,005 5 /var/panoptes/images/temp.cr2
+  scripts/take-pic.sh usb:001,005 5 /var/panoptes/images/temp.cr2
 "
 }
 
