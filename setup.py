@@ -28,13 +28,10 @@ modules = {
         'astropy>=4.0.0',
         'codecov',  # testing
         'coverage',  # testing
-        'coveralls',  # testing
         'matplotlib',
-        'mocket',  # testing
         'numpy',
-        'pandas',
         'panoptes-utils>=0.2.4',
-        'pycodestyle==2.3.1',  # testing
+        'pycodestyle',  # testing
         'pyserial>=3.1.1',
         'pytest-cov',  # testing
         'pytest-remotedata>=0.3.1',  # testing
