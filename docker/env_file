@@ -1,4 +1,4 @@
 PANDIR=/var/panoptes
-POCS=/var/panoptes/POCS
-PANLOG=/var/panoptes/logs
+POCS=${PANDIR}/POCS
+PANLOG=${PANDIR}/logs
 LOCAL_USER_ID=1000
