@@ -17,7 +17,7 @@ There are a lot of changes included in this release, highlights below:
 * Storing an explicit `safety` collection in the database.
 * Configuration file specific for testing rather than relying on `pocs.yaml`.
 * Convenience scripts for running tests inside docker container: `scripts/testing/test-software.sh`
-* GitHub Actions testing and coverage upload.
+* GitHub Actions for testing and coverage upload.
 
 ### Changed
 
@@ -36,7 +36,9 @@ There are a lot of changes included in this release, highlights below:
     * `trace`: one level below `debug`.
     * `success`: one level above `info`.
 * :warning: **breaking** Mount: unparking has been moved from the `ready` to the `slewing` state. This fixes a problem where after waiting 10 minutes for observation check, the mount would move from park to home to park without checking weather safety.
+* Documentation updates.
 * Lots of conversions to `f-strings`.
+* Renamed codecov configuration file to be compliant.
 
 ### Removed
 
@@ -45,6 +47,7 @@ There are a lot of changes included in this release, highlights below:
 * Consolidate configration files: `.pycodestyle.cfg`, `.coveragerc` into `setup.cfg`.
 * Weather related items. These have been moved to [`aag-weather`](https://github.com/panoptes/aag-weather).
 * All notebook tutorials in favor of [`panoptes-tutorials`](https://github.com/panoptes/panoptes-tutorials).
+* Remove all old install and startup scripts.
 
 ## [0.6.2] - 2018-09-27
 
