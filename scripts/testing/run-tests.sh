@@ -10,7 +10,4 @@ coverage run "$(command -v pytest)" -x -vv -rfes --test-databases all
 echo "Combining coverage"
 coverage combine
 
-# Show basic report
-coverage report --skip-covered
-
 exit 0

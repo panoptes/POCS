@@ -39,10 +39,11 @@ jobs:
           -v $(pwd):/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
-    - name: Upload coverage on success
+    - uses: codecov/codecov-action@v1
       if: success()
-      run: |
-        bash <(curl -s https://codecov.io/bash) -f .coverage
+      with:
+        file: ./.coverage
+        fail_ci_if_error: true # optional (default = false)
     - name: Create log file artifact
       uses: actions/upload-artifact@v1
       if: always()
