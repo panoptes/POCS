@@ -8,7 +8,8 @@ jobs:
       matrix:
         python-version: [3.7]
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -26,7 +27,8 @@ jobs:
       matrix:
         python-version: [3.7]
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
     - name: Pull pocs image
       run: |
         docker pull gcr.io/panoptes-exp/pocs:latest
@@ -39,7 +41,8 @@ jobs:
           -v $(pwd):/var/panoptes/logs \
           gcr.io/panoptes-exp/pocs:latest \
           scripts/testing/run-tests.sh
-    - uses: codecov/codecov-action@v1
+    - name: Upload coverage report to codecov.io
+      uses: codecov/codecov-action@v1
       if: success()
       with:
         file: ./.coverage
