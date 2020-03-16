@@ -130,7 +130,7 @@ do_install() {
     fi
 
     echo "Cloning PANOPTES source code."
-    echo "Github user for PANOPTES repos (POCS, PAWS, panoptes-utils)."
+    echo "Github user for PANOPTES repos (POCS, panoptes-utils)."
 
     # Default user
     read -p "Github User [press Enter for default]: " github_user
@@ -147,15 +147,11 @@ do_install() {
             # Just redirect the errors because otherwise looks like it hangs.
             git clone "https://github.com/${github_user}/${repo}.git" >> "${LOGFILE}" 2>&1
         else
-            echo "Repo ${repo} already exists on system."
+            cd "${repo}"
+            git fetch origin >> "${LOGFILE}" 2>&1
+            cd ..
         fi
     done
-
-    # Link env_file from POCS
-    if ! test -f "${PANDIR}/.env"; then
-        ln -sf "${PANDIR}/POCS/docker/env_file" "${PANDIR}/.env"
-        echo "source ${PANDIR}/.env" >> "${HOME}/.zshrc"
-    fi
 
     # Get Docker
     if ! command_exists docker; then
@@ -180,8 +176,8 @@ do_install() {
 
         echo "Pulling POCS docker images"
         sudo docker pull "${DOCKER_BASE}/panoptes-utils:latest"
-        sudo docker pull "${DOCKER_BASE}/pocs:latest"
         sudo docker pull "${DOCKER_BASE}/aag-weather:latest"
+        sudo docker pull "${DOCKER_BASE}/pocs:latest"
     else
         echo "WARNING: Docker images not installed/downloaded."
     fi

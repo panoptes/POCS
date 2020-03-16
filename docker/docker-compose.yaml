@@ -7,7 +7,7 @@ services:
     hostname: peas-shell
     privileged: true
     network_mode: host
-    env_file: $PANDIR/.env
+    env_file: ../env_file
     depends_on:
       - "messaging-hub"
     volumes:
@@ -27,7 +27,7 @@ services:
     hostname: pocs-shell
     privileged: true
     network_mode: host
-    env_file: $PANDIR/.env
+    env_file: ../env_file
     depends_on:
       - "peas-shell"
     volumes:
