@@ -310,7 +310,6 @@ def dynamic_config_server(config_host, config_port, config_server_args, images_d
     logger.log('testing', f'Setting testing scheduler fields_file to {fields_file}')
     set_config('scheduler.fields_file', fields_file, port=config_port)
 
-    # TODO(wtgee): determine if we need separate directories for each module.
     logger.log('testing', f'Setting temporary image directory for testing')
     set_config('directories.images', images_dir, port=config_port)
 
