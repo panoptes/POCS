@@ -83,12 +83,16 @@ do_install() {
     esac
     echo ${machine}
 
+    # Install directory
+    read -p "PANOPTES base directory [${PANDIR:-/var/panoptes}]: " PANDIR
+    PANDIR=${PANDIR:-/var/panoptes}
+
     LOGFILE="${PANDIR}/logs/install-pocs.log"
 
     echo "Installing PANOPTES software."
     echo "USER: ${PANUSER}"
     echo "OS: ${OS}"
-    echo "DIR: ${PANDIR}"
+    echo "Base dir: ${PANDIR}"
     echo "Logfile: ${LOGFILE}"
 
     # System time doesn't seem to be updating correctly for some reason.

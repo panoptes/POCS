@@ -130,4 +130,3 @@ panoptes_network:
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
-
