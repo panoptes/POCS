@@ -26,7 +26,7 @@ usage() {
  $ $(basename $0) [--user panoptes] [--pandir /var/panoptes]
 
  Options:
-  USER      The PANUSER environment variable, defaults to 'panoptes'.
+  USER      The PANUSER environment variable, defaults to `$USER`.
   PANDIR    Default install directory, defaults to /var/panoptes. Saved as PANDIR
             environment variable.
 "
@@ -35,7 +35,7 @@ usage() {
 DOCKER_BASE="gcr.io/panoptes-exp"
 
 if [ -z "${PANUSER}" ]; then
-    export PANUSER='panoptes'
+    export PANUSER=$USER
     echo "export PANUSER=${PANUSER}" >> ${HOME}/.zshrc
 fi
 if [ -z "${PANDIR}" ]; then

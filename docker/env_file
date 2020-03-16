@@ -2,7 +2,3 @@ PANUSER=panoptes
 PANDIR=/var/panoptes
 POCS=${PANDIR}/POCS
 PANLOG=${PANDIR}/logs
-
-# For running docker containers - assumes first user
-# Should be same as output from `id -u`.
-LOCAL_USER_ID=1000
