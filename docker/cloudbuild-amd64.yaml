@@ -42,4 +42,5 @@ steps:
   - 'gcr.io/${PROJECT_ID}/pocs:latest'
   waitFor: ['manifest']
 images:
+  - 'gcr.io/${PROJECT_ID}/pocs:latest'
   - 'gcr.io/${PROJECT_ID}/pocs:amd64'
