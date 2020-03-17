@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 export PYTHONPATH="${PYTHONPATH}:${PANDIR}/POCS/scripts/coverage"
-export COVERAGE_PROCESS_START="${PANDIR}/POCS/.coveragerc"
+export COVERAGE_PROCESS_START="${PANDIR}/POCS/setup.cfg"
 
 # Run coverage over the pytest suite
 echo "Staring tests"
