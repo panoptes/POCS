@@ -1,7 +1,7 @@
 ARG arch=amd64
 
 FROM gcr.io/panoptes-exp/panoptes-utils:latest AS pocs-base
-MAINTAINER Developers for PANOPTES project<https://github.com/panoptes/POCS>
+LABEL maintainer="developers@projectpanoptes.org"
 
 ARG pandir=/var/panoptes
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz"
