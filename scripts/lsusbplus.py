@@ -114,7 +114,41 @@ for port in DevPaths:
     break
 
 # Identify Weather Sensor
-
+print("Looking for AAG weather sensor. Process could take up to 8 minutes")
+for port in DevPaths:
+    usb_port = f'/dev/{port}'
+    print(f'Testing port {usb_port}.')
+    Input = ""
+    ser = serial.Serial(usb_port, 9600, timeout=3)
+    i = 0
+    PreviousInput = False
+    end_time = time.time() + 60
+    while i < 10:
+        bytesToRead = ser.inWaiting()
+        info = ser.read(bytesToRead)
+        info = info.decode('utf-8')
+        Input = Input + info
+        if (len(Input) > 1000):
+            if ("CloudWatcher!" in Input):
+                print(f'\033[1;32;40mFound weather sensor on {usb_port}, saving to config\033[1;37;40m')
+                set_config('weather.aag_cloud.serial_port', usb_port)
+                ser.close()
+                i += 1
+                break
+            Input = ""
+        info = ''
+        if (time.time() >= end_time and PreviousInput == False):
+           print("Testing if there is any input information.")
+           if (Input == ""):
+              print(f'Weather sensor not found on {usb_port}.')
+              print(f'Input: {Input}')
+              ser.close()
+              break
+           print("Input found. Verifying weather sensor.")
+           PreviousInput = True
+    else:
+        continue
+    break
 
 # Identify Arduinos
 # Isolate Arduino device paths
