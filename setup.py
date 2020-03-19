@@ -30,7 +30,7 @@ modules = {
         'coverage',  # testing
         'matplotlib',
         'numpy',
-        'panoptes-utils>=0.2.4',
+        'panoptes-utils>=0.2.5',
         'pycodestyle',  # testing
         'pyserial>=3.1.1',
         'pytest-cov',  # testing
