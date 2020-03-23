@@ -17,6 +17,28 @@ BASEDIR = 'cd /sys/devices/pci0000:00'
 DataStorageMatrix = []
 TemporaryDataStorageList = []
 
+# Utility function for Arduino automatic uploading
+def ArduinoAutoUpload(board_type, usb_port):
+    if (board_type == "camera board"):
+        sketch_name = "camera_board"
+    if (board_type == "control board"):
+        sketch_name = "power_board"
+    while True:
+        response = input(
+            f'Automatically upload the Arduino sketch for the {board_type} Arduino ({sketch_name}.ino) [y/n]?')
+        if response.lower().startswith('y'):
+            print("Uploading sketch...")
+            os.chdir('/var/panoptes/POCS/resources/arduino_files')
+            os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} {sketch_name}')
+            print('\033[1;32;40mSketch uploaded.\033[1;37;40m')
+            break
+        elif response.lower().startswith('n'):
+            print("Exiting, continuing with next upload if necessary.")
+            break
+        else:
+            print("A 'yes' or 'no' response is required")
+
+
 # Finding dev path and relating it to bus number and dev number
 StartLocationProbe = BASEDIR + ' ; find -maxdepth 2 -name "usb*"'
 StartLocation = Popen(
@@ -71,6 +93,8 @@ while i > 0:
     TemporaryDataStorageList = BUSNUMDEVNUM.split("\n")
     TemporaryDataStorageList.insert(0, PARSEDDEVPATH[0])
     TemporaryDataStorageList.insert(1, " ")
+    TemporaryDataStorageList.insert(0, "Dev path: \033[1;32;40m/dev/")
+    TemporaryDataStorageList.insert(2, "\033[1;37;40m")
     DataStorageMatrix.append(TemporaryDataStorageList)
     i -= 1
 # Print out that parsed info!
@@ -85,10 +109,8 @@ DataStorageMatrixLength = len(DataStorageMatrix)
 k = DataStorageMatrixLength
 while k > 0:
     DataSet = DataStorageMatrixLength - k
-    if (DataStorageMatrix[DataSet][0].startswith("ttyUSB")):
-        DevPaths.append(DataStorageMatrix[DataSet][0])
-        k -= 1
-        continue
+    if (DataStorageMatrix[DataSet][1].startswith("ttyUSB")):
+        DevPaths.append(DataStorageMatrix[DataSet][1])
     k -= 1
 
 # Identify Mount
@@ -137,50 +159,27 @@ for port in DevPaths:
                 break
             Input = ""
         info = ''
-        if (time.time() >= end_time and PreviousInput == False):
-           print("Testing if there is any input information.")
-           if (Input == ""):
-              print(f'Weather sensor not found on {usb_port}.')
-              print(f'Input: {Input}')
-              ser.close()
-              break
-           print("Input found. Verifying weather sensor.")
-           PreviousInput = True
+        if (time.time() >= end_time and PreviousInput is False):
+            print("Testing if there is any input information.")
+            if (Input == ""):
+                print(f'Weather sensor not found on {usb_port}.')
+                print(f'Input: {Input}')
+                ser.close()
+                break
+            print("Input found. Verifying weather sensor.")
+            PreviousInput = True
     else:
         continue
     break
 
-# Utility function for Arduino automatic uploading
-def ArduinoAutoUpload(board_type, usb_port):
-    if (board_type == "camera board"):
-        sketch_name = "camera_board"
-    if (board_type == "control board"):
-        sketch_name = "power_board"
-    while True:
-        response = input(
-            f'Automatically upload the Arduino sketch for the {board_type} Arduino ({sketch_name}.ino) [y/n]?')
-        if response.lower().startswith('y'):
-                print("Uploading sketch...")
-                os.chdir('/var/panoptes/POCS/resources/arduino_files')
-                os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} {sketch_name}')
-                print('\033[1;32;40mSketch uploaded.\033[1;37;40m')
-                break
-        elif response.lower().startswith('n'):
-                print("Moving on without uploading sketch.")
-                break
-        else:
-                print("A 'yes' or 'no' response is required")
-                
 # Identify Arduinos
 # Isolate Arduino device paths
 k = DataStorageMatrixLength
 DevPaths.clear()
 while k > 0:
     DataSet = DataStorageMatrixLength - k
-    if (DataStorageMatrix[DataSet][0].startswith("ttyACM")):
-        DevPaths.append(DataStorageMatrix[DataSet][0])
-        k -= 1
-        continue
+    if (DataStorageMatrix[DataSet][1].startswith("ttyACM")):
+        DevPaths.append(DataStorageMatrix[DataSet][1])
     k -= 1
 
 # Setup arduino-cli commands for this docker image
@@ -190,10 +189,19 @@ fqbn = fqbn_raw.split('\n')[1]
 fqbnCoreElements = fqbn.split(":")
 fqbnCore = fqbnCoreElements[0] + ":" + fqbnCoreElements[1]
 os.system(f'arduino-cli core install {fqbnCore}')
-# Switch to the arduino_files directory to have the sketch upload properly
+# Switch to the arduino_files directory to have the sketch compile and
+# upload properly
 os.chdir('/var/panoptes/POCS/resources/arduino_files')
+
+print("Compiling sketches...")
+# Setup required .hex and .elf arduino-cli files for all sketches
+SketchPaths = ["identifier", "camera_board", "power_board"]
+for path in SketchPaths:
+    os.system(f'arduino-cli compile --fqbn {fqbn} {path}')
+print("Done, moving on to upload.")
+
+# Upload Sketch and test output
 for port in DevPaths:
-    # Upload sketch
     usb_port = f'/dev/{port}'
     print(f'Uploading identifier Arduino sketch to {usb_port}.')
     os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} identifier')
@@ -214,6 +222,8 @@ for port in DevPaths:
     if (full_reading == '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound camera_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
         set_config('environment.camera_board.serial_port', usb_port)
+        # Ask user if they want to upload the Arduino script, don't force
+        # incase the build is different
         ArduinoAutoUpload("camera board", usb_port)
     elif (full_reading != '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound power_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
