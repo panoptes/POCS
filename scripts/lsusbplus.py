@@ -150,6 +150,27 @@ for port in DevPaths:
         continue
     break
 
+# Utility function for Arduino automatic uploading
+def ArduinoAutoUpload(board_type, usb_port):
+    if (board_type == "camera board"):
+        sketch_name = "camera_board"
+    if (board_type == "control board"):
+        sketch_name = "power_board"
+    while True:
+        response = input(
+            f'Automatically upload the Arduino sketch for the {board_type} Arduino ({sketch_name}.ino) [y/n]?')
+        if response.lower().startswith('y'):
+                print("Uploading sketch...")
+                os.chdir('/var/panoptes/POCS/resources/arduino_files')
+                os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} {sketch_name}')
+                print('\033[1;32;40mSketch uploaded.\033[1;37;40m')
+                break
+        elif response.lower().startswith('n'):
+                print("Moving on without uploading sketch.")
+                break
+        else:
+                print("A 'yes' or 'no' response is required")
+                
 # Identify Arduinos
 # Isolate Arduino device paths
 k = DataStorageMatrixLength
@@ -193,38 +214,10 @@ for port in DevPaths:
     if (full_reading == '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound camera_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
         set_config('environment.camera_board.serial_port', usb_port)
-        # Ask user if they want to upload the Arduino script, don't force
-        # in case the build is different
-        while True:
-            response = input(
-                "Automatically upload the Arduino sketch for the camera board Arduino (camera_board.ino) [y/n]?")
-            if response.lower().startswith('y'):
-                print("Uploading sketch...")
-                os.chdir('/var/panoptes/POCS/resources/arduino_files')
-                os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} camera_board')
-                print('\033[1;32;40mSketch uploaded.\033[1;37;40m')
-                break
-            elif response.lower().startswith('n'):
-                print("Exiting and printing collected information.")
-                break
-            else:
-                print("A 'yes' or 'no' response is required")
+        ArduinoAutoUpload("camera board", usb_port)
     elif (full_reading != '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound power_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
         set_config('environment.control_board.serial_port', usb_port)
-        while True:
-            response = input(
-                "Automatically upload the Arduino sketch for the control board Arduino (power_board.ino) [y/n]?")
-            if response.lower().startswith('y'):
-                print("Uploading sketch...")
-                os.chdir('/var/panoptes/POCS/resources/arduino_files')
-                os.system(f'arduino-cli upload -p {usb_port} --fqbn {fqbn} power_board')
-                print('\033[1;32;40mSketch uploaded.\033[1;37;40m')
-                break
-            elif response.lower().startswith('n'):
-                print("Exiting and printing collected information.")
-                break
-            else:
-                print("A 'yes' or 'no' response is required")
+        ArduinoAutoUpload("control board", usb_port)
     else:
         print(f'\033[91mProblem detecting board with Arduino on {usb_port}!\033[00m')
