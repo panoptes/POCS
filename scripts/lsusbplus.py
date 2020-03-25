@@ -18,6 +18,8 @@ DataStorageMatrix = []
 TemporaryDataStorageList = []
 
 # Utility function for Arduino automatic uploading
+
+
 def ArduinoAutoUpload(board_type, usb_port):
     if (board_type == "camera board"):
         sketch_name = "camera_board"
@@ -48,55 +50,60 @@ StartLocation = Popen(
     stdin=PIPE,
     stdout=PIPE,
     close_fds=True).stdout.read().strip().decode('utf-8').split('\n')
-NEWBASEDIR = BASEDIR + ' ; cd ' + StartLocation[0]
-SearchLocationProbe = NEWBASEDIR + ' ; find . -name "*-*:*"'
-SearchLocations = Popen(
-    SearchLocationProbe,
-    shell=True,
-    bufsize=64,
-    stdin=PIPE,
-    stdout=PIPE,
-    close_fds=True).stdout.read().strip().decode('utf-8').split('\n')
-Num_Searches = len(SearchLocations)
-i = Num_Searches
-while i > 0:
-    CurrentIndex = Num_Searches - i
-    SearchLocation = NEWBASEDIR + ' ; cd ' + SearchLocations[CurrentIndex]
-    DevPathProbe = SearchLocation + ' ; find -maxdepth 2 ! -name "tty"  -name "tty*"'
-    DEVPATH = Popen(
-        DevPathProbe,
+NumStartLocation = len(StartLocation)
+x = NumStartLocation
+while x > 0:
+    StartLocationIndex = NumStartLocation - x
+    NEWBASEDIR = BASEDIR + ' ; cd ' + StartLocation[StartLocationIndex]
+    SearchLocationProbe = NEWBASEDIR + ' ; find . -name "*-*:*"'
+    SearchLocations = Popen(
+        SearchLocationProbe,
         shell=True,
         bufsize=64,
         stdin=PIPE,
         stdout=PIPE,
-        close_fds=True).stdout.read().strip().decode('utf-8')
-    if (DEVPATH == ""):
-        i -= 1
-        continue
-    if (DEVPATH.startswith("./tty/")):
-        PARSEDDEVPATH = DEVPATH.split("./tty/")
-        PARSEDDEVPATH.remove("")
-    if (DEVPATH != ""):
+        close_fds=True).stdout.read().strip().decode('utf-8').split('\n')
+    Num_Searches = len(SearchLocations)
+    i = Num_Searches
+    while i > 0:
+        CurrentIndex = Num_Searches - i
+        SearchLocation = NEWBASEDIR + ' ; cd ' + SearchLocations[CurrentIndex]
+        DevPathProbe = SearchLocation + ' ; find -maxdepth 2 ! -name "tty"  -name "tty*"'
+        DEVPATH = Popen(
+            DevPathProbe,
+            shell=True,
+            bufsize=64,
+            stdin=PIPE,
+            stdout=PIPE,
+            close_fds=True).stdout.read().strip().decode('utf-8')
+        if (DEVPATH == ""):
+            i -= 1
+            continue
         if (DEVPATH.startswith("./tty/")):
             PARSEDDEVPATH = DEVPATH.split("./tty/")
-        elif (DEVPATH.startswith("./tty")):
-            PARSEDDEVPATH = DEVPATH.split("./")
-    PARSEDDEVPATH.remove("")
-    BUSNUMDEVNUMPROBE = SearchLocation + ' ; cd .. ; echo -n "Bus: " ; cat busnum ; echo -n " Device: " ; cat devnum ; echo -n " ID " ; cat idVendor ; echo -n ":" ; cat idProduct ; echo -n " " ; cat manufacturer ; echo -n ", " ; cat product'
-    BUSNUMDEVNUM = Popen(
-        BUSNUMDEVNUMPROBE,
-        shell=True,
-        bufsize=64,
-        stdin=PIPE,
-        stdout=PIPE,
-        close_fds=True).stdout.read().strip().decode('utf-8')
-    TemporaryDataStorageList = BUSNUMDEVNUM.split("\n")
-    TemporaryDataStorageList.insert(0, PARSEDDEVPATH[0])
-    TemporaryDataStorageList.insert(1, " ")
-    TemporaryDataStorageList.insert(0, "Dev path: \033[1;32;40m/dev/")
-    TemporaryDataStorageList.insert(2, "\033[1;37;40m")
-    DataStorageMatrix.append(TemporaryDataStorageList)
-    i -= 1
+            PARSEDDEVPATH.remove("")
+        if (DEVPATH != ""):
+            if (DEVPATH.startswith("./tty/")):
+                PARSEDDEVPATH = DEVPATH.split("./tty/")
+            elif (DEVPATH.startswith("./tty")):
+                PARSEDDEVPATH = DEVPATH.split("./")
+        PARSEDDEVPATH.remove("")
+        BUSNUMDEVNUMPROBE = SearchLocation + ' ; cd .. ; echo -n "Bus: " ; cat busnum ; echo -n " Device: " ; cat devnum ; echo -n " ID " ; cat idVendor ; echo -n ":" ; cat idProduct ; echo -n " " ; cat manufacturer ; echo -n ", " ; cat product'
+        BUSNUMDEVNUM = Popen(
+            BUSNUMDEVNUMPROBE,
+            shell=True,
+            bufsize=64,
+            stdin=PIPE,
+            stdout=PIPE,
+            close_fds=True).stdout.read().strip().decode('utf-8')
+        TemporaryDataStorageList = BUSNUMDEVNUM.split("\n")
+        TemporaryDataStorageList.insert(0, PARSEDDEVPATH[0])
+        TemporaryDataStorageList.insert(1, " ")
+        TemporaryDataStorageList.insert(0, "Dev path: \033[1;32;40m/dev/")
+        TemporaryDataStorageList.insert(2, "\033[1;37;40m")
+        DataStorageMatrix.append(TemporaryDataStorageList)
+        i -= 1
+    x -= 1
 # Print out that parsed info!
 for x in DataStorageMatrix:
     print("")
@@ -153,6 +160,7 @@ for port in DevPaths:
         if (len(Input) > 1000):
             if ("CloudWatcher!" in Input):
                 print(f'\033[1;32;40mFound weather sensor on {usb_port}, saving to config\033[1;37;40m')
+                print(usb_port)
                 set_config('weather.aag_cloud.serial_port', usb_port)
                 ser.close()
                 i += 1
@@ -198,9 +206,61 @@ print("Compiling sketches...")
 SketchPaths = ["identifier", "camera_board", "power_board"]
 for path in SketchPaths:
     os.system(f'arduino-cli compile --fqbn {fqbn} {path}')
-print("Done, moving on to upload.")
+print("Done. Testing for Micro setup and then moving on to upload to identify Arduinos if necessary.")
 
-# Upload Sketch and test output
+Board_Types = os.popen("arduino-cli board list").read().split('\n')
+Board_Types.pop(0)
+Board_Types.pop(-1)
+Board_Types.pop(-1)
+Num_Types = len(Board_Types)
+
+# Check to make sure that the build is using only two Arduinos
+# to avoid damaging custom hardware or future builds
+if (Num_Types > 2):
+    print("\033[31mMore than two Arduinos attached to NUC. Script can damage custom hardware and only supports builds using a two Arduino setup with one as the camera board and one as the control board. Exiting.\033[0m")
+    sys.exit()
+
+# Test for Mirco - Uno setup and prompt user to upload sketches
+
+ArduinoInfoStorage = []
+i = Num_Types
+while i > 0:
+    Index = Num_Types - i
+    ArduinoInfoStorage.append(Board_Types[Index].split(' '))
+    i -= 1
+for i in ArduinoInfoStorage:
+    for x in i:
+        if ("Micro" in x):
+            print(f'\033[1;32;40mMicro detected on {i[0]}. Assuming this is camera board. Saving to config.\033[1;37;40m')
+            set_config("environment.control_board.serial_port", i[0])
+            ArduinoAutoUpload("camera board", i[0])
+            print("Searching for Arduino Uno. Assuming it is the control board.\033[1;37;40m")
+            for y in ArduinoInfoStorage:
+                for z in y:
+                    if ("Uno" in z):
+                        print(f'\033[1;32;40mUno found at {y[0]}. Saving to config.\033[1;37;40m')
+                        set_config("environment.camera_board.serial_port", y[0])
+                        ArduinoAutoUpload("control board", y[0])
+            sys.exit()
+
+# Test for Uno - Uno setup. If found, identify boards, upadte config, prompt sketch upload
+Number_Arduino_Uno = 0
+for i in Board_Types:
+    if ("Uno" in i):
+        Number_Arduino_Uno +=1
+
+if (Number_Arduino_Uno is 2):
+    print("Double Arduino Uno setup detected. Using identifier sketch to differentiate identical devices.")
+else:
+    print("\033[31Setup of unit is incomplete or unsupported. If only one Arduino board is connected, continue to auto-identify and configure it.\033[0m")
+    while True:
+        response = input("Continue?[y/n]")
+        if response.lower().startswith('y'):
+            break
+        elif response.lower().startswith('n'):
+            sys.exit()
+
+# Upload identifier sketch and test output
 for port in DevPaths:
     usb_port = f'/dev/{port}'
     print(f'Uploading identifier Arduino sketch to {usb_port}.')
@@ -222,12 +282,8 @@ for port in DevPaths:
     if (full_reading == '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound camera_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
         set_config('environment.camera_board.serial_port', usb_port)
-        # Ask user if they want to upload the Arduino script, don't force
-        # incase the build is different
         ArduinoAutoUpload("camera board", usb_port)
     elif (full_reading != '"temps":[-127.00,-127.00,-127.00]'):
         print(f'\033[1;32;40mFound power_board Arduino on {usb_port}, saving to config.\033[1;37;40m')
         set_config('environment.control_board.serial_port', usb_port)
         ArduinoAutoUpload("control board", usb_port)
-    else:
-        print(f'\033[91mProblem detecting board with Arduino on {usb_port}!\033[00m')
