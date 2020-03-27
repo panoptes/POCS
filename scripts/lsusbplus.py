@@ -245,12 +245,19 @@ for i in ArduinoInfoStorage:
 
 # Test for Uno - Uno setup. If found, identify boards, upadte config, prompt sketch upload
 Number_Arduino_Uno = 0
+Number_Arduino_Micro = 0
 for i in Board_Types:
     if ("Uno" in i):
         Number_Arduino_Uno +=1
+    elif ("Micro" in i):
+	    Number_Arduino_Micro +=1
 
 if (Number_Arduino_Uno is 2):
     print("Double Arduino Uno setup detected. Using identifier sketch to differentiate identical devices.")
+elif (Number_Arduino_Micro is 2):
+    print("Double Arduino Micro setup detected. Build is currently not supported with this script. Skipping the Arduino identification process.")
+    print("Exiting.")
+    sys.exit()
 else:
     print("\033[31Setup of unit is incomplete or unsupported. If only one Arduino board is connected, continue to auto-identify and configure it.\033[0m")
     while True:
