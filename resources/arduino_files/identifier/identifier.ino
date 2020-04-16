@@ -2,7 +2,7 @@
 #include "DallasTemperature.h"
 
 //Declare suspected ds18 pin
-const int DS18_PIN = 13;
+const int DS18_PIN = 11;
 
 //Declare number of ds18 sensors
 const int NUM_DS18 = 3;
