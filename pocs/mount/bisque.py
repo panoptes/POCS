@@ -157,7 +157,7 @@ class Mount(AbstractMount):
 # Movement methods
 ##########################################################################
 
-    def slew_to_target(self, timeout=60):
+    def slew_to_target(self, timeout=120):
         """ Slews to the current _target_coordinates
 
         Args:
@@ -203,7 +203,7 @@ class Mount(AbstractMount):
 
         return success
 
-    def slew_to_home(self, blocking=False, timeout=60):
+    def slew_to_home(self, blocking=False, timeout=120):
         """ Slews the mount to the home position.
 
         Note:
@@ -230,7 +230,7 @@ class Mount(AbstractMount):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home(blocking=blocking)
 
-    def park(self, timeout=60):
+    def park(self, timeout=120):
         """ Slews to the park position and parks the mount.
 
         Note:
