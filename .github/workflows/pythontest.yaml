@@ -1,0 +1,44 @@
+name: Test Python Package
+
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Fetch all history for all tags and branches for versioneer
+      run: git fetch --prune --unshallow
+    - name: Pull pocs image
+      run: |
+        docker pull gcr.io/panoptes-exp/pocs:latest
+    - name: Test with pytest in pocs container
+      run: |
+        ci_env=`bash <(curl -s https://codecov.io/env)`
+        docker run -i \
+          $ci_env \
+          -e LOCAL_USER_ID=$(id -u) \
+          -e TRAVIS=true \
+          -v $(pwd):/var/panoptes/POCS \
+          gcr.io/panoptes-exp/pocs:latest \
+          scripts/testing/run-tests.sh
