@@ -276,7 +276,8 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe', **kwargs):
+    def is_safe(self, no_warning=False, horizon='observe', horizon_bright=None,
+                **kwargs):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -308,6 +309,10 @@ class POCS(PanStateMachine, PanBase):
 
         # Check if night time
         is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
+
+        # Check if its bright enough (e.g. for twilight flats)
+        if horizon_bright is not None:
+            is_safe_values['is_bright'] = not self.is_dark(horizon=horizon_bright)
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()

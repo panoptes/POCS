@@ -43,7 +43,7 @@ class PanStateMachine(Machine):
                         for transition in state_machine_table['transitions']]
 
         # States can require the horizon to be at a certain level.
-        self._horizon_lookup = dict()
+        self._horizon_lookup = {'dark': dict(), 'bright': dict()}
 
         # Setup States.
         states = [
@@ -135,12 +135,19 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
+
                 # Wait for horizon level if state requires.
                 self.logger.warning(f'Checking horizon limits for next state: {self.next_state}')
+                _horizon_kwargs = {}
                 with suppress(KeyError):
-                    required_horizon = self._horizon_lookup[self.next_state]
-                    self.logger.info(f'Horizon limit for {self.state}: {required_horizon}')
-                    self.wait_until_safe(horizon=required_horizon)
+                    _horizon = self._horizon_lookup['dark'][self.next_state]
+                    _horizon_kwargs['horizon'] = _horizon
+                    self.logger.info(f'Horizon limit for {self.state}: {_horizon}')
+                with suppress(KeyError):
+                    _horizon = self._horizon_lookup['bright'][self.next_state]
+                    _horizon_kwargs['horizon_bright'] = _horizon
+                    self.logger.info(f'Bright horizon limit for {self.state}: {_horizon}')
+                self.wait_until_safe(**_horizon_kwargs)
 
                 self.logger.warning('Going to next state')
                 try:
@@ -252,15 +259,16 @@ class PanStateMachine(Machine):
         dest_state = self.get_state(dest_state_name)
 
         # See if the state requires a certain horizon limit.
-        required_horizon = self._horizon_lookup.get(dest_state_name, 'observe')
+        required_horizon = self._horizon_lookup['dark'].get(dest_state_name, 'observe')
+        required_horizon_bright = self._horizon_lookup['bright'].get(dest_state_name, None)
 
         # It's always safe to be in some states
         if dest_state.is_always_safe:
             self.logger.debug(f"Always safe to move to {dest_state_name}")
             is_safe = True
         else:
-            is_safe = self.is_safe(horizon=required_horizon)
-
+            is_safe = self.is_safe(horizon=required_horizon,
+                                   horizon_bright=required_horizon_bright)
         return is_safe
 
     def mount_is_tracking(self, event_data):
@@ -412,10 +420,13 @@ class PanStateMachine(Machine):
             if state_info is None:
                 state_info = dict()
 
-            # Add horizon if state requires.
+            # Add horizons if state requires them.
             with suppress(KeyError):
-                self._horizon_lookup[state] = state_info['horizon']
+                self._horizon_lookup['dark'][state] = state_info['horizon']
                 del state_info['horizon']
+            with suppress(KeyError):
+                self._horizon_lookup['bright'][state] = state_info['horizon_bright']
+                del state_info['horizon_bright']
 
             self.logger.debug(f"Creating state={state} with {state_info}")
             s = MachineState(name=state, **state_info)
