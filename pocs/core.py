@@ -291,6 +291,8 @@ class POCS(PanStateMachine, PanBase):
                 defaults to False.
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
+            horizon_bright (str, optional): Horizon spcifying minimum brightness,
+                default None.
         Returns:
             bool: Latest safety flag
 
