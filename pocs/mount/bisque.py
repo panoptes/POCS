@@ -305,12 +305,7 @@ class Mount(AbstractMount):
 
         response_obj = {'success': False}
 
-        try:
-            response = self.theskyx.read(timeout=timeout)
-        except Exception as err:
-            self.logger.error(err)
-            response = None
-
+        response = self.theskyx.read(timeout=timeout)
         if response is None:
             return response_obj
 
