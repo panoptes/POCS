@@ -88,3 +88,4 @@ weather_plots
 
 # Ignore pytest's cache of data across tests.
 /.pytest_cache
+venv/*
