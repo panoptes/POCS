@@ -10,6 +10,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
+ENV USER panoptes
 
 COPY . ${POCS}
 
@@ -50,5 +51,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${POCS}
+USER ${USER}
 
 CMD ["/bin/zsh"]
