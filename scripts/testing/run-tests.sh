@@ -1,16 +1,18 @@
 #!/bin/bash -e
 
-export PYTHONPATH="${PYTHONPATH}:${PANDIR}/POCS/scripts/coverage"
-export COVERAGE_PROCESS_START="${PANDIR}/POCS/setup.cfg"
+REPORT_FILE=${REPORT_FILE:-coverage.xml}
+
+export PYTHONPATH="$PYTHONPATH:$PANDIR/panoptes-utils/scripts/testing/coverage"
+export COVERAGE_PROCESS_START="${PANDIR}/panoptes-utils/setup.cfg"
 
 # Run coverage over the pytest suite
-echo "Staring tests"
+echo "Starting tests"
 coverage run "$(command -v pytest)" -x -vv -rfes --test-databases all
 
 echo "Combining coverage"
 coverage combine
 
-echo "Making XML coverage report"
-coverage xml
+echo "Making XML coverage report at ${REPORT_FILE}"
+coverage xml -o "${REPORT_FILE}"
 
 exit 0

@@ -1,11 +1,14 @@
 #!/bin/bash -e
-SOURCE_DIR="${POCS}"
-CLOUD_FILE="cloudbuild-${1:-all}.yaml"
 
-echo "Using ${CLOUD_FILE}"
+SOURCE_DIR="${PANDIR}/pocs"
+BASE_CLOUD_FILE="cloudbuild.yaml"
+TAG="${1:-develop}"
 
+cd "${SOURCE_DIR}"
+
+echo "Building gcr.io/panoptes-exp/pocs"
 gcloud builds submit \
-    --timeout="5h" \
-    --config "${SOURCE_DIR}/docker/${CLOUD_FILE}" \
+    --timeout="1h" \
+    --substitutions="_TAG=${TAG}" \
+    --config "${SOURCE_DIR}/docker/${BASE_CLOUD_FILE}" \
     "${SOURCE_DIR}"
-

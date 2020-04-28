@@ -1,0 +1,18 @@
+steps:
+- name: 'docker'
+  id: 'amd64-build'
+  args:
+  - 'build'
+  - '-f=docker/${_TAG}.Dockerfile'
+  - '--tag=gcr.io/${PROJECT_ID}/pocs:${_TAG}'
+  - '.'
+
+- name: 'docker'
+  id: 'amd64-push'
+  args:
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/pocs:${_TAG}'
+  waitFor: ['amd64-build']
+
+images:
+  - 'gcr.io/${PROJECT_ID}/pocs:${_TAG}'

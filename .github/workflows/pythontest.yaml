@@ -29,26 +29,29 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Pull pocs image
+    - name: Fetch all history for all tags and branches for versioneer
+      run: git fetch --prune --unshallow
+    - name: Build pocs image
       run: |
-        docker pull gcr.io/panoptes-exp/pocs:latest
+        docker build --build-arg "userid=$(id -u)" -t pocs:testing -f docker/latest.Dockerfile .
     - name: Test with pytest in pocs container
-      timeout-minutes: 60
       run: |
+        mkdir -p coverage_dir && chmod 777 coverage_dir
         ci_env=`bash <(curl -s https://codecov.io/env)`
         docker run -i \
           $ci_env \
-          -e LOCAL_USER_ID=$(id -u) \
-          -v $(pwd):/var/panoptes/POCS \
+          -e REPORT_FILE="/tmp/coverage/coverage.xml" \
+          --network "host" \
           -v $(pwd):/var/panoptes/logs \
-          gcr.io/panoptes-exp/pocs:latest \
+          -v $PWD/coverage_dir:/tmp/coverage \
+          pocs:testing \
           scripts/testing/run-tests.sh
     - name: Upload coverage report to codecov.io
       uses: codecov/codecov-action@v1
       if: success()
       with:
         name: codecov-upload
-        file: ./coverage.xml
+        file: coverage_dir/coverage.xml
         fail_ci_if_error: true
     - name: Create log file artifact
       uses: actions/upload-artifact@v1

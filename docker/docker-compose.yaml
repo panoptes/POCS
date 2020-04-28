@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   peas-shell:
-    image: gcr.io/panoptes-exp/pocs
+    image: gcr.io/panoptes-exp/pocs:latest
     init: true
     container_name: peas-shell
     hostname: peas-shell
@@ -21,7 +21,7 @@ services:
       - "-f"
       - "/dev/null"
   pocs-shell:
-    image: gcr.io/panoptes-exp/pocs
+    image: gcr.io/panoptes-exp/pocs:latest
     init: true
     container_name: pocs-shell
     hostname: pocs-shell
