@@ -38,9 +38,7 @@ RUN cd ${POCS} && \
     # Install requirements
     pip install --no-cache-dir -r requirements.txt && \
     # Install module
-    pip install --no-cache-dir -e . && \
-    # Link conf_files to $PANDIR
-    && ln -s ${POCS}/conf_files/ ${PANDIR}/
+    pip install --no-cache-dir -e .
 
 USER root
 
