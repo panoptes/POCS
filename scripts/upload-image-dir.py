@@ -19,7 +19,7 @@ logger = get_logger()
 def upload_observation_to_bucket(pan_id,
                                  dir_name,
                                  include_files='*.fz',
-                                 bucket='panoptes-survey',
+                                 bucket='panoptes-exp',
                                  **kwargs):
     """Upload an observation directory to google cloud storage.
 

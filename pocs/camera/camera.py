@@ -691,15 +691,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Get full file path
         if filename is None:
-            file_path = os.path.join(
-                image_dir,
-                '{}.{}'.format(start_time, self.file_extension)
-            )
-
+            file_path = os.path.join(image_dir, f'{start_time}.{self.file_extension}')
         else:
             # Add extension
             if '.' not in filename:
-                filename = '{}.{}'.format(filename, self.file_extension)
+                filename = f'{filename}.{self.file_extension}'
 
             # Add directory
             if '/' not in filename:
