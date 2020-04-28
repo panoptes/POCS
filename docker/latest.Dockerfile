@@ -12,8 +12,6 @@ ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
 ENV USER panoptes
 
-COPY . ${POCS}
-
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
         gcc libncurses5-dev udev \
@@ -27,17 +25,27 @@ RUN apt-get update \
     # Untar and capture output name (NOTE: assumes only one file).
     && tar xvfz arduino-cli.tar.gz \
     && mv arduino-cli /usr/local/bin/arduino-cli \
-    && chmod +x /usr/local/bin/arduino-cli \
-    # POCS
-    && cd ${POCS} \
+    && chmod +x /usr/local/bin/arduino-cli
+
+USER $PANUSER
+
+# Can't seem to get around the hard-coding user
+COPY --chown=panoptes:panoptes . ${POCS}
+
+RUN cd ${POCS} && \
     # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-    && pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir -e . \
+    pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
+    # Install requirements
+    pip install --no-cache-dir -r requirements.txt && \
+    # Install module
+    pip install --no-cache-dir -e . && \
     # Link conf_files to $PANDIR
-    && ln -s ${POCS}/conf_files/ ${PANDIR}/ \
-    # Cleanup
-    && apt-get autoremove --purge -y \
+    && ln -s ${POCS}/conf_files/ ${PANDIR}/
+
+USER root
+
+# Cleanup apt.
+RUN apt-get autoremove --purge -y \
         autoconf \
         automake \
         autopoint \
@@ -45,12 +53,12 @@ RUN apt-get update \
         gcc \
         gettext \
         libtool \
-        pkg-config \
-    && apt-get autoremove --purge -y \
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/*
+        pkg-config && \
+    apt-get autoremove --purge -y && \
+    apt-get -y clean && \
+    rm -rf /var/lib/apt/lists/*
 
+USER root
 WORKDIR ${POCS}
-USER ${USER}
 
 CMD ["/bin/zsh"]

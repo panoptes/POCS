@@ -42,7 +42,7 @@ jobs:
           $ci_env \
           -e REPORT_FILE="/tmp/coverage/coverage.xml" \
           --network "host" \
-          -v $(pwd):/var/panoptes/logs \
+          -v $PWD:/var/panoptes/logs \
           -v $PWD/coverage_dir:/tmp/coverage \
           pocs:testing \
           scripts/testing/run-tests.sh
