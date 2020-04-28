@@ -701,7 +701,7 @@ class AbstractMount(PanBase):
 
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
-    def query(self, cmd, params=None):
+    def query(self, cmd, params=None, **kwargs):
         """Sends a query to the mount and returns response.
 
         Performs a send and then returns response. Will do a translate on cmd first. This should
@@ -730,7 +730,7 @@ class AbstractMount(PanBase):
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
-        response = self.read()
+        response = self.read(**kwargs)
 
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):

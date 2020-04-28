@@ -157,7 +157,7 @@ class Mount(AbstractMount):
 # Movement methods
 ##########################################################################
 
-    def slew_to_target(self):
+    def slew_to_target(self, timeout=120):
         """ Slews to the current _target_coordinates
 
         Args:
@@ -182,7 +182,7 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                })
+                }, timeout=timeout)
                 success = response['success']
                 if success:
                     self.status()
@@ -203,7 +203,7 @@ class Mount(AbstractMount):
 
         return success
 
-    def slew_to_home(self, blocking=False):
+    def slew_to_home(self, blocking=False, timeout=120):
         """ Slews the mount to the home position.
 
         Note:
@@ -220,7 +220,7 @@ class Mount(AbstractMount):
 
         if not self.is_parked:
             self._target_coordinates = None
-            response = self.query('goto_home')
+            response = self.query('goto_home', timeout=timeout)
         else:
             self.logger.info('Mount is parked')
 
@@ -230,7 +230,7 @@ class Mount(AbstractMount):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home(blocking=blocking)
 
-    def park(self):
+    def park(self, timeout=120):
         """ Slews to the park position and parks the mount.
 
         Note:
@@ -240,7 +240,7 @@ class Mount(AbstractMount):
             bool: indicating success
         """
         self.logger.debug('Parking mount')
-        response = self.query('park')
+        response = self.query('park', timeout=timeout)
 
         self._is_parked = response['success']
 
@@ -281,7 +281,8 @@ class Mount(AbstractMount):
 
         try:
             self.logger.debug("Moving {} for {} arcmins. ".format(direction, arcmin))
-            self.query(move_command, params={'direction': direction.upper()[0], 'arcmin': arcmin})
+            self.query(move_command, params={'direction': direction.upper()[0], 'arcmin': arcmin},
+                       timeout=seconds + 10)
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
@@ -301,15 +302,10 @@ class Mount(AbstractMount):
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
-        response_obj = {'success': False}
-        while True:
-            response = self.theskyx.read()
-            if response is not None or timeout == 0:
-                break
-            else:
-                time.sleep(1)
-                timeout -= 1
 
+        response_obj = {'success': False}
+
+        response = self.theskyx.read(timeout=timeout)
         if response is None:
             return response_obj
 
@@ -318,17 +314,9 @@ class Mount(AbstractMount):
         except TypeError as e:
             self.logger.warning("Error: {}".format(e, response))
         except json.JSONDecodeError as e:
-            # self.logger.warning("Can't decode JSON response from mount")
-            # self.logger.warning(e)
-            # self.logger.warning(response)
-            response_obj = {
-                "response": response,
-                "success": False,
-                "error": e,
-            }
+            response_obj = {"response": response, "success": False, "error": e}
 
         return response_obj
-
 
 ##########################################################################
 # Private Methods
