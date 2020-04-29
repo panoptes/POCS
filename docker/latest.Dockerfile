@@ -56,7 +56,5 @@ RUN apt-get autoremove --purge -y \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/*
 
-USER root
 WORKDIR ${POCS}
-
 CMD ["/bin/zsh"]

@@ -41,7 +41,6 @@ jobs:
         docker run -i \
           $ci_env \
           -e REPORT_FILE="/tmp/coverage/coverage.xml" \
-          -u "$(id -u)" \
           --network "host" \
           -v $PWD:/var/panoptes/logs \
           -v $PWD/coverage_dir:/tmp/coverage \
