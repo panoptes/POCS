@@ -19,7 +19,7 @@ DESCRIPTION = metadata.get('description', '')
 KEYWORDS = metadata.get('keywords', 'Project PANOPTES')
 LICENSE = metadata.get('license', 'unknown')
 LONG_DESCRIPTION = metadata.get('long_description', '')
-PACKAGENAME = metadata.get('package_name', 'packagename')
+PACKAGENAME = metadata.get('package_name', 'pocs')
 URL = metadata.get('url', 'http://projectpanoptes.org')
 
 modules = {
@@ -30,7 +30,7 @@ modules = {
         'coverage',  # testing
         'matplotlib',
         'numpy',
-        'panoptes-utils>=0.2.10',
+        'panoptes-utils>=0.2.11',
         'pycodestyle',  # testing
         'pyserial>=3.1.1',
         'pytest-cov',  # testing
