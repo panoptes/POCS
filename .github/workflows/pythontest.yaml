@@ -37,12 +37,13 @@ jobs:
     - name: Test with pytest in pocs container
       run: |
         mkdir -p coverage_dir && chmod 777 coverage_dir
+        mkdir -p log_dir && chmod 777 log_dir
         ci_env=`bash <(curl -s https://codecov.io/env)`
         docker run -i \
           $ci_env \
           -e REPORT_FILE="/tmp/coverage/coverage.xml" \
           --network "host" \
-          -v $PWD:/var/panoptes/logs \
+          -v $PWD/log_dir:/var/panoptes/logs \
           -v $PWD/coverage_dir:/tmp/coverage \
           pocs:testing \
           scripts/testing/run-tests.sh
