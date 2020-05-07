@@ -29,20 +29,20 @@ RUN apt-get update \
 
 USER $PANUSER
 
-# Can't seem to get around the hard-coding user
-COPY --chown=panoptes:panoptes . ${POCS}
-
+# Copy just requirements and install.
+COPY --chown=panoptes:panoptes ./requirements.txt ${POCS}/
 RUN cd ${POCS} && \
     # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
     pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
     # Install requirements
-    pip install --no-cache-dir -r requirements.txt && \
-    # Install module
-    pip install --no-cache-dir -e .
+    pip install --no-cache-dir -r requirements.txt
 
-USER root
+# Copy over entire directory now and install in editable mode.
+COPY --chown=panoptes:panoptes . ${POCS}
+RUN pip install --no-cache-dir -e .
 
 # Cleanup apt.
+USER root
 RUN apt-get autoremove --purge -y \
         autoconf \
         automake \

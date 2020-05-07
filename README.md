@@ -27,15 +27,14 @@
 [PANOPTES](https://projectpanoptes.org) is an open source citizen science project
 that is designed to find exoplanets with digital cameras. The goal of PANOPTES is
 to establish a global network of of robotic cameras run by amateur astronomers
-and schools in order to monitor, as continuously as possible, a very large number
+schools in order to monitor, as continuously as possible, a very large number
 of stars. For more general information about the project, including the science
 case and resources for interested individuals, see the
 [about page](https://projectpanoptes.org/articles/what-is-panoptes/).
 
 POCS (PANOPTES Observatory Control System) is the main software driver for the
-PANOPTES unit, responsible for high-level control of the unit. There are also
-files for a one-time upload to the arduino hardware, as well as various scripts
-to read information from the environmental sensors.
+PANOPTES unit, responsible for high-level control of the unit. This repository 
+also contains a number of scripts for running a full instance of POCS.
 
 ## Getting Started
 

@@ -2,8 +2,8 @@
 
 REPORT_FILE=${REPORT_FILE:-coverage.xml}
 
-export PYTHONPATH="$PYTHONPATH:$PANDIR/POCS/scripts/coverage"
-export COVERAGE_PROCESS_START="${PANDIR}/POCS/setup.cfg"
+export PYTHONPATH="$PYTHONPATH:${POCS}/scripts/coverage"
+export COVERAGE_PROCESS_START="${POCS}/setup.cfg"
 
 # Run coverage over the pytest suite
 echo "Starting tests"
