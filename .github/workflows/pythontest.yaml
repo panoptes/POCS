@@ -40,6 +40,7 @@ jobs:
         ci_env=`bash <(curl -s https://codecov.io/env)`
         docker run -i \
           $ci_env \
+          -e LOCAL_USER_ID=$(id -u) \
           -e REPORT_FILE="/tmp/coverage/coverage.xml" \
           --network "host" \
           -v $PWD:/var/panoptes/logs \
