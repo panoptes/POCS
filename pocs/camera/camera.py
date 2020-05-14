@@ -239,7 +239,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     self.logger.warning(f"Image sensor temperature {self.temperature} " +
                                         f"deviating from target ({self.target_temperature}) " +
                                         f"by more than tolerance ({self.temperature_tolerance})" +
-                                        f"in {self}".)
+                                        f"in {self}.")
                 if self.cooling_power == 100 * u.percent:
                     self.logger.warning(f"Image sensor cooling power at 100% in {self}.")
                 return False
