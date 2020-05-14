@@ -285,7 +285,7 @@ def make_timelapse(
     """
     if fn_out is None:
         head, tail = os.path.split(directory)
-        if tail is '':
+        if tail == '':
             head, tail = os.path.split(head)
 
         field_name = head.split('/')[-2]
