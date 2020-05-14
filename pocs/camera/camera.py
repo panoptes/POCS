@@ -394,7 +394,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 problems.append("exposure in progress")
 
             problems_string = ", ".join(problems)
-            msg = f"Attempt to start exposure on {self} while not ready: {problem_string}."
+            msg = f"Attempt to start exposure on {self} while not ready: {problems_string}."
             raise error.PanError(msg)
 
         if not isinstance(seconds, u.Quantity):
