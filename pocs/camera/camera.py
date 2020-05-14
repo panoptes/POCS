@@ -263,7 +263,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
         for sub_name in self._subcomponent_names:
             if getattr(self, sub_name):
-                current_readiness['sub_name'] = getattr(self.subname).is_ready
+                current_readiness['sub_name'] = getattr(self, sub_name).is_ready
         # Make sure there isn't an exposure already in progress.
         current_readiness['not_exposing'] = not self.is_exposing
 
