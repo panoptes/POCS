@@ -6,8 +6,6 @@ from setuptools import setup, find_namespace_packages
 from configparser import ConfigParser
 from distutils.command.build_py import build_py
 
-from pocs.version import __version__
-
 # Get some values from the setup.cfg
 conf = ConfigParser()
 conf.read(['setup.cfg'])
@@ -30,7 +28,7 @@ modules = {
         'coverage',  # testing
         'matplotlib',
         'numpy',
-        'panoptes-utils>=0.2.11',
+        'panoptes-utils>=0.2.14',
         'pycodestyle',  # testing
         'pyserial>=3.1.1',
         'pytest-cov',  # testing
@@ -46,7 +44,7 @@ modules = {
 }
 
 setup(name=PACKAGENAME,
-      version=__version__,
+      use_scm_version=True,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
