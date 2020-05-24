@@ -87,4 +87,4 @@ notebooks/*
 /.pytest_cache
 venv/*
 
-pocs/version.pypocs/version.py
+pocs/version.py
