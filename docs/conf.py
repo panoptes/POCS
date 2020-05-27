@@ -63,11 +63,20 @@ except Exception as e:
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
-              'sphinx.ext.autosummary', 'sphinx.ext.viewcode', 'sphinx.ext.coverage',
-              'sphinx.ext.doctest', 'sphinx.ext.ifconfig', 'sphinx.ext.mathjax',
-              'sphinx.ext.napoleon']
-extensions.append('recommonmark')
+extensions = [
+    'sphinx.ext.autosummary',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.coverage',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
+    'matplotlib.sphinxext.plot_directive',
+    'recommonmark',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -84,6 +93,7 @@ def setup(app):
     }, True)
     app.add_transform(AutoStructify)
 
+
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']
 
@@ -95,7 +105,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'POCS'
-copyright = u'2020, Wilfred Tyler Gee'
+copyright = u'2020, Project PANOPTES'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -176,6 +186,7 @@ else:
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 # html_logo = ""
+html_logo = '_static/pan-title-black-transparent.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -231,25 +242,24 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'pocs-doc'
 
-
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-# 'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-# 'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-# 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'user_guide.tex', u'POCS Documentation',
-   u'Wilfred Tyler Gee', 'manual'),
+    ('index', 'user_guide.tex', u'POCS Documentation',
+     u'Project PANOPTES', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -282,4 +292,9 @@ intersphinx_mapping = {
     'sklearn': ('http://scikit-learn.org/stable', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'astroplan': ('https://astroplan.readthedocs.io/en/latest/', None),
 }
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True
