@@ -7,7 +7,7 @@ services:
     hostname: peas-shell
     privileged: true
     network_mode: host
-    env_file: ../env_file
+    env_file: $PANDIR/env
     depends_on:
       - "messaging-hub"
     volumes:
@@ -27,7 +27,7 @@ services:
     hostname: pocs-shell
     privileged: true
     network_mode: host
-    env_file: ../env_file
+    env_file: $PANDIR/env
     depends_on:
       - "peas-shell"
     volumes:
@@ -47,4 +47,3 @@ volumes:
         type: none
         device: /var/panoptes
         o: bind
-

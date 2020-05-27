@@ -2,20 +2,13 @@ docs/*
 .git
 .eggs
 .idea
-venv
 __pycache__
 *.egg-info
 .github
 
-# PANOPTES specific files
-# Development support
-# emacs backups
-# ignore all markdown files (md) beside all README*.md
 *.md
 !README*.md
 
-# TeX products
 *.log
 *.pdf
-# Compiled files
 __pycache__
