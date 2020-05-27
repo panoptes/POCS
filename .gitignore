@@ -1,90 +1,50 @@
-# PANOPTES specific files
-conf_files/*_local.yaml
-examples/notebooks/*.fits
-examples/notebooks/*.jpeg
-
-# Development support
-sftp-config.json
-
-# emacs backups
+# Temporary and binary files
 *~
-\#*\#
-
-# TeX products
-*.aux
-*.log
-*.pdf
-*.toc
-
-# Compiled files
-*.py[co]
-*.a
-*.o
+*.py[cod]
 *.so
-__pycache__
-
-# Ignore .c files by default to avoid including generated code. If you want to
-# add a non-generated .c extension, use `git add -f filename.c`.
-*.c
-
-# Other generated files
-_build
-*/cython_version.py
-htmlcov
-.coverage
-.coverage.*
-MANIFEST
-
-# Sphinx
-docs/api
-docs/_build
-docs/_static
-
-# Eclipse editor project files
-.project
-.pydevproject
-.settings
-.vscode*
-
-# Pycharm editor project files
-.idea
-
-# Packages/installer info
-*.egg
-*.eggs
-*.cache
-*.egg-info
-dist
-build
-eggs
-parts
-var
-sdist
-develop-eggs
-.installed.cfg
-distribute-*.tar.gz
-
-# Other
+*.cfg
+!.isort.cfg
+!setup.cfg
+*.orig
+*.log
+*.pot
+__pycache__/*
+.cache/*
 .*.swp
-
-# Mac OSX
+*/.ipynb_checkpoints/*
 .DS_Store
 
-# Eclipse project files
-.settings
+# Project files
+.ropeproject
 .project
 .pydevproject
+.settings
+.idea
+tags
 
-# Ignore IPython notebook (Jupyter) checkpoints.
-.ipynb_checkpoints/
-notebooks/*
+# Package files
+*.egg
+*.eggs/
+.installed.cfg
+*.egg-info
 
-# Ignore pytest.ini file in root of project. Especially useful
-# on a unit to skip tests that interact with hardware.
-/pytest.ini
+# Unittest and coverage
+htmlcov/*
+.coverage
+.tox
+junit.xml
+coverage.xml
+.pytest_cache/
 
-# Ignore pytest's cache of data across tests.
-/.pytest_cache
-venv/*
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*
+docs/api/*
+docs/_rst/*
+docs/_build/*
+cover/*
+MANIFEST
 
-pocs/version.py
+# Per-project virtualenvs
+.venv*/
