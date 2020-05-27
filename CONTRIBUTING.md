@@ -89,7 +89,7 @@ instead of `My File.py`.
   ```
   Import from the top-down instead:
   ```python
-  from pocs.base import PanBase
+  from panoptes.pocs.base import PanBase
   from panoptes.utils import current_time
   ```
   The same applies to code inside of `peas`.

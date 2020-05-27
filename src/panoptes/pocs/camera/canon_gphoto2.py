@@ -9,7 +9,7 @@ from panoptes.utils import CountdownTimer
 from panoptes.utils import error
 from panoptes.utils import get_quantity_value
 from panoptes.utils.images import cr2 as cr2_utils
-from pocs.camera import AbstractGPhotoCamera
+from panoptes.pocs.camera import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):

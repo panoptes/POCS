@@ -5,9 +5,9 @@ from contextlib import suppress
 from astropy.coordinates import EarthLocation
 from astropy import units as u
 
-from pocs.images import OffsetError
-from pocs.mount.ioptron import Mount
-from pocs.utils.location import create_location_from_config
+from panoptes.pocs.images import OffsetError
+from panoptes.pocs.mount.ioptron import Mount
+from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 

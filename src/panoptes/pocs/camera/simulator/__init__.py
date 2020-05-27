@@ -1,1 +1,1 @@
-from pocs.camera.simulator.dslr import Camera
+from panoptes.pocs.camera.simulator.dslr import Camera

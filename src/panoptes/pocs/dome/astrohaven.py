@@ -3,7 +3,7 @@
 
 import time
 
-from pocs.dome import abstract_serial_dome
+from panoptes.pocs.dome import abstract_serial_dome
 
 
 class Protocol:

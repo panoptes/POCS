@@ -5,7 +5,7 @@ from astropy import units as u
 
 from panoptes.utils import current_time
 from panoptes.utils import error
-from pocs.mount import AbstractMount
+from panoptes.pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):

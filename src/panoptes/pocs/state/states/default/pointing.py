@@ -1,5 +1,5 @@
 import numpy as np
-from pocs.images import Image
+from panoptes.pocs.images import Image
 
 MAX_EXTRA_TIME = 60  # second
 

@@ -1,8 +1,8 @@
 import os
 import pytest
 
-from pocs.core import POCS
-from pocs.observatory import Observatory
+from panoptes.pocs.core import POCS
+from panoptes.pocs.observatory import Observatory
 from panoptes.utils import error
 from panoptes.utils.serializers import to_yaml
 

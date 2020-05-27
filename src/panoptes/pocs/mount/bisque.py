@@ -10,7 +10,7 @@ from string import Template
 from panoptes.utils import error
 from panoptes.utils import theskyx
 
-from pocs.mount import AbstractMount
+from panoptes.pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):

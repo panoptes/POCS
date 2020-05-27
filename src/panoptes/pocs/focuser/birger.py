@@ -5,7 +5,7 @@ import glob
 from warnings import warn
 from contextlib import suppress
 
-from pocs.focuser import AbstractFocuser
+from panoptes.pocs.focuser import AbstractFocuser
 from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits

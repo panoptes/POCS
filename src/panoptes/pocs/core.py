@@ -4,24 +4,21 @@ import queue
 import time
 import warnings
 import multiprocessing
-import zmq
 from contextlib import suppress
 
 from astropy import units as u
 
-from pocs.base import PanBase
-from pocs.observatory import Observatory
-from pocs.state.machine import PanStateMachine
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.utils import current_time
 from panoptes.utils import get_free_space
 from panoptes.utils import CountdownTimer
 from panoptes.utils import listify
 from panoptes.utils import error
-from panoptes.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
-
     """The main class representing the Panoptes Observatory Control Software (POCS).
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
@@ -128,9 +125,9 @@ class POCS(PanStateMachine, PanBase):
     def should_retry(self):
         return self._obs_run_retries >= 0
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def initialize(self):
         """Initialize POCS.
@@ -272,9 +269,9 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self._retry_attempts
 
-##################################################################################################
-# Safety Methods
-##################################################################################################
+    ##################################################################################################
+    # Safety Methods
+    ##################################################################################################
 
     def is_safe(self, no_warning=False, horizon='observe', **kwargs):
         """Checks the safety flag of the system to determine if safe.
@@ -490,10 +487,9 @@ class POCS(PanStateMachine, PanBase):
 
         return has_power
 
-
-##################################################################################################
-# Convenience Methods
-##################################################################################################
+    ##################################################################################################
+    # Convenience Methods
+    ##################################################################################################
 
     def sleep(self, delay=2.5, with_status=True, **kwargs):
         """ Send POCS to sleep
@@ -613,9 +609,9 @@ class POCS(PanStateMachine, PanBase):
         while not self.is_safe(no_warning=True, **kwargs):
             self.sleep(delay=self._safe_delay, **kwargs)
 
-##################################################################################################
-# Class Methods
-##################################################################################################
+    ##################################################################################################
+    # Class Methods
+    ##################################################################################################
 
     @classmethod
     def check_environment(cls):
@@ -646,9 +642,9 @@ class POCS(PanStateMachine, PanBase):
             print("Creating log dir at {}/logs".format(pandir))
             os.makedirs("{}/logs".format(pandir))
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _check_messages(self, queue_type, q):
         cmd_dispatch = {

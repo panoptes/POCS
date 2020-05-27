@@ -22,7 +22,7 @@ from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
 
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):

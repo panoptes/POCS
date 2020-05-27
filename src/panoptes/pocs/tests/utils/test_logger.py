@@ -1,7 +1,7 @@
 import time
 import pytest
 
-from pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 
 @pytest.fixture()

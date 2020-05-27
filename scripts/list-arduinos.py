@@ -2,7 +2,7 @@
 
 import sys
 
-from pocs.sensors import arduino_io
+from panoptes.pocs.sensors import arduino_io
 from panoptes.utils import rs232
 
 

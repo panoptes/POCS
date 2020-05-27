@@ -4,9 +4,9 @@ import numpy as np
 
 from astropy import units as u
 
-from pocs.camera.sdk import AbstractSDKCamera
-from pocs.camera.libfli import FLIDriver
-from pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
+from panoptes.pocs.camera.libfli import FLIDriver
+from panoptes.pocs.camera import libfliconstants as c
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 

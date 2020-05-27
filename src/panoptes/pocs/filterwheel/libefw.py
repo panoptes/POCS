@@ -3,7 +3,7 @@ import enum
 import threading
 import time
 
-from pocs.camera.sdk import AbstractSDKDriver
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.utils import CountdownTimer

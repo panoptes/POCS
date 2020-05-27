@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 
 from panoptes.utils import current_time
 from panoptes.utils import error as error
-from pocs.mount.serial import AbstractSerialMount
+from panoptes.pocs.mount.serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):

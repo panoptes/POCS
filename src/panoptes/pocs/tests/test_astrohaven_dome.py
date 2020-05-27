@@ -3,9 +3,9 @@
 import pytest
 import serial
 
-from pocs import hardware
-from pocs.dome import astrohaven
-from pocs.dome import create_dome_simulator
+from panoptes.pocs import hardware
+from panoptes.pocs.dome import astrohaven
+from panoptes.pocs.dome import create_dome_simulator
 
 from panoptes.utils.config.client import set_config
 

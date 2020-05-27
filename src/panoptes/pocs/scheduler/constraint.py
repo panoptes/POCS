@@ -1,7 +1,7 @@
 from astropy import units as u
 
 from panoptes.utils import horizon as horizon_utils
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 
 
 class BaseConstraint(PanBase):

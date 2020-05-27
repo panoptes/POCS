@@ -4,7 +4,7 @@ import yaml
 from panoptes.utils import error
 from panoptes.utils import rs232
 
-from pocs.mount import AbstractMount
+from panoptes.pocs.mount import AbstractMount
 
 
 class AbstractSerialMount(AbstractMount):

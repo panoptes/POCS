@@ -2,8 +2,8 @@ import os
 from astropy import units as u
 from collections import OrderedDict
 
-from pocs.base import PanBase
-from pocs.scheduler.field import Field
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.scheduler.field import Field
 
 
 class Observation(PanBase):

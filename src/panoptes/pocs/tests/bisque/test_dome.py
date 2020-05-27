@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from pocs.dome.bisque import Dome
+from panoptes.pocs.dome.bisque import Dome
 from panoptes.utils.theskyx import TheSkyX
 
 pytestmark = pytest.mark.skipif(

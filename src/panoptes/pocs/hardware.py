@@ -50,7 +50,7 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
         simulator: An explicit list of names of hardware to be simulated (i.e. hardware drivers
             to be replaced with simulators).
         kwargs: The kwargs passed in to the caller, which is inspected for an arg called 'simulator'.
-        config: Dictionary created from pocs.yaml or similar.
+        config: Dictionary created from panoptes.pocs.yaml or similar.
 
     Returns:
         List of names of the hardware to be simulated.

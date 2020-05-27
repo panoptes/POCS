@@ -4,9 +4,9 @@ from serial import serialutil
 import threading
 import time
 
-from pocs.dome import astrohaven
+from panoptes.pocs.dome import astrohaven
 from panoptes.utils.tests import serial_handlers
-from pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
 CLOSED_POSITION = 0

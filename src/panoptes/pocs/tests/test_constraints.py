@@ -9,14 +9,14 @@ from astropy.time import Time
 
 from collections import OrderedDict
 
-from pocs.scheduler.field import Field
-from pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.field import Field
+from panoptes.pocs.scheduler.observation import Observation
 
-from pocs.scheduler.constraint import Altitude
-from pocs.scheduler.constraint import BaseConstraint
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
-from pocs.scheduler.constraint import AlreadyVisited
+from panoptes.pocs.scheduler.constraint import Altitude
+from panoptes.pocs.scheduler.constraint import BaseConstraint
+from panoptes.pocs.scheduler.constraint import Duration
+from panoptes.pocs.scheduler.constraint import MoonAvoidance
+from panoptes.pocs.scheduler.constraint import AlreadyVisited
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils

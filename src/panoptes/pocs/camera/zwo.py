@@ -6,8 +6,8 @@ import numpy as np
 from astropy import units as u
 from astropy.time import Time
 
-from pocs.camera.sdk import AbstractSDKCamera
-from pocs.camera.libasi import ASIDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
+from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 from panoptes.utils import get_quantity_value

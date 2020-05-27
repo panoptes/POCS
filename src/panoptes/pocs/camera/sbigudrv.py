@@ -17,7 +17,7 @@ import numpy as np
 from numpy.ctypeslib import as_ctypes
 from astropy import units as u
 
-from pocs.camera.sdk import AbstractSDKDriver
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils import CountdownTimer
 from panoptes.utils import get_quantity_value

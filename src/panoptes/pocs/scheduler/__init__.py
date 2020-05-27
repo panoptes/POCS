@@ -2,19 +2,19 @@ import os
 
 from astropy import units as u
 
-from pocs.scheduler.constraint import Altitude
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
+from panoptes.pocs.scheduler.constraint import Altitude
+from panoptes.pocs.scheduler.constraint import Duration
+from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 # Below is needed for import
-from pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
+from panoptes.pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
-from pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 
-from pocs.utils.location import create_location_from_config
+from panoptes.pocs.utils.location import create_location_from_config
 
 
 def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwargs):

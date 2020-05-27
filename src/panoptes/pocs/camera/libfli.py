@@ -9,8 +9,8 @@ import os
 import numpy as np
 from astropy import units as u
 
-from pocs.camera.sdk import AbstractSDKDriver
-from pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
+from panoptes.pocs.camera import libfliconstants as c
 from panoptes.utils import error
 from panoptes.utils import get_quantity_value
 

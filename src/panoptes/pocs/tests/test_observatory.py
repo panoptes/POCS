@@ -7,18 +7,18 @@ import pocs.version
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 
-from pocs import hardware
-from pocs.mount import AbstractMount
-from pocs.observatory import Observatory
-from pocs.scheduler.dispatch import Scheduler
-from pocs.scheduler.observation import Observation
+from panoptes.pocs import hardware
+from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.scheduler.dispatch import Scheduler
+from panoptes.pocs.scheduler.observation import Observation
 
-from pocs.mount import create_mount_from_config
-from pocs.mount import create_mount_simulator
-from pocs.dome import create_dome_simulator
-from pocs.camera import create_camera_simulator
-from pocs.scheduler import create_scheduler_from_config
-from pocs.utils.location import create_location_from_config
+from panoptes.pocs.mount import create_mount_from_config
+from panoptes.pocs.mount import create_mount_simulator
+from panoptes.pocs.dome import create_dome_simulator
+from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.scheduler import create_scheduler_from_config
+from panoptes.pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture(scope='function')

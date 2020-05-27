@@ -1,6 +1,6 @@
 import random
 
-from pocs.dome import AbstractDome
+from panoptes.pocs.dome import AbstractDome
 
 
 class Dome(AbstractDome):

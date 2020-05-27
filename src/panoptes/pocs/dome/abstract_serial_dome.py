@@ -1,4 +1,4 @@
-from pocs import dome
+from panoptes.pocs import dome
 from panoptes.utils import error
 from panoptes.utils import rs232
 

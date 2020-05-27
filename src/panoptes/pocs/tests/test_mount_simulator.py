@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
-from pocs.mount.simulator import Mount
+from panoptes.pocs.mount.simulator import Mount
 from panoptes.utils.config.client import get_config
 from panoptes.utils import error
 from panoptes.utils import altaz_to_radec

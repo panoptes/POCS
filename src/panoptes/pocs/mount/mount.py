@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 
 from panoptes.utils import current_time
 from panoptes.utils import error

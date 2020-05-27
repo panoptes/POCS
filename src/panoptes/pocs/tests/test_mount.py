@@ -1,11 +1,11 @@
 import pytest
 from contextlib import suppress
 
-from pocs import hardware
-from pocs.mount import AbstractMount
-from pocs.mount import create_mount_from_config
-from pocs.mount import create_mount_simulator
-from pocs.utils.location import create_location_from_config
+from panoptes.pocs import hardware
+from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.mount import create_mount_from_config
+from panoptes.pocs.mount import create_mount_simulator
+from panoptes.pocs.utils.location import create_location_from_config
 
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config

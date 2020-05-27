@@ -9,12 +9,12 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs.base import PanBase
-from pocs.camera import AbstractCamera
-from pocs.dome import AbstractDome
-from pocs.images import Image
-from pocs.mount import AbstractMount
-from pocs.scheduler import BaseScheduler
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.camera import AbstractCamera
+from panoptes.pocs.dome import AbstractDome
+from panoptes.pocs.images import Image
+from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.scheduler import BaseScheduler
 
 from panoptes.utils import current_time
 from panoptes.utils import error

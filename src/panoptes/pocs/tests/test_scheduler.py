@@ -2,9 +2,9 @@ import pytest
 
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
-from pocs.scheduler import create_scheduler_from_config
-from pocs.scheduler import BaseScheduler
-from pocs.utils.location import create_location_from_config
+from panoptes.pocs.scheduler import create_scheduler_from_config
+from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.utils.location import create_location_from_config
 
 
 def test_bad_scheduler_type(dynamic_config_server, config_port):

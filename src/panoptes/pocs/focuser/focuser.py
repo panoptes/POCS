@@ -13,7 +13,7 @@ from scipy.ndimage import binary_dilation
 from astropy.modeling import models
 from astropy.modeling import fitting
 
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images import mask_saturated

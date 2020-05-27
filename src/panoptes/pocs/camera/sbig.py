@@ -2,9 +2,9 @@ from contextlib import suppress
 
 from astropy import units as u
 
-from pocs.camera.sdk import AbstractSDKCamera
-from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
-from pocs.camera.sbigudrv import SBIGDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
+from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
+from panoptes.pocs.camera.sbigudrv import SBIGDriver
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 

@@ -3,8 +3,8 @@ import pytest
 
 from astropy.coordinates import EarthLocation
 
-from pocs.core import POCS
-from pocs.dome.bisque import Dome
+from panoptes.pocs.core import POCS
+from panoptes.pocs.dome.bisque import Dome
 from panoptes.utils.config.client import get_config
 from panoptes.utils import altaz_to_radec
 from panoptes.utils import current_time

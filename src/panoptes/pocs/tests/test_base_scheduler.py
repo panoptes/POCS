@@ -8,9 +8,9 @@ from astroplan import Observer
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
-from pocs.scheduler import BaseScheduler as Scheduler
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
+from panoptes.pocs.scheduler import BaseScheduler as Scheduler
+from panoptes.pocs.scheduler.constraint import Duration
+from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 
 @pytest.fixture

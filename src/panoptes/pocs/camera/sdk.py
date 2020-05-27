@@ -2,11 +2,11 @@ import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
-from pocs.base import PanBase
-from pocs.camera.camera import AbstractCamera
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
-from pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):

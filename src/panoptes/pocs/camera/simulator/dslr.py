@@ -9,7 +9,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 
-from pocs.camera import AbstractCamera
+from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import get_quantity_value
 

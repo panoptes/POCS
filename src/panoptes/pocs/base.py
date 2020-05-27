@@ -1,9 +1,9 @@
 from requests.exceptions import ConnectionError
 
-from pocs import __version__
+from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
-from pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 
 class PanBase(object):

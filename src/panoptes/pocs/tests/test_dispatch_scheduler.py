@@ -7,9 +7,9 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from astroplan import Observer
 
-from pocs.scheduler.dispatch import Scheduler
-from pocs.scheduler.constraint import Duration
-from pocs.scheduler.constraint import MoonAvoidance
+from panoptes.pocs.scheduler.dispatch import Scheduler
+from panoptes.pocs.scheduler.constraint import Duration
+from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 from panoptes.utils.config.client import get_config
 

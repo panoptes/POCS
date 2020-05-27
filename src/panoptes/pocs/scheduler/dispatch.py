@@ -1,6 +1,6 @@
 from panoptes.utils import current_time
 from panoptes.utils import listify
-from pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):

@@ -3,7 +3,7 @@ import pytest
 from astropy import units as u
 from astropy.coordinates import Latitude, Longitude
 
-from pocs.scheduler.field import Field
+from panoptes.pocs.scheduler.field import Field
 
 
 def test_create_field_no_params():

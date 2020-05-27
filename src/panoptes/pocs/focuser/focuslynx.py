@@ -5,7 +5,7 @@ from contextlib import suppress
 
 import astropy.units as u
 
-from pocs.focuser import AbstractFocuser
+from panoptes.pocs.focuser import AbstractFocuser
 
 
 class Focuser(AbstractFocuser):

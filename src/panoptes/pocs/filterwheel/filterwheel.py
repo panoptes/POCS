@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from astropy import units as u
 
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 from panoptes.utils import listify
 from panoptes.utils import error
 
@@ -176,7 +176,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             and a serial number, e.g. the following selects a g band filter without having to
             know its full name.
 
-            >>> from pocs.filterwheel.filterwheel import AbstractFilterWheel as FilterWheel
+            >>> from panoptes.pocs.filterwheel.filterwheel import AbstractFilterWheel as FilterWheel
             >>> fw = FilterWheel(filter_names=['u_12', 'g_04', 'r_09', 'i_20', 'z_07'])
             >>> fw_event = fw.move_to('g')
             >>> fw_event.wait()

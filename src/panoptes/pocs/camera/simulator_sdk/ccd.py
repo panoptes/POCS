@@ -5,8 +5,8 @@ import time
 from contextlib import suppress
 import astropy.units as u
 
-from pocs.camera.simulator import Camera
-from pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 
 
 class SDKDriver(AbstractSDKDriver):

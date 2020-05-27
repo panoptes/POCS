@@ -1,6 +1,6 @@
 import pytest
 
-from pocs.base import PanBase
+from panoptes.pocs.base import PanBase
 
 from panoptes.utils.config.client import set_config
 from panoptes.utils.database import PanDB

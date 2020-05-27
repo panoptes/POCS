@@ -12,11 +12,11 @@ from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
 from astropy.utils import console
 
-from pocs import hardware
-from pocs.core import POCS
-from pocs.observatory import Observatory
-from pocs.scheduler.field import Field
-from pocs.scheduler.observation import Observation
+from panoptes.pocs import hardware
+from panoptes.pocs.core import POCS
+from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.scheduler.field import Field
+from panoptes.pocs.scheduler.observation import Observation
 from panoptes.utils import current_time
 from panoptes.utils import string_to_params
 from panoptes.utils import error
@@ -28,9 +28,9 @@ from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import client
 from panoptes.utils.data import Downloader
 
-from pocs.mount import create_mount_from_config
-from pocs.camera import create_cameras_from_config
-from pocs.scheduler import create_scheduler_from_config
+from panoptes.pocs.mount import create_mount_from_config
+from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.scheduler import create_scheduler_from_config
 
 
 # Download IERS data and astrometry index files
@@ -123,7 +123,7 @@ class PocsShell(Cmd):
         except Exception as e:
             print_warning("Can't start command subscriber: {}".format(e))
 
-        # Receive messages from POCS via this subscriber
+        # Receive messages from panoptes.pocs via this subscriber
         try:
             self.msg_subscriber = PanMessaging.create_subscriber(
                 self.msg_sub_port)

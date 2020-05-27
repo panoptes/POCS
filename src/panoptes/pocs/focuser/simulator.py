@@ -1,4 +1,4 @@
-from pocs.focuser import AbstractFocuser
+from panoptes.pocs.focuser import AbstractFocuser
 
 import time
 import random

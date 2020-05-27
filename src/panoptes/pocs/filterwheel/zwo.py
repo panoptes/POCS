@@ -2,9 +2,9 @@ from contextlib import suppress
 
 from astropy import units as u
 
-from pocs.filterwheel import AbstractFilterWheel
-from pocs.filterwheel.libefw import EFWDriver
-from pocs.camera.camera import AbstractCamera
+from panoptes.pocs.filterwheel import AbstractFilterWheel
+from panoptes.pocs.filterwheel.libefw import EFWDriver
+from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
 
 
