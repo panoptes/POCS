@@ -1,7 +1,7 @@
 import os
+from contextlib import suppress
 
 from astropy import units as u
-from astropy import wcs
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import FK5
 from astropy.coordinates import SkyCoord
@@ -9,7 +9,7 @@ from astropy.io import fits
 from astropy.time import Time
 from collections import namedtuple
 
-from panoptes.pocs.base import PanBase
+from .base import PanBase
 from panoptes.utils.images import fits as fits_utils
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
@@ -97,16 +97,13 @@ class Image(PanBase):
     @wcs_file.setter
     def wcs_file(self, filename):
         if filename is not None:
-            try:
-                header = fits_utils.getheader(filename)
-                w = wcs.WCS(header)
+            with suppress(AssertionError):
+                w = fits_utils.getwcs(filename)
                 assert w.is_celestial
 
                 self.wcs = w
                 self._wcs_file = filename
                 self.logger.debug("WCS loaded from image")
-            except Exception:
-                pass
 
     @property
     def pointing_error(self):
@@ -157,7 +154,8 @@ class Image(PanBase):
                 # Compute the HA from the RA and sidereal time.
                 # Precess to the current equinox otherwise the
                 # RA - LST method will be off.
-                # NOTE(wtgee): This conversion doesn't seem to be correct.
+                # TODO(wtgee): This conversion doesn't seem to be correct.
+                # wtgee: I'm not sure what I meant by the above. May 2020.
                 self.header_ha = self.header_pointing.transform_to(
                     self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
 
@@ -183,10 +181,10 @@ class Image(PanBase):
             self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
     def solve_field(self, **kwargs):
-        """ Solve field and populate WCS information
+        """ Solve field and populate WCS information.
 
         Args:
-            **kwargs (dict): Options to be passed to `get_solve_field`
+            **kwargs: Options to be passed to `get_solve_field`.
         """
         solve_info = fits_utils.get_solve_field(self.fits_file,
                                                 ra=self.header_pointing.ra.value,
@@ -206,8 +204,7 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference")
+        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec
@@ -215,10 +212,5 @@ class Image(PanBase):
 
         return OffsetError(d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
 
-
-##################################################################################################
-# Private Methods
-##################################################################################################
-
     def __str__(self):
-        return "{}: {}".format(self.fits_file, self.header_pointing)
+        return f"{self.fits_file}: {self.header_pointing}"

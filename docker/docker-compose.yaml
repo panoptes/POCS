@@ -8,8 +8,6 @@ services:
     privileged: true
     network_mode: host
     env_file: $PANDIR/env
-    depends_on:
-      - "messaging-hub"
     volumes:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/peas-shell to access

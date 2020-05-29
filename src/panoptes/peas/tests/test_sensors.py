@@ -5,8 +5,8 @@ import pytest
 import serial
 import responses
 
-from peas import sensors as sensors_module
-from peas import remote_sensors
+from panoptes.peas import sensors as sensors_module
+from panoptes.peas import remote_sensors
 from panoptes.utils import rs232
 from panoptes.utils import error
 
@@ -17,10 +17,10 @@ SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 @pytest.fixture(scope='function')
 def serial_handlers():
     # Install our test handlers for the duration.
-    serial.protocol_handler_packages.insert(0, 'panoptes.utils.tests.serial_handlers')
+    serial.protocol_handler_packages.insert(0, 'panoptes.utils.serial_handlers')
     yield True
     # Remove our test handlers.
-    serial.protocol_handler_packages.remove('panoptes.utils.tests.serial_handlers')
+    serial.protocol_handler_packages.remove('panoptes.utils.serial_handlers')
 
 
 def list_comports():
@@ -187,7 +187,7 @@ def test_remote_sensor(remote_response, remote_response_power):
         db_type='memory'
     )
 
-    mocked_response = power_monitor.capture(send_message=False)
+    mocked_response = power_monitor.capture()
     del mocked_response['date']
     assert remote_response_power == mocked_response
 

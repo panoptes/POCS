@@ -75,27 +75,13 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'matplotlib.sphinxext.plot_directive',
-    'recommonmark',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-
-# To configure AutoStructify
-def setup(app):
-    from recommonmark.transform import AutoStructify
-    app.add_config_value('recommonmark_config', {
-        'auto_toc_tree_section': 'Contents',
-        'enable_eval_rst': True,
-        'enable_math': True,
-        'enable_inline_math': True
-    }, True)
-    app.add_transform(AutoStructify)
-
-
 # The suffix of source filenames.
-source_suffix = ['.rst', '.md']
+source_suffix = ['.rst']
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -158,7 +144,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -294,6 +280,7 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
     'astroplan': ('https://astroplan.readthedocs.io/en/latest/', None),
+    'panoptes.utils': ('https://panoptes-utils.readthedocs.io/en/latest/', None),
 }
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.

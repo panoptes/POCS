@@ -1,5 +1,4 @@
 import os
-import yaml
 
 from contextlib import suppress
 from transitions.extensions.states import Tags as MachineState
@@ -7,18 +6,19 @@ from transitions.extensions.states import Tags as MachineState
 from panoptes.utils import error
 from panoptes.utils import listify
 from panoptes.utils.library import load_module
+from panoptes.utils.serializers import from_yaml
 
 can_graph = False
 try:  # pragma: no cover
     import pygraphviz  # pragma: no flakes
     from transitions.extensions import GraphMachine as Machine
+
     can_graph = True
 except ImportError:  # pragma: no cover
     from transitions import Machine
 
 
 class PanStateMachine(Machine):
-
     """ A finite state machine for PANOPTES.
 
     The state machine guides the overall action of the unit.
@@ -75,9 +75,9 @@ class PanStateMachine(Machine):
 
         self.logger.debug("State machine created")
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def keep_running(self):
@@ -100,9 +100,9 @@ class PanStateMachine(Machine):
         """ Set the tracking rate """
         self._next_state = value
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
@@ -135,7 +135,7 @@ class PanStateMachine(Machine):
             self.check_messages()
 
             # If we are processing the states
-            if self.do_states:
+            if self.do_states and self.observatory.can_observe:
 
                 # BEFORE TRANSITION
 
@@ -226,13 +226,9 @@ class PanStateMachine(Machine):
         self.logger.info("Stopping POCS states")
         self._do_states = False
 
-    def status(self):
-        """Computes status, a dict, of whole observatory."""
-        return NotImplemented
-
-##################################################################################################
-# State Conditions
-##################################################################################################
+    ##################################################################################################
+    # State Conditions
+    ##################################################################################################
 
     def check_safety(self, event_data=None):
         """ Checks the safety flag of the system to determine if safe.
@@ -287,15 +283,15 @@ class PanStateMachine(Machine):
         """
         return self.observatory.mount.is_initialized
 
-##################################################################################################
-# Callback Methods
-##################################################################################################
+    ##################################################################################################
+    # Callback Methods
+    ##################################################################################################
 
     def before_state(self, event_data):
         """ Called before each state.
 
         Args:
-            event_data(transitions.EventData):  Contains informaton about the event
+            event_data(transitions.EventData):  Contains information about the event
          """
         self.logger.debug(f"Changing state from {event_data.state.name} to {event_data.event.name}")
 
@@ -303,15 +299,14 @@ class PanStateMachine(Machine):
         """ Called after each state.
 
         Args:
-            event_data(transitions.EventData):  Contains informaton about the event
+            event_data(transitions.EventData):  Contains information about the event
         """
 
         self.logger.debug(f"After {event_data.event.name} transition. In {event_data.state.name} state")
 
-
-##################################################################################################
-# Class Methods
-##################################################################################################
+    ##################################################################################################
+    # Class Methods
+    ##################################################################################################
 
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
@@ -327,8 +322,12 @@ class PanStateMachine(Machine):
         """
 
         if not state_table_name.startswith('/'):
-            state_table_file = "{}/resources/state_table/{}.yaml".format(
-                os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
+            state_table_file = os.path.join(
+                os.getenv('POCS', default='/var/panoptes/POCS'),
+                'resources',
+                'state_table',
+                f'{state_table_name}.yaml'
+            )
         else:
             state_table_file = state_table_name
 
@@ -336,16 +335,15 @@ class PanStateMachine(Machine):
 
         try:
             with open(state_table_file, 'r') as f:
-                state_table = yaml.full_load(f.read())
+                state_table = from_yaml(f.read())
         except Exception as err:
-            raise error.InvalidConfig(
-                'Problem loading state table yaml file: {} {}'.format(err, state_table_file))
+            raise error.InvalidConfig(f'Problem loading state table yaml file: {err!r} {state_table_file}')
 
         return state_table
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _lookup_trigger(self):
         self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
@@ -385,13 +383,13 @@ class PanStateMachine(Machine):
             os.symlink(fn, ln_fn)
 
         except Exception as e:
-            self.logger.warning("Can't generate state graph: {}".format(e))
+            self.logger.warning(f"Can't generate state graph: {e!r}")
 
     def _load_state(self, state, state_info=None):
-        self.logger.debug("Loading state: {}".format(state))
+        self.logger.debug(f"Loading state: {state}")
         s = None
         try:
-            state_module = load_module('{}.{}.{}'.format(
+            state_module = load_module('panoptes.{}.{}.{}'.format(
                 self._states_location.replace("/", "."),
                 self._state_table_name,
                 state

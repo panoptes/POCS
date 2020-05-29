@@ -63,7 +63,7 @@ class Camera(AbstractCamera):
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
-            'pocs', 'tests', 'data',
+            'tests', 'data',
             'unsolved.fits'
         )
         fake_data = fits.getdata(file_path)

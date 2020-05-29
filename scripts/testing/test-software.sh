@@ -25,5 +25,5 @@ docker run --rm -it \
     -v /var/panoptes/pocs:/var/panoptes/pocs \
     -v /var/panoptes/logs:/var/panoptes/logs \
     pocs:testing \
-    "/var/panoptes/pocs/scripts/testing/run-tests.sh"
+    "/var/panoptes/POCS/scripts/testing/run-tests.sh"
 

@@ -1,5 +1,5 @@
 import os
-from panoptes.utils.logger import logger
+from panoptes.utils.logging import logger
 
 
 class PanLogger:

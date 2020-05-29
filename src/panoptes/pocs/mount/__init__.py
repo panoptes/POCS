@@ -92,7 +92,7 @@ def create_mount_from_config(config_port='6563',
 
     logger.debug(f'Loading mount driver: pocs.mount.{driver}')
     try:
-        module = load_module(f'pocs.mount.{driver}')
+        module = load_module(f'panoptes.pocs.mount.{driver}')
     except error.NotFound as e:
         raise error.MountNotFound(e)
 
@@ -126,7 +126,7 @@ def create_mount_simulator(config_port='6563', *args, **kwargs):
 
     logger.debug(f"Loading mount driver: pocs.mount.{mount_config['driver']}")
     try:
-        module = load_module(f"pocs.mount.{mount_config['driver']}")
+        module = load_module(f"panoptes.pocs.mount.{mount_config['driver']}")
     except error.NotFound as e:
         raise error.MountNotFound(e)
 

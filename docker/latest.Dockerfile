@@ -1,6 +1,6 @@
-ARG arch=amd64
+ARG image_url=gcr.io/panoptes-exp/panoptes-utils:latest
 
-FROM gcr.io/panoptes-exp/panoptes-utils:latest AS pocs-base
+FROM $image_url AS pocs-base
 LABEL maintainer="developers@projectpanoptes.org"
 
 ARG pandir=/var/panoptes
@@ -27,19 +27,14 @@ RUN apt-get update \
     && mv arduino-cli /usr/local/bin/arduino-cli \
     && chmod +x /usr/local/bin/arduino-cli
 
-USER $PANUSER
+COPY ./requirements.txt /tmp/requirements.txt
+# First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
+RUN pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
+    pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy just requirements and install.
-COPY --chown=panoptes:panoptes ./requirements.txt ${POCS}/
-RUN cd ${POCS} && \
-    # First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-    pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
-    # Install requirements
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy over entire directory now and install in editable mode.
-COPY --chown=panoptes:panoptes . ${POCS}
-RUN pip install --no-cache-dir -e .
+# Install module
+COPY . ${POCS}/
+RUN cd ${POCS} && python setup.py develop
 
 # Cleanup apt.
 USER root

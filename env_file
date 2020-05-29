@@ -1,4 +1,0 @@
-PANUSER=panoptes
-PANDIR=/var/panoptes
-POCS=${PANDIR}/POCS
-PANLOG=${PANDIR}/logs

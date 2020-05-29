@@ -29,10 +29,9 @@ class Mount(AbstractMount):
 
         self.template_dir = template_dir
 
-
-##########################################################################
-# Methods
-##########################################################################
+    ##########################################################################
+    # Methods
+    ##########################################################################
 
     def connect(self):
         """ Connects to the mount via the serial port (`self._port`)
@@ -152,17 +151,12 @@ class Mount(AbstractMount):
         self.query('set_park_position')
         self.logger.info("Mount park position set: {}".format(self._park_coordinates))
 
+    ##########################################################################
+    # Movement methods
+    ##########################################################################
 
-##########################################################################
-# Movement methods
-##########################################################################
-
-    def slew_to_target(self, timeout=120):
+    def slew_to_target(self, timeout=120, **kwargs):
         """ Slews to the current _target_coordinates
-
-        Args:
-            on_finish(method):  A callback method to be executed when mount has
-            arrived at destination
 
         Returns:
             bool: indicating success
@@ -212,6 +206,7 @@ class Mount(AbstractMount):
         Args:
             blocking (bool, optional): If command should block while slewing to
                 home, default False.
+            timeout (int, optional): Timeout in seconds, default 120.
 
         Returns:
             bool: indicating success
@@ -293,10 +288,9 @@ class Mount(AbstractMount):
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
-
-##########################################################################
-# Communication Methods
-##########################################################################
+    ##########################################################################
+    # Communication Methods
+    ##########################################################################
 
     def write(self, value):
         return self.theskyx.write(value)
@@ -318,9 +312,9 @@ class Mount(AbstractMount):
 
         return response_obj
 
-##########################################################################
-# Private Methods
-##########################################################################
+    ##########################################################################
+    # Private Methods
+    ##########################################################################
 
     def _setup_commands(self, commands):
         """

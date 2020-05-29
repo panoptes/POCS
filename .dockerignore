@@ -1,5 +1,5 @@
 docs/*
-.git
+!.git
 .eggs
 .idea
 __pycache__

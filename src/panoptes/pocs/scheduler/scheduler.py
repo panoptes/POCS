@@ -1,7 +1,7 @@
 import os
-import yaml
 
 from collections import OrderedDict
+from contextlib import suppress
 
 from astroplan import Observer
 from astropy import units as u
@@ -11,14 +11,14 @@ from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import current_time
 from panoptes.utils import get_quantity_value
+from panoptes.utils.serializers import from_yaml
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation import Observation
 
 
 class BaseScheduler(PanBase):
 
-    def __init__(self, observer, fields_list=None, fields_file=None,
-                 constraints=list(), *args, **kwargs):
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
@@ -34,8 +34,7 @@ class BaseScheduler(PanBase):
                 will take place from.
             fields_list (list, optional): A list of valid field configurations.
             fields_file (str): YAML file containing field parameters.
-            constraints (list, optional): List of `Constraints` to apply to each
-                observation.
+            constraints (list, optional): List of `Constraints` to apply to each observation.
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
         """
@@ -45,14 +44,14 @@ class BaseScheduler(PanBase):
 
         self._fields_file = fields_file
         # Setting the fields_list directly will clobber anything
-        # from the fields_file. It comes second so we can speicfically
+        # from the fields_file. It comes second so we can specifically
         # clobber if passed.
         self._fields_list = fields_list
         self._observations = dict()
 
         self.observer = observer
 
-        self.constraints = constraints
+        self.constraints = constraints or list()
 
         self._current_observation = None
         self.observed_list = OrderedDict()
@@ -65,9 +64,9 @@ class BaseScheduler(PanBase):
 
         self.common_properties = None
 
-##########################################################################
-# Properties
-##########################################################################
+    ##########################################################################
+    # Properties
+    ##########################################################################
 
     @property
     def observations(self):
@@ -178,9 +177,9 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
-##########################################################################
-# Methods
-##########################################################################
+    ##########################################################################
+    # Methods
+    ##########################################################################
 
     def clear_available_observations(self):
         """Reset the list of available observations"""
@@ -258,12 +257,10 @@ class BaseScheduler(PanBase):
             field_name (str): Field name corresponding to entry key in `observations`
 
         """
-        try:
+        with suppress(Exception):
             obs = self._observations[field_name]
             del self._observations[field_name]
-            self.logger.debug("Observation removed: {}".format(obs))
-        except Exception:
-            pass
+            self.logger.debug(f"Observation removed: {obs}")
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
@@ -274,7 +271,7 @@ class BaseScheduler(PanBase):
                 raise FileNotFoundError
 
             with open(self.fields_file, 'r') as f:
-                self._fields_list = yaml.full_load(f.read())
+                self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
@@ -293,11 +290,3 @@ class BaseScheduler(PanBase):
             'moon': get_moon(time, self.observer.location),
             'observed_list': self.observed_list
         }
-
-##########################################################################
-# Utility Methods
-##########################################################################
-
-##########################################################################
-# Private Methods
-##########################################################################

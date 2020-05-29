@@ -92,9 +92,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self.logger.debug('Focuser created: {} on {}'.format(self.name, self.port))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def uid(self):
@@ -152,9 +152,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # A focuser is 'ready' if it is not currently moving.
         return not self.is_moving
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     @abstractmethod
     def move_to(self, position):
@@ -217,8 +217,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             ValueError: If invalid values are passed for any of the focus parameters.
         """
         self.logger.debug('Starting autofocus')
-        assert self._camera.is_connected, self.logger.error(
-            "Camera must be connected for autofocus!")
+        assert self._camera.is_connected, self.logger.error("Camera must be connected for autofocus!")
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 

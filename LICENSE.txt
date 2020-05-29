@@ -1,6 +1,7 @@
 The MIT License (MIT)
 
-Copyright (c) 2014-2020 PANOPTES
+Copyright (c) 2014-2020 Project PANOPTES
+
 Copyright 2016 Google Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

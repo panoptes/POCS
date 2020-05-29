@@ -134,7 +134,7 @@ def create_cameras_from_config(config_port='6563', **kwargs):
         logger.debug(f'Creating camera: {model}')
 
         try:
-            module = load_module(f'pocs.camera.{model}')
+            module = load_module(f'panoptes.pocs.camera.{model}')
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(config_port=config_port, **device_config)
@@ -225,7 +225,7 @@ def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
         logger.debug('Creating camera: {}'.format(device_config['model']))
 
         try:
-            module = load_module('pocs.camera.{}'.format(device_config['model']))
+            module = load_module('panoptes.pocs.camera.{}'.format(device_config['model']))
             logger.debug('Camera module: {}'.format(module))
             # Create the camera object
             cam = module.Camera(name=cam_name, config_port=config_port, **device_config)

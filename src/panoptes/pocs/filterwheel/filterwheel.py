@@ -176,10 +176,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             and a serial number, e.g. the following selects a g band filter without having to
             know its full name.
 
-            >>> from panoptes.pocs.filterwheel.filterwheel import AbstractFilterWheel as FilterWheel
+            >>> from panoptes.pocs.filterwheel.simulator import FilterWheel
             >>> fw = FilterWheel(filter_names=['u_12', 'g_04', 'r_09', 'i_20', 'z_07'])
             >>> fw_event = fw.move_to('g')
             >>> fw_event.wait()
+            True
             >>> fw.current_filter
             'g_04'
         """

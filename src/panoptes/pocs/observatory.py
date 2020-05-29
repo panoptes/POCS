@@ -1,7 +1,7 @@
 import os
 import subprocess
 from collections import OrderedDict
-from datetime import datetime
+import pendulum
 
 from astroplan import Observer
 from astropy import units as u
@@ -15,6 +15,7 @@ from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.utils.location import create_location_from_config
 
 from panoptes.utils import current_time
 from panoptes.utils import error
@@ -32,29 +33,39 @@ class Observatory(PanBase):
         self.logger.info('Initializing observatory')
 
         # Setup information about site location
-        self.logger.info('\tSetting up location')
-        self.location = None
-        self.earth_location = None
-        self.observer = None
-        self._setup_location()
+        self.logger.info('Setting up location')
+        site_details = create_location_from_config()
+        self.location = site_details['location']
+        self.earth_location = site_details['earth_location']
+        self.observer = site_details['observer']
 
+        # Do some one-time calculations
+        now = current_time()
+        self._local_sun_pos = self.observer.altaz(now, target=get_sun(now)).alt  # Re-calculated
+        self._local_sunrise = self.observer.sun_rise_time(now)
+        self._local_sunset = self.observer.sun_set_time(now)
+        self._evening_astro_time = self.observer.twilight_evening_astronomical(now, which='next')
+        self._morning_astro_time = self.observer.twilight_morning_astronomical(now, which='next')
+
+        # Set up some of the hardware.
         self.set_mount(mount)
         self.cameras = OrderedDict()
 
+        self._primary_camera = None
         if cameras:
-            self.logger.info('Adding the cameras to the observatory: {}', cameras)
-            self._primary_camera = None
+            self.logger.info(f'Adding the cameras to the observatory: {cameras}')
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
-        # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
-        # here compared to that for the mount.
+        # TODO(jamessynge): Figure out serial port validation behavior here compared to that for the mount.
         self.set_dome(dome)
+
         self.set_scheduler(scheduler)
         self.current_offset_info = None
 
         self._image_dir = self.get_config('directories.images')
-        self.logger.info('\t Observatory initialized')
+
+        self.logger.success('Observatory initialized')
 
     ##########################################################################
     # Helper methods
@@ -81,9 +92,8 @@ class Observatory(PanBase):
         horizon_deg = self.get_config(f'location.{horizon}_horizon', default=default_dark)
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
-        if not is_dark:
-            sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
-            self.logger.debug(f"Sun {sun_pos:.02f} > {horizon_deg} [{horizon}]")
+        self._local_sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
+        self.logger.debug(f"Sun {self._local_sun_pos:.02f} > {horizon_deg} [{horizon}]")
 
         return is_dark
 
@@ -153,16 +163,18 @@ class Observatory(PanBase):
         Returns:
             bool: True if observations are possible, False otherwise.
         """
-        can_observe = True
-        if can_observe and self.scheduler is None:
-            self.logger.info(f'Scheduler not present, cannot observe.')
-            can_observe = False
-        if can_observe and not self.has_cameras:
-            self.logger.info(f'Cameras not present, cannot observe.')
-            can_observe = False
-        if can_observe and self.mount is None:
-            self.logger.info(f'Mount not present, cannot observe.')
-            can_observe = False
+        checks = {
+            'scheduler': self.scheduler is not None,
+            'cameras': self.has_cameras is True,
+            'mount': self.mount is not None,
+        }
+
+        can_observe = all(checks.values())
+
+        if can_observe is False:
+            for check_name, is_true in checks.items():
+                if not is_true:
+                    self.logger.warning(f'{check_name.title()} not present, cannot observe')
 
         return can_observe
 
@@ -178,11 +190,9 @@ class Observatory(PanBase):
             camera (`pocs.camera.camera.Camera`): An instance of the `~Camera` class.
         """
         assert isinstance(camera, AbstractCamera)
-        self.logger.debug('Adding {}: {}'.format(cam_name, camera))
+        self.logger.debug(f'Adding {cam_name}: {camera}')
         if cam_name in self.cameras:
-            self.logger.debug(
-                '{} already exists, replacing existing camera under that name.',
-                cam_name)
+            self.logger.debug(f'{cam_name} already exists, replacing existing camera under that name.')
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
@@ -265,24 +275,21 @@ class Observatory(PanBase):
         if self.dome:
             self.dome.disconnect()
 
+    @property
     def status(self):
-        """Get status information for various parts of the observatory
-        """
-        status = {}
+        """Get status information for various parts of the observatory."""
+        status = {'can_observe': self.can_observe}
 
-        status['can_observe'] = self.can_observe
-
-        t = current_time()
-        local_time = str(datetime.now()).split('.')[0]
+        now = current_time()
 
         try:
             if self.mount.is_initialized:
-                status['mount'] = self.mount.status()
-                status['mount']['current_ha'] = self.observer.target_hour_angle(
-                    t, self.mount.get_current_coordinates())
+                status['mount'] = self.mount.status
+                current_coords = self.mount.get_current_coordinates()
+                status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
-                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
-                        t, self.mount.get_target_coordinates())
+                    target_coords = self.mount.get_target_coordinates()
+                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now, target_coords)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -295,26 +302,23 @@ class Observatory(PanBase):
         try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
-                status['observation']['field_ha'] = self.observer.target_hour_angle(
-                    t, self.current_observation.field)
+                status['observation']['field_ha'] = self.observer.target_hour_angle(now, self.current_observation.field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
 
         try:
-            evening_astro_time = self.observer.twilight_evening_astronomical(t, which='next')
-            morning_astro_time = self.observer.twilight_morning_astronomical(t, which='next')
-
             status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
-                'utctime': t,
-                'localtime': local_time,
-                'local_evening_astro_time': evening_astro_time,
-                'local_morning_astro_time': morning_astro_time,
-                'local_sun_set_time': self.observer.sun_set_time(t),
-                'local_sun_rise_time': self.observer.sun_rise_time(t),
-                'local_moon_alt': self.observer.moon_altaz(t).alt,
-                'local_moon_illumination': self.observer.moon_illumination(t),
-                'local_moon_phase': self.observer.moon_phase(t),
+                'utctime': now,
+                'localtime': pendulum.now(),
+                'local_evening_astro_time': self._evening_astro_time,
+                'local_morning_astro_time': self._morning_astro_time,
+                'local_sun_set_time': self._local_sunset,
+                'local_sun_rise_time': self._local_sunrise,
+                'local_sun_position': self._local_sun_pos,
+                'local_moon_alt': self.observer.moon_altaz(now).alt,
+                'local_moon_illumination': self.observer.moon_illumination(now),
+                'local_moon_phase': self.observer.moon_phase(now),
             }
 
         except Exception as e:  # pragma: no cover
@@ -327,7 +331,7 @@ class Observatory(PanBase):
 
         Returns:
             observation (pocs.scheduler.observation.Observation or None): An
-                an object that represents the obervation to be made
+                an object that represents the observation to be made
 
         Raises:
             error.NoObservation: If no valid observation is found
@@ -341,9 +345,9 @@ class Observatory(PanBase):
 
         # If observation list is empty or a reread is requested
         reread_fields_file = (
-            self.scheduler.has_valid_observations is False or
-            kwargs.get('reread_fields_file', False) or
-            self.get_config('scheduler.check_file', default=False)
+                self.scheduler.has_valid_observations is False or
+                kwargs.get('reread_fields_file', False) or
+                self.get_config('scheduler.check_file', default=False)
         )
 
         # This will set the `current_observation`
@@ -493,23 +497,21 @@ class Observatory(PanBase):
         self.current_offset_info = None
 
         pointing_image_id, pointing_image = self.current_observation.pointing_image
-        self.logger.debug(
-            "Analyzing recent image using pointing image: '{}'".format(pointing_image))
+        self.logger.debug(f"Analyzing recent image using pointing image: '{pointing_image}'")
 
         try:
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            current_image = Image(image_path, location=self.earth_location,
-                                  config_port=self._config_port)
+            current_image = Image(image_path, location=self.earth_location, config_port=self._config_port)
 
             solve_info = current_image.solve_field(skip_solved=False)
 
-            self.logger.debug("Solve Info: {}".format(solve_info))
+            self.logger.debug(f"Solve Info: {solve_info}")
 
             # Get the offset between the two
             self.current_offset_info = current_image.compute_offset(pointing_image)
-            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
+            self.logger.debug(f'Offset Info: {self.current_offset_info}')
 
             # Store the offset information
             self.db.insert_current('offset_info', {
@@ -523,7 +525,7 @@ class Observatory(PanBase):
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
         except Exception as e:
-            self.logger.warning("Problem in analyzing: {}".format(e))
+            self.logger.warning(f"Problem in analyzing: {e!r}")
 
         return self.current_offset_info
 
@@ -707,63 +709,3 @@ class Observatory(PanBase):
         if not self.dome.is_closed:
             self.logger.info('Closed dome')
         return self.dome.close()
-
-    ##########################################################################
-    # Private Methods
-    ##########################################################################
-
-    def _setup_location(self):
-        """
-        Sets up the site and location details for the observatory
-
-        Note:
-            These items are read from the 'site' config directive and include:
-                * name
-                * latitude
-                * longitude
-                * timezone
-                * presseure
-                * elevation
-                * horizon
-
-        """
-        self.logger.debug('Setting up site details of observatory')
-
-        try:
-            config_site = self.get_config('location')
-
-            name = config_site.get('name', 'Nameless Location')
-
-            latitude = config_site.get('latitude')
-            longitude = config_site.get('longitude')
-
-            timezone = config_site.get('timezone')
-
-            pressure = config_site.get('pressure', 0.680) * u.bar
-            elevation = config_site.get('elevation', 0 * u.meter)
-            horizon = config_site.get('horizon', 30 * u.degree)
-            flat_horizon = config_site.get('flat_horizon', -6 * u.degree)
-            focus_horizon = config_site.get('focus_horizon', -12 * u.degree)
-            observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
-
-            self.location = {
-                'name': name,
-                'latitude': latitude,
-                'longitude': longitude,
-                'elevation': elevation,
-                'timezone': timezone,
-                'pressure': pressure,
-                'horizon': horizon,
-                'flat_horizon': flat_horizon,
-                'focus_horizon': focus_horizon,
-                'observe_horizon': observe_horizon,
-            }
-            self.logger.debug("Location: {}".format(self.location))
-
-            # Create an EarthLocation for the mount
-            self.earth_location = EarthLocation(
-                lat=latitude, lon=longitude, height=elevation)
-            self.observer = Observer(
-                location=self.earth_location, name=name, timezone=timezone)
-        except Exception as e:
-            raise error.PanError(msg=f'Bad site information: {e!r}')

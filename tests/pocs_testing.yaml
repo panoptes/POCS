@@ -14,58 +14,53 @@ name: Generic PANOPTES Unit
 pan_id: PAN000
 
 location:
-    name: Mauna Loa Observatory
-    latitude: 19.54 deg
-    longitude: -155.58 deg
-    elevation: 3400.0 m
-    horizon: 30 deg # targets must be above this to be considered valid.
-    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
-    focus_horizon: -12 deg # Dark enough to focus on stars.
-    observe_horizon: -18 deg # Sun below this limit to observe.
-    obstructions: []
-    timezone: US/Hawaii
-    gmt_offset: -600 # Offset in minutes from GMT during.
-                     # standard time (not daylight saving).
+  name: Mauna Loa Observatory
+  latitude: 19.54 deg
+  longitude: -155.58 deg
+  elevation: 3400.0 m
+  horizon: 30 deg # targets must be above this to be considered valid.
+  flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+  focus_horizon: -12 deg # Dark enough to focus on stars.
+  observe_horizon: -18 deg # Sun below this limit to observe.
+  obstructions: []
+  timezone: US/Hawaii
+  gmt_offset: -600 # Offset in minutes from GMT during.
+  # standard time (not daylight saving).
 directories:
-    base: /var/panoptes
-    images: images
-    data: data
-    resources: POCS/resources/
-    targets: POCS/resources/targets
-    mounts: POCS/resources/mounts
+  base: /var/panoptes
+  images: images
+  data: data
+  resources: POCS/resources/
+  targets: POCS/resources/targets
+  mounts: POCS/resources/mounts
 db:
-    name: panoptes
-    type: file
+  name: panoptes
+  type: file
 scheduler:
-    type: dispatch
-    fields_file: simple.yaml
-    check_file: False
+  type: dispatch
+  fields_file: simple.yaml
+  check_file: False
 mount:
-    brand: ioptron
-    model: 30
-    driver: ioptron
-    serial:
-        port: /dev/ttyUSB0
-        timeout: 0.
-        baudrate: 9600
-    non_sidereal_available: True
+  brand: ioptron
+  model: 30
+  driver: ioptron
+  serial:
+    port: /dev/ttyUSB0
+    timeout: 0.
+    baudrate: 9600
+  non_sidereal_available: True
 pointing:
-    auto_correct: True
-    threshold: 500 # arcseconds ~ 50 pixels
-    exptime: 30 # seconds
-    max_iterations: 3
+  auto_correct: True
+  threshold: 500 # arcseconds ~ 50 pixels
+  exptime: 30 # seconds
+  max_iterations: 3
 cameras:
-    auto_detect: True
-    primary: 14d3bd
-    devices:
-    -
-        model: canon_gphoto2
-    -
-        model: canon_gphoto2
-messaging:
-    # Must match ports in peas.yaml.
-    cmd_port: 6500
-    msg_port: 6510
+  auto_detect: True
+  primary: 14d3bd
+  devices:
+    - model: canon_gphoto2
+    - model: canon_gphoto2
+
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
@@ -83,8 +78,8 @@ messaging:
 # TODO: Add options for cleaning up old data (e.g. >30 days)
 ################################################################################
 observations:
-    make_timelapse: True
-    keep_jpgs: True
+  make_timelapse: True
+  keep_jpgs: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -97,11 +92,11 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: True
-    service_account_key: # Location of JSON account key
-    project_id: panoptes-survey
-    buckets:
-        images: panoptes-survey
+  image_storage: True
+  service_account_key: # Location of JSON account key
+  project_id: panoptes-survey
+  buckets:
+    images: panoptes-survey
 
 #Enable to output POCS messages to social accounts
 # social_accounts:
@@ -127,7 +122,7 @@ state_machine: simple_state_table
 #       serial_port: /dev/ttyACM1
 ################################################################################
 environment:
-    auto_detect: True
+  auto_detect: True
 
 ######################### Weather Station ######################################
 # Weather station options.
@@ -137,30 +132,6 @@ environment:
 # Default thresholds should be okay for most locations.
 ################################################################################
 weather:
-    aag_cloud:
-      #        serial_port: '/dev/ttyUSB1'
-        serial_port: '/dev/ttyUSB1'
-        threshold_cloudy: -25
-        threshold_very_cloudy: -15.
-        threshold_windy: 50.
-        threshold_very_windy: 75.
-        threshold_gusty: 100.
-        threshold_very_gusty: 125.
-        threshold_wet: 2200.
-        threshold_rainy: 1800.
-        safety_delay: 15 ## minutes
-        heater:
-            low_temp: 0 ## deg C
-            low_delta: 6 ## deg C
-            high_temp: 20 ## deg C
-            high_delta: 4 ## deg C
-            min_power: 10 ## percent
-            impulse_temp: 10 ## deg C
-            impulse_duration: 60 ## seconds
-            impulse_cycle: 600 ## seconds
-    plot:
-        amb_temp_limits: [-5, 35]
-        cloudiness_limits: [-45, 5]
-        wind_limits: [0, 75]
-        rain_limits: [700, 3200]
-        pwm_limits: [-5, 105]
+  aag_cloud:
+    #        serial_port: '/dev/ttyUSB1'
+    serial_port: '/dev/ttyUSB1'

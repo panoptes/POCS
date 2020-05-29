@@ -120,7 +120,7 @@ class ArduinoIO(object):
 
     """
 
-    def __init__(self, board, serial_data, db, pub, sub):
+    def __init__(self, board, serial_data, db):
         """Initialize for board on device.
 
         Args:
@@ -129,16 +129,11 @@ class ArduinoIO(object):
                 topics for readings or relay commands.
             serial_data: A SerialData instance connected to the board.
             db: The PanDB instance in which to record reading.
-            pub: PanMessaging publisher to which to write messages.
-            sub: PanMessaging subscriber from which to read relay change
-                instructions.
         """
         self.board = board.lower()
         self.port = serial_data.port
         self._serial_data = serial_data
         self._db = db
-        self._pub = pub
-        self._sub = sub
         self._logger = get_logger()
         self._last_reading = None
         self._report_next_reading = True
@@ -254,8 +249,6 @@ class ArduinoIO(object):
             raise ArduinoDataError(msg)
         reading = dict(name=self.board, timestamp=timestamp, data=data)
         self._last_reading = copy.deepcopy(reading)
-        if self._pub:
-            self._pub.send_message(self.board, reading)
         if self._db:
             self._db.insert_current(self.board, reading)
 

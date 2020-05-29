@@ -4,14 +4,14 @@ def on_enter(event_data):
 
     observation = pocs.observatory.current_observation
 
-    pocs.say("Analyzing image {} / {}".format(observation.current_exp_num, observation.min_nexp))
+    pocs.say(f"Analyzing image {observation.current_exp_num} / {observation.min_nexp}")
 
     pocs.next_state = 'tracking'
     try:
 
         pocs.observatory.analyze_recent()
 
-        if pocs.force_reschedule:
+        if pocs.get_config('actions.FORCE_RESCHEDULE'):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
@@ -21,5 +21,5 @@ def on_enter(event_data):
             if observation.current_exp_num % observation.exp_set_size == 0:
                 pocs.next_state = 'scheduling'
     except Exception as e:
-        pocs.logger.error("Problem in analyzing: {}".format(e))
+        pocs.logger.error(f"Problem in analyzing: {e!r}")
         pocs.next_state = 'parking'

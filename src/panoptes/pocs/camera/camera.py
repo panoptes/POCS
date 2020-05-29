@@ -26,14 +26,13 @@ from panoptes.pocs.base import PanBase
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
-
     """Base class for all cameras.
 
     Attributes:
         filter_type (str): Type of filter attached to camera, default RGGB.
-        focuser (`pocs.focuser.*.Focuser`|None): Focuser for the camera, default None.
-        filter_wheel (`pocs.filterwheel.*.FilterWheel`|None): Filter wheel for the camera, default
-            None.
+        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera, default None.
+        filter_wheel (`panoptes.pocs.filterwheel.AbstractFilterWheel`|None): Filter wheel for the camera,
+            default None.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
@@ -56,7 +55,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         For these cameras serial_number should be passed to the constructor instead. For SBIG and
         FLI this should simply be the serial number engraved on the camera case, whereas for
         ZWO cameras this should be the 8 character ID string previously saved to the camera
-        firmware.  This can be done using ASICAP, or `pocs.camera.libasi.ASIDriver.set_ID()`.
+        firmware.  This can be done using ASICAP, or `panoptes.pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
     _subcomponent_classes = {'Focuser', 'FilterWheel'}
@@ -97,9 +96,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug('Camera created: {}'.format(self))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def uid(self):
@@ -233,10 +232,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         if self.is_cooled_camera and self.cooling_enabled:
             at_target = abs(self.temperature - self.target_temperature) \
-                < self.temperature_tolerance
+                        < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(f'Cooling={self.cooling_power:.02f} % Temp={self.temperature:.02f} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
+                self.logger.warning(
+                    f'Cooling={self.cooling_power:.02f} % Temp={self.temperature:.02f} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
                 return False
             else:
                 return True
@@ -269,9 +269,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return True
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     @abstractmethod
     def connect(self):
@@ -287,7 +287,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             `process_exposure` finishes.
 
         Args:
-            observation (~pocs.scheduler.observation.Observation): Object
+            observation (~panoptes.pocs.scheduler.observation.Observation): Object
                 describing the observation
             headers (dict, optional): Header data to be saved along with the file.
             filename (str, optional): pass a filename for the output FITS file to
@@ -387,7 +387,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
                                          function=self._poll_exposure,
-                                         args=(readout_args, ))
+                                         args=(readout_args,))
         readout_thread.start()
 
         if blocking:
@@ -630,7 +630,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             else:
                 header.set('IMAGETYP', 'Light Frame')
         header.set('FILTER', self.filter_type)
-        with suppress(NotImplementedError):            # SBIG & ZWO cameras report their gain.
+        with suppress(NotImplementedError):  # SBIG & ZWO cameras report their gain.
             header.set('EGAIN', get_quantity_value(self.egain, u.electron / u.adu),
                        'Electrons/ADU')
         with suppress(NotImplementedError):
@@ -670,7 +670,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 except Exception as e:
                     self.logger.error(f'Error moving filterwheel on {self} to'
                                       f' {observation.filter_name}: {e}')
-                    raise(e)
+                    raise (e)
 
             else:
                 self.logger.info(f'Filter {observation.filter_name} requested by'
@@ -764,11 +764,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 arguments required to create it.
             class_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version
                 will be used as the attribute name, and must also match the name of the
-                corresponding POCS submodule for this subcomponent, e.g. `pocs.focuser`.
+                corresponding POCS submodule for this subcomponent, e.g. `panoptes.pocs.focuser`.
         """
         class_name_lower = class_name.casefold()
         if subcomponent:
-            base_module_name = "pocs.{0}.{0}".format(class_name_lower)
+            base_module_name = "panoptes.pocs.{0}.{0}".format(class_name_lower)
             try:
                 base_module = load_module(base_module_name)
             except error.NotFound as err:
@@ -782,7 +782,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 setattr(self, class_name_lower, subcomponent)
                 getattr(self, class_name_lower).camera = self
             elif isinstance(subcomponent, dict):
-                module_name = 'pocs.{}.{}'.format(class_name_lower, subcomponent['model'])
+                module_name = 'panoptes.pocs.{}.{}'.format(class_name_lower, subcomponent['model'])
                 try:
                     module = load_module(module_name)
                 except error.NotFound as err:

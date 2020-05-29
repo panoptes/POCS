@@ -3,7 +3,7 @@ import os
 import pytest
 from astropy.time import Time
 
-import pocs.version
+from panoptes.pocs import __version__
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 
@@ -66,19 +66,22 @@ def test_bad_site(dynamic_config_server, config_port):
 def test_cannot_observe(dynamic_config_server, config_port, caplog):
     obs = Observatory(config_port=config_port)
     assert obs.can_observe is False
-    assert caplog.records[-1].levelname == "INFO" and caplog.records[
-        -1].message == "Scheduler not present, cannot observe."
+
     site_details = create_location_from_config(config_port=config_port)
-    obs.scheduler = create_scheduler_from_config(
-        observer=site_details['observer'], config_port=config_port)
-    assert obs.can_observe is False
-    assert caplog.records[-1].levelname == "INFO" and caplog.records[
-        -1].message == "Cameras not present, cannot observe."
     cameras = create_camera_simulator()
+
+    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
+        -1].message == "Scheduler not present, cannot observe"
+    obs.scheduler = create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
+
+    assert obs.can_observe is False
+    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
+        -1].message == "Cameras not present, cannot observe."
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
+
     assert obs.can_observe is False
-    assert caplog.records[-1].levelname == "INFO" and caplog.records[
+    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
         -1].message == "Mount not present, cannot observe."
 
 
@@ -149,7 +152,6 @@ def test_set_dome(dynamic_config_server, config_port):
 
 
 def test_set_mount(dynamic_config_server, config_port):
-
     obs = Observatory(config_port=config_port)
     assert obs.mount is None
 
@@ -175,18 +177,18 @@ def test_set_mount(dynamic_config_server, config_port):
 
 def test_status(observatory):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
-    status = observatory.status()
+    status = observatory.status
     assert 'mount' not in status
     assert 'observation' not in status
     assert 'observer' in status
 
     observatory.mount.initialize(unpark=True)
-    status2 = observatory.status()
+    status2 = observatory.status
     assert status != status2
     assert 'mount' in status2
 
     observatory.get_observation()
-    status3 = observatory.status()
+    status3 = observatory.status
     assert status3 != status
     assert status3 != status2
 
@@ -240,7 +242,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv{}'.format(pocs.version.__version__),
+        'creator': 'POCSv{}'.format(__version__),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,

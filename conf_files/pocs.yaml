@@ -39,10 +39,6 @@ db:
 
 state_machine: simple_state_table
 
-messaging:
-    cmd_port: 6500
-    msg_port: 6510
-
 scheduler:
     type: dispatch
     fields_file: simple.yaml

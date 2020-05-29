@@ -1,7 +1,6 @@
 import os
 import threading
 import time
-import shutil
 
 import pytest
 
@@ -14,7 +13,6 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.utils import CountdownTimer
 from panoptes.utils import current_time
 from panoptes.utils import error
-from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.mount import create_mount_simulator
@@ -62,17 +60,12 @@ def site_details(dynamic_config_server, config_port):
 
 @pytest.fixture(scope='function')
 def scheduler(dynamic_config_server, config_port, site_details):
-    return create_scheduler_from_config(config_port=config_port,
-                                        observer=site_details['observer'])
+    return create_scheduler_from_config(config_port=config_port, observer=site_details['observer'])
 
 
 @pytest.fixture(scope='function')
-def observatory(dynamic_config_server, config_port, message_forwarder,
-                cameras, mount, site_details, scheduler):
+def observatory(dynamic_config_server, config_port, cameras, mount, site_details, scheduler):
     """Return a valid Observatory instance with a specific config."""
-
-    set_config('messaging.cmd_port', message_forwarder['cmd_ports'][0], port=config_port)
-    set_config('messaging.msg_port', message_forwarder['msg_ports'][0], port=config_port)
 
     obs = Observatory(scheduler=scheduler, config_port=config_port)
     for cam_name, cam in cameras.items():
@@ -265,27 +258,9 @@ def test_is_weather_safe_no_simulator(dynamic_config_server, config_port, pocs):
     assert pocs.is_weather_safe() is False
 
 
-def wait_for_message(sub, type=None, attr=None, value=None):
-    """Wait for a message of the specified type and contents."""
-    assert (attr is None) == (value is None)
-    while True:
-        topic, msg_obj = sub.receive_message()
-        if not msg_obj:
-            continue
-        if type and topic != type:
-            continue
-        if not attr or attr not in msg_obj:
-            continue
-        if value and msg_obj[attr] != value:
-            continue
-        return topic, msg_obj
-
-
 def test_run_wait_until_safe(observatory,
                              valid_observation,
                              config_port,
-                             cmd_publisher,
-                             msg_subscriber
                              ):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
@@ -297,7 +272,7 @@ def test_run_wait_until_safe(observatory,
         # Remove weather simulator, else it would always be safe.
         set_config('simulator', hardware.get_all_names(without=['weather']), port=config_port)
 
-        pocs = POCS(observatory, messaging=True, safe_delay=5, config_port=config_port)
+        pocs = POCS(observatory, safe_delay=5, config_port=config_port)
 
         pocs.observatory.scheduler.clear_available_observations()
         pocs.observatory.scheduler.add_observation(valid_observation)
@@ -451,7 +426,6 @@ def test_run_power_down_interrupt(dynamic_config_server,
                                   config_port,
                                   observatory,
                                   valid_observation,
-                                  message_forwarder,
                                   cmd_publisher,
                                   msg_subscriber
                                   ):
@@ -508,7 +482,6 @@ def test_pocs_park_to_ready_with_observations(pocs):
 
 
 def test_pocs_park_to_ready_without_observations(pocs):
-
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
     assert pocs.is_safe() is True

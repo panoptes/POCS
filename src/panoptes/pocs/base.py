@@ -7,7 +7,6 @@ from panoptes.pocs.utils.logger import get_logger
 
 
 class PanBase(object):
-
     """ Base class for other classes within the PANOPTES ecosystem
 
     Defines common properties for each class (e.g. logger, db).
@@ -31,11 +30,8 @@ class PanBase(object):
         _db = kwargs.get('db', None)
         if _db is None:
             # If the user requests a db_type then update runtime config
-            db_type = kwargs.get('db_type', None)
-            db_name = kwargs.get('db_name', None)
-
-            db_type = self.get_config('db.type')
-            db_name = self.get_config('db.name')
+            db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
+            db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
 
             _db = PanDB(db_type=db_type, db_name=db_name)
 

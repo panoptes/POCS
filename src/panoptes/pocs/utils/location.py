@@ -58,13 +58,11 @@ def create_location_from_config(config_port=6563):
             'focus_horizon': focus_horizon,
             'observe_horizon': observe_horizon,
         }
-        logger.debug("Location: {}".format(location))
+        logger.debug(f"Location: {location}")
 
         # Create an EarthLocation for the mount
-        earth_location = EarthLocation(
-            lat=latitude, lon=longitude, height=elevation)
-        observer = Observer(
-            location=earth_location, name=name, timezone=timezone)
+        earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
+        observer = Observer(location=earth_location, name=name, timezone=timezone)
 
         site_details = {
             "location": location,
@@ -74,5 +72,5 @@ def create_location_from_config(config_port=6563):
 
         return site_details
 
-    except Exception:
-        raise error.PanError(msg='Bad site information')
+    except Exception as e:
+        raise error.PanError(msg='Bad site information: {e!r}')

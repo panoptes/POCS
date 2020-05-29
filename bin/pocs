@@ -22,8 +22,8 @@ usage() {
 
     e.g.
 
-    # Start config-server and messaging-hub services in the background.
-    $POCS/bin/pocs up --no-deps -d config-server messaging-hub
+    # Start config-server service in the background.
+    $POCS/bin/pocs up --no-deps -d config-server
 
     # Read the logs from the config-server
     $POCS/bin/pocs logs config-server

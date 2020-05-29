@@ -11,8 +11,8 @@ from astropy.utils import console
 from threading import Timer
 from pprint import pprint
 
-from peas.sensors import ArduinoSerialMonitor
-from peas.remote_sensors import RemoteMonitor
+from panoptes.peas.sensors import ArduinoSerialMonitor
+from panoptes.peas.remote_sensors import RemoteMonitor
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import current_time
@@ -35,7 +35,6 @@ class PanSensorShell(cmd.Cmd):
     _loop_delay = 60
     _timer = None
     captured_data = list()
-    messaging = None
 
     telemetry_relay_lookup = {
         'computer': {'pin': 8, 'board': 'telemetry_board'},
@@ -420,7 +419,7 @@ class PanSensorShell(cmd.Cmd):
         if sensor_name in self.active_sensors:
             sensor = getattr(self, sensor_name)
             try:
-                sensor.capture(store_result=True, send_message=True)
+                sensor.capture(store_result=True)
             except Exception as e:
                 print_warning(f'Problem storing captured data: {e!r}')
 

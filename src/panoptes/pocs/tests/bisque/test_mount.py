@@ -10,8 +10,7 @@ from panoptes.utils import altaz_to_radec
 from panoptes.utils import current_time
 from panoptes.utils.theskyx import TheSkyX
 
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture
@@ -85,7 +84,7 @@ def test_unpark_park(mount):
 
 def test_status(mount, target):
     mount.initialize(unpark=True)
-    status1 = mount.status()
+    status1 = mount.status
     assert 'mount_target_ra' not in status1
 
     mount.set_target_coordinates(target)
@@ -93,7 +92,7 @@ def test_status(mount, target):
 
     assert mount.get_target_coordinates() == target
 
-    status2 = mount.status()
+    status2 = mount.status
     assert 'mount_target_ra' in status2
 
 
@@ -107,8 +106,8 @@ def test_update_location(mount, config):
         lon=loc['longitude'],
         lat=loc['latitude'],
         height=loc['elevation'] -
-        1000 *
-        u.meter)
+               1000 *
+               u.meter)
     mount.location = location2
 
     assert location1 != location2

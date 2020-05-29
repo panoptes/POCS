@@ -10,9 +10,7 @@ from panoptes.utils import altaz_to_radec
 from panoptes.utils import current_time
 from panoptes.utils.theskyx import TheSkyX
 
-
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture
@@ -41,8 +39,7 @@ def pocs(target, dynamic_config_server, config_port):
 
     config = get_config(port=config_port)
 
-    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True,
-                config=config, db='panoptes_testing', messaging=True)
+    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config, db='panoptes_testing')
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Testing Target',

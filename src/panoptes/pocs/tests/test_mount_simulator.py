@@ -70,7 +70,7 @@ def test_set_park_coords(mount):
 
 
 def test_status(mount):
-    status1 = mount.status()
+    status1 = mount.status
     assert 'mount_target_ra' not in status1
 
     c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
@@ -79,7 +79,7 @@ def test_status(mount):
 
     assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
 
-    status2 = mount.status()
+    status2 = mount.status
     assert 'mount_target_ra' in status2
 
 

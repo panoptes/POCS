@@ -1,7 +1,7 @@
 import pytest
 
 from panoptes.utils import error
-from peas.sensors import ArduinoSerialMonitor
+from panoptes.peas.sensors import ArduinoSerialMonitor
 
 
 @pytest.mark.with_sensors

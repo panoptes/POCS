@@ -450,7 +450,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     time.sleep(original_timeout)
     # Put the timeout back to the original setting.
     camera._timeout = original_timeout
-    # Should be an ERROR message in the log from the exposure tiemout
+    # Should be an ERROR message in the log from the exposure timeout
     assert caplog.records[-1].levelname == "ERROR"
     # Should be no data file, camera should not be exposing, and exposure event should be set
     assert not os.path.exists(fits_path)

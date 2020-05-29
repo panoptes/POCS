@@ -4,8 +4,7 @@ import pytest
 from panoptes.pocs.dome.bisque import Dome
 from panoptes.utils.theskyx import TheSkyX
 
-pytestmark = pytest.mark.skipif(
-    TheSkyX().is_connected is False, reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture(scope="function")

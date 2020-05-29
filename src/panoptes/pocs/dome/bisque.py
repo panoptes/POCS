@@ -4,17 +4,17 @@ import time
 
 from string import Template
 
-import pocs.dome
-import panoptes.utils.theskyx
+from panoptes.pocs import dome
+from panoptes.utils import theskyx
 
 
-class Dome(pocs.dome.AbstractDome):
+class Dome(dome.AbstractDome):
     """docstring for Dome"""
 
     def __init__(self, *args, **kwargs):
         """"""
         super().__init__(*args, **kwargs)
-        self.theskyx = panoptes.utils.theskyx.TheSkyX()
+        self.theskyx = theskyx.TheSkyX()
 
         template_dir = kwargs.get('template_dir',
                                   self.config['dome']['template_dir'])
@@ -26,6 +26,7 @@ class Dome(pocs.dome.AbstractDome):
 
         self.template_dir = template_dir
         self._is_parked = True
+        self._is_connected = False
 
     @property
     def is_connected(self):
@@ -143,9 +144,9 @@ class Dome(pocs.dome.AbstractDome):
 
         return self.is_parked
 
-##################################################################################################
-# Communication Methods
-##################################################################################################
+    ##################################################################################################
+    # Communication Methods
+    ##################################################################################################
 
     def write(self, value):
         return self.theskyx.write(value)
@@ -171,9 +172,9 @@ class Dome(pocs.dome.AbstractDome):
 
         return response_obj
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _get_command(self, filename, params=None):
         """ Looks up appropriate command for telescope """

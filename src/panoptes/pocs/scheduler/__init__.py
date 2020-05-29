@@ -45,7 +45,7 @@ def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwarg
 
         try:
             # Load the required module
-            module = load_module(f'pocs.scheduler.{scheduler_type}')
+            module = load_module(f'panoptes.pocs.scheduler.{scheduler_type}')
 
             obstruction_list = get_config('location.obstructions', default=[], port=config_port)
             default_horizon = get_config(

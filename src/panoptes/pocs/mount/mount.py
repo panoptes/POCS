@@ -12,14 +12,13 @@ from panoptes.utils import CountdownTimer
 
 
 class AbstractMount(PanBase):
-
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
         issues as well as any helper methods specific mounts might need. See
         "NotImplemented Methods" section of this module.
 
-        Sets the following properies:
+        Sets the following properties:
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
@@ -32,7 +31,7 @@ class AbstractMount(PanBase):
             commands (dict):            Commands for the telescope. These are read from a yaml file
                                         that maps the mount-specific commands to common commands.
 
-            location (EarthLocation):   An astropy.coordinates.EarthLocation that
+            location (EarthLocation):   An `astropy.coordinates.EarthLocation` that
                 contains location information.
 
     """
@@ -124,10 +123,9 @@ class AbstractMount(PanBase):
     def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
-
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def location(self):
@@ -201,9 +199,9 @@ class AbstractMount(PanBase):
         """ Set the tracking rate """
         self._tracking_rate = value
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
@@ -452,10 +450,9 @@ class AbstractMount(PanBase):
                 self.logger.debug("Waiting for {} tracking adjustment".format(axis))
                 time.sleep(0.5)
 
-
-##################################################################################################
-# Movement methods
-##################################################################################################
+    ##################################################################################################
+    # Movement methods
+    ##################################################################################################
 
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
         """ Slews to given coordinates.
@@ -744,9 +741,9 @@ class AbstractMount(PanBase):
     def read(self, *args):
         raise NotImplementedError
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """

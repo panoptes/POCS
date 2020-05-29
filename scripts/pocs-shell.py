@@ -2,7 +2,6 @@
 import os
 import readline
 import time
-import zmq
 
 from cmd import Cmd
 from pprint import pprint
@@ -24,17 +23,11 @@ from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images import polar_alignment as polar_alignment_utils
 from panoptes.utils.database import PanDB
-from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.config import client
-from panoptes.utils.data import Downloader
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
-
-
-# Download IERS data and astrometry index files
-Downloader().download_all_files()
 
 
 class PocsShell(Cmd):
@@ -89,58 +82,6 @@ class PocsShell(Cmd):
         i = DriftShell()
         i.cmdloop()
 
-    def do_start_messaging(self, *arg):
-        """Starts the messaging system for the POCS ecosystem.
-
-        This starts both a command forwarder and a message forwarder as separate
-        processes.
-
-        The command forwarder has the pocs_shell and PAWS as PUBlishers and POCS
-        itself as a SUBscriber to those commands
-
-        The message forwarder has POCS as a PUBlisher and the pocs_shell and PAWS
-        as SUBscribers to those messages
-
-        Arguments:
-            *arg {str} -- Unused
-        """
-        print_info("Starting messaging")
-
-        # Send commands to POCS via this publisher
-        try:
-            self.cmd_publisher = PanMessaging.create_publisher(
-                self.cmd_pub_port)
-            print_info("Command publisher started on port {}".format(
-                self.cmd_pub_port))
-        except Exception as e:
-            print_warning("Can't start command publisher: {}".format(e))
-
-        try:
-            self.cmd_subscriber = PanMessaging.create_subscriber(
-                self.cmd_sub_port)
-            print_info("Command subscriber started on port {}".format(
-                self.cmd_sub_port))
-        except Exception as e:
-            print_warning("Can't start command subscriber: {}".format(e))
-
-        # Receive messages from panoptes.pocs via this subscriber
-        try:
-            self.msg_subscriber = PanMessaging.create_subscriber(
-                self.msg_sub_port)
-            print_info("Message subscriber started on port {}".format(
-                self.msg_sub_port))
-        except Exception as e:
-            print_warning("Can't start message subscriber: {}".format(e))
-
-        # Send messages to PAWS
-        try:
-            self.msg_publisher = PanMessaging.create_publisher(
-                self.msg_pub_port)
-            print_info("Message publisher started on port {}".format(
-                self.msg_pub_port))
-        except Exception as e:
-            print_warning("Can't start message publisher: {}".format(e))
-
     def do_setup_pocs(self, *arg):
         """Setup and initialize a POCS instance."""
         args, kwargs = string_to_params(*arg)
@@ -166,7 +107,7 @@ class PocsShell(Cmd):
             scheduler = create_scheduler_from_config()
 
             observatory = Observatory(mount=mount, cameras=cameras, scheduler=scheduler)
-            self.pocs = POCS(observatory, messaging=True)
+            self.pocs = POCS(observatory)
             self.pocs.initialize()
         except error.PanError as e:
             print_warning('Problem setting up POCS: {}'.format(e))
@@ -217,9 +158,6 @@ Hardware names: {}   (or all for all hardware)'''.format(
         Continues until the user presses Ctrl-C or the state machine
         exits, such as due to an error."""
         if self.pocs is not None:
-            if self.msg_subscriber is None:
-                self.do_start_messaging()
-
             print_info("Starting POCS - Press Ctrl-c to interrupt")
 
             try:
@@ -241,34 +179,10 @@ Hardware names: {}   (or all for all hardware)'''.format(
         if self.pocs is None:
             print_warning('Please run `setup_pocs` before trying to run')
             return
-        if self.msg_subscriber is None:
-            self.do_start_messaging()
-        status = self.pocs.status()
+        status = self.pocs.status
         print()
         pprint(status)
         print()
-
-    def do_pocs_command(self, cmd):
-        """Send a command to POCS instance.
-
-        Arguments:
-            cmd {str} -- Command to be sent
-        """
-        try:
-            self.cmd_publisher.send_message('POCS-CMD', cmd)
-        except AttributeError:
-            print_info('Messaging not started')
-
-    def do_pocs_message(self, cmd):
-        """Send a message to PAWS and other listeners.
-
-        Arguments:
-            cmd {str} -- Command to be sent
-        """
-        try:
-            self.msg_publisher.send_message('POCS-SHELL', cmd)
-        except AttributeError:
-            print_info('Messaging not started')
 
     def do_exit(self, *arg):
         """Exits PocsShell."""
@@ -449,58 +363,10 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
             with open('/var/panoptes/images/drift_align/center.txt'.format(base_dir), 'a') as f:
                 f.write('{}.{},{},{},{},{},{}\n'.format(start_time, pole_center[0], pole_center[
-                        1], rotate_center[0], rotate_center[1], d_x, d_y))
+                    1], rotate_center[0], rotate_center[1], d_x, d_y))
 
         print_info("Done with polar alignment test")
         self.pocs.say("Done with polar alignment test")
-
-    def do_web_listen(self, *arg):
-        """Goes into a loop listening for commands from PAWS."""
-
-        if not hasattr(self, 'cmd_subscriber'):
-            self.do_start_messaging()
-
-        self.pocs.say("Now listening for commands from PAWS")
-
-        poller = zmq.Poller()
-        poller.register(self.cmd_subscriber.socket, zmq.POLLIN)
-
-        command_lookup = {
-            'polar_alignment': self.do_polar_alignment_test,
-            'park': self.do_park,
-            'unpark': self.do_unpark,
-            'home': self.do_go_home,
-        }
-
-        try:
-            while True:
-                # Poll for messages
-                sockets = dict(poller.poll(500))  # 500 ms timeout
-
-                if self.cmd_subscriber.socket in sockets and \
-                        sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
-
-                    topic, msg_obj = self.cmd_subscriber.receive_message(
-                        flags=zmq.NOBLOCK)
-                    print_info("{} {}".format(topic, msg_obj))
-
-                    # Put the message in a queue to be processed
-                    if topic == 'PAWS-CMD':
-                        try:
-                            print_info("Command received: {}".format(
-                                msg_obj['message']))
-                            cmd = command_lookup[msg_obj['message']]
-                            cmd()
-                        except KeyError:
-                            pass
-                        except Exception as e:
-                            print_warning(
-                                "Can't perform command: {}".format(e))
-
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self.pocs.say("No longer listening to PAWS")
-            pass
 
 
 ##########################################################################
@@ -580,265 +446,6 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
             pocs.say(f"Can't make image for {rotate_fn}")
 
     return rotate_fn
-
-
-class DriftShell(Cmd):
-    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment.'
-    prompt = 'POCS:DriftAlign > '
-
-    pocs = None
-    base_dir = '{}/images/drift_align'.format(os.getenv('PANDIR'))
-
-    num_pics = 40
-    exptime = 30
-
-    # Coordinates for different tests
-    coords = {
-        'alt_east': (30, 102),
-        'alt_west': (20, 262.5),
-        'az_east': (70.47, 170),
-        'az_west': (70.47, 180),
-    }
-
-    @property
-    def ready(self):
-        if self.pocs is None:
-            print_warning('POCS has not been setup. Please run `setup_pocs`')
-            return False
-
-        if self.pocs.observatory.mount.is_parked:
-            print_warning('Mount is parked. To unpark run `unpark`')
-            return False
-
-        return self.pocs.is_safe()
-
-    def do_setup_pocs(self, *arg):
-        """Setup and initialize a POCS instance."""
-        args, kwargs = string_to_params(*arg)
-        simulator = kwargs.get('simulator', [])
-        print_info("Simulator: {}".format(simulator))
-
-        try:
-            self.pocs = POCS(simulator=simulator)
-            self.pocs.initialize()
-        except error.PanError:
-            pass
-
-    def do_drift_test(self, *arg):
-        if self.ready is False:
-            return
-
-        args, kwargs = string_to_params(*arg)
-
-        try:
-            direction = kwargs['direction']
-            num_pics = int(kwargs['num_pics'])
-            exptime = float(kwargs['exptime'])
-        except Exception:
-            print_warning(
-                'Drift test requires three arguments: direction, num_pics, exptime')
-            return
-
-        start_time = kwargs.get('start_time', current_time(flatten=True))
-
-        print_info('{} drift test with {}x {}sec exposures'.format(
-            direction.capitalize(), num_pics, exptime))
-
-        if direction:
-            try:
-                alt, az = self.coords.get(direction)
-            except KeyError:
-                print_error('Invalid direction given')
-            else:
-                location = self.pocs.observatory.observer.location
-                obs = get_observation(
-                    alt=alt,
-                    az=az,
-                    loc=location,
-                    num_exp=num_pics,
-                    exptime=exptime,
-                    name=direction
-                )
-
-                self.perform_test(obs, start_time=start_time)
-                print_info('Test complete, slewing to home')
-                self.do_go_home()
-        else:
-            print_warning('Must pass direction to test: alt_east, alt_west, az_east, az_west')
-
-    def do_full_drift_test(self, *arg):
-        if not self.ready:
-            return
-
-        args, kwargs = string_to_params(*arg)
-
-        num_pics = int(kwargs.get('num_pics', self.num_pics))
-        exptime = float(kwargs.get('exptime', self.exptime))
-
-        print_info('Full drift test. Press Ctrl-c to interrupt')
-
-        start_time = current_time(flatten=True)
-
-        for direction in ['alt_east', 'az_east', 'alt_west', 'az_west']:
-            if not self.ready:
-                break
-
-            print_info('Performing drift test: {}'.format(direction))
-            try:
-                self.do_drift_test('direction={} num_pics={} exptime={} start_time={}'.format(
-                    direction, num_pics, exptime, start_time))
-            except KeyboardInterrupt:
-                print_warning('Drift test interrupted')
-                break
-
-        print_info('Slewing to home')
-        self.do_go_home()
-
-    def do_unpark(self, *arg):
-        try:
-            self.pocs.observatory.mount.unpark()
-        except Exception as e:
-            print_warning('Problem unparking: {}'.format(e))
-
-    def do_go_home(self, *arg):
-        """Move the mount to home."""
-        if self.ready is False:
-            if self.pocs.is_weather_safe() is False:
-                self.do_power_down()
-
-            return
-
-        try:
-            self.pocs.observatory.mount.slew_to_home(blocking=True)
-        except Exception as e:
-            print_warning('Problem slewing to home: {}'.format(e))
-
-    def do_power_down(self, *arg):
-        print_info("Shutting down POCS instance, please wait")
-        self.pocs.power_down()
-
-        while self.pocs.observatory.mount.is_parked is False:
-            print_info('.')
-            time.sleep(5)
-
-        self.pocs = None
-
-    def do_exit(self, *arg):
-        if self.pocs is not None:
-            self.do_power_down()
-
-        print_info('Leaving drift alignment')
-        return True
-
-    def emptyline(self):
-        if self.ready:
-            print_info(self.pocs.status())
-
-    def perform_test(self, observation, start_time=None):
-        if start_time is None:
-            start_time = current_time(flatten=True)
-
-        mount = self.pocs.observatory.mount
-
-        mount.set_target_coordinates(observation.field.coord)
-        # print_info("Slewing to {}".format(coord))
-        mount.slew_to_target()
-
-        while mount.is_slewing:
-            time.sleep(3)
-
-        print_info('At destination, taking pics')
-
-        for i in range(observation.min_nexp):
-
-            if not self.ready:
-                break
-
-            headers = self.pocs.observatory.get_standard_headers(
-                observation=observation)
-
-            # All camera images share a similar start time
-            headers['start_time'] = start_time
-
-            print_info('\t{} of {}'.format(i, observation.min_nexp))
-
-            events = []
-            files = []
-            for name, cam in self.pocs.observatory.cameras.items():
-                fn = '{}/{}_{}_{}_{:02d}.cr2'.format(
-                    self.base_dir, start_time, observation.field.field_name, name, i)
-                cam_event = cam.take_observation(
-                    observation, headers=headers, filename=fn)
-                events.append(cam_event)
-                files.append(fn.replace('.cr2', '.fits'))
-
-            for e in events:
-                while not e.is_set():
-                    time.sleep(5)
-
-            # while files:
-            #     file = files.pop(0)
-            #     process_img(file, start_time)
-
-
-def process_img(fn, start_time, remove_after=True):
-    # Unpack if already packed
-    if fn.endswith('.fz'):
-        fn = fits_utils.fpack(fn, unpack=True)
-
-    if os.path.exists('{}.fz'.format(fn)):
-        fn = fits_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
-
-    # Solve the field
-    try:
-        fits_utils.get_solve_field(fn)
-
-        # Get header info
-        header = fits_utils.getheader(fn)
-
-        try:
-            del header['COMMENT']
-            del header['HISTORY']
-        except Exception:
-            pass
-
-        db = PanDB()
-
-        # Add to DB
-        db.drift_align.insert_one({
-            'data': header,
-            'type': 'drift_align',
-            'date': current_time(datetime=True),
-            'start_time': start_time,
-        })
-
-        # Remove file
-        if remove_after:
-            try:
-                os.remove(fn)
-            except Exception as e:
-                print_warning('Problem removing file: {}'.format(e))
-    except Exception as e:
-        print_warning('Problem with adding to database: {}'.format(e))
-
-
-def get_observation(alt=None, az=None, loc=None, num_exp=25, exptime=30 * u.second, name=None):
-    assert alt is not None
-    assert az is not None
-    assert loc is not None
-
-    coord = AltAz(az=az * u.deg, alt=alt * u.deg,
-                  obstime=current_time(), location=loc).transform_to(ICRS)
-
-    field = Field(name, coord)
-
-    if not isinstance(exptime, u.Quantity):
-        exptime *= u.second
-
-    obs = Observation(field, exptime=exptime,
-                      min_nexp=num_exp, exp_set_size=1)
-
-    return obs
 
 
 def print_info(msg):

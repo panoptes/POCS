@@ -1,5 +1,3 @@
 -r ../requirements.txt
-m2r
-recommonmark
 sphinx_rtd_theme
 

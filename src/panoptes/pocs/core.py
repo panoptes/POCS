@@ -1,9 +1,8 @@
 import os
 import sys
-import queue
 import time
 import warnings
-import multiprocessing
+from threading import Thread
 from contextlib import suppress
 
 from astropy import units as u
@@ -35,7 +34,6 @@ class POCS(PanStateMachine, PanBase):
             class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
             'simple_state_table'.
-        messaging(bool): If messaging should be included, defaults to False.
         simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
@@ -49,7 +47,6 @@ class POCS(PanStateMachine, PanBase):
             self,
             observatory,
             state_machine_file=None,
-            messaging=False,
             *args, **kwargs):
 
         # Explicitly call the base classes in the order we want
@@ -58,18 +55,8 @@ class POCS(PanStateMachine, PanBase):
         assert isinstance(observatory, Observatory)
 
         self.name = self.get_config('name', default='Generic PANOPTES Unit')
-        self.logger.info('Initializing PANOPTES unit - {} - {}',
-                         self.name,
-                         self.get_config('location.name')
-                         )
-
-        self._processes = {}
-
-        self._has_messaging = None
-        self.has_messaging = messaging
-
-        self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
-        self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
+        location = self.get_config('location.name', default='Unknown location')
+        self.logger.info(f'Initializing PANOPTES unit - {self.name} - {location}')
 
         if state_machine_file is None:
             state_machine_file = self.get_config('state_machine', default='simple_state_table')
@@ -82,44 +69,39 @@ class POCS(PanStateMachine, PanBase):
 
         self._connected = True
         self._initialized = False
-        self._interrupted = False
-        self.force_reschedule = False
+        self._free_space = None
 
-        self._retry_attempts = kwargs.get('retry_attempts', 3)
-        self._obs_run_retries = self._retry_attempts
+        self._obs_run_retries = self.get_config('retry_attempts', default=3)
 
-        self.status()
+        # We want to call and record the status every 30 seconds.
+        def get_status():
+            while True:
+                self.db.insert_current('status', self.status)
+                CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
+
+        self._status_thread = Thread(target=get_status)
+        self._status_thread.start()
 
         self.say("Hi there!")
 
     @property
     def is_initialized(self):
-        """ Indicates if POCS has been initalized or not """
+        """ Indicates if POCS has been initialized or not """
         return self._initialized
 
     @property
     def interrupted(self):
-        """If POCS has been interrupted
+        """If POCS has been interrupted.
 
         Returns:
             bool: If an interrupt signal has been received
         """
-        return self._interrupted
+        return self.get_config('actions.INTERRUPT_POCS', default=False)
 
     @property
     def connected(self):
         """ Indicates if POCS is connected """
         return self._connected
-
-    @property
-    def has_messaging(self):
-        return self._has_messaging
-
-    @has_messaging.setter
-    def has_messaging(self, value):
-        self._has_messaging = value
-        if self._has_messaging:
-            self._setup_messaging()
 
     @property
     def should_retry(self):
@@ -147,28 +129,26 @@ class POCS(PanStateMachine, PanBase):
                 self.observatory.initialize()
 
             except Exception as e:
-                self.say("Oh wait. There was a problem initializing: {}".format(e))
+                self.say(f"Oh wait. There was a problem initializing: {e!r}")
                 self.say("Since we didn't initialize, I'm going to exit.")
                 self.power_down()
             else:
                 self._initialized = True
 
-        self.status()
         return self._initialized
 
+    @property
     def status(self):
         status = dict()
 
         try:
             status['state'] = self.state
             status['system'] = {
-                'free_space': get_free_space().value,
+                'free_space': str(self._free_space),
             }
             status['observatory'] = self.observatory.status()
         except Exception as e:  # pragma: no cover
-            self.logger.warning("Can't get status: {}".format(e))
-        else:
-            self.send_message(status, topic='STATUS')
+            self.logger.warning(f"Can't get status: {e!r}")
 
         return status
 
@@ -180,39 +160,7 @@ class POCS(PanStateMachine, PanBase):
         Args:
             msg(str): Message to be sent to topic PANCHAT.
         """
-        if self.has_messaging is False:
-            self.logger.success('Unit says: {}', msg)
-        self.send_message(msg, topic='PANCHAT')
-
-    def send_message(self, msg, topic='POCS'):
-        """ Send a message
-
-        This will use the `self._msg_publisher` to send a message
-
-        Note:
-            The `topic` and `msg` params are switched for convenience
-
-        Arguments:
-            msg {str} -- Message to be sent
-
-        Keyword Arguments:
-            topic {str} -- Topic to send message on (default: {'POCS'})
-        """
-        if self.has_messaging:
-            self._msg_publisher.send_message(topic, msg)
-
-    def check_messages(self):
-        """ Check messages for the system
-
-        If `self.has_messaging` is True then there is a separate process running
-        responsible for checking incoming zeromq messages. That process will fill
-        various `queue.Queue`s with messages depending on their type. This method
-        is a thin-wrapper around private methods that are responsible for message
-        dispatching based on which queue received a message.
-        """
-        if self.has_messaging:
-            self._check_messages('command', self._cmd_queue)
-            self._check_messages('schedule', self._sched_queue)
+        self.logger.success(f'Unit says: {msg}')
 
     def power_down(self):
         """Actions to be performed upon shutdown
@@ -251,14 +199,6 @@ class POCS(PanStateMachine, PanBase):
             # Observatory shut down
             self.observatory.power_down()
 
-            # Shut down messaging
-            self.logger.debug('Shutting down messaging system')
-
-            for name, proc in self._processes.items():
-                if proc.is_alive():
-                    self.logger.debug('Terminating {} - PID {}'.format(name, proc.pid))
-                    proc.terminate()
-
             self._keep_running = False
             self._do_states = False
             self._connected = False
@@ -267,13 +207,13 @@ class POCS(PanStateMachine, PanBase):
     def reset_observing_run(self):
         """Reset an observing run loop. """
         self.logger.debug("Resetting observing run attempts")
-        self._obs_run_retries = self._retry_attempts
+        self._obs_run_retries = self.get_config('retry_attempts', default=3)
 
     ##################################################################################################
     # Safety Methods
     ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe', **kwargs):
+    def is_safe(self, no_warning=False, horizon='observe'):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -319,7 +259,7 @@ class POCS(PanStateMachine, PanBase):
 
         if not safe:
             if no_warning is False:
-                self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
+                self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
                 self.logger.warning('Safety failed so sending to park')
@@ -351,7 +291,7 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.debug(f'Using night simulator')
                 is_dark = True
 
-        self.logger.debug("Dark Check: {}".format(is_dark))
+        self.logger.debug(f"Dark Check: {is_dark}")
         return is_dark
 
     def is_weather_safe(self, stale=180):
@@ -403,7 +343,7 @@ class POCS(PanStateMachine, PanBase):
         return is_safe
 
     def has_free_space(self, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
-        """Does hard drive have disk space (>= 0.5 GB)
+        """Does hard drive have disk space (>= 0.5 GB).
 
         Args:
             required_space (u.gigabyte, optional): Amount of free space required
@@ -416,17 +356,17 @@ class POCS(PanStateMachine, PanBase):
             bool: True if enough space
         """
         req_space = required_space.to(u.gigabyte)
-        free_space = get_free_space()
+        self._free_space = get_free_space()
 
-        space_is_low = free_space.value <= (req_space.value * low_space_percent)
+        space_is_low = self._free_space.value <= (req_space.value * low_space_percent)
 
         # Explicitly cast to bool (instead of numpy.bool)
-        has_space = bool(free_space.value >= req_space.value)
+        has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')
+            self.logger.error(f'No disk space: Free {self._free_space:.02f}\tReq: {req_space:.02f}')
         elif space_is_low:
-            self.logger.warning(f'Low disk space: Free {free_space:.02f}\tReq: {req_space:.02f}')
+            self.logger.warning(f'Low disk space: Free {self._free_space:.02f}\tReq: {req_space:.02f}')
 
         return has_space
 
@@ -474,9 +414,9 @@ class POCS(PanStateMachine, PanBase):
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
-            self.logger.warning("No record found in DB: {}", e)
+            self.logger.warning(f"No record found in DB: {e!r}")
         except Exception as e:  # pragma: no cover
-            self.logger.error("Error checking weather: {}", e)
+            self.logger.error(f"Error checking weather: {e!r}")
         else:
             if age > stale:
                 self.logger.warning("Power record looks stale, marking unsafe.")
@@ -491,43 +431,31 @@ class POCS(PanStateMachine, PanBase):
     # Convenience Methods
     ##################################################################################################
 
-    def sleep(self, delay=2.5, with_status=True, **kwargs):
-        """ Send POCS to sleep
+    def sleep(self, delay=2.5):
+        """ Send POCS to sleep.
 
-        Loops for `delay` number of seconds. If `delay` is more than 10.0 seconds,
-        `check_messages` will be called every 10.0 seconds in order to allow for
-        interrupt.
+        Loops for `delay` number of seconds. If `delay` is more than 30.0 seconds,
+        then check for status signals (which are updated every 60 seconds by default).
 
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
-            with_status {bool} -- Show system status while sleeping
-                (default: {True if delay > 2.0})
         """
         if delay is None:
-            delay = self._sleep_delay
+            delay = self.get_config('sleep_delay', default=2.5)
 
-        if with_status and delay > 2.0:
-            self.status()
+        timer = CountdownTimer(delay)
 
-        # If delay is greater than 10 seconds check for messages during wait
-        if delay >= 10.0:
-            while delay >= 10.0:
-                self.check_messages()
-                # If we shutdown leave loop
-                if self.connected is False:
-                    return
+        while not timer.expired():
+            # If we shutdown leave loop
+            if self.interrupted or self.connected is False:
+                break
 
-                time.sleep(10.0)
-                delay -= 10.0
-
-        if delay > 0.0:
-            time.sleep(delay)
+            timer.sleep(max_sleep=30)
 
     def wait_for_events(self,
                         events,
                         timeout,
                         sleep_delay=1 * u.second,
-                        status_interval=10 * u.second,
                         msg_interval=30 * u.second,
                         event_type='generic'):
         """Wait for event(s) to be set.
@@ -537,68 +465,41 @@ class POCS(PanStateMachine, PanBase):
 
         Will check at least every `sleep_delay` seconds for the events to be done,
         and also for interrupts and bad weather. Will log debug messages approximately
-        every `status_interval` seconds, and will output status messages approximately
         every `msg_interval` seconds.
 
         Args:
             events (list(`threading.Event`)): An Event or list of Events to wait on.
             timeout (float|`astropy.units.Quantity`): Timeout in seconds to wait for events.
             sleep_delay (float, optional): Time in seconds between event checks.
-            status_interval (float, optional): Time in seconds between status checks of the system.
-            msg_interval (float, optional): Time in seconds between sending of status messages.
+            msg_interval (float, optional): Time in seconds between sending of log messages.
             event_type (str, optional): The type of event, used for outputting in log messages,
                 default 'generic'.
 
         Raises:
             error.Timeout: Raised if events have not all been set before `timeout` seconds.
         """
-        events = listify(events)
-
-        # Remove units from these values.
-        if isinstance(timeout, u.Quantity):
-            timeout = timeout.to(u.second).value
-
         if isinstance(sleep_delay, u.Quantity):
             sleep_delay = sleep_delay.to(u.second).value
 
-        # ADD units to these values. Ugly.
-        if not isinstance(status_interval, u.Quantity):
-            status_interval = status_interval * u.second
-
-        if not isinstance(msg_interval, u.Quantity):
-            msg_interval = msg_interval * u.second
-
         timer = CountdownTimer(timeout)
+        msg_timer = CountdownTimer(msg_interval)
 
         start_time = current_time()
-        next_status_time = start_time + status_interval
-        next_msg_time = start_time + msg_interval
-
-        while not all([event.is_set() for event in events]):
-            self.check_messages()
+        while not all([event.is_set() for event in listify(events)]):
             if self.interrupted:
                 self.logger.info("Waiting for events has been interrupted")
                 break
 
-            now = current_time()
-            if now >= next_msg_time:
-                elapsed_secs = (now - start_time).to(u.second).value
-                self.logger.debug('Waiting for {} events: {} seconds elapsed',
-                                  event_type,
-                                  round(elapsed_secs))
-                next_msg_time += msg_interval
-                now = current_time()
-
-            if now >= next_status_time:
-                self.status()
-                next_status_time += status_interval
-                now = current_time()
+            if msg_timer.expired():
+                elapsed_secs = (current_time() - start_time).to(u.second).value
+                self.logger.debug(f'Waiting for {event_type} events: {round(elapsed_secs)} seconds elapsed')
+                msg_timer.restart()
 
             if timer.expired():
-                raise error.Timeout("Timedout waiting for {} event".format(event_type))
+                raise error.Timeout(f"Timeout waiting for {event_type} event")
 
             # Sleep for a little bit.
-            time.sleep(sleep_delay)
+            timer.sleep(max_sleep=sleep_delay)
 
     def wait_until_safe(self, **kwargs):
         """ Waits until weather is safe.
@@ -607,7 +508,7 @@ class POCS(PanStateMachine, PanBase):
         blocking until then.
         """
         while not self.is_safe(no_warning=True, **kwargs):
-            self.sleep(delay=self._safe_delay, **kwargs)
+            self.sleep(delay=self.get_config('safe_delay', default=60 * 5))
 
     ##################################################################################################
     # Class Methods
@@ -629,116 +530,15 @@ class POCS(PanStateMachine, PanBase):
 
         pandir = os.getenv('PANDIR')
         if not os.path.exists(pandir):
-            sys.exit("$PANDIR dir does not exist or is empty: {}".format(pandir))
+            sys.exit(f"$PANDIR dir does not exist or is empty: {pandir}")
 
         pocs = os.getenv('POCS')
         if pocs is None:  # pragma: no cover
             sys.exit('Please make sure $POCS environment variable is set')
 
         if not os.path.exists(pocs):
-            sys.exit("$POCS directory does not exist or is empty: {}".format(pocs))
+            sys.exit(f"$POCS directory does not exist or is empty: {pocs}")
 
-        if not os.path.exists("{}/logs".format(pandir)):
-            print("Creating log dir at {}/logs".format(pandir))
-            os.makedirs("{}/logs".format(pandir))
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
-
-    def _check_messages(self, queue_type, q):
-        cmd_dispatch = {
-            'command': {
-                'park': self._interrupt_and_park,
-                'shutdown': self._interrupt_and_shutdown,
-            },
-            'schedule': {}
-        }
-
-        while True:
-            try:
-                msg_obj = q.get_nowait()
-                call_method = msg_obj.get('message', '')
-                # Lookup and call the method
-                self.logger.critical(f'Message received: {queue_type} {call_method}')
-                cmd_dispatch[queue_type][call_method]()
-            except queue.Empty:
-                break
-            except KeyError:
-                pass
-            except Exception as e:
-                self.logger.warning('Problem calling method from messaging: {}'.format(e))
-            else:
-                break
-
-    def _interrupt_and_park(self):
-        self.logger.critical('Park interrupt received')
-        self._interrupted = True
-        self.park()
-
-    def _interrupt_and_shutdown(self):
-        self.logger.critical('Shutdown command received')
-        self._interrupted = True
-        self.power_down()
-
-    def _setup_messaging(self):
-
-        cmd_port = self.get_config('messaging.cmd_port')
-        msg_port = self.get_config('messaging.msg_port')
-
-        def create_forwarder(port):
-            try:
-                PanMessaging.create_forwarder(port, port + 1)
-            except Exception:
-                pass
-
-        cmd_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
-        cmd_forwarder_process.start()
-
-        msg_forwarder_process = multiprocessing.Process(
-            target=create_forwarder, args=(msg_port,), name='MsgForwarder')
-        msg_forwarder_process.start()
-
-        self._do_cmd_check = True
-        self._cmd_queue = multiprocessing.Queue()
-        self._sched_queue = multiprocessing.Queue()
-
-        self._msg_publisher = PanMessaging.create_publisher(msg_port)
-
-        def check_message_loop(cmd_queue):
-            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
-
-            poller = zmq.Poller()
-            poller.register(cmd_subscriber.socket, zmq.POLLIN)
-
-            try:
-                while self._do_cmd_check:
-                    # Poll for messages
-                    sockets = dict(poller.poll(500))  # 500 ms timeout
-
-                    if cmd_subscriber.socket in sockets and \
-                            sockets[cmd_subscriber.socket] == zmq.POLLIN:
-
-                        topic, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
-
-                        # Put the message in a queue to be processed
-                        if topic == 'POCS-CMD':
-                            cmd_queue.put(msg_obj)
-
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                pass
-
-        self.logger.debug('Starting command message loop')
-        check_messages_process = multiprocessing.Process(
-            target=check_message_loop, args=(self._cmd_queue,))
-        check_messages_process.name = 'MessageCheckLoop'
-        check_messages_process.start()
-        self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
-
-        self._processes = {
-            'check_messages': check_messages_process,
-            'cmd_forwarder': cmd_forwarder_process,
-            'msg_forwarder': msg_forwarder_process,
-        }
+        if not os.path.exists(f"{pandir}/logs"):
+            print(f"Creating log dir at {pandir}/logs")
+            os.makedirs(f"{pandir}/logs")

@@ -35,11 +35,11 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     This function is intended to be called from `PanBase` or similar, which receives kwargs that
     may include simulator, config or both. For example::
 
-           get_simulator_names(config=self.config, kwargs=kwargs)
+        get_simulator_names(config=self.config, kwargs=kwargs)
 
-            # Or:
+        # Or:
 
-            get_simulator_names(simulator=simulator, config=self.config)
+        get_simulator_names(simulator=simulator, config=self.config)
 
     The reason this function doesn't just take **kwargs as its sole arg is that we need to allow
     for the case where the caller is passing in simulator (or config) twice, once on its own,

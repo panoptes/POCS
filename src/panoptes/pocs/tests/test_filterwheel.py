@@ -17,6 +17,7 @@ def filterwheel(dynamic_config_server, config_port):
                                      config_port=config_port)
     return sim_filterwheel
 
+
 # intialisation
 
 
@@ -51,6 +52,7 @@ def test_with_no_name(dynamic_config_server, config_port):
     with pytest.raises(ValueError):
         SimFilterWheel(config_port=config_port)
 
+
 # Basic property getting and (not) setting
 
 
@@ -83,6 +85,7 @@ def test_filter_names(filterwheel):
         assert isinstance(name, str)
     with pytest.raises(AttributeError):
         filterwheel.filter_names = ["Unsharp mask", "Gaussian blur"]
+
 
 # Movement
 
@@ -157,11 +160,11 @@ def test_move_times(dynamic_config_server, config_port, name, unidirectional, ex
                                      config_port=config_port)
     sim_filterwheel.position = 1
     assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == \
-        pytest.approx(0.1, rel=4e-2)
+           pytest.approx(0.1, rel=4e-2)
     assert timeit("sim_filterwheel.position = 4", number=1, globals=locals()) == \
-        pytest.approx(0.2, rel=5e-2)
+           pytest.approx(0.2, rel=5e-2)
     assert timeit("sim_filterwheel.position = 3", number=1, globals=locals()) == \
-        pytest.approx(expected, rel=6e-2)
+           pytest.approx(expected, rel=7e-2)
 
 
 def test_move_exposing(dynamic_config_server, config_port, tmpdir):

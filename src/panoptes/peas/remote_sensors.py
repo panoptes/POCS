@@ -5,7 +5,6 @@ from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.pocs.utils.logger import get_logger
-from panoptes.utils.messaging import PanMessaging
 
 
 class RemoteMonitor(object):
@@ -25,8 +24,6 @@ class RemoteMonitor(object):
 
         self.db = PanDB(db_type=db_type)
 
-        self.messaging = None
-
         self.sensor_name = sensor_name
         self.sensor = None
 
@@ -44,19 +41,7 @@ class RemoteMonitor(object):
     def disconnect(self):
         self.logger.debug('Stop listening on {self.endpoint_url}')
 
-    def send_message(self, msg, topic='environment'):
-        if self.messaging is None:
-            msg_port = get_config('messaging.msg_port')
-
-            try:
-                self.messaging = PanMessaging.create_publisher(msg_port)
-            except Exception as e:
-                self.logger.warning(f"Can't send sensor message: {e!r}")
-                return
-
-        self.messaging.send_message(topic, msg)
-
-    def capture(self, store_result=True, send_message=True):
+    def capture(self, store_result=True):
         """Read JSON from endpoint url and capture data.
 
         Note:
@@ -74,8 +59,6 @@ class RemoteMonitor(object):
         self.logger.debug(f'Captured on {self.sensor_name}: {sensor_data!r}')
 
         sensor_data['date'] = current_time(flatten=True)
-        if send_message:
-            self.send_message({'data': sensor_data}, topic='environment')
 
         if store_result and len(sensor_data) > 0:
             self.db.insert_current(self.sensor_name, sensor_data)

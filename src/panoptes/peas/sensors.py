@@ -7,7 +7,6 @@ from serial.tools.list_ports import comports as list_comports
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
 from panoptes.pocs.utils.logger import get_logger
-from panoptes.utils.messaging import PanMessaging
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils import error
 
@@ -31,8 +30,6 @@ class ArduinoSerialMonitor(object):
             db_type = kwargs.get('db_type', db_type)
 
         self.db = PanDB(db_type=db_type)
-
-        self.messaging = None
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -87,17 +84,7 @@ class ArduinoSerialMonitor(object):
             reader = reader_info['reader']
             reader.stop()
 
-    def send_message(self, msg, topic='environment'):
-        if self.messaging is None:
-            msg_port = get_config('messaging.msg_port')
-            try:
-                self.messaging = PanMessaging.create_publisher(msg_port)
-            except Exception as e:
-                self.logger.warning(f'Problem creating messaging: {e!r}')
-
-        self.messaging.send_message(topic, msg)
-
-    def capture(self, store_result=True, send_message=True):
+    def capture(self, store_result=True):
         """
         Helper function to return serial sensor info.
 
@@ -133,8 +120,6 @@ class ArduinoSerialMonitor(object):
                 time_stamp, data = reading
                 data['date'] = time_stamp
                 sensor_data[sensor_name] = data
-                if send_message:
-                    self.send_message({'data': data}, topic='environment')
 
                 if store_result and len(sensor_data) > 0:
                     self.db.insert_current(sensor_name, data)
