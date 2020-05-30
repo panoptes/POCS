@@ -1,7 +1,8 @@
+import logging
 import os
+import stat
 import pytest
 from _pytest.logging import caplog as _caplog
-import logging
 import subprocess
 import time
 import tempfile
@@ -16,30 +17,31 @@ from panoptes.utils.database import PanDB
 from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import app as config_server_app
-from panoptes.utils.logging import logger
+
+from panoptes.pocs.utils.logging import get_logger, PanLogger
 
 # TODO download IERS files.
 
 _all_databases = ['file', 'memory']
 
+LOGGER_INFO = PanLogger()
+
+logger = get_logger()
 logger.enable('panoptes')
 logger.level("testing", no=15, icon="🤖", color="<YELLOW><black>")
 log_file_path = os.path.join(
     os.getenv('PANLOG', '/var/panoptes/logs'),
     'panoptes-testing.log'
 )
-log_fmt = "<lvl>{level:.1s}</lvl> " \
-          "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
-          "<blue>({time:HH:mm:ss.ss})</> " \
-          "| <c>{name} {function}:{line}</c> | " \
-          "<lvl>{message}</lvl>\n"
 logger.add(log_file_path,
-           enqueue=True,  # multiprocessing
-           format=log_fmt,
+           format=LOGGER_INFO.format,
            colorize=True,
+           enqueue=True,  # multiprocessing
            backtrace=True,
            diagnose=True,
            level='TRACE')
+# Make the log file world readable.
+os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
 
 def pytest_addoption(parser):

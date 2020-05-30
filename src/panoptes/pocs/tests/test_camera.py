@@ -29,7 +29,6 @@ from panoptes.utils.config.client import set_config
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.camera import create_camera_simulator
 
-
 focuser_params = {
     'model': 'simulator',
     'focus_port': '/dev/ttyFAKE',
@@ -189,6 +188,7 @@ def test_sdk_already_in_use(dynamic_config_server, config_port):
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number='SSC999', config_port=config_port)
 
+
 # Hardware independent tests for SBIG camera
 
 
@@ -214,6 +214,7 @@ def test_sbig_bad_serial(dynamic_config_server, config_port):
         pytest.skip("Test requires SBIG camera driver to be installed")
     with pytest.raises(error.PanError):
         SBIGCamera(serial_number='NOTAREALSERIALNUMBER', config_port=config_port)
+
 
 # *Potentially* hardware dependant tests:
 
@@ -404,7 +405,7 @@ def test_exposure_scaling(camera, tmpdir):
         image_data, image_header = fits.getdata(fits_path, header=True)
         assert bit_depth == image_header['BITDEPTH'] * u.bit
         pad_bits = image_header['BITPIX'] - image_header['BITDEPTH']
-        assert (image_data % 2**pad_bits).any()
+        assert (image_data % 2 ** pad_bits).any()
 
 
 def test_exposure_no_filename(camera):
@@ -445,11 +446,11 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     camera._timeout = 0.01
     # This should result in a timeout error in the poll thread, but the exception won't
     # be seen in the main thread. Can check for logged error though.
-    exposure_event = camera.take_exposure(seconds=0.1, filename=fits_path)
+    exposure_event = camera.take_exposure(seconds=2.0, filename=fits_path)
+
     # Wait for it all to be over.
-    time.sleep(original_timeout)
-    # Put the timeout back to the original setting.
-    camera._timeout = original_timeout
+    time.sleep(4)
+
     # Should be an ERROR message in the log from the exposure timeout
     assert caplog.records[-1].levelname == "ERROR"
     # Should be no data file, camera should not be exposing, and exposure event should be set

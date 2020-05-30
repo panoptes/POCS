@@ -13,18 +13,8 @@ PANOPTES Observatory Control System
    System <#panoptes-observatory-control-system>`__
 -  `Overview <#overview>`__
 -  `Getting Started <#getting-started>`__
--  `Setup <#setup>`__
-
-   -  `Install Script <#install-script>`__
-
+-  `Install <#install-script>`__
 -  `Test POCS <#test-pocs>`__
-
-   -  `Software Testing <#software-testing>`__
-   -  `Testing your installation <#testing-your-installation>`__
-   -  `Testing your code changes <#testing-your-code-changes>`__
-   -  `Writing tests <#writing-tests>`__
-   -  `Hardware Testing <#hardware-testing>`__
-
 -  `Links <#links>`__
 
 Overview
@@ -60,15 +50,10 @@ To get started with POCS there are three easy steps:
 
 See below for more details.
 
-Setup
------
+Install
+-------
 
-Coming Soon!
-
-Install Script
-~~~~~~~~~~~~~~
-
-Coming Soon!
+Coming Soon!  For now see the Testing section of the :ref:`contribute` guide.
 
 Test POCS
 ---------
@@ -79,6 +64,7 @@ Links
 -----
 
 -  PANOPTES Homepage: https://projectpanoptes.org
+-  PANOPTES Data Explorer: https://www.panoptes-data.org
 -  Community Forum: https://forum.projectpanoptes.org
 -  Source Code: https://github.com/panoptes/POCS
 

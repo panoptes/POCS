@@ -6,7 +6,7 @@ from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
-from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logging import get_logger
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
@@ -95,15 +95,12 @@ class AbstractSDKCamera(AbstractCamera):
             logger.debug("Connected {}s: {}".format(name, my_class._cameras))
 
         if serial_number in my_class._cameras:
-            logger.debug("Found {} with UID '{}' at {}.".format(
-                name, serial_number, my_class._cameras[serial_number]))
+            logger.debug(f"Found {name} with UID '{serial_number}' at {my_class._cameras[serial_number]}.")
         else:
-            raise error.PanError("Could not find {} with UID '{}'.".format(
-                name, serial_number))
+            raise error.PanError(f"Could not find {name} with UID '{serial_number}'.")
 
         if serial_number in my_class._assigned_cameras:
-            raise error.PanError("{} with UID '{}' already in use.".format(
-                name, serial_number))
+            raise error.PanError(f"{name} with UID '{serial_number}' already in use.")
 
         my_class._assigned_cameras.add(serial_number)
         super().__init__(name, *args, **kwargs)
@@ -136,7 +133,6 @@ class AbstractSDKCamera(AbstractCamera):
         with suppress(AttributeError):
             uid = self.uid
             type(self)._assigned_cameras.discard(uid)
-            self.logger.debug('Removed {} from assigned cameras list'.format(uid))
 
     # Properties
 

@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from panoptes.pocs.base import PanBase
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
-from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logging import get_logger
 
 logger = get_logger()
 

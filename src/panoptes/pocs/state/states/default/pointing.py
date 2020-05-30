@@ -36,7 +36,7 @@ def on_enter(event_data):
         # Loop over maximum number of pointing iterations
         for img_num in range(num_pointing_images):
             pocs.logger.info(
-                f"Taking pointing image {img_num+1}/{num_pointing_images} on: {primary_camera}")
+                f"Taking pointing image {img_num + 1}/{num_pointing_images} on: {primary_camera}")
 
             # Start the exposure
             camera_event = primary_camera.take_observation(
@@ -66,8 +66,8 @@ def on_enter(event_data):
                 # Store the solved image object
                 observation.pointing_images[pointing_id] = pointing_image
 
-                pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
-                pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
+                pocs.logger.debug(f"Pointing Coords: {pointing_image.pointing}")
+                pocs.logger.debug(f"Pointing Error: {pointing_image.pointing_error}")
 
                 if should_correct is False:
                     pocs.logger.info("Pointing correction turned off, done with pointing.")

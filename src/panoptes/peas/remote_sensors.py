@@ -4,7 +4,7 @@ from panoptes.utils import current_time
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logging import get_logger
 
 
 class RemoteMonitor(object):

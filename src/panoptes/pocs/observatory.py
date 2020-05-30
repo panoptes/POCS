@@ -3,9 +3,7 @@ import subprocess
 from collections import OrderedDict
 import pendulum
 
-from astroplan import Observer
 from astropy import units as u
-from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 

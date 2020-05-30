@@ -67,7 +67,7 @@ def test_solve_field_unsolved(dynamic_config_server,
         assert im0.wcs is None
         assert im0.pointing is None
 
-        im0.solve_field(verbose=True, replace=False, radius=4)
+        im0.solve_field(verbose=True, replace=True, radius=4)
 
         assert im0.wcs is not None
         assert im0.wcs_file is not None

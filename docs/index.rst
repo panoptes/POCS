@@ -14,6 +14,7 @@ Contents
    Authors <authors>
    Changelog <changelog>
    Module Reference <api/modules>
+   Contributing Guide <contribute>
 
 
 Indices and tables

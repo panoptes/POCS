@@ -28,8 +28,7 @@ class Image(PanBase):
         assert os.path.exists(fits_file), self.logger.warning('File does not exist: {fits_file}')
 
         file_path, file_ext = os.path.splitext(fits_file)
-        assert file_ext in ['.fits', '.fz'], \
-            self.logger.warning('File must end with .fits')
+        assert file_ext in ['.fits', '.fz'], self.logger.warning('File must end with .fits')
 
         self.wcs = None
         self._wcs_file = None
@@ -196,10 +195,8 @@ class Image(PanBase):
 
         # Remove some fields
         for header in ['COMMENT', 'HISTORY']:
-            try:
+            with suppress(KeyError):
                 del solve_info[header]
-            except KeyError:
-                pass
 
         return solve_info
 

@@ -366,12 +366,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug(f'Taking {seconds} exposure on {self.name}: {filename}')
 
         header = self._create_fits_header(seconds, dark)
 
         if not self._exposure_event.is_set():
-            msg = "Attempt to take exposure on {} while one already in progress.".format(self)
+            msg = f"Attempt to take exposure on {self} while one already in progress."
             raise error.PanError(msg)
 
         # Clear event now to prevent any other exposures starting before this one is finished.
@@ -605,12 +605,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = "Timeout waiting for exposure on {} to complete".format(self)
+                    msg = f"Timeout waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(0.01)
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
-            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            self.logger.error(f'Error while waiting for exposure on {self}: {err!r}')
             raise err
         else:
             # Camera type specific readout function

@@ -32,47 +32,57 @@ Pull Request Process
 -  If the change you wish to make is not already an `Issue in the
    project <https://github.com/panoptes/POCS/issues>`__, please create
    one specifying the need.
--  Process
--  Create a fork of the repository via github (button in top-right).
--  Clone your fork to your local system:
 
-   -  ``git clone git@github.com:YOUR-GITHUB-NAME/POCS.git``
+Process
+^^^^^^^
 
--  Set the "upstream" branch to ``panoptes``:
+1.  Create a fork of the repository via github (button in top-right).
+2.  Clone your fork to your local system:
 
-   -  ``cd POCS``
-   -  ``git remote add upstream https://github.com/panoptes/POCS.git``
-   -  ``git fetch upstream``
+    .. code-block::
+        bash
 
--  Use a topic branch within your fork to make changes. All of our
-   repositories have a default branch of ``develop`` when you first
-   clone them, but your work should be in a separate branch (see note
-   below). Your branch should almost always be based off of the
-   ``upstream/develop`` branch:
+        cd $PANDIR
+        git clone git@github.com:YOUR-GITHUB-NAME/POCS.git
 
-   -  Create a branch with a descriptive name, e.g.:
+3.  Set the "upstream" branch to ``panoptes`` and fetch the upstream changes:
 
-      -  ``git checkout -b new-camera-simulator upstream/develop``
-      -  ``git checkout -b issue-28 upstream/develop``
+    .. code-block::
+        bash
 
--  Ensure that your code meets this project's standards (see Testing and
-   Code Formatting below). - Run ``python setup.py test`` from the
-   ``$POCS`` directory before pushing to github
--  Submit a pull request to the repository, be sure to reference the
-   issue number it addresses.
+        cd POCS
+        git remote add upstream https://github.com/panoptes/POCS.git
+        git fetch upstream
 
-    Note: See `"A successful Git branching
-    model" <https://nvie.com/posts/a-successful-git-branching-model/>`__
+4.  Use a topic branch within your fork to make changes. All of our repositories
+    have a default branch of ``develop`` when you first clone them, but your work
+    should be in a separate branch (see note below). Your branch should be based
+    off of the ``upstream/develop`` branch.
+
+    Create a branch with a descriptive name, e.g.:
+
+    .. code-block::
+        bash
+
+        git checkout -b new-camera-simulator upstream/develop
+        git checkout -b issue-28 upstream/develop
+
+5.  Ensure that your code meets this project's standards (see Testing and Code
+    Formatting below).
+
+6. Run the testing suite locally to ensure that all tests are passing. See Testing below.
+
+7. Submit a pull request to the repository, be sure to reference the issue number it addresses.
+
+.. note::
+
+    See `"A successful Git branching model" <https://nvie.com/posts/a-successful-git-branching-model/>`__
     for details on how the repository is structured.
 
 Setting up Local Environment
 ============================
 
--  Follow instructions in the
-   `README <https://github.com/panoptes/POCS/blob/develop/README.md>`__
-   as well as the `Coding in
-   PANOPTES <https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES>`__
-   document.
+Coming Soon!
 
 Code Formatting
 ===============
@@ -99,30 +109,23 @@ Code Formatting
    For example, ``my_file.py`` instead of ``My File.py``.
 -  Define any project specific terminology or abbreviations you use in
    the file you use them.
--  Test imports are slightly different because ``pocs/tests`` and
-   ``peas/tests`` are not Python packages (those directories don't
-   contain an ``__init__.py`` file). For imports of ``pocs`` or ``peas``
-   code, use root-relative imports as described above. For importing
-   test packages and modules, assume the test doing the imports is in
-   the root directory.
 
 Log Messages
 ============
 
-Use appropriate logging: - Log level: - DEBUG (i.e.
-``self.logger.debug()``) should attempt to capture all run-time
-information. - INFO (i.e. ``self.logger.info()``) should be used
-sparingly and meant to convey information to a person actively watching
-a running unit. - WARNING (i.e. ``self.logger.warning()``) should alert
-when something does not go as expected but operation of unit can
-continue. - ERROR (i.e. ``self.logger.error()``) should be used at
-critical levels when operation cannot continue. - The logger supports
-variable information without the use of the ``format`` method. - There
-is a ``say`` method available on the main ``POCS`` class that is meant
-to be used in friendly manner to convey information to a user. This
-should be used only for personable output and is typically displayed in
-the "chat box"of the PAWS website. These messages are also sent to the
-INFO level logger.
+Use appropriate logging:
+
+* DEBUG (i.e. ``self.logger.debug()``) should attempt to capture all run*time information.
+
+* INFO (i.e. ``self.logger.info()``) should be used sparingly and meant to convey information to a person actively watching a running unit.
+
+* WARNING (i.e. ``self.logger.warning()``) should alert when something does not go as expected but operation of unit can continue.
+
+* ERROR (i.e. ``self.logger.error()``) should be used at critical levels when operation cannot continue.
+
+* The logger supports variable information without the use of the ``format`` method.
+
+* There is a ``say`` method available on the main ``POCS`` class that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box"of the PAWS website. These messages are also sent to the INFO level logger.
 
 Logging examples:
 ^^^^^^^^^^^^^^^^^
@@ -130,22 +133,18 @@ Logging examples:
 *Note: These are meant to illustrate the logging calls and are not
 necessarily indicative of real operation*
 
-::
-
-    self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
+.. code-block::
+    python
 
     self.say("I'm all ready to go, first checking the weather")
 
+    self.logger.info(f'PANOPTES unit initialized: {self.name}')
+
     self.logger.debug("Setting up weather station")
 
-    self.logger.warning('Problem getting wind safety: {}'.format(e))
+    self.logger.warning(f'Problem getting wind safety: {e!r}')
 
-    self.logger.debug("Rain: {} Clouds: {} Dark: {} Temp: {:.02f}",
-       is_raining,
-       is_cloudy,
-       is_dark,
-       temp_celsius
-    )
+    self.logger.debug(f'Rain: {is_raining} Clouds: {is_cloudy} Dark: {is_dark} Temp: {temp:.02f}')
 
     self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
 
@@ -155,7 +154,8 @@ Viewing log files
 -  You typically want to follow an active log file by using ``tail -F``
    on the command line.
 
-::
+.. code-block::
+    bash
 
     (panoptes-env) $ tail -F $PANDIR/logs/pocs_shell.log
 

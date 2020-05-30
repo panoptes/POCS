@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from panoptes.utils import error
-from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logging import get_logger
 from panoptes.utils.config.client import get_config
 
 logger = get_logger()

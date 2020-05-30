@@ -3,7 +3,7 @@ from requests.exceptions import ConnectionError
 from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
-from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logging import get_logger
 
 
 class PanBase(object):
