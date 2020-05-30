@@ -11,7 +11,6 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
-from panoptes.utils.serializers import from_yaml
 
 
 def list_connected_cameras():
@@ -252,42 +251,3 @@ def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
     logger.debug("{} cameras created", len(cameras))
 
     return cameras
-
-
-def parse_config(lines):
-    yaml_string = ''
-    for line in lines:
-        IsID = len(line.split('/')) > 1
-        IsLabel = re.match(r'^Label:\s*(.*)', line)
-        IsType = re.match(r'^Type:\s*(.*)', line)
-        IsCurrent = re.match(r'^Current:\s*(.*)', line)
-        IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-        IsPrintable = re.match(r'^Printable:\s*(.*)', line)
-        IsHelp = re.match(r'^Help:\s*(.*)', line)
-        if IsLabel or IsType or IsCurrent:
-            line = f'  {line}'
-        elif IsChoice:
-            if int(IsChoice.group(1)) == 0:
-                line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-            else:
-                line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-        elif IsPrintable:
-            line = '  {}'.format(line)
-        elif IsHelp:
-            line = '  {}'.format(line)
-        elif IsID:
-            line = '- ID: {}'.format(line)
-        elif line == '':
-            continue
-        else:
-            print(f'Line not parsed: {line}')
-        yaml_string += f'{line}\n'
-    properties_list = from_yaml(yaml_string)
-    if isinstance(properties_list, list):
-        properties = {}
-        for property in properties_list:
-            if property['Label']:
-                properties[property['Label']] = property
-    else:
-        properties = properties_list
-    return properties

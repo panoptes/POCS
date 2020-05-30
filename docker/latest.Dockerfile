@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
 
 # Install module
 COPY . ${POCS}/
-RUN cd ${POCS} && python setup.py develop
+RUN cd ${POCS} && pip install -e ".[google]"
 
 # Cleanup apt.
 USER root

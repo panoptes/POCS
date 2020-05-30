@@ -141,6 +141,15 @@ class POCS(PanStateMachine, PanBase):
         self.set_config('pocs.RUN_ONCE', new_value)
 
     @property
+    def is_sleeping(self):
+        """ Is the unit currently in a sleeping loop."""
+        return self.get_config('pocs.IS_SLEEPING', default=False)
+
+    @is_sleeping.setter
+    def is_sleeping(self, new_value):
+        self.set_config('pocs.IS_SLEEPING', new_value)
+
+    @property
     def should_retry(self):
         return self._obs_run_retries >= 0
 
@@ -488,17 +497,19 @@ class POCS(PanStateMachine, PanBase):
             delay {float|None} -- Number of seconds to sleep. If default `None`, look up value in
                 config, otherwise 2.5 seconds.
         """
+        self.is_sleeping = True
         if delay is None:
             delay = self.get_config('sleep_delay', default=2.5)
 
         sleep_timer = CountdownTimer(delay)
-
         while not sleep_timer.expired():
             # If we shutdown leave loop
             if self.interrupted or self.connected is False:
                 break
 
             sleep_timer.sleep(max_sleep=30)
+
+        self.is_sleeping = False
 
     def wait_for_events(self,
                         events,
@@ -549,7 +560,7 @@ class POCS(PanStateMachine, PanBase):
             # Sleep for a little bit.
             timer.sleep(max_sleep=sleep_delay)
 
-    def wait_until_safe(self, **kwargs):
+    def wait_until_safe(self, safe_delay=None, **kwargs):
         """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
@@ -557,9 +568,14 @@ class POCS(PanStateMachine, PanBase):
 
         This can be used with `horizon` to wait for the sun to get to a certain
         position, e.g., `self.wait_until_safe(horizon='flat')`.  See `run` for an example.
+
+        Args:
+            safe_delay (int|float): The time to sleep between `is_safe` calls. If default
+                `None`, look for `safe_delay` in config, otherwise 5 minutes.
         """
+        safe_delay = safe_delay or self.get_config('safe_delay', default=60 * 5)
         while not self.is_safe(no_warning=True, **kwargs):
-            self.sleep(delay=self.get_config('safe_delay', default=60 * 5))
+            self.sleep(delay=safe_delay)
 
     ##################################################################################################
     # Class Methods
