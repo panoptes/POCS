@@ -1,10 +1,10 @@
 import os
-import yaml
 
 from panoptes.utils import error
 from panoptes.utils import rs232
 
 from panoptes.pocs.mount import AbstractMount
+from panoptes.utils.serializers import from_yaml
 
 
 class AbstractSerialMount(AbstractMount):
@@ -33,10 +33,9 @@ class AbstractSerialMount(AbstractMount):
     def _port(self):
         return self.serial.ser.port
 
-
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def connect(self):
         """Connects to the mount via the serial port (`self._port`)
@@ -98,10 +97,9 @@ class AbstractSerialMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
-
-##################################################################################################
-# Communication Methods
-##################################################################################################
+    ##################################################################################################
+    # Communication Methods
+    ##################################################################################################
 
     def write(self, cmd):
         """ Sends a string command to the mount via the serial port.
@@ -150,10 +148,9 @@ class AbstractSerialMount(AbstractMount):
 
         return response
 
-
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _connect(self):
         """ Sets up serial connection """
@@ -186,7 +183,7 @@ class AbstractSerialMount(AbstractMount):
                         "Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
-                            commands.update(yaml.full_load(f.read()))
+                            commands.update(from_yaml(f.read()))
                             self.logger.debug(
                                 "Mount commands updated from {}".format(conf_file))
                     except OSError as err:

@@ -1,11 +1,12 @@
-import json
 import os
 import time
 
 from string import Template
 
 from panoptes.pocs import dome
+from panoptes.utils import error
 from panoptes.utils import theskyx
+from panoptes.utils.serializers import from_json
 
 
 class Dome(dome.AbstractDome):
@@ -16,8 +17,7 @@ class Dome(dome.AbstractDome):
         super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
-        template_dir = kwargs.get('template_dir',
-                                  self.config['dome']['template_dir'])
+        template_dir = kwargs.get('template_dir', self.get_config('dome.template_dir'))
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
@@ -83,7 +83,7 @@ class Dome(dome.AbstractDome):
     def disconnect(self):
         if self.is_connected:
             if self.is_open:
-                self.close_slit()
+                self.close()
 
             self.write(self._get_command('dome/disconnect.js'))
             response = self.read()
@@ -160,15 +160,15 @@ class Dome(dome.AbstractDome):
                 time.sleep(1)
                 timeout -= 1
 
+        # Default object.
+        response_obj = {
+            "response": response,
+            "success": False,
+        }
         try:
-            response_obj = json.loads(response)
-        except TypeError as e:
-            self.logger.warning("Error: {}".format(e, response))
-        except json.JSONDecodeError:
-            response_obj = {
-                "response": response,
-                "success": False,
-            }
+            response_obj = from_json(response)
+        except (TypeError, error.InvalidDeserialization) as e:
+            self.logger.warning(f"Error: {e!r}: {response}")
 
         return response_obj
 

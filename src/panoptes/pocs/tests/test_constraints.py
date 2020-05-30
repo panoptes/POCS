@@ -1,5 +1,4 @@
 import pytest
-import yaml
 
 from astroplan import Observer
 from astropy import units as u
@@ -20,6 +19,7 @@ from panoptes.pocs.scheduler.constraint import AlreadyVisited
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils
+from panoptes.utils.serializers import from_yaml
 
 
 @pytest.fixture(scope='function')
@@ -32,7 +32,7 @@ def observer(dynamic_config_server, config_port):
 @pytest.fixture(scope='function')
 def horizon_line(dynamic_config_server, config_port):
     obstruction_list = get_config('location.obstructions', default=list(), port=config_port)
-    default_horizon = get_config('location.horizon', port=config_port).value
+    default_horizon = get_config('location.horizon', port=config_port)
 
     horizon_line = horizon_utils.Horizon(
         obstructions=obstruction_list,
@@ -43,7 +43,7 @@ def horizon_line(dynamic_config_server, config_port):
 
 @pytest.fixture(scope='module')
 def field_list():
-    return yaml.full_load("""
+    return from_yaml("""
 -
     name: HD 189733
     position: 20h00m43.7135s +22d42m39.0645s

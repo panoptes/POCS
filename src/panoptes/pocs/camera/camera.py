@@ -5,7 +5,6 @@ import shutil
 import subprocess
 import threading
 import time
-import yaml
 from contextlib import suppress
 from abc import ABCMeta, abstractmethod
 
@@ -23,6 +22,7 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.camera import parse_config
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -965,52 +965,9 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         self.logger.debug('Get All Properties')
         command = ['--list-all-config']
 
-        self.properties = self.parse_config(self.command(command))
+        self.properties = parse_config(self.command(command))
 
         if self.properties:
             self.logger.debug('  Found {} properties'.format(len(self.properties)))
         else:
             self.logger.warning('  Could not determine properties.')
-
-    def parse_config(self, lines):
-        yaml_string = ''
-        for line in lines:
-            IsID = len(line.split('/')) > 1
-            IsLabel = re.match(r'^Label:\s*(.*)', line)
-            IsType = re.match(r'^Type:\s*(.*)', line)
-            IsCurrent = re.match(r'^Current:\s*(.*)', line)
-            IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-            IsPrintable = re.match(r'^Printable:\s*(.*)', line)
-            IsHelp = re.match(r'^Help:\s*(.*)', line)
-            if IsLabel:
-                line = '  {}'.format(line)
-            elif IsType:
-                line = '  {}'.format(line)
-            elif IsCurrent:
-                line = '  {}'.format(line)
-            elif IsChoice:
-                if int(IsChoice.group(1)) == 0:
-                    line = '  Choices:\n    {}: {:d}'.format(
-                        IsChoice.group(2), int(IsChoice.group(1)))
-                else:
-                    line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-            elif IsPrintable:
-                line = '  {}'.format(line)
-            elif IsHelp:
-                line = '  {}'.format(line)
-            elif IsID:
-                line = '- ID: {}'.format(line)
-            elif line == '':
-                continue
-            else:
-                print('Line Not Parsed: {}'.format(line))
-            yaml_string += '{}\n'.format(line)
-        properties_list = yaml.load(yaml_string)
-        if isinstance(properties_list, list):
-            properties = {}
-            for property in properties_list:
-                if property['Label']:
-                    properties[property['Label']] = property
-        else:
-            properties = properties_list
-        return properties

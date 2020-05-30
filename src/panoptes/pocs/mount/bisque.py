@@ -1,7 +1,6 @@
 import json
 import os
 import time
-import yaml
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -11,6 +10,7 @@ from panoptes.utils import error
 from panoptes.utils import theskyx
 
 from panoptes.pocs.mount import AbstractMount
+from panoptes.utils.serializers import from_yaml
 
 
 class Mount(AbstractMount):
@@ -331,19 +331,17 @@ class Mount(AbstractMount):
                 conf_file = f"{mount_dir}/{model}.yaml"
 
                 if os.path.isfile(conf_file):
-                    self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                    self.logger.debug(f"Loading mount commands file: {conf_file}")
                     try:
                         with open(conf_file, 'r') as f:
-                            commands.update(yaml.load(f.read()))
-                            self.logger.debug("Mount commands updated from {}".format(conf_file))
+                            commands.update(from_yaml(f.read()))
+                            self.logger.debug(f"Mount commands updated from {conf_file}")
                     except OSError as err:
-                        self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                        self.logger.warning(f'Cannot load commands config file: {conf_file} \n {err}')
                     except Exception:
                         self.logger.warning("Problem loading mount command file")
                 else:
-                    self.logger.warning(
-                        "No such config file for mount commands: {}".format(conf_file))
+                    self.logger.warning(f"No such config file for mount commands: {conf_file}")
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')

@@ -1,5 +1,4 @@
 import pytest
-import yaml
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -11,6 +10,7 @@ from panoptes.utils.config.client import set_config
 from panoptes.pocs.scheduler import BaseScheduler as Scheduler
 from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
+from panoptes.utils.serializers import from_yaml
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def observer(dynamic_config_server, config_port):
 
 @pytest.fixture()
 def field_list():
-    return yaml.full_load("""
+    return from_yaml("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
@@ -187,7 +187,6 @@ def test_scheduler_add_field(scheduler):
 
 
 def test_scheduler_add_bad_field(scheduler):
-
     orig_length = len(scheduler.observations)
     with pytest.raises(error.InvalidObservation):
         scheduler.add_observation({
@@ -200,7 +199,6 @@ def test_scheduler_add_bad_field(scheduler):
 
 
 def test_scheduler_add_duplicate_field(scheduler):
-
     scheduler.add_observation({
         'name': 'Duplicate Field',
         'position': '12h30m01s +08d08m08s',
