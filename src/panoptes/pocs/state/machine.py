@@ -8,14 +8,7 @@ from panoptes.utils import listify
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 
-can_graph = False
-try:  # pragma: no cover
-    import pygraphviz  # pragma: no flakes
-    from transitions.extensions import GraphMachine as Machine
-
-    can_graph = True
-except ImportError:  # pragma: no cover
-    from transitions import Machine
+from transitions import Machine
 
 
 class PanStateMachine(Machine):
@@ -68,28 +61,16 @@ class PanStateMachine(Machine):
         )
 
         self._state_machine_table = state_machine_table
-        self._next_state = None
-        self._keep_running = False
-        self._run_once = kwargs.get('run_once', False)
-        self._do_states = True
+        self.next_state = None
+        self.keep_running = False
+        self.do_states = True
+        self.run_once = kwargs.get('run_once', False)
 
         self.logger.debug("State machine created")
 
     ##################################################################################################
     # Properties
     ##################################################################################################
-
-    @property
-    def keep_running(self):
-        return self._keep_running
-
-    @property
-    def do_states(self):
-        return self._do_states
-
-    @property
-    def run_once(self):
-        return self._run_once
 
     @property
     def next_state(self):
@@ -118,21 +99,16 @@ class PanStateMachine(Machine):
         """
         assert self.is_initialized, self.logger.error("POCS not initialized")
 
-        self._keep_running = True
-        self._do_states = True
         run_once = run_once or self.run_once
 
         # Start with `get_ready`
         self.next_state = 'ready'
 
         _loop_iteration = 0
-
         while self.keep_running and self.connected:
             state_changed = False
             self.logger.info(f'Run loop: {self.state}')
             self.logger.info(f'Horizon limits: {self._horizon_lookup}')
-
-            self.check_messages()
 
             # If we are processing the states
             if self.do_states and self.observatory.can_observe:
@@ -153,8 +129,7 @@ class PanStateMachine(Machine):
                     # The state's `on_enter` logic will be performed here.
                     state_changed = self.goto_next_state()
                 except Exception as e:
-                    self.logger.critical("Problem going from {} to {}, exiting loop [{!r}]".format(
-                        self.state, self.next_state, e))
+                    self.logger.critical(f"Problem going from {self.state} to {self.next_state}, exiting loop [{e!r}]")
                     self.stop_states()
                     break
 
@@ -164,17 +139,14 @@ class PanStateMachine(Machine):
                 if not state_changed:
                     self.logger.warning(f"Failed to move from {self.state} to {self.next_state}")
                     if self.is_safe() is False:
-                        self.logger.warning(
-                            "Conditions have become unsafe; setting next state to 'parking'")
+                        self.logger.warning("Conditions have become unsafe; setting next state to 'parking'")
                         self.next_state = 'parking'
                     elif _loop_iteration > 5:
                         self.logger.warning("Stuck in current state for 5 iterations, parking")
                         self.next_state = 'parking'
                     else:
                         _loop_iteration = _loop_iteration + 1
-                        self.logger.warning(
-                            "Sleeping for a bit, then trying the transition again (loop: {})",
-                            _loop_iteration)
+                        self.logger.warning(f"Sleeping for a bit, then trying again (loop: {_loop_iteration})")
                         self.sleep(with_status=False)
                 else:
                     _loop_iteration = 0
@@ -183,7 +155,7 @@ class PanStateMachine(Machine):
                 # Note that `self.state` below has changed from above
                 ########################################################
 
-                # If we are in ready state then we are making one attempt
+                # If we are in ready state then we are making one attempt through the loop.
                 if self.state == 'ready':
                     self._obs_run_retries -= 1
 
@@ -192,7 +164,8 @@ class PanStateMachine(Machine):
             elif exit_when_done:
                 break
             elif not self.interrupted:
-                # Sleep for one minute (can be interrupted via `check_messages`)
+                # Sleep for one minute
+                self.logger.debug(f'Sleeping in run loop - why am I here?')
                 self.sleep(60)
 
     def goto_next_state(self):
@@ -213,7 +186,7 @@ class PanStateMachine(Machine):
         # Get the next transition method based off `state` and `next_state`
         transition_method_name = self._lookup_trigger()
 
-        self.logger.debug("Transition method: {}".format(transition_method_name))
+        self.logger.debug(f"Transition method: {transition_method_name}")
 
         transition_method = getattr(self, transition_method_name, self.park)
         state_changed = transition_method()
@@ -224,7 +197,7 @@ class PanStateMachine(Machine):
     def stop_states(self):
         """ Stops the machine loop on the next iteration """
         self.logger.info("Stopping POCS states")
-        self._do_states = False
+        self.do_states = False
 
     ##################################################################################################
     # State Conditions
@@ -331,8 +304,6 @@ class PanStateMachine(Machine):
         else:
             state_table_file = state_table_name
 
-        state_table = {'states': [], 'transitions': []}
-
         try:
             with open(state_table_file, 'r') as f:
                 state_table = from_yaml(f.read())
@@ -346,7 +317,7 @@ class PanStateMachine(Machine):
     ##################################################################################################
 
     def _lookup_trigger(self):
-        self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
+        self.logger.debug(f"Source: {self.state}\t Dest: {self.next_state}")
         if self.state == 'parking' and self.next_state == 'parking':
             return 'set_park'
         else:
@@ -358,36 +329,11 @@ class PanStateMachine(Machine):
         return 'parking'
 
     def _update_status(self, event_data):
-        self.status()
-
-    def _update_graph(self, event_data):  # pragma: no cover
-        model = event_data.model
-
-        try:
-            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-
-            image_dir = self.get_config('directories.images')
-            os.makedirs('{}/state_images/'.format(image_dir), exist_ok=True)
-
-            fn = '{}/state_images/{}.svg'.format(image_dir, state_id)
-            ln_fn = '{}/state.svg'.format(image_dir)
-
-            # Only make the file once
-            if not os.path.exists(fn):
-                model.graph.draw(fn, prog='dot')
-
-            # Link current image
-            if os.path.exists(ln_fn):
-                os.remove(ln_fn)
-
-            os.symlink(fn, ln_fn)
-
-        except Exception as e:
-            self.logger.warning(f"Can't generate state graph: {e!r}")
+        self.logger.debug(f'State change status: {self.status!r}')
 
     def _load_state(self, state, state_info=None):
         self.logger.debug(f"Loading state: {state}")
-        s = None
+        state_machine = None
         try:
             state_module = load_module('panoptes.{}.{}.{}'.format(
                 self._states_location.replace("/", "."),
@@ -399,7 +345,7 @@ class PanStateMachine(Machine):
             self.logger.debug(f"Checking {state_module}")
 
             on_enter_method = getattr(state_module, 'on_enter')
-            setattr(self, 'on_enter_{}'.format(state), on_enter_method)
+            setattr(self, f'on_enter_{state}', on_enter_method)
             self.logger.debug(f"Added `on_enter` method from {state_module} {on_enter_method}")
 
             if state_info is None:
@@ -411,22 +357,19 @@ class PanStateMachine(Machine):
                 del state_info['horizon']
 
             self.logger.debug(f"Creating state={state} with {state_info}")
-            s = MachineState(name=state, **state_info)
+            state_machine = MachineState(name=state, **state_info)
 
-            s.add_callback('enter', '_update_status')
-
-            if can_graph:
-                s.add_callback('enter', '_update_graph')
-
-            s.add_callback('enter', 'on_enter_{}'.format(state))
+            # Add default callbacks.
+            state_machine.add_callback('enter', '_update_status')
+            state_machine.add_callback('enter', f'on_enter_{state}')
 
         except Exception as e:
-            raise error.InvalidConfig("Can't load state modules: {}\t{}".format(state, e))
+            raise error.InvalidConfig(f"Can't load state modules: {state}\t{e!r}")
 
-        return s
+        return state_machine
 
     def _load_transition(self, transition):
-        self.logger.debug("Loading transition: {}".format(transition))
+        self.logger.debug(f"Loading transition: {transition}")
 
         # Add `check_safety` as the first transition for all states
         conditions = listify(transition.get('conditions', []))
@@ -434,5 +377,5 @@ class PanStateMachine(Machine):
         conditions.insert(0, 'check_safety')
         transition['conditions'] = conditions
 
-        self.logger.debug("Returning transition: {}".format(transition))
+        self.logger.debug(f"Returning transition: {transition}")
         return transition

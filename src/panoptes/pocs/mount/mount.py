@@ -97,6 +97,7 @@ class AbstractMount(PanBase):
 
         self._is_connected = False
 
+    @property
     def status(self):
         status = {}
         try:
@@ -621,7 +622,7 @@ class AbstractMount(PanBase):
             self.logger.warning('Problem with slew_to_park')
 
         while not self._at_mount_park:
-            self.status()
+            self.status
             time.sleep(2)
 
         self._is_parked = True

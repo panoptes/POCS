@@ -164,7 +164,7 @@ def test_move_times(dynamic_config_server, config_port, name, unidirectional, ex
     assert timeit("sim_filterwheel.position = 4", number=1, globals=locals()) == \
            pytest.approx(0.2, rel=6e-2)
     assert timeit("sim_filterwheel.position = 3", number=1, globals=locals()) == \
-           pytest.approx(expected, rel=1e-1)
+           pytest.approx(expected, rel=1.5e-1)
 
 
 def test_move_exposing(dynamic_config_server, config_port, tmpdir):

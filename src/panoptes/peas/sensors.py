@@ -6,7 +6,7 @@ from serial.tools.list_ports import comports as list_comports
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.pocs.utils.logging import get_logger
+from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils import error
 

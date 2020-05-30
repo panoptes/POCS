@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import warnings
 from threading import Thread
 from contextlib import suppress
@@ -67,27 +66,33 @@ class POCS(PanStateMachine, PanBase):
         # Add observatory object, which does the bulk of the work
         self.observatory = observatory
 
-        self._connected = True
-        self._initialized = False
+        self.is_initialized = False
         self._free_space = None
 
-        self._obs_run_retries = self.get_config('retry_attempts', default=3)
+        self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
-        # We want to call and record the status every 30 seconds.
+        # We want to call and record the status on a periodic interval.
         def get_status():
             while True:
-                self.db.insert_current('status', self.status)
+                status = self.status
+                self.logger.debug(status)
+                self.db.insert_current('status', status)
                 CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
 
         self._status_thread = Thread(target=get_status)
         self._status_thread.start()
 
+        self.connected = True
         self.say("Hi there!")
 
     @property
     def is_initialized(self):
         """ Indicates if POCS has been initialized or not """
-        return self._initialized
+        return self.get_config('pocs.INITIALIZED', default=False)
+
+    @is_initialized.setter
+    def is_initialized(self, new_value):
+        self.set_config('pocs.INITIALIZED', new_value)
 
     @property
     def interrupted(self):
@@ -96,46 +101,48 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: If an interrupt signal has been received
         """
-        return self.get_config('actions.INTERRUPT_POCS', default=False)
+        return self.get_config('pocs.INTERRUPTED', default=False)
+
+    @interrupted.setter
+    def interrupted(self, new_value):
+        self.set_config('pocs.INTERRUPTED', new_value)
 
     @property
     def connected(self):
         """ Indicates if POCS is connected """
-        return self._connected
+        return self.get_config('pocs.CONNECTED', default=False)
+
+    @connected.setter
+    def connected(self, new_value):
+        self.set_config('pocs.CONNECTED', new_value)
+
+    @property
+    def keep_running(self):
+        return self.get_config('pocs.KEEP_RUNNING', default=False)
+
+    @keep_running.setter
+    def keep_running(self, new_value):
+        self.set_config('pocs.KEEP_RUNNING', new_value)
+
+    @property
+    def do_states(self):
+        return self.get_config('.pocs.DO_STATES', default=False)
+
+    @do_states.setter
+    def do_states(self, new_value):
+        self.set_config('pocs.DO_STATES', new_value)
+
+    @property
+    def run_once(self):
+        return self.get_config('pocs.RUN_ONCE', default=False)
+
+    @run_once.setter
+    def run_once(self, new_value):
+        self.set_config('pocs.RUN_ONCE', new_value)
 
     @property
     def should_retry(self):
         return self._obs_run_retries >= 0
-
-    ##################################################################################################
-    # Methods
-    ##################################################################################################
-
-    def initialize(self):
-        """Initialize POCS.
-
-        Calls the Observatory `initialize` method.
-
-        Returns:
-            bool: True if all initialization succeeded, False otherwise.
-        """
-
-        if not self._initialized:
-            self.logger.info('*' * 80)
-            self.say("Initializing the system! Woohoo!")
-
-            try:
-                self.logger.debug("Initializing observatory")
-                self.observatory.initialize()
-
-            except Exception as e:
-                self.say(f"Oh wait. There was a problem initializing: {e!r}")
-                self.say("Since we didn't initialize, I'm going to exit.")
-                self.power_down()
-            else:
-                self._initialized = True
-
-        return self._initialized
 
     @property
     def status(self):
@@ -151,6 +158,36 @@ class POCS(PanStateMachine, PanBase):
             self.logger.warning(f"Can't get status: {e!r}")
 
         return status
+
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
+
+    def initialize(self):
+        """Initialize POCS.
+
+        Calls the Observatory `initialize` method.
+
+        Returns:
+            bool: True if all initialization succeeded, False otherwise.
+        """
+
+        if not self.is_initialized:
+            self.logger.info('*' * 80)
+            self.say("Initializing the system! Woohoo!")
+
+            try:
+                self.logger.debug("Initializing observatory")
+                self.observatory.initialize()
+
+            except Exception as e:
+                self.say(f"Oh wait. There was a problem initializing: {e!r}")
+                self.say("Since we didn't initialize, I'm going to exit.")
+                self.power_down()
+            else:
+                self.is_initialized = True
+
+        return self.is_initialized
 
     def say(self, msg):
         """ PANOPTES Units like to talk!
@@ -199,15 +236,18 @@ class POCS(PanStateMachine, PanBase):
             # Observatory shut down
             self.observatory.power_down()
 
-            self._keep_running = False
-            self._do_states = False
-            self._connected = False
+            self.keep_running = False
+            self.do_states = False
+            self.is_initialized = False
+            self.connected = False
+
+            # Clear all the config items.
             self.logger.info("Power down complete")
 
     def reset_observing_run(self):
         """Reset an observing run loop. """
         self.logger.debug("Resetting observing run attempts")
-        self._obs_run_retries = self.get_config('retry_attempts', default=3)
+        self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
     ##################################################################################################
     # Safety Methods
@@ -228,7 +268,7 @@ class POCS(PanStateMachine, PanBase):
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
         Returns:
-            bool: Latest safety flag
+            bool: Latest safety flag.
 
         """
         if not self.connected:
@@ -236,7 +276,7 @@ class POCS(PanStateMachine, PanBase):
 
         is_safe_values = dict()
 
-        # Check if AC power connected and return immediately if not
+        # Check if AC power connected and return immediately if not.
         has_power = self.has_ac_power()
         if not has_power:
             return False
@@ -261,7 +301,15 @@ class POCS(PanStateMachine, PanBase):
             if no_warning is False:
                 self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
-            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
+            # These states are already "parked" so don't send to parking.
+            safe_states = [
+                'parked',
+                'parking',
+                'sleeping',
+                'housekeeping',
+                'ready'
+            ]
+            if self.state not in safe_states:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
 
@@ -312,10 +360,10 @@ class POCS(PanStateMachine, PanBase):
         # Check if we are using weather simulator
         simulator_values = self.get_config('simulator', default=[])
         if len(simulator_values):
-            self.logger.critical(f'simulator_values: {simulator_values}')
+            self.logger.debug(f'simulator_values: {simulator_values}')
 
         if 'weather' in simulator_values:
-            self.logger.debug("Weather simulator always safe")
+            self.logger.info("Weather simulator always safe")
             return True
 
         # Get current weather readings from database
@@ -332,9 +380,9 @@ class POCS(PanStateMachine, PanBase):
             self.logger.debug(f"Weather Safety: {is_safe} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
-            self.logger.warning("No record found in DB: {}", e)
+            self.logger.warning(f"No record found in DB: {e!r}")
         except Exception as e:  # pragma: no cover
-            self.logger.error("Error checking weather: {}", e)
+            self.logger.error(f"Error checking weather: {e!r}")
         else:
             if age >= stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -402,9 +450,8 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 self.logger.warning(f'No mains "power" reading found in database.')
 
-            # Legacy control boards have `main`.
             has_power = False  # Assume not
-            for power_key in ['main', 'mains']:
+            for power_key in ['main', 'mains']:  # Legacy control boards have `main`.
                 with suppress(KeyError):
                     has_power = bool(record['data'][power_key])
 
@@ -431,26 +478,27 @@ class POCS(PanStateMachine, PanBase):
     # Convenience Methods
     ##################################################################################################
 
-    def sleep(self, delay=2.5):
+    def sleep(self, delay=None):
         """ Send POCS to sleep.
 
         Loops for `delay` number of seconds. If `delay` is more than 30.0 seconds,
         then check for status signals (which are updated every 60 seconds by default).
 
         Keyword Arguments:
-            delay {float} -- Number of seconds to sleep (default: 2.5)
+            delay {float|None} -- Number of seconds to sleep. If default `None`, look up value in
+                config, otherwise 2.5 seconds.
         """
         if delay is None:
             delay = self.get_config('sleep_delay', default=2.5)
 
-        timer = CountdownTimer(delay)
+        sleep_timer = CountdownTimer(delay)
 
-        while not timer.expired():
+        while not sleep_timer.expired():
             # If we shutdown leave loop
             if self.interrupted or self.connected is False:
                 break
 
-            timer.sleep(max_sleep=30)
+            sleep_timer.sleep(max_sleep=30)
 
     def wait_for_events(self,
                         events,
@@ -506,6 +554,9 @@ class POCS(PanStateMachine, PanBase):
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
+
+        This can be used with `horizon` to wait for the sun to get to a certain
+        position, e.g., `self.wait_until_safe(horizon='flat')`.  See `run` for an example.
         """
         while not self.is_safe(no_warning=True, **kwargs):
             self.sleep(delay=self.get_config('safe_delay', default=60 * 5))

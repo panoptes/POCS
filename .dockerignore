@@ -1,8 +1,9 @@
-docs/*
 !.git
+docs/*
 .eggs
 .idea
-__pycache__
+.venv
+venv
 *.egg-info
 .github
 
@@ -11,4 +12,5 @@ __pycache__
 
 *.log
 *.pdf
-__pycache__
+**/*.pyc
+**/__pycache__

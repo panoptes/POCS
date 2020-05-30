@@ -280,7 +280,9 @@ def test_run_wait_until_safe(observatory,
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.is_weather_safe() is False
+
         pocs.send_message('RUNNING')
+
         pocs.run(run_once=True, exit_when_done=True)
         assert pocs.is_weather_safe() is True
         pocs.power_down()

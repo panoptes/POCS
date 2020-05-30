@@ -3,13 +3,13 @@ from requests.exceptions import ConnectionError
 from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
-from panoptes.pocs.utils.logging import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 
 class PanBase(object):
     """ Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, db).
+    Defines common properties for each class (e.g. logger, config, db).
     """
 
     def __init__(self, config_port='6563', *args, **kwargs):
@@ -22,9 +22,6 @@ class PanBase(object):
         simulators = self.get_config('simulator', default=[])
         if simulators:
             self.logger.warning(f'Using simulators: {simulators}')
-
-        # Check to make sure config has some items we need
-        self._check_config()
 
         # Get passed DB or set up new connection
         _db = kwargs.get('db', None)
@@ -43,8 +40,8 @@ class PanBase(object):
         See `panoptes.utils.config.client.get_config` for more information.
 
         Args:
-            *args: Passed to get_client
-            **kwargs: Passed to get_client
+            *args: Passed to get_config
+            **kwargs: Passed to get_config
         """
         config_value = None
         try:
@@ -54,16 +51,21 @@ class PanBase(object):
 
         return config_value
 
-    def _check_config(self):
-        """ Checks the config file for mandatory items """
+    def set_config(self, key, new_value, *args, **kwargs):
+        """Thin-wrapper around client based set_config that sets default port.
 
-        items_to_check = [
-            'directories',
-            'mount',
-            'state_machine'
-        ]
+        See `panoptes.utils.config.client.set_config` for more information.
 
-        for item in items_to_check:
-            config_item = self.get_config(item, default={})
-            if config_item is None or len(config_item) == 0:
-                self.logger.error(f"'{item}' must be specified in config, exiting")
+        Args:
+            key (str): The key name to use, can be namespaced with dots.
+            new_value (any): The value to store.
+            *args: Passed to set_config
+            **kwargs: Passed to set_config
+        """
+        config_value = None
+        try:
+            config_value = client.set_config(key, new_value, port=self._config_port, *args, **kwargs)
+        except ConnectionError as e:  # pragma: no cover
+            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+
+        return config_value

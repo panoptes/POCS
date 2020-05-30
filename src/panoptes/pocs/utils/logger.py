@@ -1,5 +1,5 @@
 import os
-from panoptes.utils.logging import logger
+from loguru import logger as loguru_logger
 
 
 class PanLogger:
@@ -77,7 +77,7 @@ def get_logger(profile='panoptes',
     # Log file for tailing on the console.
     if 'console' not in LOGGER_INFO.handlers:
         console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
-        console_id = logger.add(
+        console_id = loguru_logger.add(
             console_log_path,
             rotation='11:30',
             retention=1,
@@ -93,7 +93,7 @@ def get_logger(profile='panoptes',
     # Log file for ingesting into log file service.
     if full_log_file and 'archive' not in LOGGER_INFO.handlers:
         full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
-        archive_id = logger.add(
+        archive_id = loguru_logger.add(
             full_log_path,
             rotation='11:31',
             retention='7 days',
@@ -106,9 +106,9 @@ def get_logger(profile='panoptes',
         LOGGER_INFO.handlers['archive'] = archive_id
 
     # Customize colors
-    logger.level('TRACE', color='<cyan>')
-    logger.level('DEBUG', color='<white>')
-    logger.level('INFO', color='<light-blue><bold>')
-    logger.level('SUCCESS', color='<cyan><bold>')
+    loguru_logger.level('TRACE', color='<cyan>')
+    loguru_logger.level('DEBUG', color='<white>')
+    loguru_logger.level('INFO', color='<light-blue><bold>')
+    loguru_logger.level('SUCCESS', color='<cyan><bold>')
 
-    return logger
+    return loguru_logger

@@ -18,7 +18,7 @@ from panoptes.utils.config import load_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import app as config_server_app
 
-from panoptes.pocs.utils.logging import get_logger, PanLogger
+from panoptes.pocs.utils.logger import get_logger, PanLogger
 
 # TODO download IERS files.
 

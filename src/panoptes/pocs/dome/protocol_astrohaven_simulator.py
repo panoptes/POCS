@@ -6,7 +6,7 @@ import time
 
 from panoptes.pocs.dome import astrohaven
 from panoptes.utils import serial_handlers
-from panoptes.pocs.utils.logging import get_logger
+from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
 CLOSED_POSITION = 0
