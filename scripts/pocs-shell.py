@@ -1,28 +1,19 @@
 #!/usr/bin/env python3
-import os
 import readline
 import time
 
 from cmd import Cmd
 from pprint import pprint
 
-from astropy import units as u
-from astropy.coordinates import AltAz
-from astropy.coordinates import ICRS
 from astropy.utils import console
 
 from panoptes.pocs import hardware
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
-from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
 from panoptes.utils import current_time
 from panoptes.utils import string_to_params
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.images import polar_alignment as polar_alignment_utils
-from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
 
 from panoptes.pocs.mount import create_mount_from_config
@@ -74,13 +65,6 @@ class PocsShell(Cmd):
             return False
 
         return self.pocs.is_safe()
-
-    def do_drift_align(self, *arg):
-        """Enter the drift alignment shell."""
-        self.do_reset_pocs()
-        print_info('*' * 80)
-        i = DriftShell()
-        i.cmdloop()
 
     def do_setup_pocs(self, *arg):
         """Setup and initialize a POCS instance."""
@@ -308,13 +292,17 @@ Hardware names: {}   (or all for all hardware)'''.format(
         self.pocs.say("Moving back to home")
         mount.slew_to_home(blocking=True)
 
+        print_error(f'NO POLAR UTILS RIGHT NOW')
+        return
+
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
+            self.pocs.logger.error(f'THERE ARE NO POLAR ALIGNMENT UTILS RIGHT NOW')
+            # pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
         except Exception as e:
             print_warning(f'Unable to solve pole image: {e!r}')
-            print_warning("Will proceeed with rotation image but analysis not possible")
+            print_warning("Will proceed with rotation image but analysis not possible")
             pole_center = None
         else:
             pole_center = (float(pole_center[0]), float(pole_center[1]))
