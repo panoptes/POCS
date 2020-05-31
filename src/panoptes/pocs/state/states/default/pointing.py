@@ -21,6 +21,9 @@ def on_enter(event_data):
     pointing_threshold = pointing_config.get('threshold', 0.05)  # degrees
     exptime = pointing_config.get('exptime', 30)  # seconds
 
+    # We want about 3 iterations of waiting loop during pointing image.
+    wait_delay = int(exptime / 3) + 1
+
     try:
         pocs.say("Taking pointing picture.")
 
@@ -30,7 +33,7 @@ def on_enter(event_data):
             observation=observation
         )
         fits_headers['POINTING'] = 'True'
-        pocs.logger.debug("Pointing headers: {}".format(fits_headers))
+        pocs.logger.debug(f"Pointing headers: {fits_headers!r}")
 
         primary_camera = pocs.observatory.primary_camera
 
@@ -44,7 +47,7 @@ def on_enter(event_data):
                 observation,
                 headers=fits_headers,
                 exptime=exptime,
-                filename='pointing{:02d}'.format(img_num)
+                filename=f'pointing{img_num:02d}'
             )
 
             # Wait for images to complete
@@ -54,7 +57,7 @@ def on_enter(event_data):
                 pocs.logger.info(f'Waiting for pointing image {img_num + 1}/{num_pointing_images}')
                 return pocs.is_safe()
 
-            wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb, sleep_delay=11)
+            wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb, sleep_delay=wait_delay)
 
             # Analyze pointing
             if observation is not None:
@@ -62,9 +65,9 @@ def on_enter(event_data):
                 pointing_image = Image(
                     pointing_path,
                     location=pocs.observatory.earth_location,
-                    config_port=pocs._config_port
+                    config_port=pocs.config_port
                 )
-                pocs.logger.debug("Pointing image: {}".format(pointing_image))
+                pocs.logger.debug(f"Pointing image: {pointing_image}")
 
                 pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
                 pointing_image.solve_field()

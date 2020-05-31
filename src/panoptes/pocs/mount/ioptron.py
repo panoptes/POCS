@@ -10,7 +10,6 @@ from panoptes.pocs.mount.serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
-
     """
         Mount class for iOptron mounts. Overrides the base `initialize` method
         and providers some helper methods to convert coordinates.
@@ -82,36 +81,34 @@ class Mount(AbstractSerialMount):
 
         self.logger.info('Mount created')
 
-
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self.status().get('state', '')
+        self._is_home = 'Stopped - Zero Position' in self.status.get('state', '')
 
         return self._is_home
 
     @property
     def is_tracking(self):
         """ bool: Mount tracking status. """
-        self._is_tracking = 'Tracking' in self.status().get('state', '')
+        self._is_tracking = 'Tracking' in self.status.get('state', '')
 
         return self._is_tracking
 
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. """
-        self._is_slewing = 'Slewing' in self.status().get('state', '')
+        self._is_slewing = 'Slewing' in self.status.get('state', '')
 
         return self._is_slewing
 
-
-##################################################################################################
-# Public Methods
-##################################################################################################
+    ##################################################################################################
+    # Public Methods
+    ##################################################################################################
 
     def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
@@ -213,9 +210,9 @@ class Mount(AbstractSerialMount):
 
         return self._is_parked
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
     def _set_initial_rates(self):
         # Make sure we start at sidereal
         self.set_tracking_rate()

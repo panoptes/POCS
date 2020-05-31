@@ -23,7 +23,7 @@ def create_mount_from_config(config_port='6563',
     and the class must be called Mount.
 
     Args:
-        config: A dictionary of name to value, as produced by `panoptes.utils.config.load_config`.
+        config_port: The port number of the config server, default 6563.
         mount_info: Optional param which overrides the 'mount' entry in config if provided.
             Useful for testing.
         earth_location: `astropy.coordinates.EarthLocation` instance, representing the
@@ -42,7 +42,7 @@ def create_mount_from_config(config_port='6563',
             because of incorrect configuration.
     """
 
-    # If mount_info was not passed as a paramter, check config.
+    # If mount_info was not passed as a parameter, check config.
     if mount_info is None:
         logger.debug('No mount info provided, using values from config.')
         mount_info = get_config('mount', default=None, port=config_port)
@@ -73,7 +73,7 @@ def create_mount_from_config(config_port='6563',
     # Create simulator if requested
     if use_simulator or (driver == 'simulator'):
         logger.debug(f'Creating mount simulator')
-        return create_mount_simulator(config_port=config_port)
+        return create_mount_simulator()
 
     # See if we have a serial connection
     try:
@@ -99,15 +99,15 @@ def create_mount_from_config(config_port='6563',
     # Make the mount include site information
     mount = module.Mount(config_port=config_port, location=earth_location, *args, **kwargs)
 
-    logger.info(f'{driver} mount created')
+    logger.success(f'{driver} mount created')
 
     return mount
 
 
 def create_mount_simulator(config_port='6563', *args, **kwargs):
-
     # Remove mount simulator
     current_simulators = get_config('simulator', default=[], port=config_port)
+    logger.warning(f'Current simulators: {current_simulators}')
     with suppress(ValueError):
         current_simulators.remove('mount')
 
@@ -122,16 +122,16 @@ def create_mount_simulator(config_port='6563', *args, **kwargs):
     # Set mount device info to simulator
     set_config('mount', mount_config, port=config_port)
 
-    earth_location = create_location_from_config()['earth_location']
+    earth_location = create_location_from_config(config_port=config_port)['earth_location']
 
     logger.debug(f"Loading mount driver: pocs.mount.{mount_config['driver']}")
     try:
         module = load_module(f"panoptes.pocs.mount.{mount_config['driver']}")
     except error.NotFound as e:
-        raise error.MountNotFound(e)
+        raise error.MountNotFound(f'Error loading mount module: {e!r}')
 
     mount = module.Mount(location=earth_location, config_port=config_port, *args, **kwargs)
 
-    logger.info(f"{mount_config['driver']} mount created")
+    logger.success(f"{mount_config['driver']} mount created")
 
     return mount

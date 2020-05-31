@@ -62,8 +62,6 @@ class PanStateMachine(Machine):
 
         self._state_machine_table = state_machine_table
         self.next_state = None
-        self.keep_running = False
-        self.do_states = True
         self.run_once = kwargs.get('run_once', False)
 
         self.logger.debug("State machine created")
@@ -93,7 +91,7 @@ class PanStateMachine(Machine):
 
         Args:
             exit_when_done (bool, optional): If True, the loop will exit when `do_states`
-                has become False, otherwise will sleep (default)
+                has become False, otherwise will wait (default)
             run_once (bool, optional): If the machine loop should only run one time, defaults
                 to False to loop continuously.
         """
@@ -105,24 +103,29 @@ class PanStateMachine(Machine):
         self.next_state = 'ready'
 
         _loop_iteration = 0
+        self.logger.debug(f'Starting run loop with keep_running={self.keep_running} '
+                          f'and connected={self.connected}')
         while self.keep_running and self.connected:
             state_changed = False
-            self.logger.info(f'Run loop: {self.state}')
-            self.logger.info(f'Horizon limits: {self._horizon_lookup}')
+            self.logger.info(f'Run loop: state={self.state} next_state={self.next_state} do_states={self.do_states}')
 
             # If we are processing the states
+            self.logger.debug(f'Observatory can_observe: {self.observatory.can_observe}')
             if self.do_states and self.observatory.can_observe:
 
                 # BEFORE TRANSITION
 
                 # Wait for safety readying at given horizon level.
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-                self.logger.info(f'Checking safety for {self.next_state} with horizon limit of {required_horizon}')
-                self.wait_until_safe(horizon=required_horizon)
+                delay = self.get_config('wait_delay', default=60 * 3)  # Check every 3 minutes
+                self.logger.debug(f'Checking for horizon={required_horizon} for {self.next_state}')
+                while not self.is_safe(no_warning=True, horizon=required_horizon):
+                    self.logger.info(f'Waiting for horizon={required_horizon} for state={self.next_state}')
+                    self.wait(delay=delay)
 
                 # ENTER STATE
 
-                self.logger.info('Going to next state')
+                self.logger.info(f'Going to next_state={self.next_state}')
                 try:
                     # The state's `on_enter` logic will be performed here.
                     state_changed = self.goto_next_state()
@@ -134,7 +137,7 @@ class PanStateMachine(Machine):
 
                 # AFTER TRANSITION
 
-                # If we didn't successfully transition, sleep a while then try again
+                # If we didn't successfully transition, wait a while then try again
                 max_iterations = self.get_config('pocs.MAX_TRANSITION_ATTEMPTS', default=5)
                 if not state_changed:
                     self.logger.warning(f"Failed to move from {self.state} to {self.next_state}")
@@ -147,14 +150,11 @@ class PanStateMachine(Machine):
                     else:
                         _loop_iteration = _loop_iteration + 1
                         self.logger.warning(f"Sleeping before trying again ({_loop_iteration}/{max_iterations})")
-                        self.sleep(with_status=False)
+                        self.wait(with_status=False)
                 else:
                     _loop_iteration = 0
 
-                ########################################################
                 # Note that `self.state` below has changed from above
-                ########################################################
-
                 # If we are in ready state then we are making one attempt through the loop.
                 if self.state == 'ready':
                     self._obs_run_retries -= 1
@@ -166,7 +166,7 @@ class PanStateMachine(Machine):
             elif not self.interrupted:
                 # Sleep for one minute
                 self.logger.debug(f'Sleeping in run loop - why am I here?')
-                self.sleep(60)
+                self.wait(delay=60)
 
     def goto_next_state(self):
         """Make a transition to the next state.
@@ -185,18 +185,20 @@ class PanStateMachine(Machine):
 
         # Get the next transition method based off `state` and `next_state`
         transition_method_name = self._lookup_trigger()
-
-        self.logger.debug(f"Transition method: {transition_method_name}")
-
         transition_method = getattr(self, transition_method_name, self.park)
+        self.logger.debug(f'{transition_method_name}: {self.state} → {self.next_state}')
+
+        # Do transition.
         state_changed = transition_method()
-        self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
+        if state_changed:
+            self.logger.success(f'Successful transition to {self.state}')
+            self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
 
     def stop_states(self):
         """ Stops the machine loop on the next iteration """
-        self.logger.info("Stopping POCS states")
+        self.logger.success("Stopping POCS states")
         self.do_states = False
 
     ##################################################################################################
@@ -317,7 +319,6 @@ class PanStateMachine(Machine):
     ##################################################################################################
 
     def _lookup_trigger(self):
-        self.logger.debug(f"Source: {self.state}\t Dest: {self.next_state}")
         if self.state == 'parking' and self.next_state == 'parking':
             return 'set_park'
         else:

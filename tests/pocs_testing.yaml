@@ -55,11 +55,10 @@ pointing:
   exptime: 30 # seconds
   max_iterations: 3
 cameras:
-  auto_detect: True
-  primary: 14d3bd
+  auto_detect: False
   devices:
-    - model: canon_gphoto2
-    - model: canon_gphoto2
+    - model: simulator
+    - model: simulator
 
 
 ########################## Observations ########################################

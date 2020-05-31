@@ -14,7 +14,7 @@ class Protocol:
     A_IS_CLOSED = '1'  # Only shutter A is fully closed.
     B_IS_CLOSED = '2'  # Only shutter B is fully closed.
 
-    BOTH_OPEN = '3'    # Really means both NOT fully closed.
+    BOTH_OPEN = '3'  # Really means both NOT fully closed.
 
     # Status codes produced by the dome when not responding to a movement command.
     STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)
@@ -99,19 +99,27 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     @property
     def status(self):
-        """Return a text string describing dome's current status."""
-        if not self.is_connected:
-            return 'Not connected to the dome'
-        v = self._read_latest_state()
-        if v == Protocol.BOTH_CLOSED:
-            return 'Both sides closed'
-        if v == Protocol.A_IS_CLOSED:
-            return 'Side A closed, side B open'
-        if v == Protocol.B_IS_CLOSED:
-            return 'Side A open, side B closed'
-        if v == Protocol.BOTH_OPEN:
-            return 'Both sides open'
-        return 'Unexpected response from Astrohaven Dome Controller: %r' % v
+        """Return a dict with dome's current status."""
+
+        status_lookup = {
+            Protocol.BOTH_CLOSED: 'closed_both',
+            Protocol.A_IS_CLOSED: 'closed_a',
+            Protocol.B_IS_CLOSED: 'closed_b',
+            Protocol.BOTH_OPEN: 'open_both',
+        }
+
+        state = self._read_latest_state()
+
+        return_status = dict(
+            connected=self.is_connected,
+        )
+
+        try:
+            return_status['open'] = status_lookup[state]
+        except KeyError as e:
+            return_status['open'] = f'Unexpected response from Astrohaven Dome Controller: {state!r}'
+
+        return return_status
 
     def __str__(self):
         if self.is_connected:
@@ -170,7 +178,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
             have_seen_send = False
             end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
             self.serial.reset_input_buffer()
-            # Note that there is no sleep in this loop because we have a timeout on reading from
+            # Note that there is no wait in this loop because we have a timeout on reading from
             # the the dome controller, and we know that the dome doesn't echo every character that
             # we send to it.
             while True:

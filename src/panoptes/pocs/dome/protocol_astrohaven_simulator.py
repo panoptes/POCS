@@ -125,7 +125,7 @@ class AstrohavenPLCSimulator:
             except queue.Empty:
                 continue
             if self.handle_input(c):
-                # This sleep is here to reflect the fact that responses from the Astrohaven PLC
+                # This wait is here to reflect the fact that responses from the Astrohaven PLC
                 # don't appear to be instantaneous, and the Wheaton originated driver had pauses
                 # and drains of input from the PLC before accepting a response.
                 time.sleep(0.2)

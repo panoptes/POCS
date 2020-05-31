@@ -1,6 +1,7 @@
 import os
 import random
 import time
+from abc import ABC
 
 from threading import Timer
 
@@ -14,26 +15,26 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import get_quantity_value
 
 
-class Camera(AbstractCamera):
+class Camera(AbstractCamera, ABC):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
         kwargs['readout_time'] = kwargs.get('readout_time', 1.0 * u.second)
         super().__init__(name=name, *args, **kwargs)
         self.connect()
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     def connect(self):
         """ Connect to camera simulator
 
-        The simulator merely markes the `connected` property.
+        The simulator merely marks the `connected` property.
         """
         # Create a random serial number if one hasn't been specified
         if self._serial_number == 'XXXXXX':
             self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
-        self.logger.debug('{} connected'.format(self.name))
+        self.logger.debug(f'{self.name} connected')
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
@@ -45,13 +46,12 @@ class Camera(AbstractCamera):
         return super().take_observation(observation,
                                         headers,
                                         filename,
-                                        *args,
                                         **kwargs)
 
     def _end_exposure(self):
         self._is_exposing = False
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second) + 0.05,
                                 function=self._end_exposure)
         self._is_exposing = True
@@ -59,7 +59,7 @@ class Camera(AbstractCamera):
         readout_args = (filename, header)
         return readout_args
 
-    def _readout(self, filename, header):
+    def _readout(self, filename=None, header=None):
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
@@ -79,9 +79,11 @@ class Camera(AbstractCamera):
     def _process_fits(self, file_path, info):
         file_path = super()._process_fits(file_path, info)
         self.logger.debug('Overriding mount coordinates for camera simulator')
+        # TODO get the path as package data or something better.
         solved_path = os.path.join(
             os.environ['POCS'],
-            'pocs', 'tests', 'data',
+            'tests',
+            'data',
             'solved.fits.fz'
         )
         solved_header = fits_utils.getheader(solved_path)

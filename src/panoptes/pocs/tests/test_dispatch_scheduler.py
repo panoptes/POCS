@@ -11,7 +11,6 @@ from panoptes.pocs.scheduler.dispatch import Scheduler
 from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
-from panoptes.utils.serializers import from_yaml
 from panoptes.utils.config.client import get_config
 
 
@@ -40,7 +39,7 @@ def field_file(dynamic_config_server, config_port):
 
 @pytest.fixture()
 def field_list():
-    return from_yaml("""
+    return yaml.full_load("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s

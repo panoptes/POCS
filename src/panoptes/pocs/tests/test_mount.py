@@ -12,9 +12,9 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
 
-def test_create_mount_simulator(dynamic_config_server, config_port):
+def test_create_mount_simulator():
     # Use the simulator create function directly.
-    mount = create_mount_simulator(config_port=config_port)
+    mount = create_mount_simulator()
     assert isinstance(mount, AbstractMount) is True
 
 
@@ -50,7 +50,7 @@ def test_create_mount_with_mount_info(dynamic_config_server, config_port):
 
 def test_create_mount_with_earth_location(dynamic_config_server, config_port):
     # Get location to pass manually.
-    loc = create_location_from_config(config_port=config_port)
+    loc = create_location_from_config()
     # Set config to not have a location.
     set_config('location', None, port=config_port)
     assert isinstance(create_mount_from_config(config_port=config_port,

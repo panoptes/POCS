@@ -69,6 +69,13 @@ class BaseScheduler(PanBase):
     ##########################################################################
 
     @property
+    def status(self):
+        return {
+            'constraints': self.constraints,
+            'current_observation': self.current_observation,
+        }
+
+    @property
     def observations(self):
         """Returns a dict of `~pocs.scheduler.observation.Observation` objects
         with `~pocs.scheduler.observation.Observation.field.field_name` as the key
@@ -200,12 +207,6 @@ class BaseScheduler(PanBase):
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
         raise NotImplementedError
-
-    def status(self):
-        return {
-            'constraints': self.constraints,
-            'current_observation': self.current_observation,
-        }
 
     def reset_observed_list(self):
         """Reset the observed list """

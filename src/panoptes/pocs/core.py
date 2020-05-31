@@ -12,8 +12,6 @@ from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.utils import current_time
 from panoptes.utils import get_free_space
 from panoptes.utils import CountdownTimer
-from panoptes.utils import listify
-from panoptes.utils import error
 
 
 class POCS(PanStateMachine, PanBase):
@@ -75,11 +73,11 @@ class POCS(PanStateMachine, PanBase):
         def get_status():
             while True:
                 status = self.status
-                self.logger.debug(status)
+                self.logger.debug(f'Periodic status call: {status!r}')
                 self.db.insert_current('status', status)
                 CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
 
-        self._status_thread = Thread(target=get_status)
+        self._status_thread = Thread(target=get_status, daemon=True)
         self._status_thread.start()
 
         self.connected = True
@@ -106,6 +104,8 @@ class POCS(PanStateMachine, PanBase):
     @interrupted.setter
     def interrupted(self, new_value):
         self.set_config('pocs.INTERRUPTED', new_value)
+        if new_value:
+            self.logger.critical(f'POCS has been interrupted')
 
     @property
     def connected(self):
@@ -118,7 +118,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def keep_running(self):
-        return self.get_config('pocs.KEEP_RUNNING', default=False)
+        return self.get_config('pocs.KEEP_RUNNING', default=True)
 
     @keep_running.setter
     def keep_running(self, new_value):
@@ -126,7 +126,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def do_states(self):
-        return self.get_config('.pocs.DO_STATES', default=False)
+        return self.get_config('pocs.DO_STATES', default=True)
 
     @do_states.setter
     def do_states(self, new_value):
@@ -141,15 +141,6 @@ class POCS(PanStateMachine, PanBase):
         self.set_config('pocs.RUN_ONCE', new_value)
 
     @property
-    def is_sleeping(self):
-        """ Is the unit currently in a sleeping loop."""
-        return self.get_config('pocs.IS_SLEEPING', default=False)
-
-    @is_sleeping.setter
-    def is_sleeping(self, new_value):
-        self.set_config('pocs.IS_SLEEPING', new_value)
-
-    @property
     def should_retry(self):
         return self._obs_run_retries >= 0
 
@@ -162,7 +153,7 @@ class POCS(PanStateMachine, PanBase):
             status['system'] = {
                 'free_space': str(self._free_space),
             }
-            status['observatory'] = self.observatory.status()
+            status['observatory'] = self.observatory.status
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get status: {e!r}")
 
@@ -245,9 +236,10 @@ class POCS(PanStateMachine, PanBase):
             # Observatory shut down
             self.observatory.power_down()
 
-            self.keep_running = False
-            self.do_states = False
+            self.keep_running = True
+            self.do_states = True
             self.is_initialized = False
+            self.interrupted = False
             self.connected = False
 
             # Clear all the config items.
@@ -487,46 +479,28 @@ class POCS(PanStateMachine, PanBase):
     # Convenience Methods
     ##################################################################################################
 
-    def sleep(self, delay=None):
-        """ Send POCS to sleep.
+    def wait(self, delay=None):
+        """ Send POCS to wait.
 
         Loops for `delay` number of seconds. If `delay` is more than 30.0 seconds,
         then check for status signals (which are updated every 60 seconds by default).
 
         Keyword Arguments:
-            delay {float|None} -- Number of seconds to sleep. If default `None`, look up value in
+            delay {float|None} -- Number of seconds to wait. If default `None`, look up value in
                 config, otherwise 2.5 seconds.
         """
-        self.is_sleeping = True
         if delay is None:
-            delay = self.get_config('sleep_delay', default=2.5)
+            delay = self.get_config('wait_delay', default=2.5)
 
         sleep_timer = CountdownTimer(delay)
-        while not sleep_timer.expired():
-            # If we shutdown leave loop
-            if self.interrupted or self.connected is False:
-                break
-
+        self.logger.info(f'Starting a wait timer of {delay} seconds')
+        while not sleep_timer.expired() and not self.interrupted:
+            self.logger.debug(f'Wait timer: {sleep_timer.time_left():.02f} / {delay:.02f}')
             sleep_timer.sleep(max_sleep=30)
 
-        self.is_sleeping = False
-
-    def wait_until_safe(self, safe_delay=None, **kwargs):
-        """ Waits until weather is safe.
-
-        This will wait until a True value is returned from the safety check,
-        blocking until then.
-
-        This can be used with `horizon` to wait for the sun to get to a certain
-        position, e.g., `self.wait_until_safe(horizon='flat')`.  See `run` for an example.
-
-        Args:
-            safe_delay (int|float): The time to sleep between `is_safe` calls. If default
-                `None`, look for `safe_delay` in config, otherwise 5 minutes.
-        """
-        safe_delay = safe_delay or self.get_config('safe_delay', default=60 * 5)
-        while not self.is_safe(no_warning=True, **kwargs):
-            self.sleep(delay=safe_delay)
+        is_expired = sleep_timer.expired()
+        self.logger.debug(f'Leaving wait timer: expired={is_expired}')
+        return is_expired
 
     ##################################################################################################
     # Class Methods

@@ -1,4 +1,5 @@
 import os
+import time
 
 import pytest
 from astropy.time import Time
@@ -65,24 +66,27 @@ def test_bad_site(dynamic_config_server, config_port):
 
 def test_cannot_observe(dynamic_config_server, config_port, caplog):
     obs = Observatory(config_port=config_port)
-    assert obs.can_observe is False
 
     site_details = create_location_from_config(config_port=config_port)
     cameras = create_camera_simulator()
 
-    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
-        -1].message == "Scheduler not present, cannot observe"
+    assert obs.can_observe is False
+    time.sleep(0.5)  # log sink time
+    log_record = caplog.records[-1]
+    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
     obs.scheduler = create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
 
     assert obs.can_observe is False
-    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
-        -1].message == "Cameras not present, cannot observe."
+    time.sleep(0.5)  # log sink time
+    log_record = caplog.records[-1]
+    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
     assert obs.can_observe is False
-    assert caplog.records[-1].levelname == "WARNING" and caplog.records[
-        -1].message == "Mount not present, cannot observe."
+    log_record = caplog.records[-1]
+    time.sleep(0.5)  # log sink time
+    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
 
 
 def test_camera_wrong_type(dynamic_config_server, config_port):

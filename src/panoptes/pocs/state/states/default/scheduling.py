@@ -23,23 +23,23 @@ def on_enter(event_data):
         # Get the next observation
         try:
             observation = pocs.observatory.get_observation()
-            pocs.logger.info("Observation: {}".format(observation))
+            pocs.logger.info(f"Observation: {observation}")
         except error.NoObservation:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
         except Exception as e:
-            pocs.logger.warning("Error in scheduling: {}".format(e))
+            pocs.logger.warning(f"Error in scheduling: {e!r}")
         else:
 
             if existing_observation and observation.name == existing_observation.name:
-                pocs.say("I'm sticking with {}".format(observation.name))
+                pocs.say(f"I'm sticking with {observation.name}")
 
                 # Make sure we are using existing observation (with pointing image)
                 pocs.observatory.current_observation = existing_observation
                 pocs.next_state = 'tracking'
             else:
-                pocs.say("Got it! I'm going to check out: {}".format(observation.name))
+                pocs.say(f"Got it! I'm going to check out: {observation.name}")
 
-                pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
+                pocs.logger.debug(f"Setting Observation coords: {observation.field}")
                 if pocs.observatory.mount.set_target_coordinates(observation.field):
                     pocs.next_state = 'slewing'
                 else:

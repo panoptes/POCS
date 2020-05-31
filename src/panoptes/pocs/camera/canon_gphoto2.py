@@ -1,5 +1,6 @@
 import os
 import subprocess
+from abc import ABC
 
 from threading import Event
 from threading import Timer
@@ -12,7 +13,7 @@ from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.pocs.camera import AbstractGPhotoCamera
 
 
-class Camera(AbstractGPhotoCamera):
+class Camera(AbstractGPhotoCamera, ABC):
 
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
@@ -36,32 +37,32 @@ class Camera(AbstractGPhotoCamera):
         # Get serial number
         _serial_number = self.get_property('serialnumber')
         if not _serial_number:
-            raise error.CameraNotFound("Camera not responding: {}".format(self))
+            raise error.CameraNotFound(f"Camera not responding: {self}")
 
         self._serial_number = _serial_number
 
         # Properties to be set upon init.
         prop2index = {
-            '/main/actions/viewfinder': 1,                # Screen off
+            '/main/actions/viewfinder': 1,  # Screen off
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
-            '/main/capturesettings/continuousaf': 0,      # No auto-focus
-            '/main/capturesettings/drivemode': 0,         # Single exposure
-            '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
-            '/main/capturesettings/shutterspeed': 0,      # Bulb
-            '/main/imgsettings/imageformat': 9,           # RAW
-            '/main/imgsettings/imageformatcf': 9,         # RAW
-            '/main/imgsettings/imageformatsd': 9,         # RAW
-            '/main/imgsettings/iso': 1,                   # ISO 100
-            '/main/settings/autopoweroff': 0,             # Don't power off
-            '/main/settings/capturetarget': 0,            # Capture to RAM, for download
-            '/main/settings/datetime': 'now',             # Current datetime
-            '/main/settings/datetimeutc': 'now',          # Current datetime
-            '/main/settings/reviewtime': 0,               # Screen off after taking pictures
+            '/main/capturesettings/continuousaf': 0,  # No auto-focus
+            '/main/capturesettings/drivemode': 0,  # Single exposure
+            '/main/capturesettings/focusmode': 0,  # Manual (don't try to focus)
+            '/main/capturesettings/shutterspeed': 0,  # Bulb
+            '/main/imgsettings/imageformat': 9,  # RAW
+            '/main/imgsettings/imageformatcf': 9,  # RAW
+            '/main/imgsettings/imageformatsd': 9,  # RAW
+            '/main/imgsettings/iso': 1,  # ISO 100
+            '/main/settings/autopoweroff': 0,  # Don't power off
+            '/main/settings/capturetarget': 0,  # Capture to RAM, for download
+            '/main/settings/datetime': 'now',  # Current datetime
+            '/main/settings/datetimeutc': 'now',  # Current datetime
+            '/main/settings/reviewtime': 0,  # Screen off after taking pictures
         }
 
         owner_name = 'Project PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
-        copyright = 'owner_name {}'.format(owner_name, current_time().datetime.year)
+        copyright = f'{owner_name} {current_time().datetime:%Y}'
 
         prop2value = {
             '/main/settings/artist': artist_name,
@@ -101,7 +102,6 @@ class Camera(AbstractGPhotoCamera):
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
                                                                          filename,
-                                                                         *args,
                                                                          **kwargs)
 
         exposure_event = self.take_exposure(seconds=exptime, filename=file_path)
@@ -117,12 +117,12 @@ class Camera(AbstractGPhotoCamera):
         wait_time = exptime + self.readout_time
 
         t = Timer(wait_time, self.process_exposure, (metadata, observation_event, exposure_event))
-        t.name = '{}Thread'.format(self.name)
+        t.name = f'{self.name}Thread'
         t.start()
 
         return observation_event
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+    def _start_exposure(self, seconds=None, filename=None, dark=None, header=None, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
@@ -155,9 +155,9 @@ class Camera(AbstractGPhotoCamera):
             readout_args = (filename, header)
             return readout_args
 
-    def _readout(self, cr2_path, info):
+    def _readout(self, cr2_path=None, info=None):
         """Reads out the image as a CR2 and converts to FITS"""
-        self.logger.debug("Converting CR2 -> FITS: {}".format(cr2_path))
+        self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
         fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
         return fits_path
 

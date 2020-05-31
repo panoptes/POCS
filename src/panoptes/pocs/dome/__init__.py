@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 
 from panoptes.pocs.base import PanBase
 from panoptes.utils.library import load_module
@@ -89,7 +89,7 @@ class AbstractDome(PanBase):
 
         Returns: True if connected, False otherwise.
         """
-        return NotImplemented
+        return NotImplementedError()
 
     @abstractmethod
     def disconnect(self):  # pragma: no cover
@@ -98,12 +98,12 @@ class AbstractDome(PanBase):
         Raises:
             An exception if unable to disconnect.
         """
-        return NotImplemented
+        return NotImplementedError()
 
-    @abstractproperty
+    @abstractmethod
     def is_open(self):  # pragma: no cover
         """True if dome is known to be open."""
-        return NotImplemented
+        return NotImplementedError()
 
     @abstractmethod
     def open(self):  # pragma: no cover
@@ -113,12 +113,12 @@ class AbstractDome(PanBase):
 
         Returns: True if and when open, False if unable to open.
         """
-        return NotImplemented
+        return NotImplementedError()
 
-    @abstractproperty
+    @abstractmethod
     def is_closed(self):  # pragma: no cover
         """True if dome is known to be closed."""
-        return NotImplemented
+        return NotImplementedError()
 
     @abstractmethod
     def close(self):  # pragma: no cover
@@ -128,9 +128,10 @@ class AbstractDome(PanBase):
 
         Returns: True if and when closed, False if unable to close.
         """
-        return NotImplemented
+        return NotImplementedError()
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def status(self):  # pragma: no cover
         """A string representing the status of the dome for presentation.
 
@@ -144,4 +145,4 @@ class AbstractDome(PanBase):
 
         Returns: A string.
         """
-        return NotImplemented
+        return NotImplementedError()

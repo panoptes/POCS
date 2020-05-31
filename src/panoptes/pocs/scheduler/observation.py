@@ -72,6 +72,7 @@ class Observation(PanBase):
         self._set_duration = self.exptime * self.exp_set_size
 
         self._image_dir = self.get_config('directories.images')
+        self._directory = None
         self._seq_time = None
 
         self.merit = 0.0
@@ -83,6 +84,40 @@ class Observation(PanBase):
     ##################################################################################################
     # Properties
     ##################################################################################################
+
+    @property
+    def status(self):
+        """ Observation status
+
+        Returns:
+            dict: Dictionary containing current status of observation
+        """
+
+        equinox = 'J2000'
+        try:
+            equinox = self.field.coord.equinox.value
+        except AttributeError:  # pragma: no cover
+            equinox = self.field.coord.equinox
+
+        status = {
+            'current_exp': self.current_exp_num,
+            'dec_mnt': self.field.coord.dec.value,
+            'equinox': equinox,
+            'exp_set_size': self.exp_set_size,
+            'exptime': self.exptime.value,
+            'field_dec': self.field.coord.dec.value,
+            'field_name': self.name,
+            'field_ra': self.field.coord.ra.value,
+            'merit': self.merit,
+            'min_nexp': self.min_nexp,
+            'minimum_duration': self.minimum_duration.value,
+            'priority': self.priority,
+            'ra_mnt': self.field.coord.ra.value,
+            'seq_time': self.seq_time,
+            'set_duration': self.set_duration.value,
+        }
+
+        return status
 
     @property
     def minimum_duration(self):
@@ -121,13 +156,11 @@ class Observation(PanBase):
         Returns:
             str: Full path to base directory.
         """
-        try:
-            return self._directory
-        except AttributeError:
-            self._directory = os.path.join(self._image_dir,
-                                           'fields',
-                                           self.field.field_name)
-            return self._directory
+        if self._directory is None:
+            self.logger.warning(f'Setting observation directory to {self._image_dir}/{self.field.field_name}')
+            self._directory = os.path.join(self._image_dir, self.field.field_name)
+
+        return self._directory
 
     @property
     def current_exp_num(self):
@@ -186,40 +219,6 @@ class Observation(PanBase):
         self.exposure_list = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
-
-    def status(self):
-        """ Observation status
-
-        Returns:
-            dict: Dictionary containing current status of observation
-        """
-
-        try:
-            equinox = self.field.coord.equinox.value
-        except AttributeError:
-            equinox = self.field.coord.equinox
-        except Exception:
-            equinox = 'J2000'
-
-        status = {
-            'current_exp': self.current_exp_num,
-            'dec_mnt': self.field.coord.dec.value,
-            'equinox': equinox,
-            'exp_set_size': self.exp_set_size,
-            'exptime': self.exptime.value,
-            'field_dec': self.field.coord.dec.value,
-            'field_name': self.name,
-            'field_ra': self.field.coord.ra.value,
-            'merit': self.merit,
-            'min_nexp': self.min_nexp,
-            'minimum_duration': self.minimum_duration.value,
-            'priority': self.priority,
-            'ra_mnt': self.field.coord.ra.value,
-            'seq_time': self.seq_time,
-            'set_duration': self.set_duration.value,
-        }
-
-        return status
 
     ##################################################################################################
     # Private Methods

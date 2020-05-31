@@ -91,7 +91,7 @@ class Mount(AbstractMount):
     def _update_status(self):
         """ """
         status = self.query('get_status')
-        self.logger.debug("Status: {}".format(status))
+        self.logger.debug(f"Status: {status}")
 
         try:
             self._at_mount_park = status['parked']
@@ -179,14 +179,11 @@ class Mount(AbstractMount):
                 }, timeout=timeout)
                 success = response['success']
                 if success:
-                    self.status()
                     while self.is_slewing:
-                        self.status()
                         time.sleep(2)
 
             except Exception as e:
-                self.logger.warning(
-                    "Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+                self.logger.warning(f"Problem slewing to mount coordinates: {mount_coords} {e}")
 
             if success:
                 if not self.query('start_tracking')['success']:

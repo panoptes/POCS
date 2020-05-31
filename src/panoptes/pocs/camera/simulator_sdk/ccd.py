@@ -1,6 +1,7 @@
 import math
 import random
 import time
+from abc import ABC
 
 from contextlib import suppress
 import astropy.units as u
@@ -24,7 +25,7 @@ class SDKDriver(AbstractSDKDriver):
         return cameras
 
 
-class Camera(AbstractSDKCamera, Camera):
+class Camera(AbstractSDKCamera, Camera, ABC):
     def __init__(self,
                  name='Simulated SDK camera',
                  driver=SDKDriver,
@@ -90,7 +91,7 @@ class Camera(AbstractSDKCamera, Camera):
         self._max_temp = 25 * u.Celsius
         self._min_temp = -15 * u.Celsius
         self._temp_var = 0.05 * u.Celsius
+        self._time_constant = 0.25
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
-        self._time_constant = 0.25
         self._connected = True

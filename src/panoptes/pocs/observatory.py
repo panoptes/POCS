@@ -32,7 +32,7 @@ class Observatory(PanBase):
 
         # Setup information about site location
         self.logger.info('Setting up location')
-        site_details = create_location_from_config()
+        site_details = create_location_from_config(config_port=self.config_port)
         self.location = site_details['location']
         self.earth_location = site_details['earth_location']
         self.observer = site_details['observer']
@@ -299,7 +299,7 @@ class Observatory(PanBase):
 
         try:
             if self.current_observation:
-                status['observation'] = self.current_observation.status()
+                status['observation'] = self.current_observation.status
                 status['observation']['field_ha'] = self.observer.target_hour_angle(now, self.current_observation.field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
@@ -615,7 +615,7 @@ class Observatory(PanBase):
         }
 
         # Add observation metadata
-        headers.update(observation.status())
+        headers.update(observation.status)
 
         # Explicitly convert EQUINOX to float
         try:

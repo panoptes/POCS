@@ -97,6 +97,13 @@ class AbstractMount(PanBase):
 
         self._is_connected = False
 
+    def initialize(self, *arg, **kwargs):  # pragma: no cover
+        raise NotImplementedError
+
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
+
     @property
     def status(self):
         status = {}
@@ -116,17 +123,10 @@ class AbstractMount(PanBase):
                 status['mount_target_ra'] = target_coord.ra
                 status['mount_target_dec'] = target_coord.dec
         except Exception as e:
-            self.logger.debug('Problem getting mount status: {}'.format(e))
+            self.logger.debug(f'Problem getting mount status: {e!r}')
 
         status.update(self._update_status())
         return status
-
-    def initialize(self, *arg, **kwargs):  # pragma: no cover
-        raise NotImplementedError
-
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
 
     @property
     def location(self):
@@ -265,7 +265,7 @@ class AbstractMount(PanBase):
         target_set = False
 
         # Save the skycoord coordinates
-        self.logger.debug("Setting target coordinates: {}".format(coords))
+        self.logger.debug(f"Setting target coordinates: {coords}")
         self._target_coordinates = coords
 
         # Get coordinate format from mount specific class
@@ -277,8 +277,9 @@ class AbstractMount(PanBase):
             self.query('set_dec', mount_coords[1])
             target_set = True
         except Exception as e:
-            self.logger.warning("Problem setting mount coordinates: {} {}".format(mount_coords, e))
+            self.logger.warning(f"Problem setting mount coordinates: {mount_coords} {e!r}")
 
+        self.logger.debug(f'Mount simulator set target coordinates: {target_set}')
         return target_set
 
     def get_current_coordinates(self):

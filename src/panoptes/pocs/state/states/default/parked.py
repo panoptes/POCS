@@ -1,14 +1,13 @@
-
 def on_enter(event_data):
     """ """
     pocs = event_data.model
     pocs.say("I'm parked now.")
 
     if pocs.run_once is True:
-        pocs.say("Done running loop, going to clean up and sleep!")
+        pocs.say("Done running loop, going to clean up and wait!")
         pocs.next_state = 'housekeeping'
     elif pocs.should_retry is False:
-        pocs.say("Done with retrying loop, going to clean up and sleep!")
+        pocs.say("Done with retrying loop, going to clean up and wait!")
         pocs.next_state = 'housekeeping'
     else:
         if pocs.observatory.scheduler.has_valid_observations:
@@ -20,14 +19,15 @@ def on_enter(event_data):
                 pocs.next_state = 'housekeeping'
         else:
             pocs.say("No observations found.")
+            # TODO all of this should go away with better scheduling.
             # TODO Should check if we are close to morning and if so do some morning
             # calibration frames rather than just waiting for 30 minutes then shutting down.
-            pocs.say("Going to stay parked for half an hour then will try again.")
+            pocs.say("Going to stay parked for five minutes then will try again.")
 
             while True:
-                pocs.sleep(delay=1800)  # 30 minutes = 1800 seconds
+                pocs.wait(delay=60 * 5)  # 5 minutes
 
-                # We might have shutdown during previous sleep.
+                # We might have shutdown during previous wait.
                 if not pocs.connected:
                     break
                 elif pocs.is_safe():

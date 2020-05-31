@@ -4,53 +4,28 @@ import time
 
 import pytest
 
-from astropy import units as u
-
 from panoptes.pocs import hardware
 
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
 from panoptes.utils import CountdownTimer
-from panoptes.utils import current_time
-from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def wait_for_running(sub, max_duration=90):
-    """Given a message subscriber, wait for a RUNNING message."""
-    timeout = CountdownTimer(max_duration)
-    while not timeout.expired():
-        topic, msg_obj = sub.receive_message(timeout_ms=5000)
-        if msg_obj and 'RUNNING' == msg_obj.get('message'):
-            return True
-
-    return False
-
-
-def wait_for_state(sub, state, max_duration=90):
-    """Given a message subscriber, wait for the specified state."""
-    timeout = CountdownTimer(max_duration)
-    while not timeout.expired():
-        topic, msg_obj = sub.receive_message()
-        if topic == 'STATUS' and msg_obj and msg_obj.get('state') == state:
-            return True
-    return False
-
-
 @pytest.fixture(scope='function')
 def cameras(dynamic_config_server, config_port):
-    return create_camera_simulator(config_port=config_port)
+    return create_cameras_from_config(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
 def mount(dynamic_config_server, config_port):
-    return create_mount_simulator(config_port=config_port)
+    return create_mount_simulator()
 
 
 @pytest.fixture(scope='function')
@@ -189,59 +164,6 @@ def test_is_weather_and_dark_simulator(dynamic_config_server, config_port, pocs)
     assert pocs.is_weather_safe() is True
 
 
-def test_wait_for_events_timeout(pocs):
-    del os.environ['POCSTIME']
-    test_event = threading.Event()
-
-    # Test timeout
-    with pytest.raises(error.Timeout):
-        pocs.wait_for_events(test_event, 1)
-
-    # Test timeout
-    with pytest.raises(error.Timeout):
-        pocs.wait_for_events(test_event, 5 * u.second, sleep_delay=1)
-
-    test_event = threading.Event()
-
-    def set_event():
-        test_event.set()
-
-    # Mark as set in 1 second
-    t = threading.Timer(1.0, set_event)
-    t.start()
-
-    # Wait for 10 seconds (should trip in 1 second)
-    pocs.wait_for_events(test_event, 10)
-    assert test_event.is_set()
-
-    test_event = threading.Event()
-
-    def set_event():
-        while test_event.is_set() is False:
-            time.sleep(1)
-
-    def interrupt():
-        pocs._interrupted = True
-
-    # Wait for 60 seconds (interrupts below)
-    t = threading.Timer(60.0, set_event)
-    t.start()
-
-    # Interrupt - Time to test status and messaging
-    t2 = threading.Timer(3.0, interrupt)
-
-    # Wait for 60 seconds (should interrupt from above)
-    start_time = current_time()
-    t2.start()
-    pocs.wait_for_events(test_event, 60, sleep_delay=1., status_interval=1, msg_interval=1)
-    end_time = current_time()
-    assert test_event.is_set() is False
-    assert (end_time - start_time).sec < 10
-    test_event.set()
-    t.cancel()
-    t2.cancel()
-
-
 def test_is_weather_safe_no_simulator(dynamic_config_server, config_port, pocs):
     pocs.initialize()
     set_config('simulator', ['camera', 'mount', 'night'], port=config_port)
@@ -256,56 +178,6 @@ def test_is_weather_safe_no_simulator(dynamic_config_server, config_port, pocs):
     # Set a time 181 seconds later
     os.environ['POCSTIME'] = '2020-01-01 18:05:01'
     assert pocs.is_weather_safe() is False
-
-
-def test_run_wait_until_safe(observatory,
-                             valid_observation,
-                             config_port,
-                             ):
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
-
-    # Make sure DB is clear for current weather
-    observatory.db.clear_current('weather')
-
-    def start_pocs():
-        observatory.logger.info('start_pocs ENTER')
-        # Remove weather simulator, else it would always be safe.
-        set_config('simulator', hardware.get_all_names(without=['weather']), port=config_port)
-
-        pocs = POCS(observatory, safe_delay=5, config_port=config_port)
-
-        pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation(valid_observation)
-
-        pocs.initialize()
-        pocs.logger.info('Starting observatory run')
-        assert pocs.is_weather_safe() is False
-
-        pocs.send_message('RUNNING')
-
-        pocs.run(run_once=True, exit_when_done=True)
-        assert pocs.is_weather_safe() is True
-        pocs.power_down()
-        observatory.logger.info('start_pocs EXIT')
-
-    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
-    pocs_thread.start()
-
-    try:
-        # Wait for the RUNNING message,
-        assert wait_for_running(msg_subscriber)
-
-        time.sleep(10)
-        # Insert a dummy weather record to break wait
-        observatory.logger.warning(f'Inserting safe weather reading')
-        observatory.db.insert_current('weather', {'safe': True})
-
-        assert wait_for_state(msg_subscriber, 'scheduling')
-    finally:
-        cmd_publisher.send_message('POCS-CMD', 'shutdown')
-        pocs_thread.join(timeout=30)
-
-    assert pocs_thread.is_alive() is False
 
 
 def test_unsafe_park(dynamic_config_server, config_port, pocs):
@@ -424,41 +296,9 @@ def test_run_complete(dynamic_config_server, config_port, pocs, valid_observatio
     pocs.power_down()
 
 
-def test_run_power_down_interrupt(dynamic_config_server,
-                                  config_port,
-                                  observatory,
-                                  valid_observation,
-                                  cmd_publisher,
-                                  msg_subscriber
-                                  ):
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
-
-    def start_pocs():
-        observatory.logger.info('start_pocs ENTER')
-        pocs = POCS(observatory, messaging=True, config_port=config_port)
-        pocs.initialize()
-        pocs.observatory.scheduler.clear_available_observations()
-        pocs.observatory.scheduler.add_observation(valid_observation)
-        pocs.logger.info('Starting observatory run')
-        pocs.run()
-        pocs.power_down()
-        observatory.logger.info('start_pocs EXIT')
-
-    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
-    pocs_thread.start()
-
-    try:
-        assert wait_for_state(msg_subscriber, 'scheduling')
-    finally:
-        cmd_publisher.send_message('POCS-CMD', 'shutdown')
-        pocs_thread.join(timeout=30)
-
-    assert pocs_thread.is_alive() is False
-
-
 def test_pocs_park_to_ready_with_observations(pocs):
     # We don't want to run_once here
-    pocs._run_once = False
+    pocs.run_once = False
 
     assert pocs.is_safe() is True
     assert pocs.state == 'sleeping'
@@ -467,7 +307,10 @@ def test_pocs_park_to_ready_with_observations(pocs):
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
     assert pocs.goto_next_state()
+    assert pocs.state == 'scheduling'
     assert pocs.observatory.current_observation is not None
+
+    # Manually set to parking
     pocs.next_state = 'parking'
     assert pocs.goto_next_state()
     assert pocs.state == 'parking'
@@ -475,8 +318,7 @@ def test_pocs_park_to_ready_with_observations(pocs):
     assert pocs.observatory.mount.is_parked
     assert pocs.goto_next_state()
     assert pocs.state == 'parked'
-    # Should be safe and still have valid observations so next state should
-    # be ready
+    # Should be safe and still have valid observations so next state should be ready
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
     pocs.power_down()
@@ -503,13 +345,129 @@ def test_pocs_park_to_ready_without_observations(pocs):
     # No valid obs
     pocs.observatory.scheduler.clear_available_observations()
 
-    # Since we don't have valid observations we will start sleeping for 30
-    # minutes so send shutdown command first.
-    pub = PanMessaging.create_publisher(6500)
-    pub.send_message('POCS-CMD', 'shutdown')
+    pocs.interrupted = True
     assert pocs.goto_next_state()
     assert pocs.state == 'parked'
     pocs.power_down()
 
     assert pocs.connected is False
     assert pocs.is_safe() is False
+
+
+def test_run_wait_until_safe(observatory,
+                             valid_observation,
+                             config_port,
+                             ):
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+
+    # Make sure DB is clear for current weather
+    observatory.db.clear_current('weather')
+
+    observatory.logger.info('start_pocs ENTER')
+    # Remove weather simulator, else it would always be safe.
+    set_config('simulator', hardware.get_all_names(without=['weather']), port=config_port)
+
+    pocs = POCS(observatory, config_port=config_port)
+    pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
+
+    pocs.observatory.scheduler.clear_available_observations()
+    pocs.observatory.scheduler.add_observation(valid_observation)
+
+    pocs.initialize()
+    pocs.logger.info('Starting observatory run')
+
+    # Weather is bad and unit is is connected but not set.
+    assert pocs.is_weather_safe() is False
+    assert pocs.connected
+    assert pocs.do_states
+    assert pocs.is_initialized
+    assert pocs.next_state is None
+
+    pocs.set_config('wait_delay', 1)
+
+    def start_pocs():
+        # Start running, BLOCKING.
+        pocs.logger.info(f'start_pocs ENTER')
+        pocs.run(run_once=True, exit_when_done=True)
+
+        # After done running.
+        assert pocs.is_weather_safe() is True
+        pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
+
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
+    pocs_thread.start()
+
+    # Wait until we are in the waiting state.
+    while not pocs.next_state == 'ready':
+        time.sleep(1)
+
+    assert pocs.is_safe() is False
+
+    # Wait to pretend we're waiting for weather
+    time.sleep(2)
+
+    # Insert a dummy weather record to break wait
+    observatory.logger.warning(f'Inserting safe weather reading')
+    observatory.db.insert_current('weather', {'safe': True})
+
+    assert pocs.is_safe() is True
+
+    while pocs.next_state != 'slewing':
+        pocs.logger.warning(f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
+        time.sleep(1)
+
+    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    observatory.set_config('pocs.DO_STATES', False)
+
+    observatory.logger.warning(f'Waiting on pocs_thread')
+    pocs_thread.join(timeout=300)
+
+    assert pocs_thread.is_alive() is False
+
+
+def test_run_power_down_interrupt(config_port,
+                                  observatory,
+                                  valid_observation,
+                                  ):
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+
+    observatory.logger.info('start_pocs ENTER')
+    # Remove weather simulator, else it would always be safe.
+    set_config('simulator', hardware.get_all_names(), port=config_port)
+
+    pocs = POCS(observatory, config_port=config_port)
+    pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
+
+    pocs.observatory.scheduler.clear_available_observations()
+    pocs.observatory.scheduler.add_observation(valid_observation)
+
+    pocs.initialize()
+    pocs.logger.info('Starting observatory run')
+
+    # Weather is bad and unit is is connected but not set.
+    assert pocs.connected
+    assert pocs.do_states
+    assert pocs.is_initialized
+    assert pocs.next_state is None
+
+    def start_pocs():
+        observatory.logger.info('start_pocs ENTER')
+        pocs.run(exit_when_done=True, run_once=True)
+        pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
+
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
+    pocs_thread.start()
+
+    while pocs.next_state != 'scheduling':
+        pocs.logger.debug(f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
+        time.sleep(1)
+
+    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    observatory.set_config('pocs.DO_STATES', False)
+
+    observatory.logger.debug(f'Waiting on pocs_thread')
+    pocs_thread.join(timeout=300)
+
+    assert pocs_thread.is_alive() is False

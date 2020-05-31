@@ -114,8 +114,11 @@ def test_create_camera_simulator():
 
 def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
     set_config('cameras.auto_detect', False, port=config_port)
-    set_config('cameras.devices[0].port', '/dev/fake01', port=config_port)
-    set_config('cameras.devices[1].port', '/dev/fake02', port=config_port)
+    set_config('cameras.devices', [
+        dict(model='canon_gphoto2', port='/dev/fake01'),
+        dict(model='canon_gphoto2', port='/dev/fake02'),
+    ], port=config_port)
+
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config(config_port=config_port)
 
@@ -469,7 +472,7 @@ def test_observation(dynamic_config_server, config_port, camera, images_dir):
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
-    observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
+    observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
     for fn in glob.glob(observation_pattern):
@@ -485,7 +488,7 @@ def test_observation_nofilter(dynamic_config_server, config_port, camera, images
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
-    observation_pattern = os.path.join(images_dir, 'fields', 'TestObservation',
+    observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
     for fn in glob.glob(observation_pattern):

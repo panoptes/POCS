@@ -133,7 +133,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
                                       class_name=subcomponent_class)
 
-        self.logger.debug('Camera created: {}'.format(self))
+        self.logger.debug(f'Camera created: {self}')
 
     ##################################################################################################
     # Properties
@@ -381,7 +381,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             target=self.process_exposure,
             args=(metadata, observation_event, exposure_event),
             daemon=True)
-        t.name = '{}Thread'.format(self.name)
+        t.name = f'{self.name}Thread'
         t.start()
 
         return observation_event
@@ -634,7 +634,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return thumbnail
 
     @abstractmethod
-    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         """Responsible for the camera-specific process that start an exposure.
 
         This method is called from the `take_exposure` method and is used to handle
@@ -657,7 +657,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def _readout(self, filename=None):
+    def _readout(self, filename=None, **kwargs):
         """Performs the camera-specific readout after exposure.
 
         This method is called from the `_poll_exposure` private method and is responsible
@@ -727,33 +727,36 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return header
 
     def _setup_observation(self, observation, headers, filename, **kwargs):
-        if headers is None:
-            headers = {}
+        headers = headers or None
 
         # Move the filterwheel if necessary
         if self.filterwheel is not None:
-
             if observation.filter_name is not None:
-
                 try:
                     # Move the filterwheel
+                    self.logger.debug(f'Moving filterwheel={self.filterwheel} to filter_name={observation.filter_name}')
                     self.filterwheel.move_to(observation.filter_name, blocking=True)
                 except Exception as e:
                     self.logger.error(f'Error moving filterwheel on {self} to'
-                                      f' {observation.filter_name}: {e}')
+                                      f' {observation.filter_name}: {e!r}')
                     raise (e)
 
             else:
                 self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 ' observation but {self} has no filterwheel, using'
-                                 ' {self.filter_type}.')
+                                 f' observation but {self.filterwheel} is missing that filter, using'
+                                 f' {self.filter_type}.')
 
-        start_time = headers.get('start_time', current_time(flatten=True))
+        if headers is None:
+            start_time = current_time(flatten=True)
+        else:
+            start_time = headers.get('start_time', current_time(flatten=True))
 
         if not observation.seq_time:
+            self.logger.debug(f'Setting observation seq_time={start_time}')
             observation.seq_time = start_time
 
         # Get the filename
+        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -774,22 +777,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             file_path = filename
 
+        self.logger.debug(f'Setting file_path={file_path}')
+
         unit_id = self.get_config('pan_id')
 
-        # Make the image_id
-        image_id = '{}_{}_{}'.format(
-            unit_id,
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
+        # Make the IDs.
+        sequence_id = f'{unit_id}_{self.uid}_{observation.seq_time}'
+        image_id = f'{unit_id}_{self.uid}_{start_time}'
+
+        self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
 
         # Make the sequence_id
-        sequence_id = '{}_{}_{}'.format(
-            unit_id,
-            self.uid,
-            observation.seq_time
-        )
 
         # The exptime header data is set as part of observation but can
         # be override by passed parameter so update here.
@@ -810,17 +808,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         }
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
-        metadata.update(headers)
 
+        if headers is not None:
+            metadata.update(headers)
+
+        self.logger.debug(
+            f'Observation setup: exptime={exptime} file_path={file_path} image_id={image_id} metadata={metadata}')
         return exptime, file_path, image_id, metadata
 
     def _process_fits(self, file_path, info):
         """
         Add FITS headers from info the same as images.cr2_to_fits()
         """
-        self.logger.debug("Updating FITS headers: {}".format(file_path))
+        self.logger.debug(f"Updating FITS headers: {file_path}")
         fits_utils.update_observation_headers(file_path, info)
-        self.logger.debug("Finished FITS headers: {}".format(file_path))
+        self.logger.debug(f"Finished FITS headers: {file_path}")
 
         return file_path
 
@@ -843,13 +845,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 base_module = load_module(base_module_name)
             except error.NotFound as err:
-                self.logger.critical("Couldn't import {} base class module {}!".format(
-                    class_name, base_module_name))
+                self.logger.critical(f"Couldn't import {class_name} base class module {base_module_name}!")
                 raise err
-            base_class = getattr(base_module, "Abstract{}".format(class_name))
+            base_class = getattr(base_module, f"Abstract{class_name}")
 
             if isinstance(subcomponent, base_class):
-                self.logger.debug("{} received: {}".format(class_name, subcomponent))
+                self.logger.debug(f"{class_name} received: {subcomponent}")
                 setattr(self, class_name_lower, subcomponent)
                 getattr(self, class_name_lower).camera = self
             elif isinstance(subcomponent, dict):
@@ -879,16 +880,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if self.is_primary:
                 name += ' [Primary]'
 
-            s = "{} ({}) on {}".format(name, self.uid, self.port)
+            s = f"{name} ({self.uid}) on {self.port}"
 
             sub_count = 0
             for sub_name in self._subcomponent_names:
                 subcomponent = getattr(self, sub_name)
                 if subcomponent:
                     if sub_count == 0:
-                        s += " with {}".format(subcomponent.name)
+                        s += f" with {subcomponent.name}"
                     else:
-                        s += " & {}".format(subcomponent.name)
+                        s += f" & {subcomponent.name}"
                     sub_count += 1
         except Exception:
             s = str(self.__class__)

@@ -73,4 +73,4 @@ def create_location_from_config(config_port=6563):
         return site_details
 
     except Exception as e:
-        raise error.PanError(msg='Bad site information: {e!r}')
+        raise error.PanError(msg=f'Bad site information: {e!r}')
