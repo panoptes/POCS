@@ -154,10 +154,9 @@ Viewing log files
 -  You typically want to follow an active log file by using ``tail -F``
    on the command line.
 
-.. code-block::
-    bash
+.. code-block:: bash
 
-    (panoptes-env) $ tail -F $PANDIR/logs/pocs_shell.log
+    tail -F $PANDIR/logs/panoptes.log
 
 
 Test POCS
@@ -205,7 +204,7 @@ while the test suite is running:
 .. code:: bash
 
     # Follow the log file
-    $ tail -F $PANDIR/logs/panoptes.log
+    tail -F $PANDIR/logs/panoptes.log
 
 Testing your code changes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -222,7 +221,7 @@ to test the code related to the cameras one can run:
 
 .. code:: bash
 
-    (panoptes-env) $ pytest -xv pocs/tests/test_camera.py
+    pytest -xv pocs/tests/test_camera.py
 
 Here the ``-x`` option will stop the tests upon the first failure and the ``-v`` makes
 the testing verbose.

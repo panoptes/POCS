@@ -62,7 +62,7 @@ PANOPTES environment.
 There is a bash shell script that will attempt to install an entire working POCS
 system on your computer.  Some folks even report that it works on a Mac.
 
-To test the script, open a terminal an enter:
+To test the script, open a terminal and enter:
 
 .. code-block:: bash
 
@@ -101,7 +101,7 @@ Links
 -----
 
 -  PANOPTES Homepage: https://projectpanoptes.org
--  PANOPTES Data Explorer: https://www.panoptes-data.org
+-  PANOPTES Data Explorer: https://www.panoptes-data.net
 -  Community Forum: https://forum.projectpanoptes.org
 -  Source Code: https://github.com/panoptes/POCS
 
