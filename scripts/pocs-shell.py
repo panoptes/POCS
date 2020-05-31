@@ -295,75 +295,9 @@ Hardware names: {}   (or all for all hardware)'''.format(
         print_error(f'NO POLAR UTILS RIGHT NOW')
         return
 
-        print_info("Solving celestial pole image")
-        self.pocs.say("Solving celestial pole image")
-        try:
-            self.pocs.logger.error(f'THERE ARE NO POLAR ALIGNMENT UTILS RIGHT NOW')
-            # pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
-        except Exception as e:
-            print_warning(f'Unable to solve pole image: {e!r}')
-            print_warning("Will proceed with rotation image but analysis not possible")
-            pole_center = None
-        else:
-            pole_center = (float(pole_center[0]), float(pole_center[1]))
-
-        print_info("Starting analysis of rotation image")
-        self.pocs.say("Starting analysis of rotation image")
-        try:
-            rotate_center = polar_alignment_utils.analyze_ra_rotation(rotate_fn)
-        except Exception as e:
-            print_warning(f'nable to process rotation image: {e}')
-            rotate_center = None
-
-        if pole_center is not None and rotate_center is not None:
-            print_info("Plotting centers")
-            self.pocs.say("Plotting centers")
-
-            print_info("Pole: {} {}".format(pole_center, pole_fn))
-            self.pocs.say("Pole  : {:0.2f} x {:0.2f}".format(
-                pole_center[0], pole_center[1]))
-
-            print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
-            self.pocs.say("Rotate: {:0.2f} x {:0.2f}".format(
-                rotate_center[0], rotate_center[1]))
-
-            d_x = pole_center[0] - rotate_center[0]
-            d_y = pole_center[1] - rotate_center[1]
-
-            self.pocs.say("d_x: {:0.2f}".format(d_x))
-            self.pocs.say("d_y: {:0.2f}".format(d_y))
-
-            fig = polar_alignment_utils.plot_center(
-                pole_fn, rotate_fn, pole_center, rotate_center)
-
-            print_info("Plot image: {}".format(plot_fn))
-            fig.tight_layout()
-            fig.savefig(plot_fn)
-
-            try:
-                os.unlink('/var/panoptes/images/latest.jpg')
-            except Exception:
-                pass
-            try:
-                os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
-            except Exception:
-                print_warning("Can't link latest image")
-
-            with open('/var/panoptes/images/drift_align/center.txt'.format(base_dir), 'a') as f:
-                f.write('{}.{},{},{},{},{},{}\n'.format(start_time, pole_center[0], pole_center[
-                    1], rotate_center[0], rotate_center[1], d_x, d_y))
-
         print_info("Done with polar alignment test")
         self.pocs.say("Done with polar alignment test")
 
-
-##########################################################################
-# Private Methods
-##########################################################################
-
-##########################################################################
-# Utility Methods
-##########################################################################
 
 def polar_rotation(pocs, exptime=30, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
@@ -410,8 +344,8 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         if include_west is False and direction == 'west':
             continue
 
-        print_info("Rotating to {}".format(direction))
-        pocs.say("Rotating to {}".format(direction))
+        print_info(f"Rotating to {direction}")
+        pocs.say(f"Rotating to {direction}")
 
         cam = pocs.observatory.primary_camera
         rotate_fn = f'{base_dir}/rotation_{direction}_{cam.name.lower()}.cr2'
