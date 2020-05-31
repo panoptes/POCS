@@ -53,7 +53,44 @@ See below for more details.
 Install
 -------
 
-Coming Soon!  For now see the Testing section of the :ref:`contribute` guide.
+POCS Environment
+^^^^^^^^^^^^^^^^
+
+If you are running a PANOPTES unit then you will most likely want the entire
+PANOPTES environment.
+
+There is a bash shell script that will attempt to install an entire working POCS
+system on your computer.  Some folks even report that it works on a Mac.
+
+To test the script, open a terminal an enter:
+
+.. code-block:: bash
+
+    curl -L https://install.projectpanoptes.org | bash
+
+Or using `wget`:
+
+.. code-block:: bash
+
+    wget -O - https://install.projectpanoptes.org | bash
+
+POCS Module
+^^^^^^^^^^^
+
+If you want just the POCS module, for instance if you want to override it in
+your own OCS (see `Huntsman-POCS <https://github.com/AstroHuntsman/huntsman-pocs>`_
+for an example), then install via `pip`:
+
+.. code-block:: bash
+
+    pip install panoptes-pocs
+
+If you want the extra features, such as Google Cloud Platform connectivity, then
+use the extras options:
+
+.. code-block:: bash
+
+    pip install "panoptes-pocs[google]"
 
 Test POCS
 ---------

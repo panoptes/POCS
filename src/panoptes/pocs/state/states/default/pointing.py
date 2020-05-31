@@ -1,5 +1,6 @@
 import numpy as np
 from panoptes.pocs.images import Image
+from panoptes.utils.time import wait_for_events
 
 MAX_EXTRA_TIME = 60  # second
 
@@ -48,7 +49,12 @@ def on_enter(event_data):
 
             # Wait for images to complete
             maximum_duration = exptime + MAX_EXTRA_TIME
-            pocs.wait_for_events(camera_event, maximum_duration, event_type='pointing')
+
+            def waiting_cb():
+                pocs.logger.info(f'Waiting for pointing image {img_num + 1}/{num_pointing_images}')
+                return pocs.is_safe()
+
+            wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb, sleep_delay=11)
 
             # Analyze pointing
             if observation is not None:
@@ -107,4 +113,5 @@ def on_enter(event_data):
         pocs.next_state = 'tracking'
 
     except Exception as e:
-        pocs.say("Hmm, I had a problem checking the pointing error. Going to park. {}".format(e))
+        pocs.logger.warning(f'Error in pointing: {e!r}')
+        pocs.say(f"Hmm, I had a problem checking the pointing error. Going to park.")

@@ -115,12 +115,10 @@ class PanStateMachine(Machine):
 
                 # BEFORE TRANSITION
 
-                # Wait for horizon level if state requires.
-                self.logger.info(f'Checking horizon limits for next state: {self.next_state}')
-                with suppress(KeyError):
-                    required_horizon = self._horizon_lookup[self.next_state]
-                    self.logger.info(f'Horizon limit for {self.state}: {required_horizon}')
-                    self.wait_until_safe(horizon=required_horizon)
+                # Wait for safety readying at given horizon level.
+                required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
+                self.logger.info(f'Checking safety for {self.next_state} with horizon limit of {required_horizon}')
+                self.wait_until_safe(horizon=required_horizon)
 
                 # ENTER STATE
 
@@ -130,23 +128,25 @@ class PanStateMachine(Machine):
                     state_changed = self.goto_next_state()
                 except Exception as e:
                     self.logger.critical(f"Problem going from {self.state} to {self.next_state}, exiting loop [{e!r}]")
+                    # TODO should we automatically park here?
                     self.stop_states()
                     break
 
                 # AFTER TRANSITION
 
                 # If we didn't successfully transition, sleep a while then try again
+                max_iterations = self.get_config('pocs.MAX_TRANSITION_ATTEMPTS', default=5)
                 if not state_changed:
                     self.logger.warning(f"Failed to move from {self.state} to {self.next_state}")
                     if self.is_safe() is False:
                         self.logger.warning("Conditions have become unsafe; setting next state to 'parking'")
                         self.next_state = 'parking'
-                    elif _loop_iteration > 5:
-                        self.logger.warning("Stuck in current state for 5 iterations, parking")
+                    elif _loop_iteration > max_iterations:
+                        self.logger.warning(f"Stuck in current state for {max_iterations} iterations, parking")
                         self.next_state = 'parking'
                     else:
                         _loop_iteration = _loop_iteration + 1
-                        self.logger.warning(f"Sleeping for a bit, then trying again (loop: {_loop_iteration})")
+                        self.logger.warning(f"Sleeping before trying again ({_loop_iteration}/{max_iterations})")
                         self.sleep(with_status=False)
                 else:
                     _loop_iteration = 0

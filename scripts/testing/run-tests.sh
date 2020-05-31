@@ -2,8 +2,8 @@
 
 REPORT_FILE=${REPORT_FILE:-coverage.xml}
 
-export PYTHONPATH="${PYTHONPATH}:/var/panoptes/pocs/scripts/testing/coverage"
-export COVERAGE_PROCESS_START="/var/panoptes/pocs/setup.cfg"
+export PYTHONPATH="${PYTHONPATH}:/var/panoptes/POCS/scripts/testing/coverage"
+export COVERAGE_PROCESS_START="/var/panoptes/POCS/setup.cfg"
 
 coverage erase
 

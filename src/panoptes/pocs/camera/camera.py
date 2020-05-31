@@ -274,8 +274,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         < self.temperature_tolerance
             if not at_target or self.cooling_power == 100 * u.percent:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(
-                    f'Cooling={self.cooling_power:.02f} % Temp={self.temperature:.02f} Target={self.target_temperature} Tolerance={self.temperature_tolerance}')
+                self.logger.warning(f'Cooling={self.cooling_power:.02f} '
+                                    f'Temp={self.temperature:.02f} '
+                                    f'Target={self.target_temperature:.02f} '
+                                    f'Tolerance={self.temperature_tolerance:.02f}')
                 return False
             else:
                 return True
@@ -288,25 +290,41 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._is_exposing
 
     @property
+    def readiness(self):
+        """ Dictionary detailing the readiness of the camera system to take an exposure. """
+        current_readiness = {}
+        # For cooled camera expect stable temperature before taking exposure
+        if self.is_cooled_camera:
+            current_readiness['temperature_stable'] = self.is_temperature_stable
+        # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
+        for sub_name in self._subcomponent_names:
+            if getattr(self, sub_name):
+                current_readiness['sub_name'] = getattr(self, sub_name).is_ready
+
+        # Make sure there isn't an exposure already in progress.
+        current_readiness['not_exposing'] = not self.is_exposing
+
+        return current_readiness
+
+    @property
     def is_ready(self):
         """ True if camera is ready to start another exposure, otherwise False. """
+        current_readiness = self.readiness
+
         # For cooled camera expect stable temperature before taking exposure
-        if self.is_cooled_camera and not self.is_temperature_stable:
-            self.logger.debug(f'Camera not ready, cooled: {self.is_cooled_camera} stable: {self.is_temperature_stable}')
-            return False
+        if not current_readiness.get('temperature_stable', True):
+            self.logger.warning(f"Camera {self} not ready: unstable temperature.")
 
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
         for sub_name in self._subcomponent_names:
-            if getattr(self, sub_name) and not getattr(self, sub_name).is_ready:
-                self.logger.debug(f'Camera subcomponent not ready: {sub_name}')
-                return False
+            if not current_readiness.get(sub_name, True):
+                self.logger.warning(f"Camera {self} not ready: {sub_name} not ready.")
 
         # Make sure there isn't an exposure already in progress.
-        if self.is_exposing:
-            self.logger.debug(f'Camera not ready, is exposing')
-            return False
+        if not current_readiness['not_exposing']:
+            self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
-        return True
+        return all(current_readiness.values())
 
     ##################################################################################################
     # Methods
@@ -399,7 +417,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Check that the camera (and subcomponents) is ready
         if not self.is_ready:
-            msg = f"Attempt to start exposure on {self} while not ready, ignoring!"
+            # Work out why the camera isn't ready.
+            current_readiness = self.readiness
+            problems = []
+            if not current_readiness.get('temperature_stable', True):
+                problems.append("unstable temperature")
+
+            for sub_name in self._subcomponent_names:
+                if not current_readiness.get(sub_name, True):
+                    problems.append(f"{sub_name} not ready")
+
+            if not current_readiness['not_exposing']:
+                problems.append("exposure in progress")
+
+            problems_string = ", ".join(problems)
+            msg = f"Attempt to start exposure on {self} while not ready: {problems_string}."
             raise error.PanError(msg)
 
         if not isinstance(seconds, u.Quantity):
