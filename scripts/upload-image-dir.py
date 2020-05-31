@@ -55,18 +55,18 @@ def upload_observation_to_bucket(pan_id,
     if gsutil is None:  # pragma: no cover
         raise Exception('Cannot find gsutil, skipping upload')
 
-    logger.debug("Uploading {}".format(dir_name))
+    logger.debug(f"Uploading {dir_name}")
 
     file_search_path = os.path.join(dir_name, include_files)
     if glob(file_search_path):
         # Get just the observation path
-        field_dir = dir_name.split('/fields/')[-1]
+        field_dir = dir_name.split('/images/')[-1]
         remote_path = os.path.normpath(os.path.join(
             bucket,
             pan_id,
             field_dir
         ))
-        destination = 'gs://{}/'.format(remote_path)
+        destination = f'gs://{remote_path}/'
 
         script_name = os.path.join(os.environ['POCS'], 'scripts', 'transfer-files.sh')
         manifest_file = os.path.join(dir_name, 'upload_manifest.log')
