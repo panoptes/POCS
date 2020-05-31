@@ -111,12 +111,7 @@ Links
    :target: https://codecov.io/gh/panoptes/POCS
 .. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
    :target: http://www.astropy.org/
-
 .. |PyPI version| image:: https://badge.fury.io/py/panoptes-pocs.svg
    :target: https://badge.fury.io/py/panoptes-pocs
-.. |Build Status| image:: https://travis-ci.com/panoptes/pocs.svg?branch=develop
-   :target: https://travis-ci.com/panoptes/pocs
-.. |codecov| image:: https://codecov.io/gh/panoptes/pocs/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/panoptes/pocs
 .. |Documentation Status| image:: https://readthedocs.org/projects/pocs/badge/?version=latest
    :target: https://pocs.readthedocs.io/en/latest/?badge=latest
