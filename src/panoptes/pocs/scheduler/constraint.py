@@ -1,5 +1,8 @@
+from contextlib import suppress
+
 from astropy import units as u
 
+from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.pocs.base import PanBase
 
@@ -15,10 +18,8 @@ class BaseConstraint(PanBase):
 
         Args:
             weight (float, optional): The weight of the observation, which will
-                be multipled by the score
-            default_score (float, optional): The starting score for observation
-            *args (TYPE): Description
-            **kwargs (TYPE): Description
+                be multiplied by the score.
+            default_score (float, optional): The starting score for observation.
         """
         super().__init__(*args, **kwargs)
 
@@ -35,7 +36,6 @@ class BaseConstraint(PanBase):
 
 
 class Altitude(BaseConstraint):
-
     """ Implements altitude constraints for a horizon """
 
     def __init__(self, horizon=None, *args, **kwargs):
@@ -51,14 +51,19 @@ class Altitude(BaseConstraint):
         target = observation.field
 
         # Note we just get nearest integer
-        target_az = int(observer.altaz(time, target=target).az.value)
+        target_az = observer.altaz(time, target=target).az.degree
         target_alt = observer.altaz(time, target=target).alt.degree
 
         # Determine if the target altitude is above or below the determined
         # minimum elevation for that azimuth
-        min_alt = self.horizon_line[target_az]
+        min_alt = self.horizon_line[int(target_az)]
+
+        with suppress(AttributeError):
+            min_alt = min_alt.to_value('degree')
+
+        self.logger.debug(f'Minimum altitude for az = {target_az:.02f} alt = {target_alt:.02f} < {min_alt:.02f}')
         if target_alt < min_alt:
-            self.logger.debug(f"\t\tBelow minimum altitude: {target_alt:.02f} < {min_alt:.02f}")
+            self.logger.debug(f"Below minimum altitude: {target_alt:.02f} < {min_alt:.02f}")
             veto = True
         else:
             score = 1
@@ -76,15 +81,12 @@ class Duration(BaseConstraint):
         self.horizon = horizon
 
     def get_score(self, time, observer, observation, **kwargs):
-        veto = False
         score = self._score
-
         target = observation.field
-
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        end_of_night = kwargs.get('end_of_night',
-                                  observer.tonight(time=time, horizon=-18 * u.degree)[1])
+        horizon = self.get_config('location.observe_horizon', default=-18 * u.degree)
+        end_of_night = kwargs.get('end_of_night', observer.tonight(time=time, horizon=horizon)[1])
 
         if not veto:
             # Get the next meridian flip
@@ -124,7 +126,7 @@ class Duration(BaseConstraint):
         return veto, score * self.weight
 
     def __str__(self):
-        return "Duration above {}".format(self.horizon)
+        return f"Duration above {self.horizon}"
 
 
 class MoonAvoidance(BaseConstraint):
@@ -139,13 +141,14 @@ class MoonAvoidance(BaseConstraint):
         try:
             moon = kwargs['moon']
         except KeyError:
-            self.logger.error("Moon must be set")
+            raise error.PanError(f'Moon must be set for MoonAvoidance constraint')
 
         moon_sep = moon.separation(observation.field.coord).value
 
-        # This would potentially be within image
-        if moon_sep < 15:
-            self.logger.debug("\t\tMoon separation: {:.02f}".format(moon_sep))
+        # Check we are a certain number of degrees from moon.
+        min_moon_sep = kwargs.get('min_moon_sep', 45)
+        if moon_sep < min_moon_sep:
+            self.logger.debug(f"\t\tMoon separation: {moon_sep:.02f} < {min_moon_sep:.02f}")
             veto = True
         else:
             score = (moon_sep / 180)
@@ -157,7 +160,6 @@ class MoonAvoidance(BaseConstraint):
 
 
 class AlreadyVisited(BaseConstraint):
-
     """ Simple Already Visited Constraint
 
     A simple already visited constraint that determines if the given `observation`

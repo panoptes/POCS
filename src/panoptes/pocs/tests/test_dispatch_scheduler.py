@@ -1,4 +1,5 @@
 import os
+import yaml
 import pytest
 
 from astropy import units as u
@@ -11,7 +12,6 @@ from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 from panoptes.utils.serializers import from_yaml
-from panoptes.utils.serializers import to_yaml
 from panoptes.utils.config.client import get_config
 
 
@@ -117,7 +117,7 @@ def test_get_observation_reread(dynamic_config_server,
 
     # Write out the field list
     with open(temp_file, 'w') as f:
-        f.write(to_yaml(field_list))
+        f.write(yaml.dump(field_list))
 
     scheduler = Scheduler(observer,
                           fields_file=temp_file,
@@ -127,11 +127,10 @@ def test_get_observation_reread(dynamic_config_server,
     # Get observation as above
     best = scheduler.get_observation(time=time)
     assert best[0] == 'HD 189733'
-    assert isinstance(best[1], float)
 
     # Alter the field file - note same target but new name
     with open(temp_file, 'a') as f:
-        f.write(to_yaml([{
+        f.write(yaml.dump([{
             'name': 'New Name',
             'position': '20h00m43.7135s +22d42m39.0645s',
             'priority': 5000
@@ -140,7 +139,6 @@ def test_get_observation_reread(dynamic_config_server,
     # Get observation but reread file first
     best = scheduler.get_observation(time=time, reread_fields_file=True)
     assert best[0] != 'HD 189733'
-    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):
