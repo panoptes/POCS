@@ -1,12 +1,6 @@
 PANOPTES Observatory Control System
 ===================================
 
-.. raw:: html
-
-   <p align="center">
-   <img src="https://projectpanoptes.org/uploads/2018/12/16/pan-logo.png" alt="PANOPTES logo" />
-   </p>
-
 |PyPI version| |Build Status| |codecov| |Documentation Status|
 
 -  `PANOPTES Observatory Control
