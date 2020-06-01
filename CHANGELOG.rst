@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
-[0.7.0dev]
+[0.7.0] - 2020-05-31
 --------------------
 
 If you thought 9 months between releases was a long time, how about 18
@@ -19,6 +19,13 @@ with a number of changes, including the refactoring of many items into
 the `panoptes-utils <https://github.com/panoptes/panoptes-utils.git>`__ repo.
 
 There are a lot of changes included in this release, highlights below:
+
+.. warning::
+
+    This changelog is likely missing some things. The release was large. Too
+    large. If you think something might be working different that just might
+    be true. Check the forums.
+
 
 Added
 ~~~~~
