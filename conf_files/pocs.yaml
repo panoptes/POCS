@@ -15,13 +15,14 @@ pan_id: PAN000
 
 location:
     name: Mauna Loa Observatory
-    latitude: 19.54 # Degrees
-    longitude: -155.58 # Degrees
-    elevation: 3400.0 # Meters
-    horizon: 30 # Degrees; targets must be above this to be considered valid.
-    flat_horizon: -6 # Degrees - Flats when sun between this and focus horizon.
-    focus_horizon: -12 # Degrees - Dark enough to focus on stars.
-    observe_horizon: -18 # Degrees - Sun below this limit to observe.
+    latitude: 19.54 deg
+    longitude: -155.58 deg
+    elevation: 3400.0 m
+    horizon: 30 deg # targets must be above this to be considered valid.
+    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+    focus_horizon: -12 deg # Dark enough to focus on stars.
+    observe_horizon: -18 deg # Sun below this limit to observe.
+    obsctructions: []
     timezone: US/Hawaii
     gmt_offset: -600 # Offset in minutes from GMT during.
                      # standard time (not daylight saving).
@@ -35,11 +36,14 @@ directories:
 db:
     name: panoptes
     type: file
+
 state_machine: simple_state_table
+
 scheduler:
     type: dispatch
     fields_file: simple.yaml
     check_file: False
+
 mount:
     brand: ioptron
     model: 30
@@ -51,11 +55,13 @@ mount:
     non_sidereal_available: True
     min_tracking_threshold: 100 # ms
     max_tracking_threshold: 99999 # ms
+
 pointing:
     auto_correct: True
     threshold: 100 # arcseconds ~ 10 pixels
     exptime: 30 # seconds
     max_iterations: 5
+
 cameras:
     auto_detect: True
     primary: 14d3bd
@@ -64,9 +70,26 @@ cameras:
         model: canon_gphoto2
     -
         model: canon_gphoto2
-messaging:
-    cmd_port: 6500
-    msg_port: 6510
+
+######################### Environmental Sensors ################################
+# Configure the environmental sensors that are attached.
+#
+# Use `auto_detect: True` for most options. Or use a manual configuration:
+#
+#   camera_board:
+#       serial_port: /dev/ttyACM0
+#   control_board:
+#       serial_port: /dev/ttyACM1
+################################################################################
+environment:
+    auto_detect: False
+    camera_board:
+        serial_port: /dev/ttyACM0
+    control_board:
+        serial_port: /dev/ttyACM1
+    weather:
+        url: http://localhost:5000/latest.json
+
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
@@ -91,79 +114,15 @@ observations:
 # By default all images are stored on googlecloud servers and we also
 # use a few google services to store metadata, communicate with servers, etc.
 #
-# See $POCS/pocs/utils/google/README.md for details about authentication.
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
 #
 # Options to change:
 #   image_storage: If images should be uploaded to Google Cloud Storage.
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: True
+    image_storage: False
     service_account_key: # Location of JSON account key
     project_id: panoptes-survey
     buckets:
         images: panoptes-survey
-
-#Enable to output POCS messages to social accounts
-# social_accounts:
-#     twitter:
-#         consumer_key: [your_consumer_key]
-#         consumer_secret: [your_consumer_secret]
-#         access_token: [your_access_token]
-#         access_token_secret: [your_access_token_secret]
-#     slack:
-#         webhook_url: [your_webhook_url]
-#         output_timestamp: False
-
-
-######################### Environmental Sensors ################################
-# Configure the environmental sensors that are attached.
-#
-# Use `auto_detect: True` for most options. Or use a manual configuration:
-#
-#   camera_board:
-#       serial_port: /dev/ttyACM0
-#   control_board:
-#       serial_port: /dev/ttyACM1
-################################################################################
-environment:
-    auto_detect: False
-    camera_board:
-        serial_port: /dev/ttyACM0
-    control_board:
-        serial_port: /dev/ttyACM1
-
-######################### Weather Station ######################################
-# Weather station options.
-#
-# Configure the serial_port as necessary.
-#
-# Default thresholds should be okay for most locations.
-################################################################################
-weather:
-    aag_cloud:
-        serial_port: '/dev/ttyUSB1'
-        threshold_cloudy: -25
-        threshold_very_cloudy: -15.
-        threshold_windy: 50.
-        threshold_very_windy: 75.
-        threshold_gusty: 100.
-        threshold_very_gusty: 125.
-        threshold_wet: 2200.
-        threshold_rainy: 1800.
-        safety_delay: 15 ## minutes
-        heater:
-            low_temp: 0 ## deg C
-            low_delta: 6 ## deg C
-            high_temp: 20 ## deg C
-            high_delta: 4 ## deg C
-            min_power: 10 ## percent
-            impulse_temp: 10 ## deg C
-            impulse_duration: 60 ## seconds
-            impulse_cycle: 600 ## seconds
-    plot:
-        amb_temp_limits: [-5, 35]
-        cloudiness_limits: [-45, 5]
-        wind_limits: [0, 75]
-        rain_limits: [700, 3200]
-        pwm_limits: [-5, 105]
