@@ -17,6 +17,15 @@ PANOPTES Observatory Control System
 -  `Test POCS <#test-pocs>`__
 -  `Links <#links>`__
 
+
+.. warning::
+
+    The recent `v0.7.0` release of POCS is not backwards compatible. If you
+    are one of the folks running that software, please either do a reinstall
+    of your system using the instructions below or see our `forum <https://forum.project.panoptes>`__
+    for advice.
+
+
 Overview
 --------
 
