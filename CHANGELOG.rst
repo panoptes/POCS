@@ -6,7 +6,18 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
-[0.7.0] - 2020-05-31
+
+[0.7.2] - 2020-05-31
+----------
+
+Bug fixes
+~~~~~~~~~
+
+* Package name is `panoptes-pocs` for namespace consistency. (#971)
+* README changed to rst. (#971)
+
+
+[0.7.1] - 2020-05-31
 --------------------
 
 If you thought 9 months between releases was a long time, how about 18
