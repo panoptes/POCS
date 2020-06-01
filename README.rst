@@ -104,7 +104,7 @@ use the extras options:
 Test POCS
 ---------
 
-See the Testing section of the :ref:`contribute` guide.
+See the Testing section of the Contributing guide.
 
 Links
 -----
