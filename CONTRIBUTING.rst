@@ -79,10 +79,6 @@ Process
     See `"A successful Git branching model" <https://nvie.com/posts/a-successful-git-branching-model/>`__
     for details on how the repository is structured.
 
-Setting up Local Environment
-============================
-
-Coming Soon!
 
 Code Formatting
 ===============
