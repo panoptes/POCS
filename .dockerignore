@@ -1,0 +1,16 @@
+!.git
+docs/*
+.eggs
+.idea
+.venv
+venv
+*.egg-info
+.github
+
+*.md
+!README*.md
+
+*.log
+*.pdf
+**/*.pyc
+**/__pycache__
