@@ -13,7 +13,8 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Bug fixes
 ~~~~~~~~~
 
-* Package name is `panoptes-pocs` for namespace consistency. (#)
+* Package name is `panoptes-pocs` for namespace consistency. (#971)
+* README changed to rst. (#971)
 
 
 [0.7.1] - 2020-05-31
