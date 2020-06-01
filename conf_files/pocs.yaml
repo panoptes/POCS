@@ -1,38 +1,67 @@
 ---
+######################### PANOPTES UNIT ########################################
+# name:   Can be anything you want it to be. This name is displayed in several
+#         places and should be a "personal" name for the unit.
+#
+# pan_id: This is an identification number assigned by the PANOPTES team and is
+#         the official designator for your unit. This id is used to store image
+#         files and communicate with the Google Cloud network.
+#
+#         Leave the pan_id at `PAN000` for testing until you have been assigned
+#         an official id. Update pocs_local.yaml with offical name once received.
+################################################################################
 name: Generic PANOPTES Unit
+pan_id: PAN000
+
 location:
     name: Mauna Loa Observatory
-    latitude: 19.54 # Degrees
-    longitude: -155.58 # Degrees
-    elevation: 3400.0 # Meters
-    utc_offset: -10.00 # Hours
-    horizon: 30 # Degrees
-    twilight_horizon: -18 # Degrees
+    latitude: 19.54 deg
+    longitude: -155.58 deg
+    elevation: 3400.0 m
+    horizon: 30 deg # targets must be above this to be considered valid.
+    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+    focus_horizon: -12 deg # Dark enough to focus on stars.
+    observe_horizon: -18 deg # Sun below this limit to observe.
+    obsctructions: []
     timezone: US/Hawaii
-    gmt_offset: -600
+    gmt_offset: -600 # Offset in minutes from GMT during.
+                     # standard time (not daylight saving).
 directories:
     base: /var/panoptes
     images: images
-    webcam: webcams
     data: data
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
-db: 
+db:
     name: panoptes
+    type: file
+
+state_machine: simple_state_table
+
 scheduler:
     type: dispatch
     fields_file: simple.yaml
+    check_file: False
+
 mount:
     brand: ioptron
     model: 30
     driver: ioptron
-    port: /dev/ttyUSB0
+    serial:
+        port: /dev/ttyUSB0
+        timeout: 0.
+        baudrate: 9600
     non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
+
 pointing:
-    threshold: 0.05
-    exptime: 30
-    max_iterations: 3
+    auto_correct: True
+    threshold: 100 # arcseconds ~ 10 pixels
+    exptime: 30 # seconds
+    max_iterations: 5
+
 cameras:
     auto_detect: True
     primary: 14d3bd
@@ -41,7 +70,59 @@ cameras:
         model: canon_gphoto2
     -
         model: canon_gphoto2
-messaging:
-    cmd_port: 6500
-    msg_port: 6510
-state_machine: simple_state_table
+
+######################### Environmental Sensors ################################
+# Configure the environmental sensors that are attached.
+#
+# Use `auto_detect: True` for most options. Or use a manual configuration:
+#
+#   camera_board:
+#       serial_port: /dev/ttyACM0
+#   control_board:
+#       serial_port: /dev/ttyACM1
+################################################################################
+environment:
+    auto_detect: False
+    camera_board:
+        serial_port: /dev/ttyACM0
+    control_board:
+        serial_port: /dev/ttyACM1
+    weather:
+        url: http://localhost:5000/latest.json
+
+
+########################## Observations ########################################
+# An observation folder contains a contiguous sequence of images of a target/field
+# recorded by a single camera, with no slewing of the mount during the sequence;
+# there may be tracking adjustments during the observation.
+#
+# An example folder structure would be:
+#
+#   $PANDIR/images/fields/Hd189733/14d3bd/20180901T120001/
+#
+# In this folder will be stored JPG and FITS images. A timelapse of the
+# observation can be made (one per camera) and the JPGs optionally removed
+# afterward.
+#
+# TODO: Add options for cleaning up old data (e.g. >30 days)
+################################################################################
+observations:
+    make_timelapse: True
+    keep_jpgs: True
+
+######################## Google Network ########################################
+# By default all images are stored on googlecloud servers and we also
+# use a few google services to store metadata, communicate with servers, etc.
+#
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
+#
+# Options to change:
+#   image_storage: If images should be uploaded to Google Cloud Storage.
+#   service_account_key: Location of the JSON service account key.
+################################################################################
+panoptes_network:
+    image_storage: False
+    service_account_key: # Location of JSON account key
+    project_id: panoptes-survey
+    buckets:
+        images: panoptes-survey

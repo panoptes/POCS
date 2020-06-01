@@ -1,39 +1,41 @@
 #include <stdlib.h>
 
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <DHT.h>
+#include "OneWire.h"
+#include "DallasTemperature.h"
+#include "dht_handler.h"
+#include "CharBuffer.h"
+#include "PinUtils.h"
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 /* DECLARE PINS */
 
+// Digital Pins
+const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
+const int DHT_PIN = 10;  // DHT Temp & Humidity Pin
+
+// Relays
+const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
+const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
+const int RELAY_2 = 4;  // 0_1 PROFET-1 Channel 0
+const int RELAY_3 = 7;  // 1_1 PROFET-1 Channel 1
+const int RELAY_4 = 8;  // 0_2 PROFET-2 Channel 0
+
 // Current Sense
-const int IS_0 = A0; // PROFET-0
-const int IS_1 = A1; // PROFET-1
-const int IS_2 = A2; // PROFET-2
+const int IS_0 = A0; // (PROFET-0 A0 = 14)
+const int IS_1 = A1; // (PROFET-1 A1 = 15)
+const int IS_2 = A2; // (PROFET-2 A2 = 16)
 
 // Channel select
 const int DSEL_0 = 2; // PROFET-0
 const int DSEL_1 = 6; // PROFET-1
 
-const inst DEN_0 = A4; // PROFET-0
-const inst DEN_1 = 5;  // PROFET-1
-const inst DEN_2 = 9;  // PROFET-2
+// Enable Sensing
+const int DEN_0 = A4; // PROFET-0 (A4 = 18)
+const int DEN_1 = 5;  // PROFET-1
+const int DEN_2 = 9;  // PROFET-2
 
-// Digital Pins
-const int DS18_PIN = 10; // DS18B20 Temperature (OneWire)
-const int DHT_PIN = 11;  // DHT Temp & Humidity Pin
-
-// Relays
-const int RELAY_1 = A3; // 0_0 PROFET-0 Channel 0
-const int RELAY_2 = 3;  // 1_0 PROFET-0 Channel 1
-const int RELAY_3 = 4;  // 0_1 PROFET-1 Channel 0
-const int RELAY_4 = 7;  // 1_1 PROFET-1 Channel 1
-const int RELAY_5 = 8;  // 0_2 PROFET-2 Channel 0
-
-const int relayArray[] = {RELAY_1, RELAY_2, RELAY_3, RELAY_4, RELAY_5};
-const int numRelay = 5;
+const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4};
 
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
@@ -44,7 +46,7 @@ OneWire ds(DS18_PIN);
 DallasTemperature sensors(&ds);
 
 // Setup DHT22
-DHT dht(DHT_PIN, DHTTYPE);
+DHTHandler dht_handler(DHT_PIN, DHTTYPE);
 
 int led_value = LOW;
 
@@ -56,68 +58,152 @@ void setup() {
 
   sensors.begin();
 
-  pinMode(AC_PIN, INPUT);
+  // Setup sense pins
+  pinMode(IS_0, INPUT);
+  pinMode(IS_1, INPUT);
+  pinMode(IS_2, INPUT);  
 
-  // Turn relays on to start
-  for (int i = 0; i < numRelay; i++) {
-    pinMode(relayArray[i], OUTPUT);
-    digitalWrite(relayArray[i], HIGH);
-    delay(250);
-  }
+  // Setup diagnosis enable pins
+  pinMode(DEN_0, OUTPUT);
+  pinMode(DEN_1, OUTPUT);
+  pinMode(DEN_2, OUTPUT);
+  
+  // Setup relay pins
+  pinMode(RELAY_0, OUTPUT);
+  pinMode(RELAY_1, OUTPUT);
+  pinMode(RELAY_2, OUTPUT);
+  pinMode(RELAY_3, OUTPUT);
+  pinMode(RELAY_4, OUTPUT);
+  
+  // Turn on everything to start
+  // Setup relay pins
+  digitalWrite(RELAY_0, HIGH);
+  digitalWrite(RELAY_1, HIGH);
+  digitalWrite(RELAY_2, HIGH);
+  digitalWrite(RELAY_3, HIGH);
+  digitalWrite(RELAY_4, HIGH);    
 
-  dht.begin();
+  dht_handler.Init();
+  
+  //ENABLE DIAGNOSIS AND SELECT CHANNEL
+  digitalWrite(DEN_0, HIGH);  // DEN_0 goes HIGH so Diagnosis enabled for PROFET0
+  digitalWrite(DEN_1, HIGH);  // DEN_1 goes HIGH so Diagnosis enabled for PROFET1
+  digitalWrite(DEN_2, HIGH);  // DEN_2 goes HIGH so Diagnosis enabled for PROFET2
+  
+  digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
+  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
 }
+
+// Accumulates a line, parses it and takes the requested action if it is valid.
+class SerialInputHandler {
+  public:
+    void Handle() {
+      while (Serial && Serial.available() > 0) {
+        int c = Serial.read();
+        if (wait_for_new_line_) {
+          if (IsNewLine(c)) {
+            wait_for_new_line_ = false;
+            input_buffer_.Reset();
+          }
+        } else if (IsNewLine(c)) {
+          ProcessInputBuffer();
+          wait_for_new_line_ = false;
+          input_buffer_.Reset();
+        } else if (isprint(c)) {
+          if (!input_buffer_.Append(static_cast<char>(c))) {
+            wait_for_new_line_ = true;
+          }
+        } else {
+          // Input is not an acceptable character.
+          wait_for_new_line_ = true;
+        }
+      }
+    }
+
+  private:
+    // Allow the input line to end with NL, CR NL or CR.
+    bool IsNewLine(int c) {
+      return c == '\n' || c == '\r';
+    }
+
+    void ProcessInputBuffer() {
+      uint8_t relay_index, new_state;
+      if (input_buffer_.ParseUInt8(&relay_index) &&
+          input_buffer_.MatchAndConsume(',') &&
+          input_buffer_.ParseUInt8(&new_state) &&
+          input_buffer_.Empty()) {
+            
+        int pin_num = relayArray[relay_index];
+        switch (new_state) {
+          case 0:
+            turn_pin_off(pin_num);
+            break;    
+          case 1:
+            turn_pin_on(pin_num);
+            break;
+          case 9:
+            toggle_pin(pin_num);
+            break;
+        }    
+      }
+    }
+
+    CharBuffer<8> input_buffer_;
+    bool wait_for_new_line_{false};
+} serial_input_handler;
 
 void loop() {
 
   // Read any serial input
   //    - Input will be two comma separated integers, the
-  //      first specifying the pin and the second the status
-  //      to change to (1/0). Only the fan and the debug led
-  //      are currently supported.
+  //      first specifying the relayArray index and the second 
+  //      the new desired state.
   //      Example serial input:
-  //           4,1   # Turn relay 4 on
-  //           4,2   # Toggle relay 4
-  //           4,3   # Toggle relay 4 w/ 30 sec delay
-  //           4,9   # Turn relay 4 off
-  while (Serial.available() > 0) {
-    int pin_num = Serial.parseInt();
-    int pin_status = Serial.parseInt();
-
-    switch (pin_status) {
-      case 1:
-        turn_pin_on(pin_num);
-        break;
-      case 2:
-        toggle_pin(pin_num);
-        break;    
-      case 3:
-        toggle_pin_delay(pin_num);    
-      case 9:
-        turn_pin_off(pin_num);
-        break;
-    }
-  }
+  //           0,1   # Turn relay index 0 on (pin RELAY_0)
+  //           0,2   # Turn relay index 0 off
+  //           0,3   # Toggle relay index 0 
+  //           0,4   # Toggle relay index 0 w/ 30 sec delay
+  
+  serial_input_handler.Handle();
+  
+  delay(250);
 
   get_readings();
 
   // Simple heartbeat
   toggle_led();
-  delay(500);
+  delay(250);
 }
 
 void get_readings() {
+  float voltages[5];
+  float temps[4];
+  float humidity[1];
+
+  read_voltages(voltages);
+  read_dht_temp(temps, humidity);
+  read_ds18b20_temp(temps);
+
   Serial.print("{");
 
-  read_voltages();
+  Serial.print("\"currents\":[");
+  Serial.print(voltages[0], 3); Serial.print(',');
+  Serial.print(voltages[1], 3); Serial.print(',');
+  Serial.print(voltages[2], 3); Serial.print(',');
+  Serial.print(voltages[3], 3); Serial.print(',');
+  Serial.print(voltages[4], 3);
+  Serial.print("],");
 
-  read_dht_temp();
+  Serial.print("\"temps\":[");
+  Serial.print(temps[0], 2); Serial.print(',');
+  Serial.print(temps[1], 2); Serial.print(',');
+  Serial.print(temps[2], 2); Serial.print(',');
+  Serial.print(temps[3], 2);
+  Serial.print("],");
 
-  read_ds18b20_temp();
+  Serial.print(" \"humidity\":"); Serial.print(humidity[0]); Serial.print(',');
 
-  Serial.print("\"name\":\"telemetry_board\""); Serial.print(",");
-
-  Serial.print("\"count\":"); Serial.print(millis());
+  Serial.print("\"name\":\"power_board\"");
 
   Serial.println("}");
 }
@@ -129,111 +215,68 @@ Gets the AC probe as well as the values of the current on the AC I_ pins
 https://www.arduino.cc/en/Reference/AnalogRead
 
  */
-void read_voltages() {
-  int ac_reading = digitalRead(AC_PIN);
+void read_voltages(float voltages[]) {
 
-  int main_reading = analogRead(I_MAIN);
-  float main_amps = (main_reading / 1023.) * main_amps_mult;  
-//  float main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
+  // Enable channels 0_0 and 1_0
+  digitalWrite(DSEL_0, LOW);
+  digitalWrite(DSEL_1, LOW);
 
-  int fan_reading = analogRead(I_FAN);
-  float fan_amps = (fan_reading / 1023.) * fan_amps_mult;
-//  float fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
+  delay(500);  
+
+  float Diag0=analogRead(IS_0);
+  float Diag1=analogRead(IS_1);
   
-  int mount_reading = analogRead(I_MOUNT);
-  float mount_amps = (mount_reading / 1023.) * mount_amps_mult;
-//  float mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
+
+  // Enabled channels 0_1 and 1_1
+  digitalWrite(DSEL_0, HIGH);
+  digitalWrite(DSEL_1, HIGH);
+
+  delay(500);  
   
-  int camera_reading = analogRead(I_CAMERAS);
-  float camera_amps = (camera_reading / 1023.) * 1;
-//  float camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
-
-  Serial.print("\"power\":{");
-  Serial.print("\"computer\":"); Serial.print(is_pin_on(COMP_RELAY)); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(is_pin_on(FAN_RELAY)); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(is_pin_on(MOUNT_RELAY)); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(is_pin_on(CAMERAS_RELAY)); Serial.print(',');
-  Serial.print("\"weather\":"); Serial.print(is_pin_on(WEATHER_RELAY)); Serial.print(',');  
-  Serial.print("\"main\":"); Serial.print(ac_reading); Serial.print(',');  
-  Serial.print("},");
-
-  Serial.print("\"current\":{");
-  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(camera_reading);
-  Serial.print("},");
+  float Diag3=analogRead(IS_0);
+  float Diag4=analogRead(IS_1);
   
-//  Serial.print("\"volts\":{");
-//  Serial.print("\"main\":"); Serial.print(main_voltage); Serial.print(',');
-//  Serial.print("\"fan\":"); Serial.print(fan_voltage); Serial.print(',');
-//  Serial.print("\"mount\":"); Serial.print(mount_voltage); Serial.print(',');
-//  Serial.print("\"cameras\":"); Serial.print(camera_voltage);
-//  Serial.print("},");
-
-  Serial.print("\"amps\":{");
-  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(camera_amps);
-  Serial.print("},");
+  float Diag2=analogRead(IS_2);
+  
+  float Iload0 = Diag0*5/1023*2360/1200; //conversion factor to compute Iload from sensed voltage
+  float Iload1 = Diag1*5/1023*2360/1200;
+  float Iload2 = Diag2*5/1023*2360/1200; 
+  float Iload3 = Diag3*5/1023*2360/1200; 
+  float Iload4 = Diag4*5/1023*2360/1200; 
+  
+  voltages[0] = Iload0;
+  voltages[1] = Iload3;
+  voltages[2] = Iload1;
+  voltages[3] = Iload4;
+  voltages[4] = Iload2;
 }
 
 // Reading temperature or humidity takes about 250 milliseconds!
 // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-void read_dht_temp() {
-  float h = dht.readHumidity();
-  float c = dht.readTemperature(); // Celsius
+void read_dht_temp(float temps[], float humidity[]) {
+  dht_handler.Collect();
 
-  // Check if any reads failed and exit early (to try again).
-  // if (isnan(h) || isnan(t)) {
-  //   Serial.println("Failed to read from DHT sensor!");
-  //   return;
-  // }
-
-  Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_00\":"); Serial.print(c); Serial.print(',');
+  humidity[0] = dht_handler.humidity();
+  temps[0] = dht_handler.temperature();
 }
 
-void read_ds18b20_temp() {
+void read_ds18b20_temp(float temps[]) {
 
   sensors.requestTemperatures();  
 
-  Serial.print("\"temperature\":[");
-
   for (int x = 0; x < NUM_DS18; x++) {
-    Serial.print(sensors.getTempCByIndex(x)); Serial.print(",");
+    // Store in x+1 because DHT11 stores in index 0
+    temps[x+1] = sensors.getTempCByIndex(x);
   }
-  Serial.print("],");
 }
 
 
 /************************************
-* Utitlity Methods
+* Utility Methods
 *************************************/
 
-int is_pin_on(int pin_num) {
-  return digitalRead(pin_num);
-}
-
-void turn_pin_on(int pin_num) {
-  digitalWrite(pin_num, HIGH);
-}
-
-void turn_pin_off(int pin_num) {
-  digitalWrite(pin_num, LOW);
-}
-
-void toggle_pin(int pin_num) {
-  digitalWrite(pin_num, !digitalRead(pin_num));
-}
-
-void toggle_pin_delay(int pin_num, int delay = 30) {
+void toggle_pin_delay(int pin_num) {
   turn_pin_off(pin_num);
-  delay(1000 * delay);
+  delay(1000 * 30);
   turn_pin_on(pin_num);
-}
-
-void toggle_led() {
-  toggle_pin(LED_BUILTIN);
 }

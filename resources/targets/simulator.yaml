@@ -1,7 +1,7 @@
-- epoch: 2014.58
-  equinox: J2000
-  frame: icrs
-  name: Kelt-3
-  position: 09h54m34.391s +40d23m16.98s
-  priority: 125
-  proper_motion: 0.0 0.0
+-
+    name: Wasp 33
+    position: 02h26m51.0582s +37d33m01.733s
+    priority: 100
+    exptime: 2
+    min_nexp: 2
+    exp_set_size: 2
