@@ -3,16 +3,17 @@ steps:
   id: 'amd64-build'
   args:
   - 'build'
+  - '--build-arg image_url=gcr.io/panoptes-exp/panoptes-utils:${_TAG}'
   - '-f=docker/${_TAG}.Dockerfile'
-  - '--tag=gcr.io/${PROJECT_ID}/pocs:${_TAG}'
+  - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
   - '.'
 
 - name: 'docker'
   id: 'amd64-push'
   args:
   - 'push'
-  - 'gcr.io/${PROJECT_ID}/pocs:${_TAG}'
+  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
   waitFor: ['amd64-build']
 
 images:
-  - 'gcr.io/${PROJECT_ID}/pocs:${_TAG}'
+  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
