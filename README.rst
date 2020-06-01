@@ -22,7 +22,7 @@ PANOPTES Observatory Control System
 
     The recent `v0.7.0` release of POCS is not backwards compatible. If you
     are one of the folks running that software, please either do a reinstall
-    of your system using the instructions below or see our `forum <https://forum.project.panoptes>`__
+    of your system using the instructions below or see our `forum <https://forum.projectpanoptes.org>`__
     for advice.
 
 
@@ -58,6 +58,12 @@ To get started with POCS there are three easy steps:
 #. **Start using POCS!**
 
 See below for more details.
+
+.. note::
+
+    We rely heavily on much of the code in `panoptes-utils`.
+
+    See https://github.com/panoptes/panoptes-utils
 
 Install
 -------
