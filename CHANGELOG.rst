@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
+[0.7.5dev]
+----------
+
+Added
+~~~~~
+
+* Docker image updates (#972)
+    * `latest` installs the `panoptes-pocs` module from pip
+    * `develop` installs via `pip install -e[google.testing]` and is used for running the CI tests.
+    * `developer-env` installs locally but with all options, i.e. `pip install -e[google,testing,plotting,developer]`. Also builds jupyterlab and other developer tools. Starts a jupyterlab instance by default.
+
 
 [0.7.4] - 2020-05-31
 ----------
