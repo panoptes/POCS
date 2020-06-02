@@ -3,9 +3,6 @@ set -e
 
 PARAMS="$*"
 
-# TODO Detect and install docker if needed.
-# TODO Detect and install docker-compose if needed.
-
 export PANDIR=${PANDIR:-/var/panoptes}
 export IMAGE="${IMAGE:-gcr.io/panoptes-exp/panoptes-pocs}"
 export TAG="${TAG:-develop}"
