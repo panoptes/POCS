@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
         run: |
-          docker build -t panoptes-pocs:testing -f docker/latest.Dockerfile .
+          docker build -t panoptes-pocs:develop -f docker/develop.Dockerfile .
       - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p coverage_dir && chmod 777 coverage_dir
@@ -42,7 +42,7 @@ jobs:
             --network "host" \
             -v $PWD:/var/panoptes/logs \
             -v $PWD/coverage_dir:/tmp/coverage \
-            panoptes-pocs:testing \
+            panoptes-pocs:develop \
             scripts/testing/run-tests.sh
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v1

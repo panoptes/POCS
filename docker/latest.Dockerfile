@@ -26,6 +26,7 @@ RUN apt-get update \
     && tar xvfz arduino-cli.tar.gz \
     && mv arduino-cli /usr/local/bin/arduino-cli \
     && chmod +x /usr/local/bin/arduino-cli \
+    # Install the module.
     && pip install -U "panoptes-pocs[google]"
 
 # Cleanup apt.

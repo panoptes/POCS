@@ -10,9 +10,9 @@ python:
 services:
 - docker
 before_install:
-- docker build -t panoptes-pocs:testing -f ${TRAVIS_BUILD_DIR}/docker/latest.Dockerfile ${TRAVIS_BUILD_DIR}
+- docker build -t panoptes-pocs:develop -f ${TRAVIS_BUILD_DIR}/docker/develop.Dockerfile ${TRAVIS_BUILD_DIR}
 install: true
 script:
 - docker run -it
-  panoptes-pocs:testing
+  panoptes-pocs:develop
   scripts/testing/run-tests.sh
