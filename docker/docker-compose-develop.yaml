@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+  develop-env:
+    image: "${IMAGE}:${TAG}"
+    init: true
+    container_name: "${CONTAINER_NAME:-pocs-develop}"
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/env
+    volumes:
+      - pandir:/var/panoptes
+volumes:
+  pandir:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/panoptes
+      o: bind
+
