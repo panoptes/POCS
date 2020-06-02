@@ -6,7 +6,7 @@ TAG="${1:-develop}"
 
 cd "${SOURCE_DIR}"
 
-echo "Building gcr.io/panoptes-exp/pocs:${TAG}"
+echo "Building gcr.io/panoptes-exp/panoptes-pocs:${TAG}"
 gcloud builds submit \
     --timeout="1h" \
     --substitutions="_TAG=${TAG}" \
