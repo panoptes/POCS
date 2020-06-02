@@ -1,6 +1,6 @@
-ARG image_url=gcr.io/panoptes-exp/panoptes-utils:testing
+ARG IMAGE_URL=gcr.io/panoptes-exp/panoptes-utils:latest
 
-FROM $image_url AS pocs-base
+FROM $IMAGE_URL AS pocs-base
 LABEL maintainer="developers@projectpanoptes.org"
 
 ARG pandir=/var/panoptes
@@ -25,16 +25,8 @@ RUN apt-get update \
     # Untar and capture output name (NOTE: assumes only one file).
     && tar xvfz arduino-cli.tar.gz \
     && mv arduino-cli /usr/local/bin/arduino-cli \
-    && chmod +x /usr/local/bin/arduino-cli
-
-COPY ./requirements.txt /tmp/requirements.txt
-# First deal with pip and PyYAML - see https://github.com/pypa/pip/issues/5247
-RUN pip install --no-cache-dir --no-deps --ignore-installed pip PyYAML && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
-
-# Install module
-COPY . ${POCS}/
-RUN cd ${POCS} && pip install -e ".[google]"
+    && chmod +x /usr/local/bin/arduino-cli \
+    && pip install -U "panoptes-pocs[google]"
 
 # Cleanup apt.
 USER root
