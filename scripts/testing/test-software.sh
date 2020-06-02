@@ -26,6 +26,6 @@ docker run --rm -it \
     -e LOCAL_USER_ID=$(id -u) \
     -v /var/panoptes/POCS:/var/panoptes/POCS \
     -v /var/panoptes/logs:/var/panoptes/logs \
-    pocs:testing \
+    panoptes-pocs:testing \
     "/var/panoptes/POCS/scripts/testing/run-tests.sh"
 
