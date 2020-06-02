@@ -15,14 +15,11 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
 
 ENV PANDIR $pan_dir
-ENV PANUSER $panuser
 ENV POCS $pocs_dir
-ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc git pkg-config
 
-USER $PANUSER
 # Can't seem to get around the hard-coding for chown.
 COPY --chown=panoptes:panoptes . ${POCS}/
 RUN cd ${PANDIR}/POCS && \
