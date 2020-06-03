@@ -9,6 +9,7 @@ venv
 *.md
 !README*.md
 
+logs/
 **/.eggs
 **/*.pdf
 **/*.log
