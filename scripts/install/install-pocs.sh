@@ -14,44 +14,66 @@ usage() {
 #   or
 #   $ wget -O - https://install.projectpanoptes.org | bash
 #
-# The script will insure that Docker is installed, download the
-# latest Docker images (see list below) and clone a copy of the
-# relevant PANOPTES repositories.
+# The script will do the following:
+#
+#   * Create the needed directory structure.
+#   * Ensure that docker and docker-compose are installed.
+#   * Fetch and/or build the docker images needed to run.
+#   * If in "developer" mode, clone user's fork and set panoptes upstream.
+#   * Write the environment variables to $PANDIR/env
 #
 # Docker Images:
 #
 #   ${DOCKER_BASE}/panoptes-utils
 #   ${DOCKER_BASE}/pocs
 #
-# The script will ask for a github user name. If you are a developer
-# you can enter your github username to work from your fork. Otherwise
-# the default user (panoptes) is okay for running the unit.
 #
-# The script has been tested with a fresh install of Ubuntu 19.04
+# The script will ask if it should be installed in "developer" mode or not.
+#
+# The regular install is for running units and will not create local (to the
+# host system) copies of the files.
+#
+# The "developer" mode will ask for a github username and will clone and
+# fetch the repos. The `docker/setup-local-enviornment.sh` script will then
+# be run to build the docker images locally.
+#
+# If not in "developer" mode, the docker images will be pulled from GCR.
+#
+# The script has been tested with a fresh install of Ubuntu 20.04
 # but may work on other linux systems.
 #############################################################
- $ $(basename $0) [--user panoptes] [--pandir /var/panoptes]
+ $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
 
  Options:
-  USER      The PANUSER environment variable, defaults to current user (i.e. USER=`$USER`).
-  PANDIR    Default install directory, defaults to /var/panoptes. Saved as PANDIR
+  DEVELOPER Install POCS in developer mode, default False.
+
+ If in DEVELOPER mode, the following options are also available:
+  USER      The PANUSER environment variable, defaults to current user (i.e. PANUSER=$USER).
+  PANDIR    Default install directory, defaults to PANDIR=${PANDIR}. Saved as PANDIR
             environment variable.
 "
 }
 
-DOCKER_BASE="gcr.io/panoptes-exp"
 
-if [ -z "${PANUSER}" ]; then
-    export PANUSER=$USER
-fi
-if [ -z "${PANDIR}" ]; then
-    export PANDIR='/var/panoptes'
-fi
+DEVELOPER=${DEVELOPER:-false}
+PANUSER=${PANUSER:-$USER}
+PANDIR=${PANDIR:-/var/panoptes}
+LOGFILE="${PANDIR}/install-pocs.log"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.0}"
+DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
+DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 while [[ $# -gt 0 ]]
 do
 key="$1"
-case $key in
+case ${key} in
+    --developer)
+    DEVELOPER=true
+    shift # past bool argument
+    ;;
     -u|--user)
     PANUSER="$2"
     shift # past argument
@@ -70,6 +92,14 @@ case $key in
 esac
 done
 
+if "${DEVELOPER}"; then
+    while [[ -z "${GITHUB_USER}" ]]; do
+        read -p "Github User [NOTE: you must have a fork created already]: " GITHUB_USER
+    done
+fi
+
+echo "DEVELOPER=${DEVELOPER} PANDIR=${PANDIR} PANUSER=${PANUSER} GITHUB_USER=${GITHUB_USER}"
+
 function command_exists {
     # https://gist.github.com/gubatron/1eb077a1c5fcf510e8e5
     # this should be a very portable way of checking if something is on the path
@@ -77,89 +107,100 @@ function command_exists {
   type "$1" &> /dev/null
 }
 
-do_install() {
-    clear
-
-    OS="$(uname -s)"
-    case "${OS}" in
-        Linux*)     machine=Linux;;
-        Darwin*)    machine=Mac;;
-        *)          machine="UNKNOWN:${unameOut}"
-    esac
-    echo ${machine}
-
-    # Install directory
-    read -p "PANOPTES base directory [${PANDIR:-/var/panoptes}]: " PANDIR
-    PANDIR=${PANDIR:-/var/panoptes}
-
-    LOGFILE="${PANDIR}/logs/install-pocs.log"
-
-    echo "Installing PANOPTES software."
-    echo "USER: ${PANUSER}"
-    echo "OS: ${OS}"
-    echo "Base dir: ${PANDIR}"
-    echo "Logfile: ${LOGFILE}"
-
-    # Directories
+function make_directories {
     if [[ ! -d "${PANDIR}" ]]; then
-        echo "Creating directories in ${PANDIR}"
-        # Make directories
+        # Make directories and make PANUSER the owner.
         sudo mkdir -p "${PANDIR}"
-        sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
-
-        mkdir -p "${PANDIR}/logs"
-        mkdir -p "${PANDIR}/images"
-        mkdir -p "${PANDIR}/conf_files"
-        mkdir -p "${PANDIR}/.key"
     else
         echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
         select yn in "Yes" "No"; do
-            case $yn in
+            case ${yn} in
                 Yes ) echo "Proceeding with existing directory"; break;;
                 No ) echo "Exiting"; exit 1;;
             esac
         done
     fi
 
-    # apt: git, wget
-    echo "Installing system dependencies"
+    sudo mkdir -p "${PANDIR}/logs"
+    sudo mkdir -p "${PANDIR}/images"
+    sudo mkdir -p "${PANDIR}/config_files"
+    sudo mkdir -p "${PANDIR}/.key"
+    sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+}
 
-    if [[ "${OS}" = "Linux" ]]; then
-        sudo apt-get update >> "${LOGFILE}" 2>&1
-        sudo apt-get --yes install wget curl git openssh-server ack jq httpie byobu >> "${LOGFILE}" 2>&1
-    elif [[ "${OS}" = "Darwin" ]]; then
-        sudo brew update | sudo tee -a "${LOGFILE}"
-        sudo brew install wget curl git jq httpie | sudo tee -a "${LOGFILE}"
+function setup_env_vars {
+    ENV_FILE="${PANDIR}/env"
+
+    echo "Writing environment variables to ${ENV_FILE}"
+    if -f "${ENV_FILE}"; then
+        echo "\n**** Added by install-pocs script ****\n" >> "${ENV_FILE}"
     fi
 
-    echo "Cloning PANOPTES source code."
-    echo "Github user for PANOPTES repos (POCS, panoptes-utils)."
+    cat >> "${ENV_FILE}" <<EOF
+export PANUSER=${PANUSER}
+export PANDIR=${PANDIR}
+export POCS=${PANDIR}/POCS
+export PANLOG=${PANDIR}/logs
+EOF
+}
 
-    # Default user
-    read -p "Github User [if you are a developer, enter your name or press Enter for 'panoptes']: " github_user
-    github_user=${github_user:-panoptes}
-    echo "Using repositories from user '${github_user}'."
+function system_deps {
+    if [[ "${OS}" = "Linux" ]]; then
+        sudo apt-get update >> "${LOGFILE}" 2>&1
+        # TODO(wtgee) figure out why we needed openssh-server on the host.
+        sudo apt-get --yes install \
+            wget curl git openssh-server ack jq httpie byobu \
+            >> "${LOGFILE}" 2>&1
+    elif [[ "${OS}" = "Darwin" ]]; then
+        sudo brew update | sudo tee -a "${LOGFILE}"
+        sudo brew install \
+            wget curl git jq httpie \
+            | sudo tee -a "${LOGFILE}"
+    fi
 
-    GIT_BRANCH="develop"
+    # Add an SSH key if one doesn't exist.
+    if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
+        echo "Adding ssh key"
+        ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa";
+    fi
+}
 
-    cd "${PANDIR}"
-    declare -a repos=("POCS" "panoptes-utils")
+function get_repos {
+    PUBLIC_GITHUB_URL="https://github.com/panoptes"
+
+    if "${DEVELOPER}"; then
+        echo "Using repositories from user: ${GITHUB_USER}"
+        declare -a repos=("POCS" "panoptes-utils" "panoptes-tutorials")
+        GITHUB_URL="git@github.com:${GITHUB_USER}"
+    else
+        declare -a repos=("POCS" "panoptes-utils")
+        GITHUB_URL="${PUBLIC_GITHUB_URL}"
+    fi
+
     for repo in "${repos[@]}"; do
         if [[ ! -d "${PANDIR}/${repo}" ]]; then
+            cd "${PANDIR}"
             echo "Cloning ${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
-            git clone "https://github.com/${github_user}/${repo}.git" >> "${LOGFILE}" 2>&1
+            # TODO handle errors if repo doesn't exist (e.g. bad github name).
+            git clone "https://github.com/${GITHUB_USER}/${repo}.git" >> "${LOGFILE}" 2>&1
+
+            # Set panoptes as upstream
+            cd "${repo}"
+            git remote add upstream "${PUBLIC_GITHUB_URL}/${repo}"
         else
-            # TODO Do an update here.
-            echo ""
+            # TODO Figure out how to do updates.
+            echo "${repo} already exists in ${PANDIR}. No auto-update for now, skipping repo."
         fi
     done
+}
 
+function get_docker {
     # Get Docker
     if ! command_exists docker; then
         echo "Installing Docker"
         if [[ "${OS}" = "Linux" ]]; then
-            /bin/bash -c "$(wget -qO- https://get.docker.com)" &>> ${PANDIR}/logs/install-pocs.log
+            /bin/bash -c "$(wget -qO- https://get.docker.com)" &>> "${LOGFILE}"
 
             echo "Adding ${PANUSER} to docker group"
             sudo usermod -aG docker "${PANUSER}" >> "${LOGFILE}" 2>&1
@@ -168,29 +209,60 @@ do_install() {
             echo "Adding ${PANUSER} to docker group"
             sudo dscl -aG docker "${PANUSER}"
         fi
-    else
-        echo "WARNING: Docker images not installed/downloaded."
     fi
 
     if ! command_exists docker-compose; then
         echo "Installing docker-compose"
         # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
-        sudo wget -q https://github.com/docker/compose/releases/download/1.25.4/docker-compose-`uname -s`-`uname -m` -O /usr/local/bin/docker-compose
+        sudo wget -q "${DOCKER_COMPOSE_INSTALL}" -O /usr/local/bin/docker-compose
         sudo chmod a+x /usr/local/bin/docker-compose
-
-        docker pull docker/compose
     fi
+}
 
-    echo "Pulling PANOPTES docker images"
-    docker pull "${DOCKER_BASE}/panoptes-utils:latest"
-    docker pull "${DOCKER_BASE}/aag-weather:latest"
-    docker pull "${DOCKER_BASE}/pocs:latest"
+function get_or_build_images {
+    if ${DEVELOPER}; then
+        echo "Building local PANOPTES docker images."
 
-    # Add an SSH key if one doesn't exists
-    if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
-        echo "Looks like you don't have an SSH key set up yet, adding one now."
-        ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa";
+        cd "${POCS}"
+        ./docker/setup-local-environment.sh
+    else
+        echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
+
+        docker pull "${DOCKER_BASE}/panoptes-pocs:latest"
+        docker pull "${DOCKER_BASE}/panoptes-utils:latest"
+        docker pull "${DOCKER_BASE}/aag-weather:latest"
     fi
+}
+
+function do_install {
+    clear
+
+    if ${DEVELOPER}; then
+        echo ""
+        echo "**** Developer Mode ****"
+        echo ""
+    fi
+    echo "Installing PANOPTES software."
+    echo "PANUSER: ${PANUSER}"
+    echo "PANDIR: ${PANDIR}"
+    echo "OS: ${OS}"
+    echo "Logfile: ${LOGFILE}"
+
+    exit 0;
+
+    echo "Creating directories in ${PANDIR}"
+    make_directories
+
+    echo "Installing system dependencies"
+    system_deps
+
+    echo "Installing docker and docker-compose"
+    get_docker
+
+    echo "Cloning PANOPTES source code"
+    get_repos
+
+    get_or_build_images
 
     echo "Please reboot your machine before using POCS."
 
@@ -201,6 +273,4 @@ do_install() {
 
 }
 
-# wrapped up in a function so that we have some protection against only getting
-# half the file during "curl | sh" - copied from get.docker.com
 do_install

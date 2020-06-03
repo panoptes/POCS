@@ -1,14 +1,14 @@
 # Temporary and binary files
 *~
-*.py[cod]
 *.so
 *.cfg
 !.isort.cfg
 !setup.cfg
 *.orig
-*.log
 *.pot
-__pycache__/*
+**/*.py[cod]
+**/*.log
+**/__pycache__/*
 .cache/*
 .*.swp
 */.ipynb_checkpoints/*
