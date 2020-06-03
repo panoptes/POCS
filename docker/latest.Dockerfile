@@ -15,6 +15,7 @@ ENV SHELL /bin/zsh
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
 ENV USER panoptes
+ENV PANUSER panoptes
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
@@ -27,7 +28,9 @@ RUN apt-get update \
     # arduino-cli
     && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh \
     # Install the module.
-    && pip install "panoptes-pocs[google]"
+    && pip install "panoptes-pocs[google]" \
+    # Make sure $PANUSER owns $PANDIR.
+    && chown -R "${PANUSER}:${PANUSER}" "${PANDIR}"
 
 # Cleanup apt.
 RUN apt-get autoremove --purge -y \
