@@ -16,6 +16,7 @@ ENV SHELL /bin/zsh
 ENV PANUSER=panoptes
 ENV PANDIR $pan_dir
 ENV POCS $pocs_dir
+ENV SOLVE_FIELD /usr/bin/solve-field
 
 # panoptes-utils
 USER ${PANUSER}
@@ -27,7 +28,8 @@ RUN cd "${PANDIR}/POCS" && \
 USER root
 RUN apt-get autoremove --purge -y && \
     apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R "${PANUSER}:${PANUSER}" "${PANDIR}"
 
 WORKDIR ${POCS}
 

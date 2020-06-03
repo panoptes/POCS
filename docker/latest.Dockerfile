@@ -14,8 +14,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
 ENV PANDIR $pandir
 ENV POCS ${PANDIR}/POCS
-ENV USER panoptes
-ENV PANUSER panoptes
+ENV SOLVE_FIELD /usr/bin/solve-field
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
@@ -28,9 +27,7 @@ RUN apt-get update \
     # arduino-cli
     && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh \
     # Install the module.
-    && pip install "panoptes-pocs[google]" \
-    # Make sure $PANUSER owns $PANDIR.
-    && chown -R "${PANUSER}:${PANUSER}" "${PANDIR}"
+    && pip install "panoptes-pocs[google]"
 
 # Cleanup apt.
 RUN apt-get autoremove --purge -y \
