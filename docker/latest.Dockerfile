@@ -1,10 +1,14 @@
 ARG IMAGE_URL=gcr.io/panoptes-exp/panoptes-utils:latest
+FROM ${IMAGE_URL} AS pocs-base
 
-FROM $IMAGE_URL AS pocs-base
-LABEL maintainer="developers@projectpanoptes.org"
+LABEL description="Installs the panoptes-pocs module from pip. \
+Used as a production image, i.e. for running on PANOPTES units."
+LABEL maintainers="developers@projectpanoptes.org"
+LABEL repo="github.com/panoptes/POCS"
 
 ARG pandir=/var/panoptes
-ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz"
+ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
+ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
@@ -16,21 +20,16 @@ RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
         gcc libncurses5-dev udev \
     # GPhoto2
-    && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh \
+    && wget $gphoto2_url \
     && chmod +x gphoto2-updater.sh \
     && /bin/bash gphoto2-updater.sh --stable \
     && rm gphoto2-updater.sh \
     # arduino-cli
-    && wget -q $arduino_url -O arduino-cli.tar.gz \
-    # Untar and capture output name (NOTE: assumes only one file).
-    && tar xvfz arduino-cli.tar.gz \
-    && mv arduino-cli /usr/local/bin/arduino-cli \
-    && chmod +x /usr/local/bin/arduino-cli \
+    && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh \
     # Install the module.
-    && pip install -U "panoptes-pocs[google]"
+    && pip install "panoptes-pocs[google]"
 
 # Cleanup apt.
-USER root
 RUN apt-get autoremove --purge -y \
         autoconf \
         automake \

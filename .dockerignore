@@ -1,16 +1,17 @@
-!.git
 docs/*
-.eggs
 .idea
 .venv
 venv
-*.egg-info
+
+.git
 .github
 
 *.md
 !README*.md
 
-*.log
-*.pdf
+**/.eggs
+**/*.pdf
+**/*.log
+**/*.egg-info
 **/*.pyc
 **/__pycache__
