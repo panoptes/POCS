@@ -29,12 +29,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
-      - name: Build pocs image
+      - name: Build panoptes-pocs image
         run: |
-          docker build -t pocs:testing -f docker/latest.Dockerfile .
-      - name: Test with pytest in pocs container
+          # Make sure git goes to the build context.
+          sed -i s'/^\.git$/\!\.git/' .dockerignore
+          docker build -t panoptes-pocs:develop -f docker/develop.Dockerfile .
+      - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p coverage_dir && chmod 777 coverage_dir
           ci_env=`bash <(curl -s https://codecov.io/env)`
@@ -42,9 +42,9 @@ jobs:
             $ci_env \
             -e REPORT_FILE="/tmp/coverage/coverage.xml" \
             --network "host" \
-            -v $PWD:/var/panoptes/logs \
+            -v $PWD/coverage_dir:/var/panoptes/logs \
             -v $PWD/coverage_dir:/tmp/coverage \
-            pocs:testing \
+            panoptes-pocs:develop \
             scripts/testing/run-tests.sh
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v1
@@ -58,4 +58,4 @@ jobs:
         if: always()
         with:
           name: log-files
-          path: panoptes-testing.log
+          path: coverage_dir/panoptes-testing.log
