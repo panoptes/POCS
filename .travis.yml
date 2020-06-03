@@ -10,6 +10,7 @@ python:
 services:
 - docker
 before_install:
+- sed -i s'/^\.git$/\!\.git/' .dockerignore
 - docker build -t panoptes-pocs:develop -f ${TRAVIS_BUILD_DIR}/docker/develop.Dockerfile ${TRAVIS_BUILD_DIR}
 install: true
 script:
