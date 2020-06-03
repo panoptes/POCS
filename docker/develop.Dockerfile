@@ -29,7 +29,8 @@ USER root
 RUN apt-get autoremove --purge -y && \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* && \
-    chown -R "${PANUSER}:${PANUSER}" "${PANDIR}"
+    chown -R "${PANUSER}:${PANUSER}" "${PANDIR}" && \
+    chmod -R 777 /astrometry
 
 WORKDIR ${POCS}
 
