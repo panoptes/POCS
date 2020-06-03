@@ -42,7 +42,7 @@ jobs:
             $ci_env \
             -e REPORT_FILE="/tmp/coverage/coverage.xml" \
             --network "host" \
-            -v $PWD:/var/panoptes/logs \
+            -v $PWD/coverage_dir:/var/panoptes/logs \
             -v $PWD/coverage_dir:/tmp/coverage \
             panoptes-pocs:develop \
             scripts/testing/run-tests.sh
@@ -58,4 +58,4 @@ jobs:
         if: always()
         with:
           name: log-files
-          path: panoptes-testing.log
+          path: coverage_dir/panoptes-testing.log
