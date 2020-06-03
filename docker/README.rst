@@ -5,10 +5,27 @@ POCS is available as a docker image hosted on Google Cloud Registry (GCR):
 
 Image name: ``gcr.io/panoptes-exp/panoptes-pocs``
 
-Tags: ``latest``, ``develop``, and ``testing``.
+Tags: ``latest``, ``develop``, and ``developer-env``.
 
-Tags
-~~~~
+Setup
+~~~~~
+
+To build the images locally:
+
+.. code:: bash
+
+    docker/setup-local-environment.sh
+
+To run the test suite locally:
+
+.. code:: bash
+
+    scripts/testing/test-software.sh
+
+This will build all three images locally and is suitable for testing and development.
+
+Description
+~~~~~~~~~~~
 
 The ``panoptes-pocs`` image comes in three separate flavors, or tags,
 that serve different purposes.
@@ -16,26 +33,30 @@ that serve different purposes.
 latest
 ^^^^^^
 
-The ``latest`` image is typically used to run services or to serve as a
-foundational layer for other docker images. It includes all the tools
-required to run the various functions with the ``panoptes-pocs``
-module, including a plate-solver (astrometry.net), ``sextractor``, etc.
+The ``latest`` image is the "production" version of ``panoptes-pocs``.
 
-This image is what the active PANOPTES units should be running. When
-running the install script, this will be the default install option
-unless "developer" is selected.
+PANOPTES units should be running this flavor.
+
+When running the install script, this will be the default install option unless the "developer" is selected.
 
 develop
 ^^^^^^^
 
-The ``develop`` image can be used by developers or anyone wishing to
-explore the code. The ``bin/panoptes-develop`` script is a wrapper that
-will start up a docker container instance and launce jupyter-lab from
-``$PANDIR`` automatically.
+The ``develop`` image is used for running the automated tests. These are
+run automatically on both GitHub and Travis for all code pushes but can
+also be run locally while doing development.
+
+developer-env
+^^^^^^^^^^^^^
+
+The ``developer-env`` image is meant to be be used by developers or anyone wishing to
+explore the code. The image should be built locally using the ``docker/setup-local-environment.sh``
+script (or, ideally, just use the ``install-pocs`` script).
+
+The ``bin/panoptes-develop up`` can then be used to start a docker container
+instance that will launch ``jupyter-lab`` from ``$PANDIR`` automatically.
 
 There are a few ways to get the development version.
-
-    Note: See also https://github.com/panoptes/panoptes-tutorials
 
 1) If you have ``git`` and are comfortable using the command line:
 
@@ -72,23 +93,4 @@ There are a few ways to get the development version.
 3) If you are using a new system:
 
     TODO: Document this section.
-
-testing
-^^^^^^^
-
-The ``testing`` image is used for running the automated tests. These are
-run automatically on both GitHub and Travis for all code pushes but can
-also be run locally while doing development.
-
-To build the test image:
-
-.. code:: bash
-
-    docker build -t panoptes-pocs:testing -f docker/testing.Dockerfile .
-
-To run the test suite locally:
-
-.. code:: bash
-
-    scripts/testing/test-software.sh
 

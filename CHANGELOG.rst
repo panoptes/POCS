@@ -13,21 +13,23 @@ Added
 ~~~~~
 
 * Docker image updates (#972)
-    * `latest` installs the `panoptes-pocs` module from pip
-    * `develop` installs via `pip install -e[google.testing]` and is used for running the CI tests.
-    * `developer-env` installs locally but with all options, i.e. `pip install -e[google,testing,plotting,developer]`. Also builds jupyterlab and other developer tools. Starts a jupyterlab instance by default.
-
+    * ``latest`` installs the ``panoptes-pocs`` module from pip
+    * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
+    * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
+    * Use new ``arduino-cli`` installer.
+    * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
+    * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
 
 [0.7.4] - 2020-05-31
 ----------
 
-Note that we skipped `0.7.2` and `0.7.3`.
+Note that we skipped ``0.7.2`` and ``0.7.3``.
 
 
 Bug fixes
 ~~~~~~~~~
 
-* Package name is `panoptes-pocs` for namespace consistency. (#971)
+* Package name is ``panoptes-pocs`` for namespace consistency. (#971)
 * README changed to rst. (#971)
 
 
