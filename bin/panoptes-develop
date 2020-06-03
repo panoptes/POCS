@@ -4,16 +4,16 @@ set -e
 PARAMS="$*"
 
 export PANDIR=${PANDIR:-/var/panoptes}
-export IMAGE="${IMAGE:-gcr.io/panoptes-exp/panoptes-pocs}"
-export TAG="${TAG:-develop}"
-export CONTAINER_NAME="${CONTAINER_NAME:-pocs-develop}"
+export IMAGE="${IMAGE:-panoptes-pocs}"
+export TAG="${TAG:-developer-env}"
+export CONTAINER_NAME="${CONTAINER_NAME:-pocs-developer-env}"
 
 cd "${PANDIR}"
 
 CMD="docker-compose \
     --project-directory ${PANDIR} \
     --env-file ${PANDIR}/env \
-    -f POCS/docker/docker-compose-develop.yaml \
+    -f POCS/docker/docker-compose-developer-env.yaml \
     -p panoptes"
 
 ## Add the deamon option by default.

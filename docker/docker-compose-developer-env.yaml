@@ -1,9 +1,9 @@
 version: '3.7'
 services:
   develop-env:
-    image: "${IMAGE}:${TAG}"
+    image: "${IMAGE:-panoptes-pocs}:${TAG:-developer-env}"
     init: true
-    container_name: "${CONTAINER_NAME:-pocs-develop}"
+    container_name: "${CONTAINER_NAME:-pocs-developer-env}"
     privileged: true
     network_mode: host
     env_file: $PANDIR/env
