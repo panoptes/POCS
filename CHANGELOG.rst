@@ -9,10 +9,11 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 [0.7.5dev]
 ----------
 
-Added
-~~~~~
+Changed
+~~~~~~~
 
 * Docker image updates (#972)
+    * Updated `install-pocs.sh` script.
     * ``latest`` installs the ``panoptes-pocs`` module from pip
     * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
     * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
