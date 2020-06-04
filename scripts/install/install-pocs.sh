@@ -264,7 +264,7 @@ function do_install {
     echo "Creating directories in ${PANDIR}"
     make_directories
 
-    echo "Setting up environment variables"
+    echo "Setting up environment variables in ${ENV_FILE}"
     setup_env_vars
 
 
