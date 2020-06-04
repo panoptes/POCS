@@ -66,6 +66,7 @@ DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.0}"
 DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
+
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -91,6 +92,16 @@ case ${key} in
     ;;
 esac
 done
+
+if ! ${DEVELOPER}; then
+    echo "WARNING "developer" mode not detected. You can exit and install in "developer" mode with --developer or continue."
+    select yn in "Yes" "No"; do
+        case ${yn} in
+            Yes ) echo "Proceeding with existing installation settings"; break;;
+            No ) echo "Exiting"; exit 1;;
+        esac
+    done
+fi
 
 if "${DEVELOPER}"; then
     while [[ -z "${GITHUB_USER}" ]]; do
@@ -223,7 +234,7 @@ function get_or_build_images {
     if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
-        cd "${POCS}"                         
+        cd "${POCS}"
         ./docker/setup-local-environment.sh
     else
         echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
@@ -248,7 +259,7 @@ function do_install {
     echo "OS: ${OS}"
     echo "Logfile: ${LOGFILE}"
 
-  
+
 
     echo "Creating directories in ${PANDIR}"
     make_directories
