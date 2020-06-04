@@ -94,11 +94,11 @@ esac
 done
 
 if ! ${DEVELOPER}; then
-    echo "WARNING "developer" mode not detected. You can exit and install in "developer" mode with --developer or continue."
+    echo -n "Are you installing POCS as a developer? (for PANOPTES units, select No)"
     select yn in "Yes" "No"; do
         case ${yn} in
-            Yes ) echo "Proceeding with existing installation settings"; break;;
-            No ) echo "Exiting"; exit 1;;
+            Yes ) echo "Enabling developer mode. Note that you will need your GitHub username to proceed"; DEVELOPER=true; break;;
+            No ) echo "Installing POCS in production mode"; break;;
         esac
     done
 fi
