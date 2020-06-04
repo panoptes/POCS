@@ -7,7 +7,6 @@ cd "${POCS}"
 
 echo "Building local panoptes-pocs:latest"
 docker build \
-    --quiet \
     -t "panoptes-pocs:latest" \
     -f "${POCS}/docker/latest.Dockerfile" \
     "${POCS}"
@@ -17,7 +16,6 @@ sed -i s'/^\.git$/\!\.git/' .dockerignore
 
 echo "Building local panoptes-pocs:develop"
 docker build \
-    --quiet \
     --build-arg IMAGE_URL="panoptes-pocs:latest" \
     -t "panoptes-pocs:develop" \
     -f "${POCS}/docker/develop.Dockerfile" \
@@ -25,7 +23,6 @@ docker build \
 
 echo "Building local panoptes-pocs:developer-env"
 docker build \
-    --quiet \
     --build-arg IMAGE_URL="panoptes-pocs:develop" \
     -t "panoptes-pocs:developer-env" \
     -f "${POCS}/docker/developer-env.Dockerfile" \
