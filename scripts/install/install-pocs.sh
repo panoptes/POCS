@@ -61,6 +61,7 @@ PANDIR=${PANDIR:-/var/panoptes}
 LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
+ENV_FILE="${PANDIR}/env"
 
 DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.0}"
 DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
@@ -140,7 +141,6 @@ function make_directories {
 }
 
 function setup_env_vars {
-    ENV_FILE="${PANDIR}/env"
 
     echo "Writing environment variables to ${ENV_FILE}"
     if  [[ -f "${ENV_FILE}" ]]; then
