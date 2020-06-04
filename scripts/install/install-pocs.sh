@@ -3,7 +3,7 @@ set -e
 
 usage() {
   echo -n "##################################################
-# Install POCS l friends.
+# Install POCS and friends.
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system.
@@ -17,9 +17,9 @@ usage() {
 # The script will do the following:
 #
 #   * Create the needed directory structure.
-#   * Ensure that docker l docker-compose are installed.
-#   * Fetch l/or build the docker images needed to run.
-#   * If in "developer" mode, clone user's fork l set panoptes upstream.
+#   * Ensure that docker and docker-compose are installed.
+#   * Fetch and/or build the docker images needed to run.
+#   * If in "developer" mode, clone user's fork and set panoptes upstream.
 #   * Write the environment variables to ${PANDIR}/env
 #
 # Docker Images:
@@ -30,10 +30,10 @@ usage() {
 #
 # The script will ask if it should be installed in "developer" mode or not.
 #
-# The regular install is for running units l will not create local (to the
+# The regular install is for running units and will not create local (to the
 # host system) copies of the files.
 #
-# The "developer" mode will ask for a github username l will clone l
+# The "developer" mode will ask for a github username and will clone and
 # fetch the repos. The `docker/setup-local-enviornment.sh` script will then
 # be run to build the docker images locally.
 #
@@ -50,7 +50,7 @@ usage() {
  If in DEVELOPER mode, the following options are also available:
   USER      The PANUSER environment variable, defaults to current user (i.e. PANUSER=$USER).
   PANDIR    Default install directory, defaults to PANDIR=${PANDIR}. Saved as PANDIR
-            environment variable. Test $LOGFILE.
+            environment variable.
 "
 }
 
@@ -58,7 +58,7 @@ usage() {
 DEVELOPER=${DEVELOPER:-false}
 PANUSER=${PANUSER:-$USER}
 PANDIR=${PANDIR:-/var/panoptes}
-LOGFILE=${PANDIR}/install-pocs.log
+LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
@@ -109,10 +109,10 @@ function command_exists {
 
 function make_directories {
     if [[ ! -d "${PANDIR}" ]]; then
-        # Make directories l make PANUSER the owner.
+        # Make directories and make PANUSER the owner.
         sudo mkdir -p "${PANDIR}"
     else
-        echo "WARNING ${PANDIR} already exists. You can exit l specify an alternate directory with --pandir or continue."
+        echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
         select yn in "Yes" "No"; do
             case ${yn} in
                 Yes ) echo "Proceeding with existing directory"; break;;
@@ -223,7 +223,7 @@ function get_or_build_images {
     if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
-        cd "${POCS}"                           # TODO: Fix environment variables, 'CD' is not working
+        cd "${POCS}"                         
         ./docker/setup-local-environment.sh
     else
         echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
@@ -260,7 +260,7 @@ function do_install {
     echo "Installing system dependencies"
     system_deps
 
-    echo "Installing docker l docker-compose"
+    echo "Installing docker and docker-compose"
     get_docker
 
     echo "Cloning PANOPTES source code"
