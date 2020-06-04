@@ -50,7 +50,7 @@ usage() {
  If in DEVELOPER mode, the following options are also available:
   USER      The PANUSER environment variable, defaults to current user (i.e. PANUSER=$USER).
   PANDIR    Default install directory, defaults to PANDIR=${PANDIR}. Saved as PANDIR
-            environment variable. Test $LOGFILE.
+            environment variable.
 "
 }
 
