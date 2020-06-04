@@ -141,7 +141,6 @@ function make_directories {
 }
 
 function setup_env_vars {
-
     echo "Writing environment variables to ${ENV_FILE}"
     if  [[ -f "${ENV_FILE}" ]]; then
         echo "\n**** Added by install-pocs script ****\n" >> "${ENV_FILE}"
