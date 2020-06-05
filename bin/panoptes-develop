@@ -13,7 +13,7 @@ cd "${PANDIR}"
 CMD="docker-compose \
     --project-directory ${PANDIR} \
     --env-file ${PANDIR}/env \
-    -f POCS/docker/docker-compose-developer-env.yaml \
+    -f ${PANDIR}/POCS/docker/docker-compose-developer-env.yaml \
     -p panoptes"
 
 ## Add the deamon option by default.
