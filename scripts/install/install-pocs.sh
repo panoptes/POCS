@@ -20,7 +20,7 @@ usage() {
 #   * Ensure that docker and docker-compose are installed.
 #   * Fetch and/or build the docker images needed to run.
 #   * If in "developer" mode, clone user's fork and set panoptes upstream.
-#   * Write the environment variables to $PANDIR/env
+#   * Write the environment variables to ${PANDIR}/env
 #
 # Docker Images:
 #
@@ -61,10 +61,12 @@ PANDIR=${PANDIR:-/var/panoptes}
 LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
+ENV_FILE="${PANDIR}/env"
 
 DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.0}"
 DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
+
 
 while [[ $# -gt 0 ]]
 do
@@ -91,6 +93,16 @@ case ${key} in
     ;;
 esac
 done
+
+if ! ${DEVELOPER}; then
+    echo -n "Are you installing POCS as a developer? (for PANOPTES units, select No)"
+    select yn in "Yes" "No"; do
+        case ${yn} in
+            Yes ) echo "Enabling developer mode. Note that you will need your GitHub username to proceed"; DEVELOPER=true; break;;
+            No ) echo "Installing POCS in production mode"; break;;
+        esac
+    done
+fi
 
 if "${DEVELOPER}"; then
     while [[ -z "${GITHUB_USER}" ]]; do
@@ -129,10 +141,8 @@ function make_directories {
 }
 
 function setup_env_vars {
-    ENV_FILE="${PANDIR}/env"
-
     echo "Writing environment variables to ${ENV_FILE}"
-    if -f "${ENV_FILE}"; then
+    if  [[ -f "${ENV_FILE}" ]]; then
         echo "\n**** Added by install-pocs script ****\n" >> "${ENV_FILE}"
     fi
 
@@ -248,10 +258,14 @@ function do_install {
     echo "OS: ${OS}"
     echo "Logfile: ${LOGFILE}"
 
-    exit 0;
+
 
     echo "Creating directories in ${PANDIR}"
     make_directories
+
+    echo "Setting up environment variables in ${ENV_FILE}"
+    setup_env_vars
+
 
     echo "Installing system dependencies"
     system_deps
@@ -271,6 +285,7 @@ function do_install {
         sudo reboot
     fi
 
+    exit 0;
 }
 
 do_install
