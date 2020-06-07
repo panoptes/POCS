@@ -3,29 +3,24 @@
 clear;
 
 cat <<EOF
-Beginning test of pocs software. This software is run inside a virtualized docker
+Beginning test of panoptes-pocs software. This software is run inside a virtualized docker
 container that has all of the required dependencies installed.
 
-This will start a single docker container, mapping the host ${PANDIR} into the running docker
+This will start a single docker container, mapping the host POCS=${POCS} into the running docker
 container, which allows for testing of any local changes.
 
 You can view the output for the tests in a separate terminal:
 
-grc tail -F ${PANDIR}/log/pytest-all.log
-
-The tests will start by updating: ${PANDIR}/pocs/requirements.txt inside the container.
+tail -F ${PANDIR}/logs/panoptes-testing.log
 
 Tests will begin in 5 seconds. Press Ctrl-c to cancel.
 EOF
 
 sleep 5;
 
-# TODO fix the hardcoded paths below.
-
 docker run --rm -it \
-    -e LOCAL_USER_ID=$(id -u) \
-    -v /var/panoptes/POCS:/var/panoptes/POCS \
-    -v /var/panoptes/logs:/var/panoptes/logs \
+    -v "${POCS}":/var/panoptes/panoptes-pocs \
+    -v "${PANDIR}/logs":/var/panoptes/logs \
     panoptes-pocs:develop \
-    "/var/panoptes/POCS/scripts/testing/run-tests.sh"
+    "${POCS}/scripts/testing/run-tests.sh"
 

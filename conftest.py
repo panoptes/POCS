@@ -96,11 +96,11 @@ def pytest_collection_modifyitems(config, items):
         # User does not want to run tests that interact with hardware called name,
         # whether it is marked as with_name or without_name.
         if name in with_hardware:
-            print('Warning: {!r} in both --with-hardware and --without-hardware'.format(name))
+            print(f'Warning: {f!r} in both --with-hardware and --without-hardware')
             with_hardware.remove(name)
-        skip = pytest.mark.skip(reason="--without-hardware={} specified".format(name))
-        with_keyword = 'with_' + name
-        without_keyword = 'without_' + name
+        skip = pytest.mark.skip(reason=f"--without-hardware={name} specified")
+        with_keyword = f'with_{name}'
+        without_keyword = f'without_{name}'
         for item in items:
             if with_keyword in item.keywords or without_keyword in item.keywords:
                 item.add_marker(skip)
