@@ -156,8 +156,6 @@ EOF
     echo '. /var/panoptes/env' >> ~/.bashrc
 }
 
-
-
 function system_deps {
     if [[ "${OS}" = "Linux" ]]; then
         sudo apt-get update >> "${LOGFILE}" 2>&1
