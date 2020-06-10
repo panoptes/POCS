@@ -152,6 +152,8 @@ export PANDIR=${PANDIR}
 export POCS=${PANDIR}/POCS
 export PANLOG=${PANDIR}/logs
 EOF
+
+    [ ! -f /var/panoptes/env ] && echo '. /var/panoptes/env' >> ~/.bashrc
 }
 
 function system_deps {
