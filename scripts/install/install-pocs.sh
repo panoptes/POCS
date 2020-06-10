@@ -153,7 +153,10 @@ export POCS=${PANDIR}/POCS
 export PANLOG=${PANDIR}/logs
 EOF
 
-    [ ! -f /var/panoptes/env ] && echo '. /var/panoptes/env' >> ~/.bashrc
+    if [[ ! -f /var/panoptes/env ]]; then
+        [[ -f "$HOME/.bashrc" ]] && echo '. /var/panoptes/env' >> ~/.bashrc
+        [[ -f "$HOME/.zshrc" ]] && echo '. /var/panoptes/env' >> ~/.zshrc
+    fi
 }
 
 function system_deps {
@@ -267,7 +270,6 @@ function do_install {
 
     echo "Setting up environment variables in ${ENV_FILE}"
     setup_env_vars
-
 
     echo "Installing system dependencies"
     system_deps

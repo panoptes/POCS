@@ -1,8 +1,9 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 
-PANDIR=${PANDIR:-/var/panoptes}
-POCS=${POCS:-/var/panoptes/POCS}
-TAG="${1:-develop}"
+export PANDIR=${PANDIR:-/var/panoptes}
+export POCS=${POCS:-/var/panoptes/POCS}
+export TAG="${1:-develop}"
 
 # Build panoptes-utils first.
 . "${PANDIR}/panoptes-utils/docker/setup-local-environment.sh"

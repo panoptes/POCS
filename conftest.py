@@ -3,7 +3,6 @@ import os
 import stat
 import pytest
 from _pytest.logging import caplog as _caplog
-import subprocess
 import time
 import tempfile
 import shutil
@@ -14,7 +13,7 @@ from scalpl import Cut
 
 from panoptes.pocs import hardware
 from panoptes.utils.database import PanDB
-from panoptes.utils.config import load_config
+from panoptes.utils.config.helpers import load_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import app as config_server_app
 
