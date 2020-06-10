@@ -153,31 +153,16 @@ def pytest_runtest_logreport(report):
 
 
 @pytest.fixture(scope='session')
-def config_host():
-    return 'localhost'
-
-
-@pytest.fixture(scope='session')
-def config_port():
-    """Used for the session-scoped config_server where no config values
-    are expected to change during testing.
-    """
-    return '6567'
-
-
-@pytest.fixture(scope='session')
 def config_path():
     return os.path.expandvars('${POCS}/tests/pocs_testing.yaml')
 
 
 @pytest.fixture(scope='session', autouse=True)
-def static_config_server(config_path, config_host, config_port, images_dir, db_name):
+def static_config_server(config_path, images_dir, db_name):
     logger.log('testing', f'Starting static_config_server for testing session')
 
     proc = config_server(
         config_path,
-        host=config_host,
-        port=config_port,
         ignore_local=True,
         auto_save=False
     )
