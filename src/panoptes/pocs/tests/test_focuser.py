@@ -3,7 +3,7 @@ import time
 import pytest
 from threading import Thread
 
-from panoptes.utils.config import load_config
+from panoptes.utils.config.helpers import load_config
 
 from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser

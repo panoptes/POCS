@@ -5,6 +5,9 @@ export PANDIR=${PANDIR:-/var/panoptes}
 export POCS=${POCS:-/var/panoptes/POCS}
 export TAG="${1:-develop}"
 
+echo "Removing stale docker images to make space"
+docker system prune --force
+
 # Build panoptes-utils first.
 . "${PANDIR}/panoptes-utils/docker/setup-local-environment.sh"
 
