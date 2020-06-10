@@ -62,7 +62,7 @@ serial_number_params = 'SSC101'
     'simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
     'sbig', 'fli', 'zwo'
 ])
-def camera(request, dynamic_config_server, config_port):
+def camera(request, config_port):
     CamClass = request.param[0]
     cam_params = request.param[1]
 
@@ -80,7 +80,7 @@ def camera(request, dynamic_config_server, config_port):
     assert camera.is_ready
     yield camera
 
-    # simulator_sdk needs this explictly removed for some reason.
+    # simulator_sdk needs this explicitly removed for some reason.
     with suppress(AttributeError):
         type(camera)._assigned_cameras.discard(camera.uid)
 
@@ -112,7 +112,7 @@ def test_create_camera_simulator():
         create_camera_simulator(num_cameras=0)
 
 
-def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
+def test_create_cameras_from_config_no_autodetect(config_port):
     set_config('cameras.auto_detect', False, port=config_port)
     set_config('cameras.devices', [
         dict(model='canon_gphoto2', port='/dev/fake01'),
@@ -123,7 +123,7 @@ def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_
         create_cameras_from_config(config_port=config_port)
 
 
-def test_create_cameras_from_config_autodetect(dynamic_config_server, config_port):
+def test_create_cameras_from_config_autodetect(config_port):
     set_config('cameras.auto_detect', True, port=config_port)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config(config_port=config_port)
@@ -131,61 +131,61 @@ def test_create_cameras_from_config_autodetect(dynamic_config_server, config_por
 
 # Hardware independent tests, mostly use simulator:
 
-def test_sim_create_focuser(dynamic_config_server, config_port):
+def test_sim_create_focuser(config_port):
     sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'},
                            config_port=config_port)
     assert isinstance(sim_camera.focuser, Focuser)
 
 
-def test_sim_passed_focuser(dynamic_config_server, config_port):
+def test_sim_passed_focuser(config_port):
     sim_focuser = Focuser(port='/dev/ttyFAKE', config_port=config_port)
     sim_camera = SimCamera(focuser=sim_focuser, config_port=config_port)
     assert sim_camera.focuser is sim_focuser
 
 
-def test_sim_bad_focuser(dynamic_config_server, config_port):
+def test_sim_bad_focuser(config_port):
     with pytest.raises((NotFound)):
         SimCamera(focuser={'model': 'NOTAFOCUSER'}, config_port=config_port)
 
 
-def test_sim_worse_focuser(dynamic_config_server, config_port):
+def test_sim_worse_focuser(config_port):
     sim_camera = SimCamera(focuser='NOTAFOCUSER', config_port=config_port)
     # Will log an error but raise no exceptions
     assert sim_camera.focuser is None
 
 
-def test_sim_string(dynamic_config_server, config_port):
+def test_sim_string(config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE', config_port=config_port)
     assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
 
-def test_sim_file_extension(dynamic_config_server, config_port):
+def test_sim_file_extension(config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.file_extension == 'fits'
     sim_camera = SimCamera(file_extension='FIT', config_port=config_port)
     assert sim_camera.file_extension == 'FIT'
 
 
-def test_sim_readout_time(dynamic_config_server, config_port):
+def test_sim_readout_time(config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.readout_time == 1.0
     sim_camera = SimCamera(readout_time=2.0, config_port=config_port)
     assert sim_camera.readout_time == 2.0
 
 
-def test_sdk_no_serial_number(dynamic_config_server, config_port):
+def test_sdk_no_serial_number(config_port):
     with pytest.raises(ValueError):
         SimSDKCamera(config_port=config_port)
 
 
-def test_sdk_camera_not_found(dynamic_config_server, config_port):
+def test_sdk_camera_not_found(config_port):
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number='SSC404', config_port=config_port)
 
 
-def test_sdk_already_in_use(dynamic_config_server, config_port):
+def test_sdk_already_in_use(config_port):
     sim_camera = SimSDKCamera(serial_number='SSC999', config_port=config_port)
     assert sim_camera
     with pytest.raises(error.PanError):
@@ -195,7 +195,7 @@ def test_sdk_already_in_use(dynamic_config_server, config_port):
 # Hardware independent tests for SBIG camera
 
 
-def test_sbig_driver_bad_path(dynamic_config_server, config_port):
+def test_sbig_driver_bad_path(config_port):
     """
     Manually specify an incorrect path for the SBIG shared library. The
     CDLL loader should raise OSError when it fails. Can't test a successful
@@ -207,7 +207,7 @@ def test_sbig_driver_bad_path(dynamic_config_server, config_port):
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
-def test_sbig_bad_serial(dynamic_config_server, config_port):
+def test_sbig_bad_serial(config_port):
     """
     Attempt to create an SBIG camera instance for a specific non-existent
     camera. No actual cameras are required to run this test but the SBIG
@@ -463,7 +463,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert exposure_event.is_set()
 
 
-def test_observation(dynamic_config_server, config_port, camera, images_dir):
+def test_observation(config_port, camera, images_dir):
     """
     Tests functionality of take_observation()
     """
@@ -479,7 +479,7 @@ def test_observation(dynamic_config_server, config_port, camera, images_dir):
         os.remove(fn)
 
 
-def test_observation_nofilter(dynamic_config_server, config_port, camera, images_dir):
+def test_observation_nofilter(config_port, camera, images_dir):
     """
     Tests functionality of take_observation()
     """

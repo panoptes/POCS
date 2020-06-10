@@ -18,7 +18,7 @@ def test_create_mount_simulator():
     assert isinstance(mount, AbstractMount) is True
 
 
-def test_create_mount_simulator_with_config(dynamic_config_server, config_port):
+def test_create_mount_simulator_with_config(config_port):
     # Remove mount from list of simulators.
     set_config('simulator', hardware.get_all_names(without=['mount']))
     # But setting the driver to `simulator` should return simulator.
@@ -28,7 +28,7 @@ def test_create_mount_simulator_with_config(dynamic_config_server, config_port):
     assert isinstance(mount, AbstractMount) is True
 
 
-def test_create_mount_without_mount_info(dynamic_config_server, config_port):
+def test_create_mount_without_mount_info(config_port):
     # Set the mount config to none and then don't pass anything for error.
     set_config('mount', None, port=config_port)
     set_config('simulator', hardware.get_all_names(without=['mount']))
@@ -36,7 +36,7 @@ def test_create_mount_without_mount_info(dynamic_config_server, config_port):
         create_mount_from_config(config_port=config_port, mount_info=None)
 
 
-def test_create_mount_with_mount_info(dynamic_config_server, config_port):
+def test_create_mount_with_mount_info(config_port):
     # Pass the mount info directly with nothing in config.
     mount_info = get_config('mount', port=config_port)
     mount_info['driver'] = 'simulator'
@@ -48,7 +48,7 @@ def test_create_mount_with_mount_info(dynamic_config_server, config_port):
                                                mount_info=mount_info), AbstractMount) is True
 
 
-def test_create_mount_with_earth_location(dynamic_config_server, config_port):
+def test_create_mount_with_earth_location(config_port):
     # Get location to pass manually.
     loc = create_location_from_config()
     # Set config to not have a location.
@@ -57,13 +57,13 @@ def test_create_mount_with_earth_location(dynamic_config_server, config_port):
                                                earth_location=loc), AbstractMount) is True
 
 
-def test_create_mount_without_earth_location(dynamic_config_server, config_port):
+def test_create_mount_without_earth_location(config_port):
     set_config('location', None, port=config_port)
     with pytest.raises(error.PanError):
         create_mount_from_config(config_port=config_port, earth_location=None)
 
 
-def test_bad_mount_port(dynamic_config_server, config_port):
+def test_bad_mount_port(config_port):
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator', port=config_port)
     with suppress(KeyError):
@@ -76,7 +76,7 @@ def test_bad_mount_port(dynamic_config_server, config_port):
         create_mount_from_config(config_port=config_port)
 
 
-def test_bad_mount_driver(dynamic_config_server, config_port):
+def test_bad_mount_driver(config_port):
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator', port=config_port)
     with suppress(KeyError):

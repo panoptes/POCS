@@ -23,17 +23,17 @@ from panoptes.pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture(scope='function')
-def cameras(dynamic_config_server, config_port):
+def cameras(config_port):
     return create_camera_simulator(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
-def mount(dynamic_config_server, config_port):
+def mount(config_port):
     return create_mount_simulator()
 
 
 @pytest.fixture
-def observatory(dynamic_config_server, config_port, mount, cameras, images_dir):
+def observatory(config_port, mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
     site_details = create_location_from_config(config_port=config_port)
@@ -48,23 +48,23 @@ def observatory(dynamic_config_server, config_port, mount, cameras, images_dir):
     return obs
 
 
-def test_camera_already_exists(dynamic_config_server, config_port, observatory, cameras):
+def test_camera_already_exists(config_port, observatory, cameras):
     for cam_name, cam in cameras.items():
         observatory.add_camera(cam_name, cam)
 
 
-def test_remove_cameras(dynamic_config_server, config_port, observatory, cameras):
+def test_remove_cameras(config_port, observatory, cameras):
     for cam_name, cam in cameras.items():
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(dynamic_config_server, config_port):
+def test_bad_site(config_port):
     set_config('location', {}, port=config_port)
     with pytest.raises(error.PanError):
         Observatory(config_port=config_port)
 
 
-def test_cannot_observe(dynamic_config_server, config_port, caplog):
+def test_cannot_observe(config_port, caplog):
     obs = Observatory(config_port=config_port)
 
     site_details = create_location_from_config(config_port=config_port)
@@ -89,7 +89,7 @@ def test_cannot_observe(dynamic_config_server, config_port, caplog):
     assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
 
 
-def test_camera_wrong_type(dynamic_config_server, config_port):
+def test_camera_wrong_type(config_port):
     # Remove mount simulator
     set_config('simulator', hardware.get_all_names(without='camera'), port=config_port)
 
@@ -102,7 +102,7 @@ def test_camera_wrong_type(dynamic_config_server, config_port):
                     config_port=config_port)
 
 
-def test_camera(dynamic_config_server, config_port):
+def test_camera(config_port):
     cameras = create_camera_simulator(config_port=config_port)
     obs = Observatory(cameras=cameras,
                       config_port=config_port)
@@ -118,7 +118,7 @@ def test_primary_camera_no_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
-def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
+def test_set_scheduler(config_port, observatory, caplog):
     site_details = create_location_from_config(config_port=config_port)
     scheduler = create_scheduler_from_config(
         observer=site_details['observer'], config_port=config_port)
@@ -134,7 +134,7 @@ def test_set_scheduler(dynamic_config_server, config_port, observatory, caplog):
         observatory.set_scheduler()
 
 
-def test_set_dome(dynamic_config_server, config_port):
+def test_set_dome(config_port):
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
@@ -155,7 +155,7 @@ def test_set_dome(dynamic_config_server, config_port):
         obs.set_dome()
 
 
-def test_set_mount(dynamic_config_server, config_port):
+def test_set_mount(config_port):
     obs = Observatory(config_port=config_port)
     assert obs.mount is None
 
@@ -376,7 +376,7 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(dynamic_config_server, config_port):
+def test_operate_dome(config_port):
     # Remove dome and night simulator
     set_config('simulator', hardware.get_all_names(without=['dome', 'night']), port=config_port)
 

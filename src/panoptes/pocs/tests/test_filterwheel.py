@@ -10,7 +10,7 @@ from panoptes.utils import error
 
 
 @pytest.fixture(scope='function')
-def filterwheel(dynamic_config_server, config_port):
+def filterwheel(config_port):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
                                      timeout=0.5 * u.second,
@@ -26,7 +26,7 @@ def test_init(filterwheel):
     assert filterwheel.is_connected
 
 
-def test_camera_init(dynamic_config_server, config_port):
+def test_camera_init(config_port):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']},
                            config_port=config_port)
@@ -36,19 +36,19 @@ def test_camera_init(dynamic_config_server, config_port):
     assert sim_camera.filterwheel.camera is sim_camera
 
 
-def test_camera_no_filterwheel(dynamic_config_server, config_port):
+def test_camera_no_filterwheel(config_port):
     sim_camera = SimCamera(config_port=config_port)
     assert sim_camera.filterwheel is None
 
 
-def test_camera_association_on_init(dynamic_config_server, config_port):
+def test_camera_association_on_init(config_port):
     sim_camera = SimCamera(config_port=config_port)
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      camera=sim_camera, config_port=config_port)
     assert sim_filterwheel.camera is sim_camera
 
 
-def test_with_no_name(dynamic_config_server, config_port):
+def test_with_no_name(config_port):
     with pytest.raises(ValueError):
         SimFilterWheel(config_port=config_port)
 
@@ -137,7 +137,7 @@ def test_move_bad_name(filterwheel):
         filterwheel.move_to('cinco')
 
 
-def test_move_timeout(dynamic_config_server, config_port, caplog):
+def test_move_timeout(config_port, caplog):
     slow_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                       move_time=0.5,
                                       timeout=0.2,
@@ -152,7 +152,7 @@ def test_move_timeout(dynamic_config_server, config_port, caplog):
 @pytest.mark.parametrize("name, unidirectional, expected",
                          [("unidirectional", True, 0.3),
                           ("bidirectional", False, 0.1)])
-def test_move_times(dynamic_config_server, config_port, name, unidirectional, expected):
+def test_move_times(config_port, name, unidirectional, expected):
     sim_filterwheel = SimFilterWheel(filter_names=['one', 'deux', 'drei', 'quattro'],
                                      move_time=0.1 * u.second,
                                      unidirectional=unidirectional,
@@ -167,7 +167,7 @@ def test_move_times(dynamic_config_server, config_port, name, unidirectional, ex
            pytest.approx(expected, rel=2e-1)
 
 
-def test_move_exposing(dynamic_config_server, config_port, tmpdir):
+def test_move_exposing(config_port, tmpdir):
     sim_camera = SimCamera(filterwheel={'model': 'simulator',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']},
                            config_port=config_port)

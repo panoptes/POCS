@@ -17,7 +17,7 @@ ids = ['simulator', 'birger', 'focuslynx']
 
 
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
-def focuser(request, dynamic_config_server, config_port):
+def focuser(request, config_port):
     if request.param[0] == SimFocuser:
         # Simulated focuser, just create one and return it
         return request.param[0]()

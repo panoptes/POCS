@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX
 
 
 @pytest.fixture
-def location(dynamic_config_server, config_port):
+def location(config_port):
     config = get_config(port=config_port)
     loc = config['location']
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])

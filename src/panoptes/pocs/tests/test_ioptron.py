@@ -13,13 +13,13 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture
-def location(dynamic_config_server, config_port):
+def location(config_port):
     loc = get_config('location', port=config_port)
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture(scope="function")
-def mount(dynamic_config_server, config_port, location):
+def mount(config_port, location):
     with suppress(KeyError):
         del os.environ['POCSTIME']
 

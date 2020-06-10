@@ -7,7 +7,7 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope="function")
-def dome(dynamic_config_server, config_port):
+def dome(config_port):
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',

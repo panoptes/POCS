@@ -12,7 +12,7 @@ from panoptes.utils import altaz_to_radec
 
 
 @pytest.fixture
-def location(dynamic_config_server, config_port):
+def location(config_port):
     loc = get_config('location', port=config_port)
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
@@ -22,13 +22,13 @@ def target(location):
     return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
 
 
-def test_no_location(dynamic_config_server, config_port):
+def test_no_location(config_port):
     with pytest.raises(TypeError):
         Mount(config_port=config_port)
 
 
 @pytest.fixture(scope='function')
-def mount(dynamic_config_server, config_port, location):
+def mount(config_port, location):
     return Mount(location=location, config_port=config_port)
 
 
@@ -83,7 +83,7 @@ def test_status(mount):
     assert 'mount_target_ra' in status2
 
 
-def test_update_location_no_init(dynamic_config_server, config_port, mount):
+def test_update_location_no_init(config_port, mount):
     loc = get_config('location', port=config_port)
 
     location2 = EarthLocation(
@@ -97,7 +97,7 @@ def test_update_location_no_init(dynamic_config_server, config_port, mount):
         mount.location = location2
 
 
-def test_update_location(dynamic_config_server, config_port, mount):
+def test_update_location(config_port, mount):
     loc = get_config('location', port=config_port)
 
     mount.initialize()

@@ -15,19 +15,19 @@ from panoptes.utils.config.client import get_config
 
 
 @pytest.fixture
-def constraints(dynamic_config_server, config_port):
+def constraints(config_port):
     return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
 
 
 @pytest.fixture
-def observer(dynamic_config_server, config_port):
+def observer(config_port):
     loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
-def field_file(dynamic_config_server, config_port):
+def field_file(config_port):
     scheduler_config = get_config('scheduler', default={}, port=config_port)
 
     # Read the targets from the file
@@ -82,7 +82,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(dynamic_config_server, config_port, field_list, observer, constraints):
+def scheduler(config_port, field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints,
@@ -90,7 +90,7 @@ def scheduler(dynamic_config_server, config_port, field_list, observer, constrai
 
 
 @pytest.fixture
-def scheduler_from_file(dynamic_config_server, config_port, field_file, observer, constraints):
+def scheduler_from_file(config_port, field_file, observer, constraints):
     return Scheduler(observer,
                      fields_file=field_file,
                      constraints=constraints,

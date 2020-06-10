@@ -21,22 +21,22 @@ def copy_file_to_dir(to_dir, file):
     return result
 
 
-def test_fits_exists(dynamic_config_server, config_port, unsolved_fits_file):
+def test_fits_exists(config_port, unsolved_fits_file):
     with pytest.raises(AssertionError):
         Image(unsolved_fits_file.replace('.fits', '.fit'), config_port=config_port)
 
 
-def test_fits_extension(dynamic_config_server, config_port):
+def test_fits_extension(config_port):
     with pytest.raises(AssertionError):
         Image(os.path.join(os.environ['POCS'], 'pocs', 'images.py'), config_port=config_port)
 
 
-def test_fits_noheader(dynamic_config_server, config_port, noheader_fits_file):
+def test_fits_noheader(config_port, noheader_fits_file):
     with pytest.raises(KeyError):
         Image(noheader_fits_file, config_port=config_port)
 
 
-def test_solve_timeout(dynamic_config_server, config_port, tiny_fits_file):
+def test_solve_timeout(config_port, tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
         im0 = Image(tiny_fits_file, config_port=config_port)
@@ -45,7 +45,7 @@ def test_solve_timeout(dynamic_config_server, config_port, tiny_fits_file):
             im0.solve_field(verbose=True, replace=False, radius=4, timeout=1)
 
 
-def test_fail_solve(dynamic_config_server, config_port, tiny_fits_file):
+def test_fail_solve(config_port, tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
         im0 = Image(tiny_fits_file, config_port=config_port)
@@ -84,7 +84,7 @@ def test_solve_field_unsolved(dynamic_config_server,
         assert u.allclose(offset_info, expected_offset, rtol=0.005)
 
 
-def test_solve_field_solved(dynamic_config_server, config_port, solved_fits_file):
+def test_solve_field_solved(config_port, solved_fits_file):
     im0 = Image(solved_fits_file, config_port=config_port)
 
     assert isinstance(im0, Image)
@@ -100,7 +100,7 @@ def test_solve_field_solved(dynamic_config_server, config_port, solved_fits_file
     assert isinstance(im0.pointing, SkyCoord)
 
 
-def test_pointing_error_no_wcs(dynamic_config_server, config_port, unsolved_fits_file):
+def test_pointing_error_no_wcs(config_port, unsolved_fits_file):
     im0 = Image(unsolved_fits_file, config_port=config_port)
 
     with pytest.raises(AssertionError):
@@ -116,7 +116,7 @@ def test_pointing_error_passed_wcs(dynamic_config_server,
     assert isinstance(im0.pointing_error, OffsetError)
 
 
-def test_pointing_error(dynamic_config_server, config_port, solved_fits_file):
+def test_pointing_error(config_port, solved_fits_file):
     im0 = Image(solved_fits_file, config_port=config_port)
 
     im0.solve_field(verbose=True, replace=False, radius=4)

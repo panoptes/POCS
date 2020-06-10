@@ -14,17 +14,17 @@ from panoptes.utils.serializers import from_yaml
 
 
 @pytest.fixture
-def constraints(dynamic_config_server, config_port):
+def constraints(config_port):
     return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
 
 
 @pytest.fixture
-def simple_fields_file(dynamic_config_server, config_port):
+def simple_fields_file(config_port):
     return get_config('directories.targets', port=config_port) + '/simulator.yaml'
 
 
 @pytest.fixture
-def observer(dynamic_config_server, config_port):
+def observer(config_port):
     loc = get_config('location', port=config_port)
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
@@ -75,24 +75,24 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(dynamic_config_server, config_port, field_list, observer, constraints):
+def scheduler(config_port, field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints,
                      config_port=config_port)
 
 
-def test_scheduler_load_no_params(dynamic_config_server, config_port):
+def test_scheduler_load_no_params(config_port):
     with pytest.raises(TypeError):
         Scheduler(config_port=config_port)
 
 
-def test_no_observer(dynamic_config_server, config_port, simple_fields_file):
+def test_no_observer(config_port, simple_fields_file):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file, config_port=config_port)
 
 
-def test_bad_observer(dynamic_config_server, config_port, simple_fields_file, constraints):
+def test_bad_observer(config_port, simple_fields_file, constraints):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file,
                   constraints=constraints,
@@ -149,7 +149,7 @@ def test_with_location(scheduler):
     assert isinstance(scheduler, Scheduler)
 
 
-def test_loading_bad_target_file(dynamic_config_server, config_port, observer):
+def test_loading_bad_target_file(config_port, observer):
     with pytest.raises(FileNotFoundError):
         Scheduler(observer, fields_file='/var/path/foo.bar', config_port=config_port)
 

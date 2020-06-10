@@ -12,7 +12,7 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope='function')
-def dome(dynamic_config_server, config_port):
+def dome(config_port):
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('panoptes.pocs.dome')
 
