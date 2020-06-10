@@ -1,9 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
+set -e
 
 clear;
 
 cat <<EOF
-Beginning test of panoptes-pocs software. This software is run inside a virtualized docker
+Beginning test of POCS software. This software is run inside a virtualized docker
 container that has all of the required dependencies installed.
 
 This will start a single docker container, mapping the host POCS=${POCS} into the running docker
@@ -19,8 +20,7 @@ EOF
 sleep 5;
 
 docker run --rm -it \
-    -v "${POCS}":/var/panoptes/panoptes-pocs \
+    -v "${POCS}":/var/panoptes/POCS \
     -v "${PANDIR}/logs":/var/panoptes/logs \
     panoptes-pocs:develop \
     "${POCS}/scripts/testing/run-tests.sh"
-
