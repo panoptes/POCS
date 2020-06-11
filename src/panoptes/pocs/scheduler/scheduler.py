@@ -234,22 +234,21 @@ class BaseScheduler(PanBase):
                 field_config['exptime'], unit=u.second)) * u.second
 
         self.logger.debug("Adding {} to scheduler", field_config['name'])
-        field = Field(field_config['name'], field_config['position'],
-                      config_port=self._config_port)
+        field = Field(field_config['name'], field_config['position'])
         self.logger.debug("Created {} Field", field_config['name'])
 
         try:
             self.logger.debug(f"Creating observation for {field_config!r}")
-            obs = Observation(field, config_port=self._config_port, **field_config)
-            self.logger.debug(f"Observation created {obs}")
+            obs = Observation(field, **field_config)
+            self.logger.debug(f"Observation created {obs=}")
         except Exception as e:
             raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
         else:
             self.logger.debug(f"Checking if {field.name} in self._observations")
             if field.name in self._observations:
-                self.logger.debug("Overriding existing entry for {}".format(field.name))
+                self.logger.debug(f"Overriding existing entry for {field.name=}")
             self._observations[field.name] = obs
-            self.logger.debug(f"{obs} added")
+            self.logger.debug(f"{obs=} added")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler

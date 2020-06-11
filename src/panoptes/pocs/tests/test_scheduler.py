@@ -7,26 +7,26 @@ from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def test_bad_scheduler_type(config_port):
-    set_config('scheduler.type', 'foobar', port=config_port)
-    site_details = create_location_from_config(config_port=config_port)
+def test_bad_scheduler_type():
+    set_config('scheduler.type', 'foobar')
+    site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
-        create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
+        create_scheduler_from_config(observer=site_details['observer'])
 
 
-def test_bad_scheduler_fields_file(config_port):
-    set_config('scheduler.fields_file', 'foobar', port=config_port)
-    site_details = create_location_from_config(config_port=config_port)
+def test_bad_scheduler_fields_file():
+    set_config('scheduler.fields_file', 'foobar')
+    site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
-        create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
+        create_scheduler_from_config(observer=site_details['observer'])
 
 
 def test_no_observer():
     assert isinstance(create_scheduler_from_config(observer=None), BaseScheduler) is True
 
 
-def test_no_scheduler_in_config(config_port):
-    set_config('scheduler', None, port=config_port)
-    site_details = create_location_from_config(config_port=config_port)
+def test_no_scheduler_in_config():
+    set_config('scheduler', None)
+    site_details = create_location_from_config()
     assert create_scheduler_from_config(
-        observer=site_details['observer'], config_port=config_port) is None
+        observer=site_details['observer']) is None

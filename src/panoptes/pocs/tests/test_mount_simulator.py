@@ -12,8 +12,8 @@ from panoptes.utils import altaz_to_radec
 
 
 @pytest.fixture
-def location(config_port):
-    loc = get_config('location', port=config_port)
+def location():
+    loc = get_config('location')
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
@@ -22,14 +22,14 @@ def target(location):
     return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
 
 
-def test_no_location(config_port):
+def test_no_location():
     with pytest.raises(TypeError):
-        Mount(config_port=config_port)
+        Mount()
 
 
 @pytest.fixture(scope='function')
-def mount(config_port, location):
-    return Mount(location=location, config_port=config_port)
+def mount(location):
+    return Mount(location=location)
 
 
 def test_connect(mount):
@@ -83,22 +83,22 @@ def test_status(mount):
     assert 'mount_target_ra' in status2
 
 
-def test_update_location_no_init(config_port, mount):
-    loc = get_config('location', port=config_port)
+def test_update_location_no_init(mount):
+    loc = get_config('location')
 
     location2 = EarthLocation(
         lon=loc['longitude'],
         lat=loc['latitude'],
         height=loc['elevation'] -
-        1000 *
-        u.meter)
+               1000 *
+               u.meter)
 
     with pytest.raises(AssertionError):
         mount.location = location2
 
 
-def test_update_location(config_port, mount):
-    loc = get_config('location', port=config_port)
+def test_update_location(mount):
+    loc = get_config('location')
 
     mount.initialize()
 
@@ -107,8 +107,8 @@ def test_update_location(config_port, mount):
         lon=loc['longitude'],
         lat=loc['latitude'],
         height=loc['elevation'] -
-        1000 *
-        u.meter)
+               1000 *
+               u.meter)
     mount.location = location2
 
     assert location1 != location2

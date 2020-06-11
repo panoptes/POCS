@@ -26,13 +26,13 @@ Overview
 Project PANOPTES
 ^^^^^^^^^^^^^^^^
 
-[PANOPTES](https://www.projectpanoptes.org) is an open source citizen science project
-designed to find [transiting exoplanets](https://spaceplace.nasa.gov/transits/en/) with
+`PANOPTES <https://www.projectpanoptes.org>`_ is an open source citizen science project
+designed to find `transiting exoplanets <https://spaceplace.nasa.gov/transits/en/>`_ with
 digital cameras. The goal of PANOPTES is to establish a global network of of robotic
 cameras run by amateur astronomers and schools (or anyone!) in order to monitor,
 as continuously as possible, a very large number of stars. For more general information
 about the project, including the science case and resources for interested individuals, see the
-[project overview](https://projectpanoptes.org/articles/).
+`project overview <https://projectpanoptes.org/articles/>`_.
 
 POCS
 ^^^^

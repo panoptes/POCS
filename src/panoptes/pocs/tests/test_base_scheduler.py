@@ -14,18 +14,18 @@ from panoptes.utils.serializers import from_yaml
 
 
 @pytest.fixture
-def constraints(config_port):
-    return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
+def constraints():
+    return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
 @pytest.fixture
-def simple_fields_file(config_port):
-    return get_config('directories.targets', port=config_port) + '/simulator.yaml'
+def simple_fields_file():
+    return get_config('directories.targets') + '/simulator.yaml'
 
 
 @pytest.fixture
-def observer(config_port):
-    loc = get_config('location', port=config_port)
+def observer():
+    loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
@@ -75,72 +75,62 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(config_port, field_list, observer, constraints):
+def scheduler(field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
-                     constraints=constraints,
-                     config_port=config_port)
+                     constraints=constraints)
 
 
-def test_scheduler_load_no_params(config_port):
+def test_scheduler_load_no_params():
     with pytest.raises(TypeError):
-        Scheduler(config_port=config_port)
+        Scheduler()
 
 
-def test_no_observer(config_port, simple_fields_file):
+def test_no_observer(simple_fields_file):
     with pytest.raises(TypeError):
-        Scheduler(fields_file=simple_fields_file, config_port=config_port)
+        Scheduler(fields_file=simple_fields_file)
 
 
-def test_bad_observer(config_port, simple_fields_file, constraints):
+def test_bad_observer(simple_fields_file, constraints):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file,
-                  constraints=constraints,
-                  config_port=config_port)
+                  constraints=constraints, )
 
 
-def test_loading_target_file_check_file(dynamic_config_server,
-                                        config_port,
-                                        observer,
+def test_loading_target_file_check_file(observer,
                                         simple_fields_file,
                                         constraints):
-    set_config('scheduler.check_file', False, port=config_port)
+    set_config('scheduler.check_file', False)
     scheduler = Scheduler(observer,
                           fields_file=simple_fields_file,
                           constraints=constraints,
-                          config_port=config_port
                           )
     # Check the hidden property as the public one
     # will populate if not found.
     assert len(scheduler._observations)
 
 
-def test_loading_target_file_no_check_file(dynamic_config_server,
-                                           config_port,
-                                           observer,
+def test_loading_target_file_no_check_file(observer,
                                            simple_fields_file,
                                            constraints):
     # If check_file is True then we will check the file
     # before each call to `get_observation`, but *not*
     # when the Scheduler is initialized.
-    set_config('scheduler.check_file', True, port=config_port)
+    set_config('scheduler.check_file', True)
     scheduler = Scheduler(observer,
                           fields_file=simple_fields_file,
                           constraints=constraints,
-                          config_port=config_port
                           )
     # Check the hidden property as the public one
     # will populate if not found.
     assert len(scheduler._observations) == 0
 
 
-def test_loading_target_file_via_property(dynamic_config_server,
-                                          config_port,
-                                          simple_fields_file,
+def test_loading_target_file_via_property(simple_fields_file,
                                           observer,
                                           constraints):
     scheduler = Scheduler(observer, fields_file=simple_fields_file,
-                          constraints=constraints, config_port=config_port)
+                          constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None
 
@@ -149,9 +139,9 @@ def test_with_location(scheduler):
     assert isinstance(scheduler, Scheduler)
 
 
-def test_loading_bad_target_file(config_port, observer):
+def test_loading_bad_target_file(observer):
     with pytest.raises(FileNotFoundError):
-        Scheduler(observer, fields_file='/var/path/foo.bar', config_port=config_port)
+        Scheduler(observer, fields_file='/var/path/foo.bar')
 
 
 def test_new_fields_file(scheduler, simple_fields_file):

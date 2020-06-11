@@ -32,7 +32,7 @@ class Observatory(PanBase):
 
         # Setup information about site location
         self.logger.info('Setting up location')
-        site_details = create_location_from_config(config_port=self.config_port)
+        site_details = create_location_from_config()
         self.location = site_details['location']
         self.earth_location = site_details['earth_location']
         self.observer = site_details['observer']
@@ -501,7 +501,7 @@ class Observatory(PanBase):
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            current_image = Image(image_path, location=self.earth_location, config_port=self._config_port)
+            current_image = Image(image_path, location=self.earth_location)
 
             solve_info = current_image.solve_field(skip_solved=False)
 

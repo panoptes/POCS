@@ -23,24 +23,23 @@ from panoptes.pocs.utils.location import create_location_from_config
 
 
 @pytest.fixture(scope='function')
-def cameras(config_port):
-    return create_camera_simulator(config_port=config_port)
+def cameras():
+    return create_camera_simulator()
 
 
 @pytest.fixture(scope='function')
-def mount(config_port):
+def mount():
     return create_mount_simulator()
 
 
 @pytest.fixture
-def observatory(config_port, mount, cameras, images_dir):
+def observatory(mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
-    site_details = create_location_from_config(config_port=config_port)
-    scheduler = create_scheduler_from_config(config_port=config_port,
-                                             observer=site_details['observer'])
+    site_details = create_location_from_config()
+    scheduler = create_scheduler_from_config(observer=site_details['observer'])
 
-    obs = Observatory(scheduler=scheduler, config_port=config_port)
+    obs = Observatory(scheduler=scheduler)
     obs.set_mount(mount)
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
@@ -48,33 +47,33 @@ def observatory(config_port, mount, cameras, images_dir):
     return obs
 
 
-def test_camera_already_exists(config_port, observatory, cameras):
+def test_camera_already_exists(observatory, cameras):
     for cam_name, cam in cameras.items():
         observatory.add_camera(cam_name, cam)
 
 
-def test_remove_cameras(config_port, observatory, cameras):
+def test_remove_cameras(observatory, cameras):
     for cam_name, cam in cameras.items():
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(config_port):
-    set_config('location', {}, port=config_port)
+def test_bad_site():
+    set_config('location', {})
     with pytest.raises(error.PanError):
-        Observatory(config_port=config_port)
+        Observatory()
 
 
-def test_cannot_observe(config_port, caplog):
-    obs = Observatory(config_port=config_port)
+def test_cannot_observe(caplog):
+    obs = Observatory()
 
-    site_details = create_location_from_config(config_port=config_port)
+    site_details = create_location_from_config()
     cameras = create_camera_simulator()
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
     log_record = caplog.records[-1]
     assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
-    obs.scheduler = create_scheduler_from_config(observer=site_details['observer'], config_port=config_port)
+    obs.scheduler = create_scheduler_from_config(observer=site_details['observer'])
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
@@ -89,23 +88,20 @@ def test_cannot_observe(config_port, caplog):
     assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
 
 
-def test_camera_wrong_type(config_port):
+def test_camera_wrong_type():
     # Remove mount simulator
-    set_config('simulator', hardware.get_all_names(without='camera'), port=config_port)
+    set_config('simulator', hardware.get_all_names(without='camera'))
 
     with pytest.raises(AttributeError):
-        Observatory(cameras=[Time.now()],
-                    config_port=config_port)
+        Observatory(cameras=[Time.now()])
 
     with pytest.raises(AssertionError):
-        Observatory(cameras={'Cam00': Time.now()},
-                    config_port=config_port)
+        Observatory(cameras={'Cam00': Time.now()})
 
 
-def test_camera(config_port):
-    cameras = create_camera_simulator(config_port=config_port)
-    obs = Observatory(cameras=cameras,
-                      config_port=config_port)
+def test_camera():
+    cameras = create_camera_simulator()
+    obs = Observatory(cameras=cameras)
     assert obs.has_cameras
 
 
@@ -118,10 +114,10 @@ def test_primary_camera_no_primary_camera(observatory):
     assert observatory.primary_camera is not None
 
 
-def test_set_scheduler(config_port, observatory, caplog):
-    site_details = create_location_from_config(config_port=config_port)
+def test_set_scheduler(observatory, caplog):
+    site_details = create_location_from_config()
     scheduler = create_scheduler_from_config(
-        observer=site_details['observer'], config_port=config_port)
+        observer=site_details['observer'])
     observatory.set_scheduler(scheduler=None)
     assert observatory.scheduler is None
     observatory.set_scheduler(scheduler=scheduler)
@@ -134,14 +130,14 @@ def test_set_scheduler(config_port, observatory, caplog):
         observatory.set_scheduler()
 
 
-def test_set_dome(config_port):
+def test_set_dome():
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-    }, port=config_port)
-    dome = create_dome_simulator(config_port=config_port)
+    })
+    dome = create_dome_simulator()
 
-    obs = Observatory(dome=dome, config_port=config_port)
+    obs = Observatory(dome=dome)
     assert obs.has_dome is True
     obs.set_dome(dome=None)
     assert obs.has_dome is False
@@ -155,8 +151,8 @@ def test_set_dome(config_port):
         obs.set_dome()
 
 
-def test_set_mount(config_port):
-    obs = Observatory(config_port=config_port)
+def test_set_mount():
+    obs = Observatory()
     assert obs.mount is None
 
     obs.set_mount(mount=None)
@@ -166,8 +162,8 @@ def test_set_mount(config_port):
         'brand': 'Simulacrum',
         'driver': 'simulator',
         'model': 'simulator',
-    }, port=config_port)
-    mount = create_mount_from_config(config_port=config_port)
+    })
+    mount = create_mount_from_config()
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
 
@@ -376,21 +372,21 @@ def test_no_dome(observatory):
     assert observatory.close_dome()
 
 
-def test_operate_dome(config_port):
+def test_operate_dome():
     # Remove dome and night simulator
-    set_config('simulator', hardware.get_all_names(without=['dome', 'night']), port=config_port)
+    set_config('simulator', hardware.get_all_names(without=['dome', 'night']))
 
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-    }, port=config_port)
+    })
 
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-    }, port=config_port)
-    dome = create_dome_simulator(config_port=config_port)
-    observatory = Observatory(dome=dome, config_port=config_port)
+    })
+    dome = create_dome_simulator()
+    observatory = Observatory(dome=dome)
 
     assert observatory.has_dome
     assert observatory.open_dome()

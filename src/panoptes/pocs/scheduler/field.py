@@ -14,18 +14,17 @@ class Field(FixedTarget, PanBase):
 
         Arguments:
             name {str} -- Name of the field, typically the name of object at
-                center `position`
+                center `position`.
             position {str} -- Center of field, can be anything accepted by
-                `~astropy.coordinates.SkyCoord`
+                `~astropy.coordinates.SkyCoord`.
             **kwargs {dict} -- Additional keywords to be passed to
-                `astroplan.ObservingBlock`
+                `astroplan.ObservingBlock`.
 
         """
         PanBase.__init__(self, *args, **kwargs)
 
-        # Force an equinox
-        if equinox is None:
-            equinox = 'J2000'
+        # Force an equinox if they pass None (legacy).
+        equinox = equinox or 'J2000'
 
         super().__init__(SkyCoord(position, equinox=equinox, frame='icrs'), name=name, **kwargs)
 
@@ -33,22 +32,10 @@ class Field(FixedTarget, PanBase):
         if not self._field_name:
             raise ValueError('Name is empty')
 
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
     @property
     def field_name(self):
         """ Flattened field name appropriate for paths """
         return self._field_name
-
-    ##################################################################################################
-    # Methods
-    ##################################################################################################
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
 
     def __str__(self):
         return self.name

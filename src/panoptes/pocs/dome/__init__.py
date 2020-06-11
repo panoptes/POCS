@@ -8,7 +8,7 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
-def create_dome_from_config(config_port='6563', *args, **kwargs):
+def create_dome_from_config(*args, **kwargs):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
@@ -17,7 +17,7 @@ def create_dome_from_config(config_port='6563', *args, **kwargs):
     by a single dome driver class.
     """
 
-    dome_config = get_config('dome', port=config_port)
+    dome_config = get_config('dome')
 
     if dome_config is None:
         logger.info('No dome in config.')
@@ -26,25 +26,25 @@ def create_dome_from_config(config_port='6563', *args, **kwargs):
     brand = dome_config['brand']
     driver = dome_config['driver']
 
-    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+    logger.debug(f'Creating dome: {brand=}, {driver=}')
     module = load_module(f'panoptes.pocs.dome.{driver}')
-    dome = module.Dome(config_port=config_port, *args, **kwargs)
+    dome = module.Dome(*args, **kwargs)
     logger.info(f'Created dome driver: brand={brand}, driver={driver}')
 
     return dome
 
 
-def create_dome_simulator(config_port=6563, *args, **kwargs):
-    dome_config = get_config('dome', port=config_port)
+def create_dome_simulator(*args, **kwargs):
+    dome_config = get_config('dome')
 
     brand = dome_config['brand']
     driver = dome_config['driver']
 
-    logger.debug('Creating dome simulator: brand={}, driver={}'.format(brand, driver))
+    logger.debug(f'Creating dome simulator: {brand=}, {driver=}')
 
     module = load_module(f'panoptes.pocs.dome.{driver}')
-    dome = module.Dome(config_port=config_port, *args, **kwargs)
-    logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
+    dome = module.Dome(*args, **kwargs)
+    logger.info(f'Created dome driver: {brand=}, {driver=}')
 
     return dome
 

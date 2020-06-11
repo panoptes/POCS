@@ -34,10 +34,6 @@ class PanBase(object):
 
         self.db = _db
 
-    @property
-    def config_port(self):
-        return self._config_port
-
     def get_config(self, *args, **kwargs):
         """Thin-wrapper around client based get_config that sets default port.
 
@@ -49,7 +45,7 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.get_config(port=self.config_port, *args, **kwargs)
+            config_value = client.get_config(port=self._config_port, *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
@@ -68,7 +64,7 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.set_config(key, new_value, port=self.config_port, *args, **kwargs)
+            config_value = client.set_config(key, new_value, port=self._config_port, *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 

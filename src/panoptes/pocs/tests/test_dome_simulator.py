@@ -7,13 +7,13 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope="function")
-def dome(config_port):
+def dome():
     set_config('dome', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-    }, port=config_port)
+    })
 
-    the_dome = create_dome_simulator(config_port=config_port)
+    the_dome = create_dome_simulator()
 
     yield the_dome
 
