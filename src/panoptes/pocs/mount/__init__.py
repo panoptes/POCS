@@ -71,7 +71,7 @@ def create_mount_from_config(mount_info=None,
     # Create simulator if requested
     if use_simulator or (driver == 'simulator'):
         logger.debug(f'Creating mount simulator')
-        return create_mount_simulator()
+        return create_mount_simulator(mount_info=mount_info, earth_location=earth_location)
 
     # See if we have a serial connection
     try:
@@ -102,14 +102,16 @@ def create_mount_from_config(mount_info=None,
     return mount
 
 
-def create_mount_simulator(*args, **kwargs):
+def create_mount_simulator(mount_info=None,
+                           earth_location=None,
+                           *args, **kwargs):
     # Remove mount simulator
     current_simulators = get_config('simulator', default=[])
     logger.warning(f'Current simulators: {current_simulators}')
     with suppress(ValueError):
         current_simulators.remove('mount')
 
-    mount_config = {
+    mount_config = mount_info or {
         'model': 'simulator',
         'driver': 'simulator',
         'serial': {
@@ -120,7 +122,7 @@ def create_mount_simulator(*args, **kwargs):
     # Set mount device info to simulator
     set_config('mount', mount_config)
 
-    earth_location = create_location_from_config()['earth_location']
+    earth_location = earth_location or create_location_from_config()['earth_location']
 
     logger.debug(f"Loading mount driver: pocs.mount.{mount_config['driver']}")
     try:
