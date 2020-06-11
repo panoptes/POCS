@@ -42,31 +42,25 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
-        self._fields_file = fields_file
+        self._observations = dict()
+        self._current_observation = None
+        self._fields_list = fields_list
+
+        self.fields_file = fields_file
         # Setting the fields_list directly will clobber anything
         # from the fields_file. It comes second so we can specifically
         # clobber if passed.
-        self._fields_list = fields_list
-        self._observations = dict()
 
         self.observer = observer
-
         self.constraints = constraints or list()
-
-        self._current_observation = None
         self.observed_list = OrderedDict()
 
-        if not self.get_config('scheduler.check_file', default=False):
+        if self.get_config('scheduler.check_file', default=True):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
         # Items common to each observation that shouldn't be computed each time.
-
         self.common_properties = None
-
-    ##########################################################################
-    # Properties
-    ##########################################################################
 
     @property
     def status(self):
@@ -181,10 +175,6 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
-    ##########################################################################
-    # Methods
-    ##########################################################################
-
     def clear_available_observations(self):
         """Reset the list of available observations"""
         # Clear out existing list and observations
@@ -261,8 +251,8 @@ class BaseScheduler(PanBase):
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
+        self.logger.debug(f'Reading fields from file: {self.fields_file}')
         if self._fields_file is not None:
-            self.logger.debug(f'Reading fields from file: {self.fields_file}')
 
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError

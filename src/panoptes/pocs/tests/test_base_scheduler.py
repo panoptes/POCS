@@ -94,7 +94,7 @@ def test_no_observer(simple_fields_file):
 def test_bad_observer(simple_fields_file, constraints):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file,
-                  constraints=constraints, )
+                  constraints=constraints)
 
 
 def test_loading_target_file_check_file(observer,
@@ -103,19 +103,15 @@ def test_loading_target_file_check_file(observer,
     set_config('scheduler.check_file', False)
     scheduler = Scheduler(observer,
                           fields_file=simple_fields_file,
-                          constraints=constraints,
-                          )
+                          constraints=constraints)
     # Check the hidden property as the public one
     # will populate if not found.
     assert len(scheduler._observations)
 
 
-def test_loading_target_file_no_check_file(observer,
-                                           simple_fields_file,
-                                           constraints):
-    # If check_file is True then we will check the file
-    # before each call to `get_observation`, but *not*
-    # when the Scheduler is initialized.
+def test_loading_target_file_check_file(observer,
+                                        simple_fields_file,
+                                        constraints):
     set_config('scheduler.check_file', True)
     scheduler = Scheduler(observer,
                           fields_file=simple_fields_file,
@@ -123,7 +119,7 @@ def test_loading_target_file_no_check_file(observer,
                           )
     # Check the hidden property as the public one
     # will populate if not found.
-    assert len(scheduler._observations) == 0
+    assert len(scheduler._observations) > 0
 
 
 def test_loading_target_file_via_property(simple_fields_file,
