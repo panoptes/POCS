@@ -38,7 +38,7 @@ def test_create_mount_without_mount_info():
 
 def test_create_mount_with_mount_info():
     # Pass the mount info directly with nothing in config.
-    mount_info = get_config('mount')
+    mount_info = get_config('mount', default=dict())
     mount_info['driver'] = 'simulator'
 
     # Remove info from config.
