@@ -33,7 +33,7 @@ def test_create_mount_without_mount_info():
     set_config('mount', None)
     set_config('simulator', hardware.get_all_names(without=['mount']))
     with pytest.raises(error.MountNotFound):
-        create_mount_from_config(config_, mount_info=None)
+        create_mount_from_config(mount_info=None)
 
 
 def test_create_mount_with_mount_info():
@@ -44,8 +44,7 @@ def test_create_mount_with_mount_info():
     # Remove info from config.
     set_config('mount', None)
     set_config('simulator', hardware.get_all_names(without=['mount']))
-    assert isinstance(create_mount_from_config(config_,
-                                               mount_info=mount_info), AbstractMount) is True
+    assert isinstance(create_mount_from_config(mount_info=mount_info), AbstractMount) is True
 
 
 def test_create_mount_with_earth_location():
@@ -53,14 +52,13 @@ def test_create_mount_with_earth_location():
     loc = create_location_from_config()
     # Set config to not have a location.
     set_config('location', None)
-    assert isinstance(create_mount_from_config(config_,
-                                               earth_location=loc), AbstractMount) is True
+    assert isinstance(create_mount_from_config(earth_location=loc), AbstractMount) is True
 
 
 def test_create_mount_without_earth_location():
     set_config('location', None)
     with pytest.raises(error.PanError):
-        create_mount_from_config(config_, earth_location=None)
+        create_mount_from_config(earth_location=None)
 
 
 def test_bad_mount_port():
