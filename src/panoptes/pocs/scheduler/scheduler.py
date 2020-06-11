@@ -155,10 +155,7 @@ class BaseScheduler(PanBase):
         self.clear_available_observations()
 
         self._fields_file = new_file
-        if new_file is not None:
-            assert os.path.exists(new_file), \
-                self.logger.error("Cannot load field list: {}".format(new_file))
-            self.read_field_list()
+        self.read_field_list()
 
     @property
     def fields_list(self):
@@ -265,7 +262,7 @@ class BaseScheduler(PanBase):
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         if self._fields_file is not None:
-            self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
+            self.logger.debug(f'Reading fields from file: {self.fields_file}')
 
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
