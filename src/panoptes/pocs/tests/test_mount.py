@@ -64,7 +64,7 @@ def test_create_mount_without_earth_location():
 def test_bad_mount_port():
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
-    with suppress(KeyError):
+    with suppress(KeyError, ValueError):
         simulators.remove('mount')
     set_config('simulator', simulators)
 
@@ -77,7 +77,7 @@ def test_bad_mount_port():
 def test_bad_mount_driver():
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
-    with suppress(KeyError):
+    with suppress(KeyError, ValueError):
         simulators.remove('mount')
     set_config('simulator', simulators)
 
