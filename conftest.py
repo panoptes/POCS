@@ -157,7 +157,7 @@ def config_path():
     return os.path.expandvars('${POCS}/tests/pocs_testing.yaml')
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def static_config_server(config_path, images_dir, db_name):
     logger.log('testing', f'Starting static_config_server for testing session')
 

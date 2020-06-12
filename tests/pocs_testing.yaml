@@ -13,6 +13,10 @@
 name: Generic PANOPTES Unit
 pan_id: PAN000
 
+pocs:
+  INITIALIZED: false
+  CONNECTED: false
+  INTERRUPTED: false
 location:
   name: Mauna Loa Observatory
   latitude: 19.54 deg

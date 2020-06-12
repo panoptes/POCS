@@ -66,7 +66,7 @@ class PanBase(object):
         try:
             self.logger.debug(f'Setting config {key=} {new_value=}')
             config_value = client.set_config(key, new_value, port=self._config_port, *args, **kwargs)
-            self.logger.debug(f'Config set {key=} {new_value=}')
+            self.logger.debug(f'Config set {config_value=}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
