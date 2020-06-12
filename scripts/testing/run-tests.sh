@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+cd "${POCS}"
+
+echo "Run test params: $@"
+
 REPORT_FILE=${REPORT_FILE:-coverage.xml}
 
 # This assumes we are always running in a docker container.
@@ -10,7 +14,12 @@ coverage erase
 
 # Run coverage over the pytest suite.
 echo "Starting tests"
-coverage run "$(command -v pytest)"
+
+if [[ -z ${CLI_ARGS} ]]; then
+    coverage run "$(command -v pytest) ${CLI_ARGS}"
+else
+    coverage run "$(command -v pytest)"
+fi
 
 echo "Combining coverage"
 coverage combine

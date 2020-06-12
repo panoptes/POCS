@@ -130,7 +130,7 @@ def create_mount_simulator(mount_info=None,
     except error.NotFound as e:
         raise error.MountNotFound(f'Error loading mount module: {e!r}')
 
-    mount = module.Mount(location=earth_location, *args, **kwargs)
+    mount = module.Mount(earth_location, *args, **kwargs)
 
     logger.success(f"{mount_config['driver']} mount created")
 
