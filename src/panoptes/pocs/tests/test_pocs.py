@@ -55,7 +55,7 @@ def scheduler(site_details):
 def observatory(cameras, mount, site_details, scheduler):
     """Return a valid Observatory instance with a specific config."""
 
-    obs = Observatory(scheduler=scheduler)
+    obs = Observatory(scheduler=scheduler, simulator=['weather', 'power'])
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
@@ -104,7 +104,7 @@ def valid_observation():
             }
 
 
-def test_bad_pandir_env(pocs):
+def test_bad_pandir_env():
     pandir = os.getenv('PANDIR')
     os.environ['PANDIR'] = '/foo/bar'
     with pytest.raises(SystemExit):
@@ -112,7 +112,7 @@ def test_bad_pandir_env(pocs):
     os.environ['PANDIR'] = pandir
 
 
-def test_bad_pocs_env(pocs):
+def test_bad_pocs_env():
     pocs_dir = os.getenv('POCS')
     os.environ['POCS'] = '/foo/bar'
     with pytest.raises(SystemExit):
@@ -120,7 +120,7 @@ def test_bad_pocs_env(pocs):
     os.environ['POCS'] = pocs_dir
 
 
-def test_make_log_dir(tmp_path, pocs):
+def test_make_log_dir(tmp_path):
     log_dir = tmp_path / 'logs'
     assert os.path.exists(log_dir) is False
 
