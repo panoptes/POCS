@@ -52,7 +52,7 @@ def test_create_mount_with_earth_location():
     loc = create_location_from_config()
     # Set config to not have a location.
     set_config('location', None)
-    assert isinstance(create_mount_from_config(earth_location=loc), AbstractMount) is True
+    assert isinstance(create_mount_from_config(earth_location=loc['earth_location']), AbstractMount) is True
 
 
 def test_create_mount_without_earth_location():
