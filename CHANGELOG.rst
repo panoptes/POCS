@@ -12,6 +12,15 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Changed
 ~~~~~~~
 
+* `panoptes-utils` to `0.2.20`. (#974)
+* Python moved to 3.8. (#974)
+* Code coverage no longer ignores test. (#974)
+* Misc documentation updates. (#974)
+* Development Environment (#974)
+    * Many cleanups to environment and launch. See docs.
+    * Config server started along with development environment.
+* Install script. (#974)
+    * Env var file is sourced for zshrc and bashrc.
 * Docker image updates (#972)
     * Updated `install-pocs.sh` script.
     * ``latest`` installs the ``panoptes-pocs`` module from pip
@@ -20,6 +29,12 @@ Changed
     * Use new ``arduino-cli`` installer.
     * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
     * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+* Testing (#974)
+    * Removing all the dynamic config server info, making things a lot simpler.
+    * `docker-compose` files for running tests.
+* Camera simulator cleanup. (#974)
+* Scheduler (#974)
+    * The `fields_file` is read when scheduler is created.
 
 [0.7.4] - 2020-05-31
 ----------

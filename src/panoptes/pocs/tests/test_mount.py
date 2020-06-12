@@ -72,6 +72,7 @@ def test_create_mount_with_earth_location():
     loc = create_location_from_config()
     # Set config to not have a location.
     set_config('location', None)
+    set_config('simulator', hardware.get_all_names())
     assert isinstance(create_mount_from_config(earth_location=loc['earth_location']), AbstractMount) is True
 
     reset_conf()
@@ -87,7 +88,7 @@ def test_create_mount_without_earth_location():
 def test_bad_mount_port():
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
-    with suppress(KeyError, ValueError):
+    with suppress(KeyError, AttributeError):
         simulators.remove('mount')
     set_config('simulator', simulators)
 
@@ -101,7 +102,7 @@ def test_bad_mount_port():
 def test_bad_mount_driver():
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
-    with suppress(KeyError, ValueError):
+    with suppress(KeyError, AttributeError):
         simulators.remove('mount')
     set_config('simulator', simulators)
 
