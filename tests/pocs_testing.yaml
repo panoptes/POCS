@@ -28,7 +28,7 @@ location:
   # standard time (not daylight saving).
 directories:
   base: /var/panoptes
-  images: /tmp/images
+  images: images
   data: data
   resources: POCS/resources/
   targets: POCS/resources/targets
