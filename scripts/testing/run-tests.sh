@@ -15,11 +15,7 @@ coverage erase
 # Run coverage over the pytest suite.
 echo "Starting tests"
 
-if [[ -z ${CLI_ARGS} ]]; then
-    coverage run "$(command -v pytest) ${CLI_ARGS}"
-else
-    coverage run "$(command -v pytest)"
-fi
+coverage run "$(command -v pytest)"
 
 echo "Combining coverage"
 coverage combine
