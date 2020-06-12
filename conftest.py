@@ -174,6 +174,8 @@ def static_config_server(config_path, images_dir, db_name):
         logger.log('testing', f'Waiting for static_config_server {proc.pid=}, sleeping 1 second.')
         time.sleep(1)
 
+    set_config('directories.images', images_dir)
+
     logger.log('testing', f'Startup config_server name=[{get_config("name")}]')
     yield
     logger.log('testing', f'Killing static_config_server started with PID={proc.pid}')
