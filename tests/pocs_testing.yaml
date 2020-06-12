@@ -28,17 +28,17 @@ location:
   # standard time (not daylight saving).
 directories:
   base: /var/panoptes
-  images: images
+  images: /tmp/images
   data: data
   resources: POCS/resources/
   targets: POCS/resources/targets
   mounts: POCS/resources/mounts
 db:
-  name: panoptes
+  name: panoptes_testing
   type: file
 scheduler:
   type: dispatch
-  fields_file: simple.yaml
+  fields_file: simulator.yaml
   check_file: False
 mount:
   brand: ioptron

@@ -175,22 +175,6 @@ def static_config_server(config_path, images_dir, db_name):
         time.sleep(1)
 
     logger.log('testing', f'Startup config_server name=[{get_config("name")}]')
-
-    # Adjust various config items for testing
-    unit_id = 'PAN000'
-    logger.log('testing', f'Setting testing name and unit_id to {unit_id}')
-    set_config('pan_id', unit_id)
-
-    logger.log('testing', f'Setting testing database to {db_name}')
-    set_config('db.name', db_name)
-
-    fields_file = 'simulator.yaml'
-    logger.log('testing', f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file)
-
-    logger.log('testing', f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir)
-
     yield
     logger.log('testing', f'Killing static_config_server started with PID={proc.pid}')
     proc.terminate()
