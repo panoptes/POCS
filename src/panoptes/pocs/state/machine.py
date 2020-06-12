@@ -357,7 +357,7 @@ class PanStateMachine(Machine):
                 self._horizon_lookup[state] = state_info['horizon']
                 del state_info['horizon']
 
-            self.logger.debug(f"Creating state={state} with {state_info}")
+            self.logger.debug(f"Creating {state=} with {state_info=}")
             state_machine = MachineState(name=state, **state_info)
 
             # Add default callbacks.

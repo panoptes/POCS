@@ -72,7 +72,6 @@ def dome():
     })
 
     return create_dome_simulator()
-    reset_conf()
 
 
 @pytest.fixture(scope='function')
@@ -82,6 +81,7 @@ def pocs(observatory):
     pocs = POCS(observatory, run_once=True)
     yield pocs
     pocs.power_down()
+    reset_conf()
 
 
 @pytest.fixture(scope='function')
@@ -176,7 +176,6 @@ def test_is_weather_and_dark_simulator(pocs):
 
     set_config('simulator', ['camera', 'mount', 'weather', 'night'])
     assert pocs.is_weather_safe() is True
-    reset_conf()
 
 
 def test_is_weather_safe_no_simulator(pocs):
@@ -193,7 +192,6 @@ def test_is_weather_safe_no_simulator(pocs):
     # Set a time 181 seconds later
     os.environ['POCSTIME'] = '2020-01-01 18:05:01'
     assert pocs.is_weather_safe() is False
-    reset_conf()
 
 
 def test_unsafe_park(pocs):
@@ -218,8 +216,6 @@ def test_unsafe_park(pocs):
     pocs.goto_sleep()
     assert pocs.state == 'sleeping'
     pocs.power_down()
-
-    reset_conf()
 
 
 def test_no_ac_power(pocs):
@@ -253,8 +249,6 @@ def test_no_ac_power(pocs):
         # Remove entry and try again
         pocs.db.clear_current('power')
         assert pocs.has_ac_power() is False
-
-    reset_conf()
 
 
 def test_power_down_while_running(pocs):
@@ -297,8 +291,6 @@ def test_run_no_targets_and_exit(pocs):
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
 
-    reset_conf()
-
 
 def test_run_complete(pocs, valid_observation):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
@@ -316,8 +308,6 @@ def test_run_complete(pocs, valid_observation):
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
     pocs.power_down()
-
-    reset_conf()
 
 
 def test_pocs_park_to_ready_with_observations(pocs):
@@ -448,8 +438,6 @@ def test_run_wait_until_safe(observatory,
 
     assert pocs_thread.is_alive() is False
 
-    reset_conf()
-
 
 def test_run_power_down_interrupt(observatory,
                                   valid_observation,
@@ -495,5 +483,3 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread.join(timeout=300)
 
     assert pocs_thread.is_alive() is False
-
-    reset_conf()
