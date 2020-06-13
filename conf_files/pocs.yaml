@@ -8,68 +8,70 @@
 #         files and communicate with the Google Cloud network.
 #
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
-#         an official id. Update pocs_local.yaml with offical name once received.
+#         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
 name: Generic PANOPTES Unit
 pan_id: PAN000
 
 location:
-    name: Mauna Loa Observatory
-    latitude: 19.54 deg
-    longitude: -155.58 deg
-    elevation: 3400.0 m
-    horizon: 30 deg # targets must be above this to be considered valid.
-    flat_horizon: -6 deg # Flats when sun between this and focus horizon.
-    focus_horizon: -12 deg # Dark enough to focus on stars.
-    observe_horizon: -18 deg # Sun below this limit to observe.
-    obsctructions: []
-    timezone: US/Hawaii
-    gmt_offset: -600 # Offset in minutes from GMT during.
-                     # standard time (not daylight saving).
+  name: Mauna Loa Observatory
+  latitude: 19.54 deg
+  longitude: -155.58 deg
+  elevation: 3400.0 m
+  horizon: 30 deg # targets must be above this to be considered valid.
+  flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+  focus_horizon: -12 deg # Dark enough to focus on stars.
+  observe_horizon: -18 deg # Sun below this limit to observe.
+  obsctructions: []
+  timezone: US/Hawaii
+  gmt_offset: -600 # Offset in minutes from GMT during.
+
 directories:
-    base: /var/panoptes
-    images: images
-    data: data
-    resources: POCS/resources/
-    targets: POCS/resources/targets
-    mounts: POCS/resources/mounts
+  base: /var/panoptes
+  images: images
+  data: data
+  resources: POCS/resources/
+  targets: POCS/resources/targets
+  mounts: POCS/resources/mounts
+
 db:
-    name: panoptes
-    type: file
+  name: panoptes
+  type: file
+
+wait_delay: 180 # time in seconds before checking safety/etc while waiting.
+max_transition_attempts: 5  # number of transitions attempts.
 
 state_machine: simple_state_table
 
 scheduler:
-    type: dispatch
-    fields_file: simple.yaml
-    check_file: False
+  type: dispatch
+  fields_file: simple.yaml
+  check_file: False
 
 mount:
-    brand: ioptron
-    model: 30
-    driver: ioptron
-    serial:
-        port: /dev/ttyUSB0
-        timeout: 0.
-        baudrate: 9600
-    non_sidereal_available: True
-    min_tracking_threshold: 100 # ms
-    max_tracking_threshold: 99999 # ms
+  brand: ioptron
+  model: 30
+  driver: ioptron
+  serial:
+    port: /dev/ttyUSB0
+    timeout: 0.
+    baudrate: 9600
+  non_sidereal_available: True
+  min_tracking_threshold: 100 # ms
+  max_tracking_threshold: 99999 # ms
 
 pointing:
-    auto_correct: True
-    threshold: 100 # arcseconds ~ 10 pixels
-    exptime: 30 # seconds
-    max_iterations: 5
+  auto_correct: True
+  threshold: 100 # arcseconds ~ 10 pixels
+  exptime: 30 # seconds
+  max_iterations: 5
 
 cameras:
-    auto_detect: True
-    primary: 14d3bd
-    devices:
-    -
-        model: canon_gphoto2
-    -
-        model: canon_gphoto2
+  auto_detect: True
+  primary: 14d3bd
+  devices:
+    - model: canon_gphoto2
+    - model: canon_gphoto2
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.
@@ -82,13 +84,13 @@ cameras:
 #       serial_port: /dev/ttyACM1
 ################################################################################
 environment:
-    auto_detect: False
-    camera_board:
-        serial_port: /dev/ttyACM0
-    control_board:
-        serial_port: /dev/ttyACM1
-    weather:
-        url: http://localhost:5000/latest.json
+  auto_detect: False
+  camera_board:
+    serial_port: /dev/ttyACM0
+  control_board:
+    serial_port: /dev/ttyACM1
+  weather:
+    url: http://localhost:5000/latest.json
 
 
 ########################## Observations ########################################
@@ -107,8 +109,8 @@ environment:
 # TODO: Add options for cleaning up old data (e.g. >30 days)
 ################################################################################
 observations:
-    make_timelapse: True
-    keep_jpgs: True
+  make_timelapse: True
+  keep_jpgs: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -121,8 +123,19 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-    image_storage: False
-    service_account_key: # Location of JSON account key
-    project_id: panoptes-survey
-    buckets:
-        images: panoptes-survey
+  image_storage: False
+  service_account_key: # Location of JSON account key
+  project_id: panoptes-survey
+  buckets:
+    images: panoptes-survey
+
+############################### pocs ##################################
+# POCS status flags. The values below represent initial values but
+# they can be switched at run-time if needed.
+#######################################################################
+pocs:
+  INITIALIZED: false
+  INTERRUPTED: false
+  KEEP_RUNNING: true
+  DO_STATES: true
+  RUN_ONCE: false

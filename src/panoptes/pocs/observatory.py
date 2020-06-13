@@ -28,6 +28,9 @@ class Observatory(PanBase):
         dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         super().__init__(*args, **kwargs)
+        self.scheduler = None
+        self.dome = None
+        self.mount = None
         self.logger.info('Initializing observatory')
 
         # Setup information about site location
@@ -172,7 +175,7 @@ class Observatory(PanBase):
         if can_observe is False:
             for check_name, is_true in checks.items():
                 if not is_true:
-                    self.logger.warning(f'{check_name.title()} not present, cannot observe')
+                    self.logger.warning(f'{check_name.title()} not present')
 
         return can_observe
 
@@ -216,42 +219,35 @@ class Observatory(PanBase):
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
-        if isinstance(scheduler, BaseScheduler):
-            self.logger.info('Adding scheduler.')
-            self.scheduler = scheduler
-        elif scheduler is None:
-            self.logger.info('Removing scheduler.')
-            self.scheduler = None
-        else:
-            raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
+        self._set_hardware(scheduler, 'scheduler', BaseScheduler)
 
     def set_dome(self, dome):
         """Set's dome or remove the dome for the `Observatory`.
         Args:
             dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
         """
-        if isinstance(dome, AbstractDome):
-            self.logger.info('Adding dome.')
-            self.dome = dome
-        elif dome is None:
-            self.logger.info('Removing dome.')
-            self.dome = None
-        else:
-            raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
+        self._set_hardware(dome, 'dome', AbstractDome)
 
     def set_mount(self, mount):
         """Sets the mount for the `Observatory`.
         Args:
             mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
         """
-        if isinstance(mount, AbstractMount):
-            self.logger.info('Adding mount')
-            self.mount = mount
-        elif mount is None:
-            self.logger.info('Removing mount')
-            self.mount = None
+        self._set_hardware(mount, 'mount', AbstractMount)
+
+    def _set_hardware(self, new_hardware, hw_type, hw_class):
+        # Lookup the set method for the hardware type.
+        hw_attr = getattr(self, hw_type)
+
+        if isinstance(new_hardware, hw_class):
+            self.logger.success(f'Adding {new_hardware=}')
+            setattr(self, hw_type, new_hardware)
+        elif new_hardware is None:
+            if hw_attr is not None:
+                self.logger.success(f'Removing {hw_attr=}')
+            setattr(self, hw_type, None)
         else:
-            raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
+            raise TypeError(f"{hw_type.title()} {new_hardware=} is not instance of {hw_class} class")
 
     ##########################################################################
     # Methods
@@ -281,7 +277,7 @@ class Observatory(PanBase):
         now = current_time()
 
         try:
-            if self.mount.is_initialized:
+            if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
                 current_coords = self.mount.get_current_coordinates()
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)

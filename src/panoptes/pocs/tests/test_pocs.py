@@ -55,7 +55,7 @@ def scheduler(site_details):
 def observatory(cameras, mount, site_details, scheduler):
     """Return a valid Observatory instance with a specific config."""
 
-    obs = Observatory(scheduler=scheduler, simulator=['weather', 'power'])
+    obs = Observatory(scheduler=scheduler, simulator=['power'])
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 

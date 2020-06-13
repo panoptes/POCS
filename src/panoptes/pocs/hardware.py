@@ -12,15 +12,14 @@ ALL_NAMES = sorted([
 ])
 
 
-def get_all_names(all_names=ALL_NAMES, without=list()):
+def get_all_names(all_names=ALL_NAMES, without=None):
     """Returns the names of all the categories of hardware that POCS supports.
 
     Note that this doesn't extend to the Arduinos for the telemetry and camera boards, for
     which no simulation is supported at this time.
     """
     # Make sure that 'all' gets expanded.
-    if without:
-        without = get_simulator_names(simulator=without)
+    without = get_simulator_names(simulator=without)
 
     return [v for v in all_names if v not in without]
 

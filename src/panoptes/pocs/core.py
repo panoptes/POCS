@@ -31,7 +31,7 @@ class POCS(PanStateMachine, PanBase):
             class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
             'simple_state_table'.
-        simulator(list): A list of the different modules that can run in simulator mode. Possible
+        simulators(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
     Attributes:
@@ -44,10 +44,15 @@ class POCS(PanStateMachine, PanBase):
             self,
             observatory,
             state_machine_file=None,
+            simulators=None,
             *args, **kwargs):
 
-        # Explicitly call the base classes in the order we want
+        # Explicitly call the base classes in the order we want.
         PanBase.__init__(self, *args, **kwargs)
+
+        if simulators:
+            self.logger.warning(f'Using {simulators=}')
+            self.set_config('simulator', simulators)
 
         assert isinstance(observatory, Observatory)
 
@@ -61,7 +66,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
-        # Add observatory object, which does the bulk of the work
+        # Add observatory object, which does the bulk of the work.
         self.observatory = observatory
 
         self.is_initialized = False
@@ -70,14 +75,14 @@ class POCS(PanStateMachine, PanBase):
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
         # We want to call and record the status on a periodic interval.
-        def get_status():
-            while True:
+        def get_periodic_status():
+            while self.connected:
                 status = self.status
-                self.logger.debug(f'Periodic status call: {status!r}')
+                self.logger.trace(f'Periodic status call: {status!r}')
                 self.db.insert_current('status', status)
                 CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
 
-        self._status_thread = Thread(target=get_status, daemon=True)
+        self._status_thread = Thread(target=get_periodic_status, daemon=True)
         self._status_thread.start()
 
         self.connected = True
@@ -117,14 +122,6 @@ class POCS(PanStateMachine, PanBase):
         self.set_config('pocs.CONNECTED', new_value)
 
     @property
-    def keep_running(self):
-        return self.get_config('pocs.KEEP_RUNNING', default=True)
-
-    @keep_running.setter
-    def keep_running(self, new_value):
-        self.set_config('pocs.KEEP_RUNNING', new_value)
-
-    @property
     def do_states(self):
         return self.get_config('pocs.DO_STATES', default=True)
 
@@ -133,7 +130,29 @@ class POCS(PanStateMachine, PanBase):
         self.set_config('pocs.DO_STATES', new_value)
 
     @property
+    def keep_running(self):
+        """If POCS should keep running.
+
+        Currently reads:
+
+        * `connected`
+        * `do_states`
+        * `observatory.can_observe`
+
+        Returns:
+            bool: If POCS should keep running.
+        """
+        return self.connected and self.do_states and self.observatory.can_observe
+
+    @property
     def run_once(self):
+        """If POCS should exit the run loop after a single iteration.
+
+        This value reads the `pocs.RUN_ONCE` config value.
+
+        Returns:
+            bool: if machine should stop after single iteration, default False.
+        """
         return self.get_config('pocs.RUN_ONCE', default=False)
 
     @run_once.setter
@@ -171,6 +190,10 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if all initialization succeeded, False otherwise.
         """
+
+        if not self.observatory.can_observe:
+            self.say("Looks like we're missing some required hardware.")
+            return False
 
         if not self.is_initialized:
             self.logger.info('*' * 80)
@@ -236,14 +259,12 @@ class POCS(PanStateMachine, PanBase):
             # Observatory shut down
             self.observatory.power_down()
 
-            self.keep_running = True
-            self.do_states = True
-            self.is_initialized = False
-            self.interrupted = False
             self.connected = False
 
+            self._status_thread.join(1)
+
             # Clear all the config items.
-            self.logger.info("Power down complete")
+            self.logger.success("Power down complete")
 
     def reset_observing_run(self):
         """Reset an observing run loop. """
@@ -316,6 +337,15 @@ class POCS(PanStateMachine, PanBase):
 
         return safe
 
+    def _in_simulator(self, key):
+        """Checks the config server for the given simulator key value."""
+        with suppress(KeyError):
+            if key in self.get_config('simulator', default=list()):
+                self.logger.debug(f'Using {key} simulator')
+                return True
+
+        return False
+
     def is_dark(self, horizon='observe'):
         """Is it dark
 
@@ -323,7 +353,7 @@ class POCS(PanStateMachine, PanBase):
         entry `location.flat_horizon` by default.
 
         Args:
-            horizon (str, optional): Which horizon to use, 'flat''focus', or
+            horizon (str, optional): Which horizon to use, 'flat', 'focus', or
                 'observe' (default).
 
         Returns:
@@ -334,11 +364,8 @@ class POCS(PanStateMachine, PanBase):
         is_dark = self.observatory.is_dark(horizon=horizon)
         self.logger.debug(f'Observatory is_dark: {is_dark}')
 
-        # Check simulator
-        with suppress(KeyError):
-            if 'night' in self.get_config('simulator', default=[]):
-                self.logger.debug(f'Using night simulator')
-                is_dark = True
+        if self._in_simulator('night'):
+            return True
 
         self.logger.debug(f"Dark Check: {is_dark}")
         return is_dark
@@ -356,18 +383,12 @@ class POCS(PanStateMachine, PanBase):
 
         # Always assume False
         self.logger.debug("Checking weather safety")
-        is_safe = False
 
-        # Check if we are using weather simulator
-        simulator_values = self.get_config('simulator', default=[])
-        if len(simulator_values):
-            self.logger.debug(f'simulator_values: {simulator_values}')
-
-        if 'weather' in simulator_values:
-            self.logger.info("Weather simulator always safe")
+        if self._in_simulator('weather'):
             return True
 
         # Get current weather readings from database
+        is_safe = False
         try:
             record = self.db.get_current('weather')
             if record is None:
@@ -438,11 +459,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Checking for AC power")
         has_power = False
 
-        # TODO(wtgee): figure out if we really want to simulate no power
-        # Check if we are using power simulator
-        simulator_values = self.get_config('simulator', default=[])
-        if 'power' in simulator_values:
-            self.logger.debug("AC power simulator always safe")
+        if self._in_simulator('power'):
             return True
 
         # Get current power readings from database
