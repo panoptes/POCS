@@ -247,7 +247,7 @@ class Observatory(PanBase):
                 self.logger.success(f'Removing {hw_attr=}')
             setattr(self, hw_type, None)
         else:
-            raise TypeError(f"{hw_type.title()} {new_hardware=} is not instance of {hw_class} class")
+            raise TypeError(f"{hw_type.title()} is not an instance of {str(hw_class)} class")
 
     ##########################################################################
     # Methods

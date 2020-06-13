@@ -89,20 +89,20 @@ def test_cannot_observe(caplog):
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
     log_record = caplog.records[-1]
-    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
+    assert log_record.message.endswith("not present") and log_record.levelname == "WARNING"
     obs.scheduler = create_scheduler_from_config(observer=site_details['observer'])
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
     log_record = caplog.records[-1]
-    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
+    assert log_record.message.endswith("not present") and log_record.levelname == "WARNING"
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
     assert obs.can_observe is False
     log_record = caplog.records[-1]
     time.sleep(0.5)  # log sink time
-    assert log_record.message.endswith("not present, cannot observe") and log_record.levelname == "WARNING"
+    assert log_record.message.endswith("not present") and log_record.levelname == "WARNING"
 
 
 def test_camera_wrong_type():
@@ -139,7 +139,7 @@ def test_set_scheduler(observatory, caplog):
     assert observatory.scheduler is None
     observatory.set_scheduler(scheduler=scheduler)
     assert observatory.scheduler is not None
-    err_msg = 'Scheduler is not instance of BaseScheduler class, cannot add.'
+    err_msg = 'Scheduler is not an instance of .*BaseScheduler'
     with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler('scheduler')
     err_msg = ".*missing 1 required positional argument.*"
@@ -160,7 +160,7 @@ def test_set_dome():
     assert obs.has_dome is False
     obs.set_dome(dome=dome)
     assert obs.has_dome is True
-    err_msg = 'Dome is not instance of AbstractDome class, cannot add.'
+    err_msg = 'Dome is not an instance of .*AbstractDome'
     with pytest.raises(TypeError, match=err_msg):
         obs.set_dome('dome')
     err_msg = ".*missing 1 required positional argument.*"
@@ -184,7 +184,7 @@ def test_set_mount():
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
 
-    err_msg = 'Mount is not instance of AbstractMount class, cannot add.'
+    err_msg = 'Mount is not an instance of .*AbstractMount'
     with pytest.raises(TypeError, match=err_msg):
         obs.set_mount(mount='mount')
     err_msg = ".*missing 1 required positional argument.*"

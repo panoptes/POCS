@@ -32,7 +32,6 @@ log_file_path = os.path.join(
 startup_message = ' STARTING NEW PYTEST RUN '
 logger.add(log_file_path,
            enqueue=True,  # multiprocessing
-           format=LOGGER_INFO.fmt,
            colorize=True,
            backtrace=True,
            diagnose=True,
