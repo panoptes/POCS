@@ -394,7 +394,6 @@ def test_run_wait_until_safe(observatory,
     pocs.observatory.scheduler.add_observation(valid_observation)
 
     assert pocs.connected is True
-    assert pocs.do_states is False
     assert pocs.is_initialized is False
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
