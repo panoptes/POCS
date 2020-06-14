@@ -136,7 +136,6 @@ def test_set_scheduler(observatory, caplog):
     scheduler = create_scheduler_from_config(observer=site_details['observer'])
 
     assert observatory.current_observation is None
-    assert 'Scheduler not present' in caplog.records[-1].message
 
     observatory.set_scheduler(scheduler=None)
     assert observatory.scheduler is None
