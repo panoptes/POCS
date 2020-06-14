@@ -151,7 +151,7 @@ def test_observatory_cannot_observe(pocs):
 
 def test_simple_simulator(pocs, caplog):
     assert isinstance(pocs, POCS)
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
 
     assert pocs.is_initialized is not True
 
@@ -179,26 +179,26 @@ def test_is_weather_and_dark_simulator(pocs):
     pocs.initialize()
 
     # Night simulator
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is True
 
     # No night simulator
-    set_config('simulator', hardware.get_all_names(without=['night']))
+    pocs.set_config('simulator', hardware.get_all_names(without=['night']))
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is False
 
-    set_config('simulator', ['camera', 'mount', 'weather', 'night'])
+    pocs.set_config('simulator', ['camera', 'mount', 'weather', 'night'])
     assert pocs.is_weather_safe() is True
 
 
 def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
-    set_config('simulator', hardware.get_all_names(without=['weather']))
+    pocs.set_config('simulator', hardware.get_all_names(without=['weather']))
 
     # Set a specific time
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'
@@ -213,7 +213,7 @@ def test_is_weather_safe_no_simulator(pocs):
 
 
 def test_unsafe_park(pocs):
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
     pocs.initialize()
     assert pocs.is_initialized is True
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
@@ -225,7 +225,7 @@ def test_unsafe_park(pocs):
 
     # My time goes fast...
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'
-    set_config('simulator', hardware.get_all_names(without=['night']))
+    pocs.set_config('simulator', hardware.get_all_names(without=['night']))
 
     assert pocs.is_safe() is False
 
@@ -242,7 +242,7 @@ def test_no_ac_power(pocs):
     assert pocs.has_ac_power() is True
 
     # Remove 'power' from simulator
-    set_config('simulator', hardware.get_all_names(without=['power']))
+    pocs.set_config('simulator', hardware.get_all_names(without=['power']))
 
     pocs.initialize()
 
@@ -300,7 +300,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2020-01-01 19:00:00'
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
 
     pocs.state = 'sleeping'
 
@@ -313,7 +313,7 @@ def test_run_no_targets_and_exit(pocs):
 
 def test_run_complete(pocs, valid_observation):
     os.environ['POCSTIME'] = '2020-01-01 19:00:00'
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
 
     pocs.state = 'sleeping'
     pocs._do_states = True
@@ -402,7 +402,7 @@ def test_run_wait_until_safe(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    set_config('simulator', hardware.get_all_names(without=['weather']))
+    pocs.set_config('simulator', hardware.get_all_names(without=['weather']))
 
     pocs = POCS(observatory)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
@@ -473,7 +473,7 @@ def test_run_power_down_interrupt(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    set_config('simulator', 'all')
+    pocs.set_config('simulator', 'all')
 
     pocs = POCS(observatory)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
