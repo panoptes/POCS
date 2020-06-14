@@ -402,7 +402,7 @@ def test_run_wait_until_safe(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    pocs.set_config('simulator', hardware.get_all_names(without=['weather']))
+    observatory.set_config('simulator', hardware.get_all_names(without=['weather']))
 
     pocs = POCS(observatory)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
@@ -473,7 +473,7 @@ def test_run_power_down_interrupt(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    pocs.set_config('simulator', 'all')
+    observatory.set_config('simulator', 'all')
 
     pocs = POCS(observatory)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
