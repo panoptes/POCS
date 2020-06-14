@@ -62,7 +62,8 @@ def pytest_addoption(parser):
         "--test-databases",
         nargs="+",
         default=['file'],
-        help=f"Test databases in the list. List items can include: {db_names}. Note that travis-ci will test all of "
+        help=f"Test databases in the list. List items can include: {db_names}. Note that "
+             f"travis-ci will test all of "
              f"them by default.")
 
 
@@ -144,11 +145,16 @@ def pytest_runtest_logreport(report):
         return
     with suppress(Exception):
         logger.log('testing', '')
-        logger.log('testing', f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
+        logger.log('testing',
+                   f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
         if report.capstdout:
-            logger.log('testing', f'============ Captured stdout during {report.when} {report.capstdout} ============')
+            logger.log('testing',
+                       f'============ Captured stdout during {report.when} {report.capstdout} '
+                       f'============')
         if report.capstderr:
-            logger.log('testing', f'============ Captured stdout during {report.when} {report.capstderr} ============')
+            logger.log('testing',
+                       f'============ Captured stdout during {report.when} {report.capstderr} '
+                       f'============')
 
 
 @pytest.fixture(scope='session')

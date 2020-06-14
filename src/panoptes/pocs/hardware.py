@@ -1,4 +1,5 @@
 """Information about hardware supported by Panoptes."""
+from panoptes.utils.config.client import get_config
 
 ALL_NAMES = sorted([
     'camera',
@@ -17,14 +18,33 @@ def get_all_names(all_names=ALL_NAMES, without=None):
 
     Note that this doesn't extend to the Arduinos for the telemetry and camera boards, for
     which no simulation is supported at this time.
+
+    >>> from panoptes.pocs.hardware import get_all_names
+    >>> get_all_names()
+    ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
+    >>> hardware.get_all_names(without='mount')  # Single item
+    ['camera', 'dome', 'night', 'power', 'sensors', 'theskyx', 'weather']
+    >>> hardware.get_all_names(without=['mount', 'power'])  # List
+    ['camera', 'dome', 'night', 'sensors', 'theskyx', 'weather']
+
+    >>> # You can alter available hardware if needed.
+    >>> get_all_names(['foo', 'bar', 'power'], without=['power'])
+    ['bar', 'foo']
+
+    Args:
+        all_names (list): The list of hardware.
+        without (iterable): Return all items expect those in the list.
+
+    Returns:
+        list: The sorted list of available hardware except those listed in `without`.
     """
     # Make sure that 'all' gets expanded.
     without = get_simulator_names(simulator=without)
 
-    return [v for v in all_names if v not in without]
+    return sorted([v for v in all_names if v not in without])
 
 
-def get_simulator_names(simulator=None, kwargs=None, config=None):
+def get_simulator_names(simulator=None, kwargs=None):
     """Returns the names of the simulators to be used in lieu of hardware drivers.
 
     Note that returning a list containing 'X' doesn't mean that the config calls for a driver
@@ -45,11 +65,18 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     and once in the kwargs (which won't be examined). Python doesn't permit a keyword argument
     to be passed in twice.
 
+    >>> from panoptes.pocs.hardware import get_simulator_names
+    >>> get_simulator_names()
+    []
+    >>> get_simulator_names('all')
+    ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
+
+
     Args:
-        simulator: An explicit list of names of hardware to be simulated (i.e. hardware drivers
-            to be replaced with simulators).
-        kwargs: The kwargs passed in to the caller, which is inspected for an arg called 'simulator'.
-        config: Dictionary created from panoptes.pocs.yaml or similar.
+        simulator (list): An explicit list of names of hardware to be simulated
+            (i.e. hardware drivers to be replaced with simulators).
+        kwargs: The kwargs passed in to the caller, which is inspected for an arg
+            called 'simulator'.
 
     Returns:
         List of names of the hardware to be simulated.
@@ -59,7 +86,7 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
     def extract_simulator(d):
         return (d or empty).get('simulator')
 
-    for v in [simulator, extract_simulator(kwargs), extract_simulator(config)]:
+    for v in [simulator, extract_simulator(kwargs), extract_simulator(get_config('simulator'))]:
         if not v:
             continue
         if isinstance(v, str):
