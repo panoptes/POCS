@@ -75,6 +75,7 @@ class POCS(PanStateMachine, PanBase):
         self.run_once = kwargs.get('run_once', False)
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
         self.connected = True
+        self.interrupted = False
 
         # We want to call and record the status on a periodic interval.
         def get_periodic_status():
@@ -401,12 +402,11 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(f"Weather Safety: {is_safe} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
+            self.logger.debug(
+                f"Weather Safety: {is_safe} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
-        except (TypeError, KeyError) as e:
-            self.logger.warning(f"No record found in DB: {e!r}")
         except Exception as e:  # pragma: no cover
-            self.logger.error(f"Error checking weather: {e!r}")
+            self.logger.error(f"No weather record in database: {e!r}")
         else:
             if age >= stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -436,9 +436,9 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space: Free {self._free_space:.02f}\tReq: {req_space:.02f}')
-        elif space_is_low:
-            self.logger.warning(f'Low disk space: Free {self._free_space:.02f}\tReq: {req_space:.02f}')
+            self.logger.error(f'No disk space: Free {self._free_space:.02f}\t {req_space=:.02f}')
+        elif space_is_low:  # pragma: no cover
+            self.logger.warning(f'Low disk space: Free {self._free_space:.02f}\t {req_space=:.02f}')
 
         return has_space
 
@@ -478,7 +478,8 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(f"Power Safety: {has_power} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
+            self.logger.debug(
+                f"Power Safety: {has_power} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
             self.logger.warning(f"No record found in DB: {e!r}")
@@ -508,7 +509,7 @@ class POCS(PanStateMachine, PanBase):
             delay {float|None} -- Number of seconds to wait. If default `None`, look up value in
                 config, otherwise 2.5 seconds.
         """
-        if delay is None:
+        if delay is None:  # pragma: no cover
             delay = self.get_config('wait_delay', default=2.5)
 
         sleep_timer = CountdownTimer(delay)
@@ -536,7 +537,7 @@ class POCS(PanStateMachine, PanBase):
             PANDIR    Base directory for PANOPTES
             POCS      Base directory for POCS
         """
-        if sys.version_info[:2] < (3, 0):  # pragma: no cover
+        if sys.version_info[:2] < (3, 8):  # pragma: no cover
             warnings.warn("POCS requires Python 3.x to run")
 
         pandir = os.getenv('PANDIR')
@@ -550,6 +551,4 @@ class POCS(PanStateMachine, PanBase):
         if not os.path.exists(pocs):
             sys.exit(f"$POCS directory does not exist or is empty: {pocs}")
 
-        if not os.path.exists(f"{pandir}/logs"):
-            print(f"Creating log dir at {pandir}/logs")
-            os.makedirs(f"{pandir}/logs")
+        os.makedirs(f"{pandir}/logs", exist_ok=True)

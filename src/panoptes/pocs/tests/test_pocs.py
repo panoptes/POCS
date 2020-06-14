@@ -5,6 +5,8 @@ import time
 import pytest
 import requests
 
+from astropy import units as u
+
 from panoptes.pocs import hardware
 
 from panoptes.pocs.core import POCS
@@ -133,6 +135,18 @@ def test_make_log_dir(tmp_path):
     os.removedirs(log_dir)
 
     os.environ['PANDIR'] = old_pandir
+
+
+def test_observatory_cannot_observe(pocs):
+    scheduler = pocs.observatory.scheduler
+    pocs.observatory.scheduler = None
+    assert pocs.initialize() is False
+    pocs.observatory.scheduler = scheduler
+    assert pocs.initialize()
+    assert pocs.is_initialized
+    # Make sure we can do it twice.
+    assert pocs.initialize()
+    assert pocs.is_initialized
 
 
 def test_simple_simulator(pocs, caplog):
@@ -512,3 +526,11 @@ def test_custom_state_file(observatory, temp_file):
     pocs.initialize()
     pocs.power_down()
     reset_conf()
+
+
+def test_free_space(pocs, caplog):
+    assert pocs.has_free_space()
+    assert pocs.has_free_space(required_space=999 * u.terabyte)
+
+    assert 'No disk space' in caplog.records[-1].message
+    assert caplog.records[-1].levelname == 'ERROR'
