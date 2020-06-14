@@ -4,6 +4,7 @@ from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs import hardware
 
 
 class PanBase(object):
@@ -54,9 +55,15 @@ class PanBase(object):
             **kwargs: Passed to set_config
         """
         config_value = None
+
+        if key == 'simulator' and new_value == 'all':
+            # Don't use hardware.get_simulator_names because it checks config.
+            new_value = hardware.ALL_NAMES
+
         try:
             self.logger.trace(f'Setting config {key=} {new_value=}')
-            config_value = client.set_config(key, new_value, port=self._config_port, *args, **kwargs)
+            config_value = client.set_config(key, new_value, port=self._config_port, *args,
+                                             **kwargs)
             self.logger.trace(f'Config set {config_value=}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
