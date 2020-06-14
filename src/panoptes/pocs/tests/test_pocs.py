@@ -136,7 +136,7 @@ def test_make_log_dir(tmp_path):
 
 def test_simple_simulator(pocs, caplog):
     assert isinstance(pocs, POCS)
-    set_config('simulator', ['camera', 'mount', 'weather', 'night'])
+    set_config('simulator', hardware.get_all_names())
 
     assert pocs.is_initialized is not True
 
@@ -164,14 +164,14 @@ def test_is_weather_and_dark_simulator(pocs):
     pocs.initialize()
 
     # Night simulator
-    set_config('simulator', ['camera', 'mount', 'weather', 'night'])
+    set_config('simulator', hardware.get_all_names())
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
     assert pocs.is_dark() is True
 
     # No night simulator
-    set_config('simulator', ['camera', 'mount', 'weather'])
+    set_config('simulator', hardware.get_all_names(without=['night']))
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
     assert pocs.is_dark() is True
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
@@ -183,7 +183,7 @@ def test_is_weather_and_dark_simulator(pocs):
 
 def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
-    set_config('simulator', ['camera', 'mount', 'night'])
+    set_config('simulator', hardware.get_all_names(without=['weather']))
 
     # Set a specific time
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'
@@ -198,6 +198,7 @@ def test_is_weather_safe_no_simulator(pocs):
 
 
 def test_unsafe_park(pocs):
+    set_config('simulator', hardware.get_all_names())
     pocs.initialize()
     assert pocs.is_initialized is True
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
