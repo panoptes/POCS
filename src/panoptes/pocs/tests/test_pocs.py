@@ -10,7 +10,7 @@ from panoptes.pocs import hardware
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
 from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json
+from panoptes.utils.serializers import to_json, to_yaml
 
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.camera import create_cameras_from_config
@@ -95,13 +95,14 @@ def pocs_with_dome(pocs, dome):
 
 @pytest.fixture(scope='module')
 def valid_observation():
-    return {'name': 'HIP 36850',
-            'position': '113.65 deg +31.887 deg',
-            'priority': '100',
-            'exptime': 2,
-            'min_nexp': 2,
-            'exp_set_size': 2,
-            }
+    return {
+        'name': 'HIP 36850',
+        'position': '113.65 deg +31.887 deg',
+        'priority': '100',
+        'exptime': 2,
+        'min_nexp': 2,
+        'exp_set_size': 2,
+    }
 
 
 def test_bad_pandir_env():
@@ -438,7 +439,8 @@ def test_run_wait_until_safe(observatory,
     assert pocs.is_safe() is True
 
     while pocs.next_state != 'slewing':
-        pocs.logger.warning(f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
+        pocs.logger.warning(
+            f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
@@ -484,7 +486,8 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread.start()
 
     while pocs.next_state != 'scheduling':
-        pocs.logger.debug(f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
+        pocs.logger.debug(
+            f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
@@ -494,3 +497,18 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread.join(timeout=300)
 
     assert pocs_thread.is_alive() is False
+
+
+def test_custom_state_file(observatory, temp_file):
+    state_table = POCS.load_state_table()
+    assert isinstance(state_table, dict)
+
+    with open(temp_file, 'w') as f:
+        f.write(to_yaml(state_table))
+
+    file_path = os.path.abspath(temp_file)
+
+    pocs = POCS(observatory, state_machine_file=file_path, run_once=True, simulators=['power'])
+    pocs.initialize()
+    pocs.power_down()
+    reset_conf()
