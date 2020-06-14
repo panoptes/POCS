@@ -86,7 +86,7 @@ def get_simulator_names(simulator=None, kwargs=None):
     def extract_simulator(d):
         return (d or empty).get('simulator')
 
-    for v in [simulator, extract_simulator(kwargs), extract_simulator(get_config('simulator'))]:
+    for v in [simulator, extract_simulator(kwargs), extract_simulator(get_config())]:
         if not v:
             continue
         if isinstance(v, str):
