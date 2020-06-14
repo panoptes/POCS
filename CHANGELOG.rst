@@ -15,28 +15,41 @@ Changed
 * Python moved to 3.8. (#974)
 * `panoptes-utils` to `0.2.20`. (#974)
 * Install script. (#974)
-    * Env var file is sourced for zshrc and bashrc.
+
+  * Env var file is sourced for zshrc and bashrc.
+
 * Development Environment (#974)
-    * Many cleanups to environment and launch. See docs.
-    * Config server started along with development environment.
+
+  * Many cleanups to environment and launch. See docs.
+  * Config server started along with development environment.
+
 * Docker image updates (#972)
-    * Updated `install-pocs.sh` script.
-    * ``latest`` installs the ``panoptes-pocs`` module from pip
-    * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
-    * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
-    * Use new ``arduino-cli`` installer.
-    * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
-    * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+
+  * Updated `install-pocs.sh` script.
+  * ``latest`` installs the ``panoptes-pocs`` module from pip
+  * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
+  * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
+  * Use new ``arduino-cli`` installer.
+  * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
+  * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+
 * Testing (#974)
-    * Removing all the dynamic config server info, making things a lot simpler.
-    * `docker-compose` files for running tests.
-    * Misc documentation updates. (#974)
-    * Code coverage no longer ignores test. (#974)
-* POCS
-    * POCS instance cannot `initialize` unless it's `observatory.can_observe`.
-    * Set `simulator` config item at start of `POCS` init method if `simulators` (note plural) is passed.
-    * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
-    * Adding some action flags to the `pocs.yaml` file.
+
+  * Removing all the dynamic config server info, making things a lot simpler.
+  * `docker-compose` files for running tests.
+  * Misc documentation updates.
+  * Code coverage no longer ignores test.
+  * Testing is run via `panoptes-develop test`.
+  * Log files are rotated during each run.
+
+* POCS (#974)
+
+  * POCS instance cannot `initialize` unless it's `observatory.can_observe`.
+  * Set `simulator` config item at start of `POCS` init method if `simulators` (note plural) is passed.
+  * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
+  * Adding some action flags to the `pocs.yaml` file.
+  * Remove `POCS.check_environment` class method.
+
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
     * The `fields_file` is read when scheduler is created.

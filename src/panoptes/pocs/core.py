@@ -521,34 +521,3 @@ class POCS(PanStateMachine, PanBase):
         is_expired = sleep_timer.expired()
         self.logger.debug(f'Leaving wait timer: expired={is_expired}')
         return is_expired
-
-    ##################################################################################################
-    # Class Methods
-    ##################################################################################################
-
-    @classmethod
-    def check_environment(cls):
-        """ Checks to see if environment is set up correctly
-
-        There are a number of environmental variables that are expected
-        to be set in order for PANOPTES to work correctly. This method just
-        sanity checks our environment and shuts down otherwise.
-
-            PANDIR    Base directory for PANOPTES
-            POCS      Base directory for POCS
-        """
-        if sys.version_info[:2] < (3, 8):  # pragma: no cover
-            warnings.warn("POCS requires Python 3.x to run")
-
-        pandir = os.getenv('PANDIR')
-        if not os.path.exists(pandir):
-            sys.exit(f"$PANDIR dir does not exist or is empty: {pandir}")
-
-        pocs = os.getenv('POCS')
-        if pocs is None:  # pragma: no cover
-            sys.exit('Please make sure $POCS environment variable is set')
-
-        if not os.path.exists(pocs):
-            sys.exit(f"$POCS directory does not exist or is empty: {pocs}")
-
-        os.makedirs(f"{pandir}/logs", exist_ok=True)

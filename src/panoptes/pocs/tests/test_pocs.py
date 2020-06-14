@@ -107,36 +107,6 @@ def valid_observation():
     }
 
 
-def test_bad_pandir_env():
-    pandir = os.getenv('PANDIR')
-    os.environ['PANDIR'] = '/foo/bar'
-    with pytest.raises(SystemExit):
-        POCS.check_environment()
-    os.environ['PANDIR'] = pandir
-
-
-def test_bad_pocs_env():
-    pocs_dir = os.getenv('POCS')
-    os.environ['POCS'] = '/foo/bar'
-    with pytest.raises(SystemExit):
-        POCS.check_environment()
-    os.environ['POCS'] = pocs_dir
-
-
-def test_make_log_dir(tmp_path):
-    log_dir = tmp_path / 'logs'
-    assert os.path.exists(log_dir) is False
-
-    old_pandir = os.environ['PANDIR']
-    os.environ['PANDIR'] = str(tmp_path.resolve())
-    POCS.check_environment()
-
-    assert os.path.exists(log_dir) is True
-    os.removedirs(log_dir)
-
-    os.environ['PANDIR'] = old_pandir
-
-
 def test_observatory_cannot_observe(pocs):
     scheduler = pocs.observatory.scheduler
     pocs.observatory.scheduler = None
