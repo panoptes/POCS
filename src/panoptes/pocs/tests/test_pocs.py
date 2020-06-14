@@ -519,7 +519,7 @@ def test_free_space(pocs, caplog):
 
 
 def test_run_complete(pocs, valid_observation):
-    os.environ['POCSTIME'] = '2020-01-01 19:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
     pocs.set_config('simulator', 'all')
 
     pocs.observatory.scheduler.clear_available_observations()
