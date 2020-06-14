@@ -530,7 +530,7 @@ def test_custom_state_file(observatory, temp_file):
 
 def test_free_space(pocs, caplog):
     assert pocs.has_free_space()
-    assert pocs.has_free_space(required_space=999 * u.terabyte)
 
+    assert pocs.has_free_space(required_space=999 * u.terabyte) is False
     assert 'No disk space' in caplog.records[-1].message
     assert caplog.records[-1].levelname == 'ERROR'
