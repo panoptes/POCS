@@ -311,24 +311,6 @@ def test_run_no_targets_and_exit(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run_complete(pocs, valid_observation):
-    os.environ['POCSTIME'] = '2020-01-01 19:00:00'
-    pocs.set_config('simulator', 'all')
-
-    pocs.state = 'sleeping'
-    pocs._do_states = True
-
-    pocs.observatory.scheduler.clear_available_observations()
-    pocs.observatory.scheduler.add_observation(valid_observation)
-
-    pocs.initialize()
-    assert pocs.is_initialized is True
-
-    pocs.run(exit_when_done=True, run_once=True)
-    assert pocs.state == 'sleeping'
-    pocs.power_down()
-
-
 def test_pocs_park_to_ready_with_observations(pocs):
     # We don't want to run_once here
     pocs.run_once = False
@@ -534,3 +516,18 @@ def test_free_space(pocs, caplog):
     assert pocs.has_free_space(required_space=999 * u.terabyte) is False
     assert 'No disk space' in caplog.records[-1].message
     assert caplog.records[-1].levelname == 'ERROR'
+
+
+def test_run_complete(pocs, valid_observation):
+    os.environ['POCSTIME'] = '2020-01-01 19:00:00'
+    pocs.set_config('simulator', 'all')
+
+    pocs.observatory.scheduler.clear_available_observations()
+    pocs.observatory.scheduler.add_observation(valid_observation)
+
+    pocs.initialize()
+    assert pocs.is_initialized is True
+
+    pocs.run(exit_when_done=True, run_once=True)
+    assert pocs.state == 'sleeping'
+    pocs.power_down()

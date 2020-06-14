@@ -133,13 +133,19 @@ def test_primary_camera_no_primary_camera(observatory):
 
 def test_set_scheduler(observatory, caplog):
     site_details = create_location_from_config()
-    scheduler = create_scheduler_from_config(
-        observer=site_details['observer'])
+    scheduler = create_scheduler_from_config(observer=site_details['observer'])
+
+    assert observatory.current_observation is None
+    assert 'Scheduler not present' in caplog.records[-1].message
+
     observatory.set_scheduler(scheduler=None)
     assert observatory.scheduler is None
+
     observatory.set_scheduler(scheduler=scheduler)
+
     assert observatory.scheduler is not None
     err_msg = 'Scheduler is not an instance of .*BaseScheduler'
+
     with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler('scheduler')
     err_msg = ".*missing 1 required positional argument.*"
@@ -248,10 +254,11 @@ def test_standard_headers(observatory):
 
     observatory.scheduler.fields_file = None
     observatory.scheduler.fields_list = [
-        {'name': 'HAT-P-20',
-         'priority': '100',
-         'position': '07h27m39.89s +24d20m14.7s',
-         },
+        {
+            'name': 'HAT-P-20',
+            'priority': '100',
+            'position': '07h27m39.89s +24d20m14.7s',
+        },
     ]
 
     observatory.get_observation()
@@ -267,7 +274,8 @@ def test_standard_headers(observatory):
         'moon_fraction': 0.7880103086091879,
         'moon_separation': 148.34401,
         'observer': 'Generic PANOPTES Unit',
-        'origin': 'Project PANOPTES'}
+        'origin': 'Project PANOPTES'
+    }
 
     assert headers['airmass'] == pytest.approx(test_headers['airmass'], rel=1e-2)
     assert headers['ha_mnt'] == pytest.approx(test_headers['ha_mnt'], rel=1e-2)
@@ -289,7 +297,7 @@ def test_sidereal_time(observatory):
     assert abs(st.value - 9.145547849536634) < 1e-4
 
 
-def test_get_observation(observatory):
+def test_get_observation(observatory, caplog):
     os.environ['POCSTIME'] = '2016-08-13 15:00:00'
     observation = observatory.get_observation()
     assert isinstance(observation, Observation)

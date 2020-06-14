@@ -21,7 +21,8 @@ class PanStateMachine(Machine):
 
         if isinstance(state_machine_table, str):
             self.logger.info(f"Loading state table: {state_machine_table}")
-            state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
+            state_machine_table = PanStateMachine.load_state_table(
+                state_table_name=state_machine_table)
 
         assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
         assert 'transitions' in state_machine_table, self.logger.warning(
@@ -116,7 +117,8 @@ class PanStateMachine(Machine):
             self.logger.debug(f'Checking for {required_horizon=} for {self.next_state=}')
             while not self.is_safe(no_warning=True, horizon=required_horizon):
                 self.logger.info(f'Waiting for {required_horizon=} for {self.next_state=}')
-                check_delay = self.get_config('wait_delay', default=60 * 3)  # Check every 3 minutes.
+                check_delay = self.get_config('wait_delay',
+                                              default=60 * 3)  # Check every 3 minutes.
                 self.wait(delay=check_delay)
 
                 # TRANSITION TO STATE
@@ -137,22 +139,26 @@ class PanStateMachine(Machine):
             if not state_changed:
                 self.logger.warning(f"Failed to move from {self.state=} to {self.next_state=}")
                 if self.is_safe() is False:
-                    self.logger.warning("Conditions have become unsafe; setting next state to 'parking'")
+                    self.logger.warning(
+                        "Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = 'parking'
                 elif _transition_iteration > max_transition_attempts:
-                    self.logger.warning(f"Stuck in current state for {max_transition_attempts=}, parking")
+                    self.logger.warning(
+                        f"Stuck in current state for {max_transition_attempts=}, parking")
                     self.next_state = 'parking'
                 else:
                     _transition_iteration = _transition_iteration + 1
                     self.logger.warning(
-                        f"Sleeping before trying again ({_transition_iteration}/{max_transition_attempts})")
+                        f"Sleeping before trying again ({_transition_iteration}/"
+                        f"{max_transition_attempts})")
                     self.wait(with_status=False, delay=7)  # wait 7 seconds (no good reason)
             else:
                 _transition_iteration = 0
 
             # Note that `self.state` below has changed from above
 
-            # We started in the sleeping state, so if we are back here we have done a full iteration.
+            # We started in the sleeping state, so if we are back here we have
+            # done a full iteration.
             if self.state == 'sleeping':
                 self._obs_run_retries -= 1
                 if run_once:
@@ -271,7 +277,8 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains information about the event
         """
 
-        self.logger.debug(f"After {event_data.event.name} transition. In {event_data.state.name} state")
+        self.logger.debug(
+            f"After {event_data.event.name} transition. In {event_data.state.name} state")
 
     ##################################################################################################
     # Class Methods
@@ -304,7 +311,8 @@ class PanStateMachine(Machine):
             with open(state_table_file, 'r') as f:
                 state_table = from_yaml(f.read())
         except Exception as err:
-            raise error.InvalidConfig(f'Problem loading state table yaml file: {err!r} {state_table_file}')
+            raise error.InvalidConfig(
+                f'Problem loading state table yaml file: {err!r} {state_table_file}')
 
         return state_table
 

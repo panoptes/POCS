@@ -58,7 +58,8 @@ class Observatory(PanBase):
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
-        # TODO(jamessynge): Figure out serial port validation behavior here compared to that for the mount.
+        # TODO(jamessynge): Figure out serial port validation behavior here compared to that for
+        #  the mount.
         self.set_dome(dome)
 
         self.set_scheduler(scheduler)
@@ -193,7 +194,8 @@ class Observatory(PanBase):
         assert isinstance(camera, AbstractCamera)
         self.logger.debug(f'Adding {cam_name}: {camera}')
         if cam_name in self.cameras:
-            self.logger.debug(f'{cam_name} already exists, replacing existing camera under that name.')
+            self.logger.debug(
+                f'{cam_name} already exists, replacing existing camera under that name.')
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
@@ -261,7 +263,7 @@ class Observatory(PanBase):
             self.dome.connect()
 
     def power_down(self):
-        """Power down the observatory. Currently does nothing
+        """Power down the observatory. Currently just disconnects hardware.
         """
         self.logger.debug("Shutting down observatory")
         if self.mount:
@@ -283,7 +285,8 @@ class Observatory(PanBase):
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
-                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now, target_coords)
+                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now,
+                                                                                         target_coords)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -296,7 +299,8 @@ class Observatory(PanBase):
         try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status
-                status['observation']['field_ha'] = self.observer.target_hour_angle(now, self.current_observation.field)
+                status['observation']['field_ha'] = self.observer.target_hour_angle(now,
+                                                                                    self.current_observation.field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
 
