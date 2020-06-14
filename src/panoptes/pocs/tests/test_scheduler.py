@@ -8,6 +8,10 @@ from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.utils.serializers import to_json
 
+config_host = 'localhost'
+config_port = 6563
+url = f'http://{config_host}:{config_port}/reset-config'
+
 
 def reset_conf():
     response = requests.post(url,
