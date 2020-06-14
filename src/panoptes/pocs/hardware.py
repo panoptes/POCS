@@ -22,9 +22,9 @@ def get_all_names(all_names=ALL_NAMES, without=None):
     >>> from panoptes.pocs.hardware import get_all_names
     >>> get_all_names()
     ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
-    >>> hardware.get_all_names(without='mount')  # Single item
+    >>> get_all_names(without='mount')  # Single item
     ['camera', 'dome', 'night', 'power', 'sensors', 'theskyx', 'weather']
-    >>> hardware.get_all_names(without=['mount', 'power'])  # List
+    >>> get_all_names(without=['mount', 'power'])  # List
     ['camera', 'dome', 'night', 'sensors', 'theskyx', 'weather']
 
     >>> # You can alter available hardware if needed.
