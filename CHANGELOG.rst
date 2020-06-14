@@ -12,15 +12,13 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Changed
 ~~~~~~~
 
-* `panoptes-utils` to `0.2.20`. (#974)
 * Python moved to 3.8. (#974)
-* Code coverage no longer ignores test. (#974)
-* Misc documentation updates. (#974)
+* `panoptes-utils` to `0.2.20`. (#974)
+* Install script. (#974)
+    * Env var file is sourced for zshrc and bashrc.
 * Development Environment (#974)
     * Many cleanups to environment and launch. See docs.
     * Config server started along with development environment.
-* Install script. (#974)
-    * Env var file is sourced for zshrc and bashrc.
 * Docker image updates (#972)
     * Updated `install-pocs.sh` script.
     * ``latest`` installs the ``panoptes-pocs`` module from pip
@@ -32,6 +30,13 @@ Changed
 * Testing (#974)
     * Removing all the dynamic config server info, making things a lot simpler.
     * `docker-compose` files for running tests.
+    * Misc documentation updates. (#974)
+    * Code coverage no longer ignores test. (#974)
+* POCS
+    * POCS instance cannot `initialize` unless it's `observatory.can_observe`.
+    * Set `simulator` config item at start of `POCS` init method if `simulators` (note plural) is passed.
+    * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
+    * Adding some action flags to the `pocs.yaml` file.
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
     * The `fields_file` is read when scheduler is created.

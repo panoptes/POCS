@@ -136,6 +136,7 @@ def test_make_log_dir(tmp_path):
 
 def test_simple_simulator(pocs, caplog):
     assert isinstance(pocs, POCS)
+    set_config('simulator', ['camera', 'mount', 'weather', 'night'])
 
     assert pocs.is_initialized is not True
 

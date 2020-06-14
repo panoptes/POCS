@@ -16,7 +16,7 @@ class PanLogger:
         # Level Time_UTC Time_Local dynamic_padding Message
         self.fmt = "<lvl>{level:.1s}</lvl> " \
                    "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
-                   "<blue>({time:HH:mm:ss.ss})</> " \
+                   " <blue>({time:HH:mm:ss.ss})</> " \
                    "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
                    "<lvl>{message}</lvl>\n"
         self.handlers = dict()
