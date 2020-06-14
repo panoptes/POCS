@@ -72,7 +72,9 @@ class POCS(PanStateMachine, PanBase):
         self.is_initialized = False
         self._free_space = None
 
+        self.run_once = kwargs.get('run_once', False)
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
+        self.connected = Truey
 
         # We want to call and record the status on a periodic interval.
         def get_periodic_status():
@@ -85,7 +87,6 @@ class POCS(PanStateMachine, PanBase):
         self._status_thread = Thread(target=get_periodic_status, daemon=True)
         self._status_thread.start()
 
-        self.connected = True
         self.say("Hi there!")
 
     @property
@@ -209,6 +210,7 @@ class POCS(PanStateMachine, PanBase):
                 self.power_down()
             else:
                 self.is_initialized = True
+                self.do_states = True
 
         return self.is_initialized
 

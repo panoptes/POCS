@@ -61,7 +61,6 @@ class PanStateMachine(Machine):
 
         self._state_machine_table = state_machine_table
         self.next_state = None
-        self.run_once = kwargs.get('run_once', False)
 
         self.logger.debug("State machine created")
 
@@ -98,7 +97,7 @@ class PanStateMachine(Machine):
         """
         if not self.is_initialized:
             self.logger.warning("POCS not initialized")
-            return
+            return False
 
         run_once = run_once or self.run_once
 
@@ -117,9 +116,10 @@ class PanStateMachine(Machine):
             self.logger.debug(f'Checking for {required_horizon=} for {self.next_state=}')
             while not self.is_safe(no_warning=True, horizon=required_horizon):
                 self.logger.info(f'Waiting for {required_horizon=} for {self.next_state=}')
-                self.wait(delay=60 * 3)  # Check every 3 minutes.
+                check_delay = self.get_config('wait_delay', default=60 * 3)  # Check every 3 minutes.
+                self.wait(delay=check_delay)
 
-            # TRANSITION TO STATE
+                # TRANSITION TO STATE
             self.logger.info(f'Going to {self.next_state=}')
             try:
                 # The state's `on_enter` logic will be performed here.
@@ -151,16 +151,16 @@ class PanStateMachine(Machine):
                 _transition_iteration = 0
 
             # Note that `self.state` below has changed from above
-            # If we are in ready state then we are making one attempt through the loop.
-            if self.state == 'ready':
+
+            # We started in the sleeping state, so if we are back here we have done a full iteration.
+            if self.state == 'sleeping':
                 self._obs_run_retries -= 1
+                if run_once:
+                    self.stop_states()
 
-            if self.state == 'sleeping' and run_once:
-                self.stop_states()
-
-            if exit_when_done:
-                self.logger.info(f'Leaving run loop {exit_when_done=}')
-                break
+                if exit_when_done:
+                    self.logger.info(f'Leaving run loop {exit_when_done=}')
+                    break
 
     def goto_next_state(self):
         """Make a transition to the next state.

@@ -55,7 +55,7 @@ def scheduler(site_details):
 def observatory(cameras, mount, site_details, scheduler):
     """Return a valid Observatory instance with a specific config."""
 
-    obs = Observatory(scheduler=scheduler, simulator=['power'])
+    obs = Observatory(scheduler=scheduler, simulator=['power', 'weather'])
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
@@ -78,7 +78,7 @@ def dome():
 def pocs(observatory):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
-    pocs = POCS(observatory, run_once=True)
+    pocs = POCS(observatory, run_once=True, simulators=['power'])
     yield pocs
     pocs.power_down()
     reset_conf()
@@ -134,13 +134,15 @@ def test_make_log_dir(tmp_path):
     os.environ['PANDIR'] = old_pandir
 
 
-def test_simple_simulator(pocs):
+def test_simple_simulator(pocs, caplog):
     assert isinstance(pocs, POCS)
 
     assert pocs.is_initialized is not True
 
-    with pytest.raises(AssertionError):
-        pocs.run()
+    # Not initialized returns false and gives warning.
+    assert pocs.run() is False
+    log_record = caplog.records[-1]
+    assert log_record.message == 'POCS not initialized' and log_record.levelname == "WARNING"
 
     pocs.initialize()
     assert pocs.is_initialized
@@ -280,7 +282,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 
 def test_run_no_targets_and_exit(pocs):
-    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 19:00:00'
     set_config('simulator', hardware.get_all_names())
 
     pocs.state = 'sleeping'
@@ -293,7 +295,7 @@ def test_run_no_targets_and_exit(pocs):
 
 
 def test_run_complete(pocs, valid_observation):
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 19:00:00'
     set_config('simulator', hardware.get_all_names())
 
     pocs.state = 'sleeping'
@@ -341,16 +343,21 @@ def test_pocs_park_to_ready_with_observations(pocs):
 
 def test_pocs_park_to_ready_without_observations(pocs):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    pocs.logger.warning(f'Inserting safe weather reading')
+    pocs.db.insert_current('weather', {'safe': True})
 
     assert pocs.is_safe() is True
     assert pocs.state == 'sleeping'
     pocs.next_state = 'ready'
     assert pocs.initialize()
+    pocs.logger.warning(f'Moving to ready')
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
+    pocs.logger.warning(f'Moving to scheduling')
     assert pocs.goto_next_state()
     assert pocs.observatory.current_observation is not None
     pocs.next_state = 'parking'
+    pocs.logger.warning(f'Moving to parking')
     assert pocs.goto_next_state()
     assert pocs.state == 'parking'
     assert pocs.observatory.current_observation is None
@@ -386,14 +393,17 @@ def test_run_wait_until_safe(observatory,
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
 
+    assert pocs.connected is True
+    assert pocs.do_states is False
+    assert pocs.is_initialized is False
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
     # Weather is bad and unit is is connected but not set.
     assert pocs.is_weather_safe() is False
+    assert pocs.is_initialized
     assert pocs.connected
     assert pocs.do_states
-    assert pocs.is_initialized
     assert pocs.next_state is None
 
     pocs.set_config('wait_delay', 1)
