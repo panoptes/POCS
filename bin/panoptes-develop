@@ -1,35 +1,47 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -e
 
-PARAMS="$*"
+SUBCMD=$1
 
 export PANDIR=${PANDIR:-/var/panoptes}
 export IMAGE="${IMAGE:-panoptes-pocs}"
 export TAG="${TAG:-developer-env}"
-export CONTAINER_NAME="${CONTAINER_NAME:-pocs-developer-env}"
 
 cd "${PANDIR}"
 
-CMD="docker-compose \
-    --project-directory ${PANDIR} \
-    --env-file ${PANDIR}/env \
-    -f POCS/docker/docker-compose-developer-env.yaml \
-    -p panoptes"
+## Add the deamon option by default.
+if [[ "${SUBCMD}" == "up" ]]; then
+    SUBCMD="up -d"
+    export CONTAINER_NAME="pocs-developer-env"
+    export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-developer-env.yaml"
+fi
 
 ## Add the deamon option by default.
-if [[ "$PARAMS" == "up" ]]; then
-    PARAMS="up -d"
+if [[ "${SUBCMD}" == "test" ]]; then
+    SUBCMD="up"
+    export CONTAINER_NAME="pocs-develop-testing"
+    export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-testing.yaml"
 fi
+
+# Pass any other cli args to the containers as an env var named CLI_ARGS
+CLI_ARGS=("${@:2}")
 
 # We use a docker container for docker-compose, so we need to pass the env vars to
 # that container so it can properly place them in the docker-compose file.
-export DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS:--e IMAGE=${IMAGE} -e TAG=${TAG} -e CONTAINER_NAME=${CONTAINER_NAME}}"
+export DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS:--e IMAGE=${IMAGE} -e TAG=${TAG} -e CONTAINER_NAME=${CONTAINER_NAME} -e CLI_ARGS=\"${CLI_ARGS}\"}"
 
 # Run the docker-compose command with user params.
-eval "DOCKER_RUN_OPTIONS=\"${DOCKER_RUN_OPTIONS}\" ${CMD} ${PARAMS}"
+eval "DOCKER_RUN_OPTIONS=\"${DOCKER_RUN_OPTIONS}\" \
+        docker-compose \
+        --project-directory ${PANDIR} \
+        --env-file ${PANDIR}/env \
+        -f ${COMPOSE_FILE} \
+        -p panoptes \
+        ${SUBCMD} \
+        ${PARAMS}"
 
 # If we just started the environment, try to open the browser for the user.
-if [[ "$PARAMS" == "up -d" ]]; then
+if [[ "${SUBCMD}" == "up -d" ]]; then
     # Prompt for password
     "${PANDIR}/POCS/bin/wait-for-it.sh" \
         localhost:8888 \

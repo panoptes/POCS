@@ -62,13 +62,13 @@ serial_number_params = 'SSC101'
     'simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
     'sbig', 'fli', 'zwo'
 ])
-def camera(request, dynamic_config_server, config_port):
+def camera(request):
     CamClass = request.param[0]
     cam_params = request.param[1]
 
     if isinstance(cam_params, dict):
         # Simulator
-        camera = CamClass(config_port=config_port, **cam_params)
+        camera = CamClass(**cam_params)
     else:
         # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
@@ -80,7 +80,7 @@ def camera(request, dynamic_config_server, config_port):
     assert camera.is_ready
     yield camera
 
-    # simulator_sdk needs this explictly removed for some reason.
+    # simulator_sdk needs this explicitly removed for some reason.
     with suppress(AttributeError):
         type(camera)._assigned_cameras.discard(camera.uid)
 
@@ -112,90 +112,89 @@ def test_create_camera_simulator():
         create_camera_simulator(num_cameras=0)
 
 
-def test_create_cameras_from_config_no_autodetect(dynamic_config_server, config_port):
-    set_config('cameras.auto_detect', False, port=config_port)
+def test_create_cameras_from_config_no_autodetect():
+    set_config('cameras.auto_detect', False)
     set_config('cameras.devices', [
         dict(model='canon_gphoto2', port='/dev/fake01'),
         dict(model='canon_gphoto2', port='/dev/fake02'),
-    ], port=config_port)
+    ])
 
     with pytest.raises(error.CameraNotFound):
-        create_cameras_from_config(config_port=config_port)
+        create_cameras_from_config()
 
 
-def test_create_cameras_from_config_autodetect(dynamic_config_server, config_port):
-    set_config('cameras.auto_detect', True, port=config_port)
+def test_create_cameras_from_config_autodetect():
+    set_config('cameras.auto_detect', True)
     with pytest.raises(error.CameraNotFound):
-        create_cameras_from_config(config_port=config_port)
+        create_cameras_from_config()
 
 
 # Hardware independent tests, mostly use simulator:
 
-def test_sim_create_focuser(dynamic_config_server, config_port):
-    sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'},
-                           config_port=config_port)
+def test_sim_create_focuser():
+    sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, Focuser)
 
 
-def test_sim_passed_focuser(dynamic_config_server, config_port):
-    sim_focuser = Focuser(port='/dev/ttyFAKE', config_port=config_port)
-    sim_camera = SimCamera(focuser=sim_focuser, config_port=config_port)
+def test_sim_passed_focuser():
+    sim_focuser = Focuser(port='/dev/ttyFAKE')
+    sim_camera = SimCamera(focuser=sim_focuser)
     assert sim_camera.focuser is sim_focuser
 
 
-def test_sim_bad_focuser(dynamic_config_server, config_port):
+def test_sim_bad_focuser():
     with pytest.raises((NotFound)):
-        SimCamera(focuser={'model': 'NOTAFOCUSER'}, config_port=config_port)
+        SimCamera(focuser={'model': 'NOTAFOCUSER'})
 
 
-def test_sim_worse_focuser(dynamic_config_server, config_port):
-    sim_camera = SimCamera(focuser='NOTAFOCUSER', config_port=config_port)
+def test_sim_worse_focuser():
+    sim_camera = SimCamera(focuser='NOTAFOCUSER')
     # Will log an error but raise no exceptions
     assert sim_camera.focuser is None
 
 
-def test_sim_string(dynamic_config_server, config_port):
-    sim_camera = SimCamera(config_port=config_port)
+def test_sim_string():
+    sim_camera = SimCamera()
     assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
-    sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE', config_port=config_port)
+    sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
     assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
 
-def test_sim_file_extension(dynamic_config_server, config_port):
-    sim_camera = SimCamera(config_port=config_port)
+def test_sim_file_extension():
+    sim_camera = SimCamera()
     assert sim_camera.file_extension == 'fits'
-    sim_camera = SimCamera(file_extension='FIT', config_port=config_port)
+    sim_camera = SimCamera(file_extension='FIT')
     assert sim_camera.file_extension == 'FIT'
 
 
-def test_sim_readout_time(dynamic_config_server, config_port):
-    sim_camera = SimCamera(config_port=config_port)
+def test_sim_readout_time():
+    sim_camera = SimCamera()
     assert sim_camera.readout_time == 1.0
-    sim_camera = SimCamera(readout_time=2.0, config_port=config_port)
+    sim_camera = SimCamera(readout_time=2.0)
     assert sim_camera.readout_time == 2.0
 
 
-def test_sdk_no_serial_number(dynamic_config_server, config_port):
+def test_sdk_no_serial_number():
     with pytest.raises(ValueError):
-        SimSDKCamera(config_port=config_port)
+        SimSDKCamera()
 
 
-def test_sdk_camera_not_found(dynamic_config_server, config_port):
+def test_sdk_camera_not_found():
     with pytest.raises(error.PanError):
-        SimSDKCamera(serial_number='SSC404', config_port=config_port)
+        SimSDKCamera(serial_number='SSC404')
 
 
-def test_sdk_already_in_use(dynamic_config_server, config_port):
-    sim_camera = SimSDKCamera(serial_number='SSC999', config_port=config_port)
+def test_sdk_already_in_use():
+    sim_camera = SimSDKCamera(serial_number='SSC999')
     assert sim_camera
     with pytest.raises(error.PanError):
-        SimSDKCamera(serial_number='SSC999', config_port=config_port)
+        SimSDKCamera(serial_number='SSC999')
 
 
 # Hardware independent tests for SBIG camera
 
 
-def test_sbig_driver_bad_path(dynamic_config_server, config_port):
+def test_sbig_driver_bad_path():
     """
     Manually specify an incorrect path for the SBIG shared library. The
     CDLL loader should raise OSError when it fails. Can't test a successful
@@ -203,11 +202,11 @@ def test_sbig_driver_bad_path(dynamic_config_server, config_port):
     CDLL unload problem.
     """
     with pytest.raises(OSError):
-        SBIGDriver(library_path='no_library_here', config_port=config_port)
+        SBIGDriver(library_path='no_library_here')
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
-def test_sbig_bad_serial(dynamic_config_server, config_port):
+def test_sbig_bad_serial():
     """
     Attempt to create an SBIG camera instance for a specific non-existent
     camera. No actual cameras are required to run this test but the SBIG
@@ -216,7 +215,7 @@ def test_sbig_bad_serial(dynamic_config_server, config_port):
     if find_library('sbigudrv') is None:
         pytest.skip("Test requires SBIG camera driver to be installed")
     with pytest.raises(error.PanError):
-        SBIGCamera(serial_number='NOTAREALSERIALNUMBER', config_port=config_port)
+        SBIGCamera(serial_number='NOTAREALSERIALNUMBER')
 
 
 # *Potentially* hardware dependant tests:
@@ -463,12 +462,12 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert exposure_event.is_set()
 
 
-def test_observation(dynamic_config_server, config_port, camera, images_dir):
+def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s', config_port=config_port)
-    observation = Observation(field, exptime=1.5 * u.second, config_port=config_port)
+    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)
@@ -479,12 +478,12 @@ def test_observation(dynamic_config_server, config_port, camera, images_dir):
         os.remove(fn)
 
 
-def test_observation_nofilter(dynamic_config_server, config_port, camera, images_dir):
+def test_observation_nofilter(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s', config_port=config_port)
-    observation = Observation(field, exptime=1.5 * u.second, filter_name=None, config_port=config_port)
+    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    observation = Observation(field, exptime=1.5 * u.second, filter_name=None)
     observation.seq_time = '19991231T235959'
     camera.take_observation(observation, headers={})
     time.sleep(7)

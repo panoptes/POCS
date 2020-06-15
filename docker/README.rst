@@ -16,11 +16,11 @@ To build the images locally:
 
     docker/setup-local-environment.sh
 
-To run the test suite locally:
+Then, to run the test suite locally:
 
 .. code:: bash
 
-    scripts/testing/test-software.sh
+    panoptes-develop test
 
 This will build all three images locally and is suitable for testing and development.
 

@@ -13,13 +13,13 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture
-def location(dynamic_config_server, config_port):
-    loc = get_config('location', port=config_port)
+def location():
+    loc = get_config('location')
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture(scope="function")
-def mount(dynamic_config_server, config_port, location):
+def mount(location):
     with suppress(KeyError):
         del os.environ['POCSTIME']
 
@@ -27,9 +27,9 @@ def mount(dynamic_config_server, config_port, location):
                {
                    'brand': 'bisque',
                    'template_dir': 'resources/bisque',
-               }, port=config_port)
+               })
 
-    return Mount(location=location, config_port=config_port)
+    return Mount(location=location)
 
 
 @pytest.mark.with_mount
@@ -42,13 +42,10 @@ def test_loading_without_config():
 
 @pytest.mark.with_mount
 class TestMount(object):
-
     """ Test the mount """
 
     @pytest.fixture(autouse=True)
     def setup(self):
-
-        # Don't use config_port because we use real live config_server
         location = create_location_from_config()
 
         # Can't supply full location, need earth_location
@@ -91,7 +88,6 @@ class TestMount(object):
 
 
 def test_get_tracking_correction(mount):
-
     offsets = [
         # HA, ΔRA, ΔDec, Magnitude
         (2, -13.0881456, 1.4009, 12.154),
@@ -148,7 +144,6 @@ def test_get_tracking_correction(mount):
 
 
 def test_get_tracking_correction_custom(mount):
-
     min_tracking = 105
     max_tracking = 950
 

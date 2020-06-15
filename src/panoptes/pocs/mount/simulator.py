@@ -9,7 +9,6 @@ from panoptes.pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):
-
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
@@ -26,14 +25,13 @@ class Mount(AbstractMount):
 
         self.logger.debug('Simulator mount created')
 
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
-##################################################################################################
-# Properties
-##################################################################################################
-
-##################################################################################################
-# Public Methods
-##################################################################################################
+    ##################################################################################################
+    # Public Methods
+    ##################################################################################################
 
     def initialize(self, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
@@ -61,7 +59,7 @@ class Mount(AbstractMount):
         if unpark:
             self.unpark()
 
-        return self.is_initialized
+        return self._is_initialized
 
     def connect(self):
         self.logger.debug("Connecting to mount simulator")
@@ -196,16 +194,14 @@ class Mount(AbstractMount):
         self.tracking_rate = 1.0 + delta
         self.logger.debug("Custom tracking rate sent")
 
-
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning(
-            'Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
 
         self.logger.debug('Setting up mount for location')
 

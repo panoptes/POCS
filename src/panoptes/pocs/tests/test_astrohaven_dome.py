@@ -12,18 +12,18 @@ from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope='function')
-def dome(dynamic_config_server, config_port):
+def dome():
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('panoptes.pocs.dome')
 
     # Modify the config so that the dome uses the right controller and port.
-    set_config('simulator', hardware.get_all_names(without=['dome']), port=config_port)
+    set_config('simulator', hardware.get_all_names(without=['dome']))
     set_config('dome', {
         'brand': 'Astrohaven',
         'driver': 'astrohaven',
         'port': 'astrohaven_simulator://',
-    }, port=config_port)
-    the_dome = create_dome_simulator(config_port=config_port)
+    })
+    the_dome = create_dome_simulator()
 
     yield the_dome
     with suppress(Exception):

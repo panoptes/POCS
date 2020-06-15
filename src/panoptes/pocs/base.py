@@ -4,6 +4,7 @@ from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
 from panoptes.utils.config import client
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs import hardware
 
 
 class PanBase(object):
@@ -19,24 +20,11 @@ class PanBase(object):
 
         self.logger = get_logger()
 
-        simulators = self.get_config('simulator', default=[])
-        if simulators:
-            self.logger.warning(f'Using simulators: {simulators}')
+        # If the user requests a db_type then update runtime config
+        db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
+        db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
 
-        # Get passed DB or set up new connection
-        _db = kwargs.get('db', None)
-        if _db is None:
-            # If the user requests a db_type then update runtime config
-            db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
-            db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
-
-            _db = PanDB(db_type=db_type, db_name=db_name)
-
-        self.db = _db
-
-    @property
-    def config_port(self):
-        return self._config_port
+        self.db = PanDB(db_type=db_type, db_name=db_name)
 
     def get_config(self, *args, **kwargs):
         """Thin-wrapper around client based get_config that sets default port.
@@ -49,7 +37,7 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.get_config(port=self.config_port, *args, **kwargs)
+            config_value = client.get_config(port=self._config_port, *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
@@ -67,8 +55,16 @@ class PanBase(object):
             **kwargs: Passed to set_config
         """
         config_value = None
+
+        if key == 'simulator' and new_value == 'all':
+            # Don't use hardware.get_simulator_names because it checks config.
+            new_value = hardware.ALL_NAMES
+
         try:
-            config_value = client.set_config(key, new_value, port=self.config_port, *args, **kwargs)
+            self.logger.trace(f'Setting config {key=} {new_value=}')
+            config_value = client.set_config(key, new_value, port=self._config_port, *args,
+                                             **kwargs)
+            self.logger.trace(f'Config set {config_value=}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 

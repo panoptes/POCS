@@ -22,7 +22,7 @@ ENV SOLVE_FIELD /usr/bin/solve-field
 USER ${PANUSER}
 COPY --chown=panoptes:panoptes . "${PANDIR}/POCS/"
 RUN cd "${PANDIR}/POCS" && \
-    pip install -e ".[testing,google]"
+    pip install -U -e ".[testing,google]"
 
 # Cleanup apt.
 USER root

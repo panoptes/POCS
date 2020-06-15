@@ -2,21 +2,17 @@ import logging
 import os
 import stat
 import pytest
-from _pytest.logging import caplog as _caplog
-import subprocess
 import time
 import tempfile
 import shutil
-
 from contextlib import suppress
-from multiprocessing import Process
-from scalpl import Cut
+from _pytest.logging import caplog as _caplog
 
 from panoptes.pocs import hardware
 from panoptes.utils.database import PanDB
-from panoptes.utils.config import load_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
-from panoptes.utils.config.server import app as config_server_app
+from panoptes.utils.config.server import config_server
 
 from panoptes.pocs.utils.logger import get_logger, PanLogger
 
@@ -33,13 +29,17 @@ log_file_path = os.path.join(
     os.getenv('PANLOG', '/var/panoptes/logs'),
     'panoptes-testing.log'
 )
+startup_message = ' STARTING NEW PYTEST RUN '
 logger.add(log_file_path,
-           format=LOGGER_INFO.format,
-           colorize=True,
            enqueue=True,  # multiprocessing
+           colorize=True,
            backtrace=True,
            diagnose=True,
+           catch=True,
+           # Start new log file for each testing run.
+           rotation=lambda msg, _: startup_message in msg,
            level='TRACE')
+logger.log('testing', '*' * 25 + startup_message + '*' * 25)
 # Make the log file world readable.
 os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
@@ -59,15 +59,11 @@ def pytest_addoption(parser):
         default=[],
         help=f"A comma separated list of hardware to NOT test.  List items can include: {hw_names}")
     group.addoption(
-        "--solve",
-        action="store_true",
-        default=False,
-        help="If tests that require solving should be run")
-    group.addoption(
         "--test-databases",
         nargs="+",
         default=['file'],
-        help=f"Test databases in the list. List items can include: {db_names}. Note that travis-ci will test all of "
+        help=f"Test databases in the list. List items can include: {db_names}. Note that "
+             f"travis-ci will test all of "
              f"them by default.")
 
 
@@ -96,11 +92,11 @@ def pytest_collection_modifyitems(config, items):
         # User does not want to run tests that interact with hardware called name,
         # whether it is marked as with_name or without_name.
         if name in with_hardware:
-            print('Warning: {!r} in both --with-hardware and --without-hardware'.format(name))
+            print(f'Warning: {name} in both --with-hardware and --without-hardware')
             with_hardware.remove(name)
-        skip = pytest.mark.skip(reason="--without-hardware={} specified".format(name))
-        with_keyword = 'with_' + name
-        without_keyword = 'without_' + name
+        skip = pytest.mark.skip(reason=f"--without-hardware={name} specified")
+        with_keyword = f'with_{name}'
+        without_keyword = f'without_{name}'
         for item in items:
             if with_keyword in item.keywords or without_keyword in item.keywords:
                 item.add_marker(skip)
@@ -108,7 +104,7 @@ def pytest_collection_modifyitems(config, items):
     for name in hardware.get_all_names(without=with_hardware):
         # We don't have hardware called name, so find all tests that need that
         # hardware and mark it to be skipped.
-        skip = pytest.mark.skip(reason="Test needs --with-hardware={} option to run".format(name))
+        skip = pytest.mark.skip(reason=f"Test needs --with-hardware={name} option to run")
         keyword = 'with_' + name
         for item in items:
             if keyword in item.keywords:
@@ -147,15 +143,57 @@ def pytest_runtest_logreport(report):
     """Adds the failure info that pytest prints to stdout into the log."""
     if report.skipped or report.outcome != 'failed':
         return
-    try:
+    with suppress(Exception):
         logger.log('testing', '')
-        logger.log('testing', f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
+        logger.log('testing',
+                   f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
         if report.capstdout:
-            logger.log('testing', f'============ Captured stdout during {report.when} {report.capstdout} ============')
+            logger.log('testing',
+                       f'============ Captured stdout during {report.when} {report.capstdout} '
+                       f'============')
         if report.capstderr:
-            logger.log('testing', f'============ Captured stdout during {report.when} {report.capstderr} ============')
-    except Exception:
-        pass
+            logger.log('testing',
+                       f'============ Captured stdout during {report.when} {report.capstderr} '
+                       f'============')
+
+
+@pytest.fixture(scope='session')
+def config_path():
+    return os.path.expandvars('${POCS}/tests/pocs_testing.yaml')
+
+
+@pytest.fixture(scope='module', autouse=True)
+def static_config_server(config_path, images_dir, db_name):
+    logger.log('testing', f'Starting static_config_server for testing session')
+
+    proc = config_server(
+        config_path,
+        ignore_local=True,
+        auto_save=False
+    )
+
+    logger.log('testing', f'static_config_server started with {proc.pid=}')
+
+    # Give server time to start
+    while get_config('name') is None:  # pragma: no cover
+        logger.log('testing', f'Waiting for static_config_server {proc.pid=}, sleeping 1 second.')
+        time.sleep(1)
+
+    set_config('directories.images', images_dir)
+
+    logger.log('testing', f'Startup config_server name=[{get_config("name")}]')
+    yield
+    logger.log('testing', f'Killing static_config_server started with PID={proc.pid}')
+    proc.terminate()
+
+
+@pytest.fixture
+def temp_file(tmp_path):
+    d = tmp_path
+    d.mkdir(exist_ok=True)
+    f = d / 'temp'
+    yield f
+    f.unlink(missing_ok=True)
 
 
 @pytest.fixture(scope='session')
@@ -167,126 +205,6 @@ def db_name():
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
     return str(directory)
-
-
-@pytest.fixture(scope='session')
-def config_host():
-    return 'localhost'
-
-
-@pytest.fixture(scope='session')
-def static_config_port():
-    """Used for the session-scoped config_server where no config values
-    are expected to change during testing.
-    """
-    return '6563'
-
-
-@pytest.fixture(scope='module')
-def config_port():
-    """Used for the function-scoped config_server when it is required to change
-    config values during testing. See `dynamic_config_server` docs below.
-    """
-    return '4861'
-
-
-@pytest.fixture(scope='session')
-def config_path():
-    return os.path.join(os.getenv('POCS'), 'tests', 'pocs_testing.yaml')
-
-
-@pytest.fixture(scope='session')
-def config_server_args(config_path):
-    loaded_config = load_config(config_files=config_path, ignore_local=True)
-    return {
-        'config_file': config_path,
-        'auto_save': False,
-        'ignore_local': True,
-        'POCS': loaded_config,
-        'POCS_cut': Cut(loaded_config)
-    }
-
-
-def make_config_server(config_host, config_port, config_server_args, images_dir, db_name):
-    def start_config_server():
-        # Load the config items into the app config.
-        for k, v in config_server_args.items():
-            config_server_app.config[k] = v
-
-        # Start the actual flask server.
-        config_server_app.run(host=config_host, port=config_port)
-
-    proc = Process(target=start_config_server)
-    proc.start()
-
-    logger.log('testing', f'config_server started with PID={proc.pid}')
-
-    # Give server time to start
-    time.sleep(1)
-
-    # Adjust various config items for testing
-    unit_name = 'Generic PANOPTES Unit'
-    unit_id = 'PAN000'
-    logger.log('testing', f'Setting testing name and unit_id to {unit_id}')
-    set_config('name', unit_name, port=config_port)
-    set_config('pan_id', unit_id, port=config_port)
-
-    logger.log('testing', f'Setting testing database to {db_name}')
-    set_config('db.name', db_name, port=config_port)
-
-    fields_file = 'simulator.yaml'
-    logger.log('testing', f'Setting testing scheduler fields_file to {fields_file}')
-    set_config('scheduler.fields_file', fields_file, port=config_port)
-
-    # TODO(wtgee): determine if we need separate directories for each module.
-    logger.log('testing', f'Setting temporary image directory for testing')
-    set_config('directories.images', images_dir, port=config_port)
-
-    # Make everything a simulator
-    simulators = hardware.get_simulator_names(simulator=['all'])
-    logger.log('testing', f'Setting all hardware to use simulators: {simulators}')
-    set_config('simulator', simulators, port=config_port)
-
-    return proc
-
-
-@pytest.fixture(scope='session', autouse=True)
-def static_config_server(config_host, static_config_port, config_server_args, images_dir, db_name):
-    logger.log('testing', f'Starting config_server for testing session')
-    proc = make_config_server(config_host, static_config_port, config_server_args, images_dir, db_name)
-    yield proc
-    pid = proc.pid
-    proc.terminate()
-    time.sleep(0.1)
-    logger.log('testing', f'Killed config_server started with PID={pid}')
-
-
-@pytest.fixture(scope='function')
-def dynamic_config_server(config_host, config_port, config_server_args, images_dir, db_name):
-    """If a test requires changing the configuration we use a function-scoped testing
-    server. We only do this on tests that require it so we are not constantly starting and stopping
-    the config server unless necessary.  To use this, each test that requires it must use the
-    `dynamic_config_server` and `config_port` fixtures and must pass the `config_port` to all
-    instances that are created (propagated through PanBase).
-    """
-
-    logger.log('testing', f'Starting config_server for testing function')
-    proc = make_config_server(config_host, config_port, config_server_args, images_dir, db_name)
-
-    yield proc
-    pid = proc.pid
-    proc.terminate()
-    time.sleep(0.1)
-    logger.log('testing', f'Killed config_server started with PID={pid}')
-
-
-@pytest.fixture
-def temp_file(tmp_path):
-    d = tmp_path
-    d.mkdir(exist_ok=True)
-    f = d / 'temp'
-    yield f
-    f.unlink(missing_ok=True)
 
 
 @pytest.fixture(scope='function', params=_all_databases)
@@ -312,7 +230,7 @@ def memory_db(db_name):
 
 @pytest.fixture(scope='session')
 def data_dir():
-    return '/var/panoptes/panoptes-utils/tests/data'
+    return os.path.expandvars('${POCS}/tests/data')
 
 
 @pytest.fixture(scope='function')

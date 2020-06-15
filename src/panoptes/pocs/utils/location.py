@@ -9,26 +9,25 @@ from panoptes.utils.config.client import get_config
 logger = get_logger()
 
 
-def create_location_from_config(config_port=6563):
+def create_location_from_config():
     """
-     Sets up the site and location details.
+    Sets up the site and location details.
 
-     Note:
-         These items are read from the 'site' config directive and include:
-             * name
-             * latitude
-             * longitude
-             * timezone
-             * pressure
-             * elevation
-             * horizon
+    These items are read from the 'site' config directive and include:
+        * name
+        * latitude
+        * longitude
+        * timezone
+        * pressure
+        * elevation
+        * horizon
 
      """
 
     logger.debug('Setting up site details')
 
     try:
-        config_site = get_config('location', default=None, port=config_port)
+        config_site = get_config('location', default=None)
         if config_site is None:
             raise error.PanError(msg='location information not found in config.')
 

@@ -1,23 +1,33 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 
-POCS=${POCS:-/var/panoptes/POCS}
-TAG="${1:-develop}"
+export PANDIR=${PANDIR:-/var/panoptes}
+export POCS=${POCS:-/var/panoptes/POCS}
+
+echo "Setting up local environment."
+
+echo "Removing stale docker images to make space"
+docker system prune --force
+
+echo "Building local panoptes-utils"
+. "${PANDIR}/panoptes-utils/docker/setup-local-environment.sh"
 
 cd "${POCS}"
-
-echo "Building local panoptes-pocs:latest"
-docker build \
-    --quiet \
-    -t "panoptes-pocs:latest" \
-    -f "${POCS}/docker/latest.Dockerfile" \
-    "${POCS}"
 
 # In the local develop we need to pass git to the docker build context.
 sed -i s'/^\.git$/\!\.git/' .dockerignore
 
+echo "Building local panoptes-pocs:latest from panoptes-utils:develop"
+docker build \
+    --quiet --force-rm \
+    --build-arg IMAGE_URL="panoptes-utils:develop" \
+    -t "panoptes-pocs:latest" \
+    -f "${POCS}/docker/latest.Dockerfile" \
+    "${POCS}"
+
 echo "Building local panoptes-pocs:develop"
 docker build \
-    --quiet \
+    --quiet --force-rm \
     --build-arg IMAGE_URL="panoptes-pocs:latest" \
     -t "panoptes-pocs:develop" \
     -f "${POCS}/docker/develop.Dockerfile" \
@@ -25,7 +35,7 @@ docker build \
 
 echo "Building local panoptes-pocs:developer-env"
 docker build \
-    --quiet \
+    --quiet --force-rm \
     --build-arg IMAGE_URL="panoptes-pocs:develop" \
     -t "panoptes-pocs:developer-env" \
     -f "${POCS}/docker/developer-env.Dockerfile" \
@@ -34,12 +44,17 @@ docker build \
 # Revert our .dockerignore changes.
 sed -i s'/^!\.git$/\.git/' .dockerignore
 
+docker system prune --force
+
 cat <<EOF
+
+
 Done building the local images.  To run the development environment enter:
 
-bin/panoptes-develop up
+cd $POCS
+panoptes-develop up
 
 To run the tests enter:
 
-scripts/testing/test-software.sh
+panoptes-develop test
 EOF
