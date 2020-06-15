@@ -28,11 +28,14 @@ class Observatory(PanBase):
         dates and weather station. Adds cameras, scheduler, dome and mount.
         """
         super().__init__(*args, **kwargs)
+        self.scheduler = None
+        self.dome = None
+        self.mount = None
         self.logger.info('Initializing observatory')
 
         # Setup information about site location
         self.logger.info('Setting up location')
-        site_details = create_location_from_config(config_port=self.config_port)
+        site_details = create_location_from_config()
         self.location = site_details['location']
         self.earth_location = site_details['earth_location']
         self.observer = site_details['observer']
@@ -55,7 +58,8 @@ class Observatory(PanBase):
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
-        # TODO(jamessynge): Figure out serial port validation behavior here compared to that for the mount.
+        # TODO(jamessynge): Figure out serial port validation behavior here compared to that for
+        #  the mount.
         self.set_dome(dome)
 
         self.set_scheduler(scheduler)
@@ -172,7 +176,7 @@ class Observatory(PanBase):
         if can_observe is False:
             for check_name, is_true in checks.items():
                 if not is_true:
-                    self.logger.warning(f'{check_name.title()} not present, cannot observe')
+                    self.logger.warning(f'{check_name.title()} not present')
 
         return can_observe
 
@@ -190,7 +194,8 @@ class Observatory(PanBase):
         assert isinstance(camera, AbstractCamera)
         self.logger.debug(f'Adding {cam_name}: {camera}')
         if cam_name in self.cameras:
-            self.logger.debug(f'{cam_name} already exists, replacing existing camera under that name.')
+            self.logger.debug(
+                f'{cam_name} already exists, replacing existing camera under that name.')
 
         self.cameras[cam_name] = camera
         if camera.is_primary:
@@ -216,42 +221,35 @@ class Observatory(PanBase):
         Args:
             scheduler (`pocs.scheduler.BaseScheduler`): An instance of the `~BaseScheduler` class.
         """
-        if isinstance(scheduler, BaseScheduler):
-            self.logger.info('Adding scheduler.')
-            self.scheduler = scheduler
-        elif scheduler is None:
-            self.logger.info('Removing scheduler.')
-            self.scheduler = None
-        else:
-            raise TypeError("Scheduler is not instance of BaseScheduler class, cannot add.")
+        self._set_hardware(scheduler, 'scheduler', BaseScheduler)
 
     def set_dome(self, dome):
         """Set's dome or remove the dome for the `Observatory`.
         Args:
             dome (`pocs.dome.AbstractDome`): An instance of the `~AbstractDome` class.
         """
-        if isinstance(dome, AbstractDome):
-            self.logger.info('Adding dome.')
-            self.dome = dome
-        elif dome is None:
-            self.logger.info('Removing dome.')
-            self.dome = None
-        else:
-            raise TypeError('Dome is not instance of AbstractDome class, cannot add.')
+        self._set_hardware(dome, 'dome', AbstractDome)
 
     def set_mount(self, mount):
         """Sets the mount for the `Observatory`.
         Args:
             mount (`pocs.mount.AbstractMount`): An instance of the `~AbstractMount` class.
         """
-        if isinstance(mount, AbstractMount):
-            self.logger.info('Adding mount')
-            self.mount = mount
-        elif mount is None:
-            self.logger.info('Removing mount')
-            self.mount = None
+        self._set_hardware(mount, 'mount', AbstractMount)
+
+    def _set_hardware(self, new_hardware, hw_type, hw_class):
+        # Lookup the set method for the hardware type.
+        hw_attr = getattr(self, hw_type)
+
+        if isinstance(new_hardware, hw_class):
+            self.logger.success(f'Adding {new_hardware=}')
+            setattr(self, hw_type, new_hardware)
+        elif new_hardware is None:
+            if hw_attr is not None:
+                self.logger.success(f'Removing {hw_attr=}')
+            setattr(self, hw_type, None)
         else:
-            raise TypeError("Mount is not instance of AbstractMount class, cannot add.")
+            raise TypeError(f"{hw_type.title()} is not an instance of {str(hw_class)} class")
 
     ##########################################################################
     # Methods
@@ -265,7 +263,7 @@ class Observatory(PanBase):
             self.dome.connect()
 
     def power_down(self):
-        """Power down the observatory. Currently does nothing
+        """Power down the observatory. Currently just disconnects hardware.
         """
         self.logger.debug("Shutting down observatory")
         if self.mount:
@@ -281,13 +279,14 @@ class Observatory(PanBase):
         now = current_time()
 
         try:
-            if self.mount.is_initialized:
+            if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
                 current_coords = self.mount.get_current_coordinates()
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
-                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now, target_coords)
+                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now,
+                                                                                         target_coords)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -300,7 +299,8 @@ class Observatory(PanBase):
         try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status
-                status['observation']['field_ha'] = self.observer.target_hour_angle(now, self.current_observation.field)
+                status['observation']['field_ha'] = self.observer.target_hour_angle(now,
+                                                                                    self.current_observation.field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
 
@@ -501,7 +501,7 @@ class Observatory(PanBase):
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            current_image = Image(image_path, location=self.earth_location, config_port=self._config_port)
+            current_image = Image(image_path, location=self.earth_location)
 
             solve_info = current_image.solve_field(skip_solved=False)
 

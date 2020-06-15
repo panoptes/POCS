@@ -2,7 +2,7 @@
 POCS
 ====
 
-.. include:: ../README.rst
+.. include:: ./README.rst
 
 Contents
 ========

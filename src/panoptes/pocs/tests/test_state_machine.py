@@ -8,8 +8,8 @@ from panoptes.utils.serializers import to_yaml
 
 
 @pytest.fixture
-def observatory(dynamic_config_server, config_port):
-    observatory = Observatory(simulator=['all'], config_port=config_port)
+def observatory():
+    observatory = Observatory(simulator=['all'])
 
     yield observatory
 
@@ -19,8 +19,8 @@ def test_bad_state_machine_file():
         POCS.load_state_table(state_table_name='foo')
 
 
-def test_load_bad_state(dynamic_config_server, config_port, observatory):
-    pocs = POCS(observatory, config_port=config_port)
+def test_load_bad_state(observatory):
+    pocs = POCS(observatory)
 
     with pytest.raises(error.InvalidConfig):
         pocs._load_state('foo')

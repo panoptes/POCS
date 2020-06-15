@@ -7,7 +7,6 @@ ignore:
   - "pocs/camera/libfliconstants.py"
   - "pocs/camera/zwo.py"
   - "pocs/camera/libasi.py"
-  - "pocs/tests/*"
   - "pocs/tests/bisque/*"
   - "pocs/dome/bisque.py"
   - "pocs/mount/bisque.py"

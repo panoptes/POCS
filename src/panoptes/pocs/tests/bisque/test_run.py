@@ -14,8 +14,8 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX
 
 
 @pytest.fixture
-def location(dynamic_config_server, config_port):
-    config = get_config(port=config_port)
+def location():
+    config = get_config()
     loc = config['location']
     return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
@@ -31,13 +31,13 @@ def target_down(location):
 
 
 @pytest.fixture
-def pocs(target, dynamic_config_server, config_port):
+def pocs(target):
     try:
         del os.environ['POCSTIME']
     except KeyError:
         pass
 
-    config = get_config(port=config_port)
+    config = get_config()
 
     pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config, db='panoptes_testing')
 

@@ -7,103 +7,103 @@ from panoptes.pocs.scheduler.observation import Observation
 
 
 @pytest.fixture
-def field(dynamic_config_server, config_port):
-    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s', config_port=config_port)
+def field():
+    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
 
 
-def test_create_observation_no_field(dynamic_config_server, config_port):
+def test_create_observation_no_field():
     with pytest.raises(TypeError):
-        Observation(config_port=config_port)
+        Observation()
 
 
-def test_create_observation_bad_field(dynamic_config_server, config_port):
+def test_create_observation_bad_field():
     with pytest.raises(AssertionError):
-        Observation('20h00m43.7135s +22d42m39.0645s', config_port=config_port)
+        Observation('20h00m43.7135s +22d42m39.0645s')
 
 
-def test_create_observation_exptime_no_units(dynamic_config_server, config_port, field):
+def test_create_observation_exptime_no_units(field):
     with pytest.raises(TypeError):
-        Observation(field, exptime=1.0, config_port=config_port)
+        Observation(field, exptime=1.0)
 
 
-def test_create_observation_exptime_bad(dynamic_config_server, config_port, field):
+def test_create_observation_exptime_bad(field):
     with pytest.raises(AssertionError):
-        Observation(field, exptime=0.0 * u.second, config_port=config_port)
+        Observation(field, exptime=0.0 * u.second)
 
 
-def test_create_observation_exptime_minutes(dynamic_config_server, config_port, field):
-    obs = Observation(field, exptime=5.0 * u.minute, config_port=config_port)
+def test_create_observation_exptime_minutes(field):
+    obs = Observation(field, exptime=5.0 * u.minute)
     assert obs.exptime == 300 * u.second
 
 
-def test_bad_priority(dynamic_config_server, config_port, field):
+def test_bad_priority(field):
     with pytest.raises(AssertionError):
-        Observation(field, priority=-1, config_port=config_port)
+        Observation(field, priority=-1)
 
 
-def test_good_priority(dynamic_config_server, config_port, field):
-    obs = Observation(field, priority=5.0, config_port=config_port)
+def test_good_priority(field):
+    obs = Observation(field, priority=5.0)
     assert obs.priority == 5.0
 
 
-def test_priority_str(dynamic_config_server, config_port, field):
-    obs = Observation(field, priority="5", config_port=config_port)
+def test_priority_str(field):
+    obs = Observation(field, priority="5")
     assert obs.priority == 5.0
 
 
-def test_bad_min_set_combo(dynamic_config_server, config_port, field):
+def test_bad_min_set_combo(field):
     with pytest.raises(AssertionError):
-        Observation(field, exp_set_size=7, config_port=config_port)
+        Observation(field, exp_set_size=7)
     with pytest.raises(AssertionError):
-        Observation(field, min_nexp=57, config_port=config_port)
+        Observation(field, min_nexp=57)
 
 
-def test_small_sets(dynamic_config_server, config_port, field):
+def test_small_sets(field):
     obs = Observation(field, exptime=1 * u.second, min_nexp=1,
-                      exp_set_size=1, config_port=config_port)
+                      exp_set_size=1)
     assert obs.minimum_duration == 1 * u.second
     assert obs.set_duration == 1 * u.second
 
 
-def test_good_min_set_combo(dynamic_config_server, config_port, field):
-    obs = Observation(field, min_nexp=21, exp_set_size=3, config_port=config_port)
+def test_good_min_set_combo(field):
+    obs = Observation(field, min_nexp=21, exp_set_size=3)
     assert isinstance(obs, Observation)
 
 
-def test_default_min_duration(dynamic_config_server, config_port, field):
-    obs = Observation(field, config_port=config_port)
+def test_default_min_duration(field):
+    obs = Observation(field)
     assert obs.minimum_duration == 7200 * u.second
 
 
-def test_default_set_duration(dynamic_config_server, config_port, field):
-    obs = Observation(field, config_port=config_port)
+def test_default_set_duration(field):
+    obs = Observation(field)
     assert obs.set_duration == 1200 * u.second
 
 
-def test_print(dynamic_config_server, config_port, field):
+def test_print(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
-                      exp_set_size=9, config_port=config_port)
+                      exp_set_size=9)
     test_str = "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
     assert str(obs) == test_str
 
 
-def test_seq_time(dynamic_config_server, config_port, field):
+def test_seq_time(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
-                      exp_set_size=9, config_port=config_port)
+                      exp_set_size=9)
     assert obs.seq_time is None
 
 
-def test_no_exposures(dynamic_config_server, config_port, field):
+def test_no_exposures(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
-                      exp_set_size=9, config_port=config_port)
+                      exp_set_size=9)
     assert obs.first_exposure is None
     assert obs.last_exposure is None
     assert obs.pointing_image is None
 
 
-def test_last_exposure_and_reset(dynamic_config_server, config_port, field):
+def test_last_exposure_and_reset(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
-                      exp_set_size=9, config_port=config_port)
+                      exp_set_size=9)
     status = obs.status
     assert status['current_exp'] == obs.current_exp_num
 

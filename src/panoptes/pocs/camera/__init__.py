@@ -5,13 +5,15 @@ import subprocess
 import random
 
 from astropy import units as u
-from panoptes.pocs.camera.camera import AbstractCamera  # pragma: no flakes
-from panoptes.pocs.camera.camera import AbstractGPhotoCamera  # pragma: no flakes
+from panoptes.pocs.camera.camera import AbstractCamera  # noqa
+from panoptes.pocs.camera.camera import AbstractGPhotoCamera  # noqa
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
+
+logger = get_logger()
 
 
 def list_connected_cameras():
@@ -43,17 +45,17 @@ def list_connected_cameras():
     return ports
 
 
-def create_cameras_from_config(config_port='6563', **kwargs):
+def create_cameras_from_config(*args, **kwargs):
     """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
     appropriate camera module is loaded.
 
     Args:
-        config_port (str, optional): config_server port, default '6563'.
+        *args (list): Passed to `get_config`.
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
-            automatically discover the ports.
+            automatically discover the ports. Any other items as passed to `get_config`.
 
     Returns:
         OrderedDict: An ordered dictionary of created camera objects, with the
@@ -65,9 +67,8 @@ def create_cameras_from_config(config_port='6563', **kwargs):
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    logger = get_logger()
 
-    config = get_config(port=config_port)
+    config = get_config(*args, **kwargs)
 
     # Helper method to first check kwargs then config
     def kwargs_or_config(item, default=None):
@@ -141,7 +142,7 @@ def create_cameras_from_config(config_port='6563', **kwargs):
             module = load_module(f'panoptes.pocs.camera.{model}')
             logger.debug(f'Camera module: {module}')
             # Create the camera object
-            cam = module.Camera(config_port=config_port, **device_config)
+            cam = module.Camera(**device_config)
         except error.NotFound:
             logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
@@ -171,15 +172,11 @@ def create_cameras_from_config(config_port='6563', **kwargs):
     return cameras
 
 
-def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
+def create_camera_simulator(num_cameras=2):
     """Create simulator camera object(s).
 
     Args:
         num_cameras (int): The number of simulated cameras to create, default 2.
-        config_port (int): The port to use to connect to the config server, default 6563.
-        **kwargs (dict): Can pass a `cameras` object that overrides the info in
-            the configuration file. Can also pass `auto_detect`(bool) to try and
-            automatically discover the ports.
 
     Returns:
         OrderedDict: An ordered dictionary of created camera objects, with the
@@ -189,70 +186,55 @@ def create_camera_simulator(num_cameras=2, config_port='6563', **kwargs):
     Raises:
         error.CameraNotFound: Raised if camera cannot be found at specified port or if
             auto_detect=True and no cameras are found.
-        error.PanError: Description
     """
-    logger = get_logger()
+    if num_cameras == 0:
+        raise error.CameraNotFound(msg="No cameras available")
 
     cameras = OrderedDict()
 
-    # Create a minimal dummy camera config to get a simulated camera
-    camera_info = {'autodetect': False,
-                   'devices': [
-                       {'model': 'simulator'}, ]}
-
-    logger.debug(f"Camera config: {camera_info}")
+    # Set up a simulated camera with fully configured simulated focuser.
+    device_config = {
+        'model': 'simulator',
+        'port': '/dev/camera/simulator',
+        'focuser': {'model': 'simulator',
+                    'focus_port': '/dev/ttyFAKE',
+                    'initial_position': 20000,
+                    'autofocus_range': (40, 80),
+                    'autofocus_step': (10, 20),
+                    'autofocus_seconds': 0.1,
+                    'autofocus_size': 500},
+        'filterwheel': {'model': 'simulator',
+                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                        'move_time': 0.1 * u.second,
+                        'timeout': 0.5 * u.second},
+        'readout_time': 0.5,
+    }
+    logger.debug(f"SimulatorCamera config: {device_config=}")
 
     primary_camera = None
-
     for cam_num in range(num_cameras):
         cam_name = f'SimCam{cam_num:02d}'
 
         logger.debug(f'Using camera simulator {cam_name}')
-        # Set up a simulated camera with fully configured simulated focuser
-        device_config = {
-            'model': 'simulator',
-            'port': '/dev/camera/simulator',
-            'focuser': {'model': 'simulator',
-                        'focus_port': '/dev/ttyFAKE',
-                        'initial_position': 20000,
-                        'autofocus_range': (40, 80),
-                        'autofocus_step': (10, 20),
-                        'autofocus_seconds': 0.1,
-                        'autofocus_size': 500},
-            'filterwheel': {'model': 'simulator',
-                            'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                            'move_time': 0.1 * u.second,
-                            'timeout': 0.5 * u.second},
-            'readout_time': 0.5,
-            # Simulator config should always ignore local settings.
-            'ignore_local_config': True
-        }
 
         camera_model = device_config['model']
         logger.debug(f'Creating camera: {camera_model}')
 
-        try:
-            module = load_module(f'panoptes.pocs.camera.{camera_model}')
-            logger.debug(f'Camera module: {module}')
-            # Create the camera object
-            cam = module.Camera(name=cam_name, config_port=config_port, **device_config)
-        except error.NotFound:  # pragma: no cover
-            logger.error(f"Cannot find camera module: {camera_model}")
-        except Exception as e:  # pragma: no cover
-            logger.error(f"Cannot create camera type: {camera_model} {e!r}")
-        else:
-            is_primary = ''
-            if cam_num == 0:
-                cam.is_primary = True
-                primary_camera = cam
-                is_primary = ' [Primary]'
+        module = load_module(f'panoptes.pocs.camera.{camera_model}')
+        logger.debug(f'Camera module: {module}')
 
-            logger.debug(f"Camera created: {cam.name} {cam.uid}{is_primary}")
+        # Create the camera object
+        cam = module.Camera(name=cam_name, **device_config)
 
-            cameras[cam_name] = cam
+        is_primary = ''
+        if cam_num == 0:
+            cam.is_primary = True
+            primary_camera = cam
+            is_primary = ' [Primary]'
 
-    if len(cameras) == 0:
-        raise error.CameraNotFound(msg="No cameras available")
+        logger.debug(f"Camera created: {cam.name} {cam.uid}{is_primary}")
+
+        cameras[cam_name] = cam
 
     logger.debug(f"Primary camera: {primary_camera}")
     logger.debug(f"{len(cameras)} cameras created")

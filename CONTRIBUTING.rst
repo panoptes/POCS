@@ -182,12 +182,12 @@ In order to test your installation you should have followed all of the steps abo
 for getting your unit ready. To run the test suite, you will need to open a terminal
 and navigate to the ``$POCS`` directory.
 
-.. code:: bash
+.. code-block:: bash
 
     cd $POCS
 
     # Run the software testing
-    scripts/testing/test-software.sh
+    panoptes-develop test
 
 .. note::
 
@@ -197,7 +197,7 @@ and navigate to the ``$POCS`` directory.
 It is often helpful to view the log output in another terminal window
 while the test suite is running:
 
-.. code:: bash
+.. code-block:: bash
 
     # Follow the log file
     tail -F $PANDIR/logs/panoptes.log
@@ -215,7 +215,7 @@ to github. This can be done either by running the entire test suite as above or
 by running an individual test related to the code you are changing. For instance,
 to test the code related to the cameras one can run:
 
-.. code:: bash
+.. code-block:: bash
 
     pytest -xv pocs/tests/test_camera.py
 
@@ -256,7 +256,7 @@ and ``weather``. Optionally you can use ``all`` to test a fully connected unit.
     connected but does not test the safety conditions. It is assumed that hardware
     testing is always done with direct supervision.
 
-.. code:: bash
+.. code-block:: bash
 
     # Test an attached camera
     pytest --with-hardware=camera

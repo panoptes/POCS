@@ -153,7 +153,7 @@ class AbstractMount(PanBase):
 
     @property
     def is_initialized(self):
-        """ bool: Has mount been initialied with connection """
+        """ bool: Has mount been initialised with connection """
         return self._is_initialized
 
     @property

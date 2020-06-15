@@ -14,7 +14,7 @@ PANOPTES Observatory Control System
 
 .. warning::
 
-    The recent `v0.7.0` release of POCS is not backwards compatible. If you
+    The recent `v0.7.0` (May 2020) release of POCS is not backwards compatible. If you
     are one of the folks running that software, please either do a reinstall
     of your system using the instructions below or see our `forum <https://forum.projectpanoptes.org>`__
     for advice.
@@ -23,16 +23,28 @@ PANOPTES Observatory Control System
 Overview
 --------
 
-`PANOPTES <https://projectpanoptes.org>`__ is an open source citizen science project
-that is designed to find transiting exoplanets with digital cameras. The goal of
-PANOPTES is to establish a global network of of robotic cameras run by amateur
-astronomers schools in order to monitor, as continuously as possible, a very large
-number of stars. For more general information about the project, including the
-science case and resources for interested individuals, see the `about page <https://projectpanoptes.org/articles/what-is-panoptes/>`__.
+Project PANOPTES
+^^^^^^^^^^^^^^^^
 
-POCS (PANOPTES Observatory Control System) is the main software driver for the
-PANOPTES unit, responsible for high-level control of the unit. This repository
-also contains a number of scripts for running a full instance of POCS.
+`PANOPTES <https://www.projectpanoptes.org>`_ is an open source citizen science project
+designed to find `transiting exoplanets <https://spaceplace.nasa.gov/transits/en/>`_ with
+digital cameras. The goal of PANOPTES is to establish a global network of of robotic
+cameras run by amateur astronomers and schools (or anyone!) in order to monitor,
+as continuously as possible, a very large number of stars. For more general information
+about the project, including the science case and resources for interested individuals, see the
+`project overview <https://projectpanoptes.org/articles/>`_.
+
+POCS
+^^^^
+
+POCS (PANOPTES Observatory Control System) is the main software driver for a
+PANOPTES unit, responsible for high-level control of the unit.
+
+For more information, see the full documentation at: https://pocs.readthedocs.io.
+
+`panoptes-utils <https://www.github.com/panoptes/panoptes-utils>`_ is a related repository and POCS
+relies on most of the tools within `panoptes-utils`.  See https://panoptes-pocs.readthedocs.io for
+more information.
 
 Getting Started
 ---------------

@@ -1,5 +1,19 @@
 version: '3.7'
 services:
+  config-server:
+    image: "panoptes-utils:develop"
+    init: true
+    container_name: config-server
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/env
+    restart: on-failure
+    volumes:
+      - pandir:/var/panoptes
+    command:
+      - "panoptes-config-server"
+      - "run"
+      - "/var/panoptes/POCS/conf_files/pocs.yaml"
   develop-env:
     image: "${IMAGE:-panoptes-pocs}:${TAG:-developer-env}"
     init: true
@@ -7,6 +21,8 @@ services:
     privileged: true
     network_mode: host
     env_file: $PANDIR/env
+    depends_on:
+      - "config-server"
     volumes:
       - pandir:/var/panoptes
 volumes:

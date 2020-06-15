@@ -6,8 +6,7 @@ from panoptes.pocs.scheduler.constraint import Altitude
 from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
-# Below is needed for import
-from panoptes.pocs.scheduler.scheduler import BaseScheduler  # pragma: no flakes
+from panoptes.pocs.scheduler.scheduler import BaseScheduler  # noqa; needed for import
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
@@ -17,12 +16,12 @@ from panoptes.utils.config.client import get_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwargs):
+def create_scheduler_from_config(observer=None, *args, **kwargs):
     """ Sets up the scheduler that will be used by the observatory """
 
     logger = get_logger()
 
-    scheduler_config = get_config('scheduler', default=None, port=config_port)
+    scheduler_config = get_config('scheduler', default=None)
     logger.info(f'scheduler_config: {scheduler_config!r}')
 
     if scheduler_config is None or len(scheduler_config) == 0:
@@ -31,15 +30,15 @@ def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwarg
 
     if not observer:
         logger.debug(f'No Observer provided, creating from config.')
-        site_details = create_location_from_config(config_port=config_port)
+        site_details = create_location_from_config()
         observer = site_details['observer']
 
     scheduler_type = scheduler_config.get('type', 'dispatch')
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets', port=config_port), fields_file)
-    logger.debug('Creating scheduler: {}'.format(fields_path))
+    fields_path = os.path.join(get_config('directories.targets'), fields_file)
+    logger.debug(f'Creating scheduler: {fields_path}')
 
     if os.path.exists(fields_path):
 
@@ -47,9 +46,9 @@ def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwarg
             # Load the required module
             module = load_module(f'panoptes.pocs.scheduler.{scheduler_type}')
 
-            obstruction_list = get_config('location.obstructions', default=[], port=config_port)
+            obstruction_list = get_config('location.obstructions', default=[])
             default_horizon = get_config(
-                'location.horizon', default=30 * u.degree, port=config_port)
+                'location.horizon', default=30 * u.degree)
 
             horizon_line = horizon_utils.Horizon(
                 obstructions=obstruction_list,
@@ -58,21 +57,20 @@ def create_scheduler_from_config(config_port=6563, observer=None, *args, **kwarg
 
             # Simple constraint for now
             constraints = [
-                Altitude(horizon=horizon_line, config_port=config_port),
-                MoonAvoidance(config_port=config_port),
-                Duration(default_horizon, weight=5., config_port=config_port)
+                Altitude(horizon=horizon_line),
+                MoonAvoidance(),
+                Duration(default_horizon, weight=5.)
             ]
 
             # Create the Scheduler instance
             scheduler = module.Scheduler(observer,
                                          fields_file=fields_path,
                                          constraints=constraints,
-                                         config_port=config_port)
+                                         *args, **kwargs)
             logger.debug("Scheduler created")
         except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
-        raise error.NotFound(
-            msg="Fields file does not exist: {}".format(fields_file))
+        raise error.NotFound(msg=f"Fields file does not exist: {fields_file=}")
 
     return scheduler
