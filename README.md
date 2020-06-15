@@ -37,7 +37,13 @@ If you are running a PANOPTES unit then you will most likely want an entire PANO
 There is a bash shell script that will install an entire working POCS system on your computer.  Some 
 folks even report that it works on a Mac.
 
-To test the script, open a terminal and enter:
+The script will ask if you want to install in "developer" mode or not. If so, you should fork this repo, [panoptes-utils](https://github.com/panoptes/panoptes-utils), and [panoptes-tutorials](https://github.com/panoptes/panoptes-tutorials),
+and then give your github username when prompted.
+
+The non-developer mode of the script is intended for PANOPTES units.
+   
+
+To install POCS via the script, open a terminal and enter:
 
 ```bash
 curl -L https://install.projectpanoptes.org | bash
