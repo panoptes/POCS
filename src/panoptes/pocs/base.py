@@ -13,7 +13,7 @@ class PanBase(object):
     Defines common properties for each class (e.g. logger, config, db).
     """
 
-    def __init__(self, config_port='6563', *args, **kwargs):
+    def __init__(self, config_port="6563", *args, **kwargs):
         self.__version__ = __version__
 
         self._config_port = config_port
@@ -21,8 +21,8 @@ class PanBase(object):
         self.logger = get_logger()
 
         # If the user requests a db_type then update runtime config
-        db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
-        db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
+        db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
+        db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
 
         self.db = PanDB(db_type=db_type, db_name=db_name)
 
@@ -39,7 +39,7 @@ class PanBase(object):
         try:
             config_value = client.get_config(port=self._config_port, *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.critical(f"Cannot connect to config_server from {self.__class__}: {e!r}")
 
         return config_value
 
@@ -56,16 +56,17 @@ class PanBase(object):
         """
         config_value = None
 
-        if key == 'simulator' and new_value == 'all':
+        if key == "simulator" and new_value == "all":
             # Don't use hardware.get_simulator_names because it checks config.
             new_value = hardware.ALL_NAMES
 
         try:
-            self.logger.trace(f'Setting config {key=} {new_value=}')
-            config_value = client.set_config(key, new_value, port=self._config_port, *args,
-                                             **kwargs)
-            self.logger.trace(f'Config set {config_value=}')
+            self.logger.trace(f"Setting config {key=} {new_value=}")
+            config_value = client.set_config(
+                key, new_value, port=self._config_port, *args, **kwargs
+            )
+            self.logger.trace(f"Config set {config_value=}")
         except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.critical(f"Cannot connect to config_server from {self.__class__}: {e!r}")
 
         return config_value
