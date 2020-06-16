@@ -1,0 +1,47 @@
+version: '3.7'
+services:
+  peas-shell:
+    image: gcr.io/panoptes-exp/panoptes-pocs:latest
+    init: true
+    container_name: peas-shell
+    hostname: peas-shell
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/env
+    volumes:
+      - pandir:/var/panoptes
+    # No-op to keep machine running, use $POCS/bin/peas-shell to access
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail"
+      - "-f"
+      - "/dev/null"
+  pocs-shell:
+    image: gcr.io/panoptes-exp/panoptes-pocs:latest
+    init: true
+    container_name: pocs-shell
+    hostname: pocs-shell
+    privileged: true
+    network_mode: host
+    env_file: $PANDIR/env
+    depends_on:
+      - "peas-shell"
+    volumes:
+      - pandir:/var/panoptes
+    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
+    command:
+      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "localhost:6563"
+      - "--"
+      - "tail"
+      - "-f"
+      - "/dev/null"
+volumes:
+    pandir:
+      driver: local
+      driver_opts:
+        type: none
+        device: /var/panoptes
+        o: bind

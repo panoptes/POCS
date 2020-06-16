@@ -45,7 +45,7 @@ usage() {
 "
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -ne 3 ]; then
     usage
     exit 1
 fi
