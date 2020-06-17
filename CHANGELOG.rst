@@ -9,11 +9,6 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 [0.7.5dev]
 ----------
 
-
-    Mount simulator better name and stringify.
-    Global db.
-
-
 Changed
 ~~~~~~~
 
@@ -55,6 +50,8 @@ Changed
   * Adding some action flags to the `pocs.yaml` file.
   * Remove `POCS.check_environment` class method.
   * Add a console_log_level and stderr_log_level. The former is written to the log file in $PANLOG and is meant to be tailed in the console. The stderr_log_level is what would be displayed, e.g. in a jupyter notebook. (#977)
+  * Mount simulator better name and stringify. (#977)
+  * Global db. (#977)
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
