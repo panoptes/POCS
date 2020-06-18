@@ -54,7 +54,7 @@ class Observatory(PanBase):
 
         self._primary_camera = None
         if cameras:
-            self.logger.info(f'Adding the cameras to the observatory: {cameras}')
+            self.logger.info(f'Adding cameras to the observatory: {cameras}')
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
@@ -242,7 +242,7 @@ class Observatory(PanBase):
         hw_attr = getattr(self, hw_type)
 
         if isinstance(new_hardware, hw_class):
-            self.logger.success(f'Adding {new_hardware=}')
+            self.logger.success(f'Adding {new_hardware}')
             setattr(self, hw_type, new_hardware)
         elif new_hardware is None:
             if hw_attr is not None:

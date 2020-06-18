@@ -901,7 +901,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     else:
                         s += f" & {subcomponent.name}"
                     sub_count += 1
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f'Unable to stringify camera: {e=}')
             s = str(self.__class__)
 
         return s
