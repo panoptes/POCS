@@ -49,6 +49,9 @@ Changed
   * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
   * Adding some action flags to the `pocs.yaml` file.
   * Remove `POCS.check_environment` class method.
+  * Add a `console_log_level` and `stderr_log_level`. The former is written to the log file in `$PANLOG` and is meant to be tailed in the console. The `stderr_log_level` is what would be displayed, e.g. in a jupyter notebook. (#977)
+  * Mount simulator better name and stringify. (#977)
+  * Global db object for `PanBase` (#977)
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
