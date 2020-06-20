@@ -1,83 +1,19 @@
 dist: xenial
 sudo: required
 language: python
-services:
-  - mongodb
-python:
-  - "3.6"
-env:
-    - PANDIR=$HOME POCS=$TRAVIS_BUILD_DIR PANUSER=$USER ARDUINO_VERSION=1.8.1
-before_install:
-    - mkdir -p $PANDIR/logs
-    - mkdir -p $PANDIR/astrometry/data
-    - ln -s $POCS $PANDIR/POCS
-    - pip install -U pip
-    - pip install coveralls
-
-    # Install arudino files
-    - cd $PANDIR
-    - export DISPLAY=:1.0
-    - export
-    - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
-    - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
-    - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
-    - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
-
-    # Install miniconda
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PANDIR/astrometry/bin:$PATH"
-    - hash -r
-
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda info -a # Useful for debugging any issues with conda
-    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
-    - source activate test-environment
-    - conda install numpy scipy
-
-    # Install astrometry.net
-    - wget https://github.com/dstndstn/astrometry.net/releases/download/0.78/astrometry.net-0.78.tar.gz
-    - tar zxvf astrometry.net-0.78.tar.gz && cd astrometry.net-0.78
-    - make && make py && make install INSTALL_DIR=$PANDIR/astrometry
-    - echo 'add_path $PANDIR/astrometry/data' | sudo tee --append $PANDIR/astrometry/etc/astrometry.cfg
 addons:
   apt:
     packages:
-    - gphoto2
-    - libcairo2-dev
-    - libnetpbm10-dev
-    - netpbm
-    - libpng12-dev
-    - libjpeg-dev
-    - python-numpy
-    - python-pyfits
-    - python-dev
-    - zlib1g-dev
-    - libbz2-dev
-    - swig
-    - libcfitsio-bin
-    - libcfitsio-dev
-install:
-  - cd $PANDIR
-  # install POCS and requirements
-  - cd $POCS
-  - pip install -r requirements.txt
-  - pip install -r docs/requirements.txt
-  - pip install -e .
-  - python pocs/utils/data.py --folder $PANDIR/astrometry/data
+      - docker-ce
+python:
+  - "3.6"
+services:
+- docker
+before_install:
+- sed -i s'/^\.git$/\!\.git/' .dockerignore
+- docker build -t panoptes-pocs:develop -f ${TRAVIS_BUILD_DIR}/docker/develop.Dockerfile ${TRAVIS_BUILD_DIR}
+install: true
 script:
-  - export BOARD="arduino:avr:micro"
-  - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
-  - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
-  - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
-  - export PYTHONPATH="$PYTHONPATH:$POCS/scripts/coverage"
-  - export COVERAGE_PROCESS_START=.coveragerc
-  - coverage run $(which pytest) -v --test-databases all
-  - coverage combine
-cache:
-  pip: true
-  directories:
-    - $PANDIR/astrometry/
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- docker run -it
+  panoptes-pocs:develop
+  scripts/testing/run-tests.sh
