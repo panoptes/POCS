@@ -2,10 +2,36 @@
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
 
+import collections
+
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.rs232 import SerialData
 
 logger = get_logger()
+
+
+def open_serial_device(port, serial_config=None, **kwargs):
+    """Creates an rs232.SerialData for port, assumed to be an Arduino.
+
+    Default parameters are provided when creating the SerialData
+    instance, but may be overridden by serial_config or kwargs.
+
+    Args:
+        serial_config:
+            dictionary (or None) with serial settings from config file,
+            suitable for passing to SerialData or to a PySerial
+            instance.
+        **kwargs:
+            Any other parameters to be passed to SerialData. These have
+            higher priority than the serial_config parameter.
+    """
+    # Using a long timeout (2 times the report interval) rather than
+    # retries which can just break a JSON line into two unparseable
+    # fragments.
+    defaults = dict(baudrate=9600, retry_limit=1, retry_delay=0, timeout=4.0, name=port)
+    params = collections.ChainMap(dict(port=port), kwargs, serial_config or {}, defaults)
+    params = dict(**params)
+    return SerialData(**params)
 
 
 def find_arduino_devices(com_ports=None):

@@ -4,104 +4,18 @@
 # value the (unique) name of the board; e.g. "camera_board" or
 # "telemetry_board".
 
-import collections
-import copy
+from collections import deque
+from contextlib import suppress
+
+import pendulum
 import serial
 import threading
 import traceback
 
-from panoptes.utils.error import ArduinoDataError
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import CountdownTimer
-from panoptes.utils import rs232
-
-
-def auto_detect_arduino_devices(ports=None):
-    """Returns a list of tuples of (board_name, port)."""
-    if ports is None:
-        ports = get_arduino_ports()
-    result = []
-    for port in ports:
-        board_name = detect_board_on_port(port)
-        if board_name:
-            result.append((board_name, port))
-    return result
-
-
-# Note: get_arduino_ports is modified by test_arduino_io.py, so if changing
-# this import, the test will also need to be updated.
-def get_arduino_ports():
-    """Find ports (device paths or URLs) that appear to be Arduinos.
-
-    Returns:
-        a list of strings; device paths (e.g. /dev/ttyACM1) or URLs (e.g. rfc2217://host:port
-        arduino_simulator://?board=camera).
-    """
-    ports = rs232.get_serial_port_info()
-    return [
-        p.device for p in ports
-        if 'arduino' in p.description.lower() or 'arduino' in p.manufacturer.lower()
-    ]
-
-
-def detect_board_on_port(port):
-    """Determine which type of board is attached to the specified port.
-
-    Returns: Name of the board (e.g. 'camera_board') if we can read a
-        line of JSON from the port, parse it and find a 'name'
-        attribute in the top-level object. Else returns None.
-    """
-    logger = get_logger()
-    logger.debug('Attempting to connect to serial port: {}'.format(port))
-    serial_reader = None
-    try:
-        # First open a connection to the device.
-        try:
-            serial_reader = open_serial_device(port)
-            if not serial_reader.is_connected:
-                serial_reader.connect()
-            logger.debug('Connected to {}', port)
-        except Exception:
-            logger.warning('Could not connect to port: {}'.format(port))
-            return None
-        try:
-            reading = serial_reader.get_and_parse_reading(retry_limit=3)
-            if not reading:
-                return None
-            (ts, data) = reading
-            if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
-                return data['name']
-            logger.warning('Unable to find board name in reading: {}', reading)
-            return None
-        except Exception as e:  # pragma: no cover
-            logger.error('Exception while auto-detecting port {}: {}', port, e)
-    finally:
-        if serial_reader:
-            serial_reader.disconnect()
-
-
-def open_serial_device(port, serial_config=None, **kwargs):
-    """Creates an rs232.SerialData for port, assumed to be an Arduino.
-
-    Default parameters are provided when creating the SerialData
-    instance, but may be overridden by serial_config or kwargs.
-
-    Args:
-        serial_config:
-            dictionary (or None) with serial settings from config file,
-            suitable for passing to SerialData or to a PySerial
-            instance.
-        **kwargs:
-            Any other parameters to be passed to SerialData. These have
-            higher priority than the serial_config parameter.
-    """
-    # Using a long timeout (2 times the report interval) rather than
-    # retries which can just break a JSON line into two unparseable
-    # fragments.
-    defaults = dict(baudrate=9600, retry_limit=1, retry_delay=0, timeout=4.0, name=port)
-    params = collections.ChainMap(dict(port=port), kwargs, serial_config or {}, defaults)
-    params = dict(**params)
-    return rs232.SerialData(**params)
+from panoptes.utils import error
+from panoptes.utils.database import PanDB
 
 
 class ArduinoIO(object):
@@ -120,40 +34,55 @@ class ArduinoIO(object):
 
     """
 
-    def __init__(self, board, serial_data, db):
-        """Initialize for board on device.
+    def __init__(self, name, serial_device, db=None):
+        """Initialize for name on device.
 
         Args:
-            board: The name of the board, used as the name of the database
-                table/collection to write to, and the name of the messaging
-                topics for readings or relay commands.
-            serial_data: A SerialData instance connected to the board.
-            db: The PanDB instance in which to record reading.
+            name (str): The name of the name, used as the name of the database
+                table/collection to write to.
+            serial_device (panoptes.utils.rs232.SerialData): The serial device instance.
+            db (panoptes.utils.database.PanDB or None): The PanDB instance in
+                which to record reading or None.
         """
-        self.board = board.lower()
-        self.port = serial_data.port
-        self._serial_data = serial_data
-        self._db = db
-        self._logger = get_logger()
-        self._last_reading = None
+        self.logger = get_logger()
+        self.logger.info(f'Creating Arduino device with {name=} {serial_device=}')
+        self.name = name.lower()
+        self.serial_device = serial_device
+        self.port = serial_device.port
+
+        self.readings = deque(list(), 10)
+
+        self._db = db or PanDB()
+
+        # Used for reporting the first successful reading after error readings.
         self._report_next_reading = True
-        self._cmd_topic = "{}:commands".format(board)
+
+        self._cmd_topic = f"{self.name}:commands"
         # Using threading.Event rather than just a boolean field so that any thread
-        # can get and set the stop_running property.
+        # can get and set the keep_running property.
         self._stop_running = threading.Event()
-        self._logger.info('Created ArduinoIO instance for board {}', self.board)
+        self.logger.success(f'Created {self}')
+
+    def __str__(self):
+        return f'{self.name} arduino ({self.port})'
 
     @property
-    def stop_running(self):
-        return self._stop_running.is_set()
+    def keep_running(self):
+        return not self._stop_running.is_set()
 
-    @stop_running.setter
-    def stop_running(self, value):
-        if value:
+    @keep_running.setter
+    def keep_running(self, value):
+        """
+
+        Args:
+            value (bool): if the sensor should keep running values.
+        """
+        value = bool(value)
+        if value is False:
+            self.logger.success(f'Stopping running for {self}')
             self._stop_running.set()
         else:
             self._stop_running.clear()
-        self._logger.info('Updated ArduinoIO.stop_running to {!r}', self.stop_running)
 
     def run(self):
         """Main loop for recording data and reading commands.
@@ -163,38 +92,36 @@ class ArduinoIO(object):
         SerialData.get_and_parse_reading() in the event that the device
         disconnects from USB.
         """
-        while not self.stop_running:
+        while self.keep_running:
             self.read_and_record()
             self.handle_commands()
 
     def read_and_record(self):
         """Try to get the next reading and, if successful, record it.
 
-        Write the reading to the appropriate PanDB collections and
-        to the appropriate message topic.
+        Write the reading to the appropriate PanDB collections.
 
         If there is an interruption in success in reading from the device,
         we announce (log) the start and end of that situation.
         """
         reading = self.get_reading()
         if not reading:
-            # Consider adding an error counter.
+            # TODO Consider adding an error counter.
             if not self._report_next_reading:
-                self._logger.warning(
-                    'Unable to read from {}. Will report when next successful read.',
-                    self.port)
+                self.logger.warning(f'Unable to read from {self.port}. '
+                                    f'Will report next successful read.')
                 self._report_next_reading = True
             return False
         if self._report_next_reading:
-            self._logger.info('Succeeded in reading from {}; got:\n{}', self.port, reading)
+            self.logger.info(f'{self} {reading=}')
             self._report_next_reading = False
         self.handle_reading(reading)
         return True
 
     def connect(self):
         """Connect to the port."""
-        if not self._serial_data.is_connected:
-            self._serial_data.connect()
+        with suppress(Exception):
+            self.serial_device.connect()
 
     def disconnect(self):
         """Disconnect from the port.
@@ -202,79 +129,100 @@ class ArduinoIO(object):
         Will re-open automatically if reading or writing occurs.
         """
         try:
-            if self._serial_data.is_connected:
-                self._serial_data.disconnect()
+            self.serial_device.disconnect()
         except Exception as e:
-            self._logger.error('Failed to disconnect from {} due to: {}', self.port, e)
+            self.logger.error(f'Failed to disconnect from {self.port} due to: {e!r}')
 
     def reconnect(self):
-        """Disconnect from and connect to the serial port.
+        """Attempts a reconnection to the serial port.
 
         This supports handling a SerialException, such as when the USB
         bus is reset.
         """
         try:
             self.disconnect()
-        except Exception:
-            self._logger.error('Unable to disconnect from {}', self.port)
+        except Exception as e:
+            self.logger.error(f'Unable to disconnect from {self.port=}: {e!r}')
             return False
+
         try:
             self.connect()
             return True
         except Exception:
-            self._logger.error('Unable to reconnect to {}', self.port)
+            self.logger.error(f'Unable to reconnect from {self.port=}: {e!r}')
             return False
 
-    def get_reading(self):
-        """Reads and returns a single reading."""
-        if not self._serial_data.is_connected:
-            self._serial_data.connect()
+    def get_reading(self, retry_limit=3, attempt_reconnect=True):
+        """Reads and returns a single reading.
+
+        If there is a connection error while attempting t r
+
+        Args:
+            retry_limit (int): The number of times to attempt to get reading.
+            attempt_reconnect (bool): If there is a connection error the device
+                can attempt to automatically reconnect to the port, default True.
+
+        Returns:
+            dict: The parsed reading from the device.
+        """
         try:
-            return self._serial_data.get_and_parse_reading(retry_limit=1)
+            return self.serial_device.get_and_parse_reading(retry_limit=retry_limit)
         except serial.SerialException as e:
-            self._logger.error('Exception raised while reading from port {}', self.port)
-            self._logger.error('Exception: {}', "\n".join(traceback.format_exc()))
-            if self.reconnect():
-                return None
-            raise e
+            self.logger.error(f'Exception raised while reading from {self}: {e!r}')
+            self.logger.info(f'Exception: {traceback.format_exc()}')
+            self.logger.info(f'Attempting to reconnect to {self.port=}')
+            if attempt_reconnect and self.reconnect():
+                self.logger.success(f'Successfully reconnected to {self.port=}')
+                return self.serial_device.get_and_parse_reading(retry_limit=retry_limit)
+
+            raise error.BadSerialConnection(e)
 
     def handle_reading(self, reading):
-        """Saves a reading as the last_reading and writes to output_queue."""
-        # TODO(jamessynge): Discuss with Wilfred changing the timestamp to a datetime object
-        # instead of a string. Obviously it needs to be serialized eventually.
-        timestamp, data = reading
-        if data.get('name', self.board) != self.board:
-            msg = 'Board reports name {}, expected {}'.format(data['name'], self.board)
-            self._logger.critical(msg)
-            raise ArduinoDataError(msg)
-        reading = dict(name=self.board, timestamp=timestamp, data=data)
-        self._last_reading = copy.deepcopy(reading)
-        if self._db:
-            self._db.insert_current(self.board, reading)
+        """Saves a reading as the last_reading and writes to output_queue.
 
-    def handle_commands(self):
-        """Read and process commands for up to 1 second.
+        Args:
+            reading (dict): The parsed reading from the device.
+        """
+        timestamp, data = reading
+
+        # Make sure the board name matches.
+        if data.get('name', self.name) != self.name:
+            raise error.ArduinoDataError(f'Board reports {data["name"]}, expected {self.name=}')
+
+        reading = dict(name=self.name,
+                       timestamp=pendulum.parse(timestamp).replace(tzinfo=None),
+                       data=data)
+
+        self.readings.append(reading)
+
+        if self._db:
+            self._db.insert_current(self.name, reading)
+
+    def handle_commands(self, listen_time=1):
+        """Read and process commands for set amount of time.
 
         Returns when there are no more commands available from the
         command subscriber, or when a second has passed.
-        The interval is 1 second because we expect at least 2 seconds
-        between reports, and also expect that it probably doesn't take
-        more than 1 second for each report to be read. We could make
-        this configurable, or could dynamically adjust, such as by
-        polling for input.
+
+        The interval is one (1) second by default because we expect at least two (2)
+        seconds between reports, and also expect that it probably doesn't take
+        more than one (1) second for each report to be read.
+
+        Args:
+            listen_time (float): The amount of time to listen for commands.
         """
         timer = CountdownTimer(1.0)
         while not timer.expired():
             topic, msg_obj = self._sub.receive_message(blocking=True, timeout_ms=0.05)
             if not topic:
                 continue
-            self._logger.debug('Received a message for topic {}', topic)
+            self.logger.debug('Received a message for topic {}', topic)
             if topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:
-                    self._logger.error('Exception while handling command: {}', e)
-                    self._logger.error('msg_obj: {}', msg_obj)
+                    self.logger.error('Exception while handling command: {}', e)
+                    self.logger.error('msg_obj: {}', msg_obj)
 
     def handle_command(self, msg):
         """Handle one relay command.
@@ -284,21 +232,21 @@ class ArduinoIO(object):
         exists on this device.
         """
         if msg['command'] == 'shutdown':
-            self._logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
-            self.stop_running = True
+            self.logger.info('Received command to shutdown ArduinoIO for board {}', self.board)
+            self.keep_running = True
         elif msg['command'] == 'write_line':
             line = msg['line'].rstrip('\r\n')
-            self._logger.debug('Sending line to board {}: {}', self.board, line)
+            self.logger.debug('Sending line to board {}: {}', self.board, line)
             line = line + '\n'
             self.write(line)
         else:
-            self._logger.error('Ignoring command: {}', msg)
+            self.logger.error('Ignoring command: {}', msg)
 
     def write(self, text):
         """Writes text (a string) to the port.
 
         Returns: the number of bytes written.
         """
-        if not self._serial_data.is_connected:
-            self._serial_data.connect()
-        return self._serial_data.write(text)
+        if not self.serial_device.is_connected:
+            self.serial_device.connect()
+        return self.serial_device.write(text)
