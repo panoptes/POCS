@@ -17,7 +17,6 @@ class ArduinoSerialMonitor(object):
         self.name = sensor_name
         self.port = sensor_port
 
-        # Setup database.
         self.db = None
         db_type = db_type or get_config('db.type', default='file')
         self.db = PanDB(db_type=db_type)
