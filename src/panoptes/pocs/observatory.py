@@ -1,7 +1,7 @@
 import os
 import subprocess
 from collections import OrderedDict
-import pendulum
+from datetime import datetime
 
 from astropy import units as u
 from astropy.coordinates import get_moon
@@ -308,7 +308,7 @@ class Observatory(PanBase):
             status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': now,
-                'localtime': pendulum.now(),
+                'localtime': datetime.now(),
                 'local_evening_astro_time': self._evening_astro_time,
                 'local_morning_astro_time': self._morning_astro_time,
                 'local_sun_set_time': self._local_sunset,

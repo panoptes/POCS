@@ -25,12 +25,13 @@ RUN apt-get update \
     && /bin/bash gphoto2-updater.sh --stable \
     && rm gphoto2-updater.sh \
     # arduino-cli
-    && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh \
-    # Install the module.
-    && pip install -U "panoptes-pocs[google]"
+    && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh
 
-# Cleanup apt.
-RUN apt-get autoremove --purge -y \
+# Install module
+COPY . "${PANDIR}/POCS"
+RUN cd "${PANDIR}/POCS" && \
+    pip3 install ".[testing,google]" && \
+    apt-get autoremove --purge -y \
         autoconf \
         automake \
         autopoint \

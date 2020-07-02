@@ -1,22 +1,45 @@
 steps:
+  # Set up multiarch support
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'amd64-build'
+    id: 'setup-buildx'
+    env:
+      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
     args:
-      - 'build'
-      - '--build-arg'
-      - 'IMAGE_URL=gcr.io/panoptes-exp/panoptes-utils:${_TAG}'
-      - '-f'
-      - 'docker/${_TAG}.Dockerfile'
-      - '--tag'
-      - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
-      - '.'
+      - 'run'
+      - '--privileged'
+      - '--rm'
+      - 'docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64'
+    waitFor: ['-']
 
+  # Build builder
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'amd64-push'
+    id: 'build-builder'
+    env:
+      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
     args:
-      - 'push'
-      - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
-    waitFor: ['amd64-build']
+      - 'buildx'
+      - 'create'
+      - '--use'
+      - '--driver=docker-container'
+    waitFor: ['setup-buildx']
+
+  # Build
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-images'
+    env:
+      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+    args:
+      - 'buildx'
+      - 'build'
+      - '--push'
+      - '--platform=linux/amd64,linux/arm64'
+      - '-f=docker/${_TAG}.Dockerfile'
+      - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
+      - '--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
+      - '.'
+    waitFor: ['build-builder']
 
 images:
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
+  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
+  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:amd64'
+  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:arm64'
