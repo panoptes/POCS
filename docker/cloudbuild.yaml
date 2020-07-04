@@ -38,8 +38,3 @@ steps:
       - '--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
       - '.'
     waitFor: ['build-builder']
-
-images:
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:amd64'
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:arm64'
