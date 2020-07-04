@@ -33,7 +33,7 @@ jobs:
         run: |
           # Make sure git goes to the build context.
           sed -i s'/^\.git$/\!\.git/' .dockerignore
-          docker build -t panoptes-pocs:develop -f docker/develop.Dockerfile .
+          docker build -t panoptes-pocs:develop -f docker/latest.Dockerfile .
       - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p coverage_dir && chmod 777 coverage_dir
