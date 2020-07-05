@@ -2,8 +2,7 @@
 .venv
 venv
 
-# Need to pass git to allow version :(
-!.git
+.git
 .github
 
 *.md

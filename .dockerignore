@@ -3,8 +3,7 @@ docs/*
 .venv
 venv
 
-# Need to pass git to allow version :(
-!.git
+.git
 .github
 
 *.md
@@ -24,3 +23,8 @@ examples
 docs
 build
 coverage.xml
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*

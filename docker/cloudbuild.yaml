@@ -33,8 +33,8 @@ steps:
       - 'build'
       - '--push'
       - '--platform=linux/amd64,linux/arm64'
-      - '-f=docker/${_TAG}.Dockerfile'
-      - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
-      - '--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
+      - '-f=docker/latest.Dockerfile'
+      - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
+      - '--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
       - '.'
     waitFor: ['build-builder']

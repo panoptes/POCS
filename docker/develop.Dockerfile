@@ -1,22 +1,31 @@
-ARG IMAGE_URL=gcr.io/panoptes-exp/panoptes-pocs:latest
-FROM ${IMAGE_URL}
+ARG IMAGE_URL=gcr.io/panoptes-exp/panoptes-utils:latest
+FROM ${IMAGE_URL} AS pocs-base
 
-LABEL description="Installs the local folder in develop mode (i.e. pip install .e). \
-Used for running the tests and as a base for the for developer-env image."
+LABEL description="Installs the panoptes-pocs module in local editable \
+mode. This requires the entire git history to be present. Used for testing."
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
 
-ARG pan_dir=/var/panoptes
-ARG pocs_dir="${pan_dir}/POCS"
+ARG pandir=/var/panoptes
+ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
+ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
 
-ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/zsh
-
-ENV PANUSER=panoptes
-ENV PANDIR $pan_dir
-ENV POCS $pocs_dir
+ENV PANDIR $pandir
+ENV POCS ${PANDIR}/POCS
 ENV SOLVE_FIELD /usr/bin/solve-field
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes \
+        gcc libncurses5-dev udev \
+    # GPhoto2
+    && wget $gphoto2_url \
+    && chmod +x gphoto2-updater.sh \
+    && /bin/bash gphoto2-updater.sh --stable \
+    && rm gphoto2-updater.sh \
+    # arduino-cli
+    && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh
 
 # panoptes-utils
 USER ${PANUSER}
@@ -25,14 +34,18 @@ RUN cd "${PANDIR}/POCS" && \
     pip3 install -U -e ".[testing,google]"
 
 # Cleanup apt.
-USER root
-RUN apt-get autoremove --purge -y && \
+RUN apt-get autoremove --purge -y \
+        autoconf \
+        automake \
+        autopoint \
+        build-essential \
+        gcc \
+        gettext \
+        libtool \
+        pkg-config && \
+    apt-get autoremove --purge -y && \
     apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    chown -R "${PANUSER}:${PANUSER}" "${PANDIR}" && \
-    chmod -R 777 /astrometry
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${POCS}
-
-# Entrypoint runs gosu with panoptes user.
 CMD ["/bin/zsh"]
