@@ -34,6 +34,7 @@ RUN cd "${PANDIR}/POCS" && \
     pip3 install -U -e ".[testing,google]"
 
 # Cleanup apt.
+USER root
 RUN apt-get autoremove --purge -y \
         autoconf \
         automake \
