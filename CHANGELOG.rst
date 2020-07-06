@@ -18,6 +18,8 @@ Changed
 
   * Env var file is sourced for zshrc and bashrc.
   * Fix the clone of the repos in install script. (#978)
+  * Adding a date version to script. (#979)
+  * `docker-compose` version bumped to `1.26.2` (#979)
 
 * Development Environment (#974)
 
@@ -57,6 +59,7 @@ Changed
   * Mount simulator better name and stringify. (#977)
   * Global db object for `PanBase` (#977)
   * Allow for custom folder for metadata. (#979)
+    * Default changed to `metadata`.
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
