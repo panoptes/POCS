@@ -12,11 +12,11 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Changed
 ~~~~~~~
 
-* Python moved to 3.8. (#974)
 * `panoptes-utils` to `0.2.20`. (#974)
 * Install script. (#974)
 
   * Env var file is sourced for zshrc and bashrc.
+  * Fix the clone of the repos in install script. (#978)
 
 * Development Environment (#974)
 
@@ -32,6 +32,9 @@ Changed
   * Use new ``arduino-cli`` installer.
   * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
   * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+  * Python moved to 3.8. (#974)
+  * Docker images are now built with buildx to get an arm version running. (#978)
+  * Removing readline and pendulum dependencies. (#978)
 
 * Testing (#974)
 
