@@ -12,6 +12,7 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Changed
 ~~~~~~~
 
+* `panoptes-utils` to `0.2.21`. (#979)
 * `panoptes-utils` to `0.2.20`. (#974)
 * Install script. (#974)
 
@@ -55,6 +56,7 @@ Changed
   * Add a `console_log_level` and `stderr_log_level`. The former is written to the log file in `$PANLOG` and is meant to be tailed in the console. The `stderr_log_level` is what would be displayed, e.g. in a jupyter notebook. (#977)
   * Mount simulator better name and stringify. (#977)
   * Global db object for `PanBase` (#977)
+  * Allow for custom folder for metadata. (#979)
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
