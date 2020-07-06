@@ -6,13 +6,14 @@ from serial.tools.list_ports import comports as list_comports
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils import error
 
+from panoptes.pocs.utils.logger import get_logger
+
 
 class ArduinoSerialMonitor(object):
-    """Monitors the serial lines and tries to parse any data recevied as JSON.
+    """Monitors the serial lines and tries to parse any data received as JSON.
 
     Checks for the `camera_box` and `computer_box` entries in the config and tries to connect.
     Values are updated in the database.

@@ -10,7 +10,7 @@ usage() {
 #
 # This script is meant for quick & easy install via:
 #
-#   $ curl -L https://install.projectpanoptes.org | bash
+#   $ curl -fsSL https://install.projectpanoptes.org | bash
 #   or
 #   $ wget -O - https://install.projectpanoptes.org | bash
 #
@@ -125,6 +125,7 @@ function make_directories {
         sudo mkdir -p "${PANDIR}"
     else
         echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
+        echo "Would you like to continue with the existing directory?"
         select yn in "Yes" "No"; do
             case ${yn} in
                 Yes ) echo "Proceeding with existing directory"; break;;
@@ -195,10 +196,10 @@ function get_repos {
     for repo in "${repos[@]}"; do
         if [[ ! -d "${PANDIR}/${repo}" ]]; then
             cd "${PANDIR}"
-            echo "Cloning ${repo}"
+            echo "Cloning ${GITHUB_URL}/${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
             # TODO handle errors if repo doesn't exist (e.g. bad github name).
-            git clone "https://github.com/${GITHUB_USER}/${repo}.git" >> "${LOGFILE}" 2>&1
+            git clone "${GITHUB_URL}/${repo}.git" >> "${LOGFILE}" 2>&1
 
             # Set panoptes as upstream
             cd "${repo}"
