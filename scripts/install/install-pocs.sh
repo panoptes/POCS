@@ -5,6 +5,8 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
+# Script Version: 2020-07-05
+#
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system.
 #
@@ -26,7 +28,6 @@ usage() {
 #
 #   ${DOCKER_BASE}/panoptes-utils
 #   ${DOCKER_BASE}/pocs
-#
 #
 # The script will ask if it should be installed in "developer" mode or not.
 #
@@ -54,7 +55,6 @@ usage() {
 "
 }
 
-
 DEVELOPER=${DEVELOPER:-false}
 PANUSER=${PANUSER:-$USER}
 PANDIR=${PANDIR:-/var/panoptes}
@@ -63,7 +63,7 @@ OS="$(uname -s)"
 ARCH="$(uname -m)"
 ENV_FILE="${PANDIR}/env"
 
-DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.0}"
+DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
 DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
