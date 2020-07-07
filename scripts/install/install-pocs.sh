@@ -109,7 +109,7 @@ if ! ${DEVELOPER}; then
                 echo "Enabling developer mode. Note that you will need your GitHub username to proceed"; 
                 DEVELOPER=true; 
                 ;;
-            PANOPTES Unit) 
+            "PANOPTES Unit") 
                 echo "Installing POCS in production mode"; 
                 ;;
         esac
