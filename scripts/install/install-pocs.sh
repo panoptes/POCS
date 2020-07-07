@@ -60,6 +60,9 @@ usage() {
 "
 }
 
+# Better select prompt.
+PS3="Select: "
+
 DEVELOPER=${DEVELOPER:-false}
 PANUSER=${PANUSER:-$USER}
 PANDIR=${PANDIR:-/var/panoptes}
