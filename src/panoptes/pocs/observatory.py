@@ -395,18 +395,17 @@ class Observatory(PanBase):
                 'fields',
                 observation.field.field_name
             )
-            self.logger.debug('Searching directory: {}', observation_dir)
+            self.logger.debug(f'Searching directory: {observation_dir}')
 
             for cam_name, camera in self.cameras.items():
-                self.logger.debug('Cleanup for camera {} [{}]'.format(
-                    cam_name, camera.uid))
+                self.logger.debug(f'Cleanup for camera {cam_name} [{camera.uid}]')
 
                 seq_dir = os.path.join(
                     observation_dir,
                     camera.uid,
                     seq_time
                 )
-                self.logger.info('Cleaning directory {}'.format(seq_dir))
+                self.logger.info(f'Cleaning directory {seq_dir}')
 
                 process_cmd = [
                     process_script_path,
