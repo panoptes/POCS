@@ -3,7 +3,7 @@ docs/*
 .venv
 venv
 
-.git
+!.git
 .github
 
 *.md
