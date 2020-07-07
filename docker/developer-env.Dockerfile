@@ -38,7 +38,7 @@ USER $PANUSER
 COPY --chown=panoptes:panoptes . ${PANDIR}/POCS/
 RUN cd ${PANDIR}/POCS && \
     # Install everything!
-    pip install -e ".[google,developer,plotting,testing]" && \
+    pip3 install -e ".[google,developer,plotting,testing]" && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \
     jupyter-lab --generate-config && \

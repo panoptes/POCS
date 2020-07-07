@@ -78,7 +78,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_OPEN:
             return True
-        self.logger.warning('AstrohavenDome.open wrong final state: {!r}', v)
+        self.logger.warning(f'AstrohavenDome.open wrong final state: {v!r}')
         return False
 
     @property
@@ -94,7 +94,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_CLOSED:
             return True
-        self.logger.warning('AstrohavenDome.close wrong final state: {!r}', v)
+        self.logger.warning(f'AstrohavenDome.close wrong final state: {v!r}')
         return False
 
     @property
@@ -150,7 +150,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                 c = chr(data[-1])
                 if c in Protocol.STABLE_STATES:
                     return c
-                self.logger.debug('_read_state_until_stable not yet stable: {!r}', data)
+                self.logger.debug(f'_read_state_until_stable not yet stable: {data=!r}')
             if time.time() < end_by:
                 continue
             pass
@@ -188,26 +188,23 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                     c = chr(data[-1])
                     if c == target_feedback:
                         feedback_countdown -= 1
-                        self.logger.debug('Got target_feedback, feedback_countdown={}',
-                                          feedback_countdown)
+                        self.logger.debug(f'Got target_feedback, {feedback_countdown=}')
                         if feedback_countdown <= 0:
                             # Woot! Moved the dome and got the desired response.
                             return True
                     elif c == send:
                         have_seen_send = True
-                    elif not have_seen_send and c in Protocol.STABLE_STATES:
+                    elif not have_seen_send and c in Protocol.STABLE_STATES:  # pragma: no cover
                         # At the start of looping, we may see the previous stable state until
                         # we start seeing the echo of `send`.
                         pass
                     else:
-                        self.logger.warning(
-                            'Unexpected value from dome! send={!r} expected={!r} actual={!r}',
-                            send, target_feedback, data)
+                        self.logger.warning(f'Unexpected value from dome! {send=!r} {target_feedback=!r} {data=!r}')
                 if time.time() < end_by:
                     continue
                 self.logger.error(
-                    'Timed out moving the dome. Check for hardware or communications ' +
-                    'problem. send={!r} expected={!r} actual={!r}', send, target_feedback, data)
+                    f'Timed out moving the dome. Check for hardware or communications problem. '
+                    f'{send=!r} {target_feedback=!r} {data=!r}')
                 return False
         finally:
             self.serial.ser.timeout = saved_timeout

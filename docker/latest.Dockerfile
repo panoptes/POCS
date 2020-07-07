@@ -27,7 +27,7 @@ RUN apt-get update \
     # arduino-cli
     && curl -fsSL $arduino_url | BINDIR="/usr/local/bin" sh \
     # Install the module.
-    && pip install -U "panoptes-pocs[google]"
+    && pip3 install -U "panoptes-pocs[google]"
 
 # Cleanup apt.
 RUN apt-get autoremove --purge -y \

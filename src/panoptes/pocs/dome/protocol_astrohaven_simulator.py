@@ -139,7 +139,7 @@ class AstrohavenPLCSimulator:
         c = self.next_output_code
         if not c:
             c = self.compute_state()
-            self.logger.debug('AstrohavenPLCSimulator.compute_state -> {!r}', c)
+            self.logger.debug(f'AstrohavenPLCSimulator.compute_state -> {c!r}')
         self.next_output_code = None
         # We drop output if the queue is full.
         if not self.status_queue.full():
@@ -147,7 +147,7 @@ class AstrohavenPLCSimulator:
             self.next_output_time = datetime.datetime.now() + self.delta
 
     def handle_input(self, c):
-        self.logger.debug('AstrohavenPLCSimulator.handle_input {!r}', c)
+        self.logger.debug(f'AstrohavenPLCSimulator.handle_input {c!r}')
         (a_acted, a_resp) = self.shutter_a.handle_input(c)
         (b_acted, b_resp) = self.shutter_b.handle_input(c)
         # Use a_resp if a_acted or if there is no b_resp
@@ -256,7 +256,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             if timeout_obj.expired():
                 break
         response = bytes(response)
-        self.logger.debug('AstrohavenSerialSimulator.read({}) -> {!r}', size, response)
+        self.logger.debug(f'AstrohavenSerialSimulator.read({size}) -> {response!r}')
         return response
 
     @property
@@ -302,7 +302,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
-        self.logger.info('AstrohavenSerialSimulator.write({!r})', data)
+        self.logger.info(f'AstrohavenSerialSimulator.write({data!r})')
         count = 0
         timeout_obj = serialutil.Timeout(self.write_timeout)
         for b in data:
