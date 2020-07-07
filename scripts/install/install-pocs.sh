@@ -112,6 +112,7 @@ if ! ${DEVELOPER}; then
                 ;;
             "PANOPTES Unit") 
                 echo "Installing POCS in production mode"; 
+                break
                 ;;
         esac
     done
