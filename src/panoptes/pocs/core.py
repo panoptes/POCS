@@ -314,8 +314,12 @@ class POCS(PanStateMachine, PanBase):
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
 
-        # Hard-drive space
-        is_safe_values['free_space'] = self.has_free_space()
+        # Hard-drive space in root
+        is_safe_values['free_space_root'] = self.has_free_space('/')
+
+        # Hard-drive space in images directory.
+        images_dir = self.get_config('directories.images')
+        is_safe_values['free_space_images'] = self.has_free_space(images_dir)
 
         safe = all(is_safe_values.values())
 
@@ -414,10 +418,12 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:
+            directory (str, optional): The path to check free space on, the default
+                `None` will check `$PANDIR`.
             required_space (u.gigabyte, optional): Amount of free space required
                 for operation
             low_space_percent (float, optional): Give warning if space is less
@@ -427,8 +433,9 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
+        directory = directory or os.getenv('PANDIR')
         req_space = required_space.to(u.gigabyte)
-        self._free_space = get_free_space()
+        self._free_space = get_free_space(dir=directory)
 
         space_is_low = self._free_space.value <= (req_space.value * low_space_percent)
 
@@ -436,9 +443,9 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.error(f'No disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
         elif space_is_low:  # pragma: no cover
-            self.logger.warning(f'Low disk space: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.warning(f'Low disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
 
         return has_space
 
