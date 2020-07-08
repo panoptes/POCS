@@ -171,8 +171,8 @@ export PANLOG=${PANDIR}/logs
 EOF
 
         # Source the files in the shell.
-        [[ -f "$HOME/.bashrc" ]] && echo '. /var/panoptes/env' >> ~/.bashrc
-        [[ -f "$HOME/.zshrc" ]] && echo '. /var/panoptes/env' >> ~/.zshrc
+        test -f "$HOME/.bashrc" && echo '. /var/panoptes/env' >> ~/.bashrc
+        test -f "$HOME/.zshrc" && echo '. /var/panoptes/env' >> ~/.zshrc
     fi
 }
 
