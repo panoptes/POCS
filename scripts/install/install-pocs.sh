@@ -202,16 +202,27 @@ function system_deps {
 function get_repos {
     PUBLIC_GITHUB_URL="https://github.com/panoptes"
 
+    REPOS=("POCS" "panoptes-utils")
+
     if "${DEVELOPER}"; then
         echo "Using repositories from user: ${GITHUB_USER}"
-        declare -a repos=("POCS" "panoptes-utils" "panoptes-tutorials")
-        GITHUB_URL="git@github.com:${GITHUB_USER}"
+
+        # Test for ssh access
+        if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
+            GITHUB_URL="git@github.com:${GITHUB_USER}"
+        else
+            echo "No SSH key found, cloning via https. You may want to set up your ssh keys."
+            GITHUB_URL="https://github.com/${GITHUB_USER}"
+        fi
+
+        # If a developer, also get the tutorials
+        REPOS+=("panoptes-tutorials")
     else
-        declare -a repos=("POCS" "panoptes-utils")
         GITHUB_URL="${PUBLIC_GITHUB_URL}"
     fi
 
-    for repo in "${repos[@]}"; do
+    echo "Cloning ${REPOS}"
+    for repo in "${REPOS[@]}"; do
         if [[ ! -d "${PANDIR}/${repo}" ]]; then
             cd "${PANDIR}"
             echo "Cloning ${GITHUB_URL}/${repo}"
@@ -257,7 +268,7 @@ function get_or_build_images {
     if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
-        cd "${POCS}"
+        cd "${PANDIR}/POCS"
         ./docker/setup-local-environment.sh
     else
         echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
