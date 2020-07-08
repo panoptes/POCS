@@ -12,9 +12,11 @@ usage() {
 #
 # This script is meant for quick & easy install via:
 #
-#   $ curl -fsSL https://install.projectpanoptes.org | bash
+#   $ curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
+#   $ bash install-pocs.sh
 #   or
-#   $ wget -O - https://install.projectpanoptes.org | bash
+#   $ wget -qO- https://install.projectpanoptes.org > install-pocs.sh
+#   $ bash install-pocs.sh
 #
 # The script will do the following:
 #
