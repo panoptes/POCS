@@ -19,7 +19,8 @@ Changed
   * Env var file is sourced for zshrc and bashrc.
   * Fix the clone of the repos in install script. (#978)
   * Adding a date version to script. (#979)
-  * `docker-compose` version bumped to `1.26.2` (#979)
+  * `docker-compose` version bumped to `1.26.2`. (#979)
+  * Better testing for ssh access. (#984)
 
 * Development Environment (#974)
 
