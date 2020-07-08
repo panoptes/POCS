@@ -15,7 +15,7 @@ echo "Building local panoptes-utils"
 cd "${POCS}"
 
 # In the local develop we need to pass git to the docker build context.
-sed -i s'/^\.git$/\!\.git/' .dockerignore
+#sed -i s'/^\.git$/\!\.git/' .dockerignore
 
 echo "Building local panoptes-pocs:latest from panoptes-utils:develop"
 docker build \
@@ -42,7 +42,7 @@ docker build \
     "${POCS}"
 
 # Revert our .dockerignore changes.
-sed -i s'/^!\.git$/\.git/' .dockerignore
+#sed -i s'/^!\.git$/\.git/' .dockerignore
 
 docker system prune --force
 
