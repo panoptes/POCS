@@ -52,9 +52,9 @@ cat <<EOF
 Done building the local images.  To run the development environment enter:
 
 cd $POCS
-panoptes-develop up
+bin/panoptes-develop up
 
 To run the tests enter:
 
-panoptes-develop test
+bin/panoptes-develop test
 EOF
