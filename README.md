@@ -46,13 +46,15 @@ The non-developer mode of the script is intended for PANOPTES units.
 To install POCS via the script, open a terminal and enter:
 
 ```bash
-curl -fsSL https://install.projectpanoptes.org | bash
+curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
+bash install-pocs.sh
 ```
 
 Or using `wget`:
 
 ```bash
-wget -O - https://install.projectpanoptes.org | bash
+wget -qO- https://install.projectpanoptes.org > install-pocs.sh
+bash install-pocs.sh
 ```
 
 

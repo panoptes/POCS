@@ -5,16 +5,18 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2020-07-06
+# Script Version: 2020-07-08
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system.
 #
 # This script is meant for quick & easy install via:
 #
-#   $ curl -fsSL https://install.projectpanoptes.org | bash
+#   $ curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
+#   $ bash install-pocs.sh
 #   or
-#   $ wget -O - https://install.projectpanoptes.org | bash
+#   $ wget -qO- https://install.projectpanoptes.org > install-pocs.sh
+#   $ bash install-pocs.sh
 #
 # The script will do the following:
 #
@@ -46,6 +48,7 @@ usage() {
 # Changes:
 #   * 2020-07-05 - Initial release of versioned script.
 #   * 2020-07-06 (wtgee) - Fix the writing of the env file. Cleanup.
+#   * 2020-07-08 (wtgee) - Better test for ssh access for developer.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
@@ -200,16 +203,27 @@ function system_deps {
 function get_repos {
     PUBLIC_GITHUB_URL="https://github.com/panoptes"
 
+    REPOS=("POCS" "panoptes-utils")
+
     if "${DEVELOPER}"; then
         echo "Using repositories from user: ${GITHUB_USER}"
-        declare -a repos=("POCS" "panoptes-utils" "panoptes-tutorials")
-        GITHUB_URL="git@github.com:${GITHUB_USER}"
+
+        # Test for ssh access
+        if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
+            GITHUB_URL="git@github.com:${GITHUB_USER}"
+        else
+            echo "No SSH key found, cloning via https. You may want to set up your ssh keys."
+            GITHUB_URL="https://github.com/${GITHUB_USER}"
+        fi
+
+        # If a developer, also get the tutorials
+        REPOS+=("panoptes-tutorials")
     else
-        declare -a repos=("POCS" "panoptes-utils")
         GITHUB_URL="${PUBLIC_GITHUB_URL}"
     fi
 
-    for repo in "${repos[@]}"; do
+    echo "Cloning ${REPOS}"
+    for repo in "${REPOS[@]}"; do
         if [[ ! -d "${PANDIR}/${repo}" ]]; then
             cd "${PANDIR}"
             echo "Cloning ${GITHUB_URL}/${repo}"
@@ -255,7 +269,7 @@ function get_or_build_images {
     if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
-        cd "${POCS}"
+        cd "${PANDIR}/POCS"
         ./docker/setup-local-environment.sh
     else
         echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
