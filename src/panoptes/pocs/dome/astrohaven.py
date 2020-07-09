@@ -198,7 +198,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         # At the start of looping, we may see the previous stable state until
                         # we start seeing the echo of `send`.
                         pass
-                    else:
+                    else:  # pragma: no cover
                         self.logger.warning(f'Unexpected value from dome! {send=!r} {target_feedback=!r} {data=!r}')
                 if time.time() < end_by:
                     continue
