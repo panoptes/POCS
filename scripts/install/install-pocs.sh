@@ -49,7 +49,8 @@ usage() {
 #   * 2020-07-05 - Initial release of versioned script.
 #   * 2020-07-06 (wtgee) - Fix the writing of the env file. Cleanup.
 #   * 2020-07-08 (wtgee) - Better test for ssh access for developer.
-#   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files.
+#   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files. Use 3rd
+#                           party docker-compose (linuxserver.io) for arm.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
@@ -75,8 +76,10 @@ OS="$(uname -s)"
 ARCH="$(uname -m)"
 ENV_FILE="${PANDIR}/env"
 
-DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
-DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
+#DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
+# We are currently using this 3rd party source for docker-compose because the
+# official version doesn't build for arm64 yet. wtgee 2020-07-09
+DOCKER_COMPOSE_INSTALL="https://raw.githubusercontent.com/linuxserver/docker-docker-compose/master/run.sh"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 while [[ $# -gt 0 ]]
@@ -176,10 +179,14 @@ EOF
 
         # Source the files in the shell.
         if test -f "$HOME/.bashrc"; then
-            echo '. /var/panoptes/env' >> ~/.bashrc
+            if grep -xq ". /var/panoptes/env" "$HOME/.bashrc"; then
+                printf '\n. /var/panoptes/env\n' >> ~/.bashrc
+            fi
         fi
         if test -f "$HOME/.zshrc"; then
-            echo '. /var/panoptes/env' >> ~/.zshrc
+            if grep -xq ". /var/panoptes/env" "$HOME/.zshrc"; then
+                printf '\n. /var/panoptes/env\n' >> ~/.zshrc
+            fi
         fi
     fi
 }
