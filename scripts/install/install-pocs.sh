@@ -75,6 +75,7 @@ LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 ENV_FILE="${PANDIR}/env"
+GITHUB_USER="panoptes"
 
 #DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
 # We are currently using this 3rd party source for docker-compose because the
@@ -131,9 +132,9 @@ if "${DEVELOPER}"; then
     echo "    https://github.com/panoptes/panoptes-utils"
     echo "    https://github.com/panoptes/panoptes-tutorials"
     echo ""
-    
+
     while [[ -z "${GITHUB_USER}" ]]; do
-        read -p "Github User: " GITHUB_USER
+        read -p "Github User [panoptes]: " GITHUB_USER
     done
 fi
 
@@ -175,19 +176,21 @@ export PANUSER=${PANUSER}
 export PANDIR=${PANDIR}
 export POCS=${PANDIR}/POCS
 export PANLOG=${PANDIR}/logs
+**** End install-pocs script ****
 EOF
 
         # Source the files in the shell.
-        if test -f "$HOME/.bashrc"; then
-            if grep -xq ". /var/panoptes/env" "$HOME/.bashrc"; then
-                printf '\n. /var/panoptes/env\n' >> ~/.bashrc
+        SHELLS=(".bashrc" ".zshrc")
+
+        for SHELL_RC in "${SHELLS[@]}"; do
+            SHELL_RC_PATH="$HOME/${SHELL_RC}"
+            if test -f "${SHELL_RC_PATH}"; then
+                # Check if we have already added the file.
+                if grep -xq ". ${PANDIR}/env" "${SHELL_RC_PATH}"; then
+                    printf '\n. ${PANDIR}/env\n' >> "${SHELL_RC_PATH}"
+                fi
             fi
-        fi
-        if test -f "$HOME/.zshrc"; then
-            if grep -xq ". /var/panoptes/env" "$HOME/.zshrc"; then
-                printf '\n. /var/panoptes/env\n' >> ~/.zshrc
-            fi
-        fi
+        done
     fi
 }
 
@@ -214,24 +217,23 @@ function system_deps {
 
 function get_repos {
     PUBLIC_GITHUB_URL="https://github.com/panoptes"
+    GITHUB_URL="https://github.com/${GITHUB_USER}"
 
     REPOS=("POCS" "panoptes-utils")
 
     if "${DEVELOPER}"; then
         echo "Using repositories from user: ${GITHUB_USER}"
+        echo "Testing for ssh access to github.com"
 
         # Test for ssh access
         if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
             GITHUB_URL="git@github.com:${GITHUB_USER}"
         else
             echo "No SSH key found, cloning via https. You may want to set up your ssh keys."
-            GITHUB_URL="https://github.com/${GITHUB_USER}"
         fi
 
         # If a developer, also get the tutorials
         REPOS+=("panoptes-tutorials")
-    else
-        GITHUB_URL="${PUBLIC_GITHUB_URL}"
     fi
 
     echo "Cloning ${REPOS}"
