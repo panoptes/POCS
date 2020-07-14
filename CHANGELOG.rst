@@ -21,6 +21,11 @@ Changed
   * Adding a date version to script. (#979)
   * `docker-compose` version bumped to `1.26.2`. (#979)
   * Better testing for ssh access. (#984)
+  * Using [linuxserver.io docker-compose](https://hub.docker.com/r/linuxserver/docker-compose)
+so we also have `arm` version without work. (#986)
+  * Fixing conditional so script can proceed without restart. (#986)
+  * Generalizing install script in sections. (#986)
+
 
 * Development Environment (#974)
 
