@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2020-07-08
+# Script Version: 2020-07-09
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system.
@@ -49,6 +49,8 @@ usage() {
 #   * 2020-07-05 - Initial release of versioned script.
 #   * 2020-07-06 (wtgee) - Fix the writing of the env file. Cleanup.
 #   * 2020-07-08 (wtgee) - Better test for ssh access for developer.
+#   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files. Use 3rd
+#                           party docker-compose (linuxserver.io) for arm.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
@@ -73,9 +75,12 @@ LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 ENV_FILE="${PANDIR}/env"
+GITHUB_USER="panoptes"
 
-DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
-DOCKER_COMPOSE_INSTALL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}"
+#DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
+# We are currently using this 3rd party source for docker-compose because the
+# official version doesn't build for arm64 yet. wtgee 2020-07-09
+DOCKER_COMPOSE_INSTALL="https://raw.githubusercontent.com/linuxserver/docker-docker-compose/master/run.sh"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 while [[ $# -gt 0 ]]
@@ -127,9 +132,9 @@ if "${DEVELOPER}"; then
     echo "    https://github.com/panoptes/panoptes-utils"
     echo "    https://github.com/panoptes/panoptes-tutorials"
     echo ""
-    
+
     while [[ -z "${GITHUB_USER}" ]]; do
-        read -p "Github User: " GITHUB_USER
+        read -p "Github User [panoptes]: " GITHUB_USER
     done
 fi
 
@@ -171,11 +176,21 @@ export PANUSER=${PANUSER}
 export PANDIR=${PANDIR}
 export POCS=${PANDIR}/POCS
 export PANLOG=${PANDIR}/logs
+**** End install-pocs script ****
 EOF
 
         # Source the files in the shell.
-        test -f "$HOME/.bashrc" && echo '. /var/panoptes/env' >> ~/.bashrc
-        test -f "$HOME/.zshrc" && echo '. /var/panoptes/env' >> ~/.zshrc
+        SHELLS=(".bashrc" ".zshrc")
+
+        for SHELL_RC in "${SHELLS[@]}"; do
+            SHELL_RC_PATH="$HOME/${SHELL_RC}"
+            if test -f "${SHELL_RC_PATH}"; then
+                # Check if we have already added the file.
+                if grep -xq ". ${PANDIR}/env" "${SHELL_RC_PATH}"; then
+                    printf '\n. ${PANDIR}/env\n' >> "${SHELL_RC_PATH}"
+                fi
+            fi
+        done
     fi
 }
 
@@ -202,24 +217,23 @@ function system_deps {
 
 function get_repos {
     PUBLIC_GITHUB_URL="https://github.com/panoptes"
+    GITHUB_URL="https://github.com/${GITHUB_USER}"
 
     REPOS=("POCS" "panoptes-utils")
 
     if "${DEVELOPER}"; then
         echo "Using repositories from user: ${GITHUB_USER}"
+        echo "Testing for ssh access to github.com"
 
         # Test for ssh access
         if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
             GITHUB_URL="git@github.com:${GITHUB_USER}"
         else
             echo "No SSH key found, cloning via https. You may want to set up your ssh keys."
-            GITHUB_URL="https://github.com/${GITHUB_USER}"
         fi
 
         # If a developer, also get the tutorials
         REPOS+=("panoptes-tutorials")
-    else
-        GITHUB_URL="${PUBLIC_GITHUB_URL}"
     fi
 
     echo "Cloning ${REPOS}"
