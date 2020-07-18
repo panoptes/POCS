@@ -253,8 +253,8 @@ def test_is_cooled(camera):
 
 def test_set_target_temperature(camera):
     if camera.is_cooled_camera:
-        camera._target_temperature = 10 * u.Celsius
-        assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
+        camera.target_temperature = 10 * u.Celsius
+        assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
 

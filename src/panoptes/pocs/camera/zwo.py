@@ -45,6 +45,8 @@ class Camera(AbstractSDKCamera):
         """
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
         kwargs['timeout'] = kwargs.get('timeout', 0.5)
+        # ZWO cameras cannot take internal darks (not even supported in the API yet).
+        kwargs['internal_darks'] = kwargs.get('internal_darks', False)
 
         self._video_event = threading.Event()
 

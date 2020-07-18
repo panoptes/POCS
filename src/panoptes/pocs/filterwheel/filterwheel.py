@@ -21,6 +21,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             a Quantity with time units. If a numeric type without units is given seconds will be
             assumed. Default is None (no timeout).
         serial_number (str, optional): serial number of the filter wheel, default 'XXXXXX'
+        dark_position (int or str, optional): used to specify either a filter wheel position or
+            a filter name that should be used when taking dark exposures with a camera that is
+            not able to take internal darks.
     """
 
     def __init__(self,
@@ -30,6 +33,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                  filter_names=None,
                  timeout=None,
                  serial_number='XXXXXX',
+                 dark_position=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -48,6 +52,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         else:
             self._timeout = timeout
         self._serial_number = serial_number
+        if dark_position:
+            self._dark_position = self._parse_position(dark_position)
+        else:
+            self._dark_position = None
+        self._light_position = None
         self._connected = False
 
         # Some filter wheels needs this to track whether they are moving or not.
@@ -131,8 +140,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def current_filter(self):
         """ Name of the filter in the current position """
         try:
-            filter_name = self.filter_names[self.position - 1]  # 1 based numbering
-        except (IndexError, TypeError):
+            filter_name = self.filter_name(self.position)
+        except ValueError:
             # Some filter wheels sometimes cannot return their current position
             filter_name = "UNKNOWN"
         return filter_name
@@ -145,6 +154,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def is_unidirectional(self):
         raise NotImplementedError
 
+    @property
+    def dark_position(self):
+        return self._dark_position
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -153,6 +166,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def connect(self):
         """ Connect to filter wheel """
         raise NotImplementedError
+
+    def filter_name(self, position):
+        """ Name of the filter in the given integer position. """
+        # Validate input by passing it through _parse_position(), may raise ValueError
+        int_position = self._parse_position(position)
+        return self.filter_names[int_position - 1]
 
     def move_to(self, position, blocking=False):
         """
@@ -204,6 +223,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             # Already at requested position, don't go nowhere.
             return self._move_event
 
+        if self.dark_position and position == self.dark_position:
+            # Moving from light into darkness... Store current position so we can revert
+            # back to it if requested with move_to_light_position()
+            self._light_position = self.position
+
         self._move_event.clear()
         self._move_to(position)  # Private method to actually perform the move.
 
@@ -211,6 +235,23 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self._move_event.wait()
 
         return self._move_event
+
+    def move_to_dark_position(self):
+        """ Move to filterwheel position for taking darks. """
+        if self.dark_position:
+            self.move_to(self.dark_position)
+        else:
+            msg = f"Request to move to dark position but {self} has no dark_position set."
+            self.logger.warning(msg)
+
+    def move_to_light_position(self):
+        """ Return to previous filterwheel position from before taking darks. """
+        if self._light_position:
+            self.move_to(self._light_position)
+        else:
+            msg = f"Request to revert to previous light position but {self} has" + /
+                "no _light_position stored."
+            self.logger.warning(msg)
 
 ##################################################################################################
 # Private methods
