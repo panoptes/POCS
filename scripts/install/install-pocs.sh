@@ -114,12 +114,12 @@ if ! ${DEVELOPER}; then
     select mode in "Developer" "PANOPTES Unit"; do
         case ${mode} in
             Developer) 
-                echo "Enabling developer mode. Note that you will need your GitHub username to proceed"; 
+                echo "Enabling developer mode. Note that you will need your GitHub username to proceed."; 
                 DEVELOPER=true; 
                 break
                 ;;
             "PANOPTES Unit") 
-                echo "Installing POCS in production mode"; 
+                echo "Installing POCS for a PANOPTES unit."; 
                 break
                 ;;
         esac
@@ -133,9 +133,21 @@ if "${DEVELOPER}"; then
     echo "    https://github.com/panoptes/panoptes-tutorials"
     echo ""
 
-    while [[ -z "${GITHUB_USER}" ]]; do
-        read -p "Github User [panoptes]: " GITHUB_USER
-    done
+    read -p "Github User [panoptes]: " GITHUB_USER
+    
+    # If a different user, make sure we can access github as that user, otherwise exit.
+    if [[ test "${GITHUB_USER}" != "panoptes" ]]; then
+        echo "Testing github ssh access for user: ${GITHUB_USER}"
+
+        # Test for ssh access
+        if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
+            GITHUB_URL="git@github.com:${GITHUB_USER}"
+        else
+            echo "No SSH key found. To use POCS as a developer, make sure you forked the repositories and have set up ssh access to github.com."
+            echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
+            exit 0;
+        fi
+    fi
 fi
 
 function command_exists {
@@ -219,22 +231,7 @@ function get_repos {
     PUBLIC_GITHUB_URL="https://github.com/panoptes"
     GITHUB_URL="https://github.com/${GITHUB_USER}"
 
-    REPOS=("POCS" "panoptes-utils")
-
-    if "${DEVELOPER}"; then
-        echo "Using repositories from user: ${GITHUB_USER}"
-        echo "Testing for ssh access to github.com"
-
-        # Test for ssh access
-        if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
-            GITHUB_URL="git@github.com:${GITHUB_USER}"
-        else
-            echo "No SSH key found, cloning via https. You may want to set up your ssh keys."
-        fi
-
-        # If a developer, also get the tutorials
-        REPOS+=("panoptes-tutorials")
-    fi
+    REPOS=("POCS" "panoptes-utils" "panoptes-tutorials")
 
     echo "Cloning ${REPOS}"
     for repo in "${REPOS[@]}"; do
@@ -243,13 +240,14 @@ function get_repos {
             echo "Cloning ${GITHUB_URL}/${repo}"
             # Just redirect the errors because otherwise looks like it hangs.
             # TODO handle errors if repo doesn't exist (e.g. bad github name).
-            git clone "${GITHUB_URL}/${repo}.git" >> "${LOGFILE}" 2>&1
+            git clone --single-branch --quiet "${GITHUB_URL}/${repo}.git"
 
-            # Set panoptes as upstream
-            cd "${repo}"
-            git remote add upstream "${PUBLIC_GITHUB_URL}/${repo}"
+            # Set panoptes as upstream if clone succeeded.
+            if [ $? -eq 0 ]; then
+                cd "${repo}"
+                git remote add upstream "${PUBLIC_GITHUB_URL}/${repo}"            
+            fi
         else
-            # TODO Figure out how to do updates.
             echo "${repo} already exists in ${PANDIR}. No auto-update for now, skipping repo."
         fi
     done
