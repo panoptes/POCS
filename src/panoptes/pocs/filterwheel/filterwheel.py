@@ -249,7 +249,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         if self._light_position:
             self.move_to(self._light_position)
         else:
-            msg = f"Request to revert to previous light position but {self} has" + /
+            msg = f"Request to revert to previous light position but {self} has" + \
                 "no _light_position stored."
             self.logger.warning(msg)
 

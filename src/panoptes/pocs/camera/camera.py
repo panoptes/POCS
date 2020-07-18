@@ -448,7 +448,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if dark and self.filterwheel and self.filterwheel.dark_position:
                 # Can't take internal darks, but do have an opaque filter for that.
                 msg = "Taking dark exposure using filter '" + \
-                    f"{self.filterwheel.filter_names[self.filterwheel.dark_position - 1}'."
+                    f"{self.filterwheel.filter_name(self.filterwheel.dark_position)}'."
                 self.logger.debug(msg)
                 self.filterwheel.move_to_dark_position(blocking=True)
             elif dark:
