@@ -132,10 +132,13 @@ fi
 
 if "${DEVELOPER}"; then
     echo "To install POCS as a developer make sure you have first forked the following repositories:"
+    echo ""
     echo "    https://github.com/panoptes/POCS"
     echo "    https://github.com/panoptes/panoptes-utils"
     echo "    https://github.com/panoptes/panoptes-tutorials"
     echo ""
+    echo "You will also need to have an ssh key set up on github.com."
+    echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
 
     read -p "Github User [panoptes]: " GITHUB_USER
     
@@ -147,7 +150,7 @@ if "${DEVELOPER}"; then
         if [[ $(ssh -T git@github.com 2>&1) =~ "success" ]]; then
             GITHUB_URL="git@github.com:${GITHUB_USER}"
         else
-            echo "No SSH key found. To use POCS as a developer, make sure you forked the repositories and have set up ssh access to github.com."
+            echo "Can't ssh to github.com. Have you set up your ssh keys?"
             echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
             exit 0;
         fi
