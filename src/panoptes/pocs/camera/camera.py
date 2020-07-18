@@ -145,7 +145,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._is_exposing = False
 
         # By default assume camera isn't capable of internal darks.
-        self._internal_dark = kwargs.get('internal_darks', False)
+        self._internal_darks = kwargs.get('internal_darks', False)
 
         for subcomponent_class in self._subcomponent_classes:
             self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
