@@ -75,11 +75,15 @@ LOGFILE="${PANDIR}/install-pocs.log"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 ENV_FILE="${PANDIR}/env"
-GITHUB_USER="panoptes"
 
-#DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-1.26.2}"
-# We are currently using this 3rd party source for docker-compose because the
-# official version doesn't build for arm64 yet. wtgee 2020-07-09
+GITHUB_USER="panoptes"
+GITHUB_URL="https://github.com/${GITHUB_USER}"
+
+PANOPTES_UPSTREAM_URL="https://github.com/panoptes"
+
+# Repositories to clone.
+REPOS=("POCS" "panoptes-utils" "panoptes-tutorials")
+
 DOCKER_COMPOSE_INSTALL="https://raw.githubusercontent.com/linuxserver/docker-docker-compose/master/run.sh"
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -228,11 +232,6 @@ function system_deps {
 }
 
 function get_repos {
-    PUBLIC_GITHUB_URL="https://github.com/panoptes"
-    GITHUB_URL="https://github.com/${GITHUB_USER}"
-
-    REPOS=("POCS" "panoptes-utils" "panoptes-tutorials")
-
     echo "Cloning ${REPOS}"
     for repo in "${REPOS[@]}"; do
         if [[ ! -d "${PANDIR}/${repo}" ]]; then
@@ -245,7 +244,7 @@ function get_repos {
             # Set panoptes as upstream if clone succeeded.
             if [ $? -eq 0 ]; then
                 cd "${repo}"
-                git remote add upstream "${PUBLIC_GITHUB_URL}/${repo}"            
+                git remote add upstream "${PANOPTES_UPSTREAM_URL}/${repo}"            
             fi
         else
             echo "${repo} already exists in ${PANDIR}. No auto-update for now, skipping repo."
@@ -254,7 +253,6 @@ function get_repos {
 }
 
 function get_docker {
-    # Get Docker
     if ! command_exists docker; then
         echo "Installing Docker"
         if [[ "${OS}" = "Linux" ]]; then
@@ -271,7 +269,6 @@ function get_docker {
 
     if ! command_exists docker-compose; then
         echo "Installing docker-compose"
-        # Docker compose as container - https://docs.docker.com/compose/install/#install-compose
         sudo wget -q "${DOCKER_COMPOSE_INSTALL}" -O /usr/local/bin/docker-compose
         sudo chmod a+x /usr/local/bin/docker-compose
     fi
