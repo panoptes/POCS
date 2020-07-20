@@ -143,7 +143,7 @@ if "${DEVELOPER}"; then
     read -p "Github User [panoptes]: " GITHUB_USER
     
     # If a different user, make sure we can access github as that user, otherwise exit.
-    if [[ test "${GITHUB_USER}" != "panoptes" ]]; then
+    if test "${GITHUB_USER}" != "panoptes"; then
         echo "Testing github ssh access for user: ${GITHUB_USER}"
 
         # Test for ssh access
