@@ -108,7 +108,7 @@ case ${key} in
     -h|--help)
         PANDIR="$2"
         usage
-        exit 1
+        return
         ;;
 esac
 done
@@ -152,7 +152,7 @@ if "${DEVELOPER}"; then
         else
             echo "Can't ssh to github.com. Have you set up your ssh keys?"
             echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
-            exit 0;
+            return;
         fi
     fi
 fi
@@ -169,12 +169,11 @@ function make_directories {
         # Make directories and make PANUSER the owner.
         sudo mkdir -p "${PANDIR}"
     else
-        echo "WARNING ${PANDIR} already exists. You can exit and specify an alternate directory with --pandir or continue."
         echo "Would you like to continue with the existing directory?"
         select yn in "Yes" "No"; do
             case ${yn} in
                 Yes ) echo "Proceeding with existing directory"; break;;
-                No ) echo "Exiting"; exit 1;;
+                No ) echo "Exiting script"; return;;
             esac
         done
     fi
@@ -278,7 +277,10 @@ function get_docker {
 }
 
 function get_or_build_images {
-    if ${DEVELOPER}; then
+  # Switch to docker group to pull images
+  newgrp docker
+  
+  if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
         cd "${PANDIR}/POCS"
@@ -329,7 +331,7 @@ function do_install {
         sudo reboot
     fi
 
-    exit 0;
+    return;
 }
 
 do_install
