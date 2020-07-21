@@ -276,10 +276,7 @@ function get_docker {
     fi
 }
 
-function get_or_build_images {
-  # Switch to docker group to pull images
-  newgrp docker
-  
+function get_or_build_images {  
   if ${DEVELOPER}; then
         echo "Building local PANOPTES docker images."
 
@@ -288,9 +285,9 @@ function get_or_build_images {
     else
         echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
 
-        docker pull "${DOCKER_BASE}/panoptes-pocs:latest"
-        docker pull "${DOCKER_BASE}/panoptes-utils:latest"
-        docker pull "${DOCKER_BASE}/aag-weather:latest"
+        sudo docker pull "${DOCKER_BASE}/panoptes-pocs:latest"
+        sudo docker pull "${DOCKER_BASE}/panoptes-utils:latest"
+        sudo docker pull "${DOCKER_BASE}/aag-weather:latest"
     fi
 }
 
