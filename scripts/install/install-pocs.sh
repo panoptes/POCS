@@ -316,8 +316,10 @@ function do_install {
     echo "Installing docker and docker-compose"
     get_docker
 
-    echo "Cloning PANOPTES source code"
-    get_repos
+    if ${DEVELOPER}; then
+        echo "Cloning PANOPTES source code"
+        get_repos
+    fi
 
     get_or_build_images
 
