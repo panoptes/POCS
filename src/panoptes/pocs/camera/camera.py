@@ -125,6 +125,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # method, based on info received from camera.
         self._is_cooled_camera = False
         self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
+        self._is_temperature_stable = False
 
         self._connected = False
         self._current_observation = None
@@ -220,6 +221,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(temperature_tolerance, u.Quantity):
             temperature_tolerance = temperature_tolerance * u.Celsius
         self._temperature_tolerance = temperature_tolerance
+        self.wait_for_stable_camera_temp()
 
     @property
     def cooling_enabled(self):
@@ -275,7 +277,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if self.is_cooled_camera and self.cooling_enabled:
             at_target = abs(self.temperature - self.target_temperature) \
                         < self.temperature_tolerance
-            if not at_target or self.cooling_power == 100 * u.percent:
+            is_stable = all([at_target, self.cooling_power < 100*u.percent,
+                             self._is_temperature_stable])
+            if not is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
                 self.logger.warning(f'Cooling={self.cooling_power:.02f} '
                                     f'Temp={self.temperature:.02f} '
@@ -635,6 +639,49 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         except Exception as e:
             self.logger.warning(f'Problem getting thumbnail: {e!r}')
         return thumbnail
+
+    def wait_for_stable_camera_temp(blocking=False, *args, **kwargs):
+        """
+        Wait until camera temperature is stable for a sufficiently long period of time.
+
+        Args:
+            blocking (bool): Block until complete? Default False.
+            time_cool (Quantity): Minimum consecutive amount of time to be considered stable.
+                Default 60s.
+            sleep_delay (Quantity): Time to sleep between checks. Default 10s.
+            timeout (Quantity): Time before Timeout error is raised. Default 300s.
+        """
+        self._is_temperature_stable = False
+        self.logger.debug(f"Waiting for stable temperature on {self}.")
+        thread = threading.Thread(target=self._wait_for_stable_camera_temp,
+                                  args=args, kwargs=kwargs)
+        thread.start()
+        if blocking:
+            thread.join()
+
+    def _wait_for_stable_camera_temp(time_cool=60*u.second, sleep_delay=10*u.second,
+                                     timeout=300*u.second):
+        """
+        Wait until camera temperature is stable for a sufficiently long period of time.
+        """
+        if time_required > timeout:
+            raise ValueError("time_cool must be less than timeout.")
+        if sleep_delay > timeout:
+            raise ValueError("sleep_delay must be less than timeout.")
+        timer = CountdownTimer(duration=timeout)
+        t_cool = 0
+        # Wait until stable temperature persists or timeout
+        while True:
+            if self.is_temperature_stable:
+                t_cool += sleep_delay.to_value(u.seconds)
+                if t_cool >= time_cool:
+                    self._is_temperature_stable = True
+                    return
+            else:
+                t_cool = 0
+            if timer.expired():
+                break
+        raise(error.Timeout(f"Timeout while waiting for stable camera temperture on {self}."))
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
