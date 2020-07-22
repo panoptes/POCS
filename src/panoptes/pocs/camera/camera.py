@@ -646,7 +646,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         Args:
             blocking (bool): Block until complete? Default False.
-            time_cool (Quantity): Minimum consecutive amount of time to be considered stable.
+            time_stable (Quantity): Minimum consecutive amount of time to be considered stable.
                 Default 60s.
             sleep_delay (Quantity): Time to sleep between checks. Default 10s.
             timeout (Quantity): Time before Timeout error is raised. Default 300s.
@@ -659,26 +659,26 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if blocking:
             thread.join()
 
-    def _wait_for_stable_camera_temp(time_cool=60*u.second, sleep_delay=10*u.second,
+    def _wait_for_stable_camera_temp(time_stable=60*u.second, sleep_delay=10*u.second,
                                      timeout=300*u.second):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.
         """
-        if time_required > timeout:
-            raise ValueError("time_cool must be less than timeout.")
+        if time_stable > timeout:
+            raise ValueError("time_stable must be less than timeout.")
         if sleep_delay > timeout:
             raise ValueError("sleep_delay must be less than timeout.")
         timer = CountdownTimer(duration=timeout)
-        t_cool = 0
+        t_stable = 0
         # Wait until stable temperature persists or timeout
         while True:
             if self.is_temperature_stable:
-                t_cool += sleep_delay.to_value(u.seconds)
-                if t_cool >= time_cool:
+                t_stable += sleep_delay.to_value(u.seconds)
+                if t_stable >= time_stable:
                     self._is_temperature_stable = True
                     return
             else:
-                t_cool = 0
+                t_stable = 0
             if timer.expired():
                 break
         raise(error.Timeout(f"Timeout while waiting for stable camera temperture on {self}."))
