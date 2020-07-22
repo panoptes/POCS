@@ -205,7 +205,7 @@ EOF
             if test -f "${SHELL_RC_PATH}"; then
                 # Check if we have already added the file.
                 if ! grep -qm 1 ". ${PANDIR}/env" "${SHELL_RC_PATH}"; then
-                    printf '\n. ${PANDIR}/env\n' >> "${SHELL_RC_PATH}"
+                    printf "\n. ${PANDIR}/env\n" >> "${SHELL_RC_PATH}"
                 fi
             fi
         done
