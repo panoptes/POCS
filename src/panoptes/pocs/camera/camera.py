@@ -672,12 +672,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             raise ValueError("time_stable must be less than timeout.")
         if sleep_delay > timeout:
             raise ValueError("sleep_delay must be less than timeout.")
-        timer = CountdownTimer(duration=timeout)
+
+        # Convert all times to seconds
+        sleep_delay = sleep_delay.to_value(u.second)
+        time_stable = time_stable.to_value(u.second)
         t_stable = 0
+
         # Wait until stable temperature persists or timeout
+        timer = CountdownTimer(duration=timeout)
         while True:
             if abs(self.temperature-self.target_temperature) < self.temperature_tolerance:
-                t_stable += sleep_delay.to_value(u.second)
+                t_stable += sleep_delay
                 if t_stable >= time_stable:
                     self._is_temperature_stable = True
                     return
