@@ -103,3 +103,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._connected = True
+
+    def wait_for_stable_camera_temp(self, blocking):
+        return super().wait_for_stable_camera_temp(
+                blocking, time_stable=10*u.second, sleep_delay=5*u.second)
