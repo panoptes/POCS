@@ -283,6 +283,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         < self.temperature_tolerance
             is_stable = all([at_target, self.cooling_power < 100*u.percent,
                              self._is_temperature_stable])
+            print(self.temperature, self.cooling_power)
             print(at_target, self.cooling_power < 100*u.percent, self._is_temperature_stable)
             if not is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
