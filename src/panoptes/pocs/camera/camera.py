@@ -643,7 +643,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f'Problem getting thumbnail: {e!r}')
         return thumbnail
 
-    def wait_for_stable_camera_temp(blocking=False, *args, **kwargs):
+    def wait_for_stable_camera_temp(self, blocking=False, *args, **kwargs):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.
 
@@ -662,7 +662,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if blocking:
             thread.join()
 
-    def _wait_for_stable_camera_temp(time_stable=60*u.second, sleep_delay=10*u.second,
+    def _wait_for_stable_camera_temp(self, time_stable=60*u.second, sleep_delay=10*u.second,
                                      timeout=300*u.second):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.
