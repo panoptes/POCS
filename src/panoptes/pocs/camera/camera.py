@@ -677,7 +677,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Wait until stable temperature persists or timeout
         while True:
             if abs(self.temperature-self.target_temperature) < self.temperature_tolerance:
-                t_stable += sleep_delay.to_value(u.seconds)
+                t_stable += sleep_delay.to_value(u.second)
                 if t_stable >= time_stable:
                     self._is_temperature_stable = True
                     return
