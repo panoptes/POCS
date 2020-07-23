@@ -125,8 +125,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # method, based on info received from camera.
         self._is_cooled_camera = False
         self._cooling_enabled = False
-        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
         self._is_temperature_stable = False
+        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
 
         self._connected = False
         self._current_observation = None
@@ -225,7 +225,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Wait for temperature to stabilise
         if self.cooling_enabled:
-            self.wait_for_stable_camera_temp(blocking=False)
+            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def cooling_enabled(self):
@@ -650,7 +650,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f'Problem getting thumbnail: {e!r}')
         return thumbnail
 
-    def wait_for_stable_camera_temp(self, blocking=False, *args, **kwargs):
+    def wait_for_stable_temperature(self, blocking=False, *args, **kwargs):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.
 
@@ -663,13 +663,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self._is_temperature_stable = False
         self.logger.info(f"Waiting for stable temperature on {self}.")
-        thread = threading.Thread(target=self._wait_for_stable_camera_temp,
+        thread = threading.Thread(target=self._wait_for_stable_temperature,
                                   args=args, kwargs=kwargs)
         thread.start()
         if blocking:
             thread.join()
 
-    def _wait_for_stable_camera_temp(self, time_stable=60*u.second, sleep_delay=10*u.second,
+    def _wait_for_stable_temperature(self, time_stable=60*u.second, sleep_delay=10*u.second,
                                      timeout=300*u.second):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.

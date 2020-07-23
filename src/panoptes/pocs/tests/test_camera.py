@@ -76,8 +76,6 @@ def camera(request):
                 camera = CamClass(**cam_config)
                 break
 
-    camera.wait_for_stable_camera_temp(blocking=True)
-
     camera.logger.debug(f'Yielding camera {camera}')
     assert camera.is_ready
     yield camera

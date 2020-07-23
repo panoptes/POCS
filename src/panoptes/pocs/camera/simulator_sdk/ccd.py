@@ -46,7 +46,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
 
         # Wait for temperature to stabilise
         if self._cooling_enabled:
-            self.wait_for_stable_camera_temp(blocking=False)
+            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def target_temperature(self):
@@ -64,7 +64,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
 
         # Wait for temperature to stabilise
         if self.cooling_enabled:
-            self.wait_for_stable_camera_temp(blocking=False)
+            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def temperature(self):
@@ -88,9 +88,9 @@ class Camera(AbstractSDKCamera, Camera, ABC):
     def cooling_power(self):
         if self.cooling_enabled:
             return 100.0 * float((self._max_temp - self.temperature) /
-                                 (self._max_temp - self._min_temp))
+                                 (self._max_temp - self._min_temp)) * u.percent
         else:
-            return 0.0
+            return 0.0 * u.percent
 
     def connect(self):
         self._is_cooled_camera = True
@@ -104,6 +104,6 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_time = time.monotonic()
         self._connected = True
 
-    def wait_for_stable_camera_temp(self, blocking):
-        return super().wait_for_stable_camera_temp(
+    def wait_for_stable_temperature(self, blocking):
+        return super().wait_for_stable_temperature(
                 blocking, time_stable=10*u.second, sleep_delay=5*u.second)

@@ -59,7 +59,7 @@ class Camera(AbstractSDKCamera):
 
         # Wait for cool camera
         if self.cooling_enabled:
-            self.wait_for_stable_camera_temp(blocking=False)
+            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def cooling_enabled(self):
