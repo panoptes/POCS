@@ -283,6 +283,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         < self.temperature_tolerance
             is_stable = all([at_target, self.cooling_power < 100*u.percent,
                              self._is_temperature_stable])
+            print(at_target, self.cooling_power < 100*u.percent, self._is_temperature_stable)
             if not is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
                 self.logger.warning(f'Cooling={self.cooling_power:.02f} '
@@ -656,7 +657,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             timeout (Quantity): Time before Timeout error is raised. Default 300s.
         """
         self._is_temperature_stable = False
-        self.logger.debug(f"Waiting for stable temperature on {self}.")
+        self.logger.info(f"Waiting for stable temperature on {self}.")
         thread = threading.Thread(target=self._wait_for_stable_camera_temp,
                                   args=args, kwargs=kwargs)
         thread.start()
@@ -684,6 +685,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if abs(self.temperature-self.target_temperature) < self.temperature_tolerance:
                 t_stable += sleep_delay
                 if t_stable >= time_stable:
+                    self.logger.info(f"Temperature has stabilised on {self}.")
                     self._is_temperature_stable = True
                     return
             else:
