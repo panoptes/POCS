@@ -44,6 +44,10 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_time = time.monotonic()
         self._cooling_enabled = bool(enable)
 
+        # Wait for temperature to stabilise
+        if self._cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
+
     @property
     def target_temperature(self):
         return self._target_temperature
@@ -57,6 +61,10 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         if not isinstance(target, u.Quantity):
             target = target * u.Celsius
         self._target_temperature = target.to(u.Celsius)
+
+        # Wait for temperature to stabilise
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
 
     @property
     def temperature(self):
