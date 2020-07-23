@@ -221,7 +221,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(temperature_tolerance, u.Quantity):
             temperature_tolerance = temperature_tolerance * u.Celsius
         self._temperature_tolerance = temperature_tolerance
-        self.wait_for_stable_camera_temp()
+
+        # Wait for temperature to stabilise
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
 
     @property
     def cooling_enabled(self):

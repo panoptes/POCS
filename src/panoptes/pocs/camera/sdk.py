@@ -118,9 +118,9 @@ class AbstractSDKCamera(AbstractCamera):
             if self.is_cooled_camera:
                 self.target_temperature = target_temperature
                 self.cooling_enabled = True
+
                 # Allow for cooling
-                while self.is_temperature_stable is False:
-                    time.sleep(0.5)
+                self.wait_for_stable_camera_temp(blocking=True)
 
                 msg = f"Set target temperature {target_temperature} & enabled cooling on {self}."
                 self.logger.debug(msg)

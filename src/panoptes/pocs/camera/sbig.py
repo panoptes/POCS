@@ -56,8 +56,11 @@ class Camera(AbstractSDKCamera):
         if not isinstance(target, u.Quantity):
             target = target * u.Celsius
         self.logger.debug("Setting {} cooling set point to {}".format(self, target))
-        enabled = self.cooling_enabled
-        self._driver.set_temp_regulation(self._handle, target, enabled)
+        self._driver.set_temp_regulation(self._handle, target, self.cooling_enabled)
+
+        # Wait for temperature to stabilise
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
 
     @property
     def cooling_enabled(self):
@@ -74,6 +77,10 @@ class Camera(AbstractSDKCamera):
         self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enable))
         target = self.target_temperature
         self._driver.set_temp_regulation(self._handle, target, enable)
+
+        # Wait for temperature to stabilise
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
 
     @property
     def cooling_power(self):

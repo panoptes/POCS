@@ -117,6 +117,10 @@ class Camera(AbstractSDKCamera):
         self.logger.debug("Setting {} cooling set point to {}".format(self, target))
         self._control_setter('TARGET_TEMP', target)
 
+        # Wait for temperature to stabilise
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
+
     @property
     def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
@@ -125,6 +129,9 @@ class Camera(AbstractSDKCamera):
     @cooling_enabled.setter
     def cooling_enabled(self, enable):
         self._control_setter('COOLER_ON', enable)
+        if enable:
+            # Wait for temperature to stabilise
+            self.wait_for_stable_camera_temp(blocking=False)
 
     @property
     def cooling_power(self):

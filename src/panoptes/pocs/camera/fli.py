@@ -57,6 +57,10 @@ class Camera(AbstractSDKCamera):
         self._driver.FLISetTemperature(self._handle, target)
         self._target_temperature = target
 
+        # Wait for cool camera
+        if self.cooling_enabled:
+            self.wait_for_stable_camera_temp(blocking=False)
+
     @property
     def cooling_enabled(self):
         """
