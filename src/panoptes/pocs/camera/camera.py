@@ -279,12 +279,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         An uncooled camera, or cooled camera with cooling disabled, will always return False.
         """
         if self.is_cooled_camera and self.cooling_enabled:
-            at_target = abs(self.temperature - self.target_temperature) \
-                        < self.temperature_tolerance
-            is_stable = all([at_target, self.cooling_power < 100*u.percent,
-                             self._is_temperature_stable])
-            print(self.temperature, self.cooling_power)
-            print(at_target, self.cooling_power < 100*u.percent, self._is_temperature_stable)
+
+            # Temperature must be within tolerance
+            is_stable = abs(self.temperature-self.target_temperature) < self.temperature_tolerance
+
+            # Camera cooling power must not be 100%
+            is_stable &= get_quantity_value(self.cooling_power, u.percent) < 100
+
+            # Temperature must have been stable for some time
+            is_stable &= self._is_temperature_stable
+
             if not is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
                 self.logger.warning(f'Cooling={self.cooling_power:.02f} '
