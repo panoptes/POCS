@@ -124,7 +124,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
-        self._cooling_enbled = False
+        self._cooling_enabled = False
         self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
         self._is_temperature_stable = False
 
