@@ -112,10 +112,10 @@ def create_mount_simulator(mount_info=None,
         current_simulators.remove('mount')
 
     mount_config = mount_info or {
-        'model': 'simulator',
+        'model': 'Mount Simulator',
         'driver': 'simulator',
         'serial': {
-            'port': 'simulator'
+            'port': '/dev/FAKE'
         }
     }
 
@@ -132,6 +132,6 @@ def create_mount_simulator(mount_info=None,
 
     mount = module.Mount(earth_location, *args, **kwargs)
 
-    logger.success(f"{mount_config['driver']} mount created")
+    logger.success(f"{mount_config['driver'].title()} mount created")
 
     return mount

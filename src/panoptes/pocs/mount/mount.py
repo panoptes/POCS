@@ -1,4 +1,5 @@
 import time
+from contextlib import suppress
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -43,7 +44,7 @@ class AbstractMount(PanBase):
         # Create an object for just the mount config items
         self.mount_config = self.get_config('mount')
 
-        self.logger.debug("Mount config: {}".format(self.mount_config))
+        self.logger.debug(f"Mount config: {self.mount_config}")
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
@@ -86,6 +87,14 @@ class AbstractMount(PanBase):
         self._target_coordinates = None
         self._current_coordinates = None
         self._park_coordinates = None
+
+    def __str__(self):
+        brand = self.mount_config.get('brand', '')
+        model = self.mount_config.get('model', '')
+        port = ''
+        with suppress(KeyError):
+            port = self.mount_config['serial']['port']
+        return f'{brand} {model} ({port})'
 
     def connect(self):  # pragma: no cover
         raise NotImplementedError

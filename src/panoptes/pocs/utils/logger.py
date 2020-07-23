@@ -1,4 +1,7 @@
 import os
+import sys
+from contextlib import suppress
+
 from loguru import logger as loguru_logger
 
 
@@ -7,7 +10,8 @@ class PanLogger:
 
     Also provides a `handlers` dictionary to track attached handlers by id.
 
-    See https://loguru.readthedocs.io/en/stable/resources/recipes.html#dynamically-formatting-messages-to-properly-align-values-with-padding
+    See https://loguru.readthedocs.io/en/stable/resources/recipes.html#dynamically-formatting
+    -messages-to-properly-align-values-with-padding
 
     """
 
@@ -32,11 +36,12 @@ class PanLogger:
 LOGGER_INFO = PanLogger()
 
 
-def get_logger(profile='panoptes',
-               console_log_file='panoptes.log',
+def get_logger(console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
                log_dir=None,
-               log_level='DEBUG'):
+               console_log_level='DEBUG',
+               stderr_log_level='INFO',
+               ):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
     Two log files are created, one suitable for viewing on the console (via `tail`)
@@ -49,7 +54,6 @@ def get_logger(profile='panoptes',
       `$PANDIR/logs` if `$PANDIR` exists, otherwise defaults to `.`.
 
     Args:
-        profile (str, optional): The name of the logger to use, defaults to 'panoptes'.
         console_log_file (str|None, optional): Filename for the file that is suitable for
             tailing in a shell (i.e., read by humans). This file is rotated daily however
             the files are not retained.
@@ -58,9 +62,11 @@ def get_logger(profile='panoptes',
             website. Defaults to `panoptes_{time:YYYYMMDD!UTC}.log.gz` with a daily rotation
             at 11:30am and a 7 day retention policy. If `None` then no file will be generated.
         log_dir (str|None, optional): The directory to place the log file, see note.
-        log_level (str, optional): Log level for console output, defaults to 'DEBUG'.
+        stderr_log_level (str, optional): The log level to show on stderr, default INFO.
+        console_log_level (str, optional): Log level for console file output, defaults to 'DEBUG'.
             Note that it should be a string that matches standard `logging` levels and
-            also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`).
+            also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`). Also note this
+            is not the stderr output, but the output to the file to be tailed.
 
     Returns:
         `loguru.logger`: A configured instance of the logger.
@@ -73,6 +79,22 @@ def get_logger(profile='panoptes',
             log_dir = os.path.join(os.getenv('PANDIR', '.'), 'logs')
     log_dir = os.path.normpath(log_dir)
     os.makedirs(log_dir, exist_ok=True)
+
+    if 'stderr' not in LOGGER_INFO.handlers:
+        # Remove default and add in custom stderr.
+        with suppress(ValueError):
+            loguru_logger.remove(0)
+
+        stderr_format = "<lvl>{level:.1s}</lvl> " \
+                        "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</> " \
+                        "<lvl>{message}</lvl>"
+
+        stderr_id = loguru_logger.add(
+            sys.stdout,
+            format=stderr_format,
+            level=stderr_log_level
+        )
+        LOGGER_INFO.handlers['stderr'] = stderr_id
 
     # Log file for tailing on the console.
     if 'console' not in LOGGER_INFO.handlers:
@@ -88,7 +110,7 @@ def get_logger(profile='panoptes',
             diagnose=True,
             catch=True,
             compression='gz',
-            level=log_level)
+            level=console_log_level)
         LOGGER_INFO.handlers['console'] = console_id
 
     # Log file for ingesting into log file service.
@@ -106,10 +128,13 @@ def get_logger(profile='panoptes',
             level='TRACE')
         LOGGER_INFO.handlers['archive'] = archive_id
 
-    # Customize colors
+    # Customize colors.
     loguru_logger.level('TRACE', color='<cyan>')
     loguru_logger.level('DEBUG', color='<white>')
     loguru_logger.level('INFO', color='<light-blue><bold>')
     loguru_logger.level('SUCCESS', color='<cyan><bold>')
+
+    # Enable the logging.
+    loguru_logger.enable('panoptes')
 
     return loguru_logger

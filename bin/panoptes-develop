@@ -2,6 +2,7 @@
 set -e
 
 SUBCMD=$1
+PARAMS=${@:2}
 
 export PANDIR=${PANDIR:-/var/panoptes}
 export IMAGE="${IMAGE:-panoptes-pocs}"
@@ -9,7 +10,7 @@ export TAG="${TAG:-developer-env}"
 
 cd "${PANDIR}"
 
-## Add the deamon option by default.
+## Add the daemon option by default.
 if [[ "${SUBCMD}" == "up" ]]; then
     SUBCMD="up -d"
     export CONTAINER_NAME="pocs-developer-env"

@@ -6,6 +6,9 @@ from panoptes.utils.config import client
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs import hardware
 
+# Global database.
+PAN_DB_OBJ = None
+
 
 class PanBase(object):
     """ Base class for other classes within the PANOPTES ecosystem
@@ -23,8 +26,13 @@ class PanBase(object):
         # If the user requests a db_type then update runtime config
         db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
         db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
+        db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
 
-        self.db = PanDB(db_type=db_type, db_name=db_name)
+        global PAN_DB_OBJ
+        if PAN_DB_OBJ is None:
+            PAN_DB_OBJ = PanDB(db_type=db_type, db_name=db_name, storage_dir=db_folder)
+
+        self.db = PAN_DB_OBJ
 
     def get_config(self, *args, **kwargs):
         """Thin-wrapper around client based get_config that sets default port.

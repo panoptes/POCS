@@ -6,13 +6,14 @@ from serial.tools.list_ports import comports as list_comports
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database import PanDB
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils import error
 
+from panoptes.pocs.utils.logger import get_logger
+
 
 class ArduinoSerialMonitor(object):
-    """Monitors the serial lines and tries to parse any data recevied as JSON.
+    """Monitors the serial lines and tries to parse any data received as JSON.
 
     Checks for the `camera_box` and `computer_box` entries in the config and tries to connect.
     Values are updated in the database.
@@ -129,7 +130,7 @@ class ArduinoSerialMonitor(object):
                         self.db.insert_current('power', data['power'])
 
             except Exception as e:
-                self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
+                self.logger.warning(f'Exception while reading from {sensor_name=}: {e!r}')
 
         return sensor_data
 
@@ -164,14 +165,14 @@ def detect_board_on_port(port):
         Else returns None.
     """
     logger = get_logger()
-    logger.debug('Attempting to connect to serial port: {}'.format(port))
+    logger.debug(f'Attempting to connect to serial {port=}')
     try:
         serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)
         if not serial_reader.is_connected:
             serial_reader.connect()
-        logger.debug('Connected to {}', port)
+        logger.debug(f'Connected to {port=}')
     except Exception:
-        logger.warning('Could not connect to port: {}'.format(port))
+        logger.warning(f'Could not connect to {port=}')
         return None
     try:
         reading = serial_reader.get_and_parse_reading(retry_limit=3)
@@ -182,10 +183,10 @@ def detect_board_on_port(port):
             result = (data['name'], serial_reader)
             serial_reader = None
             return result
-        logger.warning('Unable to find board name in reading: {!r}', reading)
+        logger.warning(f'Unable to find board name in {reading=!r}')
         return None
     except Exception as e:
-        logger.error('Exception while auto-detecting port {!r}: {!r}'.format(port, e))
+        logger.error(f'Exception while auto-detecting port {port=!r}: {e!r}')
     finally:
         if serial_reader:
             serial_reader.disconnect()
@@ -195,11 +196,11 @@ def detect_board_on_port(port):
 if __name__ == '__main__':
     devices = find_arduino_devices()
     if devices:
-        print("Arduino devices: {}".format(", ".join(devices)))
+        print(f'Arduino devices: {",".join(devices)}')
     else:
         print("No Arduino devices found.")
         sys.exit(1)
     names_and_readers = auto_detect_arduino_devices()
     for (name, serial_reader) in names_and_readers:
-        print('Device {} has name {}'.format(serial_reader.name, name))
+        print(f'Device {serial_reader.name} has {name=}')
         serial_reader.disconnect()

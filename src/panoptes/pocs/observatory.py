@@ -1,7 +1,7 @@
 import os
 import subprocess
 from collections import OrderedDict
-import pendulum
+from datetime import datetime
 
 from astropy import units as u
 from astropy.coordinates import get_moon
@@ -54,7 +54,7 @@ class Observatory(PanBase):
 
         self._primary_camera = None
         if cameras:
-            self.logger.info(f'Adding the cameras to the observatory: {cameras}')
+            self.logger.info(f'Adding cameras to the observatory: {cameras}')
             for cam_name, camera in cameras.items():
                 self.add_camera(cam_name, camera)
 
@@ -242,7 +242,7 @@ class Observatory(PanBase):
         hw_attr = getattr(self, hw_type)
 
         if isinstance(new_hardware, hw_class):
-            self.logger.success(f'Adding {new_hardware=}')
+            self.logger.success(f'Adding {new_hardware}')
             setattr(self, hw_type, new_hardware)
         elif new_hardware is None:
             if hw_attr is not None:
@@ -308,7 +308,7 @@ class Observatory(PanBase):
             status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': now,
-                'localtime': pendulum.now(),
+                'localtime': datetime.now(),
                 'local_evening_astro_time': self._evening_astro_time,
                 'local_morning_astro_time': self._morning_astro_time,
                 'local_sun_set_time': self._local_sunset,
@@ -395,18 +395,17 @@ class Observatory(PanBase):
                 'fields',
                 observation.field.field_name
             )
-            self.logger.debug('Searching directory: {}', observation_dir)
+            self.logger.debug(f'Searching directory: {observation_dir}')
 
             for cam_name, camera in self.cameras.items():
-                self.logger.debug('Cleanup for camera {} [{}]'.format(
-                    cam_name, camera.uid))
+                self.logger.debug(f'Cleanup for camera {cam_name} [{camera.uid}]')
 
                 seq_dir = os.path.join(
                     observation_dir,
                     camera.uid,
                     seq_time
                 )
-                self.logger.info('Cleaning directory {}'.format(seq_dir))
+                self.logger.info(f'Cleaning directory {seq_dir}')
 
                 process_cmd = [
                     process_script_path,
