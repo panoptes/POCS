@@ -129,7 +129,7 @@ class Camera(AbstractSDKCamera):
     @cooling_enabled.setter
     def cooling_enabled(self, enable):
         self._control_setter('COOLER_ON', enable)
-        if enable:
+        if self.cooling_enabled:
             # Wait for temperature to stabilise
             self.wait_for_stable_temperature(blocking=False)
 

@@ -661,15 +661,24 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             sleep_delay (Quantity): Time to sleep between checks. Default 10s.
             timeout (Quantity): Time before Timeout error is raised. Default 300s.
         """
+        # Restart countdown if one is already in progress
+        with suppress(AttributeError):
+            if self._temperature_thread.is_alive():
+                self.logger.warning(f"Attempted to wait for stable temperature on {self}"
+                                    " while wait already in progress. Restarting countdown.")
+                self._restart_temperature_thread = True
+                self._temperature_thread.join()
+
+        # Wait for stable temperature
         self._is_temperature_stable = False
         self.logger.info(f"Waiting for stable temperature on {self}.")
-        thread = threading.Thread(target=self._wait_for_stable_temperature,
-                                  args=args, kwargs=kwargs)
-        thread.start()
+        self._temperature_thread = threading.Thread(target=self._wait_for_stable_temperature,
+                                                    args=args, kwargs=kwargs)
+        self._temperature_thread.start()
         if blocking:
-            thread.join()
+            self._temperature_thread.join()
 
-    def _wait_for_stable_temperature(self, time_stable=60*u.second, sleep_delay=10*u.second,
+    def _wait_for_stable_temperature(self, time_stable=60*u.second, sleep_delay=5*u.second,
                                      timeout=300*u.second):
         """
         Wait until camera temperature is stable for a sufficiently long period of time.
@@ -687,6 +696,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Wait until stable temperature persists or timeout
         timer = CountdownTimer(duration=timeout)
         while True:
+            # We may need to restart the thread before it has finished
+            with suppress(AttributeError):
+                if self._restart_temperature_thread:
+                    self._restart_temperature_thread = False
+                    return
             if abs(self.temperature-self.target_temperature) < self.temperature_tolerance:
                 t_stable += sleep_delay
                 if t_stable >= time_stable:
@@ -697,6 +711,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 t_stable = 0
             if timer.expired():
                 break
+            time.sleep(sleep_delay)
         raise(error.Timeout(f"Timeout while waiting for stable camera temperture on {self}."))
 
     @abstractmethod
