@@ -12,11 +12,20 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Changed
 ~~~~~~~
 
-* Python moved to 3.8. (#974)
+* `panoptes-utils` to `0.2.21`. (#979)
 * `panoptes-utils` to `0.2.20`. (#974)
 * Install script. (#974)
 
   * Env var file is sourced for zshrc and bashrc.
+  * Fix the clone of the repos in install script. (#978)
+  * Adding a date version to script. (#979)
+  * `docker-compose` version bumped to `1.26.2`. (#979)
+  * Better testing for ssh access. (#984)
+  * Using [linuxserver.io docker-compose](https://hub.docker.com/r/linuxserver/docker-compose)
+so we also have `arm` version without work. (#986)
+  * Fixing conditional so script can proceed without restart. (#986)
+  * Generalizing install script in sections. (#986)
+
 
 * Development Environment (#974)
 
@@ -32,6 +41,9 @@ Changed
   * Use new ``arduino-cli`` installer.
   * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
   * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+  * Python moved to 3.8. (#974)
+  * Docker images are now built with buildx to get an arm version running. (#978)
+  * Removing readline and pendulum dependencies. (#978)
 
 * Testing (#974)
 
@@ -52,6 +64,8 @@ Changed
   * Add a `console_log_level` and `stderr_log_level`. The former is written to the log file in `$PANLOG` and is meant to be tailed in the console. The `stderr_log_level` is what would be displayed, e.g. in a jupyter notebook. (#977)
   * Mount simulator better name and stringify. (#977)
   * Global db object for `PanBase` (#977)
+  * Allow for custom folder for metadata. (#979)
+    * Default changed to `metadata`.
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)

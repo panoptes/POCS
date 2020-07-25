@@ -37,6 +37,7 @@ directories:
 db:
   name: panoptes
   type: file
+  folder: metadata
 
 wait_delay: 180 # time in seconds before checking safety/etc while waiting.
 max_transition_attempts: 5  # number of transitions attempts.
