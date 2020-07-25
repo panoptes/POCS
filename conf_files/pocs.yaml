@@ -94,23 +94,23 @@ environment:
       0:
         name: fan
         start: off
-        type: NO
+        contact_type: NO
       1: 
         name: cameras
         start: on
-        type: NO
+        contact_type: NO
       2: 
         name: weather
         start: on
-        type: NO
+        contact_type: NO
       3:
         name: unused
         start: off
-        type: NO
+        contact_type: NO
       4:
         name: mount
         start: on
-        type: NO
+        contact_type: NO
     # Pins map relays to pins on the Arduino Uno. These should not be changed.
     pin_mapping:
       # Relays 0 and 1 support 5A each and share the same mosfet.
