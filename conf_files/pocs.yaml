@@ -92,23 +92,23 @@ environment:
     # See the pin_mapping for details.
     relays:
       0:
-        label: fan
+        name: fan
         start: off
         type: NO
       1: 
-        label: cameras
+        name: cameras
         start: on
         type: NO
       2: 
-        label: weather
+        name: weather
         start: on
         type: NO
       3:
-        label: unused
+        name: unused
         start: off
         type: NO
       4:
-        label: mount
+        name: mount
         start: on
         type: NO
     # Pins map relays to pins on the Arduino Uno. These should not be changed.
