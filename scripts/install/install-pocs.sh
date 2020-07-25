@@ -189,12 +189,12 @@ function setup_env_vars {
     if  [[ ! -f "${ENV_FILE}" ]]; then
         echo "Writing environment variables to ${ENV_FILE}"
         cat >> "${ENV_FILE}" <<EOF
-**** Added by install-pocs script ****    
+#### Added by install-pocs script ####
 export PANUSER=${PANUSER}
 export PANDIR=${PANDIR}
 export POCS=${PANDIR}/POCS
 export PANLOG=${PANDIR}/logs
-**** End install-pocs script ****
+#### End install-pocs script ####
 EOF
 
         # Source the files in the shell.
