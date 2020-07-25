@@ -10,37 +10,40 @@ logger = get_logger()
 
 
 class PowerBoard(ABC):
-    relays = list()
-    board_config = dict()
-
     def __init__(self, board_config=None):
         """Set up a power relay and distribution board.
+
+        The base board itself provides very little functionality and serves mostly
+        as a holder for the relays.
+
+        A `panoptes.pocs.sensors.power.Relay` should be capable of turning itself
+        on and off and optionally provide current sensing.
 
         Args:
             board_config (dict or None): The configuration for the power relay
                 board. If `None` is provided, query the config server. Default
                 `None.`
         """
-        self.board = None
-        self.relays = list()
         self.board_config = board_config or get_config('environment.power_board')
+        assert isinstance(self.board_config, dict)
 
+        self.name = self.board_config.get('name', 'Generic PowerBoard')
+
+        self.relays = list()
+        self._initialize_relays()
+
+        self.success(f'{self.name} initialized')
+
+
+    def _initialize_relays(self):
         logger.info(f'Setting up relays for {self}')
-        self.setup_relays()
+        relays = self.board_config.get('relays', list())
 
-    def setup_relays(self):
-        # Setup relays
-        for port, pin in self.board_config['pin_mapping'].items():
-            relay_name = self.board_config['ports'][port]
-            initial_state = self.board_config['initial_state'][port]
+        for i, relay_config in enumerate(relays):
+            relay = Relay(**relay_config)
+            self.info(f'Created relay {i:02d}: {relay=}')
 
-            logger.debug(f'Setting up {port=} for {relay_name=} with {initial_state=} on {pin=}')
-            relay = Relay(relay_name, pin)
-
-            if initial_state == 'on':
-                relay.turn_on()
-
-            self.relays.append(relay)
 
     def __str__(self):
-        return f'Power board: {self.relays}'
+        return f'{self.name}: {self.relays}'
+
