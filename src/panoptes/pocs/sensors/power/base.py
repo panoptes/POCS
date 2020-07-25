@@ -42,6 +42,9 @@ class PowerBoard(ABC):
         for i, relay_config in enumerate(relays):
             relay = Relay(**relay_config)
             self.info(f'Created relay {i:02d}: {relay=}')
+            if relay_config['initial_state'] == 'on':
+                self.info(f'Turning on {relay}')
+                relay.turn_on()
 
 
     def __str__(self):

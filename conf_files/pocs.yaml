@@ -93,35 +93,36 @@ environment:
     # Relays 0 and 1 support 5A each and share the same mosfet.
     # Relays 2 and 3 support 5A each and share the same mosfet.
     # Relay 4 supports 5A (safely; 7A max) and has a dedicated mosfet.
+    #
     name: infineon
     relays:
       0:
         name: fan
-        state: off
+        initial_state: off
         contact_type: NO # Normally Open
         relay_pin: 17    # A3
         current_pin: 14  # A0
       1: 
         name: cameras
-        state: on
+        initial_state: on
         contact_type: NO # Normally Open
         relay_pin: 3
         current_pin: 14  # A0
       2: 
         name: weather
-        state: on
+        initial_state: on
         contact_type: NO # Normally Open
         relay_pin: 4
         current_pin: 15  # A1
       3:
         name: unused
-        state: off
+        initial_state: off
         contact_type: NO # Normally Open
         relay_pin: 7
         current_pin: 15  # A1
       4:
         name: mount
-        state: on
+        initial_state: on
         contact_type: NO # Normally Open
         relay_pin: 8
         current_pin: 16  # A2

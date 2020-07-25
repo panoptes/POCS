@@ -20,18 +20,28 @@ class ContactType(Enum):
 class Relay(ABC):
     """Base class for an individual power relay."""
 
-    def __init__(self, name, pin_number, contact_type=ContactType.NO):
+    def __init__(self, 
+                 name=None, 
+                 relay_pin=None, 
+                 current_pin=None, 
+                 contact_type=ContactType.NO
+                 *args,
+                 **kwargs
+            ):
         """
 
         Args:
             name (str): The name associated with this relay.
-            pin_number (int): The GPIO pin that will be toggled.
+            relay_pin (int): The GPIO pin that controls the state of the relay.
+            current_pin (int): The GPIO pin that reads the current on the relay.
             contact_type (ContactType or str): The contact type of the relay, either
                 normally open (`ContactType.NO`) or closed (`ContactType.NC`). Default
                 is `ContactType.NO`.
+            initial_state (str): 
         """
         self.name = name
-        self.pin_number = pin_number
+        self.relay_pin = relay_pin
+        self.current_pin = current_pin
 
         if isinstance(contact_type, ContactType):
             self.contact_type = contact_type
@@ -47,6 +57,12 @@ class Relay(ABC):
     def state(self):
         """The current state of the relay, either 'on' or 'off'."""
         return 'on' if self.is_on else 'off'
+
+    @property
+    @abstractmethod
+    def current(self):
+        """Returns the electrical current for the relay."""
+        return NotImplemented
 
     @property
     @abstractmethod
@@ -77,7 +93,7 @@ class Relay(ABC):
             self.turn_on()
 
     def power_cycle(self, delay=0.1):
-        """Turns relay off, waits for a short delay, then turns relay on.
+        """Turns relay off, waits for a delay, then turns relay on.
 
         Note that the relay will turn on even if it was off to begin with.
 
