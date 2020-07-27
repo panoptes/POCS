@@ -40,7 +40,7 @@ class Camera(AbstractSDKCamera):
         """
         return self._driver.FLIGetTemperature(self._handle)
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """
         Current value of the target temperature for the camera's image sensor cooling control.

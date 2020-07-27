@@ -102,7 +102,7 @@ class Camera(AbstractSDKCamera):
         """ Current temperature of the camera's image sensor """
         return self._control_getter('TEMPERATURE')[0]
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """ Current value of the target temperature for the camera's image sensor cooling control.
 
@@ -110,7 +110,7 @@ class Camera(AbstractSDKCamera):
         """
         return self._control_getter('TARGET_TEMP')[0]
 
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
         return self._control_getter('COOLER_ON')[0]

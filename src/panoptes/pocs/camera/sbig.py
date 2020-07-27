@@ -41,7 +41,7 @@ class Camera(AbstractSDKCamera):
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['imaging_ccd_temperature']
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """
         Current value of the target temperature for the camera's image sensor cooling control.
@@ -51,7 +51,7 @@ class Camera(AbstractSDKCamera):
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['ccd_set_point']
 
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         """
         Current status of the camera's image sensor cooling system (enabled/disabled).
