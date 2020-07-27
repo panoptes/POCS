@@ -197,7 +197,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError  # pragma: no cover
 
     @target_temperature.setter
-    def target_temperature(self, target_temperature):
+    def target_temperature(self, target):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -231,10 +231,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(temperature_tolerance, u.Quantity):
             temperature_tolerance = temperature_tolerance * u.Celsius
         self._temperature_tolerance = temperature_tolerance
-
-        # Monitor temperature until it becomes stable
-        if self.cooling_enabled:
-            self._check_temperature_stability()
 
     @property
     def cooling_enabled(self):
@@ -682,7 +678,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
         # Define an inner-function to run in a thread
-        def check_temp():
+        def check_temp(required_stable_time, sleep_delay, timeout):
             if required_stable_time > timeout:
                 raise ValueError("required_stable_time must be less than timeout.")
             if sleep_delay > timeout:
@@ -724,7 +720,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Wait for stable temperature
         self._is_temperature_stable = False
         self.logger.info(f"Waiting for stable temperature on {self}.")
-        self._temperature_thread = threading.Thread(target=check_temp)
+        self._temperature_thread = threading.Thread(
+                target=check_temp, args=(required_stable_time, sleep_delay, timeout))
         self._temperature_thread.start()
         if blocking:
             self._temperature_thread.join()
