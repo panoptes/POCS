@@ -8,10 +8,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import os
-import sys
 import inspect
+import os
 import shutil
+import sys
 
 __location__ = os.path.join(os.getcwd(), os.path.dirname(
     inspect.getfile(inspect.currentframe())))
@@ -271,17 +271,27 @@ latex_documents = [
 # -- External mapping ------------------------------------------------------------
 python_version = '.'.join(map(str, sys.version_info[0:2]))
 intersphinx_mapping = {
-    'sphinx': ('http://www.sphinx-doc.org/en/stable', None),
+    'sphinx': ('https://www.sphinx-doc.org/en/stable', None),
     'python': ('https://docs.python.org/' + python_version, None),
     'matplotlib': ('https://matplotlib.org', None),
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
-    'sklearn': ('http://scikit-learn.org/stable', None),
-    'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
+    'sklearn': ('https://scikit-learn.org/stable', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
     'astroplan': ('https://astroplan.readthedocs.io/en/latest/', None),
     'panoptes.utils': ('https://panoptes-utils.readthedocs.io/en/latest/', None),
 }
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__init__":
+        return False
+    return would_skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
