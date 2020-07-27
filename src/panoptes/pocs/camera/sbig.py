@@ -51,17 +51,6 @@ class Camera(AbstractSDKCamera):
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['ccd_set_point']
 
-    @target_temperature.setter
-    def target_temperature(self, target):
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
-        self._driver.set_temp_regulation(self._handle, target, self.cooling_enabled)
-
-        # Wait for temperature to stabilise
-        if self.cooling_enabled:
-            self.wait_for_stable_temperature(blocking=False)
-
     @property
     def cooling_enabled(self):
         """
@@ -71,16 +60,6 @@ class Camera(AbstractSDKCamera):
         """
         temp_status = self._driver.query_temp_status(self._handle)
         return temp_status['cooling_enabled']
-
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enable))
-        target = self.target_temperature
-        self._driver.set_temp_regulation(self._handle, target, enable)
-
-        # Wait for temperature to stabilise
-        if self.cooling_enabled:
-            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def cooling_power(self):
@@ -143,6 +122,15 @@ class Camera(AbstractSDKCamera):
             self.filterwheel.connect()
 
 # Private methods
+
+    def _set_target_temperature(self, target):
+        self._driver.set_temp_regulation(self._handle, target, self.cooling_enabled)
+        # Check for success?
+        self._target_temperature = target
+
+    def _set_cooling_enabled(self, enable):
+        target = self.target_temperature
+        self._driver.set_temp_regulation(self._handle, target, enable)
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         readout_mode = 'RM_1X1'  # Unbinned mode

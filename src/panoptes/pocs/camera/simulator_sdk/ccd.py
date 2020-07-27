@@ -38,33 +38,9 @@ class Camera(AbstractSDKCamera, Camera, ABC):
     def cooling_enabled(self):
         return self._cooling_enabled
 
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        self._cooling_enabled = bool(enable)
-
-        # Wait for temperature to stabilise
-        if self._cooling_enabled:
-            self.wait_for_stable_temperature(blocking=False)
-
     @property
     def target_temperature(self):
         return self._target_temperature
-
-    @target_temperature.setter
-    def target_temperature(self, target):
-        # Upon init the camera won't have an existing temperature.
-        with suppress(AttributeError):
-            self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self._target_temperature = target.to(u.Celsius)
-
-        # Wait for temperature to stabilise
-        if self.cooling_enabled:
-            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def temperature(self):
@@ -104,6 +80,22 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_time = time.monotonic()
         self._connected = True
 
-    def wait_for_stable_temperature(self, blocking):
-        return super().wait_for_stable_temperature(
-                blocking, time_stable=10*u.second, sleep_delay=5*u.second)
+    def _check_temperature_stability(self, required_stable_time=10*u.second,
+                                     sleep_delay=5*u.second):
+        """Override to speed-up tests."""
+        super()._check_temperature_stability(required_stable_time=required_stable_time,
+                                             sleep_delay=sleep_delay)
+
+    def _set_target_temperature(self, target):
+        # Upon init the camera won't have an existing temperature.
+        with suppress(AttributeError):
+            self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self._target_temperature = target.to(u.Celsius)
+
+    def _set_cooling_enabled(self, enable):
+        self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        self._cooling_enabled = bool(enable)

@@ -110,28 +110,10 @@ class Camera(AbstractSDKCamera):
         """
         return self._control_getter('TARGET_TEMP')[0]
 
-    @target_temperature.setter
-    def target_temperature(self, target):
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
-        self._control_setter('TARGET_TEMP', target)
-
-        # Wait for temperature to stabilise
-        if self.cooling_enabled:
-            self.wait_for_stable_temperature(blocking=False)
-
     @property
     def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
         return self._control_getter('COOLER_ON')[0]
-
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self._control_setter('COOLER_ON', enable)
-        if self.cooling_enabled:
-            # Wait for temperature to stabilise
-            self.wait_for_stable_temperature(blocking=False)
 
     @property
     def cooling_power(self):
@@ -224,6 +206,14 @@ class Camera(AbstractSDKCamera):
         self.logger.debug("Video capture stopped on {}".format(self))
 
     # Private methods
+
+    def _set_target_temperature(self, target):
+        self._control_setter('TARGET_TEMP', target)
+        # Check for success?
+        self._target_temperature = target
+
+    def _set_cooling_enabled(self, enable):
+        self._control_setter('COOLER_ON', enable)
 
     def _video_readout(self,
                        width,

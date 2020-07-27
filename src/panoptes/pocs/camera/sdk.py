@@ -118,7 +118,7 @@ class AbstractSDKCamera(AbstractCamera):
             if self.is_cooled_camera:
                 self.target_temperature = target_temperature
 
-                # Setting this will call wait_for_stable_temperature
+                # Setting this will call _check_temperature_stability
                 self.cooling_enabled = True
 
                 # Block here while camera temperature stabilises

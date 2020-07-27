@@ -301,7 +301,7 @@ def test_is_temperature_stable(camera):
     if camera.is_cooled_camera:
         camera.target_temperature = camera.temperature
         camera.cooling_enabled = True
-        camera.wait_for_stable_temperature(blocking=True)
+        camera._check_temperature_stability(blocking=True, sleep_delay=1)
         assert camera.is_temperature_stable
         camera.cooling_enabled = False
         assert not camera.is_temperature_stable
