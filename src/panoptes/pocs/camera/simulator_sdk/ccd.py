@@ -34,11 +34,11 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         kwargs.update({'target_temperature': target_temperature})
         super().__init__(name, driver, *args, **kwargs)
 
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         return self._cooling_enabled
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         return self._target_temperature
 
