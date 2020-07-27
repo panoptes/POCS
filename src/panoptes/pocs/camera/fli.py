@@ -103,6 +103,9 @@ class Camera(AbstractSDKCamera):
         # Check for success?
         self._target_temperature = target
 
+    def _set_cooling_enabled():
+        raise NotImplementedError
+
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         self._driver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
