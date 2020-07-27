@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2020-07-09
+# Script Version: 2020-07-27
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system.
@@ -51,6 +51,7 @@ usage() {
 #   * 2020-07-08 (wtgee) - Better test for ssh access for developer.
 #   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files. Use 3rd
 #                           party docker-compose (linuxserver.io) for arm.
+#   * 2020-07-27 (wtgee) - Cleanup and consistency for Unit install.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
