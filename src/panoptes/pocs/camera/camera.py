@@ -671,8 +671,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Wait until camera temperature is within tolerance for a sufficiently long period of time.
 
         Args:
-            required_stable_time (astropy.units.Quantity): Minimum consecutive amount of time to be considered
-                stable. Default 60s.
+            required_stable_time (astropy.units.Quantity): Minimum consecutive amount of
+                time to be considered stable. Default 60s.
             sleep_delay (astropy.units.Quantity): Time to sleep between checks. Default 10s.
             timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
