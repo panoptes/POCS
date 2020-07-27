@@ -435,7 +435,7 @@ class POCS(PanStateMachine, PanBase):
         """
         directory = directory or os.getenv('PANDIR')
         req_space = required_space.to(u.gigabyte)
-        self._free_space = get_free_space(dir=directory)
+        self._free_space = get_free_space(directory=directory)
 
         space_is_low = self._free_space.value <= (req_space.value * low_space_percent)
 
