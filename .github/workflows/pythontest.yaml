@@ -31,9 +31,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
         run: |
-          # Make sure git goes to the build context.
-          sed -i s'/^\.git$/\!\.git/' .dockerignore
-          docker build -t panoptes-pocs:develop -f docker/develop.Dockerfile .
+          PANOPTES_POCS=${PWD} INCLUDE_UTILS=true docker/setup-local-environment.sh
       - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p coverage_dir && chmod 777 coverage_dir
@@ -45,7 +43,7 @@ jobs:
             -v $PWD/coverage_dir:/var/panoptes/logs \
             -v $PWD/coverage_dir:/tmp/coverage \
             panoptes-pocs:develop \
-            scripts/testing/run-tests.sh
+            "/var/panoptes/POCS/scripts/testing/run-tests.sh"
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v1
         if: success()

@@ -1,9 +1,8 @@
 ARG BASE_IMAGE=panoptes-pocs:develop
 FROM ${BASE_IMAGE}
 
-LABEL description="Installs the local folder in develop mode (i.e. pip install .e). \
-and installs a number of developer tools. Runs jupyter lab instance. This assumes the \
-`panoptes-pocs:develop` has already been built locally."
+LABEL description="Installs a number of developer tools. Runs jupyter lab instance. \
+This assumes the `panoptes-pocs:develop` has already been built locally."
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
 
@@ -21,7 +20,6 @@ ENV PANDIR $pan_dir
 ENV PANLOG "$pan_dir/logs"
 ENV PANUSER $panuser
 ENV POCS $pocs_dir
-ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
 
 RUN apt-get update && \
     # Node for jupyterlab.
@@ -29,16 +27,17 @@ RUN apt-get update && \
     # Make a developer's life easier.
     apt-get install -y --no-install-recommends \
         wget curl bzip2 ca-certificates nano neovim \
-        gcc git pkg-config ncdu sudo nodejs && \
-    echo "$PANUSER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
+        gcc git pkg-config ncdu nodejs
 
 USER $PANUSER
-# Can't seem to get around the hard-coding
-COPY --chown=panoptes:panoptes . ${PANDIR}/POCS/
-RUN cd ${PANDIR}/POCS && \
-    # Install everything!
-    pip3 install -e ".[google,developer,plotting,testing]" && \
+RUN echo "Installing developer tools" && \
+    "${PANDIR}/conda/bin/conda" install \
+        altair \
+        bokeh \
+        holoviews \
+        hvplot \
+        jupyterlab \
+        seaborn && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \
     jupyter-lab --generate-config && \
@@ -52,16 +51,14 @@ RUN cd ${PANDIR}/POCS && \
     jupyter labextension install @pyviz/jupyterlab_pyviz \
                                 jupyterlab-drawio \
                                 @aquirdturtle/collapsible_headings \
-                                @telamonian/theme-darcula
-
-USER root
-
-# Cleanup apt.
-RUN apt-get autoremove --purge -y && \
-    apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/*
+                                @telamonian/theme-darcula && \
+    # Cleanup
+    sudo apt-get autoremove --purge --yes && \
+    sudo apt-get autoclean --yes && \
+    sudo rm -rf /var/lib/apt/lists/* && \
+    "${PANDIR}/conda/bin/conda" clean -tipsy
 
 WORKDIR ${PANDIR}
-
+USER root
 # Start a jupyterlab instance.
-CMD ["/home/panoptes/.local/bin/jupyter-lab"]
+CMD ["/home/panoptes/.local/bin/jupyter-lab", "--no-browser"]

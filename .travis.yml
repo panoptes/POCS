@@ -6,16 +6,13 @@ addons:
     packages:
       - docker-ce
 python:
-  # Doesn't matter because we run inside the docker container.
   - "3.6"
 services:
   - docker
 before_install:
-  # Make sure git goes to the build context.
-  - sed -i s'/^\.git$/\!\.git/' .dockerignore
-  - docker build -t panoptes-pocs:develop -f ${TRAVIS_BUILD_DIR}/docker/develop.Dockerfile ${TRAVIS_BUILD_DIR}
+  - PANOPTES_POCS="${TRAVIS_BUILD_DIR}" INCLUDE_UTILS=true docker/setup-local-environment.sh
 install: true
 script:
   - docker run -it
     panoptes-pocs:develop
-    scripts/testing/run-tests.sh
+    "/var/panoptes/POCS/scripts/testing/run-tests.sh"

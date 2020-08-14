@@ -5,8 +5,6 @@ POCS is available as a docker image hosted on Google Cloud Registry (GCR):
 
 Image name: ``gcr.io/panoptes-exp/panoptes-pocs``
 
-Tags: ``latest``, ``develop``, and ``developer-env``.
-
 Setup
 ~~~~~
 
@@ -14,7 +12,7 @@ To build the images locally:
 
 .. code:: bash
 
-    docker/setup-local-environment.sh
+    INCLUDE_UTILS=true docker/setup-local-environment.sh
 
 Then, to run the test suite locally:
 
@@ -22,29 +20,7 @@ Then, to run the test suite locally:
 
     panoptes-develop test
 
-This will build all three images locally and is suitable for testing and development.
-
-Description
-~~~~~~~~~~~
-
-The ``panoptes-pocs`` image comes in three separate flavors, or tags,
-that serve different purposes.
-
-latest
-^^^^^^
-
-The ``latest`` image is the "production" version of ``panoptes-pocs``.
-
-PANOPTES units should be running this flavor.
-
-When running the install script, this will be the default install option unless the "developer" is selected.
-
-develop
-^^^^^^^
-
-The ``develop`` image is used for running the automated tests. These are
-run automatically on both GitHub and Travis for all code pushes but can
-also be run locally while doing development.
+This will build all required images locally and is suitable for testing and development.
 
 developer-env
 ^^^^^^^^^^^^^

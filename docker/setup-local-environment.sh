@@ -1,60 +1,56 @@
 #!/usr/bin/env bash
+
 set -e
 
-export PANDIR=${PANDIR:-/var/panoptes}
-export POCS=${POCS:-/var/panoptes/POCS}
+INCLUDE_BASE=${INCLUDE_BASE:-true} # INCLUDE_UTILS must be true to work.
+INCLUDE_UTILS=${INCLUDE_UTILS:-false}
+INCLUDE_DEVELOPER=${INCLUDE_DEVELOPER:-false}
+
+PANOPTES_UTILS=${PANOPTES_UTILS:-$PANDIR/panoptes-utils}
+PANOPTES_POCS=${PANOPTES_POCS:-$PANDIR/POCS}
+_IMAGE_URL="gcr.io/panoptes-exp/panoptes-utils:latest"
 
 echo "Setting up local environment."
+cd "${PANOPTES_POCS}"
 
-echo "Removing stale docker images to make space"
-docker system prune --force
+build_utils() {
+  /bin/bash "${PANOPTES_UTILS}/docker/setup-local-environment.sh"
+  # Use our local image for build below.
+  _IMAGE_URL="panoptes-utils:develop"
+}
 
-echo "Building local panoptes-utils"
-. "${PANDIR}/panoptes-utils/docker/setup-local-environment.sh"
-
-cd "${POCS}"
-
-# In the local develop we need to pass git to the docker build context.
-#sed -i s'/^\.git$/\!\.git/' .dockerignore
-
-echo "Building local panoptes-pocs:latest from panoptes-utils:develop"
-docker build \
-    --quiet --force-rm \
-    --build-arg IMAGE_URL="panoptes-utils:develop" \
-    -t "panoptes-pocs:latest" \
-    -f "${POCS}/docker/latest.Dockerfile" \
-    "${POCS}"
-
-echo "Building local panoptes-pocs:develop"
-docker build \
-    --quiet --force-rm \
-    --build-arg IMAGE_URL="panoptes-pocs:latest" \
+build_develop() {
+  echo "Building local panoptes-pocs:develop from ${_IMAGE_URL} in ${PANOPTES_POCS}"
+  docker build \
+    --build-arg="image_url=${_IMAGE_URL}" \
+    --build-arg="pip_install=." \
     -t "panoptes-pocs:develop" \
-    -f "${POCS}/docker/develop.Dockerfile" \
-    "${POCS}"
+    -f "${PANOPTES_POCS}/docker/Dockerfile" \
+    "${PANOPTES_POCS}"
+}
 
-echo "Building local panoptes-pocs:developer-env"
-docker build \
-    --quiet --force-rm \
-    --build-arg IMAGE_URL="panoptes-pocs:develop" \
-    -t "panoptes-pocs:developer-env" \
-    -f "${POCS}/docker/developer-env.Dockerfile" \
-    "${POCS}"
+build_developer() {
+  echo "Building local panoptes-pocs:developer from ${_IMAGE_URL} in ${PANOPTES_POCS}"
+  docker build \
+    -t "panoptes-pocs:developer" \
+    -f "${PANOPTES_POCS}/docker/developer.Dockerfile" \
+    "${PANOPTES_POCS}"
+}
 
-# Revert our .dockerignore changes.
-#sed -i s'/^!\.git$/\.git/' .dockerignore
+if [ "${INCLUDE_UTILS}" ]; then
+  build_utils
+fi
 
-docker system prune --force
+build_develop
+
+if [ "${INCLUDE_DEVELOPER}" ]; then
+  build_developer
+fi
 
 cat <<EOF
-
-
-Done building the local images.  To run the development environment enter:
-
-cd $POCS
-bin/panoptes-develop up
+Done building the local images.
 
 To run the tests enter:
 
-bin/panoptes-develop test
+scripts/testing/test-software.sh
 EOF

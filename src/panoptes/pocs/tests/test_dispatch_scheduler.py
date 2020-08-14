@@ -1,5 +1,4 @@
 import os
-import yaml
 import pytest
 
 from astropy import units as u
@@ -12,6 +11,7 @@ from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 from panoptes.utils.config.client import get_config
+from panoptes.utils.serializers import from_yaml, to_yaml
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def field_file():
 
 @pytest.fixture()
 def field_list():
-    return yaml.full_load("""
+    return from_yaml("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
@@ -112,7 +112,7 @@ def test_get_observation_reread(field_list,
 
     # Write out the field list
     with open(temp_file, 'w') as f:
-        f.write(yaml.dump(field_list))
+        f.write(to_yaml(field_list))
 
     scheduler = Scheduler(observer,
                           fields_file=temp_file,
@@ -124,7 +124,7 @@ def test_get_observation_reread(field_list,
 
     # Alter the field file - note same target but new name
     with open(temp_file, 'a') as f:
-        f.write(yaml.dump([{
+        f.write(to_yaml([{
             'name': 'New Name',
             'position': '20h00m43.7135s +22d42m39.0645s',
             'priority': 5000
