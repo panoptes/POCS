@@ -12,7 +12,6 @@ cd "${PANDIR}"
 
 ## Add the daemon option by default.
 if [[ "${SUBCMD}" == "up" ]]; then
-#  SUBCMD="up -d"
   export CONTAINER_NAME="pocs-developer"
   export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-developer.yaml"
 fi
@@ -32,12 +31,3 @@ eval "DOCKER_RUN_OPTIONS=\"${DOCKER_RUN_OPTIONS}\" \
         -p panoptes \
         ${SUBCMD} \
         ${PARAMS}"
-
-# If we just started the environment, try to open the browser for the user.
-#if [[ "${SUBCMD}" == "up -d" ]]; then
-#  # Prompt for password
-#  "${PANDIR}/POCS/bin/wait-for-it.sh" \
-#    localhost:8888 \
-#    -- \
-#    docker exec -it -u panoptes "${CONTAINER_NAME}" jupyter notebook list | grep http | cut -d ' ' -f 1 | xargs xdg-open
-#fi
