@@ -37,13 +37,13 @@ build_developer() {
     "${PANOPTES_POCS}"
 }
 
-if [ "${INCLUDE_UTILS}" ]; then
+if [ "${INCLUDE_UTILS}" = true ]; then
   build_utils
 fi
 
 build_develop
 
-if [ "${INCLUDE_DEVELOPER}" ]; then
+if [ "${INCLUDE_DEVELOPER}" = true ]; then
   build_developer
 fi
 
