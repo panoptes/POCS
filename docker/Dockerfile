@@ -63,4 +63,3 @@ RUN echo "Installing ${pip_install}" && \
     "${PANDIR}/conda/bin/conda" clean -tipsy
 
 USER root
-CMD ["/usr/bin/zsh"]
