@@ -40,18 +40,14 @@ RUN echo "Installing developer tools" && \
         seaborn && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \
-    "${PANDIR}/conda/envs/${conda_env_name}/bin/jupyter-lab" --generate-config && \
+    /usr/bin/env zsh -c "${PANDIR}/conda/envs/${conda_env_name}/bin/jupyter-lab --no-browser --generate-config" && \
     # Jupyterlab extensions.
-    echo "c.JupyterApp.answer_yesBool = True" >> \
+    echo "c.JupyterApp.answer_yes = True" >> \
         "/home/panoptes/.jupyter/jupyter_notebook_config.py" && \
-    echo "c.JupyterApp.open_browserBool = False" >> \
+    echo "c.JupyterApp.open_browser = False" >> \
         "/home/panoptes/.jupyter/jupyter_notebook_config.py" && \
     echo "c.JupyterApp.notebook_dir = '${PANDIR}'" >> \
         "/home/panoptes/.jupyter/jupyter_notebook_config.py" && \
-    "${PANDIR}/conda/envs/${conda_env_name}/bin/jupyter" labextension install @pyviz/jupyterlab_pyviz \
-        jupyterlab-drawio \
-        @aquirdturtle/collapsible_headings \
-        @telamonian/theme-darcula && \
     # Cleanup
     sudo apt-get autoremove --purge --yes && \
     sudo apt-get autoclean --yes && \
@@ -59,5 +55,3 @@ RUN echo "Installing developer tools" && \
 
 USER root
 WORKDIR ${PANDIR}
-# Start a jupyterlab instance.
-CMD ["/var/panoptes/conda/envs/panoptes/bin/jupyter-lab", "--no-browser"]
