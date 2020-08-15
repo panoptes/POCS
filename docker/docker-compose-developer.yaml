@@ -6,30 +6,26 @@ services:
     container_name: config-server
     privileged: true
     network_mode: host
-    env_file: $PANDIR/env
     restart: on-failure
     volumes:
-      - pandir:/var/panoptes
-    command:
-      - "panoptes-config-server"
-      - "run"
-      - "/var/panoptes/POCS/conf_files/pocs.yaml"
-  develop-env:
-    image: "${IMAGE:-panoptes-pocs}:${TAG:-developer-env}"
+      - pocsdir:/var/panoptes/POCS
+    command: ["panoptes-config-server run /var/panoptes/POCS/conf_files/pocs.yaml"]
+  developer:
+    image: "${IMAGE:-panoptes-pocs}:${TAG:-developer}"
     init: true
-    container_name: "${CONTAINER_NAME:-pocs-developer-env}"
+    container_name: "${CONTAINER_NAME:-pocs-developer}"
     privileged: true
     network_mode: host
-    env_file: $PANDIR/env
     depends_on:
       - "config-server"
     volumes:
-      - pandir:/var/panoptes
+      - pocsdir:/var/panoptes/POCS
+    command: ["jupyter lab", "--ip=0.0.0.0"]
 volumes:
-  pandir:
+  pocsdir:
     driver: local
     driver_opts:
       type: none
-      device: /var/panoptes
+      device: /var/panoptes/POCS
       o: bind
 
