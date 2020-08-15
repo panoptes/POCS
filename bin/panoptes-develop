@@ -6,22 +6,15 @@ PARAMS=${@:2}
 
 export PANDIR=${PANDIR:-/var/panoptes}
 export IMAGE="${IMAGE:-panoptes-pocs}"
-export TAG="${TAG:-developer-env}"
+export TAG="${TAG:-developer}"
 
 cd "${PANDIR}"
 
 ## Add the daemon option by default.
 if [[ "${SUBCMD}" == "up" ]]; then
-    SUBCMD="up -d"
-    export CONTAINER_NAME="pocs-developer-env"
-    export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-developer-env.yaml"
-fi
-
-## Add the deamon option by default.
-if [[ "${SUBCMD}" == "test" ]]; then
-    SUBCMD="up"
-    export CONTAINER_NAME="pocs-develop-testing"
-    export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-testing.yaml"
+#  SUBCMD="up -d"
+  export CONTAINER_NAME="pocs-developer"
+  export COMPOSE_FILE="${PANDIR}/POCS/docker/docker-compose-developer.yaml"
 fi
 
 # Pass any other cli args to the containers as an env var named CLI_ARGS
@@ -35,17 +28,16 @@ export DOCKER_RUN_OPTIONS="${DOCKER_RUN_OPTIONS:--e IMAGE=${IMAGE} -e TAG=${TAG}
 eval "DOCKER_RUN_OPTIONS=\"${DOCKER_RUN_OPTIONS}\" \
         docker-compose \
         --project-directory ${PANDIR} \
-        --env-file ${PANDIR}/env \
         -f ${COMPOSE_FILE} \
         -p panoptes \
         ${SUBCMD} \
         ${PARAMS}"
 
 # If we just started the environment, try to open the browser for the user.
-if [[ "${SUBCMD}" == "up -d" ]]; then
-    # Prompt for password
-    "${PANDIR}/POCS/bin/wait-for-it.sh" \
-        localhost:8888 \
-        -- \
-        docker exec -it -u panoptes "${CONTAINER_NAME}" jupyter notebook list | grep http | cut -d ' ' -f 1 | xargs xdg-open
-fi
+#if [[ "${SUBCMD}" == "up -d" ]]; then
+#  # Prompt for password
+#  "${PANDIR}/POCS/bin/wait-for-it.sh" \
+#    localhost:8888 \
+#    -- \
+#    docker exec -it -u panoptes "${CONTAINER_NAME}" jupyter notebook list | grep http | cut -d ' ' -f 1 | xargs xdg-open
+#fi

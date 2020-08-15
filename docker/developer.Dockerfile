@@ -33,7 +33,9 @@ RUN echo "Installing developer tools" && \
     "${PANDIR}/conda/bin/conda" install --name "${conda_env_name}" \
         altair \
         bokeh \
+        httpie \
         jupyterlab \
+        jq \
         holoviews \
         hvplot \
         nodejs \
