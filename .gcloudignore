@@ -2,7 +2,8 @@
 .venv
 venv
 
-!.git
+# See note in .dockerignore about the git folder.
+.git
 .github
 
 *.md
