@@ -46,4 +46,4 @@ steps:
       - "--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}"
       - "."
-    waitFor: ["build-base"]
+    waitFor: ["build-builder"]
