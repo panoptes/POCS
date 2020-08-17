@@ -81,10 +81,10 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._connected = True
 
     def _check_temperature_stability(self, required_stable_time=10*u.second,
-                                     sleep_delay=5*u.second):
+                                     sleep_delay=5*u.second, **kwargs):
         """Override to speed-up tests."""
         super()._check_temperature_stability(required_stable_time=required_stable_time,
-                                             sleep_delay=sleep_delay)
+                                             sleep_delay=sleep_delay, **kwargs)
 
     def _set_target_temperature(self, target):
         # Upon init the camera won't have an existing temperature.

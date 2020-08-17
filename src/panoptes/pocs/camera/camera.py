@@ -677,6 +677,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
+        # Convert all times to seconds
+        sleep_delay = get_quantity_value(sleep_delay, u.second)
+        required_stable_time = get_quantity_value(required_stable_time, u.second)
+        timeout = get_quantity_value(timeout, u.second)
+
         # Define an inner-function to run in a thread
         def check_temp(required_stable_time, sleep_delay, timeout):
             if required_stable_time > timeout:
@@ -684,12 +689,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if sleep_delay > timeout:
                 raise ValueError("sleep_delay must be less than timeout.")
 
-            # Convert all times to seconds
-            sleep_delay = sleep_delay.to_value(u.second)
-            required_stable_time = required_stable_time.to_value(u.second)
-            time_stable = 0
-
             # Wait until stable temperature persists or timeout
+            time_stable = 0
             timer = CountdownTimer(duration=timeout)
             while True:
                 if timer.expired():
@@ -698,6 +699,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 if self._restart_temperature_thread:
                     self._restart_temperature_thread = False
                     return
+                # Check if the temperature is within tolerance
                 if abs(self.temperature - self.target_temperature) < self.temperature_tolerance:
                     time_stable += sleep_delay
                     if time_stable >= required_stable_time:
@@ -706,7 +708,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         return
                 else:
                     time_stable = 0  # Reset the countdown
-                timer.sleep(max_delay=sleep_delay)
+                time.sleep(sleep_delay)
+                # timer.sleep(max_delay=sleep_delay)  # This hangs for some reason
+                # time.sleep(sleep_delay)
             raise error.Timeout(f"Timeout while waiting for stable temperture on {self}.")
 
         # Restart countdown if one is already in progress
