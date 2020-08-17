@@ -682,7 +682,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         required_stable_time = get_quantity_value(required_stable_time, u.second)
         timeout = get_quantity_value(timeout, u.second)
 
-        # Define an inner-function to run in a thread
+        # Define an inner function to run in a thread
         def check_temp(required_stable_time, sleep_delay, timeout):
             if required_stable_time > timeout:
                 raise ValueError("required_stable_time must be less than timeout.")
@@ -708,9 +708,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         return
                 else:
                     time_stable = 0  # Reset the countdown
-                time.sleep(sleep_delay)
                 # timer.sleep(max_delay=sleep_delay)  # This hangs for some reason
-                # time.sleep(sleep_delay)
+                time.sleep(sleep_delay)
             raise error.Timeout(f"Timeout while waiting for stable temperture on {self}.")
 
         # Restart countdown if one is already in progress
