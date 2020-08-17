@@ -1,7 +1,7 @@
 import os
-from astropy import units as u
 from collections import OrderedDict
 
+from astropy import units as u
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
 
@@ -11,7 +11,7 @@ class Observation(PanBase):
     @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60,
                  exp_set_size=10, priority=100, filter_name=None, *args, **kwargs):
-        """ An observation of a given `~pocs.scheduler.field.Field`.
+        """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
         must be taken at a set exposure time (`exptime`). These exposures come
