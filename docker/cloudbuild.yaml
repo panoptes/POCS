@@ -41,7 +41,7 @@ steps:
       - "buildx"
       - "build"
       - "--push"
-      - "--platform=linux/amd64,linux/arm64"
+      - "--platform=${_PLATFORMS}"
       - "-f=docker/Dockerfile"
       - "--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}"
