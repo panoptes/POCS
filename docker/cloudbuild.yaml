@@ -5,6 +5,7 @@ timeout: 18000s  # 5 hours
 
 substitutions:
   _PLATFORMS: linux/amd64,linux/arm64
+  _BASE_IMAGE_NAME: panoptes-utils
   _IMAGE_NAME: panoptes-pocs
   _REPO_URL: https://github.com/panoptes/POCS
   _TAG: latest
@@ -43,8 +44,14 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: ['-c', 'docker pull gcr.io/$PROJECT_ID/${_IMAGE_NAME}:${_TAG} || exit 0']
+    args: ['-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0']
     waitFor: ["build-builder"]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: "pull-cached-base-image"
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull gcr.io/${PROJECT_ID}/${_BASE_IMAGE_NAME}:${_TAG} || exit 0']
+    waitFor: ["pull-cached-image"]
 
   # Build with cloned ${_IMAGE_NAME} as source directory
   - name: "gcr.io/cloud-builders/docker"
@@ -57,6 +64,7 @@ steps:
       - "--push"
       - "--platform=${_PLATFORMS}"
       - "-f=docker/Dockerfile"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE_NAME}:${_TAG}"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "POCS"
