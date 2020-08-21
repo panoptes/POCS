@@ -14,11 +14,7 @@ ARG conda_env_name="panoptes"
 
 ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
 ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
-
-# Default install latest from pip.
-ARG github_branch="${BRANCH_NAME:-master}"
 ARG pip_extras="[testing,google]"
-ARG pip_install="git+https://github.com/panoptes/POCS@${github_branch}#egg=panoptes-pocs"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -32,7 +28,9 @@ ENV POCS $pocs_dir
 USER root
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         gcc \
-        libncurses5-dev \
+        gphoto2 \
+        ncurses-dev \
+        readline-common \
         udev
 
 # Install program dependencies.
@@ -43,23 +41,23 @@ RUN mkdir -p "${PANDIR}/scripts" && \
     # Install gphoto2 auto-updater
     wget $gphoto2_url -O gphoto2-updater.sh && \
     chmod +x gphoto2-updater.sh && \
-    sudo /bin/bash gphoto2-updater.sh --stable && \
+    # Don't actually update gphoto2 as of right now.
+    # sudo /bin/bash gphoto2-updater.sh --stable && \
     # Install arduino-cli.
     wget -q "${arduino_url}" -O install-arduino-cli.sh && \
     sudo BINDIR="/usr/local/bin" /bin/sh install-arduino-cli.sh && \
     sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 
-USER ${PANUSER}
 # Install the module.
+USER ${PANUSER}
 # Can't seem to get around the hard-coding here.
 COPY --chown=panoptes:panoptes . .
-RUN echo "Installing ${pip_install}" && \
-    "${PANDIR}/conda/envs/${conda_env_name}/bin/pip" install -e "${pip_install}${pip_extras}" && \
+RUN "${PANDIR}/conda/envs/${conda_env_name}/bin/pip" install -e ".${pip_extras}" && \
     # Cleanup
     sudo apt-get autoremove --purge --yes && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/* && \
-    "${PANDIR}/conda/bin/conda" clean -tipsy
+    "${PANDIR}/conda/bin/conda" clean -tipy
 
 USER root
