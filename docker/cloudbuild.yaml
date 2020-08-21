@@ -1,19 +1,66 @@
+options:
+  machineType: "N1_HIGHCPU_8"
+  substitutionOption: "ALLOW_LOOSE"
+timeout: 18000s  # 5 hours
+
+substitutions:
+  _PLATFORMS: linux/amd64,linux/arm64
+  _BASE_IMAGE: panoptes-utils:latest
+  _IMAGE_NAME: panoptes-pocs
+  _REPO_URL: https://github.com/panoptes/POCS
+  _TAG: latest
+
 steps:
-- name: 'docker'
-  id: 'amd64-build'
-  args:
-  - 'build'
-  - '--build-arg image_url=gcr.io/panoptes-exp/panoptes-utils:${_TAG}'
-  - '-f=docker/${_TAG}.Dockerfile'
-  - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
-  - '.'
+  # Fetch the repo from github
+  - name: gcr.io/cloud-builders/git
+    id: "clone-repo"
+    args: ["clone", "${_REPO_URL}"]
+    waitFor: ["-"]
 
-- name: 'docker'
-  id: 'amd64-push'
-  args:
-  - 'push'
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
-  waitFor: ['amd64-build']
+  # Pull the cached image.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: "pull-cached-image"
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0']
+    waitFor: ["-"]
 
-images:
-  - 'gcr.io/${PROJECT_ID}/panoptes-pocs:${_TAG}'
+  # Set up multiarch support
+  - name: "gcr.io/cloud-builders/docker"
+    id: "setup-buildx"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "run"
+      - "--privileged"
+      - "--rm"
+      - "docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64"
+    waitFor: ["-"]
+
+  # Build builder
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-builder"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "buildx"
+      - "create"
+      - "--use"
+      - "--driver=docker-container"
+    waitFor: ["setup-buildx"]
+
+  # Build with cloned panoptes-utils as source directory
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-images"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "buildx"
+      - "build"
+      - "--push"
+      - "--platform=${_PLATFORMS}"
+      - "-f=docker/Dockerfile"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
+      - "POCS"
+    waitFor: ["build-builder", "clone-repo"]

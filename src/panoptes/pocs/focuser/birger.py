@@ -149,9 +149,9 @@ class Focuser(AbstractFocuser):
             self._serial_port.close()
             self.logger.debug('Closed serial port {}'.format(self._port))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def is_connected(self):
@@ -211,9 +211,9 @@ class Focuser(AbstractFocuser):
         """ True if the focuser is currently moving. """
         return self._is_moving
 
-##################################################################################################
-# Public Methods
-##################################################################################################
+    ##################################################################################################
+    # Public Methods
+    ##################################################################################################
 
     def connect(self, port):
         try:
@@ -304,9 +304,9 @@ class Focuser(AbstractFocuser):
         self.logger.debug("Moved by {} encoder units".format(moved_by))
         return moved_by
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
 
     def _send_command(self, command, response_length=None, ignore_response=False):
         """
@@ -461,15 +461,15 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Initialising aperture motor')
         response = self._send_command('in', response_length=1)[0].rstrip()
         if response != 'DONE':
-            self.logger.error("{} got '{}', expected 'DONE'!".format(self, response))
+            self.logger.error(f"{self} got {response=}, expected 'DONE'!")
 
     def _move_zero(self):
         response = self._send_command('mz', response_length=1)[0].rstrip()
         if response[:4] != 'DONE':
-            self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
+            self.logger.error(f"{self} got {response=}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
-            self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
+            self.logger.debug(f"Moved {r[:-2]} encoder units to close stop")
             return int(r[:-2])
 
     def _zero_encoder(self):
@@ -480,15 +480,15 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Learning absolute focus range')
         response = self._send_command('la', response_length=1)[0].rstrip()
         if response != 'DONE:LA':
-            self.logger.error("{} got '{}', expected 'DONE:LA'!".format(self, response))
+            self.logger.error(f"{self} got {response=}, expected 'DONE:LA'!")
 
     def _move_inf(self):
         response = self._send_command('mi', response_length=1)[0].rstrip()
         if response[:4] != 'DONE':
-            self.logger.error("{} got '{}', expected 'DONENNNNN,1'!".format(self, response))
+            self.logger.error(f"{self} got {response=}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
-            self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
+            self.logger.debug(f"Moved {r[:-2]} encoder units to far stop")
             return int(r[:-2])
 
     def _add_fits_keywords(self, header):

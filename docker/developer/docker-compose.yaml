@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  config-server:
+    image: "panoptes-utils:develop"
+    init: true
+    container_name: config-server
+    privileged: true
+    network_mode: host
+    restart: on-failure
+    volumes:
+      - pocsdir:/var/panoptes/POCS
+    command: ["panoptes-config-server run /var/panoptes/POCS/conf_files/pocs.yaml"]
+  developer:
+    image: "${IMAGE:-panoptes-pocs}:${TAG:-developer}"
+    init: true
+    container_name: "${CONTAINER_NAME:-pocs-developer}"
+    privileged: true
+    network_mode: host
+    depends_on:
+      - "config-server"
+    volumes:
+      - pocsdir:/var/panoptes/POCS
+    command: ["jupyter lab", "--ip=0.0.0.0"]
+volumes:
+  pocsdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/panoptes/POCS
+      o: bind
+

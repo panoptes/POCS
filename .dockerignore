@@ -1,16 +1,34 @@
-!.git
 docs/*
-.eggs
 .idea
 .venv
 venv
-*.egg-info
+
+# Pass the git folder to the local build context.
+# This is only needed for local builds because of setuptools_scm.
+# The cloudbuild version ignores this folder (and creates a smaller image)
+# because it installs from pypi rather than local.
+!.git
 .github
 
 *.md
 !README*.md
 
-*.log
-*.pdf
+logs/
+**/.ipynb_checkpoints
+**/.pytest_cache
+**/.eggs
+**/*.pdf
+**/*.log
+**/*.egg-info
 **/*.pyc
 **/__pycache__
+notebooks
+examples
+docs
+build
+coverage.xml
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*

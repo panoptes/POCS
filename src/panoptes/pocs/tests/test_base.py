@@ -1,24 +1,14 @@
 import pytest
 
-from pocs import PanBase
+from panoptes.pocs.base import PanBase
+
+from panoptes.utils.database import PanDB
 
 
-def test_check_config1(config):
-    del config['mount']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
+def test_with_logger():
+    PanBase()
 
 
-def test_check_config2(config):
-    del config['directories']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
-
-
-def test_check_config3(config):
-    del config['state_machine']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
+def test_with_db():
+    base = PanBase(db=PanDB(db_type='memory', db_name='tester'))
+    assert isinstance(base, PanBase)

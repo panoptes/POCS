@@ -1,79 +1,79 @@
-import sys
+from requests.exceptions import ConnectionError
 
-from pocs import hardware
-from pocs import __version__
-from pocs.utils import config
-from pocs.utils.database import PanMongo
-from pocs.utils.logger import get_root_logger
+from panoptes.pocs import __version__
+from panoptes.utils.database import PanDB
+from panoptes.utils.config import client
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs import hardware
 
-# Global vars
-_config = None
-
-
-def reset_global_config():
-    """Reset the global _config to None.
-
-    Globals such as _config make tests non-hermetic. Enable conftest.py to clear _config
-    in an explicit fashion.
-    """
-    global _config
-    _config = None
+# Global database.
+PAN_DB_OBJ = None
 
 
 class PanBase(object):
-
     """ Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, config).
+    Defines common properties for each class (e.g. logger, config, db).
     """
 
-    def __init__(self, *args, **kwargs):
-        # Load the default and local config files
-        global _config
-        if _config is None:
-            ignore_local_config = kwargs.get('ignore_local_config', False)
-            _config = config.load_config(ignore_local=ignore_local_config)
-
+    def __init__(self, config_port='6563', *args, **kwargs):
         self.__version__ = __version__
 
-        # Update with run-time config
-        if 'config' in kwargs:
-            _config.update(kwargs['config'])
+        self._config_port = config_port
 
-        self._check_config(_config)
-        self.config = _config
+        self.logger = get_logger()
 
-        self.logger = kwargs.get('logger')
-        if not self.logger:
-            self.logger = get_root_logger()
+        # If the user requests a db_type then update runtime config
+        db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
+        db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
+        db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
 
-        self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
+        global PAN_DB_OBJ
+        if PAN_DB_OBJ is None:
+            PAN_DB_OBJ = PanDB(db_type=db_type, db_name=db_name, storage_dir=db_folder)
 
-        # Set up connection to database
-        db = kwargs.get('db', self.config['db']['name'])
-        _db = PanMongo(db=db)
+        self.db = PAN_DB_OBJ
 
-        self.db = _db
+    def get_config(self, *args, **kwargs):
+        """Thin-wrapper around client based get_config that sets default port.
 
-    def _check_config(self, temp_config):
-        """ Checks the config file for mandatory items """
+        See `panoptes.utils.config.client.get_config` for more information.
 
-        if 'directories' not in temp_config:
-            sys.exit('directories must be specified in config')
+        Args:
+            *args: Passed to get_config
+            **kwargs: Passed to get_config
+        """
+        config_value = None
+        try:
+            config_value = client.get_config(port=self._config_port, *args, **kwargs)
+        except ConnectionError as e:  # pragma: no cover
+            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
-        if 'mount' not in temp_config:
-            sys.exit('Mount must be specified in config')
+        return config_value
 
-        if 'state_machine' not in temp_config:
-            sys.exit('State Table must be specified in config')
+    def set_config(self, key, new_value, *args, **kwargs):
+        """Thin-wrapper around client based set_config that sets default port.
 
-    def __getstate__(self):  # pragma: no cover
-        d = dict(self.__dict__)
+        See `panoptes.utils.config.client.set_config` for more information.
 
-        if 'logger' in d:
-            del d['logger']
+        Args:
+            key (str): The key name to use, can be namespaced with dots.
+            new_value (any): The value to store.
+            *args: Passed to set_config
+            **kwargs: Passed to set_config
+        """
+        config_value = None
 
-        if 'db' in d:
-            del d['db']
+        if key == 'simulator' and new_value == 'all':
+            # Don't use hardware.get_simulator_names because it checks config.
+            new_value = hardware.ALL_NAMES
 
-        return d
+        try:
+            self.logger.trace(f'Setting config {key=} {new_value=}')
+            config_value = client.set_config(key, new_value, port=self._config_port, *args,
+                                             **kwargs)
+            self.logger.trace(f'Config set {config_value=}')
+        except ConnectionError as e:  # pragma: no cover
+            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+
+        return config_value

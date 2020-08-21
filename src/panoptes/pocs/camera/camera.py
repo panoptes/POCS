@@ -25,7 +25,7 @@ from panoptes.pocs.base import PanBase
 from panoptes.utils.serializers import from_yaml
 
 
-def parse_config(lines):
+def parse_config(lines):  # pragma: no cover
     yaml_string = ''
     for line in lines:
         IsID = len(line.split('/')) > 1
@@ -69,8 +69,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     Attributes:
         filter_type (str): Type of filter attached to camera, default RGGB.
-        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera, default None.
-        filter_wheel (`panoptes.pocs.filterwheel.AbstractFilterWheel`|None): Filter wheel for the camera,
+        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera,
+        default None.
+        filter_wheel (`panoptes.pocs.filterwheel.AbstractFilterWheel`|None): Filter wheel for the
+        camera,
             default None.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
@@ -94,7 +96,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         For these cameras serial_number should be passed to the constructor instead. For SBIG and
         FLI this should simply be the serial number engraved on the camera case, whereas for
         ZWO cameras this should be the 8 character ID string previously saved to the camera
-        firmware.  This can be done using ASICAP, or `panoptes.pocs.camera.libasi.ASIDriver.set_ID()`.
+        firmware.  This can be done using ASICAP,
+        or `panoptes.pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
     _subcomponent_classes = {'Focuser', 'FilterWheel'}
@@ -634,7 +637,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return thumbnail
 
     @abstractmethod
-    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
+                        **kwargs):
         """Responsible for the camera-specific process that start an exposure.
 
         This method is called from the `take_exposure` method and is used to handle
@@ -734,7 +738,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
-                    self.logger.debug(f'Moving filterwheel={self.filterwheel} to filter_name={observation.filter_name}')
+                    self.logger.debug(
+                        f'Moving filterwheel={self.filterwheel} to filter_name='
+                        f'{observation.filter_name}')
                     self.filterwheel.move_to(observation.filter_name, blocking=True)
                 except Exception as e:
                     self.logger.error(f'Error moving filterwheel on {self} to'
@@ -743,7 +749,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             else:
                 self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 f' observation but {self.filterwheel} is missing that filter, using'
+                                 f' observation but {self.filterwheel} is missing that filter, '
+                                 f'using'
                                  f' {self.filter_type}.')
 
         if headers is None:
@@ -756,7 +763,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(
+            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -813,7 +821,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             metadata.update(headers)
 
         self.logger.debug(
-            f'Observation setup: exptime={exptime} file_path={file_path} image_id={image_id} metadata={metadata}')
+            f'Observation setup: exptime={exptime} file_path={file_path} image_id={image_id} '
+            f'metadata={metadata}')
         return exptime, file_path, image_id, metadata
 
     def _process_fits(self, file_path, info):
@@ -845,7 +854,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 base_module = load_module(base_module_name)
             except error.NotFound as err:
-                self.logger.critical(f"Couldn't import {class_name} base class module {base_module_name}!")
+                self.logger.critical(
+                    f"Couldn't import {class_name} base class module {base_module_name}!")
                 raise err
             base_class = getattr(base_module, f"Abstract{class_name}")
 
@@ -861,7 +871,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
                     raise err
                 subcomponent_kwargs = copy.deepcopy(subcomponent)
-                subcomponent_kwargs.update({'camera': self, 'config_port': self._config_port})
+                subcomponent_kwargs.update({'camera': self})
                 setattr(self,
                         class_name_lower,
                         getattr(module, class_name)(**subcomponent_kwargs))
@@ -891,7 +901,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     else:
                         s += f" & {subcomponent.name}"
                     sub_count += 1
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f'Unable to stringify camera: {e=}')
             s = str(self.__class__)
 
         return s

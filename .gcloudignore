@@ -1,0 +1,25 @@
+.idea
+.venv
+venv
+
+# See note in .dockerignore about the git folder.
+.git
+.github
+
+*.md
+!README*.md
+
+logs/
+**/.ipynb_checkpoints
+**/.pytest_cache
+**/.eggs
+**/*.pdf
+**/*.log
+**/*.egg-info
+**/*.pyc
+**/__pycache__
+notebooks
+examples
+docs
+build
+coverage.xml

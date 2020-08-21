@@ -42,31 +42,25 @@ class BaseScheduler(PanBase):
 
         assert isinstance(observer, Observer)
 
-        self._fields_file = fields_file
+        self._observations = dict()
+        self._current_observation = None
+        self._fields_list = fields_list
+
+        self.fields_file = fields_file
         # Setting the fields_list directly will clobber anything
         # from the fields_file. It comes second so we can specifically
         # clobber if passed.
-        self._fields_list = fields_list
-        self._observations = dict()
 
         self.observer = observer
-
         self.constraints = constraints or list()
-
-        self._current_observation = None
         self.observed_list = OrderedDict()
 
-        if not self.get_config('scheduler.check_file', default=False):
+        if self.get_config('scheduler.check_file', default=True):
             self.logger.debug("Reading initial set of fields")
             self.read_field_list()
 
         # Items common to each observation that shouldn't be computed each time.
-
         self.common_properties = None
-
-    ##########################################################################
-    # Properties
-    ##########################################################################
 
     @property
     def status(self):
@@ -155,10 +149,7 @@ class BaseScheduler(PanBase):
         self.clear_available_observations()
 
         self._fields_file = new_file
-        if new_file is not None:
-            assert os.path.exists(new_file), \
-                self.logger.error("Cannot load field list: {}".format(new_file))
-            self.read_field_list()
+        self.read_field_list()
 
     @property
     def fields_list(self):
@@ -183,10 +174,6 @@ class BaseScheduler(PanBase):
 
         self._fields_list = new_list
         self.read_field_list()
-
-    ##########################################################################
-    # Methods
-    ##########################################################################
 
     def clear_available_observations(self):
         """Reset the list of available observations"""
@@ -229,27 +216,24 @@ class BaseScheduler(PanBase):
         Args:
             field_config (dict): Configuration items for `Observation`
         """
-        if 'exptime' in field_config:
-            field_config['exptime'] = float(get_quantity_value(
-                field_config['exptime'], unit=u.second)) * u.second
+        with suppress(KeyError):
+            field_config['exptime'] = float(get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
 
-        self.logger.debug("Adding {} to scheduler", field_config['name'])
-        field = Field(field_config['name'], field_config['position'],
-                      config_port=self._config_port)
-        self.logger.debug("Created {} Field", field_config['name'])
+        self.logger.debug(f"Adding {field_config=} to scheduler")
+        field = Field(field_config['name'], field_config['position'])
+        self.logger.debug(f"Created {field.name=}")
 
         try:
             self.logger.debug(f"Creating observation for {field_config!r}")
-            obs = Observation(field, config_port=self._config_port, **field_config)
-            self.logger.debug(f"Observation created {obs}")
+            obs = Observation(field, **field_config)
+            self.logger.debug(f"Observation created for {field.name=}")
         except Exception as e:
             raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
         else:
-            self.logger.debug(f"Checking if {field.name} in self._observations")
             if field.name in self._observations:
-                self.logger.debug("Overriding existing entry for {}".format(field.name))
+                self.logger.debug(f"Overriding existing entry for {field.name=}")
             self._observations[field.name] = obs
-            self.logger.debug(f"{obs} added")
+            self.logger.debug(f"{obs=} added")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
@@ -265,8 +249,8 @@ class BaseScheduler(PanBase):
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
+        self.logger.debug(f'Reading fields from file: {self.fields_file}')
         if self._fields_file is not None:
-            self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError

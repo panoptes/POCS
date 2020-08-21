@@ -2,7 +2,7 @@
 POCS
 ====
 
-.. include:: ../README.rst
+.. include:: ./README.rst
 
 Contents
 ========
@@ -10,11 +10,12 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   License <license>
-   Authors <authors>
+   Docker Guider <docker>
+   Contributing Guide <contribute>
    Changelog <changelog>
    Module Reference <api/modules>
-   Contributing Guide <contribute>
+   Authors <authors>
+   License <license>
 
 
 Indices and tables

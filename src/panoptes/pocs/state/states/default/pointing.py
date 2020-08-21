@@ -65,7 +65,6 @@ def on_enter(event_data):
                 pointing_image = Image(
                     pointing_path,
                     location=pocs.observatory.earth_location,
-                    config_port=pocs.config_port
                 )
                 pocs.logger.debug(f"Pointing image: {pointing_image}")
 

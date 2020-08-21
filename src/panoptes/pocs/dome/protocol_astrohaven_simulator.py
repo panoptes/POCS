@@ -1,13 +1,12 @@
 import datetime
 import queue
 from serial import serialutil
-import sys
 import threading
 import time
 
-from pocs.dome import astrohaven
-from pocs.tests import serial_handlers
-import pocs.utils.logger
+from panoptes.pocs.dome import astrohaven
+from panoptes.utils import serial_handlers
+from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
 CLOSED_POSITION = 0
@@ -38,24 +37,22 @@ class Shutter(object):
         self.max_position = max(CLOSED_POSITION, OPEN_POSITION)
 
     def handle_input(self, input_char):
-        ts = datetime.datetime.now()
-        msg = ts.strftime('%M:%S.%f')
         if input_char in self.open_commands:
             if self.is_open:
                 return (False, self.is_open_char)
-            self.logger.info('Opening side %s, starting position %r' % (self.side, self.position))
+            self.logger.debug(f'Opening side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_OPEN_INCREMENT)
             if self.is_open:
-                self.logger.info('Opened side %s' % self.side)
+                self.logger.debug(f'Opened side {self.side}')
                 return (True, self.is_open_char)
             return (True, input_char)
         elif input_char in self.close_commands:
             if self.is_closed:
                 return (False, self.is_closed_char)
-            self.logger.info('Closing side %s, starting position %r' % (self.side, self.position))
+            self.logger.debug(f'Closing side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_CLOSED_INCREMENT)
             if self.is_closed:
-                self.logger.info('Closed side %s' % self.side)
+                self.logger.debug(f'Closed side {self.side}')
                 return (True, self.is_closed_char)
             return (True, input_char)
         else:
@@ -119,7 +116,7 @@ class AstrohavenPLCSimulator:
                 return
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
-            self.logger.info('AstrohavenPLCSimulator.run remaining=%r' % remaining)
+            self.logger.info(f'AstrohavenPLCSimulator.run remaining={remaining}')
             if remaining <= 0:
                 self.do_output()
                 continue
@@ -128,7 +125,7 @@ class AstrohavenPLCSimulator:
             except queue.Empty:
                 continue
             if self.handle_input(c):
-                # This sleep is here to reflect the fact that responses from the Astrohaven PLC
+                # This wait is here to reflect the fact that responses from the Astrohaven PLC
                 # don't appear to be instantaneous, and the Wheaton originated driver had pauses
                 # and drains of input from the PLC before accepting a response.
                 time.sleep(0.2)
@@ -142,7 +139,7 @@ class AstrohavenPLCSimulator:
         c = self.next_output_code
         if not c:
             c = self.compute_state()
-            self.logger.info('AstrohavenPLCSimulator.compute_state -> {!r}', c)
+            self.logger.debug(f'AstrohavenPLCSimulator.compute_state -> {c!r}')
         self.next_output_code = None
         # We drop output if the queue is full.
         if not self.status_queue.full():
@@ -150,7 +147,7 @@ class AstrohavenPLCSimulator:
             self.next_output_time = datetime.datetime.now() + self.delta
 
     def handle_input(self, c):
-        self.logger.info('AstrohavenPLCSimulator.handle_input {!r}', c)
+        self.logger.debug(f'AstrohavenPLCSimulator.handle_input {c!r}')
         (a_acted, a_resp) = self.shutter_a.handle_input(c)
         (b_acted, b_resp) = self.shutter_b.handle_input(c)
         # Use a_resp if a_acted or if there is no b_resp
@@ -175,9 +172,9 @@ class AstrohavenPLCSimulator:
             if self.shutter_b.is_closed:
                 return Protocol.BOTH_CLOSED
             else:
-                return Protocol.B_IS_OPEN
+                return Protocol.A_IS_CLOSED
         elif self.shutter_b.is_closed:
-            return Protocol.A_IS_OPEN
+            return Protocol.B_IS_CLOSED
         else:
             return Protocol.BOTH_OPEN
 
@@ -185,7 +182,7 @@ class AstrohavenPLCSimulator:
 class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger = get_logger()
         self.plc_thread = None
         self.command_queue = queue.Queue(maxsize=50)
         self.status_queue = queue.Queue(maxsize=1000)
@@ -259,7 +256,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             if timeout_obj.expired():
                 break
         response = bytes(response)
-        self.logger.info('AstrohavenSerialSimulator.read({}) -> {!r}', size, response)
+        self.logger.debug(f'AstrohavenSerialSimulator.read({size}) -> {response!r}')
         return response
 
     @property
@@ -305,7 +302,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
-        self.logger.info('AstrohavenSerialSimulator.write({!r})', data)
+        self.logger.info(f'AstrohavenSerialSimulator.write({data!r})')
         count = 0
         timeout_obj = serialutil.Timeout(self.write_timeout)
         for b in data:
@@ -360,7 +357,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             _drain_queue(self.status_queue)
             self.stop.clear()
             self.plc_thread = threading.Thread(
-                name='Astrohaven PLC Simulator', target=lambda: self.plc.run())
+                name='Astrohaven PLC Simulator', target=lambda: self.plc.run(), daemon=True)
             self.plc_thread.start()
         elif self.plc_thread and not need_thread:
             self.stop.set()

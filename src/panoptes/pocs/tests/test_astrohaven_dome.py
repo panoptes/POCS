@@ -1,36 +1,36 @@
 # Test the Astrohaven dome interface using a simulated dome controller.
+from contextlib import suppress
 
-import copy
 import pytest
 import serial
 
-import pocs.dome
-from pocs.dome import astrohaven
+from panoptes.pocs import hardware
+from panoptes.pocs.dome import astrohaven
+from panoptes.pocs.dome import create_dome_simulator
+
+from panoptes.utils.config.client import set_config
 
 
 @pytest.fixture(scope='function')
-def dome(config):
+def dome():
     # Install our test handlers for the duration.
-    serial.protocol_handler_packages.append('pocs.dome')
+    serial.protocol_handler_packages.append('panoptes.pocs.dome')
 
     # Modify the config so that the dome uses the right controller and port.
-    config = copy.deepcopy(config)
-    dome_config = config.setdefault('dome', {})
-    dome_config.update({
+    set_config('simulator', hardware.get_all_names(without=['dome']))
+    set_config('dome', {
         'brand': 'Astrohaven',
         'driver': 'astrohaven',
         'port': 'astrohaven_simulator://',
     })
-    del config['simulator']
-    the_dome = pocs.dome.create_dome_from_config(config)
+    the_dome = create_dome_simulator()
+
     yield the_dome
-    try:
+    with suppress(Exception):
         the_dome.disconnect()
-    except Exception:
-        pass
 
     # Remove our test handlers.
-    serial.protocol_handler_packages.remove('pocs.dome')
+    serial.protocol_handler_packages.remove('panoptes.pocs.dome')
 
 
 def test_create(dome):
@@ -64,11 +64,17 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.status == 'Both sides open'
+    assert dome.status['open'] == 'open_both'
     assert dome.is_open is True
 
+    # Try to open shutter
+    assert dome.open() is True
+
     assert dome.close() is True
-    assert dome.status == 'Both sides closed'
+    assert dome.status['open'] == 'closed_both'
     assert dome.is_closed is True
+
+    # Try to close again
+    assert dome.close() is True
 
     dome.disconnect()

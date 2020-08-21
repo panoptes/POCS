@@ -15,24 +15,24 @@ from panoptes.utils.config.client import get_config
 
 
 @pytest.fixture
-def constraints(dynamic_config_server, config_port):
-    return [MoonAvoidance(config_port=config_port), Duration(30 * u.deg, config_port=config_port)]
+def constraints():
+    return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
 @pytest.fixture
-def observer(dynamic_config_server, config_port):
-    loc = get_config('location', port=config_port)
+def observer():
+    loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
-def field_file(dynamic_config_server, config_port):
-    scheduler_config = get_config('scheduler', default={}, port=config_port)
+def field_file():
+    scheduler_config = get_config('scheduler', default={})
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets', port=config_port), fields_file)
+    fields_path = os.path.join(get_config('directories.targets'), fields_file)
 
     return fields_path
 
@@ -82,19 +82,17 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(dynamic_config_server, config_port, field_list, observer, constraints):
+def scheduler(field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
-                     constraints=constraints,
-                     config_port=config_port)
+                     constraints=constraints)
 
 
 @pytest.fixture
-def scheduler_from_file(dynamic_config_server, config_port, field_file, observer, constraints):
+def scheduler_from_file(field_file, observer, constraints):
     return Scheduler(observer,
                      fields_file=field_file,
-                     constraints=constraints,
-                     config_port=config_port)
+                     constraints=constraints)
 
 
 @pytest.fixture
@@ -111,9 +109,7 @@ def test_get_observation(scheduler):
     assert isinstance(best[1], float)
 
 
-def test_get_observation_reread(dynamic_config_server,
-                                config_port,
-                                field_list,
+def test_get_observation_reread(field_list,
                                 observer,
                                 temp_file,
                                 constraints):
@@ -125,8 +121,7 @@ def test_get_observation_reread(dynamic_config_server,
 
     scheduler = Scheduler(observer,
                           fields_file=temp_file,
-                          constraints=constraints,
-                          config_port=config_port)
+                          constraints=constraints)
 
     # Get observation as above
     best = scheduler.get_observation(time=time)

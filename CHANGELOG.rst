@@ -6,17 +6,86 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
+[0.7.5] - 2020-08-21
+--------------------
+
+Changed
+~~~~~~~
+
+* Dependency updates:
+
+  * `panoptes-utils` to `0.2.26`. (#995)
+  * `panoptes-utils` to `0.2.21`. (#979)
+  * `panoptes-utils` to `0.2.20`. (#974)
+
+* Install script. (#974)
+
+  * Env var file is sourced for zshrc and bashrc.
+  * Fix the clone of the repos in install script. (#978)
+  * Adding a date version to script. (#979)
+  * `docker-compose` version bumped to `1.26.2`. (#979)
+  * Better testing for ssh access. (#984)
+  * Using `linuxserver.io docker-compose <https://hub.docker.com/r/linuxserver/docker-compose>`_ so we also have `arm` version without work. (#986)
+  * Fixing conditional so script can proceed without restart. (#986)
+  * Generalizing install script in sections. (#986)
+
+* Development Environment (#974)
+
+  * Many cleanups to environment and launch. See docs.
+  * Config server started along with development environment.
+  * Docker images and python packages are now automated via GitHub Actions and Google Cloud Build. (#995)
+
+* Docker image updates (#972)
+
+  * Updated `install-pocs.sh` script.
+  * ``latest`` installs the ``panoptes-pocs`` module from pip
+  * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
+  * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
+  * Use new ``arduino-cli`` installer.
+  * Add ``bin/panoptes-develop`` and ``bin/wait-for-it.sh`` to installed scripts.
+  * Add ``docker/setup-local-environment.sh``, a convenience script for building local images.
+  * Python moved to 3.8. (#974)
+  * Docker images are now built with buildx to get an arm version running. (#978)
+  * Removing readline and pendulum dependencies. (#978)
+  * Fully automated build and release of packages with GitHub Actions. (#995)
+
+* Testing (#974)
+
+  * Removing all the dynamic config server info, making things a lot simpler.
+  * `docker-compose` files for running tests.
+  * Misc documentation updates.
+  * Code coverage no longer ignores test.
+  * Testing is run via `panoptes-develop test`.
+  * Log files are rotated during each run.
+
+* POCS (#974)
+
+  * POCS instance cannot `initialize` unless it's `observatory.can_observe`.
+  * Set `simulator` config item at start of `POCS` init method if `simulators` (note plural) is passed.
+  * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
+  * Adding some action flags to the `pocs.yaml` file.
+  * Remove `POCS.check_environment` class method.
+  * Add a `console_log_level` and `stderr_log_level`. The former is written to the log file in `$PANLOG` and is meant to be tailed in the console. The `stderr_log_level` is what would be displayed, e.g. in a jupyter notebook. (#977)
+  * Mount simulator better name and stringify. (#977)
+  * Global db object for `PanBase` (#977)
+  * Allow for custom folder for metadata. (#979)
+    * Default changed to `metadata`.
+
+* Camera simulator cleanup. (#974)
+* Scheduler (#974)
+
+    * The `fields_file` is read when scheduler is created.
 
 [0.7.4] - 2020-05-31
-----------
+--------------------
 
-Note that we skipped `0.7.2` and `0.7.3`.
+Note that we skipped ``0.7.2`` and ``0.7.3``.
 
 
 Bug fixes
 ~~~~~~~~~
 
-* Package name is `panoptes-pocs` for namespace consistency. (#971)
+* Package name is ``panoptes-pocs`` for namespace consistency. (#971)
 * README changed to rst. (#971)
 
 
@@ -47,7 +116,9 @@ Added
 * Storing an explicit ``safety`` collection in the database.
 * Configuration file specific for testing rather than relying on ``pocs.yaml``.
 * Convenience scripts for running tests inside docker container:
-   ``scripts/testing/test-software.sh``
+
+ ``scripts/testing/test-software.sh``
+
 * GitHub Actions for testing and coverage upload.
 
 Changed
@@ -55,19 +126,25 @@ Changed
 
 * Docker as default. (#951).
 * Weather items have moved to `aag-weather <https://github.com/panoptes/aag-weather>`__.
-    * Two docker containers run from the ``aag-weather`` image and have a ``docker/docker-compose-aag.yaml`` file to start.
+
+  * Two docker containers run from the ``aag-weather`` image and have a ``docker/docker-compose-aag.yaml`` file to start.
+
 * Config items related to the configuration system have been moved to the `Config Server <https://panoptes-utils.readthedocs.io/en/latest/#config-server>`__ in ``panoptes-utils`` repo.
-    * The main interface for POCS related items is through ``self.get_config``, which can take a key and a default, e.g. ``self.get_config('mount.horizon', default='30 deg')``.
-    * Test writing is affected and is currently more difficult than would be ideal. An updated test writing document will be following this release.
+
+  * The main interface for POCS related items is through ``self.get_config``, which can take a key and a default, e.g. ``self.get_config('mount.horizon', default='30 deg')``.
+  * Test writing is affected and is currently more difficult than would be ideal. An updated test writing document will be following this release.
 
 * Logging has changed to `loguru <https://github.com/Delgan/loguru>`__ and has been greatly simplified:
-    * ``get_root_logger`` has been replaced by ``get_logger``.
+
+  * ``get_root_logger`` has been replaced by ``get_logger``.
+
 * The ``per-run`` logs have been removed and have been replaced by two logs files:
-   * ``$PANDIR/logs/panoptes.log``: Log file meant for watching on the
+
+ * ``$PANDIR/logs/panoptes.log``: Log file meant for watching on the
       command line (via ``tail``) or for otherwise human-readable logs.
       Rotated daily at 11:30 am. Only the previous days' log is
       retained.
-   * ``$PANDIR/logs/panoptes_YYYYMMDD.log``: Log file meant for archive
+ * ``$PANDIR/logs/panoptes_YYYYMMDD.log``: Log file meant for archive
       or information gathering. Stored in JSON format for ingestion into
       log analysis service. Rotated daily at 11:30 and stored in a
       compressed file for 7 days. Future updates will add option to
@@ -159,11 +236,9 @@ Removed
 [0.6.1] - 2018-09-20
 --------------------
 
-| Lots of changes in this release. In particular we've pushed through a
-lot of changes
-| (especially with the help of @jamessynge) to make the development
-process a lot
-| smoother. This has in turn contribute to the quality of the codebase.
+* Lots of changes in this release. In particular we've pushed through a lot of changes
+* (especially with the help of @jamessynge) to make the development process a lot
+* smoother. This has in turn contribute to the quality of the codebase.
 
 Too long between releases but even more exciting improvements to come!
 Next up is tackling the events notification system, which will let us
@@ -192,11 +267,9 @@ Changed
 ~~~~~~~
 
 * Mount
-* POCS Shell: Hitting ``Ctrl-c`` will complete movement through states
-   [#590].
+* POCS Shell: Hitting ``Ctrl-c`` will complete movement through states [#590].
 * Pointing updates, including ``auto_correct`` [#580].
-* Tracking mode updates (**fixes for Northern Hemisphere only!**)
-   [#549].
+* Tracking mode updates (**fixes for Northern Hemisphere only!**) [#549].
 * Serial interaction improvements [#388, #403].
 * Shutdown improvements [#407, #421].
 * Dome
