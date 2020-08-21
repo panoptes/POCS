@@ -3,7 +3,7 @@ import random
 from panoptes.pocs.dome import AbstractDome
 
 
-class Dome(pocs.dome.AbstractDome):
+class Dome(AbstractDome):
     """Simulator for a Dome controller."""
 
     def __init__(self, *args, **kwargs):

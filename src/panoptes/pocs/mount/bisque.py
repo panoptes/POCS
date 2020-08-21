@@ -300,9 +300,6 @@ class Mount(AbstractMount):
         if response is None:
             return response_obj
 
-        if response is None:
-            return response_obj
-
         try:
             response_obj = json.loads(response)
         except TypeError as e:

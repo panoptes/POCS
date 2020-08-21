@@ -1,6 +1,6 @@
-from pocs import dome
-from pocs.utils import error
-from pocs.utils import rs232
+from panoptes.pocs import dome
+from panoptes.utils import error
+from panoptes.utils import rs232
 
 
 class AbstractSerialDome(dome.AbstractDome):

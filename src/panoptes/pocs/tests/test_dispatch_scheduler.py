@@ -95,11 +95,6 @@ def scheduler_from_file(field_file, observer, constraints):
                      constraints=constraints)
 
 
-@pytest.fixture
-def scheduler_from_file(field_file, observer, constraints):
-    return Scheduler(observer, fields_file=field_file, constraints=constraints)
-
-
 def test_get_observation(scheduler):
     time = Time('2016-08-13 10:00:00')
 

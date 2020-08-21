@@ -201,8 +201,7 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference")
+        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec
