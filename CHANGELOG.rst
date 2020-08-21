@@ -29,11 +29,11 @@ Changed
   * Fixing conditional so script can proceed without restart. (#986)
   * Generalizing install script in sections. (#986)
 
-
 * Development Environment (#974)
 
   * Many cleanups to environment and launch. See docs.
   * Config server started along with development environment.
+  * Docker images and python packages are now automated via GitHub Actions and Google Cloud Build. (#995)
 
 * Docker image updates (#972)
 
