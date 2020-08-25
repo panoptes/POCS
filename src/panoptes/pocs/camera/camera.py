@@ -289,8 +289,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if self.is_cooled_camera and self.cooling_enabled:
 
             # Temperature must be within tolerance
-            temp_check = abs(self.temperature - self.target_temperature
-                             ) < self.temperature_tolerance
+            temp_difference = abs(self.temperature - self.target_temperature)
+            at_target_temp = temp_difference < self.temperature_tolerance
 
             # Camera cooling power must not be 100%
             cooling_has_stopped = not(get_quantity_value(self.cooling_power, u.percent) < 100)
