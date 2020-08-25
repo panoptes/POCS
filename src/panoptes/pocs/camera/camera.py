@@ -708,7 +708,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                         return
                 else:
                     time_stable = 0  # Reset the countdown
-                # timer.sleep(max_delay=sleep_delay)  # This hangs for some reason
                 time.sleep(sleep_delay)
             raise error.Timeout(f"Timeout while waiting for stable temperture on {self}.")
 
