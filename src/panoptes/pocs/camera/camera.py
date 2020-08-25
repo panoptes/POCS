@@ -695,7 +695,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             while True:
                 if timer.expired():
                     break
-                # We may need to restart the thread before it has finished
+                # We may need to restart the thread before it has finished if another check has been requested.
                 if self._restart_temperature_thread:
                     self._restart_temperature_thread = False
                     return
