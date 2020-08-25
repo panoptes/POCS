@@ -293,25 +293,28 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             at_target_temp = temp_difference < self.temperature_tolerance
 
             # Camera cooling power must not be 100%
-            cooling_has_stopped = not(get_quantity_value(self.cooling_power, u.percent) < 100)
+            cooling_at_maximum = get_quantity_value(self.cooling_power, u.percent) == 100
 
             # Also require temperature has been stable for some time
             # This private variable is set by _check_temperature_stability
             cooling_is_stable = self._is_temperature_stable
 
+            temp_is_stable = at_target_temp and cooling_is_stable and not cooling_at_maximum
+
             # Also require temperature has been stable for some time
             if not (temp_check and power_check and stable_check):
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(f'Cooling={self.cooling_power:.02f} '
-                                    f'Temp={self.temperature:.02f} '
-                                    f'Target={self.target_temperature:.02f} '
-                                    f'Tolerance={self.temperature_tolerance:.02f} '
-                                    f"Temperature check={temp_check} "
-                                    f"Power check={power_check} "
-                                    f"Stability check={stable_check}")
-                return False
-            else:
-                return True
+
+            self.logger.debug(f'Cooling power={self.cooling_power:.02f} '
+                              f'Temperature={self.temperature:.02f} '
+                              f'Target temp={self.target_temperature:.02f} '
+                              f'Temp tol={self.temperature_tolerance:.02f} '
+                              f"Temp diff={temp_difference:.02f} "
+                              f"At target={at_target_temp} "
+                              f"At max cooling={cooling_at_maximum} "
+                              f"Cooling is stable={cooling_is_stable} "
+                              f"Temperature is stable={temp_is_stable}")
+            return temp_is_stable
         else:
             return False
 
