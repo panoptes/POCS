@@ -250,7 +250,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
-        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enable))
+        self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
         if self.cooling_enabled:
             self._check_temperature_stability()
