@@ -209,7 +209,6 @@ class Camera(AbstractSDKCamera):
 
     def _set_target_temperature(self, target):
         self._control_setter('TARGET_TEMP', target)
-        # Check for success?
         self._target_temperature = target
 
     def _set_cooling_enabled(self, enable):
