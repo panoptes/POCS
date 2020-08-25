@@ -293,7 +293,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                              ) < self.temperature_tolerance
 
             # Camera cooling power must not be 100%
-            power_check = get_quantity_value(self.cooling_power, u.percent) < 100
+            cooling_has_stopped = not(get_quantity_value(self.cooling_power, u.percent) < 100)
 
             # Also require temperature has been stable for some time
             # This private variable is set by _check_temperature_stability
