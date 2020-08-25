@@ -297,7 +297,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             # Also require temperature has been stable for some time
             # This private variable is set by _check_temperature_stability
-            stable_check = self._is_temperature_stable
+            cooling_is_stable = self._is_temperature_stable
 
             # Also require temperature has been stable for some time
             if not (temp_check and power_check and stable_check):
