@@ -301,10 +301,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             temp_is_stable = at_target_temp and cooling_is_stable and not cooling_at_maximum
 
-            # Also require temperature has been stable for some time
-            if not (temp_check and power_check and stable_check):
+            if not temp_is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-
             self.logger.debug(f'Cooling power={self.cooling_power:.02f} '
                               f'Temperature={self.temperature:.02f} '
                               f'Target temp={self.target_temperature:.02f} '
