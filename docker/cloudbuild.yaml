@@ -1,40 +1,66 @@
+options:
+  machineType: "N1_HIGHCPU_8"
+  substitutionOption: "ALLOW_LOOSE"
+timeout: 18000s  # 5 hours
+
+substitutions:
+  _PLATFORMS: linux/amd64,linux/arm64
+  _BASE_IMAGE: panoptes-utils:latest
+  _IMAGE_NAME: panoptes-pocs
+  _REPO_URL: https://github.com/panoptes/POCS
+  _TAG: latest
+
 steps:
-  # Set up multiarch support
+  # Fetch the repo from github
+  - name: gcr.io/cloud-builders/git
+    id: "clone-repo"
+    args: ["clone", "${_REPO_URL}"]
+    waitFor: ["-"]
+
+  # Pull the cached image.
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'setup-buildx'
+    id: "pull-cached-image"
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0']
+    waitFor: ["-"]
+
+  # Set up multiarch support
+  - name: "gcr.io/cloud-builders/docker"
+    id: "setup-buildx"
     env:
-      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
-      - 'run'
-      - '--privileged'
-      - '--rm'
-      - 'docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64'
-    waitFor: ['-']
+      - "run"
+      - "--privileged"
+      - "--rm"
+      - "docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64"
+    waitFor: ["-"]
 
   # Build builder
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-builder'
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-builder"
     env:
-      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
-      - 'buildx'
-      - 'create'
-      - '--use'
-      - '--driver=docker-container'
-    waitFor: ['setup-buildx']
+      - "buildx"
+      - "create"
+      - "--use"
+      - "--driver=docker-container"
+    waitFor: ["setup-buildx"]
 
-  # Build
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-images'
+  # Build with cloned panoptes-utils as source directory
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-images"
     env:
-      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
-      - 'buildx'
-      - 'build'
-      - '--push'
-      - '--platform=linux/amd64,linux/arm64'
-      - '-f=docker/latest.Dockerfile'
-      - '--tag=gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
-      - '--cache-from=gcr.io/${PROJECT_ID}/panoptes-pocs:latest'
-      - '.'
-    waitFor: ['build-builder']
+      - "buildx"
+      - "build"
+      - "--push"
+      - "--platform=${_PLATFORMS}"
+      - "-f=docker/Dockerfile"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
+      - "POCS"
+    waitFor: ["build-builder", "clone-repo"]

@@ -95,3 +95,9 @@ class Camera(AbstractCamera, ABC):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+    def _set_target_temperature(self, target):
+        raise NotImplementedError
+
+    def _set_cooling_enabled(self, enable):
+        raise NotImplementedError

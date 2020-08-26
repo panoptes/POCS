@@ -34,29 +34,13 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         kwargs.update({'target_temperature': target_temperature})
         super().__init__(name, driver, *args, **kwargs)
 
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         return self._cooling_enabled
 
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        self._cooling_enabled = bool(enable)
-
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         return self._target_temperature
-
-    @target_temperature.setter
-    def target_temperature(self, target):
-        # Upon init the camera won't have an existing temperature.
-        with suppress(AttributeError):
-            self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self._target_temperature = target.to(u.Celsius)
 
     @property
     def temperature(self):
@@ -80,9 +64,9 @@ class Camera(AbstractSDKCamera, Camera, ABC):
     def cooling_power(self):
         if self.cooling_enabled:
             return 100.0 * float((self._max_temp - self.temperature) /
-                                 (self._max_temp - self._min_temp))
+                                 (self._max_temp - self._min_temp)) * u.percent
         else:
-            return 0.0
+            return 0.0 * u.percent
 
     def connect(self):
         self._is_cooled_camera = True
@@ -95,3 +79,23 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._connected = True
+
+    def _check_temperature_stability(self, required_stable_time=10*u.second,
+                                     sleep_delay=5*u.second, **kwargs):
+        """Override default parameters to speed-up tests."""
+        super()._check_temperature_stability(required_stable_time=required_stable_time,
+                                             sleep_delay=sleep_delay, **kwargs)
+
+    def _set_target_temperature(self, target):
+        # Upon init the camera won't have an existing temperature.
+        with suppress(AttributeError):
+            self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self._target_temperature = target.to(u.Celsius)
+
+    def _set_cooling_enabled(self, enable):
+        self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        self._cooling_enabled = bool(enable)
