@@ -82,7 +82,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
 
     def _check_temperature_stability(self, required_stable_time=10*u.second,
                                      sleep_delay=5*u.second, **kwargs):
-        """Override to speed-up tests."""
+        """Override default parameters to speed-up tests."""
         super()._check_temperature_stability(required_stable_time=required_stable_time,
                                              sleep_delay=sleep_delay, **kwargs)
 

@@ -290,7 +290,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             # Temperature must be within tolerance
             temp_difference = abs(self.temperature - self.target_temperature)
-            at_target_temp = temp_difference < self.temperature_tolerance
+            at_target_temp = temp_difference <= self.temperature_tolerance
 
             # Camera cooling power must not be 100%
             cooling_at_maximum = get_quantity_value(self.cooling_power, u.percent) == 100
@@ -357,7 +357,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
-
+        
     ##################################################################################################
     # Methods
     ##################################################################################################
