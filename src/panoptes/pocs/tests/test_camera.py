@@ -77,6 +77,7 @@ def camera(request):
                 break
 
     camera.logger.debug(f'Yielding camera {camera}')
+    camera._check_temperature_stability(blocking=True)  # Need to wait for stable temperature
     assert camera.is_ready
     yield camera
 
@@ -301,7 +302,7 @@ def test_is_temperature_stable(camera):
     if camera.is_cooled_camera:
         camera.target_temperature = camera.temperature
         camera.cooling_enabled = True
-        time.sleep(1)
+        camera._check_temperature_stability(blocking=True, sleep_delay=1)
         assert camera.is_temperature_stable
         camera.cooling_enabled = False
         assert not camera.is_temperature_stable

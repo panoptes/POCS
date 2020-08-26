@@ -124,6 +124,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
+        self._cooling_enabled = False
+        self._is_temperature_stable = False
+        self._temperature_thread = None
+        self._restart_temperature_thread = False
         self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
 
         self._connected = False
@@ -193,7 +197,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError  # pragma: no cover
 
     @target_temperature.setter
-    def target_temperature(self, target_temperature):
+    def target_temperature(self, target):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -201,7 +205,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError  # pragma: no cover
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug(f"Setting {self} cooling set point to {target}.")
+
+        self._set_target_temperature(target)
+
+        if self.cooling_enabled:
+            self._check_temperature_stability()
 
     @property
     def temperature_tolerance(self):
@@ -239,7 +250,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
-        raise NotImplementedError  # pragma: no cover
+        self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
+        self._set_cooling_enabled(enable)
+        if self.cooling_enabled:
+            self._check_temperature_stability()
 
     @property
     def cooling_power(self):
@@ -273,17 +287,32 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         An uncooled camera, or cooled camera with cooling disabled, will always return False.
         """
         if self.is_cooled_camera and self.cooling_enabled:
-            at_target = abs(self.temperature - self.target_temperature) \
-                        < self.temperature_tolerance
-            if not at_target or self.cooling_power == 100 * u.percent:
+
+            # Temperature must be within tolerance
+            temp_difference = abs(self.temperature - self.target_temperature)
+            at_target_temp = temp_difference <= self.temperature_tolerance
+
+            # Camera cooling power must not be 100%
+            cooling_at_maximum = get_quantity_value(self.cooling_power, u.percent) == 100
+
+            # Also require temperature has been stable for some time
+            # This private variable is set by _check_temperature_stability
+            cooling_is_stable = self._is_temperature_stable
+
+            temp_is_stable = at_target_temp and cooling_is_stable and not cooling_at_maximum
+
+            if not temp_is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(f'Cooling={self.cooling_power:.02f} '
-                                    f'Temp={self.temperature:.02f} '
-                                    f'Target={self.target_temperature:.02f} '
-                                    f'Tolerance={self.temperature_tolerance:.02f}')
-                return False
-            else:
-                return True
+            self.logger.debug(f'Cooling power={self.cooling_power:.02f} '
+                              f'Temperature={self.temperature:.02f} '
+                              f'Target temp={self.target_temperature:.02f} '
+                              f'Temp tol={self.temperature_tolerance:.02f} '
+                              f"Temp diff={temp_difference:.02f} "
+                              f"At target={at_target_temp} "
+                              f"At max cooling={cooling_at_maximum} "
+                              f"Cooling is stable={cooling_is_stable} "
+                              f"Temperature is stable={temp_is_stable}")
+            return temp_is_stable
         else:
             return False
 
@@ -328,7 +357,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
-
+        
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -635,6 +664,96 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         except Exception as e:
             self.logger.warning(f'Problem getting thumbnail: {e!r}')
         return thumbnail
+
+    def _check_temperature_stability(self, required_stable_time=60*u.second,
+                                     sleep_delay=5*u.second, timeout=300*u.second,
+                                     blocking=False):
+        """
+        Wait until camera temperature is within tolerance for a sufficiently long period of time.
+
+        Args:
+            required_stable_time (astropy.units.Quantity): Minimum consecutive amount of
+                time to be considered stable. Default 60s.
+            sleep_delay (astropy.units.Quantity): Time to sleep between checks. Default 10s.
+            timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
+            blocking (bool): Block until stable temperature or timeout? Useful for testing.
+        """
+        # Convert all times to seconds
+        sleep_delay = get_quantity_value(sleep_delay, u.second)
+        required_stable_time = get_quantity_value(required_stable_time, u.second)
+        timeout = get_quantity_value(timeout, u.second)
+
+        # Define an inner function to run in a thread
+        def check_temp(required_stable_time, sleep_delay, timeout):
+            if required_stable_time > timeout:
+                raise ValueError("required_stable_time must be less than timeout.")
+            if sleep_delay > timeout:
+                raise ValueError("sleep_delay must be less than timeout.")
+
+            # Wait until stable temperature persists or timeout
+            time_stable = 0
+            timer = CountdownTimer(duration=timeout)
+            while True:
+                if timer.expired():
+                    break
+                # We may need to restart the thread before it has finished if another check has been requested.
+                if self._restart_temperature_thread:
+                    self._restart_temperature_thread = False
+                    return
+                # Check if the temperature is within tolerance
+                if abs(self.temperature - self.target_temperature) < self.temperature_tolerance:
+                    time_stable += sleep_delay
+                    if time_stable >= required_stable_time:
+                        self.logger.info(f"Temperature has stabilised on {self}.")
+                        self._is_temperature_stable = True
+                        return
+                else:
+                    time_stable = 0  # Reset the countdown
+                time.sleep(sleep_delay)
+            raise error.Timeout(f"Timeout while waiting for stable temperture on {self}.")
+
+        # Restart countdown if one is already in progress
+        if self._temperature_thread is not None:
+            if self._temperature_thread.is_alive():
+                self.logger.warning(f"Attempted to wait for stable temperature on {self}"
+                                    " while wait already in progress. Restarting countdown.")
+                self._restart_temperature_thread = True
+                self._temperature_thread.join()
+
+        # Wait for stable temperature
+        self._is_temperature_stable = False
+        self.logger.info(f"Waiting for stable temperature on {self}.")
+        self._temperature_thread = threading.Thread(
+                target=check_temp, args=(required_stable_time, sleep_delay, timeout))
+        self._temperature_thread.start()
+        if blocking:
+            self._temperature_thread.join()
+
+    @abstractmethod
+    def _set_target_temperature(self, target):
+        """Camera-specific function to set the target temperature.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        Args:
+            target (astropy.units.Quantity): The target temperature.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _set_cooling_enabled(self, enable):
+        """Camera-specific function to set cooling enabled.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        Args:
+            enable (bool): Enable camera cooling?
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
