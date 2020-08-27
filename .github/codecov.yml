@@ -1,5 +1,5 @@
 ignore:
-  - "pocs/camera/canon_gphoto2.py"
+  - "pocs/camera/canon.py"
   - "pocs/camera/sbig.py"
   - "pocs/camera/sbigudrv.py"
   - "pocs/camera/fli.py"

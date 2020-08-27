@@ -11,10 +11,10 @@ from astropy.io import fits
 
 from panoptes.pocs.camera.simulator import Camera as SimCamera
 from panoptes.pocs.camera.simulator_sdk import Camera as SimSDKCamera
-from panoptes.pocs.camera.sbig import Camera as SBIGCamera
-from panoptes.pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
-from panoptes.pocs.camera.fli import Camera as FLICamera
-from panoptes.pocs.camera.zwo import Camera as ZWOCamera
+from panoptes.pocs.camera.ccd.sbig import Camera as SBIGCamera
+from panoptes.pocs.camera.ccd.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
+from panoptes.pocs.camera.ccd.fli import Camera as FLICamera
+from panoptes.pocs.camera.ccd.zwo import Camera as ZWOCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
@@ -26,8 +26,7 @@ from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
-from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.hardware import create_cameras_from_config, create_camera_simulator
 
 focuser_params = {
     'model': 'simulator',

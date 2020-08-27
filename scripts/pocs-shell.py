@@ -17,7 +17,7 @@ from panoptes.utils import images as img_utils
 from panoptes.utils.config import client
 
 from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.hardware import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 
 

@@ -1,6 +1,5 @@
 import os
 import subprocess
-from abc import ABC
 
 from threading import Event
 from threading import Timer
@@ -10,15 +9,13 @@ from panoptes.utils import CountdownTimer
 from panoptes.utils import error
 from panoptes.utils import get_quantity_value
 from panoptes.utils.images import cr2 as cr2_utils
-from panoptes.pocs.camera import AbstractGPhotoCamera
+from panoptes.pocs.camera.dslr.base import Camera as DSLRCamera
 
 
-class Camera(AbstractGPhotoCamera, ABC):
+class Camera(DSLRCamera):
 
     def __init__(self, *args, **kwargs):
-        kwargs['readout_time'] = 6.0
-        kwargs['file_extension'] = 'cr2'
-        super().__init__(*args, **kwargs)
+        super().__init__(readout_time=6.0, file_extension='cr2', *args, **kwargs)
 
         # Hold on to the exposure process for polling.
         self._exposure_proc = None

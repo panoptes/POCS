@@ -1,14 +1,12 @@
 from contextlib import suppress
 
 import numpy as np
-
 from astropy import units as u
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.pocs.camera.libfli import FLIDriver
-from panoptes.pocs.camera import libfliconstants as c
-from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.camera.ccd.libs import libfliconstants as c
+from panoptes.pocs.camera.ccd.libs.libfli import FLIDriver
+from panoptes.pocs.camera.ccd.sdk import AbstractSDKCamera
 from panoptes.utils import error
+from panoptes.utils.images import fits as fits_utils
 
 
 class Camera(AbstractSDKCamera):

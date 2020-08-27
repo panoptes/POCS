@@ -4,7 +4,7 @@ from astropy import units as u
 
 from panoptes.pocs.filterwheel import AbstractFilterWheel
 from panoptes.pocs.filterwheel.libefw import EFWDriver
-from panoptes.pocs.camera.camera import AbstractCamera
+from panoptes.pocs.camera.base import AbstractCamera
 from panoptes.utils import error
 
 

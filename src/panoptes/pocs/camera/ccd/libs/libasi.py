@@ -4,7 +4,7 @@ import enum
 import numpy as np
 from astropy import units as u
 
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
+from panoptes.pocs.camera.ccd.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils import get_quantity_value
 

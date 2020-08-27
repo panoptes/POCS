@@ -1,10 +1,9 @@
-import threading
 import math
 
 from astropy import units as u
 
 from panoptes.pocs.filterwheel import AbstractFilterWheel
-from panoptes.pocs.camera.sbig import Camera as SBIGCamera
+from panoptes.pocs.camera.ccd.sbig import Camera as SBIGCamera
 
 
 class FilterWheel(AbstractFilterWheel):

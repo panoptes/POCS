@@ -18,7 +18,7 @@ from panoptes.pocs.scheduler.observation import Observation
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
-from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.hardware import create_camera_simulator
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 

@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
 from panoptes.pocs.base import PanBase
-from panoptes.pocs.camera.camera import AbstractCamera
+from panoptes.pocs.camera.base import AbstractCamera
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.pocs.utils.logger import get_logger
