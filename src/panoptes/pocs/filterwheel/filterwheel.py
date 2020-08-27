@@ -258,7 +258,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 ##################################################################################################
 
     @abstractmethod
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         raise NotImplementedError
 
     def _parse_position(self, position):
