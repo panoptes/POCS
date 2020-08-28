@@ -28,7 +28,7 @@ logger = get_logger()
 @click.option("--targets-file", required=True, help="Output file for returned observations")
 @click.option("--facility", required=True, help="Observation facility name (ie. PAN001)")
 @click.option(
-    "--overwrite", is_flag=True, help="Should targets file be appended to or overwritten."
+    "--overwrite", is_flag=True, help="Should targets file be appended to or overwritten, default False"
 )
 def main(
     targets_file=None, facility=None, cloud_function_name="get-tom-observations", overwrite=False,
