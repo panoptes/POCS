@@ -3,7 +3,8 @@
 """Gets observations from PANOPTES Observation Portal [https://github.com/panoptes/panoptes-tom].
 
 This Python script calls the 'get-cloud-observations' cloud function to
-generate a list of observation targets from the portal. This list is then outputted to a YAML file.
+generate a list of observation targets from the portal.
+This target list is then outputted to a YAML file.
 
 Example:
 python scripts/get-cloud-observations.py --targets-file resources/targets/simple_test.yaml \
