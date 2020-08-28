@@ -25,7 +25,7 @@ logger = get_logger()
 
 @click.command()
 @click.option("--cloud-function-name", default="get-tom-observations")
-@click.option("--targets-file", required=True, help="File for writing observation debug.")
+@click.option("--targets-file", required=True, help="Output file for returned observations")
 @click.option("--facility", required=True, help="Observation facility name (ie. PAN001)")
 @click.option(
     "--overwrite", is_flag=True, help="Should targets file be appended to or overwritten."
