@@ -79,8 +79,9 @@ def call_cloud_function(cloud_function_name, facility):
 
     completed_process = subprocess.run(cmds, check=True, capture_output=True)
 
-    target_info = completed_process.stdout.decode().lstrip().rstrip().split("\n")
-    new_targets = from_json(target_info[-1])
+    # Get the targets as the last item from the gcloud output.
+    target_info = completed_process.stdout.decode().strip().split("\n")[-1]
+    new_targets = from_json(target_info)
 
     return new_targets
 
