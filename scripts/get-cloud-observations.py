@@ -68,7 +68,7 @@ def main(
         file_mode = "w"
 
     with open(targets_file, file_mode) as f:
-        f.write(yaml.safe_dump(target_list, sort_keys=False,))
+        f.write(yaml.safe_dump(target_list, sort_keys=False))
 
 
 def call_cloud_function(cloud_function_name, facility):
