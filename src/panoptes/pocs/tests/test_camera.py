@@ -47,6 +47,14 @@ filterwheel_params = {
     'timeout': 0.5
 }
 
+filterwheel_blank_params = {
+    'model': 'simulator',
+    'filter_names': ['one', 'deux', 'blank', 'quattro'],
+    'move_time': 0.1,
+    'timeout': 0.5,
+    'dark_position': 'blank'
+}
+
 serial_number_params = 'SSC101'
 
 
@@ -54,13 +62,20 @@ serial_number_params = 'SSC101'
     pytest.param([SimCamera, dict()]),
     pytest.param([SimCamera, dict(focuser=focuser_params)]),
     pytest.param([SimCamera, dict(filterwheel=filterwheel_params)]),
+    pytest.param([SimCamera, dict(filterwheel=filterwheel_blank_params)]),
     pytest.param([SimSDKCamera, dict(serial_number=serial_number_params)]),
     pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
     pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
     pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
 ], ids=[
-    'simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
-    'sbig', 'fli', 'zwo'
+    'simulator',
+    'simulator_focuser',
+    'simulator_filterwheel',
+    'simulator_filterwheel_blank',
+    'simulator_sdk',
+    'sbig',
+    'fli',
+    'zwo'
 ])
 def camera(request):
     CamClass = request.param[0]
@@ -82,6 +97,7 @@ def camera(request):
     yield camera
 
     # simulator_sdk needs this explicitly removed for some reason.
+    # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
     with suppress(AttributeError):
         type(camera)._assigned_cameras.discard(camera.uid)
 
@@ -356,7 +372,7 @@ def test_exposure_blocking(camera, tmpdir):
 
 def test_exposure_dark(camera, tmpdir):
     """
-    Tests taking a dark. At least for now only SBIG cameras do this.
+    Tests taking a dark.
     """
     fits_path = str(tmpdir.join('test_exposure_dark.fits'))
     # A 1 second dark exposure
