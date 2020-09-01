@@ -482,9 +482,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                           f"{self.filterwheel.filter_name(self.filterwheel._dark_position)}'."
                     self.logger.debug(msg)
                 except (AttributeError, error.NotFound):
-                    # No filterwheel, or opaque filter (dark_position not set)
-                    msg = "Taking dark exposure without shutter or opaque filter." + \
-                        " Is the lens cap on?"
+                    # No filterwheel, or no opaque filter (dark_position not set)
+                    msg = "Taking dark exposure without shutter or opaque filter. " + \
+                        "Is the lens cap on?"
                     self.logger.warning(msg)
             else:
                 with suppress(AttributeError, error.NotFound):

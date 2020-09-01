@@ -47,15 +47,17 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.error(msg)
             raise ValueError(msg)
         self._n_positions = len(filter_names)
-        if isinstance(timeout, u.Quantity):
-            self._timeout = timeout.to(u.second).value
-        else:
+        try:
+            self._timeout = timeout.to_value(unit=u.second)
+        except AttributeError:
             self._timeout = timeout
         self._serial_number = serial_number
-        if dark_position:
+        if dark_position is not None:
+            # Will raise ValueError is dark_position is not a valid position for this filterwheel
             self._dark_position = self._parse_position(dark_position)
         else:
             self._dark_position = None
+
         self._last_light_position = None
         self._connected = False
 
@@ -169,7 +171,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         int_position = self._parse_position(position)
         return self.filter_names[int_position - 1]
 
-    def move_to(self, position, blocking=False):
+    def move_to(self, new_position, blocking=False):
         """
         Move the filter wheel to the given position.
 
@@ -179,7 +181,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         of the names in the filter_names list, provided that this produces only one match.
 
         Args:
-            position (int or str): position to move to.
+            new_position (int or str): position to move to.
             blocking (bool, optional): If False (default) return immediately, if True block until
                 the filter wheel move has been completed.
 
@@ -211,21 +213,21 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.error(msg)
             raise error.PanError(msg)
 
-        position = self._parse_position(position)
+        new_position = self._parse_position(new_position)
         self.logger.info("Moving {} to position {} ({})".format(
-            self, position, self.filter_names[position - 1]))
+            self, new_position, self.filter_name(new_position))
 
-        if position == self.position:
+        if new_position == self.position:
             # Already at requested position, don't go nowhere.
             return self._move_event
 
-        if self._dark_position and position == self._dark_position:
+        if new_position == self._dark_position:
             # Moving from light into darkness... Store current position so we can revert
             # back to it if requested with move_to_light_position()
             self._last_light_position = self.position
 
         self._move_event.clear()
-        self._move_to(position)  # Private method to actually perform the move.
+        self._move_to(new_position)  # Private method to actually perform the move.
 
         if blocking:
             self._move_event.wait()
@@ -236,7 +238,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """ Move to filterwheel position for taking darks. """
         try:
             self.move_to(self._dark_position)
-        except TypeError:
+        except ValueError:
             msg = f"Request to move to dark position but {self} has no dark_position set."
             raise error.NotFound(msg)
 
@@ -244,7 +246,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """ Return to last filterwheel position from before taking darks. """
         try:
             self.move_to(self._last_light_position)
-        except TypeError:
+        except ValueError:
             msg = f"Request to revert to last light position but {self} has" + \
                 "no light position stored."
             raise error.NotFound(msg)
@@ -283,7 +285,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             # Not a string or no match. Try to use as an integer position number.
             try:
                 int_position = int(position)
-            except ValueError:
+            except (ValueError, TypeError):
                 msg = "No match for '{}' in filter_names, & not an integer either".format(position)
                 self.logger.error(msg)
                 raise ValueError(msg)
