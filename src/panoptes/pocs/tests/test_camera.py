@@ -382,7 +382,7 @@ def test_exposure_dark(camera, tmpdir):
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
-    with suppress AttributeError:
+    with suppress(AttributeError):
         if not camera.can_take_internal_darks and camera.filterwheel._dark_position:
             # Filterwheel should have moved to 'blank' position due to dark exposure.
             assert camera.filterwheel.current_filter == 'blank'
