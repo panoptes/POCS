@@ -6,7 +6,7 @@ from abc import ABC
 from contextlib import suppress
 import astropy.units as u
 
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.dslr.simulator import Camera
 from panoptes.pocs.camera.ccd.sdk import AbstractSDKDriver, AbstractSDKCamera
 
 
@@ -80,8 +80,8 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_time = time.monotonic()
         self._connected = True
 
-    def _check_temperature_stability(self, required_stable_time=10*u.second,
-                                     sleep_delay=5*u.second, **kwargs):
+    def _check_temperature_stability(self, required_stable_time=10 * u.second,
+                                     sleep_delay=5 * u.second, **kwargs):
         """Override default parameters to speed-up tests."""
         super()._check_temperature_stability(required_stable_time=required_stable_time,
                                              sleep_delay=sleep_delay, **kwargs)
