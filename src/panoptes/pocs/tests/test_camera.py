@@ -9,8 +9,8 @@ from contextlib import suppress
 import astropy.units as u
 from astropy.io import fits
 
-from panoptes.pocs.camera.simulator import Camera as SimCamera
-from panoptes.pocs.camera.simulator_sdk import Camera as SimSDKCamera
+from panoptes.pocs.camera.dslr.simulator import Camera as SimCamera
+from panoptes.pocs.camera.ccd.simulator import Camera as SimSDKCamera
 from panoptes.pocs.camera.ccd.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.ccd.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from panoptes.pocs.camera.ccd.fli import Camera as FLICamera
