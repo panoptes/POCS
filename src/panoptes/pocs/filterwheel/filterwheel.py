@@ -215,7 +215,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         new_position = self._parse_position(new_position)
         self.logger.info("Moving {} to position {} ({})".format(
-            self, new_position, self.filter_name(new_position))
+            self, new_position, self.filter_name(new_position)))
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
