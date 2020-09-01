@@ -85,7 +85,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         temperature (astropy.units.Quantity): Current temperature of the image sensor.
         target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
         temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
-        cooling_enabled (bool): True if image snsor cooling is active.
+        cooling_enabled (bool): True if image sensor cooling is active.
         cooling_power (float): Current image sensor cooling power level.
         egain (astropy.units.Quantity): Image sensor gain in e-/ADU as reported by the camera.
         gain (int): The gain setting of the camera (ZWO cameras only).
