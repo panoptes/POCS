@@ -16,6 +16,13 @@ def filterwheel():
                                      timeout=0.5 * u.second)
     return sim_filterwheel
 
+@pytest.fixture(scope='function')
+def filterwheel_with_blank():
+    sim_filterwheel = SimFilterWheel(filter_names=['blank', 'deux', 'drei', 'quattro'],
+                                     move_time=0.1 * u.second,
+                                     timeout=0.5 * u.second,
+                                     dark_position='blank')
+    return sim_filterwheel
 
 # intialisation
 
@@ -185,3 +192,26 @@ def test_is_moving(filterwheel):
     e.wait()
     assert not filterwheel.is_moving
     assert filterwheel.is_ready
+
+
+def test_move_dark(filterwheel, filterwheel_with_blank):
+    with pytest.raises(error.NotFound):
+        filterwheel.move_to_dark_position()
+    filterwheel_with_blank.move_to('deux', blocking=True)
+    assert filterwheel_with_blank.current_filter == 'deux'
+    filterwheel_with_blank.move_to_dark_position(blocking=True)
+    assert filterwheel_with_blank.current_filter == 'blank'
+
+
+def test_move_light(filterwheel, filterwheel_with_blank):
+    with pytest.raises(error.NotFound):
+        filterwheel.move_to_light_position()
+    with pytest.raises(error.NotFound):
+        # Won't have been set yet.
+        filterwheel_with_blank.move_to_light_position()
+    filterwheel_with_blank.move_to('deux', blocking=True)
+    assert filterwheel_with_blank.current_filter == 'deux'
+    filterwheel_with_blank.move_to_dark_position(blocking=True)
+    assert filterwheel_with_blank.current_filter == 'blank'
+    filterwheel_with_blank.move_to_light_position(blocking=True)
+    assert filterwheel_with_blank.current_filter == 'deux'

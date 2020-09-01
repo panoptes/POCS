@@ -213,12 +213,13 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.error(msg)
             raise error.PanError(msg)
 
+        # Will raise a ValueError at this point if new_position is not a valid position
         new_position = self._parse_position(new_position)
-        self.logger.info("Moving {} to position {} ({})".format(
-            self, new_position, self.filter_name(new_position)))
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
+            self.logger.debug(f"{self} already at position {new_position}" + \
+                              f" ({self.filter_name(new_position)})")
             return self._move_event
 
         if new_position == self._dark_position:
@@ -226,6 +227,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             # back to it if requested with move_to_light_position()
             self._last_light_position = self.position
 
+        self.logger.info("Moving {} to position {} ({})".format(
+            self, new_position, self.filter_name(new_position)))
         self._move_event.clear()
         self._move_to(new_position)  # Private method to actually perform the move.
 
@@ -234,18 +237,18 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         return self._move_event
 
-    def move_to_dark_position(self):
+    def move_to_dark_position(self, blocking=False):
         """ Move to filterwheel position for taking darks. """
         try:
-            self.move_to(self._dark_position)
+            return self.move_to(self._dark_position, blocking=blocking)
         except ValueError:
             msg = f"Request to move to dark position but {self} has no dark_position set."
             raise error.NotFound(msg)
 
-    def move_to_light_position(self):
+    def move_to_light_position(self, blocking=False):
         """ Return to last filterwheel position from before taking darks. """
         try:
-            self.move_to(self._last_light_position)
+            return self.move_to(self._last_light_position, blocking=blocking)
         except ValueError:
             msg = f"Request to revert to last light position but {self} has" + \
                 "no light position stored."
