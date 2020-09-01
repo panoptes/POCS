@@ -5,7 +5,7 @@ from timeit import timeit
 from astropy import units as u
 
 from panoptes.pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
-from panoptes.pocs.camera.simulator import Camera as SimCamera
+from panoptes.pocs.camera.ccd.simulator import Camera as SimCamera
 from panoptes.utils import error
 
 

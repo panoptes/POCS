@@ -8,7 +8,7 @@ from panoptes.utils.config.helpers import load_config
 from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
 from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.ccd.simulator import Camera
 
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
 ids = ['simulator', 'birger', 'focuslynx']
