@@ -86,7 +86,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
         temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
         cooling_enabled (bool): True if image sensor cooling is active.
-        cooling_power (float): Current image sensor cooling power level.
+        cooling_power (astropy.unit.Quantity): Current image sensor cooling power level in percent.
         egain (astropy.units.Quantity): Image sensor gain in e-/ADU as reported by the camera.
         gain (int): The gain setting of the camera (ZWO cameras only).
         bitdepth (astropy.units.Quantity): ADC bit depth in bits.
@@ -474,19 +474,22 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
 
         if not self.can_take_internal_darks:
-            if dark and self.filterwheel and self.filterwheel.dark_position:
-                # Can't take internal darks, but do have an opaque filter for that.
-                msg = "Taking dark exposure using filter '" + \
-                    f"{self.filterwheel.filter_name(self.filterwheel.dark_position)}'."
-                self.logger.debug(msg)
-                self.filterwheel.move_to_dark_position(blocking=True)
-            elif dark:
-                # Can't take internal darks and don't have an opaque filter either.
-                msg = "Taking dark exposure without shutter or opaque filter. Is the lens cap on?"
-                self.logger.warning(msg)
-            elif self.filterwheel and self.filterwheel.dark_position:
-                # Not taking a dark, make sure don't have an opaque filter in the way.
-                self.filterwheel.move_to_light_position(blocking=True)
+            if dark:
+                try:
+                    # Can't take internal dark, so try using an opaque filter in a filterwheel
+                    self.filterwheel.move_to_dark_position(blocking=True)
+                    msg = "Taking dark exposure using filter '" + \
+                          f"{self.filterwheel.filter_name(self.filterwheel._dark_position)}'."
+                    self.logger.debug(msg)
+                except (AttributeError, error.NotFound):
+                    # No filterwheel, or opaque filter (dark_position not set)
+                    msg = "Taking dark exposure without shutter or opaque filter." + \
+                        " Is the lens cap on?"
+                    self.logger.warning(msg)
+            else:
+                with suppress(AttributeError, error.NotFound):
+                    # Ignoring exceptions from no filterwheel, or no last light position
+                    self.filterwheel.move_to_light_position(blocking=True)
 
         # Check that the camera (and subcomponents) is ready
         if not self.is_ready:

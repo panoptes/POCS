@@ -56,7 +56,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self._dark_position = self._parse_position(dark_position)
         else:
             self._dark_position = None
-        self._light_position = None
+        self._last_light_position = None
         self._connected = False
 
         # Some filter wheels needs this to track whether they are moving or not.
@@ -154,10 +154,6 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def is_unidirectional(self):
         raise NotImplementedError
 
-    @property
-    def dark_position(self):
-        return self._dark_position
-
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -223,10 +219,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             # Already at requested position, don't go nowhere.
             return self._move_event
 
-        if self.dark_position and position == self.dark_position:
+        if self._dark_position and position == self._dark_position:
             # Moving from light into darkness... Store current position so we can revert
             # back to it if requested with move_to_light_position()
-            self._light_position = self.position
+            self._last_light_position = self.position
 
         self._move_event.clear()
         self._move_to(position)  # Private method to actually perform the move.
@@ -238,20 +234,20 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     def move_to_dark_position(self):
         """ Move to filterwheel position for taking darks. """
-        if self.dark_position:
-            self.move_to(self.dark_position)
-        else:
+        try:
+            self.move_to(self._dark_position)
+        except TypeError:
             msg = f"Request to move to dark position but {self} has no dark_position set."
-            self.logger.warning(msg)
+            raise error.NotFound(msg)
 
     def move_to_light_position(self):
-        """ Return to previous filterwheel position from before taking darks. """
-        if self._light_position:
-            self.move_to(self._light_position)
-        else:
-            msg = f"Request to revert to previous light position but {self} has" + \
-                "no _light_position stored."
-            self.logger.warning(msg)
+        """ Return to last filterwheel position from before taking darks. """
+        try:
+            self.move_to(self._last_light_position)
+        except TypeError:
+            msg = f"Request to revert to last light position but {self} has" + \
+                "no light position stored."
+            raise error.NotFound(msg)
 
 ##################################################################################################
 # Private methods
