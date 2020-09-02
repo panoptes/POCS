@@ -478,14 +478,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 try:
                     # Can't take internal dark, so try using an opaque filter in a filterwheel
                     self.filterwheel.move_to_dark_position(blocking=True)
-                    msg = "Taking dark exposure using filter '" + \
-                          f"{self.filterwheel.filter_name(self.filterwheel._dark_position)}'."
-                    self.logger.debug(msg)
+                    self.logger.debug("Taking dark exposure using filter '"
+                                      f"{self.filterwheel.filter_name(self.filterwheel._dark_position)}'.")
                 except (AttributeError, error.NotFound):
                     # No filterwheel, or no opaque filter (dark_position not set)
-                    msg = "Taking dark exposure without shutter or opaque filter. " + \
-                        "Is the lens cap on?"
-                    self.logger.warning(msg)
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
             else:
                 with suppress(AttributeError, error.NotFound):
                     # Ignoring exceptions from no filterwheel, or no last light position
