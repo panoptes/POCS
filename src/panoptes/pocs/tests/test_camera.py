@@ -47,6 +47,14 @@ filterwheel_params = {
     'timeout': 0.5
 }
 
+filterwheel_blank_params = {
+    'model': 'simulator',
+    'filter_names': ['one', 'deux', 'blank', 'quattro'],
+    'move_time': 0.1,
+    'timeout': 0.5,
+    'dark_position': 'blank'
+}
+
 serial_number_params = 'SSC101'
 
 
@@ -54,13 +62,20 @@ serial_number_params = 'SSC101'
     pytest.param([SimCamera, dict()]),
     pytest.param([SimCamera, dict(focuser=focuser_params)]),
     pytest.param([SimCamera, dict(filterwheel=filterwheel_params)]),
+    pytest.param([SimCamera, dict(filterwheel=filterwheel_blank_params)]),
     pytest.param([SimSDKCamera, dict(serial_number=serial_number_params)]),
     pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
     pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
     pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
 ], ids=[
-    'simulator', 'simulator_focuser', 'simulator_filterwheel', 'simulator_sdk',
-    'sbig', 'fli', 'zwo'
+    'simulator',
+    'simulator_focuser',
+    'simulator_filterwheel',
+    'simulator_filterwheel_blank',
+    'simulator_sdk',
+    'sbig',
+    'fli',
+    'zwo'
 ])
 def camera(request):
     CamClass = request.param[0]
@@ -82,6 +97,7 @@ def camera(request):
     yield camera
 
     # simulator_sdk needs this explicitly removed for some reason.
+    # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
     with suppress(AttributeError):
         type(camera)._assigned_cameras.discard(camera.uid)
 
@@ -254,8 +270,8 @@ def test_is_cooled(camera):
 
 def test_set_target_temperature(camera):
     if camera.is_cooled_camera:
-        camera._target_temperature = 10 * u.Celsius
-        assert abs(camera._target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
+        camera.target_temperature = 10 * u.Celsius
+        assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
 
@@ -356,7 +372,7 @@ def test_exposure_blocking(camera, tmpdir):
 
 def test_exposure_dark(camera, tmpdir):
     """
-    Tests taking a dark. At least for now only SBIG cameras do this.
+    Tests taking a dark.
     """
     fits_path = str(tmpdir.join('test_exposure_dark.fits'))
     # A 1 second dark exposure
@@ -366,7 +382,14 @@ def test_exposure_dark(camera, tmpdir):
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Dark Frame'
-
+    with suppress(AttributeError):
+        if not camera.can_take_internal_darks and camera.filterwheel._dark_position:
+            # Filterwheel should have moved to 'blank' position due to dark exposure.
+            assert camera.filterwheel.current_filter == 'blank'
+            fits_path2 = str(tmpdir.join('test_exposure_dark_light.fits'))
+            camera.take_exposure(filename=fits_path2, blocking=True)
+            # Filterwheel should have moved back to most recent non opaque filter now.
+            assert camera.filterwheel.current_filter == 'one'
 
 def test_exposure_collision(camera, tmpdir):
     """
