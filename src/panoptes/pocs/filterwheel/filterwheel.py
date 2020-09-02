@@ -188,6 +188,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
 
+        Raise:
+            ValueError: if new_position is not a valid position specifier for this filterwheel.
+
         Examples:
             Substring matching is useful when the filter names contain both the type of filter
             and a serial number, e.g. the following selects a g band filter without having to
@@ -240,6 +243,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def move_to_dark_position(self, blocking=False):
         """ Move to filterwheel position for taking darks. """
         try:
+            self.logger.debug(f"Ensuring filterwheel {self} is at dark position.")
             return self.move_to(self._dark_position, blocking=blocking)
         except ValueError:
             msg = f"Request to move to dark position but {self} has no dark_position set."
@@ -248,6 +252,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def move_to_light_position(self, blocking=False):
         """ Return to last filterwheel position from before taking darks. """
         try:
+            self.logger.debug(f"Ensuring filterwheel {self} is not at dark position.")
             return self.move_to(self._last_light_position, blocking=blocking)
         except ValueError:
             msg = f"Request to revert to last light position but {self} has" + \
