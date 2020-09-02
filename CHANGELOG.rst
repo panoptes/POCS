@@ -14,6 +14,11 @@ Added
 
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
 
+Changed
+~~~~~~~
+
+* Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
+
 
 [0.7.6] - 2020-08-21
 --------------------
