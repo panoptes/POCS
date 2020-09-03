@@ -16,9 +16,11 @@ import click
 import yaml
 
 import subprocess
+from astroplan import Observer
 
 from panoptes.pocs.utils.logger import get_logger
-from panoptes.utils.serializers import from_json, to_json
+from panoptes.utils.serializers import from_json, to_json, to_yaml, from_yaml
+from panoptes.pocs.scheduler import BaseScheduler
 
 logger = get_logger()
 
@@ -38,37 +40,55 @@ def main(
 
     # Call the cloud function get json data.
     new_targets = call_cloud_function(cloud_function_name, facility)
+     
+    # Create a dummy scheduler to test adding files.
+    dummy_observer = Observer.at_site("Subaru")
+    test_scheduler = BaseScheduler(dummy_observer)
 
     # Create targets.
     target_list = list()
     for target in new_targets:
         if target["facility"] == facility:
             logger.info(f"Adding {target}")
-            # Pull out relevant fields.
+            
+          # Pull out relevant fields.
             data = target["parameters"]
-
+               
+            target_name = data.get("name")
             ra = data.get("field_ra")
             dec = data.get("field_dec")
             position = f"{ra}deg {dec}deg"
+               
+            exptime = data.get("exp_time")
 
             target_info = dict(
-                name=data.get("name"),
+                name=target_name,
                 position=position,
                 priority=data.get("priority", 100),
-                exp_time=data.get("exp_time"),
+                exptime=exptime,
                 min_nexp=data.get("min_nexp"),
                 exp_set_size=data.get("exp_set_size"),
             )
-
-            target_list.append(target_info)
+          
+            try:
+                test_scheduler.add_observation(target_info)
+                target_list.append(target_info)
+            except Exception as e:
+                logger.warning(f'Cannot add observation: {target_info=} {e!r}')
+            finally:
+                logger.debug(f'Added {target_name} at {position=}')
 
     # Write that to fields file.
     file_mode = "a"
     if overwrite:
         file_mode = "w"
 
-    with open(targets_file, file_mode) as f:
-        f.write(yaml.safe_dump(target_list, sort_keys=False))
+    try:
+         with open(targets_file, file_mode) as f:
+             to_yaml(target_list, stream=f)
+             logger.success(f'Added {len(target_list) targets to {targets_file}}')
+    except OSError as e:
+         logger.error(e)
 
 
 def call_cloud_function(cloud_function_name, facility):
