@@ -73,7 +73,14 @@ def main(
 
 def call_cloud_function(cloud_function_name, facility):
     request_info = to_json(dict(facility=facility))
-    cmds = ["gcloud", "functions", "call", cloud_function_name, "--data", request_info]
+    # at top of file
+    import shutil
+    ...
+    gcloud_cmd = shutil.which('gcloud')
+    if gcloud_cmd is None:
+        logger.error(f"gcloud command not found on system, can't get observations from the network")
+    
+    cmds = [gcloud_cmd, "functions", "call", cloud_function_name, "--data", request_info]
 
     logger.info(f"Calling {cloud_function_name} with {cmds=}")
 
