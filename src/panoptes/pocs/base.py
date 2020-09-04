@@ -1,5 +1,6 @@
 import os
 from requests.exceptions import ConnectionError
+from dotenv import load_dotenv
 
 from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
@@ -9,6 +10,9 @@ from panoptes.pocs import hardware
 
 # Global database.
 PAN_DB_OBJ = None
+
+# look for environment files.
+load_dotenv()
 
 
 class PanBase(object):
@@ -20,8 +24,8 @@ class PanBase(object):
     def __init__(self, config_host=None, config_port=None, *args, **kwargs):
         self.__version__ = __version__
 
-        self._config_host = config_host or os.getenv('POCS_CONFIG_HOST')
-        self._config_port = config_port or os.getenv('POCS_CONFIG_PORT')
+        self._config_host = config_host or os.getenv('POCS_CONFIG_HOST', 'localhost')
+        self._config_port = config_port or os.getenv('POCS_CONFIG_PORT', 6563)
 
         self.logger = get_logger()
 

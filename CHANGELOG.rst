@@ -13,6 +13,7 @@ Added
 ~~~~~
 
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
+* Config server available on separate host and port via two new env vars, ``POCS_CONFIG_HOST`` and ``POCS_CONFIG_PORT``. Using `python-dotenv` to look for env files.
 
 Changed
 ~~~~~~~
