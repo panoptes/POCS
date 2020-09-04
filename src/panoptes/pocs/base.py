@@ -1,3 +1,4 @@
+import os
 from requests.exceptions import ConnectionError
 
 from panoptes.pocs import __version__
@@ -16,10 +17,11 @@ class PanBase(object):
     Defines common properties for each class (e.g. logger, config, db).
     """
 
-    def __init__(self, config_port='6563', *args, **kwargs):
+    def __init__(self, config_host=None, config_port=None, *args, **kwargs):
         self.__version__ = __version__
 
-        self._config_port = config_port
+        self._config_host = config_host or os.getenv('POCS_CONFIG_HOST')
+        self._config_port = config_port or os.getenv('POCS_CONFIG_PORT')
 
         self.logger = get_logger()
 
@@ -45,9 +47,11 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.get_config(port=self._config_port, *args, **kwargs)
+            config_value = client.get_config(host=self._config_host,
+                                             port=self._config_port,
+                                             *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
         return config_value
 
@@ -70,8 +74,10 @@ class PanBase(object):
 
         try:
             self.logger.trace(f'Setting config {key=} {new_value=}')
-            config_value = client.set_config(key, new_value, port=self._config_port, *args,
-                                             **kwargs)
+            config_value = client.set_config(key, new_value,
+                                             host=self._config_host,
+                                             port=self._config_port,
+                                             *args, **kwargs)
             self.logger.trace(f'Config set {config_value=}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
