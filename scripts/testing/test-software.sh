@@ -24,5 +24,7 @@ docker run --rm -it \
   --init \
   -v "${PANDIR}/POCS":/var/panoptes/POCS \
   -v "${PANDIR}/logs":/var/panoptes/logs \
+  -e PANOPTES_CONFIG_HOST="0.0.0.0" \
+  -e PANOPTES_CONFIG_PORT="9999" \
   panoptes-pocs:develop \
   "/var/panoptes/POCS/scripts/testing/run-tests.sh"

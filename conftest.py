@@ -164,12 +164,13 @@ def config_path():
 
 @pytest.fixture(scope='session')
 def config_host():
-    return 'localhost'
+    # Open on full network because we test mostly on docker.
+    return '0.0.0.0'
 
 
 @pytest.fixture(scope='session')
 def config_port():
-    return 6563
+    return 9999
 
 
 @pytest.fixture(scope='module', autouse=True)

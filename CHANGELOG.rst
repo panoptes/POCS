@@ -1,10 +1,6 @@
-CHANGELOG
 =========
-
-All notable changes to this project will be documented in this file.
-
-The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
-adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
+Changelog
+=========
 
 [0.7.7dev]
 ----------
@@ -13,7 +9,7 @@ Added
 ~~~~~
 
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
-* Config server available on separate host and port via two new env vars, ``POCS_CONFIG_HOST`` and ``POCS_CONFIG_PORT``. Using `python-dotenv` to look for env files.
+* Config server available on separate host and port via two new env vars, ``PANOPTES_CONFIG_HOST`` and ``PANOPTES_CONFIG_PORT``. Using ``python-dotenv`` to look for env files. (@wtgee #1001)
 
 Changed
 ~~~~~~~
