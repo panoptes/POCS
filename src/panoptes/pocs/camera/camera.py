@@ -547,9 +547,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         except Exception as err:
             err = error.PanError("Error starting exposure on {}: {}".format(self, err))
             self._exposure_error = repr(err)
-            raise err
-        finally:
             self._exposure_event.set()
+            raise err
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
