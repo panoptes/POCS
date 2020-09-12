@@ -586,6 +586,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = info['exptime']
         field_name = info['field_name']
 
+        if not os.path.exists(file_path):
+            self.logger.error(f"Expected image at '{filepath}' does not exist or " +
+                              "cannot be accessed, cannot process.")
+            observation_event.set()
+            return
+
         image_title = '{} [{}s] {} {}'.format(field_name,
                                               exptime,
                                               seq_id.replace('_', ' '),
