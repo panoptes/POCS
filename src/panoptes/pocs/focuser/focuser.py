@@ -48,8 +48,6 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             saturated pixel mask (determine size of masked regions), default 10
         autofocus_make_plots (bool, optional: Whether to write focus plots to images folder,
             default False.
-        autofocus_focus_time (scalar, optional): Maximum time taken to change focus position +
-            maximum time taken to process each autofocus exposure, in seconds. Default 5.
     """
 
     def __init__(self,
@@ -68,7 +66,6 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                  autofocus_merit_function_kwargs=None,
                  autofocus_mask_dilations=None,
                  autofocus_make_plots=False,
-                 autofocus_focus_time=5,
                  *args, **kwargs):
 
         super().__init__(*args, **kwargs)
@@ -94,8 +91,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                        autofocus_merit_function,
                                        autofocus_merit_function_kwargs,
                                        autofocus_mask_dilations,
-                                       autofocus_make_plots,
-                                       autofocus_focus_time)
+                                       autofocus_make_plots)
         self._autofocus_error = None
 
         self._camera = camera
@@ -591,8 +587,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                   autofocus_merit_function,
                                   autofocus_merit_function_kwargs,
                                   autofocus_mask_dilations,
-                                  autofocus_make_plots,
-                                  autofocus_focus_time):
+                                  autofocus_make_plots):
         # Moved to a separate private method to make it possible to override.
         if autofocus_range:
             self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
@@ -612,12 +607,6 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
         self.autofocus_mask_dilations = autofocus_mask_dilations
         self.autofocus_make_plots = bool(autofocus_make_plots)
-        try:
-            # This will work if it's an astropy.units.Quantity or simular.
-            self.autofocus_focus_time = autofocus_focus_time.to_value(unit=u.second)
-        except AttributeError:
-            # Not a Quantity so it should be a scalar numeric type.
-            self.autofocus_focus_time = float(autofocus_focus_time)
 
     def _add_fits_keywords(self, header):
         header.set('FOC-NAME', self.name, 'Focuser name')
