@@ -12,6 +12,7 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from astropy.modeling import models
 from astropy.modeling import fitting
+import astropy.units as u
 
 from panoptes.pocs.base import PanBase
 from panoptes.utils import current_time
@@ -45,6 +46,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             for the merit function.
         autofocus_mask_dilations (int, optional): Number of iterations of dilation to perform on the
             saturated pixel mask (determine size of masked regions), default 10
+        autofocus_make_plots (bool, optional: Whether to write focus plots to images folder,
+            default False.
+        autofocus_focus_time (scalar, optional): Maximum time taken to change focus position +
+            maximum time taken to process each autofocus exposure, in seconds. Default 5.
     """
 
     def __init__(self,
@@ -62,6 +67,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                  autofocus_merit_function=None,
                  autofocus_merit_function_kwargs=None,
                  autofocus_mask_dilations=None,
+                 autofocus_make_plots=False,
+                 autofocus_focus_time=5,
                  *args, **kwargs):
 
         super().__init__(*args, **kwargs)
@@ -86,7 +93,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                        autofocus_take_dark,
                                        autofocus_merit_function,
                                        autofocus_merit_function_kwargs,
-                                       autofocus_mask_dilations)
+                                       autofocus_mask_dilations,
+                                       autofocus_make_plots,
+                                       autofocus_focus_time)
+        self._autofocus_error = None
 
         self._camera = camera
 
@@ -152,6 +162,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # A focuser is 'ready' if it is not currently moving.
         return not self.is_moving
 
+    @property
+    def autofocus_error(self):
+        """ Error message from the most recent autofocus or None, if there was no error."""
+        return self._autofocus_error
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -176,7 +191,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=False,
+                  make_plots=None,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -206,8 +221,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
-            make_plots (bool, optional: Whether to write focus plots to images folder, default
-                False.
+            make_plots (bool, optional: Whether to write focus plots to images folder. If not
+                given will fall back on value of `autofocus_make_plots` set on initialisation,
+                & if it wasn't set then will default to False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -279,6 +295,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             else:
                 mask_dilations = 10
 
+        if make_plots is None:
+            make_plots = self.autofocus_make_plots
+
         # Set up the focus parameters
         focus_event = Event()
         focus_params = {
@@ -295,8 +314,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             'make_plots': make_plots,
             'focus_event': focus_event,
         }
+
         focus_thread = Thread(target=self._autofocus, kwargs=focus_params)
         focus_thread.start()
+
         if blocking:
             focus_event.wait()
 
@@ -337,6 +358,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                       self._camera.uid,
                                       start_time)
 
+        self._autofocus_error = None
+
         dark_thumb = None
         if take_dark:
             dark_path = os.path.join(file_path_root,
@@ -350,10 +373,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
                 dark_thumb = mask_saturated(dark_thumb, threshold=0.3)
-            except TypeError:
-                self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
-            except Exception as e:
-                self.logger.warning(f'Problem getting dark: {e!r}')
+            except Exception as err:
+                self.logger.error(f"Error taking dark frame: {err!r}")
+                self._autofocus_error = repr(err)
+                focus_event.set()
+                raise err
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
         initial_fn = "{}_{}_{}.{}".format(initial_focus,
@@ -362,8 +386,14 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                           self._camera.file_extension)
         initial_path = os.path.join(file_path_root, initial_fn)
 
-        initial_thumbnail = self._camera.get_thumbnail(
-            seconds, initial_path, thumbnail_size, keep_file=True)
+        try:
+            initial_thumbnail = self._camera.get_thumbnail(
+                seconds, initial_path, thumbnail_size, keep_file=True)
+        except Exception as err:
+            self.logger.error(f"Error taking initial image: {err!r}")
+            self._autofocus_error = repr(err)
+            focus_event.set()
+            raise err
 
         # Set up encoder positions for autofocus sweep, truncating at focus travel
         # limits if required.
@@ -393,8 +423,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_fn = "{}_{:02d}.{}".format(focus_positions[i], i, self._camera.file_extension)
             file_path = os.path.join(file_path_root, focus_fn)
 
-            thumbnail = self._camera.get_thumbnail(
-                seconds, file_path, thumbnail_size, keep_file=keep_files)
+            try:
+                thumbnail = self._camera.get_thumbnail(
+                    seconds, file_path, thumbnail_size, keep_file=keep_files)
+            except Exception as err:
+                self.logger.error(f"Error taking image {i+1}: {err!r}")
+                self._autofocus_error = repr(err)
+                focus_event.set()
+                raise err
+
             masks[i] = mask_saturated(thumbnail).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
@@ -471,8 +508,14 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                         "final",
                                         self._camera.file_extension)
         file_path = os.path.join(file_path_root, final_fn)
-        final_thumbnail = self._camera.get_thumbnail(
-            seconds, file_path, thumbnail_size, keep_file=True)
+        try:
+            final_thumbnail = self._camera.get_thumbnail(
+                seconds, file_path, thumbnail_size, keep_file=True)
+        except Exception as err:
+            self.logger.error(f"Error taking final image: {err!r}")
+            self._autofocus_error = repr(err)
+            focus_event.set()
+            raise err
 
         if make_plots:
             initial_thumbnail = mask_saturated(initial_thumbnail)
@@ -547,7 +590,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                   autofocus_take_dark,
                                   autofocus_merit_function,
                                   autofocus_merit_function_kwargs,
-                                  autofocus_mask_dilations):
+                                  autofocus_mask_dilations,
+                                  autofocus_make_plots,
+                                  autofocus_focus_time):
         # Moved to a separate private method to make it possible to override.
         if autofocus_range:
             self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
@@ -566,6 +611,13 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         self.autofocus_merit_function = autofocus_merit_function
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
         self.autofocus_mask_dilations = autofocus_mask_dilations
+        self.autofocus_make_plots = bool(autofocus_make_plots)
+        try:
+            # This will work if it's an astropy.units.Quantity or simular.
+            self.autofocus_focus_time = autofocus_focus_time.to_value(unit=u.second)
+        except AttributeError:
+            # Not a Quantity so it should be a scalar numeric type.
+            self.autofocus_focus_time = float(autofocus_focus_time)
 
     def _add_fits_keywords(self, header):
         header.set('FOC-NAME', self.name, 'Focuser name')

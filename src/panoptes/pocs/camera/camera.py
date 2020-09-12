@@ -147,6 +147,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event = threading.Event()
         self._exposure_event.set()
         self._is_exposing = False
+        self._exposure_error = None
 
         # By default assume camera isn't capable of internal darks.
         self._internal_darks = kwargs.get('internal_darks', False)
@@ -384,6 +385,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         return self._internal_darks
 
+    @property
+    def exposure_error(self):
+        """ Error message from the most recent exposure or None, if there was no error."""
+        return self._exposure_error
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -469,9 +475,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             threading.Event: Event that will be set when exposure is complete.
 
         """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+        self._exposure_error = None
 
-        assert filename is not None, self.logger.error("Must pass filename for take_exposure")
+        if not self.is_connected:
+            err = AssertionError("Camera must be connected for take_exposure!")
+            self.logger.error(str(err))
+            self._exposure_error = repr(err)
+            raise err
+
+        if not filename:
+            err = AssertionError("Must pass filename for take_exposure")
+            self.logger.error(str(err))
+            self._exposure_error = repr(err)
+            raise err
 
         if not self.can_take_internal_darks:
             if dark:
@@ -504,8 +520,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 problems.append("exposure in progress")
 
             problems_string = ", ".join(problems)
-            msg = f"Attempt to start exposure on {self} while not ready: {problems_string}."
-            raise error.PanError(msg)
+            err = error.PanError(f"Attempt to start exposure on {self} while not ready: +"
+                                 f"{problems_string}.")
+            self._exposure_error = repr(err)
+            raise err
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
@@ -515,8 +533,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header = self._create_fits_header(seconds, dark)
 
         if not self._exposure_event.is_set():
-            msg = f"Attempt to take exposure on {self} while one already in progress."
-            raise error.PanError(msg)
+            err = error.PanError(f"Attempt to take exposure on {self} while one already " +
+                                 "in progress.")
+            self._exposure_error = repr(err)
+            raise err
 
         # Clear event now to prevent any other exposures starting before this one is finished.
         self._exposure_event.clear()
@@ -524,9 +544,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             # Camera type specific exposure set up and start
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
-        except (RuntimeError, ValueError, error.PanError) as err:
+        except Exception as err:
+            err = error.PanError("Error starting exposure on {}: {}".format(self, err))
+            self._exposure_error = repr(err)
+            raise err
+        finally:
             self._exposure_event.set()
-            raise error.PanError("Error starting exposure on {}: {}".format(self, err))
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
@@ -694,17 +717,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 be kept.
             *args, **kwargs: passed to the take_exposure() method
         """
-        exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
-        exposure.wait()
+        kwargs['blocking'] = True
+        self.take_exposure(seconds, filename=file_path, *args, **kwargs)
+        if self.exposure_error is not None:
+            raise error.PanError(self.exposure_error)
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        thumbnail = None
-        try:
-            thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
-        except Exception as e:
-            self.logger.warning(f'Problem getting thumbnail: {e!r}')
-        return thumbnail
+        return img_utils.crop_data(image, box_width=thumbnail_size)
 
     def _check_temperature_stability(self, required_stable_time=60*u.second,
                                      sleep_delay=5*u.second, timeout=300*u.second,
@@ -843,15 +863,22 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     msg = f"Timeout waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(0.01)
-        except (RuntimeError, error.PanError) as err:
+        except Exception as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err!r}')
+            self._exposure_error = repr(err)
             raise err
         else:
             # Camera type specific readout function
-            self._readout(*readout_args)
+            try:
+                self._readout(*readout_args)
+            except Exception as err:
+                self.logger.error(f"Error during readout on {self}: {err!r}")
+                self._exposure_error = repr(err)
+                raise err
         finally:
-            self._exposure_event.set()  # Make sure this gets set regardless of readout errors
+            # Make sure this gets set regardless of any errors
+            self._exposure_event.set()
 
     def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
