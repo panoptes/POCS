@@ -587,7 +587,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         field_name = info['field_name']
 
         if not os.path.exists(file_path):
-            self.logger.error(f"Expected image at '{filepath}' does not exist or " +
+            self.logger.error(f"Expected image at '{file_path}' does not exist or " +
                               "cannot be accessed, cannot process.")
             observation_event.set()
             return
