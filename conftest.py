@@ -8,6 +8,7 @@ from contextlib import suppress
 from _pytest.logging import caplog as _caplog  # noqa
 
 from panoptes.pocs import hardware
+from panoptes.utils.config.client import set_config
 from panoptes.utils.database import PanDB
 
 from panoptes.pocs.utils.logger import get_logger, PanLogger
@@ -192,6 +193,7 @@ def db_name():
 @pytest.fixture(scope='session')
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
+    set_config('directories.images', directory)
     return str(directory)
 
 
