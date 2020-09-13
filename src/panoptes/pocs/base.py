@@ -53,6 +53,7 @@ class PanBase(object):
         try:
             config_value = client.get_config(host=self._config_host,
                                              port=self._config_port,
+                                             verbose=False,
                                              *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
             self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')

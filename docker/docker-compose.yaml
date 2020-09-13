@@ -12,7 +12,7 @@ services:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/peas-shell to access
     command:
-      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "$PANDIR/panoptes-utils/scripts/wait-for-it.sh"
       - "localhost:6563"
       - "--"
       - "tail"
@@ -32,7 +32,7 @@ services:
       - pandir:/var/panoptes
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
     command:
-      - "$PANDIR/panoptes-utils/bin/wait-for-it.sh"
+      - "$PANDIR/panoptes-utils/scripts/wait-for-it.sh"
       - "localhost:6563"
       - "--"
       - "tail"

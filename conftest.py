@@ -2,17 +2,13 @@ import logging
 import os
 import stat
 import pytest
-import time
 import tempfile
 import shutil
 from contextlib import suppress
-from _pytest.logging import caplog as _caplog
+from _pytest.logging import caplog as _caplog  # noqa
 
 from panoptes.pocs import hardware
 from panoptes.utils.database import PanDB
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
-from panoptes.utils.config.server import config_server
 
 from panoptes.pocs.utils.logger import get_logger, PanLogger
 
@@ -25,14 +21,20 @@ LOGGER_INFO = PanLogger()
 logger = get_logger()
 logger.enable('panoptes')
 logger.level("testing", no=15, icon="🤖", color="<YELLOW><black>")
-log_file_path = os.path.join(
-    os.getenv('PANLOG', '/var/panoptes/logs'),
-    'panoptes-testing.log'
-)
-startup_message = ' STARTING NEW PYTEST RUN '
+log_fmt = "<lvl>{level:.1s}</lvl> " \
+          "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
+          "<blue>({time:HH:mm:ss.ss})</> " \
+          "| <c>{name} {function}:{line}</c> | " \
+          "<lvl>{message}</lvl>\n"
+
+# Put the log file in the tmp dir.
+log_file_path = os.path.expandvars('${PANLOG}/panoptes-testing.log')
+startup_message = f' STARTING NEW PYTEST RUN - LOGS: {log_file_path} '
 logger.add(log_file_path,
            enqueue=True,  # multiprocessing
+           format=log_fmt,
            colorize=True,
+           # TODO decide on these options
            backtrace=True,
            diagnose=True,
            catch=True,
@@ -40,6 +42,7 @@ logger.add(log_file_path,
            rotation=lambda msg, _: startup_message in msg,
            level='TRACE')
 logger.log('testing', '*' * 25 + startup_message + '*' * 25)
+
 # Make the log file world readable.
 os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
@@ -158,46 +161,18 @@ def pytest_runtest_logreport(report):
 
 
 @pytest.fixture(scope='session')
-def config_path():
-    return os.path.expandvars('${POCS}/tests/pocs_testing.yaml')
-
-
-@pytest.fixture(scope='session')
 def config_host():
-    # Open on full network because we test mostly on docker.
-    return '0.0.0.0'
+    return os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
 
 
 @pytest.fixture(scope='session')
 def config_port():
-    return 9999
+    return os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
 
-@pytest.fixture(scope='module', autouse=True)
-def static_config_server(config_path, config_host, config_port, images_dir, db_name):
-    logger.log('testing', f'Starting static_config_server for testing session')
-
-    proc = config_server(
-        config_path,
-        host=config_host,
-        port=config_port,
-        ignore_local=True,
-        auto_save=False
-    )
-
-    logger.log('testing', f'static_config_server started with {proc.pid=}')
-
-    # Give server time to start
-    while get_config('name') is None:  # pragma: no cover
-        logger.log('testing', f'Waiting for static_config_server {proc.pid=}, sleeping 1 second.')
-        time.sleep(1)
-
-    set_config('directories.images', images_dir)
-
-    logger.log('testing', f'Startup config_server name=[{get_config("name")}]')
-    yield
-    logger.log('testing', f'Killing static_config_server started with PID={proc.pid}')
-    proc.terminate()
+@pytest.fixture(scope='session')
+def config_path():
+    return os.getenv('PANOPTES_CONFIG_FILE', '/var/panoptes/POCS/tests/testing.yaml')
 
 
 @pytest.fixture

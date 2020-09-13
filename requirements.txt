@@ -1,0 +1,2 @@
+# Use this to install the local version if needed.
+-e git+https://github.com/panoptes/POCS.git@develop#egg=panoptes-utils
