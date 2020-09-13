@@ -12,7 +12,7 @@ echo "Setting up local environment in ${PANOPTES_POCS}"
 cd "${PANOPTES_POCS}"
 
 build_utils() {
-  INCLUDE_BASE="${INCLUDE_BASE:-true} ""${PANOPTES_UTILS}/scripts/setup-local-environment.sh"
+  INCLUDE_BASE="${INCLUDE_BASE:-true}" "${PANOPTES_UTILS}/scripts/setup-local-environment.sh"
   # Use our local image for build below instead of gcr.io image.
   UTILS_IMAGE_URL="panoptes-utils:develop"
   echo "Setting UTILS_IMAGE_URL=${UTILS_IMAGE_URL}"
