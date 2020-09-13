@@ -395,7 +395,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            masks[i] = mask_saturated(thumbnail).mask
+            masks[i] = mask_saturated(thumbnail, bit_depth=self.camera.bit_depth).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             thumbnails[i] = thumbnail
