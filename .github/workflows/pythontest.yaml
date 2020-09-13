@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
         run: |
-          INCLUDE_UTILS=true scripts/setup-local-environment.sh
+          PANOPTES_POCS=. scripts/setup-local-environment.sh
       - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p logs && chmod -R 777 logs
