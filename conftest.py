@@ -193,7 +193,7 @@ def db_name():
 @pytest.fixture(scope='session')
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
-    set_config('directories.images', directory)
+    set_config('directories.images', str(directory))
     return str(directory)
 
 
