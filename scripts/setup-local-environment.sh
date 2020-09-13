@@ -10,7 +10,7 @@ PANDIR="${PANDIR:-${PWD}/../}"
 PANOPTES_UTILS=${PANOPTES_UTILS:-${PANDIR}/panoptes-utils}
 PANOPTES_POCS=${PANOPTES_POCS:-${PANDIR}/POCS}
 
-UTILS_IMAGE_URL="gcr.io/panoptes-exp/panoptes-utils:latest"
+UTILS_IMAGE_URL="gcr.io/panoptes-exp/panoptes-utils:${TAG}"
 
 echo "Setting up local environment in ${PANOPTES_POCS}"
 cd "${PANOPTES_POCS}"
