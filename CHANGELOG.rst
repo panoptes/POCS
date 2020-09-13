@@ -9,7 +9,6 @@ Added
 ~~~~~
 
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
-* Config server available on separate host and port via two new env vars, ``PANOPTES_CONFIG_HOST`` and ``PANOPTES_CONFIG_PORT``. Using ``python-dotenv`` to look for env files. (@wtgee #1001)
 
 Changed
 ~~~~~~~
