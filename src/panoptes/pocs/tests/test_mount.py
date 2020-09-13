@@ -86,7 +86,7 @@ def test_bad_mount_port(config_host, config_port):
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
     with suppress(KeyError, AttributeError):
-        simulators.remove('mount')
+        simulators.pop('mount')
     set_config('simulator', simulators)
 
     # Set a bad port, which should cause a fail before actual mount creation.
@@ -100,7 +100,7 @@ def test_bad_mount_driver(config_host, config_port):
     # Remove the mount from the list of simulators so it thinks we have a real one.
     simulators = get_config('simulator')
     with suppress(KeyError, AttributeError):
-        simulators.remove('mount')
+        simulators.pop('mount')
     set_config('simulator', simulators)
 
     # Set a bad port, which should cause a fail before actual mount creation.
