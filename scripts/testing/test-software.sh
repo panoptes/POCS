@@ -21,7 +21,9 @@ sleep "${SLEEP_TIME:-5}"
 docker run --rm -i \
   --init \
   --network "host" \
-  --env-file "./tests/env" \
+  -e "PANOPTES_CONFIG_FILE=/var/panoptes/POCS/tests/testing.yaml" \
+  -e "PANOPTES_CONFIG_HOST=0.0.0.0" \
+  -e "PANOPTES_CONFIG_PORT=8765" \
   -v "${PANLOG}":/var/panoptes/logs \
   panoptes-pocs:develop \
   "/var/panoptes/POCS/scripts/testing/run-tests.sh"
