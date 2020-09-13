@@ -16,13 +16,17 @@ tail -F ${PANDIR}/logs/panoptes-testing.log
 Tests will begin in 5 seconds. Press Ctrl-c to cancel.
 EOF
 
-SLEEP_TIME=${1:-5}
+sleep "${SLEEP_TIME:-5}"
 
-sleep "${SLEEP_TIME}"
-
-docker run --rm -it \
+docker run --rm -i \
   --init \
-  -v "${PANDIR}/POCS":/var/panoptes/POCS \
-  -v "${PANDIR}/logs":/var/panoptes/logs \
+  --network "host" \
+  -e "PANOPTES_CONFIG_FILE=/var/panoptes/POCS/tests/testing.yaml" \
+  -e "PANOPTES_CONFIG_HOST=0.0.0.0" \
+  -e "PANOPTES_CONFIG_PORT=8765" \
+  -v "${PWD}/logs":/var/panoptes/logs \
   panoptes-pocs:develop \
   "/var/panoptes/POCS/scripts/testing/run-tests.sh"
+
+echo "test output dir ${PANLOG}:"
+ls "${PANLOG}/panoptes-testing.log"

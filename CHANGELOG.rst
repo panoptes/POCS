@@ -1,10 +1,6 @@
-CHANGELOG
 =========
-
-All notable changes to this project will be documented in this file.
-
-The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
-adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
+Changelog
+=========
 
 [0.7.7dev]
 ----------
@@ -12,12 +8,26 @@ adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 Added
 ~~~~~
 
+Bug fixes
+~~~~~~~~~
+
+* DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
+
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
 
 Changed
 ~~~~~~~
 
 * Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
+* Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server.. (@wtgee #1001)
+* Local ``.env`` files in ``$PANDIR`` are sourced via ``PanBase`` when creating new objects.
+* Move the ``wait-for-it.sh`` script into ``scripts``. (@wtgee #1001)
+* Testing: (@wtgee #1001)
+
+  * Testing is run from a locally built Docker image for both local and CI testing.
+  * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``.
+  * Config server for testing is started external to ``pytest``, which is currently lowering coverage.
+  * Coverage reports are generated inside the Docker container.
 
 
 [0.7.6] - 2020-08-21
