@@ -25,7 +25,7 @@ def focuser(request):
     else:
         # Load the local config file and look for focuser configurations of the specified type
         focuser_configs = []
-        local_config = load_config('pocs_local', ignore_local=True)
+        local_config = load_config('pocs_local', load_local=True)
         camera_info = local_config.get('cameras')
         if camera_info:
             # Local config file has a cameras section
