@@ -68,28 +68,40 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     """Base class for all cameras.
 
     Attributes:
-        filter_type (str): Type of filter attached to camera, default RGGB.
-        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera,
-        default None.
+        filter_type (str): Type of filter attached to camera. If a filterwheel is present this
+            will return the filterwheel.current_filter property, otherwise it will return the
+            value of the filter_type keyword argument, or if that argument was not given it
+            it will query the camera driver, e.g. 'M' for unfiltered monochrome camera,
+            'RGGB' for Bayer matrix colour camera.
+        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera, default
+            None.
         filter_wheel (`panoptes.pocs.filterwheel.AbstractFilterWheel`|None): Filter wheel for the
-        camera,
-            default None.
+            camera, default None.
+        uid (str): Unique identifier of the camera.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
+        temperature (astropy.units.Quantity): Current temperature of the image sensor.
         target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
         temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
+        cooling_enabled (bool): True if image sensor cooling is active.
+        cooling_power (astropy.unit.Quantity): Current image sensor cooling power level in percent.
+        egain (astropy.units.Quantity): Image sensor gain in e-/ADU as reported by the camera.
         gain (int): The gain setting of the camera (ZWO cameras only).
+        bitdepth (astropy.units.Quantity): ADC bit depth in bits.
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
         timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
         readout_time (float): approximate time to readout the camera after an exposure.
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+        is_connected (bool): True if camera is connected.
         is_cooled_camera (bool): True if camera has image sensor cooling capability.
         is_temperature_stable (bool): True if image sensor temperature is stable.
         is_exposing (bool): True if an exposure is currently under way, otherwise False.
+        is_ready (bool): True if the camera is ready to take an exposure.
+        can_take_internal_darks (bool): True if the camera can take internal dark exposures.
 
     Notes:
         The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
@@ -135,6 +147,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._exposure_event = threading.Event()
         self._exposure_event.set()
         self._is_exposing = False
+
+        # By default assume camera isn't capable of internal darks.
+        self._internal_darks = kwargs.get('internal_darks', False)
 
         for subcomponent_class in self._subcomponent_classes:
             self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
@@ -357,7 +372,18 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
-        
+
+    @property
+    def can_take_internal_darks(self):
+        """ True if the camera can take internal dark exposures.
+        This will be true of cameras that have an internal mechanical shutter and can
+        be commanded to keep that shutter closed during the exposure. For cameras that
+        either lack a mechanical shutter or lack the option to keep it closed light must
+        be kept out of the camera during dark exposures by other means, e.g. an opaque
+        blank in a filterwheel, a lens cap, etc.
+        """
+        return self._internal_darks
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -446,6 +472,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
         assert filename is not None, self.logger.error("Must pass filename for take_exposure")
+
+        if not self.can_take_internal_darks:
+            if dark:
+                try:
+                    # Can't take internal dark, so try using an opaque filter in a filterwheel
+                    self.filterwheel.move_to_dark_position(blocking=True)
+                    self.logger.debug("Taking dark exposure using filter '"
+                                      f"{self.filterwheel.filter_name(self.filterwheel._dark_position)}'.")
+                except (AttributeError, error.NotFound):
+                    # No filterwheel, or no opaque filter (dark_position not set)
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
+            else:
+                with suppress(AttributeError, error.NotFound):
+                    # Ignoring exceptions from no filterwheel, or no last light position
+                    self.filterwheel.move_to_light_position(blocking=True)
 
         # Check that the camera (and subcomponents) is ready
         if not self.is_ready:

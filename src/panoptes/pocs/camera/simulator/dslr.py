@@ -97,7 +97,7 @@ class Camera(AbstractCamera, ABC):
         return file_path
 
     def _set_target_temperature(self, target):
-        raise NotImplementedError
+        raise False
 
     def _set_cooling_enabled(self, enable):
-        raise NotImplementedError
+        raise False

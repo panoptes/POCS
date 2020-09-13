@@ -28,6 +28,8 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
+        # Most SDK cameras can take internal darks so set to True by default.
+        kwargs['internal_darks'] = kwargs.get('internal_darks', True)
         super().__init__(**kwargs)
         self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()

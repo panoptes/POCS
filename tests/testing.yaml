@@ -8,7 +8,7 @@
 #         files and communicate with the Google Cloud network.
 #
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
-#         an official id. Update pocs_local.yaml with offical name once received.
+#         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
 name: Generic PANOPTES Unit
 pan_id: PAN000
