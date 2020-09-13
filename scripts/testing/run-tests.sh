@@ -12,6 +12,9 @@ coverage erase
 
 # Run coverage over the pytest suite.
 echo "Starting config server in background"
+echo "PANOPTES_CONFIG_FILE=${PANOPTES_CONFIG_FILE}"
+echo "PANOPTES_CONFIG_HOST=${PANOPTES_CONFIG_HOST}"
+echo "PANOPTES_CONFIG_PORT=${PANOPTES_CONFIG_PORT}"
 panoptes-config-server --host "${PANOPTES_CONFIG_HOST}" --port "${PANOPTES_CONFIG_PORT}" run --no-load-local --no-save-local &
 
 echo "Checking to make sure panoptes-config-server is running"
