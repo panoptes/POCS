@@ -289,7 +289,7 @@ function get_or_build_images() {
     echo "Building local PANOPTES docker images."
 
     cd "${PANDIR}/POCS"
-    ./docker/setup-local-environment.sh
+    ./scripts/setup-local-environment.sh
   else
     echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
 
