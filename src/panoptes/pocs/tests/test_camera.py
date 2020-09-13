@@ -91,9 +91,11 @@ def camera(request):
                 camera = CamClass(**cam_config)
                 break
 
-    camera.logger.debug(f'Yielding camera {camera}')
-    camera._check_temperature_stability(blocking=True)  # Need to wait for stable temperature
+    if camera.is_cooled_camera:
+        camera._check_temperature_stability(blocking=True)  # Need to wait for stable temperature
+
     assert camera.is_ready
+    camera.logger.debug(f'Yielding camera {camera}')
     yield camera
 
     # simulator_sdk needs this explicitly removed for some reason.
@@ -390,6 +392,7 @@ def test_exposure_dark(camera, tmpdir):
             camera.take_exposure(filename=fits_path2, blocking=True)
             # Filterwheel should have moved back to most recent non opaque filter now.
             assert camera.filterwheel.current_filter == 'one'
+
 
 def test_exposure_collision(camera, tmpdir):
     """
