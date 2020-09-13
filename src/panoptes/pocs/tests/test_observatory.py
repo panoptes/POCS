@@ -24,12 +24,9 @@ from panoptes.pocs.utils.location import create_location_from_config
 
 import requests
 
-config_host = 'localhost'
-config_port = 6563
-url = f'http://{config_host}:{config_port}/reset-config'
 
-
-def reset_conf():
+def reset_conf(config_host, config_port):
+    url = f'http://{config_host}:{config_port}/reset-config'
     response = requests.post(url,
                              data=to_json({'reset': True}),
                              headers={'Content-Type': 'application/json'}
@@ -72,12 +69,12 @@ def test_remove_cameras(observatory, cameras):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site():
+def test_bad_site(config_host, config_port):
     set_config('location', {})
     with pytest.raises(error.PanError):
         Observatory()
 
-    reset_conf()
+    reset_conf(config_host, config_port)
 
 
 def test_cannot_observe(caplog):
