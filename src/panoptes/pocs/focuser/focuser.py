@@ -349,7 +349,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                                         keep_file=True,
                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_thumb = mask_saturated(dark_thumb, threshold=0.3)
+                dark_thumb = mask_saturated(dark_thumb,
+                                            threshold=0.3,
+                                            bit_depth=self.camera.bit_depth)
             except TypeError:
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
             except Exception as e:
