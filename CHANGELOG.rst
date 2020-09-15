@@ -19,7 +19,8 @@ Changed
 ~~~~~~~
 
 * Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
-* Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server.. (@wtgee #1001)
+* Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
+* Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
 * Local ``.env`` files in ``$PANDIR`` are sourced via ``PanBase`` when creating new objects.
 * Move the ``wait-for-it.sh`` script into ``scripts``. (@wtgee #1001)
 * Testing: (@wtgee #1001)
