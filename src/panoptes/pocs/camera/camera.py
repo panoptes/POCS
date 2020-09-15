@@ -731,8 +731,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
-    def _check_temperature_stability(self, required_stable_time=60*u.second,
-                                     sleep_delay=5*u.second, timeout=300*u.second,
+    def _check_temperature_stability(self, required_stable_time=60 * u.second,
+                                     sleep_delay=5 * u.second, timeout=300 * u.second,
                                      blocking=False):
         """
         Wait until camera temperature is within tolerance for a sufficiently long period of time.
@@ -790,7 +790,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._is_temperature_stable = False
         self.logger.info(f"Waiting for stable temperature on {self}.")
         self._temperature_thread = threading.Thread(
-                target=check_temp, args=(required_stable_time, sleep_delay, timeout))
+            target=check_temp, args=(required_stable_time, sleep_delay, timeout))
         self._temperature_thread.start()
         if blocking:
             self._temperature_thread.join()
@@ -1041,7 +1041,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 corresponding POCS submodule for this subcomponent, e.g. `panoptes.pocs.focuser`.
         """
         class_name_lower = class_name.casefold()
-        if subcomponent:
+        if subcomponent is not None:
             base_module_name = "panoptes.pocs.{0}.{0}".format(class_name_lower)
             try:
                 base_module = load_module(base_module_name)
@@ -1120,6 +1120,11 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
         # Setup a holder for the process
         self._proc = None
+
+        # Explicitly set holders for some of the hardware subcomponents until
+        # TODO fix the setting of the attribute.
+        self.focuser = None
+        self.filterwheel = None
 
     @AbstractCamera.uid.getter
     def uid(self):
