@@ -113,8 +113,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     """
 
     _subcomponents = {
-        'focuser': 'panoptes.pocs.focuser.focuser',
-        'filterwheel': 'panoptes.pocs.filterwheel.filterwheel',
+        'focuser': 'panoptes.pocs.focuser.focuser.AbstractFocuser',
+        'filterwheel': 'panoptes.pocs.filterwheel.filterwheel.AbstractFilterWheel',
     }
 
     def __init__(self,
@@ -155,12 +155,24 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._internal_darks = kwargs.get('internal_darks', False)
 
         # Set up any subcomponents.
-        for subcomponent_name, subcomponent_class in self._subcomponents.items():
+        for attr_name, class_path in self._subcomponents.items():
             # Create the subcomponent as an attribute with default None.
-            setattr(self, subcomponent_name, None)
-            subcomponent = kwargs.get(subcomponent_name)
+            self.logger.debug(f'Setting default {attr_name=} to None')
+            setattr(self, attr_name, None)
+
+            # If given subcomponent class (or dict), try to create instance.
+            subcomponent = kwargs.get(attr_name)
             if subcomponent is not None:
-                self._create_subcomponent(subcomponent=subcomponent, class_name=subcomponent_class)
+                self.logger.debug(f'Found {subcomponent=}, creating instance')
+
+                try:
+                    subcomponent = self._create_subcomponent(class_path, subcomponent)
+                except error.NotFound:
+                    self.logger.critical(f'Unable to load {subcomponent=}, invalid '
+                                         f'instance or dict for the base class.')
+                else:
+                    self.logger.debug(f'Assigning {attr_name=} wtih {subcomponent=}')
+                    setattr(self, attr_name, subcomponent)
 
         self.logger.debug(f'Camera created: {self}')
 
@@ -1033,7 +1045,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return file_path
 
-    def _create_subcomponent(self, subcomponent, class_name):
+    def _create_subcomponent(self, class_path, subcomponent):
         """
         Creates a subcomponent as an attribute of the camera. Can do this from either an instance
         of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
@@ -1042,45 +1054,57 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             subcomponent (instance of sub_name | dict): the subcomponent object, or the keyword
                 arguments required to create it.
-            class_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version
-                will be used as the attribute name, and must also match the name of the
-                corresponding POCS submodule for this subcomponent, e.g. `panoptes.pocs.focuser`.
+            class_path (str): Full namespace of the subcomponent, e.g.
+                'panoptes.pocs.focuser.focuser.AbstractFocuser'.
+
+        Returns:
+            object: an instance of the subcomponent object.
+
+        Raises:
+            panoptes.utils.error.NotFound: Not found error.
         """
         # Load the module for the subcomponent.
+        sub_parts = class_path.split('.')
+        base_class_name = sub_parts.pop()
+        base_module_name = '.'.join(sub_parts)
+        self.logger.debug(f'Loading {base_module_name=}')
         try:
-            self.logger.debug(f'Loading {class_name=} module')
-            base_module = load_module(class_name)
+            base_module = load_module(base_module_name)
         except error.NotFound as err:
-            self.logger.critical(f"Couldn't import {class_name=} for {subcomponent=}!")
+            self.logger.critical(f"Couldn't import {base_module_name=}")
             raise err
 
         # Get the base class from the loaded module.
-        base_class = getattr(base_module, f"Abstract{class_name}")
+        self.logger.debug(f'Trying to get {base_class_name=} from {base_module}')
+        base_class = getattr(base_module, base_class_name)
 
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"{subcomponent=} is a {base_class=} instance, using it directly.")
-            # Assign the subcomponent to the object attribute.
-            setattr(self, class_name, subcomponent)
-            # Give the subcomponent a reference back to the camera.
-            getattr(self, class_name).camera = self
+            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance, "
+                              f"attaching camera to subcomponent")
+            setattr(subcomponent, 'camera', self)
+            return subcomponent
         elif isinstance(subcomponent, dict):
-            self.logger.debug(f"{subcomponent=} is a dict, trying to create a {base_class=} instance.")
             try:
-                module = load_module(subcomponent['model'])
+                model = subcomponent['model']
+                self.logger.debug(f"{subcomponent=} is a dict but has {model=} keyword, "
+                                  f"trying to create a {base_class=} instance")
+                base_class = load_module(model)
             except (KeyError, error.NotFound) as err:
-                self.logger.critical(f"Can't create a {class_name=} from {subcomponent=}")
-                raise err
+                raise error.NotFound(f"Can't create a {class_path=} from {subcomponent=}")
+
+            self.logger.debug(f'Creating the {base_class_name=} object from dict')
+
             # Copy dict creation items and add the camera.
             subcomponent_kwargs = copy.deepcopy(subcomponent)
             subcomponent_kwargs.update({'camera': self})
-            self.logger.debug(f'Creating the {class_name=} object')
-            subcomponent = getattr(module, class_name)(**subcomponent_kwargs)
-            self.logger.info(f'{subcomponent=} created for {class_name=}, attaching to camera.')
-            setattr(self, class_name, subcomponent)
+
+            subcomponent = base_class(**subcomponent_kwargs)
+            self.logger.info(f'{subcomponent=} created for {base_class_name=}')
+            return subcomponent
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
-            self.logger.error(f"Expected either a {class_name} instance or dict, got {subcomponent}")
+            raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
 
     def __str__(self):
         try:
