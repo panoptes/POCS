@@ -196,14 +196,14 @@ def create_camera_simulator(num_cameras=2):
     device_config = {
         'model': 'simulator',
         'port': '/dev/camera/simulator',
-        'focuser': {'model': 'simulator',
+        'focuser': {'model': 'simulatorpanoptes.pocs.focuser.simulator',
                     'focus_port': '/dev/ttyFAKE',
                     'initial_position': 20000,
                     'autofocus_range': (40, 80),
                     'autofocus_step': (10, 20),
                     'autofocus_seconds': 0.1,
                     'autofocus_size': 500},
-        'filterwheel': {'model': 'simulator',
+        'filterwheel': {'model': 'panoptes.pocs.filterwheel.simulator',
                         'filter_names': ['one', 'deux', 'drei', 'quattro'],
                         'move_time': 0.1 * u.second,
                         'timeout': 0.5 * u.second},
@@ -220,7 +220,7 @@ def create_camera_simulator(num_cameras=2):
         camera_model = device_config['model']
         logger.debug(f'Creating camera: {camera_model}')
 
-        module = load_module(f'panoptes.pocs.camera.{camera_model}')
+        module = load_module(camera_model)
         logger.debug(f'Camera module: {module}')
 
         # Create the camera object
