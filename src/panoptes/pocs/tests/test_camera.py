@@ -452,7 +452,7 @@ def test_exposure_not_connected(camera):
 
 
 def test_exposure_moving(camera, tmpdir):
-    if not camera.filterwheel:
+    if camera.filterwheel is None:
         pytest.skip("Camera does not have a filterwheel")
     fits_path_1 = str(tmpdir.join('test_not_moving.fits'))
     fits_path_2 = str(tmpdir.join('test_moving.fits'))
@@ -524,7 +524,7 @@ def test_observation_nofilter(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
@@ -533,7 +533,7 @@ def test_autofocus_coarse(camera, patterns, counter):
 
 
 def test_autofocus_fine(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
@@ -542,7 +542,7 @@ def test_autofocus_fine(camera, patterns, counter):
 
 
 def test_autofocus_fine_blocking(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
@@ -551,7 +551,7 @@ def test_autofocus_fine_blocking(camera, patterns, counter):
 
 
 def test_autofocus_with_plots(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
@@ -561,7 +561,7 @@ def test_autofocus_with_plots(camera, patterns, counter):
 
 
 def test_autofocus_coarse_with_plots(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(coarse=True, make_plots=True)
     autofocus_event.wait()
@@ -571,7 +571,7 @@ def test_autofocus_coarse_with_plots(camera, patterns, counter):
 
 
 def test_autofocus_keep_files(camera, patterns, counter):
-    if not camera.focuser:
+    if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
