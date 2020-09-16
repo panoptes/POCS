@@ -1048,6 +1048,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         # Load the module for the subcomponent.
         try:
+            self.logger.debug(f'Loading {class_name=} module')
             base_module = load_module(class_name)
         except error.NotFound as err:
             self.logger.critical(f"Couldn't import {class_name=} for {subcomponent=}!")
