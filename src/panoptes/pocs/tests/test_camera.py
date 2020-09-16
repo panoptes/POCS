@@ -30,7 +30,7 @@ from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.camera import create_camera_simulator
 
 focuser_params = {
-    'model': 'simulator',
+    'model': 'panoptes.pocs.focuser.simulator',
     'focus_port': '/dev/ttyFAKE',
     'initial_position': 20000,
     'autofocus_range': (40, 80),
@@ -41,14 +41,14 @@ focuser_params = {
 }
 
 filterwheel_params = {
-    'model': 'simulator',
+    'model': 'panoptes.pocs.filterwheel.simulator',
     'filter_names': ['one', 'deux', 'drei', 'quattro'],
     'move_time': 0.1,
     'timeout': 0.5
 }
 
 filterwheel_blank_params = {
-    'model': 'simulator',
+    'model': 'panoptes.pocs.filterwheel.simulator',
     'filter_names': ['one', 'deux', 'blank', 'quattro'],
     'move_time': 0.1,
     'timeout': 0.5,
