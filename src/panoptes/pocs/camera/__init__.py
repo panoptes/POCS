@@ -194,9 +194,9 @@ def create_camera_simulator(num_cameras=2):
 
     # Set up a simulated camera with fully configured simulated focuser.
     device_config = {
-        'model': 'simulator',
+        'model': 'panoptes.pocs.camera.simulator',
         'port': '/dev/camera/simulator',
-        'focuser': {'model': 'simulatorpanoptes.pocs.focuser.simulator',
+        'focuser': {'model': 'panoptes.pocs.focuser.simulator',
                     'focus_port': '/dev/ttyFAKE',
                     'initial_position': 20000,
                     'autofocus_range': (40, 80),

@@ -126,9 +126,6 @@ def test_create_camera_simulator():
     cameras = create_camera_simulator()
     assert len(cameras) == 2
 
-    cameras = create_camera_simulator()
-    assert len(cameras) == 2
-
     with pytest.raises(error.CameraNotFound):
         create_camera_simulator(num_cameras=0)
 
