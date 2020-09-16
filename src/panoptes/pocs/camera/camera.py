@@ -1070,11 +1070,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             else:
                 # Should have been passed either an instance of base_class or dict with subcomponent
                 # configuration. Got something else...
-                self.logger.error("Expected either a {} instance or dict, got {}".format(
-                    class_name, subcomponent))
+                self.logger.error(f"Expected either a {class_name} instance or dict, got {subcomponent}")
                 setattr(self, class_name_lower, None)
-        else:
-            setattr(self, class_name_lower, None)
+
+        self.logger.info(f'Setting {subcomponent=} for {self=}')
+        setattr(self, class_name_lower, None)
 
     def __str__(self):
         try:
