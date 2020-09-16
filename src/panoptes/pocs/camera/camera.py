@@ -113,8 +113,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     """
 
     _subcomponents = {
-        'focuser': 'panoptes.pocs.focuser.Focuser',
-        'filterwheel': 'panoptes.pocs.filterwheel.Filterwheel',
+        'focuser': 'panoptes.pocs.focuser.focuser',
+        'filterwheel': 'panoptes.pocs.filterwheel.filterwheel',
     }
 
     def __init__(self,
