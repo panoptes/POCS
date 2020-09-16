@@ -10,12 +10,12 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 
-from panoptes.pocs.camera import AbstractCamera
+from panoptes.pocs.camera import AbstractGPhotoCamera
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import get_quantity_value
 
 
-class Camera(AbstractCamera, ABC):
+class Camera(AbstractGPhotoCamera, ABC):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
