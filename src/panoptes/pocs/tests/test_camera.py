@@ -29,7 +29,7 @@ from panoptes.utils.config.client import set_config
 from panoptes.pocs.camera import create_cameras_from_config
 
 focuser_params = {
-    'model': 'panoptes.pocs.focuser.simulator',
+    'model': 'panoptes.pocs.focuser.simulator.Focuser',
     'focus_port': '/dev/ttyFAKE',
     'initial_position': 20000,
     'autofocus_range': (40, 80),
@@ -40,14 +40,14 @@ focuser_params = {
 }
 
 filterwheel_params = {
-    'model': 'panoptes.pocs.filterwheel.simulator',
+    'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
     'filter_names': ['one', 'deux', 'drei', 'quattro'],
     'move_time': 0.1,
     'timeout': 0.5
 }
 
 filterwheel_blank_params = {
-    'model': 'panoptes.pocs.filterwheel.simulator',
+    'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
     'filter_names': ['one', 'deux', 'blank', 'quattro'],
     'move_time': 0.1,
     'timeout': 0.5,
@@ -155,21 +155,20 @@ def test_sim_passed_focuser():
 
 
 def test_sim_bad_focuser():
-    with pytest.raises((NotFound)):
+    with pytest.raises(NotFound):
         SimCamera(focuser={'model': 'NOTAFOCUSER'})
 
 
 def test_sim_worse_focuser():
-    sim_camera = SimCamera(focuser='NOTAFOCUSER')
-    # Will log an error but raise no exceptions
-    assert sim_camera.focuser is None
+    with pytest.raises(NotFound):
+        sim_camera = SimCamera(focuser='NOTAFOCUSER')
 
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
+    assert str(sim_camera) == f'Simulated Camera ({sim_camera.uid}) on None'
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
-    assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
+    assert str(sim_camera) == f'Sim ({sim_camera.uid}) on /dev/ttyFAKE'
 
 
 def test_sim_file_extension():

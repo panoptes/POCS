@@ -166,17 +166,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if subcomponent is not None:
                 self.logger.debug(f'Found {subcomponent=}, creating instance')
 
-                try:
-                    subcomponent = self._create_subcomponent(class_path, subcomponent)
-                except error.NotFound as err:
-                    self.logger.critical(f'Unable to load {subcomponent=}, invalid '
-                                         f'instance or dict for the base class: '
-                                         f'{err!r}')
-                else:
-                    self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
-                    setattr(self, attr_name, subcomponent)
-                    # Keep a list of active subcomponents
-                    self.subcomponents[attr_name] = subcomponent
+                subcomponent = self._create_subcomponent(class_path, subcomponent)
+                self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
+                setattr(self, attr_name, subcomponent)
+                # Keep a list of active subcomponents
+                self.subcomponents[attr_name] = subcomponent
 
         self.logger.debug(f'Camera created: {self}')
 
@@ -1123,12 +1117,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             name = self.name
             if self.is_primary:
                 name += ' [Primary]'
+            s = f"{name} ({self.uid}) on {self.port}"
 
-            sub_names = '&'.join(list(self.subcomponents.keys()))
+            sub_names = '& '.join(list(self.subcomponents.keys()))
             if sub_names != '':
-                sub_names = f' with {sub_names}'
-
-            s = f"{name} ({self.uid}) on {self.port} {sub_names}"
+                s += f" with {sub_names}"
 
         except Exception as e:
             self.logger.warning(f'Unable to stringify camera: {e=}')
