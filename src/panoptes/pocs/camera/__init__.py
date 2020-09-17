@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 import re
 import shutil
@@ -81,7 +82,7 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
         return None
     logger.debug(f"{camera_config=}")
 
-    cameras = OrderedDict()
+    cameras = cameras or OrderedDict()
     ports = list()
 
     auto_detect = camera_config.get('auto_detect', False)
@@ -161,11 +162,12 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
     return cameras
 
 
-def create_camera_simulator(num_cameras=2):
+def create_camera_simulator(num_cameras=2, subcomponent_simulators=None, **kwargs):
     """Create simulator camera object(s).
 
     Args:
         num_cameras (int): The number of simulated cameras to create, default 2.
+        simulators (list): Include simulators for listed subcomponents.
 
     Returns:
         OrderedDict: An ordered dictionary of created camera objects, with the
@@ -177,55 +179,46 @@ def create_camera_simulator(num_cameras=2):
             auto_detect=True and no cameras are found.
     """
     if num_cameras == 0:
-        raise error.CameraNotFound(msg="No cameras available")
+        raise error.CameraNotFound(msg="Can't create zero cameras")
 
-    cameras = OrderedDict()
-
-    # Set up a simulated camera with fully configured simulated focuser.
-    device_config = {
+    # Set up a simulated camera config for each number of requested cameras.
+    base_sim_config = kwargs.get('config') or {
         'model': 'panoptes.pocs.camera.simulator.dslr.Camera',
         'port': '/dev/camera/simulator',
-        'focuser': {'model': 'panoptes.pocs.focuser.simulator.Focuser',
-                    'focus_port': '/dev/ttyFAKE',
-                    'initial_position': 20000,
-                    'autofocus_range': (40, 80),
-                    'autofocus_step': (10, 20),
-                    'autofocus_seconds': 0.1,
-                    'autofocus_size': 500},
-        'filterwheel': {'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
-                        'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                        'move_time': 0.1 * u.second,
-                        'timeout': 0.5 * u.second},
         'readout_time': 0.5,
     }
-    logger.debug(f"SimulatorCamera config: {device_config=}")
+    logger.debug(f"SimulatorCamera config: {base_sim_config=}")
 
-    primary_camera = None
+    subcomponent_config = {
+        'focuser': kwargs.get('focuser') or {'model': 'panoptes.pocs.focuser.simulator.Focuser',
+                                             'focus_port': '/dev/ttyFAKE',
+                                             'initial_position': 20000,
+                                             'autofocus_range': (40, 80),
+                                             'autofocus_step': (10, 20),
+                                             'autofocus_seconds': 0.1,
+                                             'autofocus_size': 500},
+        'filterwheel': kwargs.get('filterwheel') or {'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
+                                                     'filter_names': ['one', 'deux', 'drei', 'quattro'],
+                                                     'move_time': 0.1 * u.second,
+                                                     'timeout': 0.5 * u.second}
+    }
+
+    subcomponent_simulators = subcomponent_simulators or list()
+
+    sim_devices = list()
     for cam_num in range(num_cameras):
         cam_name = f'SimCam{cam_num:02d}'
-
         logger.debug(f'Using camera simulator {cam_name}')
+        sim_cam_config = copy.deepcopy(base_sim_config)
+        sim_cam_config['name'] = cam_name
 
-        camera_model = device_config['model']
-        logger.debug(f'Creating camera: {camera_model}')
+        # Add in the subcomponents if requested.
+        for sub_name, sub_config in subcomponent_config.items():
+            if sub_name in subcomponent_simulators:
+                sim_cam_config[sub_name] = sub_config
 
-        module = load_module(camera_model)
-        logger.debug(f'Camera module: {module}')
+        sim_devices.append(sim_cam_config)
 
-        # Create the camera object
-        cam = module.Camera(name=cam_name, **device_config)
+    simulator_config = dict(devices=sim_devices)
 
-        is_primary = ''
-        if cam_num == 0:
-            cam.is_primary = True
-            primary_camera = cam
-            is_primary = ' [Primary]'
-
-        logger.debug(f"Camera created: {cam.name} {cam.uid}{is_primary}")
-
-        cameras[cam_name] = cam
-
-    logger.debug(f"Primary camera: {primary_camera}")
-    logger.debug(f"{len(cameras)} cameras created")
-
-    return cameras
+    return create_cameras_from_config(config=simulator_config)
