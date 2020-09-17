@@ -143,7 +143,7 @@ def test_create_cameras_from_config_autodetect():
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
-    sim_camera = SimCamera(focuser={'model': 'panoptes.pocs.focuser.simulator',
+    sim_camera = SimCamera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
                                     'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, Focuser)
 

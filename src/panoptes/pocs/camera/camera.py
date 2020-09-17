@@ -168,9 +168,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
                 try:
                     subcomponent = self._create_subcomponent(class_path, subcomponent)
-                except error.NotFound:
+                except error.NotFound as err:
                     self.logger.critical(f'Unable to load {subcomponent=}, invalid '
-                                         f'instance or dict for the base class.')
+                                         f'instance or dict for the base class: '
+                                         f'{err!r}')
                 else:
                     self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
                     setattr(self, attr_name, subcomponent)
@@ -1083,11 +1084,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f'Trying to get {base_class_name=} from {base_module}')
         base_class = getattr(base_module, base_class_name)
 
+        # If we get an instance, just use it.
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance, "
-                              f"attaching camera to subcomponent")
-            setattr(subcomponent, 'camera', self)
-            return subcomponent
+            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance")
+        # If we get a dict, use them as params to create instance.
         elif isinstance(subcomponent, dict):
             try:
                 model = subcomponent['model']
@@ -1103,13 +1103,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             subcomponent_kwargs = copy.deepcopy(subcomponent)
             subcomponent_kwargs.update({'camera': self})
 
-            subcomponent = base_class(**subcomponent_kwargs)
+            try:
+                subcomponent = base_class(**subcomponent_kwargs)
+            except TypeError:
+                raise error.NotFound(f'{base_class=} is not a callable class. '
+                                     f'Please specify full path to class (not module).')
             self.logger.info(f'{subcomponent=} created for {base_class_name=}')
-            return subcomponent
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
             raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
+
+        # Give the subcomponent a reference back to the camera.
+        setattr(subcomponent, 'camera', self)
+        return subcomponent
 
     def __str__(self):
         try:
