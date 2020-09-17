@@ -18,7 +18,7 @@ from panoptes.utils import get_quantity_value
 class Camera(AbstractCamera, ABC):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
-        kwargs['timeout'] = kwargs.get('timeout', 0.5 * u.second)
+        kwargs['timeout'] = kwargs.get('timeout', 1.5 * u.second)
         kwargs['readout_time'] = kwargs.get('readout_time', 1.0 * u.second)
         super().__init__(name=name, *args, **kwargs)
         self.connect()
