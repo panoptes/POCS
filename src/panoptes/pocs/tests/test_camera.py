@@ -81,6 +81,8 @@ def camera(request):
     CamClass = request.param[0]
     cam_params = request.param[1]
 
+    camera = None
+
     if isinstance(cam_params, dict):
         # Simulator
         camera = CamClass(**cam_params)
