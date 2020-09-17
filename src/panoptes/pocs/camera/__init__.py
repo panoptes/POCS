@@ -123,13 +123,21 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
         try:
             module = load_module(model)
             logger.debug(f'Camera module: {module=}')
-            # Create the camera object
-            camera = module.Camera(**device_config)
+
+            # We either got a class or a module.
+            if callable(module):
+                camera = module(**device_config)
+            else:
+                if hasattr(module, 'Camera'):
+                    camera = module.Camera(**device_config)
+                else:
+                    raise error.NotFound(f'{module=} does not have a Camera object')
         except error.NotFound:
             logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
             logger.error(f"Cannot create camera type: {model} {e}")
         else:
+            # Check if the config specified a primary camera and if it matches.
             if camera.uid == camera_config.get('primary'):
                 camera.is_primary = True
                 primary_camera = camera
