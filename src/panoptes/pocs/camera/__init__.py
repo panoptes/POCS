@@ -162,12 +162,12 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
     return cameras
 
 
-def create_camera_simulator(num_cameras=2, subcomponent_simulators=None, **kwargs):
+def create_camera_simulators(num_cameras=2, subcomponents=None, **kwargs):
     """Create simulator camera object(s).
 
     Args:
         num_cameras (int): The number of simulated cameras to create, default 2.
-        simulators (list): Include simulators for listed subcomponents.
+        subcomponents (list): Include simulators for listed subcomponents.
 
     Returns:
         OrderedDict: An ordered dictionary of created camera objects, with the
@@ -203,7 +203,7 @@ def create_camera_simulator(num_cameras=2, subcomponent_simulators=None, **kwarg
                                                      'timeout': 0.5 * u.second}
     }
 
-    subcomponent_simulators = subcomponent_simulators or list()
+    subcomponents = subcomponents or list()
 
     sim_devices = list()
     for cam_num in range(num_cameras):
@@ -214,11 +214,11 @@ def create_camera_simulator(num_cameras=2, subcomponent_simulators=None, **kwarg
 
         # Add in the subcomponents if requested.
         for sub_name, sub_config in subcomponent_config.items():
-            if sub_name in subcomponent_simulators:
+            if sub_name in subcomponents:
                 sim_cam_config[sub_name] = sub_config
 
         sim_devices.append(sim_cam_config)
 
     simulator_config = dict(devices=sim_devices)
 
-    return create_cameras_from_config(config=simulator_config)
+    return simulator_config

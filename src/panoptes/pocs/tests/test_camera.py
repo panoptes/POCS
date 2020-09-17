@@ -27,7 +27,6 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.camera import create_camera_simulator
 
 focuser_params = {
     'model': 'panoptes.pocs.focuser.simulator',
@@ -124,14 +123,6 @@ def patterns(camera, images_dir):
     return patterns
 
 
-def test_create_camera_simulator():
-    cameras = create_camera_simulator()
-    assert len(cameras) == 2
-
-    with pytest.raises(error.CameraNotFound):
-        create_camera_simulator(num_cameras=0)
-
-
 def test_create_cameras_from_config_no_autodetect():
     set_config('cameras.auto_detect', False)
     set_config('cameras.devices', [
@@ -152,7 +143,8 @@ def test_create_cameras_from_config_autodetect():
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
-    sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = SimCamera(focuser={'model': 'panoptes.pocs.focuser.simulator',
+                                    'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, Focuser)
 
 

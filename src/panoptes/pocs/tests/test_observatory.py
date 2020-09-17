@@ -18,7 +18,7 @@ from panoptes.pocs.scheduler.observation import Observation
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
-from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
@@ -36,7 +36,7 @@ def reset_conf(config_host, config_port):
 
 @pytest.fixture(scope='function')
 def cameras():
-    return create_camera_simulator()
+    return create_cameras_from_config()
 
 
 @pytest.fixture(scope='function')
@@ -81,7 +81,7 @@ def test_cannot_observe(caplog):
     obs = Observatory()
 
     site_details = create_location_from_config()
-    cameras = create_camera_simulator()
+    cameras = create_cameras_from_config()
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
@@ -114,7 +114,7 @@ def test_camera_wrong_type():
 
 
 def test_camera():
-    cameras = create_camera_simulator()
+    cameras = create_cameras_from_config()
     obs = Observatory(cameras=cameras)
     assert obs.has_cameras
 

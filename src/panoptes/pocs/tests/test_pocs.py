@@ -15,8 +15,8 @@ from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json, to_yaml
 
 from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.dome import create_dome_simulator
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
