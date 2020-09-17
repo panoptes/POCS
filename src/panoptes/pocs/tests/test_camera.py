@@ -484,7 +484,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     # Should be no data file, camera should not be exposing, and exposure event should be set
     assert not os.path.exists(fits_path)
     assert not camera.is_exposing
-    assert exposure_event is camera._exposure_event
+    assert exposure_event is camera._is_exposing_event
     assert exposure_event.is_set()
 
 
