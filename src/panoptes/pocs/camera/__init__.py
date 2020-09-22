@@ -5,9 +5,8 @@ import shutil
 import subprocess
 import random
 
-from astropy import units as u
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
-from panoptes.pocs.camera.camera import AbstractGPhotoCamera  # noqa
+from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
@@ -160,65 +159,3 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
     logger.success(f"{len(cameras)} cameras created")
 
     return cameras
-
-
-def create_camera_simulators(num_cameras=2, subcomponents=None, **kwargs):
-    """Create simulator camera object(s).
-
-    Args:
-        num_cameras (int): The number of simulated cameras to create, default 2.
-        subcomponents (list): Include simulators for listed subcomponents.
-
-    Returns:
-        OrderedDict: An ordered dictionary of created camera objects, with the
-            camera name as key and camera instance as value. Returns an empty
-            OrderedDict if there is no camera configuration items.
-
-    Raises:
-        error.CameraNotFound: Raised if camera cannot be found at specified port or if
-            auto_detect=True and no cameras are found.
-    """
-    if num_cameras == 0:
-        raise error.CameraNotFound(msg="Can't create zero cameras")
-
-    # Set up a simulated camera config for each number of requested cameras.
-    base_sim_config = kwargs.get('config') or {
-        'model': 'panoptes.pocs.camera.simulator.dslr.Camera',
-        'port': '/dev/camera/simulator',
-        'readout_time': 0.5,
-    }
-    logger.debug(f"SimulatorCamera config: {base_sim_config=}")
-
-    subcomponent_config = {
-        'focuser': kwargs.get('focuser') or {'model': 'panoptes.pocs.focuser.simulator.Focuser',
-                                             'focus_port': '/dev/ttyFAKE',
-                                             'initial_position': 20000,
-                                             'autofocus_range': (40, 80),
-                                             'autofocus_step': (10, 20),
-                                             'autofocus_seconds': 0.1,
-                                             'autofocus_size': 500},
-        'filterwheel': kwargs.get('filterwheel') or {'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
-                                                     'filter_names': ['one', 'deux', 'drei', 'quattro'],
-                                                     'move_time': 0.1 * u.second,
-                                                     'timeout': 0.5 * u.second}
-    }
-
-    subcomponents = subcomponents or list()
-
-    sim_devices = list()
-    for cam_num in range(num_cameras):
-        cam_name = f'SimCam{cam_num:02d}'
-        logger.debug(f'Using camera simulator {cam_name}')
-        sim_cam_config = copy.deepcopy(base_sim_config)
-        sim_cam_config['name'] = cam_name
-
-        # Add in the subcomponents if requested.
-        for sub_name, sub_config in subcomponent_config.items():
-            if sub_name in subcomponents:
-                sim_cam_config[sub_name] = sub_config
-
-        sim_devices.append(sim_cam_config)
-
-    simulator_config = dict(devices=sim_devices)
-
-    return simulator_config

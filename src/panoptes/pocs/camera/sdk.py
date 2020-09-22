@@ -156,13 +156,13 @@ class AbstractSDKCamera(AbstractCamera):
     def __str__(self):
         # SDK cameras don't have a port so just include the serial number in the string
         # representation.
-        s = "{} ({})".format(self.name, self.uid)
+        s = f"{self.name} ({self.uid})"
 
         if self.focuser:
-            s += ' with {}'.format(self.focuser.name)
+            s += f' with {self.focuser.name}'
             if self.filterwheel:
-                s += ' & {}'.format(self.filterwheel.name)
+                s += f' & {self.filterwheel.name}'
         elif self.filterwheel:
-            s += ' with {}'.format(self.filterwheel.name)
+            s += f' with {self.filterwheel.name}'
 
         return s

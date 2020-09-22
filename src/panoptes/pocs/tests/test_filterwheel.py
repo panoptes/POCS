@@ -5,7 +5,7 @@ from timeit import timeit
 from astropy import units as u
 
 from panoptes.pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
-from panoptes.pocs.camera.simulator import Camera as SimCamera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.utils import error
 
 
@@ -16,6 +16,7 @@ def filterwheel():
                                      timeout=0.5 * u.second)
     return sim_filterwheel
 
+
 @pytest.fixture(scope='function')
 def filterwheel_with_blank():
     sim_filterwheel = SimFilterWheel(filter_names=['blank', 'deux', 'drei', 'quattro'],
@@ -23,8 +24,6 @@ def filterwheel_with_blank():
                                      timeout=0.5 * u.second,
                                      dark_position='blank')
     return sim_filterwheel
-
-# intialisation
 
 
 def test_init(filterwheel):

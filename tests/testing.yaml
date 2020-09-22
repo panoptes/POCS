@@ -26,7 +26,7 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obstructions: []
+  obstructions: [ ]
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
@@ -60,10 +60,84 @@ pointing:
   max_iterations: 3
 cameras:
   auto_detect: False
+  defaults:
+    readout_time: 0.5
+    cooling:
+      enabled: True
+      temperature:
+        target: 0  # celsius
+        tolerance: 0.1  # celsius
+      stable_time: 60  # seconds
+      check_interval: 5  # seconds
+      timeout: 300  # seconds
+    focuser:
+      enabled: True
+      autofocus_seconds: 0.1
+      autofocus_size: 500
+      autofocus_keep_files: False
   devices:
-    - model: simulator
-    - model: simulator
-
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.00
+      port: /dev/camera/dslr00
+      readout_time: 0.5
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.focuser.cooling.00
+      # Different defaults for this camera.
+      cooling:
+        enabled: True
+        target: 1
+        tolerance: 0.1
+        stable_time: 1
+        check_interval: 0.5
+        timeout: 2.5
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/ttyFAKE
+        initial_position: 20000
+        autofocus_range: (40, 80)
+        autofocus_step: (10, 20)
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: Cam003
+      serial_number: SSC003
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      filterwheel:
+        model: 'panoptes.pocs.filterwheel.simulator.FilterWheel'
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+        move_time: 0.1
+        timeout: 0.5
+    - model: panoptes.pocs.camera.simulator.ccd.Camera
+      name: SSC004
+      serial_number: SSC004
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      filterwheel:
+        model: 'panoptes.pocs.filterwheel.simulator.FilterWheel'
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+        move_time: 0.1
+        timeout: 0.5
+        dark_position: blank
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field

@@ -6,7 +6,7 @@ from abc import ABC
 from contextlib import suppress
 import astropy.units as u
 
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
 
 
@@ -25,7 +25,7 @@ class SDKDriver(AbstractSDKDriver):
         return cameras
 
 
-class Camera(AbstractSDKCamera, Camera, ABC):
+class Camera(AbstractSDKCamera, SimCamera, ABC):
     def __init__(self,
                  name='Simulated SDK camera',
                  driver=SDKDriver,
@@ -56,7 +56,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         temperature = limit_temp - delta_temp * math.exp(-delta_time)
         add_temp = random.uniform(-self._temp_var / 2, self._temp_var / 2)
         temperature += random.uniform(-self._temp_var / 2, self._temp_var / 2)
-        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f}")
+        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f} for {self}")
 
         return temperature
 

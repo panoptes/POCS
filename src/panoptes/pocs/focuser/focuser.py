@@ -12,7 +12,6 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from astropy.modeling import models
 from astropy.modeling import fitting
-import astropy.units as u
 
 from panoptes.pocs.base import PanBase
 from panoptes.utils import current_time

@@ -9,8 +9,8 @@ from contextlib import suppress
 import astropy.units as u
 from astropy.io import fits
 
-from panoptes.pocs.camera.simulator import Camera as SimCamera
-from panoptes.pocs.camera.simulator_sdk import Camera as SimSDKCamera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
+from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from panoptes.pocs.camera.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from panoptes.pocs.camera.fli import Camera as FLICamera
@@ -28,47 +28,19 @@ from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.camera import create_cameras_from_config
 
-focuser_params = {
-    'model': 'panoptes.pocs.focuser.simulator.Focuser',
-    'focus_port': '/dev/ttyFAKE',
-    'initial_position': 20000,
-    'autofocus_range': (40, 80),
-    'autofocus_step': (10, 20),
-    'autofocus_seconds': 0.1,
-    'autofocus_size': 500,
-    'autofocus_keep_files': False
-}
-
-filterwheel_params = {
-    'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
-    'filter_names': ['one', 'deux', 'drei', 'quattro'],
-    'move_time': 0.1,
-    'timeout': 0.5
-}
-
-filterwheel_blank_params = {
-    'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
-    'filter_names': ['one', 'deux', 'blank', 'quattro'],
-    'move_time': 0.1,
-    'timeout': 0.5,
-    'dark_position': 'blank'
-}
-
-serial_number_params = 'SSC101'
-
 
 @pytest.fixture(scope='function', params=[
     pytest.param([SimCamera, dict()]),
-    pytest.param([SimCamera, dict(focuser=focuser_params)]),
-    pytest.param([SimCamera, dict(filterwheel=filterwheel_params)]),
-    pytest.param([SimCamera, dict(filterwheel=filterwheel_blank_params)]),
-    pytest.param([SimSDKCamera, dict(serial_number=serial_number_params)]),
+    pytest.param([SimCamera, get_config('cameras.devices[1]')]),
+    pytest.param([SimCamera, get_config('cameras.devices[2]')]),
+    pytest.param([SimCamera, get_config('cameras.devices[3]')]),
+    pytest.param([SimSDKCamera, get_config('cameras.devices[4]')]),
     pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
     pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
     pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
 ], ids=[
-    'simulator',
-    'simulator_focuser',
+    'dslr.00',
+    'dslr.focuser.cooling.00',
     'simulator_filterwheel',
     'simulator_filterwheel_blank',
     'simulator_sdk',
@@ -312,7 +284,9 @@ def test_is_temperature_stable(camera):
     if camera.is_cooled_camera:
         camera.target_temperature = camera.temperature
         camera.cooling_enabled = True
-        camera._check_temperature_stability(blocking=True, sleep_delay=1)
+        camera._check_temperature_stability(required_stable_time=1 * u.second,
+                                            blocking=True,
+                                            sleep_delay=1)
         assert camera.is_temperature_stable
         camera.cooling_enabled = False
         assert not camera.is_temperature_stable

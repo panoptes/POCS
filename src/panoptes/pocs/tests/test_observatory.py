@@ -180,7 +180,7 @@ def test_set_mount():
     set_config('mount', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-        'model': 'simulator',
+        'model': 'panoptes.pocs.camera.simulator.dslr',
     })
     mount = create_mount_from_config()
     obs.set_mount(mount=mount)

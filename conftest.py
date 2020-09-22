@@ -26,7 +26,7 @@ log_fmt = "<lvl>{level:.1s}</lvl> " \
           "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
           "<blue>({time:HH:mm:ss.ss})</> " \
           "| <c>{name} {function}:{line}</c> | " \
-          "<lvl>{message}</lvl>\n"
+          "<lvl>{message}</lvl>"
 
 # Put the log file in the tmp dir.
 log_file_path = os.path.expandvars('${PANLOG}/panoptes-testing.log')

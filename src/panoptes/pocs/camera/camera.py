@@ -1,8 +1,5 @@
 import copy
 import os
-import re
-import shutil
-import subprocess
 import threading
 import time
 from contextlib import suppress
@@ -14,7 +11,6 @@ import astropy.units as u
 
 from panoptes.utils import current_time
 from panoptes.utils import error
-from panoptes.utils import listify
 from panoptes.utils import images as img_utils
 from panoptes.utils import get_quantity_value
 from panoptes.utils import CountdownTimer
@@ -22,46 +18,6 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.base import PanBase
-from panoptes.utils.serializers import from_yaml
-
-
-def parse_config(lines):  # pragma: no cover
-    yaml_string = ''
-    for line in lines:
-        IsID = len(line.split('/')) > 1
-        IsLabel = re.match(r'^Label:\s*(.*)', line)
-        IsType = re.match(r'^Type:\s*(.*)', line)
-        IsCurrent = re.match(r'^Current:\s*(.*)', line)
-        IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-        IsPrintable = re.match(r'^Printable:\s*(.*)', line)
-        IsHelp = re.match(r'^Help:\s*(.*)', line)
-        if IsLabel or IsType or IsCurrent:
-            line = f'  {line}'
-        elif IsChoice:
-            if int(IsChoice.group(1)) == 0:
-                line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-            else:
-                line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-        elif IsPrintable:
-            line = '  {}'.format(line)
-        elif IsHelp:
-            line = '  {}'.format(line)
-        elif IsID:
-            line = '- ID: {}'.format(line)
-        elif line == '':
-            continue
-        else:
-            print(f'Line not parsed: {line}')
-        yaml_string += f'{line}\n'
-    properties_list = from_yaml(yaml_string)
-    if isinstance(properties_list, list):
-        properties = {}
-        for property in properties_list:
-            if property['Label']:
-                properties[property['Label']] = property
-    else:
-        properties = properties_list
-    return properties
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -136,14 +92,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
         self._cooling_enabled = False
         self._is_temperature_stable = False
         self._temperature_thread = None
-        self._restart_temperature_thread = False
         self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
+        self._cooling_required_table_time = None
+        self._cooling_sleep_delay = None
+        self._cooling_timeout = None
 
         self._connected = False
         self._current_observation = None
@@ -284,6 +243,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
+        # If the above camera-specific method was successful.
         if self.cooling_enabled:
             self._check_temperature_stability()
 
@@ -751,8 +711,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
-    def _check_temperature_stability(self, required_stable_time=60 * u.second,
-                                     sleep_delay=5 * u.second, timeout=300 * u.second,
+    def _check_temperature_stability(self,
+                                     required_stable_time=None,
+                                     sleep_delay=None,
+                                     timeout=None,
                                      blocking=False):
         """
         Wait until camera temperature is within tolerance for a sufficiently long period of time.
@@ -769,48 +731,60 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         required_stable_time = get_quantity_value(required_stable_time, u.second)
         timeout = get_quantity_value(timeout, u.second)
 
-        # Define an inner function to run in a thread
-        def check_temp(required_stable_time, sleep_delay, timeout):
-            if required_stable_time > timeout:
-                raise ValueError("required_stable_time must be less than timeout.")
-            if sleep_delay > timeout:
-                raise ValueError("sleep_delay must be less than timeout.")
+        # Make sure parameters make sense.
+        if required_stable_time > timeout:
+            raise ValueError(f"{required_stable_time=} must be less than {timeout=}.")
+        if sleep_delay > timeout:
+            raise ValueError(f"{sleep_delay=} must be less than {timeout=}.")
 
+        # Define an inner function to run in a thread
+        def check_temp():
             # Wait until stable temperature persists or timeout
             time_stable = 0
             timer = CountdownTimer(duration=timeout)
             while True:
                 if timer.expired():
-                    break
-                # We may need to restart the thread before it has finished if another check has been requested.
-                if self._restart_temperature_thread:
-                    self._restart_temperature_thread = False
-                    return
+                    error_msg = f"Timeout while waiting for stable temperature on {self}."
+                    self.logger.error(error_msg)
+                    self._exposure_error = error.Timeout(f"Timeout while waiting for stable temperature on {self}.")
+
                 # Check if the temperature is within tolerance
-                if abs(self.temperature - self.target_temperature) < self.temperature_tolerance:
+                temp_delta = abs(self.temperature - self.target_temperature)
+                within_tolerance = temp_delta < self.temperature_tolerance
+                self.logger.trace(f'Checking if {temp_delta} < {self.temperature_tolerance} = {within_tolerance}')
+                if within_tolerance:
+                    self.logger.trace(f'Temperature within tolerance, adding {sleep_delay=} to {time_stable=}')
                     time_stable += sleep_delay
-                    if time_stable >= required_stable_time:
-                        self.logger.info(f"Temperature has stabilised on {self}.")
-                        self._is_temperature_stable = True
+                    self.logger.trace(f'Checking if {time_stable=} >= {required_stable_time=}')
+                    self._is_temperature_stable = time_stable >= required_stable_time
+                    if self._is_temperature_stable:
+                        self.logger.info(f"Temperature has stabilised at {self.temperature=} on {self}.")
                         return
                 else:
+                    self.logger.trace(f'Resetting temperature stability check. {time_stable=} -> 0')
                     time_stable = 0  # Reset the countdown
-                time.sleep(sleep_delay)
-            raise error.Timeout(f"Timeout while waiting for stable temperture on {self}.")
+
+                timer.sleep(max_sleep=sleep_delay)
 
         # Restart countdown if one is already in progress
         if self._temperature_thread is not None:
+            self.logger.debug(f'Attempting to start new temperature check while {self._temperature_thread}')
+
+            # Wait for the running thread.
+            self.logger.debug(f'Waiting a (hard-coded!) 30 seconds fro previous '
+                              f'temperature check thread to stop.')
+            self._temperature_thread.join(timeout=30)
+
             if self._temperature_thread.is_alive():
                 self.logger.warning(f"Attempted to wait for stable temperature on {self}"
                                     " while wait already in progress. Restarting countdown.")
-                self._restart_temperature_thread = True
-                self._temperature_thread.join()
+            else:
+                raise error.Timeout(f"Temperature check thread timed out.")
 
         # Wait for stable temperature
         self._is_temperature_stable = False
         self.logger.info(f"Waiting for stable temperature on {self}.")
-        self._temperature_thread = threading.Thread(
-            target=check_temp, args=(required_stable_time, sleep_delay, timeout))
+        self._temperature_thread = threading.Thread(target=check_temp)
         self._temperature_thread.start()
         if blocking:
             self._temperature_thread.join()
@@ -885,7 +859,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout waiting for exposure on {self} to complete"
+                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(0.01)
         except Exception as err:
@@ -1128,156 +1102,3 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             s = str(self.__class__)
 
         return s
-
-
-class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
-
-    """ Abstract camera class that uses gphoto2 interaction
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-
-    def __init__(self, *arg, **kwargs):
-        super().__init__(*arg, **kwargs)
-
-        self.properties = None
-
-        self._gphoto2 = shutil.which('gphoto2')
-        assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
-
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
-
-        # Setup a holder for the process
-        self._proc = None
-
-        # Explicitly set holders for some of the hardware subcomponents until
-        # TODO fix the setting of the attribute.
-        self.focuser = None
-        self.filterwheel = None
-
-    @AbstractCamera.uid.getter
-    def uid(self):
-        """ A six-digit serial number for the camera """
-        return self._serial_number[0:6]
-
-    def command(self, cmd):
-        """ Run gphoto2 command """
-
-        # Test to see if there is a running command already
-        if self._proc and self._proc.poll():
-            raise error.InvalidCommand("Command already running")
-        else:
-            # Build the command.
-            run_cmd = [self._gphoto2, '--port', self.port]
-            run_cmd.extend(listify(cmd))
-
-            self.logger.debug("gphoto2 command: {}".format(run_cmd))
-
-            try:
-                self._proc = subprocess.Popen(
-                    run_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    shell=False
-                )
-            except OSError as e:
-                raise error.InvalidCommand(
-                    "Can't send command to gphoto2. {} \t {}".format(
-                        e, run_cmd))
-            except ValueError as e:
-                raise error.InvalidCommand(
-                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
-            except Exception as e:
-                raise error.PanError(e)
-
-    def get_command_result(self, timeout=10):
-        """ Get the output from the command """
-
-        self.logger.debug("Getting output from proc {}".format(self._proc.pid))
-
-        try:
-            outs, errs = self._proc.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Timeout while waiting. Killing process {}".format(self._proc.pid))
-            self._proc.kill()
-            outs, errs = self._proc.communicate()
-
-        self._proc = None
-
-        return outs
-
-    def wait_for_command(self, timeout=10):
-        """ Wait for the given command to end
-
-        This method merely waits for a subprocess to complete but doesn't attempt to communicate
-        with the process (see `get_command_result` for that).
-        """
-        self.logger.debug("Waiting for proc {}".format(self._proc.pid))
-
-        try:
-            self._proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.logger.warning("Timeout expired for PID {}".format(self._proc.pid))
-
-        self._proc = None
-
-    def set_property(self, prop, val):
-        """ Set a property on the camera """
-        set_cmd = ['--set-config', '{}={}'.format(prop, val)]
-
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
-
-    def set_properties(self, prop2index, prop2value):
-        """ Sets a number of properties all at once, by index or value.
-
-        Args:
-            prop2index (dict): A dict with keys corresponding to the property to
-            be set and values corresponding to the index option
-            prop2value (dict): A dict with keys corresponding to the property to
-            be set and values corresponding to the literal value
-        """
-        set_cmd = list()
-        for prop, val in prop2index.items():
-            set_cmd.extend(['--set-config-index', '{}={}'.format(prop, val)])
-        for prop, val in prop2value.items():
-            set_cmd.extend(['--set-config-value', '{}={}'.format(prop, val)])
-
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
-
-    def get_property(self, prop):
-        """ Gets a property from the camera """
-        set_cmd = ['--get-config', '{}'.format(prop)]
-
-        self.command(set_cmd)
-        result = self.get_command_result()
-
-        output = ''
-        for line in result.split('\n'):
-            match = re.match(r'Current:\s*(.*)', line)
-            if match:
-                output = match.group(1)
-
-        return output
-
-    def load_properties(self):
-        ''' Load properties from the camera
-        Reads all the configuration properties available via gphoto2 and populates
-        a local list with these entries.
-        '''
-        self.logger.debug('Get All Properties')
-        command = ['--list-all-config']
-
-        self.properties = parse_config(self.command(command))
-
-        if self.properties:
-            self.logger.debug('  Found {} properties'.format(len(self.properties)))
-        else:
-            self.logger.warning('  Could not determine properties.')
