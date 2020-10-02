@@ -273,7 +273,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         If position is a string it will search the list of filter names for one that begins with
         that string and return the corresponding integer position, otherwise (or if there is no
-        match) it will do an explicity case to an integer.
+        match) it will do an explicit cast to an integer.
         """
         int_position = None
         if isinstance(position, str):
@@ -294,7 +294,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             try:
                 int_position = int(position)
             except (ValueError, TypeError):
-                msg = "No match for '{}' in filter_names, & not an integer either".format(position)
+                msg = f"No match for '{position}' in filter_names and not an integer either"
                 self.logger.error(msg)
                 raise ValueError(msg)
 

@@ -135,6 +135,7 @@ cameras:
           - deux
           - drei
           - quattro
+          - blank
         move_time: 0.1
         timeout: 0.5
         dark_position: blank
