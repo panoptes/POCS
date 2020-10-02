@@ -94,8 +94,8 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/ttyFAKE
         initial_position: 20000
-        autofocus_range: (40, 80)
-        autofocus_step: (10, 20)
+        autofocus_range: [40, 80]
+        autofocus_step: [10, 20]
         autofocus_seconds: 0.1
         autofocus_size: 500
         autofocus_keep_files: False
