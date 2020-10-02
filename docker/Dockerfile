@@ -46,7 +46,7 @@ RUN mkdir -p "${PANDIR}/scripts" && \
     wget -q "${arduino_url}" -O install-arduino-cli.sh && \
     sudo BINDIR="/usr/local/bin" /bin/sh install-arduino-cli.sh && \
     rm install-arduino-cli.sh && \
-    sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+    sudo chown -R "${PANUSER}":"${PANUSER}" "${POCS}"
 
 # Install the module.
 USER ${PANUSER}
