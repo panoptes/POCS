@@ -100,7 +100,7 @@ cameras:
         autofocus_size: 500
         autofocus_keep_files: False
     - model: panoptes.pocs.camera.simulator.dslr.Camera
-      name: Cam003
+      name: dslr.filterwheel.cooling.00
       serial_number: SSC003
       cooling:
         enabled: True

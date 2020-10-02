@@ -39,11 +39,11 @@ from panoptes.pocs.camera import create_cameras_from_config
     pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
     pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
 ], ids=[
+    'dslr',
     'dslr.00',
     'dslr.focuser.cooling.00',
-    'simulator_filterwheel',
-    'simulator_filterwheel_blank',
-    'simulator_sdk',
+    'dslr.filterwheel.cooling.00',
+    'ccd.filterwheel.cooling.00',
     'sbig',
     'fli',
     'zwo'
