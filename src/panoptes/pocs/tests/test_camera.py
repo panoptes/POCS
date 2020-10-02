@@ -31,10 +31,10 @@ from panoptes.pocs.camera import create_cameras_from_config
 
 @pytest.fixture(scope='function', params=[
     pytest.param([SimCamera, dict()]),
+    pytest.param([SimCamera, get_config('cameras.devices[0]')]),
     pytest.param([SimCamera, get_config('cameras.devices[1]')]),
     pytest.param([SimCamera, get_config('cameras.devices[2]')]),
-    pytest.param([SimCamera, get_config('cameras.devices[3]')]),
-    pytest.param([SimSDKCamera, get_config('cameras.devices[4]')]),
+    pytest.param([SimSDKCamera, get_config('cameras.devices[3]')]),
     pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
     pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
     pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),

@@ -116,6 +116,7 @@ cameras:
           - deux
           - drei
           - quattro
+          - blank
         move_time: 0.1
         timeout: 0.5
     - model: panoptes.pocs.camera.simulator.ccd.Camera
