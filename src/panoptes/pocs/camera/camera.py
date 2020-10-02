@@ -727,9 +727,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
         # Convert all times to seconds
-        sleep_delay = get_quantity_value(sleep_delay, u.second)
-        required_stable_time = get_quantity_value(required_stable_time, u.second)
-        timeout = get_quantity_value(timeout, u.second)
+        # TODO these defaults should come from the config server.
+        required_stable_time = get_quantity_value(required_stable_time, u.second) or 60
+        sleep_delay = get_quantity_value(sleep_delay, u.second) or 10
+        timeout = get_quantity_value(timeout, u.second) or 300
 
         # Make sure parameters make sense.
         if required_stable_time > timeout:
