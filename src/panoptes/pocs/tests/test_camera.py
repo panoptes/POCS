@@ -8,6 +8,7 @@ from contextlib import suppress
 
 import astropy.units as u
 from astropy.io import fits
+import requests
 
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
@@ -27,6 +28,7 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.utils.serializers import to_json
 
 
 @pytest.fixture(scope='function', params=[
@@ -64,11 +66,14 @@ def camera(request):
                 camera = CamClass(**cam_config)
                 break
 
+    # Wait for cooled camera
     if camera.is_cooled_camera:
-        if camera.is_cooled_camera:
-            camera._check_temperature_stability(required_stable_time=1 * u.second,
-                                                sleep_delay=0.1 * u.second,
-                                                blocking=True)  # Need to wait for stable temperature
+        assert not camera.is_temperature_stable
+        # Wait for cooling
+        while not camera.is_temperature_stable:
+            time.sleep(2)
+        assert camera.is_temperature_stable
+
     assert camera.is_ready
     camera.logger.debug(f'Yielding camera {camera}')
     yield camera
@@ -95,7 +100,16 @@ def patterns(camera, images_dir):
     return patterns
 
 
-def test_create_cameras_from_config_no_autodetect():
+def reset_conf(config_host, config_port):
+    url = f'http://{config_host}:{config_port}/reset-config'
+    response = requests.post(url,
+                             data=to_json({'reset': True}),
+                             headers={'Content-Type': 'application/json'}
+                             )
+    assert response.ok
+
+
+def test_create_cameras_from_config_no_autodetect(config_host, config_port):
     set_config('cameras.auto_detect', False)
     set_config('cameras.devices', [
         dict(model='canon_gphoto2', port='/dev/fake01'),
@@ -105,11 +119,14 @@ def test_create_cameras_from_config_no_autodetect():
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
 
+    reset_conf(config_host, config_port)
 
-def test_create_cameras_from_config_autodetect():
+
+def test_create_cameras_from_config_autodetect(config_host, config_port):
     set_config('cameras.auto_detect', True)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
+    reset_conf(config_host, config_port)
 
 
 # Hardware independent tests, mostly use simulator:
@@ -138,9 +155,9 @@ def test_sim_worse_focuser():
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == f'Simulated Camera ({sim_camera.uid}) on None'
+    assert str(sim_camera) == f'Simulated Camera ({sim_camera.uid})'
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
-    assert str(sim_camera) == f'Sim ({sim_camera.uid}) on /dev/ttyFAKE'
+    assert str(sim_camera) == f'Sim ({sim_camera.uid}) on port=/dev/ttyFAKE'
 
 
 def test_sim_file_extension():
@@ -163,15 +180,16 @@ def test_sdk_no_serial_number():
 
 
 def test_sdk_camera_not_found():
-    with pytest.raises(error.PanError):
+    with pytest.raises(error.InvalidConfig):
         SimSDKCamera(serial_number='SSC404')
 
 
 def test_sdk_already_in_use():
-    sim_camera = SimSDKCamera(serial_number='SSC999')
+    serial_number = get_config('cameras.devices[-1].serial_number')
+    sim_camera = SimSDKCamera(serial_number=serial_number)
     assert sim_camera
     with pytest.raises(error.PanError):
-        SimSDKCamera(serial_number='SSC999')
+        SimSDKCamera(serial_number=serial_number)
 
 
 # Hardware independent tests for SBIG camera
@@ -284,9 +302,9 @@ def test_is_temperature_stable(camera):
     if camera.is_cooled_camera:
         camera.target_temperature = camera.temperature
         camera.cooling_enabled = True
-        camera._check_temperature_stability(required_stable_time=1 * u.second,
-                                            blocking=True,
-                                            sleep_delay=1)
+        while not camera.is_temperature_stable:
+            time.sleep(2)
+
         assert camera.is_temperature_stable
         camera.cooling_enabled = False
         assert not camera.is_temperature_stable
@@ -303,9 +321,8 @@ def test_exposure(camera, tmpdir):
 
     assert not camera.is_exposing
     # A one second normal exposure.
-    exp_event = camera.take_exposure(filename=fits_path)
+    camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
-    assert not exp_event.is_set()
     assert not camera.is_ready
     # By default take_exposure is non-blocking, need to give it some time to complete.
     if isinstance(camera, FLICamera):
@@ -314,7 +331,6 @@ def test_exposure(camera, tmpdir):
         time.sleep(5)
     # Output file should exist, Event should be set and camera should say it's not exposing.
     assert os.path.exists(fits_path)
-    assert exp_event.is_set()
     assert not camera.is_exposing
     assert camera.is_ready
     # If can retrieve some header data there's a good chance it's a valid FITS file
@@ -421,12 +437,11 @@ def test_exposure_moving(camera, tmpdir):
     fits_path_1 = str(tmpdir.join('test_not_moving.fits'))
     fits_path_2 = str(tmpdir.join('test_moving.fits'))
     camera.filterwheel.position = 1
-    exp_event = camera.take_exposure(filename=fits_path_1)
-    exp_event.wait()
+    exp_event = camera.take_exposure(filename=fits_path_1, blocking=True)
     assert os.path.exists(fits_path_1)
     move_event = camera.filterwheel.move_to(2)
     with pytest.raises(error.PanError):
-        camera.take_exposure(filename=fits_path_2)
+        camera.take_exposure(filename=fits_path_2, blocking=True)
     move_event.wait()
     assert not os.path.exists(fits_path_2)
 
@@ -452,7 +467,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert not os.path.exists(fits_path)
     assert not camera.is_exposing
     assert exposure_event is camera._is_exposing_event
-    assert exposure_event.is_set()
+    assert not exposure_event.is_set()
 
 
 def test_observation(camera, images_dir):

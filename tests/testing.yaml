@@ -78,10 +78,11 @@ cameras:
   devices:
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.00
-      port: /dev/camera/dslr00
+      port: /dev/fake/dslr.00
       readout_time: 0.5
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.focuser.cooling.00
+      port: /dev/fake/dslr.focuser.cooling.00
       # Different defaults for this camera.
       cooling:
         enabled: True
@@ -92,7 +93,7 @@ cameras:
         timeout: 2.5
       focuser:
         model: panoptes.pocs.focuser.simulator.Focuser
-        focus_port: /dev/ttyFAKE
+        focus_port: /dev/fake/focuser.00
         initial_position: 20000
         autofocus_range: [40, 80]
         autofocus_step: [10, 20]
@@ -101,6 +102,7 @@ cameras:
         autofocus_keep_files: False
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.filterwheel.cooling.00
+      port: /dev/fake/dslr.filterwheel.cooling.00
       cooling:
         enabled: True
         target: 0
@@ -109,7 +111,7 @@ cameras:
         check_interval: 5
         timeout: 300
       filterwheel:
-        model: 'panoptes.pocs.filterwheel.simulator.FilterWheel'
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
         filter_names:
           - one
           - deux
@@ -119,8 +121,8 @@ cameras:
         move_time: 0.1
         timeout: 0.5
     - model: panoptes.pocs.camera.simulator.ccd.Camera
-      name: SSC101
-      serial_number: SSC101
+      name: ccd.filterwheel.focuser.cooling.00
+      serial_number: ccd.filterwheel.focuser.cooling.00
       cooling:
         enabled: True
         target: 0
@@ -128,8 +130,17 @@ cameras:
         stable_time: 60
         check_interval: 5
         timeout: 300
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/fake/focuser.00
+        initial_position: 20000
+        autofocus_range: [40, 80]
+        autofocus_step: [10, 20]
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
       filterwheel:
-        model: 'panoptes.pocs.filterwheel.simulator.FilterWheel'
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
         filter_names:
           - one
           - deux

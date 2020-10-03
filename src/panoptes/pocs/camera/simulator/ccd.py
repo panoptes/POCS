@@ -8,6 +8,8 @@ import astropy.units as u
 
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+from panoptes.utils.config.client import get_config
+from panoptes.utils.logging import logger
 
 
 class SDKDriver(AbstractSDKDriver):
@@ -19,10 +21,16 @@ class SDKDriver(AbstractSDKDriver):
         return "Simulated SDK Driver v0.001"
 
     def get_devices(self):
-        cameras = {'SSC007': 'DEV_USB0',
-                   'SSC101': 'DEV_USB1',
-                   'SSC999': 'DEV_USB2'}
-        return cameras
+        logger.debug(f'Getting camera device connection config for {self}')
+        camera_devices = dict()
+        for cam_info in get_config('cameras.devices'):
+            name = cam_info.get('name') or cam_info.get('model')
+            port = cam_info.get('port') or cam_info.get('serial_number')
+            camera_devices[name] = port
+
+        logger.trace(f'{camera_devices=}')
+
+        return camera_devices
 
 
 class Camera(AbstractSDKCamera, SimCamera, ABC):

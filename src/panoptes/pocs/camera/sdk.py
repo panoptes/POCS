@@ -56,7 +56,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
 class AbstractSDKCamera(AbstractCamera):
     _driver = None
-    _cameras = {}
+    _cameras = dict()
     _assigned_cameras = set()
 
     def __init__(self,
@@ -70,6 +70,7 @@ class AbstractSDKCamera(AbstractCamera):
         # and don't want to do that until after the serial number and port have both been determined
         # in order to avoid log entries with misleading values. To enable logging during the device
         # scanning phase use get_logger() instead.
+        # TODO figure out how to remove this.
         logger = get_logger()
 
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
@@ -77,7 +78,7 @@ class AbstractSDKCamera(AbstractCamera):
         kwargs['port'] = None
         serial_number = kwargs.get('serial_number')
         if not serial_number:
-            msg = "Must specify serial_number for {}.".format(name)
+            msg = f"Must specify serial_number for {name}."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -88,29 +89,32 @@ class AbstractSDKCamera(AbstractCamera):
             # Initialise the driver if it hasn't already been done
             my_class._driver = driver(library_path=library_path)
 
-        logger.debug("Looking for {} with UID '{}'.".format(name, serial_number))
+        logger.debug(f"Looking for {name=} with UID '{serial_number=}'.")
 
         if not my_class._cameras:
             # No cached camera details, need to probe for connected cameras
             # This will raise a PanError if there are no cameras.
             my_class._cameras = my_class._driver.get_devices()
-            logger.debug("Connected {}s: {}".format(name, my_class._cameras))
+
+        logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
             logger.debug(f"Found {name} with UID {serial_number=} at {my_class._cameras[serial_number]}.")
         else:
-            raise error.PanError(f"Could not find {name} with UID {serial_number=} in {my_class._cameras}.")
+            raise error.InvalidConfig(f"No config information found for "
+                                      f"{name=} with {serial_number=} in {my_class._cameras}")
 
         if serial_number in my_class._assigned_cameras:
             raise error.PanError(f"{name} with UID {serial_number=} already in use.")
         else:
             my_class._assigned_cameras.add(serial_number)
 
+        self._info = dict()
         super().__init__(name, *args, **kwargs)
         self._address = my_class._cameras[self.uid]
         self.connect()
         if not self.is_connected:
-            raise error.PanError("Could not connect to {}.".format(self))
+            raise error.PanError(f"Could not connect to {self}.")
 
         if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
@@ -149,8 +153,8 @@ class AbstractSDKCamera(AbstractCamera):
 
     # Methods
 
-    def _create_fits_header(self, seconds, dark):
-        header = super()._create_fits_header(seconds, dark)
+    def _create_fits_header(self, seconds, dark=None):
+        header = super()._create_fits_header(seconds, dark=dark)
         header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
         return header
 
@@ -159,11 +163,14 @@ class AbstractSDKCamera(AbstractCamera):
         # representation.
         s = f"{self.name} ({self.uid})"
 
-        if self.focuser:
-            s += f' with {self.focuser.name}'
+        with suppress(AttributeError):
+            if self.focuser:
+                s += f' with {self.focuser.name}'
+                if self.filterwheel:
+                    s += f' & {self.filterwheel.name}'
+
+        with suppress(AttributeError):
             if self.filterwheel:
-                s += f' & {self.filterwheel.name}'
-        elif self.filterwheel:
-            s += f' with {self.filterwheel.name}'
+                s += f' with {self.filterwheel.name}'
 
         return s

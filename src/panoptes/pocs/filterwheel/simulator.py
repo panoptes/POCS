@@ -30,7 +30,7 @@ class FilterWheel(AbstractFilterWheel):
 
     def __init__(self,
                  name='Simulated Filter Wheel',
-                 model='simulator',
+                 model='panoptes.pocs.filterwheel.simulator.FilterWheel',
                  camera=None,
                  filter_names=None,
                  timeout=10 * u.second,

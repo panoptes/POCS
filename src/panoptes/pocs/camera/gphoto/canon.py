@@ -25,7 +25,11 @@ class Camera(AbstractGPhotoCamera, ABC):
 
         self.logger.debug("Connecting GPhoto2 camera")
         self.connect()
-        self.logger.debug("{} connected".format(self.name))
+        self.logger.debug(f"{self.name} connected")
+
+    @property
+    def bit_depth(self):
+        return 12 * u.bit
 
     def connect(self):
         """Connect to Canon DSLR

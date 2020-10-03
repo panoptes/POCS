@@ -131,9 +131,9 @@ def test_camera_association(focuser):
 
 def test_camera_init():
     """
-    Test focuser init via Camera constructor/
+    Test focuser init via Camera constructor
     """
-    sim_camera = Camera(focuser={'model': 'simulator',
+    sim_camera = Camera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
                                  'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected

@@ -202,9 +202,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self._set_target_temperature(target)
 
-        if self.cooling_enabled:
-            self._check_temperature_stability()
-
     @property
     def temperature_tolerance(self):
         """
@@ -243,9 +240,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
-        # If the above camera-specific method was successful.
-        if self.cooling_enabled:
-            self._check_temperature_stability()
 
     @property
     def cooling_power(self):
@@ -287,11 +281,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             # Camera cooling power must not be 100%
             cooling_at_maximum = get_quantity_value(self.cooling_power, u.percent) == 100
 
-            # Also require temperature has been stable for some time
-            # This private variable is set by _check_temperature_stability
-            cooling_is_stable = self._is_temperature_stable
-
-            temp_is_stable = at_target_temp and cooling_is_stable and not cooling_at_maximum
+            temp_is_stable = at_target_temp and not cooling_at_maximum
 
             if not temp_is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
@@ -302,7 +292,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                               f"Temp diff={temp_difference:.02f} "
                               f"At target={at_target_temp} "
                               f"At max cooling={cooling_at_maximum} "
-                              f"Cooling is stable={cooling_is_stable} "
                               f"Temperature is stable={temp_is_stable}")
             return temp_is_stable
         else:
@@ -450,10 +439,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 value 'Dark Frame' instead of 'Light Frame'. Set dark to None to disable the
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
-                the exposure, if True will block until it completes.
+                the exposure, if True will block until it completes and file exists.
 
         Returns:
-            threading.Event: Event that will be set when exposure is complete.
+            threading.Event: Event that indicates an exposure is in progress.
+                Will be set to False when exposure is complete.
 
         """
         self._exposure_error = None
@@ -521,7 +511,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         if blocking:
             self.logger.debug(f"Blocking on exposure event for {self}")
-            self._is_exposing_event.wait()
+            while self._is_exposing_event.is_set():
+                time.sleep(0.5)
+            self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
+            while not os.path.exists(filename):
+                time.sleep(0.1)
+            self.logger.debug(f"Blocking complete on {self} for {filename=}")
 
         return self._is_exposing_event
 
@@ -562,13 +557,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 config-server key.
 
         Raises:
-            FileNotFoundError: If the FITS file isn't at the specificed location.
+            FileNotFoundError: If the FITS file isn't at the specified location.
         """
         # If passed an Event that signals the end of the exposure wait for it to be set
         compress_fits = compress_fits or self.get_config('observations.compress_fits')
         make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
-        if exposure_event is not None:
-            exposure_event.wait()
+
+        # Wait for exposure to complete.
+        while self.is_exposing:
+            time.sleep(1)
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
@@ -711,89 +708,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
-    def _check_temperature_stability(self,
-                                     required_stable_time=None,
-                                     sleep_delay=None,
-                                     timeout=None,
-                                     blocking=False):
-        """
-        Wait until camera temperature is within tolerance for a sufficiently long period of time.
-
-        Args:
-            required_stable_time (astropy.units.Quantity): Minimum consecutive amount of
-                time to be considered stable. Default 60s.
-            sleep_delay (astropy.units.Quantity): Time to sleep between checks. Default 10s.
-            timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
-            blocking (bool): Block until stable temperature or timeout? Useful for testing.
-        """
-        # FIXME WARNING TODO
-        self._is_temperature_stable = True
-        return
-
-        # Convert all times to seconds
-        # TODO these defaults should come from the config server.
-        required_stable_time = get_quantity_value(required_stable_time, u.second) or 60
-        sleep_delay = get_quantity_value(sleep_delay, u.second) or 10
-        timeout = get_quantity_value(timeout, u.second) or 300
-
-        # Make sure parameters make sense.
-        if required_stable_time > timeout:
-            raise ValueError(f"{required_stable_time=} must be less than {timeout=}.")
-        if sleep_delay > timeout:
-            raise ValueError(f"{sleep_delay=} must be less than {timeout=}.")
-
-        # Define an inner function to run in a thread
-        def check_temp():
-            # Wait until stable temperature persists or timeout
-            time_stable = 0
-            timer = CountdownTimer(duration=timeout)
-            while True:
-                if timer.expired():
-                    error_msg = f"Timeout while waiting for stable temperature on {self}."
-                    self.logger.error(error_msg)
-                    self._exposure_error = error.Timeout(f"Timeout while waiting for stable temperature on {self}.")
-
-                # Check if the temperature is within tolerance
-                temp_delta = abs(self.temperature - self.target_temperature)
-                within_tolerance = temp_delta < self.temperature_tolerance
-                self.logger.trace(f'Checking if {temp_delta:.02f} < {self.temperature_tolerance} = {within_tolerance}')
-                if within_tolerance:
-                    self.logger.trace(f'Temperature within tolerance, adding {sleep_delay=} to {time_stable=}')
-                    time_stable += sleep_delay
-                    self.logger.trace(f'Checking if {time_stable=} >= {required_stable_time=}')
-                    self._is_temperature_stable = time_stable >= required_stable_time
-                    if self._is_temperature_stable:
-                        self.logger.info(f"Temperature has stabilised at {self.temperature=} on {self}.")
-                        return
-                else:
-                    self.logger.trace(f'Resetting temperature stability check. {time_stable=} -> 0')
-                    time_stable = 0  # Reset the countdown
-
-                timer.sleep(max_sleep=sleep_delay)
-
-        # Restart countdown if one is already in progress
-        if self._temperature_thread is not None:
-            self.logger.debug(f'Attempting to start new temperature check while {self._temperature_thread}')
-
-            # Wait for the running thread.
-            self.logger.debug(f'Waiting a (hard-coded!) 30 seconds from previous '
-                              f'temperature check thread to stop.')
-            self._temperature_thread.join(timeout=30)
-
-            if self._temperature_thread.is_alive():
-                self.logger.warning(f"Attempted to wait for stable temperature on {self}"
-                                    " while wait already in progress. Restarting countdown.")
-            else:
-                raise error.Timeout(f"Temperature check thread timed out.")
-
-        # Wait for stable temperature
-        self._is_temperature_stable = False
-        self.logger.info(f"Waiting for stable temperature on {self}.")
-        self._temperature_thread = threading.Thread(target=check_temp)
-        self._temperature_thread.start()
-        if blocking:
-            self._temperature_thread.join()
-
     @abstractmethod
     def _set_target_temperature(self, target):
         """Camera-specific function to set the target temperature.
@@ -914,7 +828,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
-        for sub_name, subcomponent in self.subcomponents:
+        for sub_name, subcomponent in self.subcomponents.items():
             header = subcomponent._add_fits_keywords(header)
 
         return header
@@ -1096,7 +1010,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             name = self.name
             if self.is_primary:
                 name += ' [Primary]'
-            s = f"{name} ({self.uid}) on {self.port}"
+            s = f"{name} ({self.uid})"
+            if self.port:
+                s += f" on port={self.port}"
 
             sub_names = '& '.join(list(self.subcomponents.keys()))
             if sub_names != '':

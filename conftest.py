@@ -23,7 +23,7 @@ LOGGER_INFO = PanLogger()
 logger = get_logger(console_log_file=TESTING_LOG_LEVEL)
 logger.enable('panoptes')
 # Add a level above TRACE and below DEBUG
-logger.level("testing", no=15, icon="🤖", color="<YELLOW><black>")
+logger.level("testing", no=15, icon="🤖", color="<LIGHT-BLUE><white>")
 log_fmt = "<lvl>{level:.1s}</lvl> " \
           "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
           "<blue>({time:HH:mm:ss.ss})</> " \
