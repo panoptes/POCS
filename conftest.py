@@ -17,10 +17,12 @@ from panoptes.pocs.utils.logger import get_logger, PanLogger
 
 _all_databases = ['file', 'memory']
 
+TESTING_LOG_LEVEL = 'TRACE'
 LOGGER_INFO = PanLogger()
 
-logger = get_logger()
+logger = get_logger(console_log_file=TESTING_LOG_LEVEL)
 logger.enable('panoptes')
+# Add a level above TRACE and below DEBUG
 logger.level("testing", no=15, icon="🤖", color="<YELLOW><black>")
 log_fmt = "<lvl>{level:.1s}</lvl> " \
           "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
@@ -28,7 +30,6 @@ log_fmt = "<lvl>{level:.1s}</lvl> " \
           "| <c>{name} {function}:{line}</c> | " \
           "<lvl>{message}</lvl>"
 
-# Put the log file in the tmp dir.
 log_file_path = os.path.expandvars('${PANLOG}/panoptes-testing.log')
 startup_message = f' STARTING NEW PYTEST RUN - LOGS: {log_file_path} '
 logger.add(log_file_path,
@@ -41,7 +42,8 @@ logger.add(log_file_path,
            catch=True,
            # Start new log file for each testing run.
            rotation=lambda msg, _: startup_message in msg,
-           level='TRACE')
+           level=TESTING_LOG_LEVEL)
+
 logger.log('testing', '*' * 25 + startup_message + '*' * 25)
 
 # Make the log file world readable.
