@@ -101,7 +101,6 @@ cameras:
         autofocus_keep_files: False
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.filterwheel.cooling.00
-      serial_number: SSC003
       cooling:
         enabled: True
         target: 0
@@ -120,8 +119,8 @@ cameras:
         move_time: 0.1
         timeout: 0.5
     - model: panoptes.pocs.camera.simulator.ccd.Camera
-      name: SSC004
-      serial_number: SSC004
+      name: SSC101
+      serial_number: SSC101
       cooling:
         enabled: True
         target: 0

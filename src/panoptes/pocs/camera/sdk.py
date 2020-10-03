@@ -97,14 +97,15 @@ class AbstractSDKCamera(AbstractCamera):
             logger.debug("Connected {}s: {}".format(name, my_class._cameras))
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with UID '{serial_number}' at {my_class._cameras[serial_number]}.")
+            logger.debug(f"Found {name} with UID {serial_number=} at {my_class._cameras[serial_number]}.")
         else:
-            raise error.PanError(f"Could not find {name} with UID '{serial_number}'.")
+            raise error.PanError(f"Could not find {name} with UID {serial_number=} in {my_class._cameras}.")
 
         if serial_number in my_class._assigned_cameras:
-            raise error.PanError(f"{name} with UID '{serial_number}' already in use.")
+            raise error.PanError(f"{name} with UID {serial_number=} already in use.")
+        else:
+            my_class._assigned_cameras.add(serial_number)
 
-        my_class._assigned_cameras.add(serial_number)
         super().__init__(name, *args, **kwargs)
         self._address = my_class._cameras[self.uid]
         self.connect()
