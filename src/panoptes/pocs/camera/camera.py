@@ -202,8 +202,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self._set_target_temperature(target)
 
-        # if self.cooling_enabled:
-        #     self._check_temperature_stability()
+        if self.cooling_enabled:
+            self._check_temperature_stability()
 
     @property
     def temperature_tolerance(self):
@@ -244,8 +244,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
         # If the above camera-specific method was successful.
-        # if self.cooling_enabled:
-        #     self._check_temperature_stability()
+        if self.cooling_enabled:
+            self._check_temperature_stability()
 
     @property
     def cooling_power(self):
@@ -711,7 +711,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
-    def _check_temperature_stability(self):
+    def _check_temperature_stability(self,
+                                     required_stable_time=None,
+                                     sleep_delay=None,
+                                     timeout=None,
+                                     blocking=False):
         """
         Wait until camera temperature is within tolerance for a sufficiently long period of time.
 
@@ -722,10 +726,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
-        # TODO WARNING FIXME
+        # FIXME WARNING TODO
         self._is_temperature_stable = True
 
+
         # Convert all times to seconds
+        # TODO these defaults should come from the config server.
         required_stable_time = get_quantity_value(required_stable_time, u.second) or 60
         sleep_delay = get_quantity_value(sleep_delay, u.second) or 10
         timeout = get_quantity_value(timeout, u.second) or 300
