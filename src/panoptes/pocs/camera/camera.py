@@ -722,6 +722,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             timeout (astropy.units.Quantity): Time before Timeout error is raised. Default 300s.
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
+        # TODO WARNING FIXME
+        self._is_temperature_stable = True
+
         # Convert all times to seconds
         required_stable_time = get_quantity_value(required_stable_time, u.second) or 60
         sleep_delay = get_quantity_value(sleep_delay, u.second) or 10
