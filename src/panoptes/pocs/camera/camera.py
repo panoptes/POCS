@@ -728,7 +728,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         # FIXME WARNING TODO
         self._is_temperature_stable = True
-
+        return
 
         # Convert all times to seconds
         # TODO these defaults should come from the config server.
