@@ -202,8 +202,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self._set_target_temperature(target)
 
-        if self.cooling_enabled:
-            self._check_temperature_stability()
+        # if self.cooling_enabled:
+        #     self._check_temperature_stability()
 
     @property
     def temperature_tolerance(self):
@@ -244,8 +244,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
         # If the above camera-specific method was successful.
-        if self.cooling_enabled:
-            self._check_temperature_stability()
+        # if self.cooling_enabled:
+        #     self._check_temperature_stability()
 
     @property
     def cooling_power(self):
@@ -711,11 +711,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
-    def _check_temperature_stability(self,
-                                     required_stable_time=None,
-                                     sleep_delay=None,
-                                     timeout=None,
-                                     blocking=False):
+    def _check_temperature_stability(self):
         """
         Wait until camera temperature is within tolerance for a sufficiently long period of time.
 
@@ -727,7 +723,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             blocking (bool): Block until stable temperature or timeout? Useful for testing.
         """
         # Convert all times to seconds
-        # TODO these defaults should come from the config server.
         required_stable_time = get_quantity_value(required_stable_time, u.second) or 60
         sleep_delay = get_quantity_value(sleep_delay, u.second) or 10
         timeout = get_quantity_value(timeout, u.second) or 300
@@ -752,7 +747,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Check if the temperature is within tolerance
                 temp_delta = abs(self.temperature - self.target_temperature)
                 within_tolerance = temp_delta < self.temperature_tolerance
-                self.logger.trace(f'Checking if {temp_delta} < {self.temperature_tolerance} = {within_tolerance}')
+                self.logger.trace(f'Checking if {temp_delta:.02f} < {self.temperature_tolerance} = {within_tolerance}')
                 if within_tolerance:
                     self.logger.trace(f'Temperature within tolerance, adding {sleep_delay=} to {time_stable=}')
                     time_stable += sleep_delay
@@ -772,7 +767,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.debug(f'Attempting to start new temperature check while {self._temperature_thread}')
 
             # Wait for the running thread.
-            self.logger.debug(f'Waiting a (hard-coded!) 30 seconds fro previous '
+            self.logger.debug(f'Waiting a (hard-coded!) 30 seconds from previous '
                               f'temperature check thread to stop.')
             self._temperature_thread.join(timeout=30)
 
