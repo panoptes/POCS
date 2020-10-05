@@ -386,7 +386,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         try:
             initial_thumbnail = self._camera.get_thumbnail(
-                seconds, initial_path, thumbnail_size, keep_file=True)
+                seconds, initial_path, thumbnail_size, keep_file=True, blocking=True)
         except Exception as err:
             self.logger.error(f"Error taking initial image: {err!r}")
             self._autofocus_error = repr(err)

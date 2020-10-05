@@ -1,5 +1,6 @@
 import os
 import time
+from contextlib import suppress
 
 import pytest
 from astropy.time import Time
@@ -357,7 +358,12 @@ def test_autofocus_coarse(observatory):
 
 
 def test_autofocus_named(observatory):
-    cam_names = [name for name in observatory.cameras.keys()]
+    # Get the list of cameras with a focuser.
+    cam_names = [name
+                 for name, camera
+                 in observatory.cameras.items()
+                 if hasattr(camera, 'focuser') and camera.focuser is not None
+                 ]
     # Call autofocus on just one camera.
     events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
     assert len(events) == 1
@@ -374,7 +380,8 @@ def test_autofocus_bad_name(observatory):
 
 def test_autofocus_focusers_disconnected(observatory):
     for camera in observatory.cameras.values():
-        camera.focuser._connected = False
+        if hasattr(camera, 'focuser') and camera.focuser is not None:
+            camera.focuser._connected = False
     events = observatory.autofocus_cameras()
     assert events == {}
 
