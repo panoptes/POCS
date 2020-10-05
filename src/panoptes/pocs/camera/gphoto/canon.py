@@ -2,6 +2,7 @@ import os
 import subprocess
 from abc import ABC
 
+from astropy import units as u
 from threading import Event
 from threading import Timer
 
