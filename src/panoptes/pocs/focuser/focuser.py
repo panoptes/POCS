@@ -132,8 +132,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
     @camera.setter
     def camera(self, camera):
         if self._camera:
-            self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
-                                self, self.camera, camera)
+            if self._camera != camera:
+                self.logger.warning(f"{self} already assigned to {self._camera}, "
+                                    f"skipping attempted assignment to {camera}!")
         else:
             self._camera = camera
 
@@ -424,7 +425,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 thumbnail = self._camera.get_thumbnail(
                     seconds, file_path, thumbnail_size, keep_file=keep_files)
             except Exception as err:
-                self.logger.error(f"Error taking image {i+1}: {err!r}")
+                self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
                 focus_event.set()
                 raise err
@@ -440,8 +441,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # Apply the master mask and then get metrics for each frame.
         for i, thumbnail in enumerate(thumbnails):
             thumbnail = np.ma.array(thumbnail, mask=master_mask)
-            metric[i] = focus_utils.focus_metric(
-                thumbnail, merit_function, **merit_function_kwargs)
+            metric[i] = focus_utils.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
 
         fitted = False
 
@@ -450,8 +450,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning(
-                "Best focus outside sweep range, aborting autofocus on {}!".format(self._camera))
+            self.logger.warning(f"Best focus outside sweep range, stopping focus and using {focus_positions[imax]}")
             best_focus = focus_positions[imax]
 
         elif not coarse:
@@ -500,10 +499,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         final_focus = self.move_to(best_focus)
 
-        final_fn = "{}_{}_{}.{}".format(final_focus,
-                                        focus_type,
-                                        "final",
-                                        self._camera.file_extension)
+        final_fn = f"{final_focus}_{focus_type}_final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
             final_thumbnail = self._camera.get_thumbnail(
@@ -567,11 +563,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             fig.clf()
             del fig
 
-            self.logger.info('{} focus plot for camera {} written to {}'.format(
-                focus_type.capitalize(), self._camera, plot_path))
+            self.logger.info(f'{focus_type.capitalize()} focus plot for '
+                             f'{self._camera} written to {plot_path}')
 
-        self.logger.debug(
-            'Autofocus of {} complete - final focus position: {}', self._camera, final_focus)
+        self.logger.debug(f'Autofocus of {self._camera} complete - final focus position: {final_focus}')
 
         if focus_event:
             focus_event.set()

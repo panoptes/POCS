@@ -36,7 +36,7 @@ def reset_conf(config_host, config_port):
 
 @pytest.fixture(scope='function')
 def cameras():
-    return create_cameras_from_config()
+    return create_cameras_from_config(recreate_existing=True)
 
 
 @pytest.fixture(scope='function')

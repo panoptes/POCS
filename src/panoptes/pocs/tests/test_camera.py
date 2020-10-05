@@ -31,7 +31,7 @@ from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.utils.serializers import to_json
 
 
-@pytest.fixture(scope='function', params=[
+@pytest.fixture(scope='module', params=[
     pytest.param([SimCamera, dict()]),
     pytest.param([SimCamera, get_config('cameras.devices[0]')]),
     pytest.param([SimCamera, get_config('cameras.devices[1]')]),
@@ -84,12 +84,12 @@ def camera(request):
         type(camera)._assigned_cameras.discard(camera.uid)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def counter(camera):
     return {'value': 0}
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def patterns(camera, images_dir):
     patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
                                       ('*_final.' + camera.file_extension)),
@@ -157,7 +157,7 @@ def test_sim_string():
     sim_camera = SimCamera()
     assert str(sim_camera) == f'Simulated Camera ({sim_camera.uid})'
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
-    assert str(sim_camera) == f'Sim ({sim_camera.uid}) on port=/dev/ttyFAKE'
+    assert str(sim_camera) == f'Sim ({sim_camera.uid}) port=/dev/ttyFAKE'
 
 
 def test_sim_file_extension():
@@ -468,6 +468,9 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert not camera.is_exposing
     assert exposure_event is camera._is_exposing_event
     assert not exposure_event.is_set()
+
+    # Reset camera because it's scoped on a module level
+    camera._timeout = original_timeout
 
 
 def test_observation(camera, images_dir):

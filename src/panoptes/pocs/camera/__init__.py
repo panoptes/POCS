@@ -4,9 +4,9 @@ import re
 import shutil
 import subprocess
 import random
+from contextlib import suppress
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
-from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
@@ -45,7 +45,11 @@ def list_connected_cameras():
     return ports
 
 
-def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *args, **kwargs):
+def create_cameras_from_config(config=None,
+                               cameras=None,
+                               auto_primary=True,
+                               recreate_existing=False,
+                               *args, **kwargs):
     """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
@@ -58,6 +62,10 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
             objects or None.
         auto_primary (bool): If True, when no camera is marked as the primary camera,
             the first camera in the list will be used as primary. Default True.
+        recreate_existing (bool): If True, a camera object will be recreated if an
+            existing camera with the same `uid` is already assigned. Should currently
+            only affect cameras that use the `sdk` (i.g. not DSLRs). Default False
+            raises an exception if camera is already assigned.
         *args (list): Passed to `get_config`.
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
@@ -123,6 +131,10 @@ def create_cameras_from_config(config=None, cameras=None, auto_primary=True, *ar
         try:
             module = load_module(model)
             logger.debug(f'Camera module: {module=}')
+
+            if recreate_existing:
+                with suppress(AttributeError):
+                    module._assigned_cameras = set()
 
             # We either got a class or a module.
             if callable(module):

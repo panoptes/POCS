@@ -32,7 +32,7 @@ def test_init(filterwheel):
 
 
 def test_camera_init():
-    sim_camera = SimCamera(filterwheel={'model': 'simulator',
+    sim_camera = SimCamera(filterwheel={'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
     assert isinstance(sim_camera.filterwheel, SimFilterWheel)
     assert sim_camera.filterwheel.is_connected
@@ -62,7 +62,7 @@ def test_with_no_name():
 
 def test_model(filterwheel):
     model = filterwheel.model
-    assert model == 'simulator'
+    assert model == 'panoptes.pocs.filterwheel.simulator.FilterWheel'
     with pytest.raises(AttributeError):
         filterwheel.model = "Airfix"
 
@@ -170,7 +170,7 @@ def test_move_times(name, unidirectional, expected):
 
 
 def test_move_exposing(tmpdir):
-    sim_camera = SimCamera(filterwheel={'model': 'simulator',
+    sim_camera = SimCamera(filterwheel={'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
     fits_path = str(tmpdir.join('test_exposure.fits'))
     exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)

@@ -412,6 +412,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Process the exposure once readout is complete
         # To be used for marking when exposure is complete (see `process_exposure`)
         t = threading.Thread(
+            name=f'Thread-{image_id}',
             target=self.process_exposure,
             args=(metadata, observation_event, exposure_event),
             daemon=True)
@@ -622,7 +623,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   keep_files=None,
                   take_dark=None,
                   merit_function='vollath_F4',
-                  merit_function_kwargs={},
+                  merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
                   make_plots=False,
@@ -650,7 +651,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
                 focus metric, default vollath_F4.
-            merit_function_kwargs (dict, optional): Dictionary of additional
+            merit_function_kwargs (dict or None, optional): Dictionary of additional
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
@@ -866,8 +867,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(
-            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -995,7 +995,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             except TypeError:
                 raise error.NotFound(f'{base_class=} is not a callable class. '
                                      f'Please specify full path to class (not module).')
-            self.logger.info(f'{subcomponent=} created for {base_class_name=}')
+            self.logger.success(f'{subcomponent} created for {base_class_name}')
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
@@ -1006,13 +1006,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return subcomponent
 
     def __str__(self):
+        s = f'{self.name}'
         try:
-            name = self.name
             if self.is_primary:
-                name += ' [Primary]'
-            s = f"{name} ({self.uid})"
+                s += ' [Primary]'
+
+            s += f" ({self.uid})"
+
             if self.port:
-                s += f" on port={self.port}"
+                s += f" port={self.port}"
 
             sub_names = '& '.join(list(self.subcomponents.keys()))
             if sub_names != '':

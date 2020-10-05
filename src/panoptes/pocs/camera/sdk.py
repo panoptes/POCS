@@ -8,6 +8,13 @@ from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.pocs.utils.logger import get_logger
 
+# Would usually use self.logger but that won't exist until after calling super().__init__(),
+# and don't want to do that until after the serial number and port have both been determined
+# in order to avoid log entries with misleading values. To enable logging during the device
+# scanning phase use get_logger() instead.
+# TODO figure out how to remove this.
+logger = get_logger()
+
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
     def __init__(self, name, library_path=None, *args, **kwargs):
@@ -66,12 +73,6 @@ class AbstractSDKCamera(AbstractCamera):
                  filter_type=None,
                  target_temperature=None,
                  *args, **kwargs):
-        # Would usually use self.logger but that won't exist until after calling super().__init__(),
-        # and don't want to do that until after the serial number and port have both been determined
-        # in order to avoid log entries with misleading values. To enable logging during the device
-        # scanning phase use get_logger() instead.
-        # TODO figure out how to remove this.
-        logger = get_logger()
 
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
         # which is some form of unique ID readable via the camera SDK.
@@ -139,10 +140,12 @@ class AbstractSDKCamera(AbstractCamera):
                 self.logger.warning(msg)
 
     def __del__(self):
-        """ Attempt some clean up """
-        with suppress(AttributeError):
-            uid = self.uid
-            type(self)._assigned_cameras.discard(uid)
+        """ Attempt some clean up. """
+        if hasattr(self, 'uid'):
+            logger.trace(f'Removing {self.uid} from {type(self)._assigned_cameras}')
+            type(self)._assigned_cameras.discard(self.uid)
+
+        logger.trace(f'Assigned cameras after removing {type(self)._assigned_cameras}')
 
     # Properties
 
