@@ -66,7 +66,6 @@ Removed
 * Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
 
 
-
 [0.7.6] - 2020-08-21
 --------------------
 
