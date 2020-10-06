@@ -36,12 +36,6 @@ USER ${PANUSER}
 WORKDIR ${POCS}
 RUN mkdir -p "${PANDIR}/scripts" && \
     cd "${PANDIR}/scripts" && \
-    # Install gphoto2 auto-updater
-#    wget $gphoto2_url -O gphoto2-updater.sh && \
-#    chmod +x gphoto2-updater.sh && \
-    # Don't actually update gphoto2 as of right now.
-#    sudo /bin/bash gphoto2-updater.sh --stable && \
-#    rm gphoto2-updater.sh && \
     # Install arduino-cli.
     wget -q "${arduino_url}" -O install-arduino-cli.sh && \
     sudo BINDIR="/usr/local/bin" /bin/sh install-arduino-cli.sh && \

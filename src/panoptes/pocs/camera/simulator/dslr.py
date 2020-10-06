@@ -17,25 +17,9 @@ from panoptes.utils import get_quantity_value
 
 class Camera(AbstractCamera):
 
-    # @property
-    # def egain(self):
-    #     pass
-
     @property
     def bit_depth(self):
         return 12 * u.bit
-
-    # @property
-    # def temperature(self):
-    #     pass
-    #
-    # @property
-    # def target_temperature(self):
-    #     pass
-    #
-    # @property
-    # def cooling_power(self):
-    #     pass
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         kwargs['timeout'] = kwargs.get('timeout', 1.5 * u.second)
