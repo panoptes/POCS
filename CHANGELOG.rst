@@ -34,15 +34,18 @@ Bug fixes
 Changed
 ~~~~~~~
 
-* Changed how subcomponents for camera are created. (@wtgee #1007)
-* Camera and subcomponent stringification changed for clarity. (@wtgee #1007)
-* Can reassign SDK camera if same UID is presented with flag to ``create_cameras_from_config``. (@wtgee #1007)
-* Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
 * Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
 * Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
-* Local ``.env`` files in ``$PANDIR`` are sourced via ``PanBase`` when creating new objects.
 * Move the ``wait-for-it.sh`` script into ``scripts``. (@wtgee #1001)
-* `_poll_exposure` was needlessly being called in a `threading.Timer` rather than a simple `threading.Event`. (@wtgee @1007)
+* Camera:
+
+  * Changed how subcomponents for camera are created. (@wtgee #1007)
+  * Camera and subcomponent stringification changed for clarity. (@wtgee #1007)
+  * Can reassign SDK camera if same UID is presented with flag to ``create_cameras_from_config``. (@wtgee #1007)
+  * Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
+  * `_poll_exposure` was needlessly being called in a `threading.Timer` rather than a simple `threading.Event`. (@wtgee @1007)
+  * Slight improvements to the timeout and readout for exposures with the simulators. (@wtgee #1007)
+
 * Docker:
 
   * ``gphoto2`` comes from apt. (@wtgee #1007)
