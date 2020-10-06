@@ -505,14 +505,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             raise err
 
         # Start polling thread that will call camera type specific _readout method when done
-        readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
-                                         function=self._poll_exposure,
-                                         args=(readout_args,))
+        readout_thread = threading.Thread(target=self._poll_exposure, args=(readout_args,))
         readout_thread.start()
 
         if blocking:
             self.logger.debug(f"Blocking on exposure event for {self}")
-            while self._is_exposing_event.is_set():
+            readout_thread.join()
+            while self.is_exposing:
                 time.sleep(0.5)
             self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
             while not os.path.exists(filename):
@@ -774,14 +773,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args):
+    def _poll_exposure(self, readout_args, interval=0.01):
         timer = CountdownTimer(duration=self._timeout)
         try:
             while self.is_exposing:
                 if timer.expired():
                     msg = f"Timeout ({timer.duration=}) waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
-                time.sleep(0.01)
+                time.sleep(interval)
         except Exception as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err!r}')

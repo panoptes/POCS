@@ -64,7 +64,7 @@ class Camera(AbstractCamera):
         return readout_args
 
     def _readout(self, filename=None, header=None):
-        self.logger.trace(f'Calling _readout for {self=}')
+        self.logger.trace(f'Calling _readout for {self}')
         # Get example FITS file from test data directory
         file_path = os.path.join(
             os.environ['POCS'],
