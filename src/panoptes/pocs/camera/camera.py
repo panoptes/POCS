@@ -773,8 +773,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args, interval=0.01):
-        timer = CountdownTimer(duration=self._timeout)
+    def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
+        timer_duration = timeout or self._timeout + self._readout_time
+        timer = CountdownTimer(duration=timer_duration)
         try:
             while self.is_exposing:
                 if timer.expired():

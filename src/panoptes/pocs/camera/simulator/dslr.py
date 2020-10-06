@@ -57,7 +57,7 @@ class Camera(AbstractCamera):
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         self.is_exposing = True
-        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second) + 0.5,
+        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second),
                                 function=self._end_exposure)
         exposure_thread.start()
         readout_args = (filename, header)

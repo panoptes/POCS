@@ -389,12 +389,17 @@ def test_exposure_collision(camera, tmpdir):
     fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
+    camera.logger.log('testing', 'Exposure 1 started')
     with pytest.raises(error.PanError):
         camera.take_exposure(1 * u.second, filename=fits_path_2)
-    if isinstance(camera, FLICamera):
-        time.sleep(10)
-    else:
-        time.sleep(5)
+    camera.logger.log('testing', 'Exposure 2 collided')
+    # Wait for exposure.
+    while camera.is_exposing:
+        time.sleep(0.5)
+    # Wait for readout on file.
+    while not os.path.exists(fits_path_1):
+        time.sleep(0.5)
+
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
     assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
