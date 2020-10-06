@@ -5,7 +5,7 @@ from timeit import timeit
 from astropy import units as u
 
 from panoptes.pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
-from panoptes.pocs.camera.simulator import Camera as SimCamera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.utils import error
 
 
@@ -16,6 +16,7 @@ def filterwheel():
                                      timeout=0.5 * u.second)
     return sim_filterwheel
 
+
 @pytest.fixture(scope='function')
 def filterwheel_with_blank():
     sim_filterwheel = SimFilterWheel(filter_names=['blank', 'deux', 'drei', 'quattro'],
@@ -24,8 +25,6 @@ def filterwheel_with_blank():
                                      dark_position='blank')
     return sim_filterwheel
 
-# intialisation
-
 
 def test_init(filterwheel):
     assert isinstance(filterwheel, SimFilterWheel)
@@ -33,7 +32,7 @@ def test_init(filterwheel):
 
 
 def test_camera_init():
-    sim_camera = SimCamera(filterwheel={'model': 'simulator',
+    sim_camera = SimCamera(filterwheel={'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
     assert isinstance(sim_camera.filterwheel, SimFilterWheel)
     assert sim_camera.filterwheel.is_connected
@@ -63,7 +62,7 @@ def test_with_no_name():
 
 def test_model(filterwheel):
     model = filterwheel.model
-    assert model == 'simulator'
+    assert model == 'panoptes.pocs.filterwheel.simulator.FilterWheel'
     with pytest.raises(AttributeError):
         filterwheel.model = "Airfix"
 
@@ -171,7 +170,7 @@ def test_move_times(name, unidirectional, expected):
 
 
 def test_move_exposing(tmpdir):
-    sim_camera = SimCamera(filterwheel={'model': 'simulator',
+    sim_camera = SimCamera(filterwheel={'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
     fits_path = str(tmpdir.join('test_exposure.fits'))
     exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)

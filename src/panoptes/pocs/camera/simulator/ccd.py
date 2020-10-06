@@ -6,8 +6,10 @@ from abc import ABC
 from contextlib import suppress
 import astropy.units as u
 
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+from panoptes.utils.config.client import get_config
+from panoptes.utils.logging import logger
 
 
 class SDKDriver(AbstractSDKDriver):
@@ -19,13 +21,19 @@ class SDKDriver(AbstractSDKDriver):
         return "Simulated SDK Driver v0.001"
 
     def get_devices(self):
-        cameras = {'SSC007': 'DEV_USB0',
-                   'SSC101': 'DEV_USB1',
-                   'SSC999': 'DEV_USB2'}
-        return cameras
+        logger.debug(f'Getting camera device connection config for {self}')
+        camera_devices = dict()
+        for cam_info in get_config('cameras.devices'):
+            name = cam_info.get('name') or cam_info.get('model')
+            port = cam_info.get('port') or cam_info.get('serial_number')
+            camera_devices[name] = port
+
+        logger.trace(f'{camera_devices=}')
+
+        return camera_devices
 
 
-class Camera(AbstractSDKCamera, Camera, ABC):
+class Camera(AbstractSDKCamera, SimCamera, ABC):
     def __init__(self,
                  name='Simulated SDK camera',
                  driver=SDKDriver,
@@ -56,7 +64,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         temperature = limit_temp - delta_temp * math.exp(-delta_time)
         add_temp = random.uniform(-self._temp_var / 2, self._temp_var / 2)
         temperature += random.uniform(-self._temp_var / 2, self._temp_var / 2)
-        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f}")
+        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f} for {self}")
 
         return temperature
 
@@ -71,7 +79,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
     def connect(self):
         self._is_cooled_camera = True
         self._cooling_enabled = False
-        self._temperature = 25 * u.Celsius
+        self._temperature = 5 * u.Celsius
         self._max_temp = 25 * u.Celsius
         self._min_temp = -15 * u.Celsius
         self._temp_var = 0.05 * u.Celsius
@@ -79,12 +87,6 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._connected = True
-
-    def _check_temperature_stability(self, required_stable_time=10*u.second,
-                                     sleep_delay=5*u.second, **kwargs):
-        """Override default parameters to speed-up tests."""
-        super()._check_temperature_stability(required_stable_time=required_stable_time,
-                                             sleep_delay=sleep_delay, **kwargs)
 
     def _set_target_temperature(self, target):
         # Upon init the camera won't have an existing temperature.

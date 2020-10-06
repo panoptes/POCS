@@ -17,10 +17,11 @@ def on_enter(event_data):
         maximum_duration = pocs.observatory.current_observation.exptime.value + MAX_EXTRA_TIME
 
         # Start the observing.
-        camera_events_info = pocs.observatory.observe()
-        camera_events = list(camera_events_info.values())
+        observing_events = pocs.observatory.observe()
+        camera_events = list(observing_events.values())
 
         def waiting_cb():
+            # TODO Check for dead camera here and potential remove from list?
             pocs.logger.info(f'Waiting on an observation.')
 
         wait_for_events(camera_events, timeout=maximum_duration, callback=waiting_cb, sleep_delay=11)

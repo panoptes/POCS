@@ -8,26 +8,66 @@ Changelog
 Added
 ~~~~~
 
+* Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
+* Added `error.InvalidConfig` exception. (@wtgee #1007)
+* Config options to control observation processiong options: (@wtgee #1007)
+
+  * ``observations.compress_fits`` if FITS files should be fpacked. Default True.
+  * ``observations.record_observations`` if observation metadata should be recorded. Default True.
+  * ``observations.make_pretty_images`` to make jpgs from images. Default True.
+
+Breaking
+~~~~~~~~
+
+* The ``model`` parameter for the camera and subcomponents needs a fully resolved namespace for either the module or class. (@wtgee #1007)
+* The ``take_exposure`` method returns an event to indicate that exposure is in progress, **not** to indicate when exposure has completed. The event is stored in the camera object and accessible via ``camera.is_exposing``. (@wtgee #1007)
+* Removed camera temperature stability checking for now. (@wtgee #1007)
+* Moved the ``AbstractGphotoCamera`` class into it's own namespace and file. (@wtgee #1007)
+*
+
 Bug fixes
 ~~~~~~~~~
 
 * DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
-
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
 
 Changed
 ~~~~~~~
 
-* Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
-* Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server.. (@wtgee #1001)
-* Local ``.env`` files in ``$PANDIR`` are sourced via ``PanBase`` when creating new objects.
+* Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
+* Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
 * Move the ``wait-for-it.sh`` script into ``scripts``. (@wtgee #1001)
-* Testing: (@wtgee #1001)
+* Camera:
 
-  * Testing is run from a locally built Docker image for both local and CI testing.
-  * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``.
-  * Config server for testing is started external to ``pytest``, which is currently lowering coverage.
-  * Coverage reports are generated inside the Docker container.
+  * Changed how subcomponents for camera are created. (@wtgee #1007)
+  * Camera and subcomponent stringification changed for clarity. (@wtgee #1007)
+  * Can reassign SDK camera if same UID is presented with flag to ``create_cameras_from_config``. (@wtgee #1007)
+  * Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
+  * `_poll_exposure` was needlessly being called in a `threading.Timer` rather than a simple `threading.Event`. (@wtgee @1007)
+  * Slight improvements to the timeout and readout for exposures with the simulators. (@wtgee #1007)
+
+* Docker:
+
+  * ``gphoto2`` comes from apt. (@wtgee #1007)
+  * Local setup script doesn't build ``panoptes-utils`` but assumes done otherwise or uses ``gcr.io``. (@wtgee #1007)
+
+
+* Testing:
+
+  * Testing is run from a locally built Docker image for both local and CI testing. (@wtgee #1001)
+  * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``. (@wtgee #1001)
+  * Config server for testing is started external to ``pytest``, which is currently lowering coverage. (@wtgee #1001)
+  * Coverage reports are generated inside the Docker container. (@wtgee #1001)
+  * Default log level set to TRACE. (@wtgee #1007)
+  * Less hard-coding of fixtures and answers, more config server. (@wtgee #1007)
+  * Renamed the cameras in testing fixtures. (@wtgee #1007)
+  * Cooled cameras have temperature stability check in conftest. (@wtgee #1007)
+
+
+Removed
+~~~~~~~
+
+* Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
 
 
 [0.7.6] - 2020-08-21

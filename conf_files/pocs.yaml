@@ -112,6 +112,9 @@ environment:
 ################################################################################
 observations:
   make_timelapse: True
+  compress_fits: True
+  record_observations: True
+  make_pretty_images: True
   keep_jpgs: True
 
 ######################## Google Network ########################################
