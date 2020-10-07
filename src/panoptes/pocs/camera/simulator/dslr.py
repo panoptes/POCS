@@ -82,8 +82,8 @@ class Camera(AbstractCamera):
         self.logger.debug(f'Writing {filename=} for {self}')
         fits_utils.write_fits(fake_data, header, filename)
 
-    def _process_fits(self, file_path, info):
-        file_path = super()._process_fits(file_path, info)
+    def _process_fits(self, file_path, metadata):
+        file_path = super()._process_fits(file_path, metadata)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         # TODO get the path as package data or something better.
         solved_path = os.path.join(

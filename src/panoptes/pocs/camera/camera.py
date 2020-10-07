@@ -404,7 +404,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Add most recent exposure to list
         if self.is_primary:
-            if 'POINTING' in headers:
+            if 'POINTING' in metadata:
                 observation.pointing_images[image_id] = file_path
             else:
                 observation.exposure_list[image_id] = file_path
@@ -521,9 +521,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._is_exposing_event
 
     def process_exposure(self,
-                         info,
+                         metadata,
                          observation_event,
-                         exposure_event=None,
                          compress_fits=None,
                          record_observations=None,
                          make_pretty_images=None):
@@ -542,11 +541,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         `current` collection. Saves metadata to `observations` collection for all images.
 
         Args:
-            info (dict): Header metadata saved for the image
+            metadata (dict): Header metadata saved for the image
             observation_event (threading.Event): An event that is set signifying that the
                 camera is done with this exposure
-            exposure_event (threading.Event, optional): An event that should be set
-                when the exposure is complete, triggering the processing.
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
                 If None (default), checks the `observations.compress_fits` config-server key.
             record_observations (bool or None): If observation metadata should be saved.
@@ -563,15 +560,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         compress_fits = compress_fits or self.get_config('observations.compress_fits')
         make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
 
-        # Wait for exposure to complete.
+        # Wait for exposure to complete. Timeout handled by exposure thread.
         while self.is_exposing:
             time.sleep(1)
 
-        image_id = info['image_id']
-        seq_id = info['sequence_id']
-        file_path = info['file_path']
-        exptime = info['exptime']
-        field_name = info['field_name']
+        image_id = metadata['image_id']
+        seq_id = metadata['sequence_id']
+        file_path = metadata['file_path']
+        exptime = metadata['exptime']
+        field_name = metadata['field_name']
 
         # Make sure image exists.
         if not os.path.exists(file_path):
@@ -580,16 +577,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                     "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
-        file_path = self._process_fits(file_path, info)
+        file_path = self._process_fits(file_path, metadata)
         self.logger.debug(f'Finished FITS processing for {file_path}')
 
+        # TODO make this async and take it out of camera.
         if make_pretty_images:
             try:
                 image_title = f'{field_name} [{exptime}s] {seq_id}'
 
                 self.logger.debug(f"Making pretty image for {file_path=}")
                 link_path = None
-                if info['is_primary']:
+                if metadata['is_primary']:
                     # This should be in the config somewhere.
                     link_path = os.path.expandvars('$PANDIR/images/latest.jpg')
 
@@ -597,14 +595,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                             title=image_title,
                                             link_path=link_path)
             except Exception as e:  # pragma: no cover
-                self.logger.warning('Problem with extracting pretty image: {e!r}')
+                self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
         with suppress(Exception):
-            info['exptime'] = info['exptime'].value
+            metadata['exptime'] = metadata['exptime'].value
 
         if record_observations:
             self.logger.debug(f"Adding current observation to db: {image_id}")
-            self.db.insert_current('observations', info)
+            self.db.insert_current('observations', metadata)
 
         if compress_fits:
             self.logger.debug(f'Compressing {file_path=}')
@@ -921,20 +919,53 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             metadata['filter_request'] = observation.filter_name
 
         if headers is not None:
+            self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(
-            f'Observation setup: exptime={exptime} file_path={file_path} image_id={image_id} '
-            f'metadata={metadata}')
+        self.logger.debug(f'Observation setup: {exptime=} {file_path=} {image_id=} {metadata=}')
+
         return exptime, file_path, image_id, metadata
 
-    def _process_fits(self, file_path, info):
+    def _process_fits(self, file_path, metadata):
         """
-        Add FITS headers from info the same as images.cr2_to_fits()
+        Add FITS headers from metadata the same as images.cr2_to_fits()
         """
+        # TODO (wtgee) I don't like this one bit.
+        fields = {
+            'image_id': {'keyword': 'IMAGEID'},
+            'sequence_id': {'keyword': 'SEQID'},
+            'field_name': {'keyword': 'FIELD'},
+            'ra_mnt': {'keyword': 'RA-MNT', 'comment': 'Degrees'},
+            'ha_mnt': {'keyword': 'HA-MNT', 'comment': 'Degrees'},
+            'dec_mnt': {'keyword': 'DEC-MNT', 'comment': 'Degrees'},
+            'equinox': {'keyword': 'EQUINOX', 'default': 2000., },
+            'airmass': {'keyword': 'AIRMASS', 'comment': 'Sec(z)'},
+            'filter': {'keyword': 'FILTER', },
+            'latitude': {'keyword': 'LAT-OBS', 'comment': 'Degrees'},
+            'longitude': {'keyword': 'LONG-OBS', 'comment': 'Degrees'},
+            'elevation': {'keyword': 'ELEV-OBS', 'comment': 'Meters'},
+            'moon_separation': {'keyword': 'MOONSEP', 'comment': 'Degrees'},
+            'moon_fraction': {'keyword': 'MOONFRAC', },
+            'creator': {'keyword': 'CREATOR', 'comment': 'POCS Software version'},
+            'camera_uid': {'keyword': 'INSTRUME', 'comment': 'Camera ID'},
+            'observer': {'keyword': 'OBSERVER', 'comment': 'PANOPTES Unit ID'},
+            'origin': {'keyword': 'ORIGIN', },
+            'tracking_rate_ra': {'keyword': 'RA-RATE', 'comment': 'RA Tracking Rate'},
+        }
+
         self.logger.debug(f"Updating FITS headers: {file_path}")
-        fits_utils.update_observation_headers(file_path, info)
-        self.logger.debug(f"Finished FITS headers: {file_path}")
+        with fits.open(file_path, 'update') as f:
+            hdu = f[0]
+            for metadata_key, field_info in fields.items():
+                fits_key = field_info['keyword']
+                fits_comment = field_info.get('comment', '')
+                # Get the value from either the metadata, the default, or use blank string.
+                fits_value = metadata.get(metadata_key, field_info.get('default', ''))
+
+                self.logger.trace(f'Setting {fits_key=} = {fits_value=} {fits_comment=}')
+                hdu.header.set(fits_key, fits_value, fits_comment)
+
+            self.logger.debug(f"Finished FITS headers: {file_path}")
 
         return file_path
 
