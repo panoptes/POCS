@@ -485,30 +485,28 @@ def test_observation(camera, images_dir):
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
-    camera.take_observation(observation)
-    time.sleep(7)
+    observation_event = camera.take_observation(observation)
+    while not observation_event.is_set():
+        camera.logger.trace(f'Waiting for observation event from inside test.')
+        time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
-    for fn in glob.glob(observation_pattern):
-        os.remove(fn)
 
 
-def test_observation_headers(camera, images_dir):
+def test_observation_headers_and_blocking(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exptime=1.5 * u.second)
-    observation.seq_time = '19991231T235959'
-    camera.take_observation(observation, headers={'field_name': 'TESTVALUE'})
-    time.sleep(7)
+    observation.seq_time = '19991231T235559'
+    camera.take_observation(observation, headers={'field_name': 'TESTVALUE'}, blocking=True)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
     headers = fits_utils.getheader(image_files[0])
-    camera.logger.log('testing', f'FITS headers for {image_files[0]}: {headers!r}')
     assert fits_utils.getval(image_files[0], 'FIELD') == 'TESTVALUE'
 
 
@@ -518,14 +516,11 @@ def test_observation_nofilter(camera, images_dir):
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exptime=1.5 * u.second, filter_name=None)
-    observation.seq_time = '19991231T235959'
-    camera.take_observation(observation, headers={})
-    time.sleep(7)
+    observation.seq_time = '19991231T235159'
+    camera.take_observation(observation, blocking=True)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
-    for fn in glob.glob(observation_pattern):
-        os.remove(fn)
 
 
 def test_autofocus_coarse(camera, patterns, counter):

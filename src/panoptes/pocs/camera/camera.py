@@ -369,7 +369,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     def connect(self):
         raise NotImplementedError  # pragma: no cover
 
-    def take_observation(self, observation, headers=None, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, blocking=False, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -383,7 +383,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 describing the observation
             headers (dict, optional): Header data to be saved along with the file.
             filename (str, optional): pass a filename for the output FITS file to
-                overrride the default file naming system
+                override the default file naming system.
+            blocking (bool): If method should wait for observation event to be complete
+                before returning, default False.
             **kwargs (dict): Optional keyword arguments (`exptime`, dark)
 
         Returns:
@@ -400,7 +402,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        exposure_event = self.take_exposure(seconds=exptime, filename=file_path, **kwargs)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -414,10 +416,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         t = threading.Thread(
             name=f'Thread-{image_id}',
             target=self.process_exposure,
-            args=(metadata, observation_event, exposure_event),
+            args=(metadata, observation_event),
             daemon=True)
-        t.name = f'{self.name}Thread'
         t.start()
+
+        if blocking:
+            while not observation_event.is_set():
+                self.logger.trace(f'Waiting for observation event')
+                time.sleep(0.5)
 
         return observation_event
 
@@ -556,13 +562,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Raises:
             FileNotFoundError: If the FITS file isn't at the specified location.
         """
-        # If passed an Event that signals the end of the exposure wait for it to be set
-        compress_fits = compress_fits or self.get_config('observations.compress_fits')
-        make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
-
         # Wait for exposure to complete. Timeout handled by exposure thread.
         while self.is_exposing:
             time.sleep(1)
+
+        self.logger.debug(f'Starting exposure processing for {observation_event}')
+
+        # If passed an Event that signals the end of the exposure wait for it to be set
+        compress_fits = compress_fits or self.get_config('observations.compress_fits')
+        make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
 
         image_id = metadata['image_id']
         seq_id = metadata['sequence_id']
@@ -953,7 +961,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'tracking_rate_ra': {'keyword': 'RA-RATE', 'comment': 'RA Tracking Rate'},
         }
 
-        self.logger.debug(f"Updating FITS headers: {file_path}")
+        self.logger.debug(f"Updating FITS headers: {file_path} with {metadata=}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             for metadata_key, field_info in fields.items():
