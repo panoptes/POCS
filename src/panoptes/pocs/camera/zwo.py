@@ -44,7 +44,7 @@ class Camera(AbstractSDKCamera):
             its serial number or, if it doesn't have one, by the user set ID.
         """
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
-        kwargs['timeout'] = kwargs.get('timeout', 0.5)
+        kwargs['timeout'] = kwargs.get('timeout', 5)
         # ZWO cameras cannot take internal darks (not even supported in the API yet).
         kwargs['internal_darks'] = kwargs.get('internal_darks', False)
 

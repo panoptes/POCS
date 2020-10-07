@@ -1,5 +1,6 @@
 import threading
 from abc import ABCMeta, abstractmethod
+from contextlib import suppress
 
 from astropy import units as u
 
@@ -67,9 +68,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         self.logger.debug('Filter wheel created: {}'.format(self))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def model(self):
@@ -112,10 +113,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @camera.setter
     def camera(self, camera):
-        if self._camera:
-            self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
-                                self, self.camera, camera)
-        else:
+        if self._camera and self._camera.uid != camera.uid:
+            self.logger.warning(f"{self} assigned to {self.camera.name}, "
+                                f"skipping attempted assignment to {camera.name}!")
+        elif self._camera:
             self._camera = camera
 
     @property
@@ -156,9 +157,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def is_unidirectional(self):
         raise NotImplementedError
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     @abstractmethod
     def connect(self):
@@ -256,12 +257,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             return self.move_to(self._last_light_position, blocking=blocking)
         except ValueError:
             msg = f"Request to revert to last light position but {self} has" + \
-                "no light position stored."
+                  "no light position stored."
             raise error.NotFound(msg)
 
-##################################################################################################
-# Private methods
-##################################################################################################
+    ##################################################################################################
+    # Private methods
+    ##################################################################################################
 
     @abstractmethod
     def _move_to(self, position):
@@ -273,7 +274,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         If position is a string it will search the list of filter names for one that begins with
         that string and return the corresponding integer position, otherwise (or if there is no
-        match) it will do an explicity case to an integer.
+        match) it will do an explicit cast to an integer.
         """
         int_position = None
         if isinstance(position, str):
@@ -294,7 +295,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             try:
                 int_position = int(position)
             except (ValueError, TypeError):
-                msg = "No match for '{}' in filter_names, & not an integer either".format(position)
+                msg = f"No match for '{position}' in filter_names and not an integer either"
                 self.logger.error(msg)
                 raise ValueError(msg)
 
@@ -313,12 +314,13 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         return header
 
     def __str__(self):
+        s = f'{self.name} ({self.uid})'
+
         try:
-            if self.camera:
-                s = "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
-            else:
-                s = "{} ({})".format(self.name, self.uid)
-        except Exception:
+            with suppress(AttributeError):
+                s += f' [Camera: {self.camera.name}]'
+        except Exception as e:  # noqa
+            self.logger.warning(f'Unable to stringify filterwheel: {e=}')
             s = str(self.__class__)
 
         return s

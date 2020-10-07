@@ -14,5 +14,10 @@ def test_base_logger(caplog, profile, tmp_path):
                         full_log_file=None)
     logger.debug('Hello')
     time.sleep(1)  # Wait for log to make it there.
-    assert caplog.records[-1].message == 'Hello'
-    assert caplog.records[-1].levelname == 'DEBUG'
+
+    see_log = False
+    for rec in caplog.records[-5:]:
+        if rec.message == 'Hello':
+            see_log = True
+
+    assert see_log
