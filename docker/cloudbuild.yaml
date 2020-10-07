@@ -5,7 +5,7 @@ timeout: 18000s  # 5 hours
 
 substitutions:
   _PLATFORMS: linux/amd64,linux/arm64
-  _BASE_IMAGE: panoptes-utils:latest
+  _BASE_IMAGE: panoptes-utils
   _IMAGE_NAME: panoptes-pocs
   _REPO_URL: https://github.com/panoptes/POCS
   _TAG: latest
@@ -59,7 +59,7 @@ steps:
       - "--push"
       - "--platform=${_PLATFORMS}"
       - "-f=docker/Dockerfile"
-      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}:${_TAG}"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "POCS"
