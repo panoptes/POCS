@@ -1,8 +1,7 @@
-ARG BASE_IMAGE=panoptes-pocs:develop
-FROM ${BASE_IMAGE}
+ARG image_url=gcr.io/panoptes-exp/panoptes-pocs:developer
+FROM ${image_url} AS pocs-base
 
-LABEL description="Installs a number of developer tools. Runs jupyter lab instance. \
-This assumes the `panoptes-pocs:develop` has already been built locally."
+LABEL description="Installs a number of developer tools. Runs jupyter lab instance."
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
 
