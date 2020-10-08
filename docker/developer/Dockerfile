@@ -10,7 +10,7 @@ ARG panuser=panoptes
 ARG userid=1000
 ARG pan_dir=/var/panoptes
 ARG pocs_dir="${pan_dir}/POCS"
-ARG conda_env_name="panoptes"
+ARG conda_env_name="base"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -33,16 +33,21 @@ RUN echo "Installing developer tools" && \
     "${PANDIR}/conda/bin/conda" install --name "${conda_env_name}" \
         altair \
         bokeh \
-        httpie \
-        jupyterlab \
-        jq \
         holoviews \
+        httpie \
         hvplot \
+        ipywidgets \
+        jq \
+        jupyter-offlinenotebook \
+        jupyter-panel-proxy \
+        jupyterlab \
         nodejs \
-        seaborn && \
+        pyarrow \
+        seaborn \
+        && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \
-    /usr/bin/env zsh -c "${PANDIR}/conda/envs/${conda_env_name}/bin/jupyter-lab --no-browser --generate-config" && \
+    /usr/bin/env zsh -c "${PANDIR}/conda/bin/jupyter-lab --no-browser --generate-config" && \
     # Jupyterlab extensions.
     echo "c.JupyterApp.answer_yes = True" >> \
         "/home/panoptes/.jupyter/jupyter_notebook_config.py" && \
