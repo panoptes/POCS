@@ -10,7 +10,6 @@ ARG panuser=panoptes
 ARG userid=1000
 ARG pan_dir=/var/panoptes
 ARG pocs_dir="${pan_dir}/POCS"
-ARG conda_env_name="panoptes"
 
 ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
 ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
@@ -29,8 +28,6 @@ USER root
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         gcc \
         gphoto2 \
-        ncurses-dev \
-        readline-common \
         udev
 
 # Install program dependencies.
@@ -38,21 +35,17 @@ USER ${PANUSER}
 WORKDIR ${POCS}
 RUN mkdir -p "${PANDIR}/scripts" && \
     cd "${PANDIR}/scripts" && \
-    # Install gphoto2 auto-updater
-    wget $gphoto2_url -O gphoto2-updater.sh && \
-    chmod +x gphoto2-updater.sh && \
-    # Don't actually update gphoto2 as of right now.
-    # sudo /bin/bash gphoto2-updater.sh --stable && \
     # Install arduino-cli.
     wget -q "${arduino_url}" -O install-arduino-cli.sh && \
     sudo BINDIR="/usr/local/bin" /bin/sh install-arduino-cli.sh && \
-    sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+    rm install-arduino-cli.sh && \
+    sudo chown -R "${PANUSER}":"${PANUSER}" "${POCS}"
 
 # Install the module.
 USER ${PANUSER}
 # Can't seem to get around the hard-coding here.
 COPY --chown=panoptes:panoptes . .
-RUN "${PANDIR}/conda/envs/${conda_env_name}/bin/pip" install -e ".${pip_extras}" && \
+RUN "${PANDIR}/conda/bin/pip" install -e ".${pip_extras}" && \
     # Cleanup
     sudo apt-get autoremove --purge --yes && \
     sudo apt-get autoclean --yes && \

@@ -1,8 +1,5 @@
 import copy
 import os
-import re
-import shutil
-import subprocess
 import threading
 import time
 from contextlib import suppress
@@ -14,7 +11,6 @@ import astropy.units as u
 
 from panoptes.utils import current_time
 from panoptes.utils import error
-from panoptes.utils import listify
 from panoptes.utils import images as img_utils
 from panoptes.utils import get_quantity_value
 from panoptes.utils import CountdownTimer
@@ -22,74 +18,46 @@ from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.base import PanBase
-from panoptes.utils.serializers import from_yaml
-
-
-def parse_config(lines):  # pragma: no cover
-    yaml_string = ''
-    for line in lines:
-        IsID = len(line.split('/')) > 1
-        IsLabel = re.match(r'^Label:\s*(.*)', line)
-        IsType = re.match(r'^Type:\s*(.*)', line)
-        IsCurrent = re.match(r'^Current:\s*(.*)', line)
-        IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-        IsPrintable = re.match(r'^Printable:\s*(.*)', line)
-        IsHelp = re.match(r'^Help:\s*(.*)', line)
-        if IsLabel or IsType or IsCurrent:
-            line = f'  {line}'
-        elif IsChoice:
-            if int(IsChoice.group(1)) == 0:
-                line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-            else:
-                line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-        elif IsPrintable:
-            line = '  {}'.format(line)
-        elif IsHelp:
-            line = '  {}'.format(line)
-        elif IsID:
-            line = '- ID: {}'.format(line)
-        elif line == '':
-            continue
-        else:
-            print(f'Line not parsed: {line}')
-        yaml_string += f'{line}\n'
-    properties_list = from_yaml(yaml_string)
-    if isinstance(properties_list, list):
-        properties = {}
-        for property in properties_list:
-            if property['Label']:
-                properties[property['Label']] = property
-    else:
-        properties = properties_list
-    return properties
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
     """Base class for all cameras.
 
     Attributes:
-        filter_type (str): Type of filter attached to camera, default RGGB.
-        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera,
-        default None.
+        filter_type (str): Type of filter attached to camera. If a filterwheel is present this
+            will return the filterwheel.current_filter property, otherwise it will return the
+            value of the filter_type keyword argument, or if that argument was not given it
+            it will query the camera driver, e.g. 'M' for unfiltered monochrome camera,
+            'RGGB' for Bayer matrix colour camera.
+        focuser (`panoptes.pocs.focuser.AbstractFocuser`|None): Focuser for the camera, default
+            None.
         filter_wheel (`panoptes.pocs.filterwheel.AbstractFilterWheel`|None): Filter wheel for the
-        camera,
-            default None.
+            camera, default None.
+        uid (str): Unique identifier of the camera.
         is_primary (bool): If this camera is the primary camera for the system, default False.
         model (str): The model of camera, such as 'gphoto2', 'sbig', etc. Default 'simulator'.
         name (str): Name of the camera, default 'Generic Camera'.
         port (str): The port the camera is connected to, typically a usb device, default None.
+        temperature (astropy.units.Quantity): Current temperature of the image sensor.
         target_temperature (astropy.units.Quantity): image sensor cooling target temperature.
         temperature_tolerance (astropy.units.Quantity): tolerance for image sensor temperature.
+        cooling_enabled (bool): True if image sensor cooling is active.
+        cooling_power (astropy.unit.Quantity): Current image sensor cooling power level in percent.
+        egain (astropy.units.Quantity): Image sensor gain in e-/ADU as reported by the camera.
         gain (int): The gain setting of the camera (ZWO cameras only).
+        bitdepth (astropy.units.Quantity): ADC bit depth in bits.
         image_type (str): Image format of the camera, e.g. 'RAW16', 'RGB24' (ZWO cameras only).
         timeout (astropy.units.Quantity): max time to wait after exposure before TimeoutError.
         readout_time (float): approximate time to readout the camera after an exposure.
         file_extension (str): file extension used by the camera's image data, e.g. 'fits'
         library_path (str): path to camera library, e.g. '/usr/local/lib/libfli.so' (SBIG, FLI, ZWO)
         properties (dict): A collection of camera properties as read from the camera.
+        is_connected (bool): True if camera is connected.
         is_cooled_camera (bool): True if camera has image sensor cooling capability.
         is_temperature_stable (bool): True if image sensor temperature is stable.
         is_exposing (bool): True if an exposure is currently under way, otherwise False.
+        is_ready (bool): True if the camera is ready to take an exposure.
+        can_take_internal_darks (bool): True if the camera can take internal dark exposures.
 
     Notes:
         The port parameter is not used by SBIG or ZWO cameras, and is deprecated for FLI cameras.
@@ -100,8 +68,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         or `panoptes.pocs.camera.libasi.ASIDriver.set_ID()`.
     """
 
-    _subcomponent_classes = {'Focuser', 'FilterWheel'}
-    _subcomponent_names = {sub_class.casefold() for sub_class in _subcomponent_classes}
+    _SUBCOMPONENT_LIST = {
+        # attribute: full qualified namespace for base class.
+        'focuser': 'panoptes.pocs.focuser.focuser.AbstractFocuser',
+        'filterwheel': 'panoptes.pocs.filterwheel.filterwheel.AbstractFilterWheel',
+    }
 
     def __init__(self,
                  name='Generic Camera',
@@ -121,20 +92,44 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
         self._file_extension = kwargs.get('file_extension', 'fits')
         self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
         self._is_cooled_camera = False
+        self._cooling_enabled = False
+        self._is_temperature_stable = False
+        self._temperature_thread = None
         self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
+        self._cooling_required_table_time = None
+        self._cooling_sleep_delay = None
+        self._cooling_timeout = None
 
         self._connected = False
         self._current_observation = None
-        self._exposure_event = threading.Event()
-        self._exposure_event.set()
-        self._is_exposing = False
+        self._is_exposing_event = threading.Event()
+        self.is_exposing = False
+        self._exposure_error = None
 
-        for subcomponent_class in self._subcomponent_classes:
-            self._create_subcomponent(subcomponent=kwargs.get(subcomponent_class.casefold()),
-                                      class_name=subcomponent_class)
+        # By default assume camera isn't capable of internal darks.
+        self._internal_darks = kwargs.get('internal_darks', False)
+
+        # Set up any subcomponents.
+        self.subcomponents = dict()
+        for attr_name, class_path in self._SUBCOMPONENT_LIST.items():
+            # Create the subcomponent as an attribute with default None.
+            self.logger.debug(f'Setting default {attr_name=} to None')
+            setattr(self, attr_name, None)
+
+            # If given subcomponent class (or dict), try to create instance.
+            subcomponent = kwargs.get(attr_name)
+            if subcomponent is not None:
+                self.logger.debug(f'Found {subcomponent=}, creating instance')
+
+                subcomponent = self._create_subcomponent(class_path, subcomponent)
+                self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
+                setattr(self, attr_name, subcomponent)
+                # Keep a list of active subcomponents
+                self.subcomponents[attr_name] = subcomponent
 
         self.logger.debug(f'Camera created: {self}')
 
@@ -193,7 +188,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         raise NotImplementedError  # pragma: no cover
 
     @target_temperature.setter
-    def target_temperature(self, target_temperature):
+    def target_temperature(self, target):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -201,7 +196,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError  # pragma: no cover
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self.logger.debug(f"Setting {self} cooling set point to {target}.")
+
+        self._set_target_temperature(target)
 
     @property
     def temperature_tolerance(self):
@@ -239,7 +238,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
-        raise NotImplementedError  # pragma: no cover
+        self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
+        self._set_cooling_enabled(enable)
 
     @property
     def cooling_power(self):
@@ -273,24 +273,41 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         An uncooled camera, or cooled camera with cooling disabled, will always return False.
         """
         if self.is_cooled_camera and self.cooling_enabled:
-            at_target = abs(self.temperature - self.target_temperature) \
-                        < self.temperature_tolerance
-            if not at_target or self.cooling_power == 100 * u.percent:
+
+            # Temperature must be within tolerance
+            temp_difference = abs(self.temperature - self.target_temperature)
+            at_target_temp = temp_difference <= self.temperature_tolerance
+
+            # Camera cooling power must not be 100%
+            cooling_at_maximum = get_quantity_value(self.cooling_power, u.percent) == 100
+
+            temp_is_stable = at_target_temp and not cooling_at_maximum
+
+            if not temp_is_stable:
                 self.logger.warning(f'Unstable CCD temperature in {self}.')
-                self.logger.warning(f'Cooling={self.cooling_power:.02f} '
-                                    f'Temp={self.temperature:.02f} '
-                                    f'Target={self.target_temperature:.02f} '
-                                    f'Tolerance={self.temperature_tolerance:.02f}')
-                return False
-            else:
-                return True
+            self.logger.debug(f'Cooling power={self.cooling_power:.02f} '
+                              f'Temperature={self.temperature:.02f} '
+                              f'Target temp={self.target_temperature:.02f} '
+                              f'Temp tol={self.temperature_tolerance:.02f} '
+                              f"Temp diff={temp_difference:.02f} "
+                              f"At target={at_target_temp} "
+                              f"At max cooling={cooling_at_maximum} "
+                              f"Temperature is stable={temp_is_stable}")
+            return temp_is_stable
         else:
             return False
 
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False. """
-        return self._is_exposing
+        return self._is_exposing_event.is_set()
+
+    @is_exposing.setter
+    def is_exposing(self, set_exposing):
+        if set_exposing:
+            self._is_exposing_event.set()
+        else:
+            self._is_exposing_event.clear()
 
     @property
     def readiness(self):
@@ -300,9 +317,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if self.is_cooled_camera:
             current_readiness['temperature_stable'] = self.is_temperature_stable
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
-        for sub_name in self._subcomponent_names:
-            if getattr(self, sub_name):
-                current_readiness['sub_name'] = getattr(self, sub_name).is_ready
+        for sub_name, subcomponent in self.subcomponents.items():
+            current_readiness[sub_name] = subcomponent.is_ready
 
         # Make sure there isn't an exposure already in progress.
         current_readiness['not_exposing'] = not self.is_exposing
@@ -319,7 +335,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Camera {self} not ready: unstable temperature.")
 
         # Check all the subcomponents too, e.g. make sure filterwheel/focuser aren't moving.
-        for sub_name in self._subcomponent_names:
+        for sub_name, subcomponent in self.subcomponents.items():
             if not current_readiness.get(sub_name, True):
                 self.logger.warning(f"Camera {self} not ready: {sub_name} not ready.")
 
@@ -328,6 +344,22 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
+
+    @property
+    def can_take_internal_darks(self):
+        """ True if the camera can take internal dark exposures.
+        This will be true of cameras that have an internal mechanical shutter and can
+        be commanded to keep that shutter closed during the exposure. For cameras that
+        either lack a mechanical shutter or lack the option to keep it closed light must
+        be kept out of the camera during dark exposures by other means, e.g. an opaque
+        blank in a filterwheel, a lens cap, etc.
+        """
+        return self._internal_darks
+
+    @property
+    def exposure_error(self):
+        """ Error message from the most recent exposure or None, if there was no error."""
+        return self._exposure_error
 
     ##################################################################################################
     # Methods
@@ -357,9 +389,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
         observation_event = threading.Event()
-
         # Setup the observation
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
@@ -380,7 +410,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 observation.exposure_list[image_id] = file_path
 
         # Process the exposure once readout is complete
+        # To be used for marking when exposure is complete (see `process_exposure`)
         t = threading.Thread(
+            name=f'Thread-{image_id}',
             target=self.process_exposure,
             args=(metadata, observation_event, exposure_event),
             daemon=True)
@@ -408,71 +440,103 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 value 'Dark Frame' instead of 'Light Frame'. Set dark to None to disable the
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
-                the exposure, if True will block until it completes.
+                the exposure, if True will block until it completes and file exists.
 
         Returns:
-            threading.Event: Event that will be set when exposure is complete.
+            threading.Event: Event that indicates an exposure is in progress.
+                Will be set to False when exposure is complete.
 
         """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+        self._exposure_error = None
 
-        assert filename is not None, self.logger.error("Must pass filename for take_exposure")
+        if not self.is_connected:
+            err = AssertionError("Camera must be connected for take_exposure!")
+            self.logger.error(str(err))
+            self._exposure_error = repr(err)
+            raise err
+
+        if not filename:
+            err = AssertionError("Must pass filename for take_exposure")
+            self.logger.error(str(err))
+            self._exposure_error = repr(err)
+            raise err
+
+        if not self.can_take_internal_darks:
+            if dark:
+                try:
+                    # Can't take internal dark, so try using an opaque filter in a filterwheel
+                    self.filterwheel.move_to_dark_position(blocking=True)
+                    self.logger.debug("Taking dark exposure using filter: " +
+                                      self.filterwheel.filter_name(self.filterwheel._dark_position))
+                except (AttributeError, error.NotFound):
+                    # No filterwheel, or no opaque filter (dark_position not set)
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
+            else:
+                with suppress(AttributeError, error.NotFound):
+                    # Ignoring exceptions from no filterwheel, or no last light position
+                    self.filterwheel.move_to_light_position(blocking=True)
 
         # Check that the camera (and subcomponents) is ready
         if not self.is_ready:
             # Work out why the camera isn't ready.
-            current_readiness = self.readiness
-            problems = []
-            if not current_readiness.get('temperature_stable', True):
-                problems.append("unstable temperature")
-
-            for sub_name in self._subcomponent_names:
-                if not current_readiness.get(sub_name, True):
-                    problems.append(f"{sub_name} not ready")
-
-            if not current_readiness['not_exposing']:
-                problems.append("exposure in progress")
-
-            problems_string = ", ".join(problems)
-            msg = f"Attempt to start exposure on {self} while not ready: {problems_string}."
-            raise error.PanError(msg)
+            self.logger.warning(f'Cameras not ready: {self.readiness!r}')
+            raise error.PanError(f"Attempt to start exposure on {self} while not ready.")
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(f'Taking {seconds} exposure on {self.name}: {filename}')
+        self.logger.debug(f'Taking {seconds=} exposure on {self.name}: {filename=}')
 
         header = self._create_fits_header(seconds, dark)
 
-        if not self._exposure_event.is_set():
-            msg = f"Attempt to take exposure on {self} while one already in progress."
-            raise error.PanError(msg)
-
-        # Clear event now to prevent any other exposures starting before this one is finished.
-        self._exposure_event.clear()
+        if self.is_exposing:
+            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
+            self._exposure_error = repr(err)
+            raise err
 
         try:
             # Camera type specific exposure set up and start
+            self.is_exposing = True
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
-        except (RuntimeError, ValueError, error.PanError) as err:
-            self._exposure_event.set()
-            raise error.PanError("Error starting exposure on {}: {}".format(self, err))
+        except Exception as err:
+            err = error.PanError(f"Error starting exposure on {self}: {err!r}")
+            self._exposure_error = repr(err)
+            self.is_exposing = False
+            raise err
 
         # Start polling thread that will call camera type specific _readout method when done
-        readout_thread = threading.Timer(interval=get_quantity_value(seconds, unit=u.second),
-                                         function=self._poll_exposure,
-                                         args=(readout_args,))
+        readout_thread = threading.Thread(target=self._poll_exposure, args=(readout_args,))
         readout_thread.start()
 
         if blocking:
-            self.logger.debug("Blocking on exposure event for {}".format(self))
-            self._exposure_event.wait()
+            self.logger.debug(f"Blocking on exposure event for {self}")
+            readout_thread.join()
+            while self.is_exposing:
+                time.sleep(0.5)
+            self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
+            while not os.path.exists(filename):
+                time.sleep(0.1)
+            self.logger.debug(f"Blocking complete on {self} for {filename=}")
 
-        return self._exposure_event
+        return self._is_exposing_event
 
-    def process_exposure(self, info, observation_event, exposure_event=None):
-        """
-        Processes the exposure.
+    def process_exposure(self,
+                         info,
+                         observation_event,
+                         exposure_event=None,
+                         compress_fits=None,
+                         record_observations=None,
+                         make_pretty_images=None):
+        """ Processes the exposure.
+
+        Performs the following steps:
+
+            1. First checks to make sure that the file exists on the file system.
+            2. Calls `_process_fits` with the filename and info, which is specific to each camera.
+            3. Makes pretty images if requested.
+            4. Records observation metadata if requested.
+            5. Compresses FITS files if requested.
+            6. Sets the observation_event.
 
         If the camera is a primary camera, extract the jpeg image and save metadata to database
         `current` collection. Saves metadata to `observations` collection for all images.
@@ -483,10 +547,25 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 camera is done with this exposure
             exposure_event (threading.Event, optional): An event that should be set
                 when the exposure is complete, triggering the processing.
+            compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
+                If None (default), checks the `observations.compress_fits` config-server key.
+            record_observations (bool or None): If observation metadata should be saved.
+                If None (default), checks the `observations.record_observations`
+                config-server key.
+            make_pretty_images (bool or None): If should make a jpg from raw image.
+                If None (default), checks the `observations.make_pretty_images`
+                config-server key.
+
+        Raises:
+            FileNotFoundError: If the FITS file isn't at the specified location.
         """
         # If passed an Event that signals the end of the exposure wait for it to be set
-        if exposure_event is not None:
-            exposure_event.wait()
+        compress_fits = compress_fits or self.get_config('observations.compress_fits')
+        make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
+
+        # Wait for exposure to complete.
+        while self.is_exposing:
+            time.sleep(1)
 
         image_id = info['image_id']
         seq_id = info['sequence_id']
@@ -494,47 +573,43 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = info['exptime']
         field_name = info['field_name']
 
-        image_title = '{} [{}s] {} {}'.format(field_name,
-                                              exptime,
-                                              seq_id.replace('_', ' '),
-                                              current_time(pretty=True))
-
-        try:
-            self.logger.debug("Making pretty image for {}".format(file_path))
-            link_path = None
-            if info['is_primary']:
-                # This should be in the config somewhere.
-                link_path = os.path.expandvars('$PANDIR/images/latest.jpg')
-
-            img_utils.make_pretty_image(file_path,
-                                        title=image_title,
-                                        link_path=link_path)
-        except Exception as e:  # pragma: no cover
-            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+        # Make sure image exists.
+        if not os.path.exists(file_path):
+            observation_event.set()
+            raise FileNotFoundError(f"Expected image at '{file_path}' does not exist or " +
+                                    "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, info)
         self.logger.debug(f'Finished FITS processing for {file_path}')
+
+        if make_pretty_images:
+            try:
+                image_title = f'{field_name} [{exptime}s] {seq_id}'
+
+                self.logger.debug(f"Making pretty image for {file_path=}")
+                link_path = None
+                if info['is_primary']:
+                    # This should be in the config somewhere.
+                    link_path = os.path.expandvars('$PANDIR/images/latest.jpg')
+
+                img_utils.make_pretty_image(file_path,
+                                            title=image_title,
+                                            link_path=link_path)
+            except Exception as e:  # pragma: no cover
+                self.logger.warning('Problem with extracting pretty image: {e!r}')
+
         with suppress(Exception):
             info['exptime'] = info['exptime'].value
 
-        if info['is_primary']:
-            self.logger.debug("Adding current observation to db: {}".format(image_id))
-            try:
-                self.db.insert_current('observations', info, store_permanently=False)
-            except Exception as e:
-                self.logger.error('Problem adding observation to db: {}'.format(e))
-        else:
-            self.logger.debug('Compressing {}'.format(file_path))
-            fits_utils.fpack(file_path)
+        if record_observations:
+            self.logger.debug(f"Adding current observation to db: {image_id}")
+            self.db.insert_current('observations', info)
 
-        self.logger.debug("Adding image metadata to db: {}".format(image_id))
-
-        self.db.insert('observations', {
-            'data': info,
-            'date': current_time(datetime=True),
-            'sequence_id': seq_id,
-        })
+        if compress_fits:
+            self.logger.debug(f'Compressing {file_path=}')
+            compressed_file_path = fits_utils.fpack(file_path)
+            self.logger.debug(f'Compressed {compressed_file_path}')
 
         # Mark the event as done
         observation_event.set()
@@ -547,7 +622,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   keep_files=None,
                   take_dark=None,
                   merit_function='vollath_F4',
-                  merit_function_kwargs={},
+                  merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
                   make_plots=False,
@@ -575,7 +650,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
                 focus metric, default vollath_F4.
-            merit_function_kwargs (dict, optional): Dictionary of additional
+            merit_function_kwargs (dict or None, optional): Dictionary of additional
                 keyword arguments for the merit function.
             mask_dilations (int, optional): Number of iterations of dilation to perform on the
                 saturated pixel mask (determine size of masked regions), default 10
@@ -624,17 +699,40 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 be kept.
             *args, **kwargs: passed to the take_exposure() method
         """
-        exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
-        exposure.wait()
+        kwargs['blocking'] = True
+        self.take_exposure(seconds, filename=file_path, *args, **kwargs)
+        if self.exposure_error is not None:
+            raise error.PanError(self.exposure_error)
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        thumbnail = None
-        try:
-            thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
-        except Exception as e:
-            self.logger.warning(f'Problem getting thumbnail: {e!r}')
-        return thumbnail
+        return img_utils.crop_data(image, box_width=thumbnail_size)
+
+    @abstractmethod
+    def _set_target_temperature(self, target):
+        """Camera-specific function to set the target temperature.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        Args:
+            target (astropy.units.Quantity): The target temperature.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _set_cooling_enabled(self, enable):
+        """Camera-specific function to set cooling enabled.
+
+        Note:
+            Each sub-class is required to implement this abstract method. The derived
+            method should at a minimum implement the described parameters.
+
+        Args:
+            enable (bool): Enable camera cooling?
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
@@ -675,23 +773,31 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args):
-        timer = CountdownTimer(duration=self._timeout)
+    def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
+        timer_duration = timeout or self._timeout + self._readout_time
+        timer = CountdownTimer(duration=timer_duration)
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout waiting for exposure on {self} to complete"
+                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
-                time.sleep(0.01)
-        except (RuntimeError, error.PanError) as err:
+                time.sleep(interval)
+        except Exception as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err!r}')
+            self._exposure_error = repr(err)
             raise err
         else:
             # Camera type specific readout function
-            self._readout(*readout_args)
+            try:
+                self._readout(*readout_args)
+            except Exception as err:
+                self.logger.error(f"Error during readout on {self}: {err!r}")
+                self._exposure_error = repr(err)
+                raise err
         finally:
-            self._exposure_event.set()  # Make sure this gets set regardless of readout errors
+            # Make sure this gets set regardless of any errors
+            self.is_exposing = False
 
     def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
@@ -723,10 +829,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header.set('CAM-NAME', self.name, 'Camera name')
         header.set('CAM-MOD', self.model, 'Camera model')
 
-        for sub_name in self._subcomponent_names:
-            subcomponent = getattr(self, sub_name)
-            if subcomponent:
-                header = subcomponent._add_fits_keywords(header)
+        for sub_name, subcomponent in self.subcomponents.items():
+            header = subcomponent._add_fits_keywords(header)
 
         return header
 
@@ -763,8 +867,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(
-            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -835,7 +938,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return file_path
 
-    def _create_subcomponent(self, subcomponent, class_name):
+    def _create_subcomponent(self, class_path, subcomponent):
         """
         Creates a subcomponent as an attribute of the camera. Can do this from either an instance
         of the appropriate subcomponent class, or from a dictionary of keyword arguments for the
@@ -844,213 +947,81 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             subcomponent (instance of sub_name | dict): the subcomponent object, or the keyword
                 arguments required to create it.
-            class_name (str): name of the subcomponent class, e.g. 'Focuser'. Lower cased version
-                will be used as the attribute name, and must also match the name of the
-                corresponding POCS submodule for this subcomponent, e.g. `panoptes.pocs.focuser`.
-        """
-        class_name_lower = class_name.casefold()
-        if subcomponent:
-            base_module_name = "panoptes.pocs.{0}.{0}".format(class_name_lower)
-            try:
-                base_module = load_module(base_module_name)
-            except error.NotFound as err:
-                self.logger.critical(
-                    f"Couldn't import {class_name} base class module {base_module_name}!")
-                raise err
-            base_class = getattr(base_module, f"Abstract{class_name}")
+            class_path (str): Full namespace of the subcomponent, e.g.
+                'panoptes.pocs.focuser.focuser.AbstractFocuser'.
 
-            if isinstance(subcomponent, base_class):
-                self.logger.debug(f"{class_name} received: {subcomponent}")
-                setattr(self, class_name_lower, subcomponent)
-                getattr(self, class_name_lower).camera = self
-            elif isinstance(subcomponent, dict):
-                module_name = 'panoptes.pocs.{}.{}'.format(class_name_lower, subcomponent['model'])
-                try:
-                    module = load_module(module_name)
-                except error.NotFound as err:
-                    self.logger.critical(f"Couldn't import {class_name} module {module_name}!")
-                    raise err
-                subcomponent_kwargs = copy.deepcopy(subcomponent)
-                subcomponent_kwargs.update({'camera': self})
-                setattr(self,
-                        class_name_lower,
-                        getattr(module, class_name)(**subcomponent_kwargs))
-            else:
-                # Should have been passed either an instance of base_class or dict with subcomponent
-                # configuration. Got something else...
-                self.logger.error("Expected either a {} instance or dict, got {}".format(
-                    class_name, subcomponent))
-                setattr(self, class_name_lower, None)
+        Returns:
+            object: an instance of the subcomponent object.
+
+        Raises:
+            panoptes.utils.error.NotFound: Not found error.
+        """
+        # Load the module for the subcomponent.
+        sub_parts = class_path.split('.')
+        base_class_name = sub_parts.pop()
+        base_module_name = '.'.join(sub_parts)
+        self.logger.debug(f'Loading {base_module_name=}')
+        try:
+            base_module = load_module(base_module_name)
+        except error.NotFound as err:
+            self.logger.critical(f"Couldn't import {base_module_name=}")
+            raise err
+
+        # Get the base class from the loaded module.
+        self.logger.debug(f'Trying to get {base_class_name=} from {base_module}')
+        base_class = getattr(base_module, base_class_name)
+
+        # If we get an instance, just use it.
+        if isinstance(subcomponent, base_class):
+            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance")
+        # If we get a dict, use them as params to create instance.
+        elif isinstance(subcomponent, dict):
+            try:
+                model = subcomponent['model']
+                self.logger.debug(f"{subcomponent=} is a dict but has {model=} keyword, "
+                                  f"trying to create a {base_class=} instance")
+                base_class = load_module(model)
+            except (KeyError, error.NotFound) as err:
+                raise error.NotFound(f"Can't create a {class_path=} from {subcomponent=}")
+
+            self.logger.debug(f'Creating the {base_class_name=} object from dict')
+
+            # Copy dict creation items and add the camera.
+            subcomponent_kwargs = copy.deepcopy(subcomponent)
+            subcomponent_kwargs.update({'camera': self})
+
+            try:
+                subcomponent = base_class(**subcomponent_kwargs)
+            except TypeError:
+                raise error.NotFound(f'{base_class=} is not a callable class. '
+                                     f'Please specify full path to class (not module).')
+            self.logger.success(f'{subcomponent} created for {base_class_name}')
         else:
-            setattr(self, class_name_lower, None)
+            # Should have been passed either an instance of base_class or dict with subcomponent
+            # configuration. Got something else...
+            raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
+
+        # Give the subcomponent a reference back to the camera.
+        setattr(subcomponent, 'camera', self)
+        return subcomponent
 
     def __str__(self):
+        s = f'{self.name}'
         try:
-            name = self.name
             if self.is_primary:
-                name += ' [Primary]'
+                s += ' [Primary]'
 
-            s = f"{name} ({self.uid}) on {self.port}"
+            s += f" ({self.uid})"
 
-            sub_count = 0
-            for sub_name in self._subcomponent_names:
-                subcomponent = getattr(self, sub_name)
-                if subcomponent:
-                    if sub_count == 0:
-                        s += f" with {subcomponent.name}"
-                    else:
-                        s += f" & {subcomponent.name}"
-                    sub_count += 1
+            if self.port:
+                s += f" port={self.port}"
+
+            sub_names = '& '.join(list(self.subcomponents.keys()))
+            if sub_names != '':
+                s += f" with {sub_names}"
+
         except Exception as e:
             self.logger.warning(f'Unable to stringify camera: {e=}')
             s = str(self.__class__)
 
         return s
-
-
-class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
-
-    """ Abstract camera class that uses gphoto2 interaction
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-
-    def __init__(self, *arg, **kwargs):
-        super().__init__(*arg, **kwargs)
-
-        self.properties = None
-
-        self._gphoto2 = shutil.which('gphoto2')
-        assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
-
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
-
-        # Setup a holder for the process
-        self._proc = None
-
-    @AbstractCamera.uid.getter
-    def uid(self):
-        """ A six-digit serial number for the camera """
-        return self._serial_number[0:6]
-
-    def command(self, cmd):
-        """ Run gphoto2 command """
-
-        # Test to see if there is a running command already
-        if self._proc and self._proc.poll():
-            raise error.InvalidCommand("Command already running")
-        else:
-            # Build the command.
-            run_cmd = [self._gphoto2, '--port', self.port]
-            run_cmd.extend(listify(cmd))
-
-            self.logger.debug("gphoto2 command: {}".format(run_cmd))
-
-            try:
-                self._proc = subprocess.Popen(
-                    run_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    shell=False
-                )
-            except OSError as e:
-                raise error.InvalidCommand(
-                    "Can't send command to gphoto2. {} \t {}".format(
-                        e, run_cmd))
-            except ValueError as e:
-                raise error.InvalidCommand(
-                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
-            except Exception as e:
-                raise error.PanError(e)
-
-    def get_command_result(self, timeout=10):
-        """ Get the output from the command """
-
-        self.logger.debug("Getting output from proc {}".format(self._proc.pid))
-
-        try:
-            outs, errs = self._proc.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Timeout while waiting. Killing process {}".format(self._proc.pid))
-            self._proc.kill()
-            outs, errs = self._proc.communicate()
-
-        self._proc = None
-
-        return outs
-
-    def wait_for_command(self, timeout=10):
-        """ Wait for the given command to end
-
-        This method merely waits for a subprocess to complete but doesn't attempt to communicate
-        with the process (see `get_command_result` for that).
-        """
-        self.logger.debug("Waiting for proc {}".format(self._proc.pid))
-
-        try:
-            self._proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.logger.warning("Timeout expired for PID {}".format(self._proc.pid))
-
-        self._proc = None
-
-    def set_property(self, prop, val):
-        """ Set a property on the camera """
-        set_cmd = ['--set-config', '{}={}'.format(prop, val)]
-
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
-
-    def set_properties(self, prop2index, prop2value):
-        """ Sets a number of properties all at once, by index or value.
-
-        Args:
-            prop2index (dict): A dict with keys corresponding to the property to
-            be set and values corresponding to the index option
-            prop2value (dict): A dict with keys corresponding to the property to
-            be set and values corresponding to the literal value
-        """
-        set_cmd = list()
-        for prop, val in prop2index.items():
-            set_cmd.extend(['--set-config-index', '{}={}'.format(prop, val)])
-        for prop, val in prop2value.items():
-            set_cmd.extend(['--set-config-value', '{}={}'.format(prop, val)])
-
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
-
-    def get_property(self, prop):
-        """ Gets a property from the camera """
-        set_cmd = ['--get-config', '{}'.format(prop)]
-
-        self.command(set_cmd)
-        result = self.get_command_result()
-
-        output = ''
-        for line in result.split('\n'):
-            match = re.match(r'Current:\s*(.*)', line)
-            if match:
-                output = match.group(1)
-
-        return output
-
-    def load_properties(self):
-        ''' Load properties from the camera
-        Reads all the configuration properties available via gphoto2 and populates
-        a local list with these entries.
-        '''
-        self.logger.debug('Get All Properties')
-        command = ['--list-all-config']
-
-        self.properties = parse_config(self.command(command))
-
-        if self.properties:
-            self.logger.debug('  Found {} properties'.format(len(self.properties)))
-        else:
-            self.logger.warning('  Could not determine properties.')

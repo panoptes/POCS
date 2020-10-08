@@ -5,7 +5,7 @@ timeout: 18000s  # 5 hours
 
 substitutions:
   _PLATFORMS: linux/amd64,linux/arm64
-  _BASE_IMAGE: panoptes-utils:latest
+  _BASE_IMAGE: panoptes-utils
   _IMAGE_NAME: panoptes-pocs
   _REPO_URL: https://github.com/panoptes/POCS
   _TAG: latest
@@ -48,7 +48,7 @@ steps:
       - "--driver=docker-container"
     waitFor: ["setup-buildx"]
 
-  # Build with cloned panoptes-utils as source directory
+  # Build with cloned panoptes-utils as source directory.
   - name: "gcr.io/cloud-builders/docker"
     id: "build-images"
     env:
@@ -59,8 +59,25 @@ steps:
       - "--push"
       - "--platform=${_PLATFORMS}"
       - "-f=docker/Dockerfile"
-      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}:${_TAG}"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "POCS"
     waitFor: ["build-builder", "clone-repo"]
+
+  # Build a developer version.
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-developer-images"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "buildx"
+      - "build"
+      - "--push"
+      - "--platform=linux/amd64"
+      - "-f=docker/developer/Dockerfile"
+      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:developer"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:developer"
+      - "POCS"
+    waitFor: ["build-images"]

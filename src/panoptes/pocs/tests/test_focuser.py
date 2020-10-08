@@ -8,7 +8,7 @@ from panoptes.utils.config.helpers import load_config
 from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
 from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.simulator.dslr import Camera
 
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
 ids = ['simulator', 'birger', 'focuslynx']
@@ -25,7 +25,7 @@ def focuser(request):
     else:
         # Load the local config file and look for focuser configurations of the specified type
         focuser_configs = []
-        local_config = load_config('pocs_local', ignore_local=True)
+        local_config = load_config('pocs_local', load_local=True)
         camera_info = local_config.get('cameras')
         if camera_info:
             # Local config file has a cameras section
@@ -131,9 +131,9 @@ def test_camera_association(focuser):
 
 def test_camera_init():
     """
-    Test focuser init via Camera constructor/
+    Test focuser init via Camera constructor
     """
-    sim_camera = Camera(focuser={'model': 'simulator',
+    sim_camera = Camera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
                                  'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected

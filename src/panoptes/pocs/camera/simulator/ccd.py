@@ -6,8 +6,10 @@ from abc import ABC
 from contextlib import suppress
 import astropy.units as u
 
-from panoptes.pocs.camera.simulator import Camera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+from panoptes.utils.config.client import get_config
+from panoptes.utils.logging import logger
 
 
 class SDKDriver(AbstractSDKDriver):
@@ -19,13 +21,19 @@ class SDKDriver(AbstractSDKDriver):
         return "Simulated SDK Driver v0.001"
 
     def get_devices(self):
-        cameras = {'SSC007': 'DEV_USB0',
-                   'SSC101': 'DEV_USB1',
-                   'SSC999': 'DEV_USB2'}
-        return cameras
+        logger.debug(f'Getting camera device connection config for {self}')
+        camera_devices = dict()
+        for cam_info in get_config('cameras.devices'):
+            name = cam_info.get('name') or cam_info.get('model')
+            port = cam_info.get('port') or cam_info.get('serial_number')
+            camera_devices[name] = port
+
+        logger.trace(f'{camera_devices=}')
+
+        return camera_devices
 
 
-class Camera(AbstractSDKCamera, Camera, ABC):
+class Camera(AbstractSDKCamera, SimCamera, ABC):
     def __init__(self,
                  name='Simulated SDK camera',
                  driver=SDKDriver,
@@ -34,29 +42,13 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         kwargs.update({'target_temperature': target_temperature})
         super().__init__(name, driver, *args, **kwargs)
 
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         return self._cooling_enabled
 
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        self._cooling_enabled = bool(enable)
-
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         return self._target_temperature
-
-    @target_temperature.setter
-    def target_temperature(self, target):
-        # Upon init the camera won't have an existing temperature.
-        with suppress(AttributeError):
-            self._last_temp = self.temperature
-        self._last_time = time.monotonic()
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self._target_temperature = target.to(u.Celsius)
 
     @property
     def temperature(self):
@@ -72,7 +64,7 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         temperature = limit_temp - delta_temp * math.exp(-delta_time)
         add_temp = random.uniform(-self._temp_var / 2, self._temp_var / 2)
         temperature += random.uniform(-self._temp_var / 2, self._temp_var / 2)
-        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f}")
+        self.logger.trace(f"Temp adding {add_temp:.02f} \t Total: {temperature:.02f} for {self}")
 
         return temperature
 
@@ -80,14 +72,14 @@ class Camera(AbstractSDKCamera, Camera, ABC):
     def cooling_power(self):
         if self.cooling_enabled:
             return 100.0 * float((self._max_temp - self.temperature) /
-                                 (self._max_temp - self._min_temp))
+                                 (self._max_temp - self._min_temp)) * u.percent
         else:
-            return 0.0
+            return 0.0 * u.percent
 
     def connect(self):
         self._is_cooled_camera = True
         self._cooling_enabled = False
-        self._temperature = 25 * u.Celsius
+        self._temperature = 5 * u.Celsius
         self._max_temp = 25 * u.Celsius
         self._min_temp = -15 * u.Celsius
         self._temp_var = 0.05 * u.Celsius
@@ -95,3 +87,17 @@ class Camera(AbstractSDKCamera, Camera, ABC):
         self._last_temp = 25 * u.Celsius
         self._last_time = time.monotonic()
         self._connected = True
+
+    def _set_target_temperature(self, target):
+        # Upon init the camera won't have an existing temperature.
+        with suppress(AttributeError):
+            self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        if not isinstance(target, u.Quantity):
+            target = target * u.Celsius
+        self._target_temperature = target.to(u.Celsius)
+
+    def _set_cooling_enabled(self, enable):
+        self._last_temp = self.temperature
+        self._last_time = time.monotonic()
+        self._cooling_enabled = bool(enable)

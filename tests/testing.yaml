@@ -8,7 +8,7 @@
 #         files and communicate with the Google Cloud network.
 #
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
-#         an official id. Update pocs_local.yaml with offical name once received.
+#         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
 name: Generic PANOPTES Unit
 pan_id: PAN000
@@ -26,7 +26,7 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obstructions: []
+  obstructions: [ ]
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
@@ -60,10 +60,96 @@ pointing:
   max_iterations: 3
 cameras:
   auto_detect: False
+  defaults:
+    readout_time: 0.5
+    cooling:
+      enabled: True
+      temperature:
+        target: 0  # celsius
+        tolerance: 0.1  # celsius
+      stable_time: 60  # seconds
+      check_interval: 5  # seconds
+      timeout: 300  # seconds
+    focuser:
+      enabled: True
+      autofocus_seconds: 0.1
+      autofocus_size: 500
+      autofocus_keep_files: False
   devices:
-    - model: simulator
-    - model: simulator
-
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.00
+      port: /dev/fake/dslr.00
+      readout_time: 0.5
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.focuser.cooling.00
+      port: /dev/fake/dslr.focuser.cooling.00
+      # Different defaults for this camera.
+      cooling:
+        enabled: True
+        target: 1
+        tolerance: 0.1
+        stable_time: 1
+        check_interval: 0.5
+        timeout: 2.5
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/fake/focuser.00
+        initial_position: 20000
+        autofocus_range: [40, 80]
+        autofocus_step: [10, 20]
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.filterwheel.cooling.00
+      port: /dev/fake/dslr.filterwheel.cooling.00
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      filterwheel:
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+          - blank
+        move_time: 0.1
+        timeout: 0.5
+    - model: panoptes.pocs.camera.simulator.ccd.Camera
+      name: ccd.filterwheel.focuser.cooling.00
+      serial_number: ccd.filterwheel.focuser.cooling.00
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/fake/focuser.00
+        initial_position: 20000
+        autofocus_range: [40, 80]
+        autofocus_step: [10, 20]
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
+      filterwheel:
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+          - blank
+        move_time: 0.1
+        timeout: 0.5
+        dark_position: blank
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field

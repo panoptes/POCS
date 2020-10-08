@@ -15,17 +15,14 @@ from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json, to_yaml
 
 from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.dome import create_dome_simulator
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
-config_host = 'localhost'
-config_port = 6563
-url = f'http://{config_host}:{config_port}/reset-config'
 
-
-def reset_conf():
+def reset_conf(config_host, config_port):
+    url = f'http://{config_host}:{config_port}/reset-config'
     response = requests.post(url,
                              data=to_json({'reset': True}),
                              headers={'Content-Type': 'application/json'}
@@ -77,13 +74,13 @@ def dome():
 
 
 @pytest.fixture(scope='function')
-def pocs(observatory):
+def pocs(observatory, config_host, config_port):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
     pocs = POCS(observatory, run_once=True, simulators=['power'])
     yield pocs
     pocs.power_down()
-    reset_conf()
+    reset_conf(config_host, config_port)
 
 
 @pytest.fixture(scope='function')
@@ -465,7 +462,7 @@ def test_run_power_down_interrupt(observatory,
     assert pocs_thread.is_alive() is False
 
 
-def test_custom_state_file(observatory, temp_file):
+def test_custom_state_file(observatory, temp_file, config_host, config_port):
     state_table = POCS.load_state_table()
     assert isinstance(state_table, dict)
 
@@ -477,7 +474,7 @@ def test_custom_state_file(observatory, temp_file):
     pocs = POCS(observatory, state_machine_file=file_path, run_once=True, simulators=['power'])
     pocs.initialize()
     pocs.power_down()
-    reset_conf()
+    reset_conf(config_host, config_port)
 
 
 def test_free_space(pocs, caplog):

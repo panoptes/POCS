@@ -1,4 +1,6 @@
+import os
 from requests.exceptions import ConnectionError
+from dotenv import load_dotenv
 
 from panoptes.pocs import __version__
 from panoptes.utils.database import PanDB
@@ -9,6 +11,9 @@ from panoptes.pocs import hardware
 # Global database.
 PAN_DB_OBJ = None
 
+# look for environment files.
+load_dotenv()
+
 
 class PanBase(object):
     """ Base class for other classes within the PANOPTES ecosystem
@@ -16,20 +21,21 @@ class PanBase(object):
     Defines common properties for each class (e.g. logger, config, db).
     """
 
-    def __init__(self, config_port='6563', *args, **kwargs):
+    def __init__(self, config_host=None, config_port=None, *args, **kwargs):
         self.__version__ = __version__
 
-        self._config_port = config_port
+        self._config_host = config_host or os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
+        self._config_port = config_port or os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
         self.logger = get_logger()
 
-        # If the user requests a db_type then update runtime config
-        db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
-        db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
-        db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
-
         global PAN_DB_OBJ
         if PAN_DB_OBJ is None:
+            # If the user requests a db_type then update runtime config
+            db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
+            db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
+            db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
+
             PAN_DB_OBJ = PanDB(db_type=db_type, db_name=db_name, storage_dir=db_folder)
 
         self.db = PAN_DB_OBJ
@@ -45,9 +51,12 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.get_config(port=self._config_port, *args, **kwargs)
+            config_value = client.get_config(host=self._config_host,
+                                             port=self._config_port,
+                                             verbose=False,
+                                             *args, **kwargs)
         except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
         return config_value
 
@@ -70,8 +79,10 @@ class PanBase(object):
 
         try:
             self.logger.trace(f'Setting config {key=} {new_value=}')
-            config_value = client.set_config(key, new_value, port=self._config_port, *args,
-                                             **kwargs)
+            config_value = client.set_config(key, new_value,
+                                             host=self._config_host,
+                                             port=self._config_port,
+                                             *args, **kwargs)
             self.logger.trace(f'Config set {config_value=}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
