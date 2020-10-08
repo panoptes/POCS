@@ -10,7 +10,6 @@ ARG panuser=panoptes
 ARG userid=1000
 ARG pan_dir=/var/panoptes
 ARG pocs_dir="${pan_dir}/POCS"
-ARG conda_env_name="panoptes"
 
 ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
 ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
@@ -46,7 +45,7 @@ RUN mkdir -p "${PANDIR}/scripts" && \
 USER ${PANUSER}
 # Can't seem to get around the hard-coding here.
 COPY --chown=panoptes:panoptes . .
-RUN "${PANDIR}/conda/envs/${conda_env_name}/bin/pip" install -e ".${pip_extras}" && \
+RUN "${PANDIR}/conda/bin/pip" install -e ".${pip_extras}" && \
     # Cleanup
     sudo apt-get autoremove --purge --yes && \
     sudo apt-get autoclean --yes && \
