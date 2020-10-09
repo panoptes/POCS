@@ -8,6 +8,7 @@ Changelog
 Added
 ~~~~~
 
+* A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
 * Added ``error.InvalidConfig`` exception. (@wtgee #1007)
 * Config options to control observation processing options: (@wtgee #1007)
