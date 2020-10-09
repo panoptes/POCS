@@ -605,8 +605,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             except Exception as e:  # pragma: no cover
                 self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-        with suppress(Exception):
-            metadata['exptime'] = metadata['exptime'].value
+        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='seconds')
 
         if record_observations:
             self.logger.debug(f"Adding current observation to db: {image_id}")

@@ -168,7 +168,10 @@ cameras:
 ################################################################################
 observations:
   make_timelapse: True
-  keep_jpgs: True
+  compress_fits: True
+  record_observations: True
+  make_pretty_images: True
+  keep_jpgs: False
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
