@@ -87,12 +87,14 @@ def create_cameras_from_config(config=None,
         # cameras section either missing or empty
         logger.info('No camera information in config.')
         return None
+
     logger.debug(f"{camera_config=}")
+    camera_defaults = camera_config.get('defaults', dict())
 
     cameras = cameras or OrderedDict()
     ports = list()
 
-    auto_detect = camera_config.get('auto_detect', False)
+    auto_detect = camera_defaults.get('auto_detect', False)
 
     # Lookup the connected ports
     if auto_detect:
@@ -110,7 +112,11 @@ def create_cameras_from_config(config=None,
     primary_camera = None
 
     device_info = camera_config['devices']
-    for cam_num, device_config in enumerate(device_info):
+    for cam_num, cfg in enumerate(device_info):
+        # Get a copy of the camera defaults and update with device config.
+        device_config = camera_defaults.copy()
+        device_config.update(cfg)
+
         cam_name = device_config.setdefault('name', f'Cam{cam_num:02d}')
 
         # Check for proper connection method.

@@ -121,7 +121,7 @@ class Camera(AbstractGPhotoCamera, ABC):
         # Process the image after a set amount of time
         wait_time = exptime + self.readout_time
 
-        t = Timer(wait_time, self.process_exposure, (metadata, observation_event, exposure_event))
+        t = Timer(wait_time, self.process_exposure, (metadata, observation_event))
         t.name = f'{self.name}Thread'
         t.start()
 
