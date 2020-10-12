@@ -8,7 +8,7 @@ Changelog
 Added
 ~~~~~
 
-* Allow for arbitrary FITS headers. Keywords will be added as `HIERARCH` cards if they don't conform to FITS standard (using ``astropy`` machinery).
+* Allow for arbitrary FITS headers. Keywords will be added as `HIERARCH` cards if they don't conform to FITS standard (using ``astropy`` machinery). (@wtgee #1016)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
 * Added ``error.InvalidConfig`` exception. (@wtgee #1007)
