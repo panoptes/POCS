@@ -87,10 +87,15 @@ cameras:
       stable_time: 60  # seconds
       check_interval: 5  # seconds
       timeout: 300  # seconds
+    filterwheel:
+      model: panoptes.pocs.filterwheel.simulator.FilterWheel
+      filter_names: [ ]
+      move_time: 0.1  # seconds
+      timeout: 0.5  # seconds
     focuser:
       enabled: False
-      autofocus_seconds: 0.1
-      autofocus_size: 500
+      autofocus_seconds: 0.1  # seconds
+      autofocus_size: 500  # seconds
       autofocus_keep_files: False
   devices:
     - model: panoptes.pocs.camera.gphoto.canon.Camera
