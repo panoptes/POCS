@@ -965,13 +965,23 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Updating FITS headers: {file_path} with {metadata=}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
-            for metadata_key, field_info in fields.items():
-                fits_key = field_info['keyword']
-                fits_comment = field_info.get('comment', '')
-                # Get the value from either the metadata, the default, or use blank string.
-                fits_value = metadata.get(metadata_key, field_info.get('default', ''))
+            for metadata_key, metadata_value in metadata.items():
+                try:
+                    field_info = fields[metadata_key]
+                    # for metadata_key, field_info in fields.items():
+                    fits_key = field_info['keyword']
+                    fits_comment = field_info.get('comment', '')
+                    # Get the value from either the metadata, the default, or use blank string.
+                    fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
-                self.logger.trace(f'Setting {fits_key=} = {fits_value=} {fits_comment=}')
+                    self.logger.trace(f'Setting {fits_key=} = {fits_value=} {fits_comment=}')
+                except KeyError:
+                    self.logger.trace(f'No mapping found for metadata {metadata_key}'
+                                      f', will attempt to add as-is.')
+                    fits_key = metadata_key
+                    fits_comment = ''
+                    fits_value = metadata_value
+
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
             self.logger.debug(f"Finished FITS headers: {file_path}")
