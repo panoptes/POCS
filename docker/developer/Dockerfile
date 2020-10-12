@@ -46,7 +46,7 @@ RUN echo "Installing developer tools" && \
         && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \
-    /usr/bin/env zsh -c "${PANDIR}/conda/bin/jupyter-lab --no-browser --generate-config" && \
+    /usr/bin/env zsh -c "${PANDIR}/conda/bin/jupyter-lab -y --no-browser --generate-config" && \
     # Jupyterlab extensions.
     echo "c.JupyterApp.answer_yes = True" >> \
         "/home/panoptes/.jupyter/jupyter_notebook_config.py" && \

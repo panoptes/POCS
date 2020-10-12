@@ -123,7 +123,7 @@ def test_create_cameras_from_config_no_autodetect(config_host, config_port):
 
 
 def test_create_cameras_from_config_autodetect(config_host, config_port):
-    set_config('cameras.auto_detect', True)
+    set_config('cameras.defaults.auto_detect', True)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
     reset_conf(config_host, config_port)

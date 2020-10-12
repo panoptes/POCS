@@ -59,9 +59,16 @@ pointing:
   exptime: 30 # seconds
   max_iterations: 3
 cameras:
-  auto_detect: False
   defaults:
-    readout_time: 0.5
+    primary: None
+    auto_detect: False
+    file_extension: fits
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: False
+    readout_time: 0.5  # seconds
+    timeout: 10  # seconds
+    filter_type: RGGB
     cooling:
       enabled: True
       temperature:
@@ -72,8 +79,8 @@ cameras:
       timeout: 300  # seconds
     focuser:
       enabled: True
-      autofocus_seconds: 0.1
-      autofocus_size: 500
+      autofocus_seconds: 0.1  # seconds
+      autofocus_size: 500  # seconds
       autofocus_keep_files: False
   devices:
     - model: panoptes.pocs.camera.simulator.dslr.Camera
@@ -95,8 +102,8 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
-        autofocus_range: [40, 80]
-        autofocus_step: [10, 20]
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
         autofocus_size: 500
         autofocus_keep_files: False
@@ -134,8 +141,8 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
-        autofocus_range: [40, 80]
-        autofocus_step: [10, 20]
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
         autofocus_size: 500
         autofocus_keep_files: False
@@ -168,10 +175,7 @@ cameras:
 ################################################################################
 observations:
   make_timelapse: True
-  compress_fits: True
   record_observations: True
-  make_pretty_images: True
-  keep_jpgs: False
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also

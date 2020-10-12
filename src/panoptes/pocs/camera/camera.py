@@ -568,9 +568,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Starting exposure processing for {observation_event}')
 
-        # If passed an Event that signals the end of the exposure wait for it to be set
-        compress_fits = compress_fits or self.get_config('observations.compress_fits')
-        make_pretty_images = make_pretty_images or self.get_config('observations.make_pretty_images')
+        if compress_fits is None:
+            compress_fits = self.get_config('observations.compress_fits', default=False)
+
+        if make_pretty_images is None:
+            make_pretty_images = self.get_config('observations.make_pretty_images', default=False)
 
         image_id = metadata['image_id']
         seq_id = metadata['sequence_id']
@@ -581,7 +583,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Make sure image exists.
         if not os.path.exists(file_path):
             observation_event.set()
-            raise FileNotFoundError(f"Expected image at '{file_path}' does not exist or " +
+            raise FileNotFoundError(f"Expected image at {file_path=} does not exist or " +
                                     "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')

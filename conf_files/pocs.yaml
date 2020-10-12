@@ -22,7 +22,7 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obsctructions: []
+  obsctructions: [ ]
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
 
@@ -69,11 +69,36 @@ pointing:
   max_iterations: 5
 
 cameras:
-  auto_detect: True
-  primary: 14d3bd
+  defaults:
+    primary: None
+    auto_detect: False
+    file_extension: fits
+    compress_fits: False
+    make_pretty_images: False
+    keep_jpgs: False
+    readout_time: 0.5  # seconds
+    timeout: 10  # seconds
+    filter_type: RGGB
+    cooling:
+      enabled: False
+      temperature:
+        target: 0  # celsius
+        tolerance: 0.1  # celsius
+      stable_time: 60  # seconds
+      check_interval: 5  # seconds
+      timeout: 300  # seconds
+    focuser:
+      enabled: False
+      autofocus_seconds: 0.1
+      autofocus_size: 500
+      autofocus_keep_files: False
   devices:
-    - model: canon_gphoto2
-    - model: canon_gphoto2
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: dslr.00
+      file_extension: cr2
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: dslr.01
+      file_extension: cr2
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.
