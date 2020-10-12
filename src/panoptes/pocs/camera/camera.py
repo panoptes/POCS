@@ -939,7 +939,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         Add FITS headers from metadata the same as images.cr2_to_fits()
         """
-        # TODO (wtgee) I don't like this one bit.
+        # TODO move this mapping outside the code.
         fields = {
             'image_id': {'keyword': 'IMAGEID'},
             'sequence_id': {'keyword': 'SEQID'},
@@ -965,12 +965,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Updating FITS headers: {file_path} with {metadata=}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
+            # Try to lookup header from list above, otherwise add whatever was given.
             for metadata_key, metadata_value in metadata.items():
                 try:
+                    # Look for key matching list above.
                     field_info = fields[metadata_key]
-                    # for metadata_key, field_info in fields.items():
                     fits_key = field_info['keyword']
                     fits_comment = field_info.get('comment', '')
+
                     # Get the value from either the metadata, the default, or use blank string.
                     fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
@@ -984,7 +986,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
-            self.logger.debug(f"Finished FITS headers: {file_path}")
+            self.logger.debug(f"Finished FITS headers: {file_path=}")
 
         return file_path
 
