@@ -79,7 +79,7 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        self.logger.debug(f'Writing {filename=} for {self}')
+        self.logger.debug(f'Writing filename={filename!r} for {self}')
         fits_utils.write_fits(fake_data, header, filename)
 
         # Sleep for the remainder of the readout time.

@@ -320,7 +320,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             with suppress(AttributeError):
                 s += f' [Camera: {self.camera.name}]'
         except Exception as e:  # noqa
-            self.logger.warning(f'Unable to stringify filterwheel: {e=}')
+            self.logger.warning(f'Unable to stringify filterwheel: e={e!r}')
             s = str(self.__class__)
 
         return s
