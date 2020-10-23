@@ -94,7 +94,7 @@ def pytest_collection_modifyitems(config, items):
     # with_hardware is a list of hardware names for which we have that hardware attached.
     with_hardware = hardware.get_simulator_names(simulator=config.getoption('--with-hardware'))
 
-    for name in without_hardware:
+    for name in without_hardware:  # noqa
         # User does not want to run tests that interact with hardware called name,
         # whether it is marked as with_name or without_name.
         if name in with_hardware:
@@ -145,24 +145,6 @@ def pytest_runtest_logfinish(nodeid, location):
         logger.log('testing', '##########' * 8)
 
 
-def pytest_runtest_logreport(report):
-    """Adds the failure info that pytest prints to stdout into the log."""
-    if report.skipped or report.outcome != 'failed':
-        return
-    with suppress(Exception):
-        logger.log('testing', '')
-        logger.log('testing',
-                   f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
-        if report.capstdout:
-            logger.log('testing',
-                       f'============ Captured stdout during {report.when} {report.capstdout} '
-                       f'============')
-        if report.capstderr:
-            logger.log('testing',
-                       f'============ Captured stdout during {report.when} {report.capstderr} '
-                       f'============')
-
-
 @pytest.fixture(scope='session')
 def config_host():
     return os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
@@ -171,11 +153,6 @@ def config_host():
 @pytest.fixture(scope='session')
 def config_port():
     return os.getenv('PANOPTES_CONFIG_PORT', 6563)
-
-
-@pytest.fixture(scope='session')
-def config_path():
-    return os.getenv('PANOPTES_CONFIG_FILE', '/var/panoptes/POCS/tests/testing.yaml')
 
 
 @pytest.fixture
@@ -189,36 +166,10 @@ def temp_file(tmp_path):
 
 
 @pytest.fixture(scope='session')
-def db_name():
-    return 'panoptes_testing'
-
-
-@pytest.fixture(scope='session')
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
     set_config('directories.images', str(directory))
     return str(directory)
-
-
-@pytest.fixture(scope='function', params=_all_databases)
-def db_type(request, db_name):
-    db_list = request.config.option.test_databases
-    if request.param not in db_list and 'all' not in db_list:
-        pytest.skip(f"Skipping {request.param} DB, set --test-all-databases=True")
-
-    PanDB.permanently_erase_database(request.param, db_name, really='Yes', dangerous='Totally')
-    return request.param
-
-
-@pytest.fixture(scope='function')
-def db(db_type, db_name):
-    return PanDB(db_type=db_type, db_name=db_name, connect=True)
-
-
-@pytest.fixture(scope='function')
-def memory_db(db_name):
-    PanDB.permanently_erase_database('memory', db_name, really='Yes', dangerous='Totally')
-    return PanDB(db_type='memory', db_name=db_name)
 
 
 @pytest.fixture(scope='session')
@@ -263,7 +214,7 @@ def noheader_fits_file(data_dir):
 
 
 @pytest.fixture(scope='function')
-def cr2_file(data_dir):
+def cr2_file(data_dir):  # noqa
     cr2_path = os.path.join(data_dir, 'canon.cr2')
 
     if not os.path.exists(cr2_path):
