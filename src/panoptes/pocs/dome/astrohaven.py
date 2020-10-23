@@ -150,7 +150,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                 c = chr(data[-1])
                 if c in Protocol.STABLE_STATES:
                     return c
-                self.logger.debug(f'_read_state_until_stable not yet stable: {data=!r}')
+                self.logger.debug(f'_read_state_until_stable not yet stable: data={data!r}')
             if time.time() < end_by:
                 continue
             pass
@@ -199,12 +199,12 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         # we start seeing the echo of `send`.
                         pass
                     else:  # pragma: no cover
-                        self.logger.warning(f'Unexpected value from dome! {send=!r} {target_feedback=!r} {data=!r}')
+                        self.logger.warning(f'Unexpected value from dome! send={send!r} target_feedback={target_feedback!r} data={data!r}')
                 if time.time() < end_by:
                     continue
                 self.logger.error(
                     f'Timed out moving the dome. Check for hardware or communications problem. '
-                    f'{send=!r} {target_feedback=!r} {data=!r}')
+                    f'send={send!r} target_feedback={target_feedback!r} data={data!r}')
                 return False
         finally:
             self.serial.ser.timeout = saved_timeout

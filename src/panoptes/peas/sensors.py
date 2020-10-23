@@ -183,10 +183,10 @@ def detect_board_on_port(port):
             result = (data['name'], serial_reader)
             serial_reader = None
             return result
-        logger.warning(f'Unable to find board name in {reading=!r}')
+        logger.warning(f'Unable to find board name in reading={reading!r}')
         return None
     except Exception as e:
-        logger.error(f'Exception while auto-detecting port {port=!r}: {e!r}')
+        logger.error(f'Exception while auto-detecting port port={port!r}: {e!r}')
     finally:
         if serial_reader:
             serial_reader.disconnect()
