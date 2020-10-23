@@ -130,7 +130,7 @@ class ArduinoSerialMonitor(object):
                         self.db.insert_current('power', data['power'])
 
             except Exception as e:
-                self.logger.warning(f'Exception while reading from {sensor_name=}: {e!r}')
+                self.logger.warning(f'Exception while reading from sensor_name={sensor_name!r}: {e!r}')
 
         return sensor_data
 
@@ -165,14 +165,14 @@ def detect_board_on_port(port):
         Else returns None.
     """
     logger = get_logger()
-    logger.debug(f'Attempting to connect to serial {port=}')
+    logger.debug(f'Attempting to connect to serial port={port!r}')
     try:
         serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)
         if not serial_reader.is_connected:
             serial_reader.connect()
-        logger.debug(f'Connected to {port=}')
+        logger.debug(f'Connected to port={port!r}')
     except Exception:
-        logger.warning(f'Could not connect to {port=}')
+        logger.warning(f'Could not connect to port={port!r}')
         return None
     try:
         reading = serial_reader.get_and_parse_reading(retry_limit=3)
@@ -202,5 +202,5 @@ if __name__ == '__main__':
         sys.exit(1)
     names_and_readers = auto_detect_arduino_devices()
     for (name, serial_reader) in names_and_readers:
-        print(f'Device {serial_reader.name} has {name=}')
+        print(f'Device {serial_reader.name} has name={name!r}')
         serial_reader.disconnect()

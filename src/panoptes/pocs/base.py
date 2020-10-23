@@ -78,12 +78,12 @@ class PanBase(object):
             new_value = hardware.ALL_NAMES
 
         try:
-            self.logger.trace(f'Setting config {key=} {new_value=}')
+            self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')
             config_value = client.set_config(key, new_value,
                                              host=self._config_host,
                                              port=self._config_port,
                                              *args, **kwargs)
-            self.logger.trace(f'Config set {config_value=}')
+            self.logger.trace(f'Config set config_value={config_value!r}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 

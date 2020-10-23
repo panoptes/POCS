@@ -28,7 +28,7 @@ class SDKDriver(AbstractSDKDriver):
             port = cam_info.get('port') or cam_info.get('serial_number')
             camera_devices[name] = port
 
-        logger.trace(f'{camera_devices=}')
+        logger.trace(f'camera_devices={camera_devices!r}')
 
         return camera_devices
 

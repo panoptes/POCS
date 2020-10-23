@@ -188,7 +188,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                     c = chr(data[-1])
                     if c == target_feedback:
                         feedback_countdown -= 1
-                        self.logger.debug(f'Got target_feedback, {feedback_countdown=}')
+                        self.logger.debug(f'Got target_feedback, feedback_countdown={feedback_countdown!r}')
                         if feedback_countdown <= 0:
                             # Woot! Moved the dome and got the desired response.
                             return True

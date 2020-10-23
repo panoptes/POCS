@@ -51,7 +51,7 @@ class POCS(PanStateMachine, PanBase):
         PanBase.__init__(self, *args, **kwargs)
 
         if simulators:
-            self.logger.warning(f'Using {simulators=}')
+            self.logger.warning(f'Using simulators={simulators!r}')
             self.set_config('simulator', simulators)
 
         assert isinstance(observatory, Observatory)
@@ -443,9 +443,9 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.error(f'No disk space for directory={directory!r}: Free {self._free_space:.02f}\t {req_space=:.02f}')
         elif space_is_low:  # pragma: no cover
-            self.logger.warning(f'Low disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.warning(f'Low disk space for directory={directory!r}: Free {self._free_space:.02f}\t {req_space=:.02f}')
 
         return has_space
 

@@ -60,9 +60,9 @@ def detect_board_on_port(port):
             serial_reader = open_serial_device(port)
             if not serial_reader.is_connected:
                 serial_reader.connect()
-            logger.debug(f'Connected to {port=}')
+            logger.debug(f'Connected to port={port!r}')
         except Exception:
-            logger.warning(f'Could not connect to {port=}')
+            logger.warning(f'Could not connect to port={port!r}')
             return None
         try:
             reading = serial_reader.get_and_parse_reading(retry_limit=3)
@@ -71,10 +71,10 @@ def detect_board_on_port(port):
             (ts, data) = reading
             if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
                 return data['name']
-            logger.warning(f'Unable to find board name in {reading=}')
+            logger.warning(f'Unable to find board name in reading={reading!r}')
             return None
         except Exception as e:  # pragma: no cover
-            logger.error(f'Exception while auto-detecting {port=}: {e!r}')
+            logger.error(f'Exception while auto-detecting port={port!r}: {e!r}')
     finally:
         if serial_reader:
             serial_reader.disconnect()
@@ -141,7 +141,7 @@ class ArduinoIO(object):
         # Using threading.Event rather than just a boolean field so that any thread
         # can get and set the stop_running property.
         self._stop_running = threading.Event()
-        self._logger.info(f'Created ArduinoIO instance for {self.board=}')
+        self._logger.info(f'Created ArduinoIO instance for self.board={self.board!r}')
 
     @property
     def stop_running(self):
@@ -180,11 +180,11 @@ class ArduinoIO(object):
         if not reading:
             # Consider adding an error counter.
             if not self._report_next_reading:
-                self._logger.warning(f'Unable to read from {self.port=}. Will report when next successful read.')
+                self._logger.warning(f'Unable to read from self.port={self.port!r}. Will report when next successful read.')
                 self._report_next_reading = True
             return False
         if self._report_next_reading:
-            self._logger.info(f'Succeeded in reading from {self.port=}; got:\n{reading}')
+            self._logger.info(f'Succeeded in reading from self.port={self.port!r}; got:\n{reading}')
             self._report_next_reading = False
         self.handle_reading(reading)
         return True
@@ -203,7 +203,7 @@ class ArduinoIO(object):
             if self._serial_data.is_connected:
                 self._serial_data.disconnect()
         except Exception as e:
-            self._logger.error(f'Failed to disconnect from {self.port=} due to: {e!r}')
+            self._logger.error(f'Failed to disconnect from self.port={self.port!r} due to: {e!r}')
 
     def reconnect(self):
         """Disconnect from and connect to the serial port.
@@ -214,13 +214,13 @@ class ArduinoIO(object):
         try:
             self.disconnect()
         except Exception:
-            self._logger.error(f'Unable to disconnect from {self.port=}')
+            self._logger.error(f'Unable to disconnect from self.port={self.port!r}')
             return False
         try:
             self.connect()
             return True
         except Exception:
-            self._logger.error(f'Unable to reconnect to {self.port=}')
+            self._logger.error(f'Unable to reconnect to self.port={self.port!r}')
             return False
 
     def get_reading(self):
@@ -230,7 +230,7 @@ class ArduinoIO(object):
         try:
             return self._serial_data.get_and_parse_reading(retry_limit=1)
         except serial.SerialException as e:
-            self._logger.error(f'Exception raised while reading from {self.port=}')
+            self._logger.error(f'Exception raised while reading from self.port={self.port!r}')
             self._logger.error("\n".join(traceback.format_exc()))
             if self.reconnect():
                 return None
@@ -266,13 +266,13 @@ class ArduinoIO(object):
             topic, msg_obj = self._sub.receive_message(blocking=True, timeout_ms=0.05)
             if not topic:
                 continue
-            self._logger.debug(f'Received a message for {topic=}')
+            self._logger.debug(f'Received a message for topic={topic!r}')
             if topic.lower() == self._cmd_topic:
                 try:
                     self.handle_command(msg_obj)
                 except Exception as e:
                     self._logger.error(f'Exception while handling command: {e!r}')
-                    self._logger.error(f'{msg_obj=}')
+                    self._logger.error(f'msg_obj={msg_obj!r}')
 
     def handle_command(self, msg):
         """Handle one relay command.
@@ -282,11 +282,11 @@ class ArduinoIO(object):
         exists on this device.
         """
         if msg['command'] == 'shutdown':
-            self._logger.info(f'Received command to shutdown ArduinoIO for {self.board=}')
+            self._logger.info(f'Received command to shutdown ArduinoIO for self.board={self.board!r}')
             self.stop_running = True
         elif msg['command'] == 'write_line':
             line = msg['line'].rstrip('\r\n')
-            self._logger.debug(f'Sending line to {self.board=}: {line}')
+            self._logger.debug(f'Sending line to self.board={self.board!r}: {line}')
             line = line + '\n'
             self.write(line)
         else:

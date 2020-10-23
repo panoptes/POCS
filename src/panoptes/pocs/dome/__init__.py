@@ -26,7 +26,7 @@ def create_dome_from_config(*args, **kwargs):
     brand = dome_config['brand']
     driver = dome_config['driver']
 
-    logger.debug(f'Creating dome: {brand=}, {driver=}')
+    logger.debug(f'Creating dome: brand={brand!r}, driver={driver!r}')
     module = load_module(f'panoptes.pocs.dome.{driver}')
     dome = module.Dome(*args, **kwargs)
     logger.info(f'Created dome driver: brand={brand}, driver={driver}')
@@ -40,11 +40,11 @@ def create_dome_simulator(*args, **kwargs):
     brand = dome_config['brand']
     driver = dome_config['driver']
 
-    logger.debug(f'Creating dome simulator: {brand=}, {driver=}')
+    logger.debug(f'Creating dome simulator: brand={brand!r}, driver={driver!r}')
 
     module = load_module(f'panoptes.pocs.dome.{driver}')
     dome = module.Dome(*args, **kwargs)
-    logger.info(f'Created dome driver: {brand=}, {driver=}')
+    logger.info(f'Created dome driver: brand={brand!r}, driver={driver!r}')
 
     return dome
 

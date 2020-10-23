@@ -461,12 +461,12 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Initialising aperture motor')
         response = self._send_command('in', response_length=1)[0].rstrip()
         if response != 'DONE':
-            self.logger.error(f"{self} got {response=}, expected 'DONE'!")
+            self.logger.error(f"{self} got response={response!r}, expected 'DONE'!")
 
     def _move_zero(self):
         response = self._send_command('mz', response_length=1)[0].rstrip()
         if response[:4] != 'DONE':
-            self.logger.error(f"{self} got {response=}, expected 'DONENNNNN,1'!")
+            self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
             self.logger.debug(f"Moved {r[:-2]} encoder units to close stop")
@@ -480,12 +480,12 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Learning absolute focus range')
         response = self._send_command('la', response_length=1)[0].rstrip()
         if response != 'DONE:LA':
-            self.logger.error(f"{self} got {response=}, expected 'DONE:LA'!")
+            self.logger.error(f"{self} got response={response!r}, expected 'DONE:LA'!")
 
     def _move_inf(self):
         response = self._send_command('mi', response_length=1)[0].rstrip()
         if response[:4] != 'DONE':
-            self.logger.error(f"{self} got {response=}, expected 'DONENNNNN,1'!")
+            self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
             self.logger.debug(f"Moved {r[:-2]} encoder units to far stop")
