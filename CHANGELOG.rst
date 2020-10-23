@@ -24,7 +24,8 @@ Breaking
 * The ``take_exposure`` method returns an event to indicate that exposure is in progress, **not** to indicate when exposure has completed. The event is stored in the camera object and accessible via ``camera.is_exposing``. (@wtgee #1007)
 * Removed camera temperature stability checking for now. (@wtgee #1007)
 * Moved the ``AbstractGphotoCamera`` class into it's own namespace and file. (@wtgee #1007)
-*
+* Python moved back to 3.7. (#1010)
+
 
 Bug fixes
 ~~~~~~~~~
@@ -49,6 +50,7 @@ Changed
 * Changelog cleanup. (@wtgee #1008)
 * ``panoptes-utils`` updates:
 
+  * Updated ``panoptes-utils`` to ``v0.2.29``. (@wtgee #1010)
   * Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
   * Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
 
