@@ -184,7 +184,8 @@ def temp_file(tmp_path):
     d.mkdir(exist_ok=True)
     f = d / 'temp'
     yield f
-    f.unlink(missing_ok=True)
+    with suppress(FileNotFoundError):
+        f.unlink()
 
 
 @pytest.fixture(scope='session')
