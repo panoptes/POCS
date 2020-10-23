@@ -443,9 +443,11 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space for directory={directory!r}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.error(f'No disk space for directory={directory!r}: '
+                              f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
         elif space_is_low:  # pragma: no cover
-            self.logger.warning(f'Low disk space for directory={directory!r}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.warning(f'Low disk space for directory={directory!r}: '
+                                f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
 
         return has_space
 
