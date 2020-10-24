@@ -90,7 +90,7 @@ class AbstractSDKCamera(AbstractCamera):
             # Initialise the driver if it hasn't already been done
             my_class._driver = driver(library_path=library_path)
 
-        logger.debug(f"Looking for {name=} with UID '{serial_number=}'.")
+        logger.debug(f"Looking for name={name!r} with UID 'serial_number={serial_number!r}'.")
 
         if not my_class._cameras:
             # No cached camera details, need to probe for connected cameras
@@ -100,13 +100,13 @@ class AbstractSDKCamera(AbstractCamera):
         logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with UID {serial_number=} at {my_class._cameras[serial_number]}.")
+            logger.debug(f"Found {name} with UID serial_number={serial_number!r} at {my_class._cameras[serial_number]}.")
         else:
             raise error.InvalidConfig(f"No config information found for "
-                                      f"{name=} with {serial_number=} in {my_class._cameras}")
+                                      f"name={name!r} with serial_number={serial_number!r} in {my_class._cameras}")
 
         if serial_number in my_class._assigned_cameras:
-            raise error.PanError(f"{name} with UID {serial_number=} already in use.")
+            raise error.PanError(f"{name} with UID serial_number={serial_number!r} already in use.")
         else:
             my_class._assigned_cameras.add(serial_number)
 

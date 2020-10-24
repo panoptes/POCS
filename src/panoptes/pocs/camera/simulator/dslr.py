@@ -12,7 +12,7 @@ from astropy.io import fits
 
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import get_quantity_value
+from panoptes.utils import get_quantity_value, CountdownTimer
 
 
 class Camera(AbstractCamera):
@@ -64,6 +64,7 @@ class Camera(AbstractCamera):
         return readout_args
 
     def _readout(self, filename=None, header=None):
+        timer = CountdownTimer(duration=self.readout_time)
         self.logger.trace(f'Calling _readout for {self}')
         # Get example FITS file from test data directory
         file_path = os.path.join(
@@ -78,12 +79,14 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        time.sleep(self.readout_time)
-        self.logger.debug(f'Writing {filename=} for {self}')
+        self.logger.debug(f'Writing filename={filename!r} for {self}')
         fits_utils.write_fits(fake_data, header, filename)
 
-    def _process_fits(self, file_path, info):
-        file_path = super()._process_fits(file_path, info)
+        # Sleep for the remainder of the readout time.
+        timer.sleep()
+
+    def _process_fits(self, file_path, metadata):
+        file_path = super()._process_fits(file_path, metadata)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         # TODO get the path as package data or something better.
         solved_path = os.path.join(

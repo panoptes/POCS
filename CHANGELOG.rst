@@ -11,11 +11,11 @@ Added
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
 * Added ``error.InvalidConfig`` exception. (@wtgee #1007)
-* Config options to control observation processing options: (@wtgee #1007)
+* Config options to control camera processing options and allow for `defaults` in the config that applies to all cameras: (@wtgee #1007)
 
-  * ``observations.compress_fits`` if FITS files should be fpacked. Default True.
-  * ``observations.record_observations`` if observation metadata should be recorded. Default True.
-  * ``observations.make_pretty_images`` to make jpgs from images. Default True.
+  * ``cameras.defaults.compress_fits`` if FITS files should be fpacked. Default True.
+  * ``cameras.defaults.record_observations`` if observation metadata should be recorded. Default True.
+  * ``cameras.defaults.make_pretty_images`` to make jpgs from images. Default True.
 
 Breaking
 ~~~~~~~~
@@ -24,7 +24,8 @@ Breaking
 * The ``take_exposure`` method returns an event to indicate that exposure is in progress, **not** to indicate when exposure has completed. The event is stored in the camera object and accessible via ``camera.is_exposing``. (@wtgee #1007)
 * Removed camera temperature stability checking for now. (@wtgee #1007)
 * Moved the ``AbstractGphotoCamera`` class into it's own namespace and file. (@wtgee #1007)
-*
+* Python moved back to 3.7. (#1021)
+
 
 Bug fixes
 ~~~~~~~~~
@@ -35,9 +36,21 @@ Bug fixes
 Changed
 ~~~~~~~
 
+* Camera observation updates:
+
+  * headers param fixed so truly optional. The POINTING keyword is checked in the metadata, not original headers. Closes #1002. (@wtgee #1009)
+  * Passing approved headers will actually write them to file. (@wtgee #1009)
+  * ``blocking=False`` param added. If True, will wait on observation_event. (@wtgee #1009)
+  * Renamed metadata variables to be consistent. (@wtgee #1009)
+  * ``_process_fits`` is responsible for writing the headers rather than calling out to panoptes-utils. Allows for easier overrides. (@wtgee #1009)
+  * dslr simulator readout time improved. (@wtgee #1009)
+  * ``process_exposure`` doesn't require the exposure_event to be passed because that is the cameras is_exposing property. (@wtgee #1009)
+
+
 * Changelog cleanup. (@wtgee #1008)
 * ``panoptes-utils`` updates:
 
+  * Updated ``panoptes-utils`` to ``v0.2.29``. (@wtgee #1021)
   * Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
   * Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
 

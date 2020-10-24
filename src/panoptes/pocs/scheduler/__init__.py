@@ -71,6 +71,6 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
         except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
-        raise error.NotFound(msg=f"Fields file does not exist: {fields_file=}")
+        raise error.NotFound(msg=f"Fields file does not exist: fields_file={fields_file!r}")
 
     return scheduler

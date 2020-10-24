@@ -29,6 +29,3 @@ docker run --rm -i \
   -v "${PANLOG}":/var/panoptes/logs \
   panoptes-pocs:develop \
   "/var/panoptes/POCS/scripts/testing/run-tests.sh"
-
-echo "test output dir ${PANLOG}:"
-ls "${PANLOG}/panoptes-testing.log"
