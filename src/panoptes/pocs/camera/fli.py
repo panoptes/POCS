@@ -153,7 +153,9 @@ class Camera(AbstractSDKCamera):
                 self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(image_data, header, filename)
+            fits_utils.write_fits(data=image_data,
+                                  header=header,
+                                  filename=filename)
 
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)

@@ -149,7 +149,7 @@ class Camera(AbstractGPhotoCamera, ABC):
 
         # Take Picture
         try:
-            self.is_exposing = True
+            self._is_exposing_event.set()
             self._exposure_proc = subprocess.Popen(run_cmd,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.PIPE,
@@ -197,4 +197,4 @@ class Camera(AbstractGPhotoCamera, ABC):
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')
             self._exposure_proc = None
-            self.is_exposing = False  # Make sure this gets set regardless of readout errors
+            self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
