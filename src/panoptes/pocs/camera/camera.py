@@ -99,7 +99,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._cooling_enabled = False
         self._is_temperature_stable = False
         self._temperature_thread = None
-        self.temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
+        self._temperature_tolerance = kwargs.get('temperature_tolerance', 0.5 * u.Celsius)
         self._cooling_required_table_time = None
         self._cooling_sleep_delay = None
         self._cooling_timeout = None
@@ -107,7 +107,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._connected = False
         self._current_observation = None
         self._is_exposing_event = threading.Event()
-        self.is_exposing = False
         self._exposure_error = None
 
         # By default assume camera isn't capable of internal darks.
@@ -302,13 +301,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ True if an exposure is currently under way, otherwise False. """
         return self._is_exposing_event.is_set()
 
-    @is_exposing.setter
-    def is_exposing(self, set_exposing):
-        if set_exposing:
-            self._is_exposing_event.set()
-        else:
-            self._is_exposing_event.clear()
-
     @property
     def readiness(self):
         """ Dictionary detailing the readiness of the camera system to take an exposure. """
@@ -502,12 +494,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         try:
             # Camera type specific exposure set up and start
-            self.is_exposing = True
+            self._is_exposing_event.set()
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
-            self.is_exposing = False
+            self._is_exposing_event.clear()
             raise err
 
         # Start polling thread that will call camera type specific _readout method when done
@@ -804,7 +796,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 raise err
         finally:
             # Make sure this gets set regardless of any errors
-            self.is_exposing = False
+            self._is_exposing_event.clear()
 
     def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
