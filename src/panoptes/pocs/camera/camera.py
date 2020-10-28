@@ -107,7 +107,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._connected = False
         self._current_observation = None
         self._is_exposing_event = threading.Event()
-        self.is_exposing = False
         self._exposure_error = None
 
         # By default assume camera isn't capable of internal darks.
@@ -117,16 +116,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.subcomponents = dict()
         for attr_name, class_path in self._SUBCOMPONENT_LIST.items():
             # Create the subcomponent as an attribute with default None.
-            self.logger.debug(f'Setting default {attr_name=} to None')
+            self.logger.debug(f'Setting default attr_name={attr_name!r} to None')
             setattr(self, attr_name, None)
 
             # If given subcomponent class (or dict), try to create instance.
             subcomponent = kwargs.get(attr_name)
             if subcomponent is not None:
-                self.logger.debug(f'Found {subcomponent=}, creating instance')
+                self.logger.debug(f'Found subcomponent={subcomponent!r}, creating instance')
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
+                self.logger.debug(f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
@@ -301,13 +300,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False. """
         return self._is_exposing_event.is_set()
-
-    @is_exposing.setter
-    def is_exposing(self, set_exposing):
-        if set_exposing:
-            self._is_exposing_event.set()
-        else:
-            self._is_exposing_event.clear()
 
     @property
     def readiness(self):
@@ -491,7 +483,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(f'Taking {seconds=} exposure on {self.name}: {filename=}')
+        self.logger.debug(f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
 
         header = self._create_fits_header(seconds, dark)
 
@@ -502,12 +494,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         try:
             # Camera type specific exposure set up and start
-            self.is_exposing = True
+            self._is_exposing_event.set()
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
-            self.is_exposing = False
+            self._is_exposing_event.clear()
             raise err
 
         # Start polling thread that will call camera type specific _readout method when done
@@ -522,7 +514,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
             while not os.path.exists(filename):
                 time.sleep(0.1)
-            self.logger.debug(f"Blocking complete on {self} for {filename=}")
+            self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
         return self._is_exposing_event
 
@@ -583,7 +575,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Make sure image exists.
         if not os.path.exists(file_path):
             observation_event.set()
-            raise FileNotFoundError(f"Expected image at {file_path=} does not exist or " +
+            raise FileNotFoundError(f"Expected image at file_path={file_path!r} does not exist or " +
                                     "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
@@ -595,7 +587,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                self.logger.debug(f"Making pretty image for {file_path=}")
+                self.logger.debug(f"Making pretty image for file_path={file_path!r}")
                 link_path = None
                 if metadata['is_primary']:
                     # This should be in the config somewhere.
@@ -614,7 +606,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.db.insert_current('observations', metadata)
 
         if compress_fits:
-            self.logger.debug(f'Compressing {file_path=}')
+            self.logger.debug(f'Compressing file_path={file_path!r}')
             compressed_file_path = fits_utils.fpack(file_path)
             self.logger.debug(f'Compressed {compressed_file_path}')
 
@@ -786,7 +778,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self} to complete"
+                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:
@@ -804,7 +796,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 raise err
         finally:
             # Make sure this gets set regardless of any errors
-            self.is_exposing = False
+            self._is_exposing_event.clear()
 
     def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
@@ -931,7 +923,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(f'Observation setup: {exptime=} {file_path=} {image_id=} {metadata=}')
+        self.logger.debug(f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata={metadata!r}')
 
         return exptime, file_path, image_id, metadata
 
@@ -962,7 +954,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'tracking_rate_ra': {'keyword': 'RA-RATE', 'comment': 'RA Tracking Rate'},
         }
 
-        self.logger.debug(f"Updating FITS headers: {file_path} with {metadata=}")
+        self.logger.debug(f"Updating FITS headers: {file_path} with metadata={metadata!r}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             # Try to lookup header from list above, otherwise add whatever was given.
@@ -984,6 +976,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     fits_comment = ''
                     fits_value = metadata_value
 
+                self.logger.trace(f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
             self.logger.debug(f"Finished FITS headers: {file_path=}")
@@ -1012,31 +1005,31 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         sub_parts = class_path.split('.')
         base_class_name = sub_parts.pop()
         base_module_name = '.'.join(sub_parts)
-        self.logger.debug(f'Loading {base_module_name=}')
+        self.logger.debug(f'Loading base_module_name={base_module_name!r}')
         try:
             base_module = load_module(base_module_name)
         except error.NotFound as err:
-            self.logger.critical(f"Couldn't import {base_module_name=}")
+            self.logger.critical(f"Couldn't import base_module_name={base_module_name!r}")
             raise err
 
         # Get the base class from the loaded module.
-        self.logger.debug(f'Trying to get {base_class_name=} from {base_module}')
+        self.logger.debug(f'Trying to get base_class_name={base_class_name!r} from {base_module}')
         base_class = getattr(base_module, base_class_name)
 
         # If we get an instance, just use it.
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance")
+            self.logger.debug(f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
         # If we get a dict, use them as params to create instance.
         elif isinstance(subcomponent, dict):
             try:
                 model = subcomponent['model']
-                self.logger.debug(f"{subcomponent=} is a dict but has {model=} keyword, "
-                                  f"trying to create a {base_class=} instance")
+                self.logger.debug(f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
+                                  f"trying to create a base_class={base_class!r} instance")
                 base_class = load_module(model)
             except (KeyError, error.NotFound) as err:
-                raise error.NotFound(f"Can't create a {class_path=} from {subcomponent=}")
+                raise error.NotFound(f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
 
-            self.logger.debug(f'Creating the {base_class_name=} object from dict')
+            self.logger.debug(f'Creating the base_class_name={base_class_name!r} object from dict')
 
             # Copy dict creation items and add the camera.
             subcomponent_kwargs = copy.deepcopy(subcomponent)
@@ -1045,7 +1038,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 subcomponent = base_class(**subcomponent_kwargs)
             except TypeError:
-                raise error.NotFound(f'{base_class=} is not a callable class. '
+                raise error.NotFound(f'base_class={base_class!r} is not a callable class. '
                                      f'Please specify full path to class (not module).')
             self.logger.success(f'{subcomponent} created for {base_class_name}')
         else:
@@ -1073,7 +1066,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 s += f" with {sub_names}"
 
         except Exception as e:
-            self.logger.warning(f'Unable to stringify camera: {e=}')
+            self.logger.warning(f'Unable to stringify camera: e={e!r}')
             s = str(self.__class__)
 
         return s

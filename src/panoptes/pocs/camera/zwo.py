@@ -296,10 +296,9 @@ class Camera(AbstractSDKCamera):
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger)
+                fits_utils.write_fits(data=image_data,
+                                      header=header,
+                                      filename=filename)
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':
