@@ -335,7 +335,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         See public `autofocus` for information about the parameters.
         """
-        focus_type = 'coarse' if coarse else 'fine'
+        focus_type = 'fine'
+        if coarse:
+            focus_type = 'coarse'
 
         initial_focus = self.position
         self.logger.debug(f"Beginning {focus_type} autofocus of {self._camera} - initial position: {initial_focus}")
@@ -344,13 +346,6 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         image_dir = self.get_config('directories.images')
         start_time = current_time(flatten=True)
         file_path_root = os.path.join(image_dir, 'focus', self._camera.uid, start_time)
-
-        class FocusException(Exception):
-            def __init__(self, err, error_msg):
-                self.logger.error(error_msg)
-                self._autofocus_error = repr(err)
-                focus_event.set()
-                raise err
 
         self._autofocus_error = None
 
@@ -369,7 +364,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                                 threshold=0.3,
                                                 bit_depth=self.camera.bit_depth)
             except Exception as err:
-                raise FocusException(err, f"Error taking dark frame: {err!r}")
+                self.logger.error(f"Error taking dark frame: {err!r}")
+                self._autofocus_error = repr(err)
+                focus_event.set()
+                raise err
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
         initial_fn = f"{initial_focus}-{focus_type}-initial.{self._camera.file_extension}"
@@ -381,7 +379,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 initial_thumbnail = initial_thumbnail - dark_thumbnail
             initial_thumbnail = mask_saturated(initial_thumbnail, bit_depth=self.camera.bit_depth)
         except Exception as err:
-            raise FocusException(err, f"Error taking initial autofocus image: {err!r}")
+            self.logger.error(f"Error taking initial image: {err!r}")
+            self._autofocus_error = repr(err)
+            focus_event.set()
+            raise err
 
         # Set up encoder positions for autofocus sweep, truncating at focus travel
         # limits if required.
@@ -416,7 +417,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             try:
                 thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=keep_files)
             except Exception as err:
-                raise FocusException(err, f"Error taking autofocus image {i + 1:02d}: {err!r}")
+                self.logger.error(f"Error taking image {i + 1}: {err!r}")
+                self._autofocus_error = repr(err)
+                focus_event.set()
+                raise err
 
             masks[i] = mask_saturated(thumbnail, bit_depth=self.camera.bit_depth).mask
             if dark_thumbnail is not None:
@@ -499,7 +503,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 final_thumbnail = final_thumbnail - dark_thumbnail
             final_thumbnail = mask_saturated(final_thumbnail, bit_depth=self.camera.bit_depth)
         except Exception as err:
-            raise FocusException(err, f"Error taking final autofocus image: {err!r}")
+            self.logger.error(f"Error taking final image: {err!r}")
+            self._autofocus_error = repr(err)
+            focus_event.set()
+            raise err
 
         if make_plots:
             line_fit = None
