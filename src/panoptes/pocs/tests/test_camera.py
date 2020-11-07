@@ -91,12 +91,12 @@ def counter(camera):
 
 @pytest.fixture(scope='module')
 def patterns(camera, images_dir):
-    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                      ('*_final.' + camera.file_extension)),
-                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                          'fine_focus.png'),
-                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                            'coarse_focus.png')}
+    base_dir = os.path.join(images_dir, 'focus', camera.uid, '*')
+    patterns = {
+        'final': os.path.join(base_dir, ('*-final.' + camera.file_extension)),
+        'fine_plot': os.path.join(base_dir, 'fine-focus.png'),
+        'coarse_plot': os.path.join(base_dir, 'coarse-focus.png')
+    }
     return patterns
 
 

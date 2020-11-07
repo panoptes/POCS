@@ -370,7 +370,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 raise err
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        initial_fn = f"{initial_focus}_{focus_type}_initial.{self._camera.file_extension}"
+        initial_fn = f"{initial_focus}-{focus_type}-initial.{self._camera.file_extension}"
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
@@ -410,7 +410,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             encoder_position = self.move_to(position)
             focus_positions[i] = encoder_position
 
-            focus_fn = f"{encoder_position}_{i:02d}.{self._camera.file_extension}"
+            focus_fn = f"{encoder_position}-{i:02d}.{self._camera.file_extension}"
             file_path = os.path.join(file_path_root, focus_fn)
 
             # Take exposure.
@@ -495,7 +495,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         final_focus = self.move_to(best_focus)
 
         # Get final thumbnail.
-        final_fn = f"{final_focus}_{focus_type}_final.{self._camera.file_extension}"
+        final_fn = f"{final_focus}-{focus_type}-final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
             final_thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
