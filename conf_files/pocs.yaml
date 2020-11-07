@@ -97,6 +97,7 @@ cameras:
       autofocus_seconds: 0.1  # seconds
       autofocus_size: 500  # seconds
       autofocus_keep_files: False
+      autofocus_make_plots: False
   devices:
     - model: panoptes.pocs.camera.gphoto.canon.Camera
       name: dslr.00

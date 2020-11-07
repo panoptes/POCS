@@ -184,7 +184,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=None,
+                  make_plots=False,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -214,9 +214,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
-            make_plots (bool, optional: Whether to write focus plots to images folder. If not
+            make_plots (bool, optional): Whether to write focus plots to images folder. If not
                 given will fall back on value of `autofocus_make_plots` set on initialisation,
-                & if it wasn't set then will default to False.
+                and if it wasn't set then will default to False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -514,7 +514,6 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 focus_range = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
                 fit_line = fit(focus_range)
                 line_fit = [focus_range, fit_line]
-
 
             plot_title = f'{self._camera} {focus_type} focus at {start_time}'
 
