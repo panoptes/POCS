@@ -579,6 +579,15 @@ def test_autofocus_keep_files(camera, patterns, counter):
     assert len(glob.glob(patterns['final'])) == counter['value']
 
 
+def test_autofocus_no_darks(camera, patterns, counter):
+    if camera.focuser is None:
+        pytest.skip("Camera does not have a focuser")
+    autofocus_event = camera.autofocus(keep_files=True, take_dark=False)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+
+
 def test_autofocus_no_size(camera):
     try:
         initial_focus = camera.focuser.position
