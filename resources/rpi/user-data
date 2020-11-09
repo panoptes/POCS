@@ -76,14 +76,19 @@ write_files:
 ## Get and run the install script upon first boot.
 runcmd:
   # Setup hardware watchdog
+#  - echo 'interface = eth0' >> /etc/watchdog.conf
+#  - echo 'interface = wlan0' >> /etc/watchdog.conf
   - echo 'watchdog-device = /dev/watchdog' >> /etc/watchdog.conf
   - echo 'watchdog-timeout = 15' >> /etc/watchdog.conf
   - echo 'max-load-1 = 24' >> /etc/watchdog.conf
-#  - echo 'interface = eth0' >> /etc/watchdog.conf
-#  - echo 'interface = wlan0' >> /etc/watchdog.conf
+  # Get the install file.
+  - mkdir -p /var/panoptes/scripts
+  - chown -R panoptes:panoptes /var/panoptes
+  - wget https://install.projectpanoptes.org -O /var/panoptes/scripts/install-pocs.sh
+  - bash /var/panoptes/scripts/install-pocs.sh
 
 power_state:
   mode: reboot
   condition: True
 
-final_message: "\n\nWelcome to the PANOPTES Observatory Control System!\n\n"
+final_message: Welcome to the PANOPTES Observatory Control System!
