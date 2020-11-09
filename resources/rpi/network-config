@@ -10,7 +10,11 @@ ethernets:
   eth0:
     dhcp4: true
     optional: true
+#
+# DON'T RELY ON WIFI FOR INSTALL
+#
 # Update ssid and password to match.
+#
 wifis:
   wlan0:
     dhcp4: true
