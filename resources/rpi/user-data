@@ -3,6 +3,16 @@
 
 hostname: pocs-control
 
+# Override ntp with chrony configuration on Ubuntu
+ntp:
+  enabled: true
+  ntp_client: chrony
+  servers:
+    - time1.google.com
+    - time2.google.com
+    - time3.google.com
+    - time4.google.com
+
 # If you have set up ssh on github you can pull down your
 # key automatically so that you can log into the unit without
 # a password. Change 'CHANGEME' to your username below.
@@ -48,7 +58,7 @@ packages:
   - ctop
   - docker-clean
   - docker-compose
-  - docker-io
+  #  - docker-io
   - git
   - htop
   - httpie
@@ -60,15 +70,6 @@ packages:
   - watchdog
   - zsh
 
-# Override ntp with chrony configuration on Ubuntu
-ntp:
-  enabled: true
-  ntp_client: chrony
-  servers:
-    - time1.google.com
-    - time2.google.com
-    - time3.google.com
-    - time4.google.com
 
 write_files:
   # Allow panoptes user to mount via sshfs.
@@ -79,8 +80,6 @@ write_files:
 
 ## Get and run the install script upon first boot.
 runcmd:
-  # Disable Bluetooth service.
-  - sudo systemctl disable hciuart
   # Oh my zsh
   - [ sh, -c, "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)", "", "--unattended" ]
   - chsh /bin/zsh
