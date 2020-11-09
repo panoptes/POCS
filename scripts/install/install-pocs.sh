@@ -5,10 +5,11 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2020-07-27
+# Script Version: 2020-11-08
 #
 # This script is designed to install the PANOPTES Observatory
-# Control System (POCS) on a cleanly installed Ubuntu system.
+# Control System (POCS) on a cleanly installed Ubuntu system
+# (ideally on a Raspberry Pi).
 #
 # This script is meant for quick & easy install via:
 #
@@ -20,8 +21,10 @@ usage() {
 #
 # The script will do the following:
 #
-#   * Create the needed directory structure.
-#   * Ensure that docker and docker-compose are installed.
+#   * Install docker and tools on the host computer.
+#   * Install zsh and oh-my-zsh on the host computer.
+#   * Install anaconda (via miniforge) on the host computer.
+#   * Create the needed directory structure for POCS.
 #   * Fetch and/or build the docker images needed to run.
 #   * If in 'developer' mode, clone user's fork and set panoptes upstream.
 #   * Write the environment variables to ${PANDIR}/env
@@ -52,6 +55,7 @@ usage() {
 #   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files. Use 3rd
 #                           party docker-compose (linuxserver.io) for arm.
 #   * 2020-07-27 (wtgee) - Cleanup and consistency for Unit install.
+#   * 2020-11-08 (wtgee) - Add zsh, anaconda. Docker from apt.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]

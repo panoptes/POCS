@@ -3,7 +3,17 @@
 
 hostname: pocs-control
 
-# Override ntp with chrony configuration on Ubuntu
+# If you have set up ssh on github you can pull down your
+# key automatically so that you can log into the unit without
+# a password. Change 'CHANGEME' to your username below.
+ssh_import_id:
+  #  - gh:your_github_id
+  - gh:panoptes
+
+#####################################################################
+# You shouldn't need to change anything below.
+#####################################################################
+
 ntp:
   enabled: true
   servers:
@@ -11,13 +21,6 @@ ntp:
     - time2.google.com
     - time3.google.com
     - time4.google.com
-
-# If you have set up ssh on github you can pull down your
-# key automatically so that you can log into the unit without
-# a password. Change 'CHANGEME' to your username below.
-ssh_import_id:
-  #  - gh:your_github_id
-  - gh:panoptes
 
 # Setting "expire: true" will force a password change on first login.
 chpasswd:
@@ -79,15 +82,8 @@ runcmd:
 #  - echo 'interface = eth0' >> /etc/watchdog.conf
 #  - echo 'interface = wlan0' >> /etc/watchdog.conf
 
-# example of how to setup cronjobs
-#write_files:
-#  - content: |
-#      0 13 * * 0 panoptes /script-to-run
-#    path: /etc/crontab
-#    append: true
-
 power_state:
   mode: reboot
   condition: True
 
-final_message: Welcome to the PANOPTES Observatory Control System!
+final_message: "\n\nWelcome to the PANOPTES Observatory Control System!\n\n"

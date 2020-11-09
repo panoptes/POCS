@@ -10,6 +10,7 @@ ethernets:
   eth0:
     dhcp4: true
     optional: true
+# Update ssid and password to match.
 wifis:
   wlan0:
     dhcp4: true
