@@ -265,7 +265,7 @@ function system_deps() {
 
     # ZSH auto-suggestion plugin.
     git clone --single-branch https://github.com/zsh-users/zsh-autosuggestions \
-      ~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+      ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 
     sudo chsh --shell /bin/zsh "${PANUSER}"
     sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="candy"/g' /home/panoptes/.zshrc
