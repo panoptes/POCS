@@ -5,7 +5,7 @@ hostname: pocs-control
 
 # If you have set up ssh on github you can pull down your
 # key automatically so that you can log into the unit without
-# a password. Change 'CHANGEME' to your username below.
+# a password.
 ssh_import_id:
   #  - gh:your_github_id
   - gh:panoptes
