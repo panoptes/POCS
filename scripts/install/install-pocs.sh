@@ -166,7 +166,7 @@ if "${DEVELOPER}"; then
     else
       echo "Can't ssh to github.com. Have you set up your ssh keys?"
       echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
-      return
+      exit 0;
     fi
   fi
 fi
@@ -281,12 +281,12 @@ function system_deps() {
 
   # Append some statements to .zshrc
   cat <<EOF >>/home/panoptes/.zshrc
-  export LANG="en_US.UTF-8"
+export LANG="en_US.UTF-8"
 
-  # POCS
-  export PANDIR=/var/panoptes
-  export POCS=/var/panoptes/POCS
-  unsetopt share_history
+# POCS
+export PANDIR=/var/panoptes
+export POCS=/var/panoptes/POCS
+unsetopt share_history
 EOF
 }
 
