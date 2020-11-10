@@ -5,10 +5,11 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2020-07-27
+# Script Version: 2020-11-08
 #
 # This script is designed to install the PANOPTES Observatory
-# Control System (POCS) on a cleanly installed Ubuntu system.
+# Control System (POCS) on a cleanly installed Ubuntu system
+# (ideally on a Raspberry Pi).
 #
 # This script is meant for quick & easy install via:
 #
@@ -20,10 +21,12 @@ usage() {
 #
 # The script will do the following:
 #
-#   * Create the needed directory structure.
-#   * Ensure that docker and docker-compose are installed.
+#   * Install docker and tools on the host computer.
+#   * Install zsh and oh-my-zsh on the host computer.
+#   * Install anaconda (via miniforge) on the host computer.
+#   * Create the needed directory structure for POCS.
 #   * Fetch and/or build the docker images needed to run.
-#   * If in "developer" mode, clone user's fork and set panoptes upstream.
+#   * If in 'developer' mode, clone user's fork and set panoptes upstream.
 #   * Write the environment variables to ${PANDIR}/env
 #
 # Docker Images:
@@ -31,16 +34,16 @@ usage() {
 #   ${DOCKER_BASE}/panoptes-utils
 #   ${DOCKER_BASE}/pocs
 #
-# The script will ask if it should be installed in "developer" mode or not.
+# The script will ask if it should be installed in 'developer' mode or not.
 #
 # The regular install is for running units and will not create local (to the
 # host system) copies of the files.
 #
-# The "developer" mode will ask for a github username and will clone and
+# The 'developer' mode will ask for a github username and will clone and
 # fetch the repos. The $(docker/setup-local-enviornment.sh) script will then
 # be run to build the docker images locally.
 #
-# If not in "developer" mode, the docker images will be pulled from GCR.
+# If not in 'developer' mode, the docker images will be pulled from GCR.
 #
 # The script has been tested with a fresh install of Ubuntu 20.04
 # but may work on other linux systems.
@@ -52,6 +55,7 @@ usage() {
 #   * 2020-07-09 (wtgee) - Fix conditional for writing shell rc files. Use 3rd
 #                           party docker-compose (linuxserver.io) for arm.
 #   * 2020-07-27 (wtgee) - Cleanup and consistency for Unit install.
+#   * 2020-11-08 (wtgee) - Add zsh, anaconda. Docker from apt.
 #
 #############################################################
  $ $(basename $0) [--developer] [--user panoptes] [--pandir /var/panoptes]
@@ -70,6 +74,7 @@ usage() {
 PS3="Select: "
 
 DEVELOPER=${DEVELOPER:-false}
+INSTALL_ZSH="${INSTALL_ZSH:-true}"
 PANUSER=${PANUSER:-$USER}
 PANDIR=${PANDIR:-/var/panoptes}
 LOGFILE="${PANDIR}/install-pocs.log"
@@ -85,7 +90,8 @@ PANOPTES_UPSTREAM_URL="https://github.com/panoptes"
 # Repositories to clone.
 REPOS=("POCS" "panoptes-utils" "panoptes-tutorials")
 
-DOCKER_COMPOSE_INSTALL="https://raw.githubusercontent.com/linuxserver/docker-docker-compose/master/run.sh"
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
+
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 while [[ $# -gt 0 ]]; do
@@ -97,6 +103,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   --install-unit)
     DEVELOPER=false
+    shift # past bool argument
+    ;;
+  --no-zsh)
+    INSTALL_ZSH=false
     shift # past bool argument
     ;;
   -u | --user)
@@ -144,7 +154,7 @@ if "${DEVELOPER}"; then
   echo "You will also need to have an ssh key set up on github.com."
   echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
 
-  read -p "Github User [panoptes]: " GITHUB_USER
+  read -rp "Github User [panoptes]: " GITHUB_USER
 
   # If a different user, make sure we can access github as that user, otherwise exit.
   if test "${GITHUB_USER}" != "panoptes"; then
@@ -156,7 +166,7 @@ if "${DEVELOPER}"; then
     else
       echo "Can't ssh to github.com. Have you set up your ssh keys?"
       echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
-      return
+      exit 0;
     fi
   fi
 fi
@@ -215,7 +225,7 @@ EOF
       if test -f "${SHELL_RC_PATH}"; then
         # Check if we have already added the file.
         if ! grep -qm 1 ". ${PANDIR}/env" "${SHELL_RC_PATH}"; then
-          printf "\n. ${PANDIR}/env\n" >>"${SHELL_RC_PATH}"
+          echo ". ${PANDIR}/env" >>"${SHELL_RC_PATH}"
         fi
       fi
     done
@@ -224,10 +234,17 @@ EOF
 
 function system_deps() {
   if [[ "${OS}" == "Linux" ]]; then
-    sudo apt-get update >>"${LOGFILE}" 2>&1
+    sudo apt-get update | sudo tee -a "${LOGFILE}" 2>&1
     sudo apt-get --yes install \
-      wget curl git openssh-server ack jq httpie byobu \
-      >>"${LOGFILE}" 2>&1
+      wget curl \
+      git openssh-server \
+      ack \
+      git \
+      jq httpie \
+      byobu \
+      htop \
+      speedometer \
+      zsh | sudo tee -a "${LOGFILE}" 2>&1
   elif [[ "${OS}" == "Darwin" ]]; then
     sudo brew update | sudo tee -a "${LOGFILE}"
     sudo brew install \
@@ -240,19 +257,47 @@ function system_deps() {
     echo "Adding ssh key"
     ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa"
   fi
+
+  # Install ZSH
+  if "${INSTALL_ZSH}"; then
+    echo "Installing ZSH and friends (use --no-zsh to disable)"
+    /bin/sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)" "" "--unattended"
+
+    # ZSH auto-suggestion plugin.
+    git clone --single-branch https://github.com/zsh-users/zsh-autosuggestions \
+      ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+
+    sudo chsh --shell /bin/zsh "${PANUSER}"
+    sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="candy"/g' /home/panoptes/.zshrc
+    sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' /home/panoptes/.zshrc
+    sed -i 's/plugins=(git)/plugins=(git sudo zsh-autosuggestions dotenv)/g' /home/panoptes/.zshrc
+  fi
+
+  # Anaconda via mini-forge.
+  mkdir -p "${PANDIR}/scripts"
+  wget -q "${CONDA_URL}" -O "${PANDIR}/scripts/install-miniforge.sh"
+  /bin/sh "${PANDIR}/scripts/install-miniforge.sh" -b -f -p "${PANDIR}/conda"
+  "${PANDIR}/conda/bin/conda" init zsh bash
+
+  # Append some statements to .zshrc
+  cat <<EOF >>/home/panoptes/.zshrc
+export LANG="en_US.UTF-8"
+
+# POCS
+export PANDIR=/var/panoptes
+export POCS=/var/panoptes/POCS
+unsetopt share_history
+EOF
 }
 
 function get_repos() {
-  echo "Cloning ${REPOS}"
+  echo "Cloning repositories"
   for repo in "${REPOS[@]}"; do
     if [[ ! -d "${PANDIR}/${repo}" ]]; then
       cd "${PANDIR}"
       echo "Cloning ${GITHUB_URL}/${repo}"
-      # Just redirect the errors because otherwise looks like it hangs.
-      git clone --single-branch --quiet "${GITHUB_URL}/${repo}.git" &>>"${LOGFILE}"
-
       # Set panoptes as upstream if clone succeeded.
-      if [ $? -eq 0 ]; then
+      if git clone --single-branch --quiet "${GITHUB_URL}/${repo}.git"; then
         cd "${repo}"
         git remote add upstream "${PANOPTES_UPSTREAM_URL}/${repo}"
       fi
@@ -266,21 +311,17 @@ function get_docker() {
   if ! command_exists docker; then
     echo "Installing Docker"
     if [[ "${OS}" == "Linux" ]]; then
-      /bin/bash -c "$(wget -qO- https://get.docker.com)" &>>"${LOGFILE}"
+      if ! /bin/bash -c "$(wget -qO- https://get.docker.com)"; then
+        sudo apt install --yes docker.io docker-compose ctop
+      fi
 
       echo "Adding ${PANUSER} to docker group"
-      sudo usermod -aG docker "${PANUSER}" >>"${LOGFILE}" 2>&1
+      sudo usermod -aG docker "${PANUSER}" | sudo tee -a "${LOGFILE}" 2>&1
     elif [[ "${OS}" == "Darwin" ]]; then
       brew cask install docker
       echo "Adding ${PANUSER} to docker group"
       sudo dscl -aG docker "${PANUSER}"
     fi
-  fi
-
-  if ! command_exists docker-compose; then
-    echo "Installing docker-compose"
-    sudo wget -q "${DOCKER_COMPOSE_INSTALL}" -O /usr/local/bin/docker-compose
-    sudo chmod a+x /usr/local/bin/docker-compose
   fi
 }
 
@@ -293,8 +334,8 @@ function get_or_build_images() {
   else
     echo "Pulling PANOPTES docker images from Google Cloud Registry (GCR)."
 
-    sudo docker pull "${DOCKER_BASE}/panoptes-pocs:latest"
-    sudo docker pull "${DOCKER_BASE}/panoptes-utils:latest"
+    sudo docker pull "${DOCKER_BASE}/panoptes-pocs:develop"
+    sudo docker pull "${DOCKER_BASE}/panoptes-utils:develop"
     sudo docker pull "${DOCKER_BASE}/aag-weather:latest"
   fi
 }
