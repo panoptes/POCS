@@ -91,12 +91,12 @@ def counter(camera):
 
 @pytest.fixture(scope='module')
 def patterns(camera, images_dir):
-    patterns = {'final': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                      ('*_final.' + camera.file_extension)),
-                'fine_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                          'fine_focus.png'),
-                'coarse_plot': os.path.join(images_dir, 'focus', camera.uid, '*',
-                                            'coarse_focus.png')}
+    base_dir = os.path.join(images_dir, 'focus', camera.uid, '*')
+    patterns = {
+        'final': os.path.join(base_dir, ('*-final.' + camera.file_extension)),
+        'fine_plot': os.path.join(base_dir, 'fine-focus.png'),
+        'coarse_plot': os.path.join(base_dir, 'coarse-focus.png')
+    }
     return patterns
 
 
@@ -574,6 +574,15 @@ def test_autofocus_keep_files(camera, patterns, counter):
     if camera.focuser is None:
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(keep_files=True)
+    autofocus_event.wait()
+    counter['value'] += 1
+    assert len(glob.glob(patterns['final'])) == counter['value']
+
+
+def test_autofocus_no_darks(camera, patterns, counter):
+    if camera.focuser is None:
+        pytest.skip("Camera does not have a focuser")
+    autofocus_event = camera.autofocus(keep_files=True, take_dark=False)
     autofocus_event.wait()
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']

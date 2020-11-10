@@ -705,6 +705,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
+
+        # Make sure thumbnail is not bigger than image.
+        actual_thumbnail_size = min(thumbnail_size, *image.shape)
+        if actual_thumbnail_size != thumbnail_size:
+            self.logger.info(f'Requested thumbnail size is smaller than image, using {actual_thumbnail_size}')
+
         return img_utils.crop_data(image, box_width=thumbnail_size)
 
     @abstractmethod
@@ -923,7 +929,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata={metadata!r}')
+        self.logger.debug(
+            f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata='
+            f'{metadata!r}')
 
         return exptime, file_path, image_id, metadata
 
@@ -963,7 +971,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Get the value from either the metadata, the default, or use blank string.
                 fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
-                self.logger.trace(f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
+                self.logger.trace(
+                    f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
             self.logger.debug(f"Finished FITS headers: {file_path}")

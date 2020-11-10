@@ -8,6 +8,7 @@ Changelog
 Added
 ~~~~~
 
+* Ability to specify autofocus plots in config file. (@wtgee #1029)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
 * Added ``error.InvalidConfig`` exception. (@wtgee #1007)
@@ -32,6 +33,8 @@ Bug fixes
 
 * DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
+* Properly closed the autofocus matplotlib figures. (@wtgee #1029)
+* Prevent thumbnails from being larger than image. (@wtgee #1029)
 
 Changed
 ~~~~~~~
@@ -45,6 +48,7 @@ Changed
   * ``_process_fits`` is responsible for writing the headers rather than calling out to panoptes-utils. Allows for easier overrides. (@wtgee #1009)
   * dslr simulator readout time improved. (@wtgee #1009)
   * ``process_exposure`` doesn't require the exposure_event to be passed because that is the cameras is_exposing property. (@wtgee #1009)
+  * The autofocus plotting has been moved to an external file. (@wtgee #1029)
 
 
 * Changelog cleanup. (@wtgee #1008)

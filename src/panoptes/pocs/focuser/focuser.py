@@ -4,10 +4,6 @@ from abc import abstractmethod
 from threading import Event
 from threading import Thread
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.colors as colours
-
 import numpy as np
 from scipy.ndimage import binary_dilation
 from astropy.modeling import models
@@ -17,7 +13,8 @@ from panoptes.pocs.base import PanBase
 from panoptes.utils import current_time
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images import mask_saturated
-from panoptes.utils.images.plot import get_palette
+
+from src.panoptes.pocs.utils.plotting import make_autofocus_plot
 
 
 class AbstractFocuser(PanBase, metaclass=ABCMeta):
@@ -187,7 +184,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=None,
+                  make_plots=False,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -217,9 +214,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 saturated pixel mask (determine size of masked regions), default 10
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
-            make_plots (bool, optional: Whether to write focus plots to images folder. If not
+            make_plots (bool, optional): Whether to write focus plots to images folder. If not
                 given will fall back on value of `autofocus_make_plots` set on initialisation,
-                & if it wasn't set then will default to False.
+                and if it wasn't set then will default to False.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -300,7 +297,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             'seconds': seconds,
             'focus_range': focus_range,
             'focus_step': focus_step,
-            'thumbnail_size': thumbnail_size,
+            'cutout_size': thumbnail_size,
             'keep_files': keep_files,
             'take_dark': take_dark,
             'merit_function': merit_function,
@@ -323,7 +320,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                    seconds,
                    focus_range,
                    focus_step,
-                   thumbnail_size,
+                   cutout_size,
                    keep_files,
                    take_dark,
                    merit_function,
@@ -343,49 +340,44 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_type = 'coarse'
 
         initial_focus = self.position
-        self.logger.debug("Beginning {} autofocus of {} - initial position: {}",
-                          focus_type, self._camera, initial_focus)
+        self.logger.debug(f"Beginning {focus_type} autofocus of {self._camera} - initial position: {initial_focus}")
 
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.get_config('directories.images')
         start_time = current_time(flatten=True)
-        file_path_root = os.path.join(image_dir,
-                                      'focus',
-                                      self._camera.uid,
-                                      start_time)
+        file_path_root = os.path.join(image_dir, 'focus', self._camera.uid, start_time)
 
         self._autofocus_error = None
 
-        dark_thumb = None
+        dark_cutout = None
         if take_dark:
-            dark_path = os.path.join(file_path_root,
-                                     '{}.{}'.format('dark', self._camera.file_extension))
-            self.logger.debug('Taking dark frame {} on camera {}'.format(dark_path, self._camera))
+            dark_path = os.path.join(file_path_root, f'dark.{self._camera.file_extension}')
+            self.logger.debug(f'Taking dark frame {dark_path} on camera {self._camera}')
             try:
-                dark_thumb = self._camera.get_thumbnail(seconds,
-                                                        dark_path,
-                                                        thumbnail_size,
-                                                        keep_file=True,
-                                                        dark=True)
+                dark_cutout = self._camera.get_thumbnail(seconds,
+                                                         dark_path,
+                                                         cutout_size,
+                                                         keep_file=True,
+                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_thumb = mask_saturated(dark_thumb,
-                                            threshold=0.3,
-                                            bit_depth=self.camera.bit_depth)
+                dark_cutout = mask_saturated(dark_cutout,
+                                             threshold=0.3,
+                                             bit_depth=self.camera.bit_depth)
             except Exception as err:
                 self.logger.error(f"Error taking dark frame: {err!r}")
                 self._autofocus_error = repr(err)
                 focus_event.set()
                 raise err
 
-        # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        initial_fn = "{}_{}_{}.{}".format(initial_focus,
-                                          focus_type,
-                                          "initial",
-                                          self._camera.file_extension)
+        # Take an image before focusing, grab a cutout from the centre and add it to the plot
+        initial_fn = f"{initial_focus}-{focus_type}-initial.{self._camera.file_extension}"
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
-            initial_thumbnail = self._camera.get_thumbnail(seconds, initial_path, thumbnail_size, keep_file=True)
+            initial_cutout = self._camera.get_thumbnail(seconds, initial_path, cutout_size, keep_file=True)
+            initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
+            if dark_cutout is not None:
+                initial_cutout = initial_cutout.astype(np.int32) - dark_cutout
         except Exception as err:
             self.logger.error(f"Error taking initial image: {err!r}")
             self._autofocus_error = repr(err)
@@ -401,51 +393,56 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_range = focus_range[0]
             focus_step = focus_step[0]
 
+        # Get focus steps.
         focus_positions = np.arange(max(initial_focus - focus_range / 2, self.min_position),
                                     min(initial_focus + focus_range / 2, self.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
 
-        thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size),
-                              dtype=initial_thumbnail.dtype)
-        masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
-        metric = np.empty(n_positions)
+        # Set up empty array holders
+        cutouts = np.zeros((n_positions, cutout_size, cutout_size), dtype=initial_cutout.dtype)
+        masks = np.empty((n_positions, cutout_size, cutout_size), dtype=np.bool)
+        metrics = np.empty(n_positions)
 
         # Take and store an exposure for each focus position.
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
             focus_positions[i] = self.move_to(position)
 
-            # Take exposure
-            focus_fn = "{}_{:02d}.{}".format(focus_positions[i], i, self._camera.file_extension)
+            focus_fn = f"{focus_positions[i]}-{i:02d}.{self._camera.file_extension}"
             file_path = os.path.join(file_path_root, focus_fn)
 
+            # Take exposure.
             try:
-                thumbnail = self._camera.get_thumbnail(
-                    seconds, file_path, thumbnail_size, keep_file=keep_files)
+                cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size, keep_file=keep_files)
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
                 focus_event.set()
                 raise err
 
-            masks[i] = mask_saturated(thumbnail, bit_depth=self.camera.bit_depth).mask
-            if dark_thumb is not None:
-                thumbnail = thumbnail - dark_thumb
-            thumbnails[i] = thumbnail
+            masks[i] = mask_saturated(cutout, bit_depth=self.camera.bit_depth).mask
+            if dark_cutout is not None:
+                cutout = cutout.astype(np.int32) - dark_cutout
+            cutouts[i] = cutout
 
+        self.logger.debug(f'Making master mask with binary dilation for {self._camera}')
         master_mask = masks.any(axis=0)
         master_mask = binary_dilation(master_mask, iterations=mask_dilations)
 
         # Apply the master mask and then get metrics for each frame.
-        for i, thumbnail in enumerate(thumbnails):
-            thumbnail = np.ma.array(thumbnail, mask=master_mask)
-            metric[i] = focus_utils.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
+        for i, cutout in enumerate(cutouts):
+            self.logger.debug(f'Applying focus metric to cutout {i:02d}')
+            cutout = np.ma.array(cutout, mask=np.ma.mask_or(master_mask, np.ma.getmask(cutout)))
+            metrics[i] = focus_utils.focus_metric(cutout, merit_function, **merit_function_kwargs)
+            self.logger.debug(f'Focus metric for cutout {i:02d}: {metrics[i]}')
 
+        # Only fit a fine focus.
         fitted = False
+        fitting_indices = [None, None]
 
-        # Find maximum values
-        imax = metric.argmax()
+        # Find maximum metric values.
+        imax = metrics.argmax()
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
@@ -456,9 +453,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             # Fit data around the maximum value to determine best focus position.
             # Initialise models
             shift = models.Shift(offset=-focus_positions[imax])
+            # Small initial coeffs with expected sign. Helps the fitting set off in the correct direction.
             poly = models.Polynomial1D(degree=4, c0=1, c1=0, c2=-1e-2, c3=0, c4=-1e-4,
                                        fixed={'c0': True, 'c1': True, 'c3': True})
-            scale = models.Scale(factor=metric[imax])
+            scale = models.Scale(factor=metrics[imax])
+            # https://docs.astropy.org/en/stable/modeling/compound-models.html?#model-composition
             reparameterised_polynomial = shift | poly | scale
 
             # Initialise fitter
@@ -470,39 +469,38 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             # Fit models to data
             fit = fitter(reparameterised_polynomial,
                          focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
-                         metric[fitting_indices[0]:fitting_indices[1] + 1])
+                         metrics[fitting_indices[0]:fitting_indices[1] + 1])
 
-            best_focus = -fit.offset_0
+            # Get the encoder position of the best focus.
+            best_focus = np.abs(fit.offset_0)
             fitted = True
 
-            # Guard against fitting failures, force best focus to stay within sweep range
+            # Guard against fitting failures, force best focus to stay within sweep range.
             min_focus = focus_positions[0]
             max_focus = focus_positions[-1]
             if best_focus < min_focus:
-                self.logger.warning("Fitting failure: best focus {} below sweep limit {}",
-                                    best_focus,
-                                    min_focus)
-
+                self.logger.warning(f"Fitting failure: best focus {best_focus} below sweep limit {min_focus}")
                 best_focus = focus_positions[1]
 
             if best_focus > max_focus:
-                self.logger.warning("Fitting failure: best focus {} above sweep limit {}",
-                                    best_focus,
-                                    max_focus)
-
+                self.logger.warning(f"Fitting failure: best focus {best_focus} above sweep limit {max_focus}")
                 best_focus = focus_positions[-2]
 
         else:
             # Coarse focus, just use max value.
             best_focus = focus_positions[imax]
 
+        # Move the focuser to best focus position.
         final_focus = self.move_to(best_focus)
 
-        final_fn = f"{final_focus}_{focus_type}_final.{self._camera.file_extension}"
+        # Get final cutout.
+        final_fn = f"{final_focus}-{focus_type}-final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
-            final_thumbnail = self._camera.get_thumbnail(
-                seconds, file_path, thumbnail_size, keep_file=True)
+            final_cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size, keep_file=True)
+            final_cutout = mask_saturated(final_cutout, bit_depth=self.camera.bit_depth)
+            if dark_cutout is not None:
+                final_cutout = final_cutout.astype(np.int32) - dark_cutout
         except Exception as err:
             self.logger.error(f"Error taking final image: {err!r}")
             self._autofocus_error = repr(err)
@@ -510,60 +508,29 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             raise err
 
         if make_plots:
-            initial_thumbnail = mask_saturated(initial_thumbnail)
-            final_thumbnail = mask_saturated(final_thumbnail)
-            if dark_thumb is not None:
-                initial_thumbnail = initial_thumbnail - dark_thumb
-                final_thumbnail = final_thumbnail - dark_thumb
-
-            fig = Figure()
-            FigureCanvas(fig)
-            fig.set_size_inches(9, 18)
-
-            ax1 = fig.add_subplot(3, 1, 1)
-            im1 = ax1.imshow(initial_thumbnail, interpolation='none',
-                             cmap=get_palette(), norm=colours.LogNorm())
-            fig.colorbar(im1)
-            ax1.set_title('Initial focus position: {}'.format(initial_focus))
-
-            ax2 = fig.add_subplot(3, 1, 2)
-            ax2.plot(focus_positions, metric, 'bo', label='{}'.format(merit_function))
+            line_fit = None
             if fitted:
-                fs = np.arange(focus_positions[fitting_indices[0]],
-                               focus_positions[fitting_indices[1]] + 1)
-                ax2.plot(fs, fit(fs), 'b-', label='Polynomial fit')
+                focus_range = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
+                fit_line = fit(focus_range)
+                line_fit = [focus_range, fit_line]
 
-            ax2.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
-            u_limit = 1.10 * metric.max()
-            l_limit = min(0.95 * metric.min(), 1.05 * metric.min())
-            ax2.set_ylim(l_limit, u_limit)
-            ax2.vlines(initial_focus, l_limit, u_limit, colors='k', linestyles=':',
-                       label='Initial focus')
-            ax2.vlines(best_focus, l_limit, u_limit, colors='k', linestyles='--',
-                       label='Best focus')
+            plot_title = f'{self._camera} {focus_type} focus at {start_time}'
 
-            ax2.set_xlabel('Focus position')
-            ax2.set_ylabel('Focus metric')
+            # Make the plots
+            plot_path = os.path.join(file_path_root, f'{focus_type}-focus.png')
+            plot_path = make_autofocus_plot(plot_path,
+                                            initial_cutout,
+                                            final_cutout,
+                                            initial_focus,
+                                            final_focus,
+                                            focus_positions,
+                                            metrics,
+                                            merit_function,
+                                            plot_title=plot_title,
+                                            line_fit=line_fit
+                                            )
 
-            ax2.set_title('{} {} focus at {}'.format(self._camera, focus_type, start_time))
-            ax2.legend(loc='best')
-
-            ax3 = fig.add_subplot(3, 1, 3)
-            im3 = ax3.imshow(final_thumbnail, interpolation='none',
-                             cmap=get_palette(), norm=colours.LogNorm())
-            fig.colorbar(im3)
-            ax3.set_title('Final focus position: {}'.format(final_focus))
-            plot_path = os.path.join(file_path_root, '{}_focus.png'.format(focus_type))
-
-            fig.tight_layout()
-            fig.savefig(plot_path, transparent=False)
-
-            # explicitly close and delete figure
-            fig.clf()
-            del fig
-
-            self.logger.info(f'{focus_type.capitalize()} focus plot for '
-                             f'{self._camera} written to {plot_path}')
+            self.logger.info(f'{focus_type.capitalize()} focus plot for {self._camera} written to {plot_path}')
 
         self.logger.debug(f'Autofocus of {self._camera} complete - final focus position: {final_focus}')
 
