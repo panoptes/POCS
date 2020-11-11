@@ -468,7 +468,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       self.filterwheel.filter_name(self.filterwheel._dark_position))
                 except (AttributeError, error.NotFound):
                     # No filterwheel, or no opaque filter (dark_position not set)
-                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter."
+                                        " Is the lens cap on?")
             else:
                 with suppress(AttributeError, error.NotFound):
                     # Ignoring exceptions from no filterwheel, or no last light position
@@ -516,7 +517,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 time.sleep(0.1)
             self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
-        return self._is_exposing_event
+        return readout_thread
 
     def process_exposure(self,
                          metadata,
