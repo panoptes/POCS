@@ -31,6 +31,7 @@ Breaking
 Bug fixes
 ~~~~~~~~~
 
+* Fix incorrect import of autofocus plots. (@wtgee #1034)
 * DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
 * Properly closed the autofocus matplotlib figures. (@wtgee #1029)
