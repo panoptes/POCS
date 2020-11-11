@@ -14,7 +14,7 @@ from panoptes.utils import current_time
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images import mask_saturated
 
-from src.panoptes.pocs.utils.plotting import make_autofocus_plot
+from panoptes.pocs.utils.plotting import make_autofocus_plot
 
 
 class AbstractFocuser(PanBase, metaclass=ABCMeta):
