@@ -441,9 +441,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 the exposure, if True will block until it completes and file exists.
 
         Returns:
-            threading.Event: Event that indicates an exposure is in progress.
-                Will be set to False when exposure is complete.
-
+            threading.Thread: The readout thread, which joins when readout has finished.
         """
         self._exposure_error = None
 
