@@ -173,12 +173,12 @@ def test_move_exposing(tmpdir):
     sim_camera = SimCamera(filterwheel={'model': 'panoptes.pocs.filterwheel.simulator.FilterWheel',
                                         'filter_names': ['one', 'deux', 'drei', 'quattro']})
     fits_path = str(tmpdir.join('test_exposure.fits'))
-    exp_event = sim_camera.take_exposure(filename=fits_path, seconds=0.1)
+    readout_thread = sim_camera.take_exposure(filename=fits_path, seconds=0.1)
     with pytest.raises(error.PanError):
         # Attempt to move while camera is exposing
         sim_camera.filterwheel.move_to(2, blocking=True)
     assert sim_camera.filterwheel.position == 1  # Should not have moved
-    exp_event.wait()
+    readout_thread.join()
 
 
 def test_is_moving(filterwheel):
