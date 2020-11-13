@@ -8,6 +8,7 @@ Changelog
 Added
 ~~~~~
 
+* Add the `google-cloud-sdk` to default Docker build. Required for uploading data. (@wtgee #1036)
 * Ability to specify autofocus plots in config file. (@wtgee #1029)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
