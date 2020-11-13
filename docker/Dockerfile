@@ -28,6 +28,7 @@ USER root
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         gcc \
         gphoto2 \
+        less \
         udev
 
 # Install program dependencies.
