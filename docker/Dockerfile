@@ -51,8 +51,6 @@ RUN "${PANDIR}/conda/bin/pip" install -e ".${pip_extras}" && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/* && \
-    # Install the Google Cloud utils.
-    "${PANDIR}/conda/bin/conda" install google-cloud-sdk && \
     # Cleanup conda.
     "${PANDIR}/conda/bin/conda" clean -tipy
 
