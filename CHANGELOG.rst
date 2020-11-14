@@ -91,6 +91,7 @@ Changed
 Removed
 ~~~~~~~
 
+* Removed all arduino files, to be replaced by Firmata. See instructions on gitbook docs. (@wtgee #1035)
 * Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
 
 
