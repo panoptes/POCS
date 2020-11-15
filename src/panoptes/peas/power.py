@@ -44,7 +44,14 @@ class CurrentEnablePins(IntEnum):
 
 
 class PowerBoard(PanBase):
-    """Power distribution and monitoring"""
+    """Power distribution and monitoring.
+
+    This represents a "trucker" board for PANOPTES, which is a combination of an
+    Arduino Uno and an Infineon 24V relay shield.
+
+    Pin names specified above correspond to Infineon terminology. See manual:
+    https://bit.ly/2IGgWLQ.
+    """
 
     def __init__(self, name='Power Board', arduino_instance_id=None, relays=None, pins=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
