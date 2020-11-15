@@ -1,5 +1,4 @@
 import time
-from contextlib import suppress
 from enum import IntEnum
 
 from pymata_express import pymata_express
@@ -8,6 +7,7 @@ from panoptes.pocs.base import PanBase
 
 
 class PinState(IntEnum):
+    """Represents a HIGH or LOW state for a digital output pin."""
     LOW = 0
     OFF = 0
     HIGH = 1
@@ -15,6 +15,7 @@ class PinState(IntEnum):
 
 
 class RelayPins(IntEnum):
+    """The pins for the relays."""
     RELAY_0 = 17
     RELAY_1 = 3
     RELAY_2 = 4
@@ -23,17 +24,20 @@ class RelayPins(IntEnum):
 
 
 class CurrentSensePins(IntEnum):
+    """Pins on which the current can be read."""
     IS_0 = 0  # Analog 0
     IS_1 = 1  # Analog 1
     IS_2 = 2  # Analog 2
 
 
 class CurrentSelectPins(IntEnum):
+    """Pins for selecting current sensing channel of a PROFET."""
     DSEL_0 = 2
     DSEL_1 = 6
 
 
 class CurrentEnablePins(IntEnum):
+    """Pins for enabling the current sensing."""
     DEN_0 = 18
     DEN_1 = 5
     DEN_2 = 9
@@ -178,8 +182,8 @@ class PowerBoard(PanBase):
         """Reads the current from all relays on the board.
 
         The Power Board uses the Infineon 24V relay shield, which has five
-        relay relays but only three MOSFETs. To read the current we poll
-        the two MOSFETs with shared relays, change which relay is read,
+        relays but only three MOSFETs (actually a PROFET). To read the current,
+        we poll the two MOSFETs with shared relays, change which relay is read,
         and then poll again.  The third MOSFET is polled each time and averaged.
 
         This will first set the channel select pins to low, do a reading,
