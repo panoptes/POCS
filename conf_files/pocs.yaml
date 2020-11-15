@@ -114,80 +114,21 @@ environment:
   power:
     arduino_instance_id: 1
     relays:
-      RELAY_0: mount
-      RELAY_1: camera_box
-      RELAY_2: fans
-      RELAY_3: weather_station
-      RELAY_4: unused
-    pins:
-      digital:
-        # Relays
-        3:
-          name: RELAY_1
-          mode: output
-          initial: high
-          current:
-            pin: IS_0
-            select: DSEL_0
-            select_state: high
-        4:
-          name: RELAY_2
-          mode: output
-          initial: high
-          current:
-            pin: IS_1
-            select: DSEL_1
-            select_state: high
-        7:
-          name: RELAY_3
-          mode: output
-          initial: high
-          current:
-            pin: IS_1
-            select: DSEL_1
-            select_state: low
-        8:
-          name: RELAY_4
-          mode: output
-          initial: high
-          current:
-            pin: IS_2
-        17: # A3 (Analog 3)
-          name: RELAY_0
-          mode: output
-          initial: high
-          current:
-            pin: IS_0
-            select: DSEL_0
-            select_state: low
-        # Channel select
-        2:
-          name: DSEL_0
-          mode: output
-          initial: low
-        6:
-          name: DSEL_1
-          mode: output
-          initial: low
-        # Sense enable
-        5:
-          name: DEN_2
-          mode: output
-          initial: high
-        9:
-          name: DEN_1
-          mode: output
-          initial: high
-        18: # A4 (Analog 4)
-          name: DEN_0
-          mode: output
-          initial: high
-      analog:
-        # analog pins are always input so value is the name.
-        # Current sensing
-        0: IS_0 # A0
-        1: IS_1 # A1
-        2: IS_2 # A2
+      RELAY_0:
+        label: mount
+        initial_state: on
+      RELAY_1:
+        label: camera_box
+        initial_state: on
+      RELAY_2:
+        label: fans
+        initial_state: on
+      RELAY_3:
+        label: weather_station
+        initial_state: on
+      RELAY_4:
+        label: unused
+        initial_state: off
   auto_detect: False
   camera_board:
     serial_port: /dev/ttyACM0
