@@ -86,6 +86,16 @@ class PowerBoard(PanBase):
 
         self.logger.success(f'Power board initialized')
 
+    def set_relay_name(self, number, name):
+        """Sets an attribute with the given name that returns the pin number.
+
+        Args:
+            number (int): The pin number to set an attribute name for.
+            name (str): The name for the pin.
+        """
+        self.logger.debug(f'Adding {name} as board attribute with pin_number={number}')
+        setattr(self, name, number)
+
     def set_pin_modes(self):
         """Set the pin modes for the Arduino Uno + Infineon Uno 24V shield."""
         self.logger.debug(f'Setting up current reading pins')
@@ -104,7 +114,7 @@ class PowerBoard(PanBase):
         for pin_number in RelayPins:
             self.board.set_pin_mode_digital_output(pin_number)
 
-    def set_pin_state(self, pin_number, state):
+    async def set_pin_state(self, pin_number, state):
         """Set the relay to the given state.
 
         Args:
@@ -120,17 +130,7 @@ class PowerBoard(PanBase):
 
         return True
 
-    def set_relay_name(self, number, name):
-        """Sets an attribute with the given name that returns the pin number.
-
-        Args:
-            number (int): The pin number to set an attribute name for.
-            name (str): The name for the pin.
-        """
-        self.logger.debug(f'Adding {name} as board attribute with pin_number={number}')
-        setattr(self, name, number)
-
-    def get_relay_state(self, relay_name):
+    async def get_relay_state(self, relay_name):
         """Get the digital pin state.
 
         Args:
@@ -145,7 +145,7 @@ class PowerBoard(PanBase):
 
         return bool(state)
 
-    def turn_on(self, relay_name):
+    async def turn_on(self, relay_name):
         """Turns off the given power relay.
 
         Note: This method is not asynchronous.
@@ -157,7 +157,7 @@ class PowerBoard(PanBase):
         pin_number = getattr(self, relay_name)
         return await self.set_pin_state(pin_number, PinState.HIGH)
 
-    def turn_off(self, relay_name):
+    async def turn_off(self, relay_name):
         """Turns off the given power relay.
 
         Note: This method is not asynchronous.
@@ -185,7 +185,7 @@ class PowerBoard(PanBase):
         time.sleep(delay)
         self.set_pin_state(pin_number, starting_state)
 
-    def read_current(self):
+    async def read_current(self):
         """Reads the current from all relays on the board.
 
         The Power Board uses the Infineon 24V relay shield, which has five
@@ -201,8 +201,8 @@ class PowerBoard(PanBase):
         self.set_pin_state(CurrentSelectPins.DSEL_1, PinState.LOW)
 
         # Read current.
-        relay_0_value, _ = self.board.digital_read(RelayPins.RELAY_0)
-        relay_1_value, _ = self.board.digital_read(RelayPins.RELAY_1)
+        relay_0_value, _ = await self.board.digital_read(RelayPins.RELAY_0)
+        relay_1_value, _ = await self.board.digital_read(RelayPins.RELAY_1)
 
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.HIGH)
@@ -212,10 +212,10 @@ class PowerBoard(PanBase):
         time.sleep(0.5)
 
         # Read current.
-        relay_2_value, _ = self.board.digital_read(RelayPins.RELAY_2)
-        relay_3_value, _ = self.board.digital_read(RelayPins.RELAY_3)
+        relay_2_value, _ = await self.board.digital_read(RelayPins.RELAY_2)
+        relay_3_value, _ = await self.board.digital_read(RelayPins.RELAY_3)
 
-        relay_4_value, _ = self.board.digital_read(RelayPins.RELAY_4)
+        relay_4_value, _ = await self.board.digital_read(RelayPins.RELAY_4)
 
         current_readings = {
             self.relays['RELAY_0']['label']: relay_0_value,
