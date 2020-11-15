@@ -35,7 +35,7 @@ class PowerBoard(PanBase):
 
         self.setup_pins()
 
-        self.logger.success(f'Power board')
+        self.logger.success(f'Power board initialized')
 
     def setup_pins(self, analog_pins=None, digital_pins=None):
         """Set the pin modes.
@@ -54,6 +54,9 @@ class PowerBoard(PanBase):
             self.logger.debug(f'Setting pin_number={pin_number} as analog input.')
             await self.board.set_pin_mode_analog_input(pin_number)
 
+            # Set an attribute for the pin name.
+            self.set_pin_name(pin_number, pin_name)
+
         # All our pins are output on PowerBoard.
         self.logger.debug(f'Setting digital pin for {self.name}')
         for pin_number, pin_config in digital_pins:
@@ -64,7 +67,10 @@ class PowerBoard(PanBase):
             self.logger.debug(f'Setting digital pin_number={pin_number} ({pin_name}) as {pin_mode}')
             await self.board.set_pin_mode_digital_output(pin_number)
 
-            # Set up attribute if pin is a relay channel.
+            # Set an attribute for the pin name.
+            self.set_pin_name(pin_number, pin_name)
+
+            # Also set an attribute name for the channel label.
             with suppress(KeyError):
                 channel_name = self.channels[pin_name]
                 if channel_name != 'unused':
@@ -128,7 +134,7 @@ class PowerBoard(PanBase):
         Returns:
             bool: True if pin state successfully set.
         """
-        state = bool(state)
+        state = PinState(bool(state))
         self.logger.debug(f'Setting digital pin {pin_number} to {state}')
         await self.board.digital_write(pin_number, state)
 
@@ -143,7 +149,7 @@ class PowerBoard(PanBase):
             channel_name (str): The name of the channel to turn on.
         """
         self.logger.info(f'Turning on {channel_name}')
-        return await self.set_pin_state(channel_name, PinState.HIGH)
+        return await self.set_pin_state(self.get_channel_pin(channel_name), PinState.HIGH)
 
     def turn_off(self, channel_name):
         """Turns off the given power channel.
@@ -154,7 +160,7 @@ class PowerBoard(PanBase):
             channel_name (str): The name of the channel to turn off.
         """
         self.logger.info(f'Turning off {channel_name}')
-        return await self.set_pin_state(channel_name, PinState.LOW)
+        return await self.set_pin_state(self.get_channel_pin(channel_name), PinState.LOW)
 
     def toggle(self, channel_name, delay=500):
         """Toggles the power state with optional delay.
@@ -167,9 +173,26 @@ class PowerBoard(PanBase):
         self.logger.info(f'Toggling {channel_name} (with {delay} ms delay). '
                          f'Starting state = {starting_state}')
 
-        self.set_pin_state(channel_name, not starting_state)
+        self.set_pin_state(self.get_channel_pin(channel_name), not starting_state)
         time.sleep(delay)
-        self.set_pin_state(channel_name, starting_state)
+        self.set_pin_state(self.get_channel_pin(channel_name), starting_state)
+
+    def read_current(self):
+        """Reads the current from all channels on the board.
+
+        The Power Board uses the Infineon 24V relay shield, which has five
+        relay channels but only three MOSFETs. To read the current we poll
+        the two MOSFETs with shared channels, change which channel is read,
+        and then poll again.  The third MOSFET is polled each time and averaged.
+        """
+        # Toggle which channels are read.
+        self.set_pin_state(self.DSEL_0, PinState.LOW)
+        self.set_pin_state(self.DSEL_1, PinState.LOW)
+
+        for pin_number, pin_name in self.pin_mapping['analog']:
+            value, timestamp = self.board.analog_read(pin_number)
+            self.db.insert_current('power', dict(channel_name=value, read_time=timestamp))
+
 
     def __str__(self):
         return f'Power Distribution Board - {self.name}'

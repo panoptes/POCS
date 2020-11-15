@@ -113,7 +113,7 @@ environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
     arduino_instance_id: 1
-    channels:
+    relays:
       RELAY_0: mount
       RELAY_1: camera_box
       RELAY_2: fans
@@ -121,27 +121,45 @@ environment:
       RELAY_4: unused
     pins:
       digital:
-        # Channels
+        # Relays
         3:
           name: RELAY_1
           mode: output
           initial: high
+          current:
+            pin: IS_0
+            select: DSEL_0
+            select_state: high
         4:
           name: RELAY_2
           mode: output
           initial: high
+          current:
+            pin: IS_1
+            select: DSEL_1
+            select_state: high
         7:
           name: RELAY_3
           mode: output
           initial: high
+          current:
+            pin: IS_1
+            select: DSEL_1
+            select_state: low
         8:
           name: RELAY_4
           mode: output
           initial: high
+          current:
+            pin: IS_2
         17: # A3 (Analog 3)
           name: RELAY_0
           mode: output
           initial: high
+          current:
+            pin: IS_0
+            select: DSEL_0
+            select_state: low
         # Channel select
         2:
           name: DSEL_0
