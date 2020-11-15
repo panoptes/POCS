@@ -123,49 +123,49 @@ environment:
       digital:
         # Channels
         3:
-          initial: high
-          label: RELAY_1
+          name: RELAY_1
           mode: output
+          initial: high
         4:
-          initial: high
-          label: RELAY_2
+          name: RELAY_2
           mode: output
+          initial: high
         7:
-          initial: high
-          label: RELAY_3
+          name: RELAY_3
           mode: output
+          initial: high
         8:
-          initial: high
-          label: RELAY_4
+          name: RELAY_4
           mode: output
+          initial: high
         17: # A3 (Analog 3)
-          initial: high
-          label: RELAY_0
+          name: RELAY_0
           mode: output
+          initial: high
         # Channel select
         2:
-          initial: low
-          label: DSEL_0
+          name: DSEL_0
           mode: output
+          initial: low
         6:
-          initial: low
-          label: DSEL_1
+          name: DSEL_1
           mode: output
+          initial: low
         # Sense enable
         5:
-          initial: high
-          label: DEN_2
+          name: DEN_2
           mode: output
+          initial: high
         9:
-          initial: high
-          label: DEN_1
+          name: DEN_1
           mode: output
+          initial: high
         18: # A4 (Analog 4)
-          initial: high
-          label: DEN_0
+          name: DEN_0
           mode: output
+          initial: high
       analog:
-        # analog pins are always input so value is the label.
+        # analog pins are always input so value is the name.
         # Current sensing
         0: IS_0 # A0
         1: IS_1 # A1
