@@ -1,4 +1,3 @@
-from enum import IntEnum, Enum
 from pymata_express import pymata_express
 
 from panoptes.pocs.base import PanBase
@@ -46,59 +45,3 @@ class PowerBoard(PanBase):
             self.board.set_pin_mode_analog_input(pin_number, callback=analog_read_callback)
 
         self.logger.debug(f'Setting digital pin modes for {self.name}')
-
-
-class PinState(IntEnum):
-    LOW = 0
-    HIGH = 1
-
-
-class PinMode(Enum):
-    INPUT = 1
-    OUTPUT = 2
-
-
-class PinType(Enum):
-    ANALOG = 1
-    DIGITAL = 2
-
-
-class Pin(object):
-    """An Arduino Pin."""
-
-    def __init__(self,
-                 number=None,
-                 name='',
-                 label='',
-                 pin_type=PinType.DIGITAL,
-                 mode=PinMode.OUTPUT,
-                 initial_state=PinState.LOW):
-        """Set up the pin."""
-        assert number is not None
-        self.number = number
-        self.name = name
-        self.label = label
-
-        self.pin_type = pin_type
-        self.mode = mode
-        self.state = initial_state
-
-    @property
-    def is_analog(self):
-        """Is this an analog pin."""
-        return self.pin_type == PinType.ANALOG
-
-    @property
-    def is_digital(self):
-        """Is this an digital pin."""
-        return self.pin_type == PinType.DIGITAL
-
-    @property
-    def is_high(self):
-        """If pin is in a high state."""
-        return self.state == PinState.HIGH
-
-    @property
-    def is_low(self):
-        """If pin is in a low state."""
-        return self.state == PinState.LOW
