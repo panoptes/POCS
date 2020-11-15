@@ -107,21 +107,72 @@ cameras:
       file_extension: cr2
 
 ######################### Environmental Sensors ################################
-# Configure the environmental sensors that are attached.
-#
-# Use `auto_detect: True` for most options. Or use a manual configuration:
-#
-#   camera_board:
-#       serial_port: /dev/ttyACM0
-#   control_board:
-#       serial_port: /dev/ttyACM1
+# Configuration for the power distribution board and other environmental sensors.
 ################################################################################
 environment:
+  # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
+  power:
+    arduino_instance_id: 1
+    channels:
+      RELAY_0: mount
+      RELAY_1: camera_box
+      RELAY_2: fans
+      RELAY_3: weather_station
+      RELAY_4: unused
+    pins:
+      digital:
+        # Channels
+        3:
+          initial: high
+          label: RELAY_1
+          mode: output
+        4:
+          initial: high
+          label: RELAY_2
+          mode: output
+        7:
+          initial: high
+          label: RELAY_3
+          mode: output
+        8:
+          initial: high
+          label: RELAY_4
+          mode: output
+        17: # A3 (Analog 3)
+          initial: high
+          label: RELAY_0
+          mode: output
+        # Channel select
+        2:
+          initial: low
+          label: DSEL_0
+          mode: output
+        6:
+          initial: low
+          label: DSEL_1
+          mode: output
+        # Sense enable
+        5:
+          initial: high
+          label: DEN_2
+          mode: output
+        9:
+          initial: high
+          label: DEN_1
+          mode: output
+        18: # A4 (Analog 4)
+          initial: high
+          label: DEN_0
+          mode: output
+      analog:
+        # analog pins are always input so value is the label.
+        # Current sensing
+        0: IS_0 # A0
+        1: IS_1 # A1
+        2: IS_2 # A2
   auto_detect: False
   camera_board:
     serial_port: /dev/ttyACM0
-  control_board:
-    serial_port: /dev/ttyACM1
   weather:
     url: http://localhost:5000/latest.json
 
