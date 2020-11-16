@@ -1,7 +1,6 @@
 import time
 from enum import IntEnum
-
-from pymata_express import pymata_express
+from pymata4 import pymata4
 
 from panoptes.pocs.base import PanBase
 
@@ -53,7 +52,30 @@ class PowerBoard(PanBase):
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, name='Power Board', arduino_instance_id=None, relays=None, pins=None, *args, **kwargs):
+    def __init__(self,
+                 name='Power Board',
+                 arduino_instance_id=None,
+                 relays=None,
+                 *args, **kwargs):
+        """Initialize the power board.
+
+        The `relays` should be a dictionary with the relay name as key and a
+        dict with `label` and `initial_state` entries::
+
+            RELAY_0:
+                label: mount
+                initial_state: on
+
+        Args:
+            name (str): The user-friendly name for the power board.
+            arduino_instance_id (int or None): If multiple arduinos are present
+                on the system the specific board can be specified with this parameter.
+                Requires setting the instance_id in the arduino sketch before upload.
+                If None, pymata will attempt auto-discovery of the arduinos.
+            relays (dict or None): The relay configuration. See notes for details.
+                A default value of None will attempt to look up relays in the
+                config-server.
+        """
         super().__init__(*args, **kwargs)
 
         self.name = name
@@ -61,23 +83,20 @@ class PowerBoard(PanBase):
         # Lookup config for power board.
         self.config = self.get_config('environment.power')
 
-        arduino_instance_id = arduino_instance_id or self.config.get('arduino_instance_id', default=1)
-        self.relays = relays or self.config.get('relays', default=dict())
-
-        # Get the pin mapping from the config if not provided.
-        self.pin_mapping = pins or self.config.get('pins', default=dict())
+        arduino_instance_id = arduino_instance_id or self.config.get('arduino_instance_id', 1)
+        self.relays = relays or self.config.get('relays', dict())
 
         # Set up the PymataExpress board.
         self.logger.debug(f'Setting up Power board connection')
-        self.board = pymata_express.PymataExpress(arduino_instance_id=arduino_instance_id)
+        self.board = pymata4.Pymata4(arduino_instance_id=arduino_instance_id)
 
         # Set initial pin modes.
         self.set_pin_modes()
 
         # Set initial pin states.
-        for relay_name, relay_config in self.relays:
+        for relay_name, relay_config in self.relays.items():
             label = relay_config['label']
-            initial_state = relay_config['initial_state'].upper()
+            initial_state = relay_config.get('initial_state', 'off').upper()
 
             self.set_pin_state(RelayPins[relay_name], initial_state)
 
@@ -114,7 +133,7 @@ class PowerBoard(PanBase):
         for pin_number in RelayPins:
             self.board.set_pin_mode_digital_output(pin_number)
 
-    async def set_pin_state(self, pin_number, state):
+    def set_pin_state(self, pin_number, state):
         """Set the relay to the given state.
 
         Args:
@@ -126,11 +145,11 @@ class PowerBoard(PanBase):
         """
         state = PinState(bool(state))
         self.logger.debug(f'Setting digital pin {pin_number} to {state}')
-        await self.board.digital_write(pin_number, state)
+        self.board.digital_write(pin_number, state)
 
         return True
 
-    async def get_relay_state(self, relay_name):
+    def get_relay_state(self, relay_name):
         """Get the digital pin state.
 
         Args:
@@ -140,12 +159,12 @@ class PowerBoard(PanBase):
             bool: True if pin is HIGH, False if LOW.
         """
         pin_number = getattr(self, relay_name)
-        state, timestamp = await self.board.digital_read(pin_number)
+        state, timestamp = self.board.digital_read(pin_number)
         self.logger.info(f'{relay_name} = {state} (at {timestamp})')
 
         return bool(state)
 
-    async def turn_on(self, relay_name):
+    def turn_on(self, relay_name):
         """Turns off the given power relay.
 
         Note: This method is not asynchronous.
@@ -155,9 +174,9 @@ class PowerBoard(PanBase):
         """
         self.logger.info(f'Turning on {relay_name}')
         pin_number = getattr(self, relay_name)
-        return await self.set_pin_state(pin_number, PinState.HIGH)
+        return self.set_pin_state(pin_number, PinState.HIGH)
 
-    async def turn_off(self, relay_name):
+    def turn_off(self, relay_name):
         """Turns off the given power relay.
 
         Note: This method is not asynchronous.
@@ -167,7 +186,7 @@ class PowerBoard(PanBase):
         """
         self.logger.info(f'Turning off {relay_name}')
         pin_number = getattr(self, relay_name)
-        return await self.set_pin_state(pin_number, PinState.LOW)
+        return self.set_pin_state(pin_number, PinState.LOW)
 
     def toggle(self, relay_name, delay=0.5):
         """Toggles the power state with optional delay.
@@ -185,7 +204,7 @@ class PowerBoard(PanBase):
         time.sleep(delay)
         self.set_pin_state(pin_number, starting_state)
 
-    async def read_current(self):
+    def read_current(self):
         """Reads the current from all relays on the board.
 
         The Power Board uses the Infineon 24V relay shield, which has five
@@ -201,8 +220,8 @@ class PowerBoard(PanBase):
         self.set_pin_state(CurrentSelectPins.DSEL_1, PinState.LOW)
 
         # Read current.
-        relay_0_value, _ = await self.board.digital_read(RelayPins.RELAY_0)
-        relay_1_value, _ = await self.board.digital_read(RelayPins.RELAY_1)
+        relay_0_value, _ = self.board.digital_read(RelayPins.RELAY_0)
+        relay_1_value, _ = self.board.digital_read(RelayPins.RELAY_1)
 
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.HIGH)
@@ -212,10 +231,10 @@ class PowerBoard(PanBase):
         time.sleep(0.5)
 
         # Read current.
-        relay_2_value, _ = await self.board.digital_read(RelayPins.RELAY_2)
-        relay_3_value, _ = await self.board.digital_read(RelayPins.RELAY_3)
+        relay_2_value, _ = self.board.digital_read(RelayPins.RELAY_2)
+        relay_3_value, _ = self.board.digital_read(RelayPins.RELAY_3)
 
-        relay_4_value, _ = await self.board.digital_read(RelayPins.RELAY_4)
+        relay_4_value, _ = self.board.digital_read(RelayPins.RELAY_4)
 
         current_readings = {
             self.relays['RELAY_0']['label']: relay_0_value,
@@ -231,4 +250,5 @@ class PowerBoard(PanBase):
         return f'Power Distribution Board - {self.name}'
 
     def __del__(self):
+        self.logger.debug(f'Shutting down power board.')
         self.board.shutdown()
