@@ -124,7 +124,7 @@ class PowerBoard(PanBase):
         """Set the pin modes for the Arduino Uno + Infineon Uno 24V shield."""
         self.logger.debug(f'Setting up current reading pins')
         for pin in CurrentSensePins:
-            self.board.set_pin_mode_analog_input(pin.value)
+            self.board.set_pin_mode_analog_input(pin.value, differential=0)
 
         self.logger.debug(f'Setting up current enable pins')
         for pin in CurrentEnablePins:
@@ -234,8 +234,8 @@ class PowerBoard(PanBase):
         self.set_pin_state(CurrentSelectPins.DSEL_1, PinState.LOW)
 
         # Read current.
-        relay_0_value, _ = self.board.analog_read(CurrentSensePins.IS_0.value)
-        relay_1_value, _ = self.board.analog_read(CurrentSensePins.IS_1.value)
+        relay_0_reading = self.board.analog_read(CurrentSensePins.IS_0.value)
+        relay_2_reading = self.board.analog_read(CurrentSensePins.IS_1.value)
 
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.HIGH)
@@ -245,17 +245,17 @@ class PowerBoard(PanBase):
         time.sleep(0.5)
 
         # Read current.
-        relay_2_value, _ = self.board.analog_read(CurrentSensePins.IS_0.value)
-        relay_3_value, _ = self.board.analog_read(CurrentSensePins.IS_1.value)
+        relay_1_reading = self.board.analog_read(CurrentSensePins.IS_0.value)
+        relay_3_reading = self.board.analog_read(CurrentSensePins.IS_1.value)
 
-        relay_4_value, _ = self.board.analog_read(CurrentSensePins.IS_2.value)
+        relay_4_reading = self.board.analog_read(CurrentSensePins.IS_2.value)
 
         current_readings = {
-            self.relays['RELAY_0']['label']: relay_0_value,
-            self.relays['RELAY_1']['label']: relay_1_value,
-            self.relays['RELAY_2']['label']: relay_2_value,
-            self.relays['RELAY_3']['label']: relay_3_value,
-            self.relays['RELAY_4']['label']: relay_4_value,
+            self.relays['RELAY_0']['label']: relay_0_reading,
+            self.relays['RELAY_1']['label']: relay_1_reading,
+            self.relays['RELAY_2']['label']: relay_2_reading,
+            self.relays['RELAY_3']['label']: relay_3_reading,
+            self.relays['RELAY_4']['label']: relay_4_reading,
         }
 
         self.logger.debug(f'Current readings: {current_readings!r}')
