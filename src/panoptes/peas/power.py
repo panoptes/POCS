@@ -1,3 +1,4 @@
+from contextlib import suppress
 import time
 from enum import IntEnum
 from pymata4 import pymata4
@@ -122,20 +123,20 @@ class PowerBoard(PanBase):
     def set_pin_modes(self):
         """Set the pin modes for the Arduino Uno + Infineon Uno 24V shield."""
         self.logger.debug(f'Setting up current reading pins')
-        for pin_number in CurrentSensePins:
-            self.board.set_pin_mode_analog_input(pin_number)
+        for pin in CurrentSensePins:
+            self.board.set_pin_mode_analog_input(pin.value)
 
         self.logger.debug(f'Setting up current enable pins')
-        for pin_number in CurrentEnablePins:
-            self.board.set_pin_mode_digital_output(pin_number)
+        for pin in CurrentEnablePins:
+            self.board.set_pin_mode_digital_output(pin.value)
 
         self.logger.debug(f'Setting up current select pins')
-        for pin_number in CurrentSelectPins:
-            self.board.set_pin_mode_digital_output(pin_number)
+        for pin in CurrentSelectPins:
+            self.board.set_pin_mode_digital_output(pin.value)
 
         self.logger.debug(f'Setting up relay pins')
-        for pin_number in RelayPins:
-            self.board.set_pin_mode_digital_output(pin_number)
+        for pin in RelayPins:
+            self.board.set_pin_mode_digital_output(pin.value)
 
     def set_pin_state(self, pin_number, state):
         """Set the relay to the given state.
@@ -147,7 +148,11 @@ class PowerBoard(PanBase):
         Returns:
             bool: True if pin state successfully set.
         """
-        state = PinState(bool(state))
+        # Assume pin_number is an enum
+        with suppress(AttributeError):
+            pin_number = pin_number.value
+
+        state = PinState(bool(state)).value
         self.logger.debug(f'Setting digital pin {pin_number} to {state}')
         self.board.digital_write(pin_number, state)
 
@@ -163,6 +168,8 @@ class PowerBoard(PanBase):
             bool: True if pin is HIGH, False if LOW.
         """
         pin_number = getattr(self, relay_name)
+        with suppress(AttributeError):
+            pin_number = pin_number.value
         state, timestamp = self.board.digital_read(pin_number)
         self.logger.info(f'{relay_name} = {state} (at {timestamp})')
 
@@ -227,8 +234,8 @@ class PowerBoard(PanBase):
         self.set_pin_state(CurrentSelectPins.DSEL_1, PinState.LOW)
 
         # Read current.
-        relay_0_value, _ = self.board.analog_read(CurrentSensePins.IS_0)
-        relay_1_value, _ = self.board.analog_read(CurrentSensePins.IS_1)
+        relay_0_value, _ = self.board.analog_read(CurrentSensePins.IS_0.value)
+        relay_1_value, _ = self.board.analog_read(CurrentSensePins.IS_1.value)
 
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.HIGH)
@@ -238,10 +245,10 @@ class PowerBoard(PanBase):
         time.sleep(0.5)
 
         # Read current.
-        relay_2_value, _ = self.board.analog_read(CurrentSensePins.IS_0)
-        relay_3_value, _ = self.board.analog_read(CurrentSensePins.IS_1)
+        relay_2_value, _ = self.board.analog_read(CurrentSensePins.IS_0.value)
+        relay_3_value, _ = self.board.analog_read(CurrentSensePins.IS_1.value)
 
-        relay_4_value, _ = self.board.analog_read(CurrentSensePins.IS_2)
+        relay_4_value, _ = self.board.analog_read(CurrentSensePins.IS_2.value)
 
         current_readings = {
             self.relays['RELAY_0']['label']: relay_0_value,
