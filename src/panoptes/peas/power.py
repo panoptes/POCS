@@ -93,6 +93,10 @@ class PowerBoard(PanBase):
         # Set initial pin modes.
         self.set_pin_modes()
 
+        # Enable current sensing.
+        for pin_number in CurrentEnablePins:
+            self.set_pin_state(pin_number, PinState.HIGH)
+
         # Set initial pin states.
         for relay_name, relay_config in self.relays.items():
             label = relay_config['label']
@@ -214,14 +218,17 @@ class PowerBoard(PanBase):
 
         This will first set the channel select pins to low, do a reading,
         then set to high and do another reading.
+
+        Returns:
+            dict: A dictionary containing the current readings for each relay.
         """
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.LOW)
         self.set_pin_state(CurrentSelectPins.DSEL_1, PinState.LOW)
 
         # Read current.
-        relay_0_value, _ = self.board.digital_read(RelayPins.RELAY_0)
-        relay_1_value, _ = self.board.digital_read(RelayPins.RELAY_1)
+        relay_0_value, _ = self.board.analog_read(CurrentSensePins.IS_0)
+        relay_1_value, _ = self.board.analog_read(CurrentSensePins.IS_1)
 
         # Set select pins to low.
         self.set_pin_state(CurrentSelectPins.DSEL_0, PinState.HIGH)
@@ -231,10 +238,10 @@ class PowerBoard(PanBase):
         time.sleep(0.5)
 
         # Read current.
-        relay_2_value, _ = self.board.digital_read(RelayPins.RELAY_2)
-        relay_3_value, _ = self.board.digital_read(RelayPins.RELAY_3)
+        relay_2_value, _ = self.board.analog_read(CurrentSensePins.IS_0)
+        relay_3_value, _ = self.board.analog_read(CurrentSensePins.IS_1)
 
-        relay_4_value, _ = self.board.digital_read(RelayPins.RELAY_4)
+        relay_4_value, _ = self.board.analog_read(CurrentSensePins.IS_2)
 
         current_readings = {
             self.relays['RELAY_0']['label']: relay_0_value,
@@ -244,7 +251,10 @@ class PowerBoard(PanBase):
             self.relays['RELAY_4']['label']: relay_4_value,
         }
 
+        self.logger.debug(f'Current readings: {current_readings!r}')
         self.db.insert_current('power', dict(current=current_readings))
+
+        return current_readings
 
     def __str__(self):
         return f'Power Distribution Board - {self.name}'
