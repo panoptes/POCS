@@ -616,7 +616,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   seconds=None,
                   focus_range=None,
                   focus_step=None,
-                  thumbnail_size=None,
+                  cutout_size=None,
                   keep_files=None,
                   take_dark=None,
                   merit_function='vollath_F4',
@@ -638,7 +638,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (int, optional): Size of square central region of image
+            cutout_size (int, optional): Size of square central region of image
                 to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
@@ -673,7 +673,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       focus_step=focus_step,
                                       keep_files=keep_files,
                                       take_dark=take_dark,
-                                      thumbnail_size=thumbnail_size,
+                                      cutout_size=cutout_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
@@ -682,20 +682,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
+    def get_cutout(self, seconds, file_path, cutout_size, keep_file=False, *args, **kwargs):
         """
-        Takes an image and returns a thumbnail.
+        Takes an image and returns a thumbnail cutout.
 
         Takes an image, grabs the data, deletes the FITS file and
-        returns a thumbnail from the centre of the image.
+        returns a cutout from the centre of the image.
 
         Args:
             seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
             file_path (str): path to (temporarily) save the image file to.
-            thumbnail_size (int): size of the square region of the centre of the image to return.
+            cutout_size (int): size of the square region of the centre of the image to return.
             keep_file (bool, optional): if True the image file will be deleted, if False it will
                 be kept.
-            *args, **kwargs: passed to the take_exposure() method
+            *args, **kwargs: passed to the `take_exposure` method
         """
         kwargs['blocking'] = True
         self.take_exposure(seconds, filename=file_path, *args, **kwargs)
@@ -706,11 +706,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             os.unlink(file_path)
 
         # Make sure thumbnail is not bigger than image.
-        actual_thumbnail_size = min(thumbnail_size, *image.shape)
-        if actual_thumbnail_size != thumbnail_size:
-            self.logger.info(f'Requested thumbnail size is smaller than image, using {actual_thumbnail_size}')
+        actual_cutout_size = min(cutout_size, *image.shape)
+        if actual_cutout_size != cutout_size:
+            self.logger.info(f'Requested thumbnail size is smaller than image, using {actual_cutout_size}')
 
-        return img_utils.crop_data(image, box_width=thumbnail_size)
+        return img_utils.crop_data(image, box_width=cutout_size)
 
     @abstractmethod
     def _set_target_temperature(self, target):
