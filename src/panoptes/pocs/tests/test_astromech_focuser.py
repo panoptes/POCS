@@ -18,7 +18,7 @@ ids = ['astromechanics']
 def focuser(request):
     # Load the local config file and look for focuser configurations of the specified type
     focuser_configs = []
-    local_config = load_config('/Users/Jaime/Documents/MacquarieUni/Projects/POCS/conf_files/pocs.yaml', load_local=True)
+    local_config = load_config('pocs', load_local=True)
     camera_info = local_config.get('cameras')
     if camera_info:
         # Local config file has a cameras section
