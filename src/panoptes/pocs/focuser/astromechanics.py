@@ -245,13 +245,17 @@ class Focuser(AbstractFocuser):
         return response
 
     def _initialise(self):
-        # Get initial position of focuser adaptor.
-        self.logger.debug(f'Initial position of focuser is at {self.position} encoder units')
+        self._is_moving = True
+        try:
+            # Get initial position of focuser adaptor.
+            self.logger.debug(f'Initial position of focuser is at {self.position} encoder units')
 
-        # Initialise the aperture motor. This also has the side effect of fully opening the iris.
-        self._initialise_aperture()
+            # Initialise the aperture motor. This also has the side effect of fully opening the iris.
+            self._initialise_aperture()
+            self.logger.info('{} initialised'.format(self))
 
-        self.logger.info('{} initialised'.format(self))
+        finally:
+            self._is_moving = False
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
