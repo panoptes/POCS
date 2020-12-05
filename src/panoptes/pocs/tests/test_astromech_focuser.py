@@ -11,9 +11,6 @@ params = [AstroMechFocuser]
 ids = ['astromechanics']
 
 
-# Ugly hack to access id inside fixture
-
-
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
 def focuser(request):
     # Load the local config file and look for focuser configurations of the specified type

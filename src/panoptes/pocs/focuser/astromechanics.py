@@ -16,9 +16,7 @@ class Focuser(AbstractFocuser):
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
         dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
-            may have a focuser adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
-            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
-            used at the time of writing by Huntsman.
+            may have a focuser adaptor attached. Default is '/dev/tty.usbserial-00*?'
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
     that class' documentation for a complete list.
@@ -118,7 +116,6 @@ class Focuser(AbstractFocuser):
     def connect(self, port):
         try:
             # Configure serial port.
-            # Settings copied from Bob Abraham's birger.c
             self._serial_port = serial.Serial()
             self._serial_port.port = port
             self._serial_port.baudrate = 38400
@@ -186,7 +183,7 @@ class Focuser(AbstractFocuser):
         """
         self._is_moving = True
         try:
-            ini_pos = self._send_command("P#", response_length=1)[0].replace("#", "")
+            ini_pos = self.position
             new_pos = int(ini_pos) + increment
             self.move_to(new_pos)
         finally:
@@ -206,7 +203,7 @@ class Focuser(AbstractFocuser):
         Sends a command to the Focuser adaptor and retrieves the response.
 
         Args:
-            command (string): command string to send (without newline), e.g. 'fa1000', 'pf'
+            command (string): command string to send (without newline), e.g. "P#"
             response length (integer, optional, default=None): number of lines of response expected.
                 For most commands this should be 0 or 1. If None readlines() will be called to
                 capture all responses. As this will block until the timeout expires it should only
@@ -249,16 +246,12 @@ class Focuser(AbstractFocuser):
 
     def _initialise(self):
         # Get initial position of focuser adaptor.
-        self._get_initial_position()
+        self.logger.debug(f'Initial position of focuser is at {self.position} encoder units')
 
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
 
         self.logger.info('{} initialised'.format(self))
-
-    def _get_initial_position(self):
-        response = self._send_command('P#', response_length=1)[0].replace("#", "")
-        self.logger.debug(f'Initial position of focuser is at {response} encoder units')
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
