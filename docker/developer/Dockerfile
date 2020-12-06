@@ -32,6 +32,7 @@ RUN echo "Installing developer tools" && \
     "${PANDIR}/conda/bin/conda" install --name "${conda_env_name}" \
         altair \
         bokeh \
+        graphviz \
         holoviews \
         httpie \
         hvplot \
@@ -40,9 +41,12 @@ RUN echo "Installing developer tools" && \
         jupyter-offlinenotebook \
         jupyter-panel-proxy \
         jupyterlab \
+        networkx \
         nodejs \
+        panel \
         pyarrow \
         seaborn \
+        streamz \
         && \
     # Set some jupyterlab defaults.
     mkdir -p /home/panoptes/.jupyter && \

@@ -74,7 +74,7 @@ steps:
       - "buildx"
       - "build"
       - "--push"
-      - "--platform=linux/amd64"
+      - "--platform=${_PLATFORMS}"
       - "-f=docker/developer/Dockerfile"
       - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:developer"
