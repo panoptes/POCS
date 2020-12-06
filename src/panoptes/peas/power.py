@@ -1,8 +1,10 @@
 from contextlib import suppress
 import time
 from enum import IntEnum
-from collections import deque
 from pymata4 import pymata4
+import pandas as pd
+from streamz import Stream
+from streamz.dataframe import PeriodicDataFrame
 
 from panoptes.pocs.base import PanBase
 
@@ -86,7 +88,8 @@ class PowerBoard(PanBase):
         self.config = self.get_config('environment.power')
 
         arduino_instance_id = arduino_instance_id or self.config.get('arduino_instance_id', 1)
-        self.current_readings = dict()
+        self._current_stream = Stream()
+        self.current_df = DataFrame(self._current_stream, example=pd.DataFrame({'channel': [], 'reading': []}))
 
         # Set up the PymataExpress board.
         self.logger.debug(f'Setting up Power board connection')
@@ -139,11 +142,6 @@ class PowerBoard(PanBase):
         if analog_callback is None:
             analog_callback = self.analog_callback
 
-        for pin in CurrentEnablePins:
-            self.logger.info(f'Setting current enable pin={pin} as digital output with state=high')
-            self.board.set_pin_mode_digital_output(pin.value)
-            self.set_pin_state(pin.value, PinState.HIGH)
-
         for pin in RelayPins:
             self.logger.info(f'Setting relay pin={pin} as digital output')
             self.board.set_pin_mode_digital_output(pin.value)
@@ -158,6 +156,11 @@ class PowerBoard(PanBase):
             self.board.set_pin_mode_analog_input(pin.value,
                                                  callback=analog_callback,
                                                  differential=analog_differential)
+
+        for pin in CurrentEnablePins:
+            self.logger.info(f'Setting current enable pin={pin} as digital output with state=high')
+            self.board.set_pin_mode_digital_output(pin.value)
+            self.set_pin_state(pin.value, PinState.HIGH)
 
     def set_pin_state(self, pin_number, state):
         """Set the relay to the given state.
@@ -208,8 +211,10 @@ class PowerBoard(PanBase):
         Args:
             data (list): A list containing: [pin, value, pin_mode, timestamp]
         """
+        self.logger.trace(f'Power board analog data: {data!r}')
         sense_pin = CurrentSensePins(data[1])
         sense_value = data[2]
+        sense_timestamp = self._format_time(data[3])
 
         self.logger.trace(f'Callback: {data!r} {sense_pin}')
 
@@ -240,9 +245,11 @@ class PowerBoard(PanBase):
                 relay = self.relays[relay_names[select_state]]
 
             if relay is not None:
-                # Print the pin, current value and time and date of the pin change event.
+                # Emit to dataframe stream.
+                current_df = pd.DataFrame({'channel': relay.label, 'reading': sense_value},
+                                          index=[pd.to_datetime(sense_timestamp)])
+                self._current_stream.emit(current_df)
                 self.logger.debug(f'{relay} current={sense_value}')
-                relay.sensed_current.append(sense_value)
         except Exception as e:
             self.logger.error(f'{sense_pin} {sense_value} {e!r}')
 
@@ -286,7 +293,6 @@ class Relay(PanBase):
                     self.initial_state = PinState(self.initial_state)
 
         self.state = None
-        self.sensed_current = deque(list(), 100)
 
         self.sensing_enabled = sensing_enabled
         self.sensing_pin = sensing_pin
