@@ -185,7 +185,7 @@ class Focuser(AbstractFocuser):
         try:
             ini_pos = self.position
             new_pos = int(ini_pos) + increment
-            self.move_to(new_pos)
+            self._send_command('M{:d}#'.format(int(new_pos)), response_length=0)
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
