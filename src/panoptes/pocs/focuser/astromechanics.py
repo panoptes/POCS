@@ -32,8 +32,6 @@ class Focuser(AbstractFocuser):
     def __init__(self,
                  name='Astromechanics Focuser Controller',
                  model='astromechanics',
-                 initial_position=None,
-                 dev_node_pattern='/dev/tty.usbserial-00*',
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Astromechanics Lens Controller')
