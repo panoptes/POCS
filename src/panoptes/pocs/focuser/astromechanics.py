@@ -82,7 +82,7 @@ class Focuser(AbstractFocuser):
         Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('P#', response_length=1)[0].replace("#", "")
-        return response
+        return int(response)
 
     @property
     def min_position(self):
