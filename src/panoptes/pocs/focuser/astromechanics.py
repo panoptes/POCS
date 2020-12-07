@@ -13,10 +13,6 @@ class Focuser(AbstractFocuser):
     Args:
         name (str, optional): default 'Astromechanics Focuser'
         model (str, optional): default 'Canon EF/EF-S'
-        initial_position (int, optional): if given the focuser will drive to this encoder position
-            following initialisation.
-        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
-            may have a focuser adaptor attached. Default is '/dev/tty.usbserial-00*?'
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
     that class' documentation for a complete list.
@@ -175,9 +171,6 @@ class Focuser(AbstractFocuser):
 
         Returns:
             int: distance moved, in encoder units.
-
-        Does not do any checking of the requested increment but will warn if the lens reports
-        hitting a stop.
         """
         self._is_moving = True
         try:
