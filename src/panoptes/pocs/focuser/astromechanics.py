@@ -34,7 +34,7 @@ class Focuser(AbstractFocuser):
 
         # Check that this node hasn't already been assigned to another adaptor
         if self.port in Focuser._assigned_nodes:
-            message = 'Device node {} already in use!'.format(self.port)
+            message = f'Device node {self.port} already in use!'
             self.logger.error(message)
             warn(message)
             return
@@ -44,7 +44,7 @@ class Focuser(AbstractFocuser):
         except (serial.SerialException,
                 serial.SerialTimeoutException,
                 AssertionError) as err:
-            message = 'Error connecting to {} on {}: {}'.format(self.name, self.port, err)
+            message = f'Error connecting to {self.name} on {self.port}: {err}'
             self.logger.error(message)
             warn(message)
             return
@@ -57,10 +57,10 @@ class Focuser(AbstractFocuser):
         with suppress(AttributeError):
             device_node = self.port
             Focuser._assigned_nodes.remove(device_node)
-            self.logger.debug('Removed {} from assigned nodes list'.format(device_node))
+            self.logger.debug(f'Removed {device_node} from assigned nodes list')
         with suppress(AttributeError):
             self._serial_port.close()
-            self.logger.debug('Closed serial port {}'.format(self._port))
+            self.logger.debug(f'Closed serial port {self._port}')
 
     ##################################################################################################
     # Properties
@@ -128,7 +128,7 @@ class Focuser(AbstractFocuser):
 
         except serial.SerialException as err:
             self._serial_port = None
-            self.logger.critical('Could not open {}!'.format(port))
+            self.logger.critical(f'Could not open {port}!')
             raise err
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines.
@@ -136,7 +136,7 @@ class Focuser(AbstractFocuser):
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\n', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
+        self.logger.debug(f'Established serial connection to {self.name} on {port}.')
 
     def move_to(self, new_position):
         """
@@ -153,13 +153,13 @@ class Focuser(AbstractFocuser):
         """
         self._is_moving = True
         try:
-            self._send_command('M{:d}#'.format(int(new_position)), response_length=0)
+            self._send_command(f'M{int(new_position):d}#', response_length=0)
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug("Moved to encoder position {}".format(new_position))
+        self.logger.debug(f"Moved to encoder position {new_position}")
         return new_position
 
     def move_by(self, increment):
@@ -176,13 +176,13 @@ class Focuser(AbstractFocuser):
         try:
             ini_pos = self.position
             new_pos = int(ini_pos) + increment
-            self._send_command('M{:d}#'.format(int(new_pos)), response_length=0)
+            self._send_command(f'M{int(new_pos):d}#', response_length=0)
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug("Moved by {} encoder units. Current position is {}".format(increment, new_pos))
+        self.logger.debug(f"Moved by {increment} encoder units. Current position is {new_pos}")
         return new_pos
 
     ##################################################################################################
@@ -205,7 +205,7 @@ class Focuser(AbstractFocuser):
                 adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(f"Attempt to send command to {self} when not connected!")
             return
 
         # Clear the input buffer in case there's anything left over in there.
@@ -243,7 +243,7 @@ class Focuser(AbstractFocuser):
 
             # Initialise the aperture motor. This also has the side effect of fully opening the iris.
             self._initialise_aperture()
-            self.logger.info('{} initialised'.format(self))
+            self.logger.info(f'{self} initialised')
 
         finally:
             self._is_moving = False
