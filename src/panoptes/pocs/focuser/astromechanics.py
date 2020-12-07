@@ -61,7 +61,7 @@ class Focuser(AbstractFocuser):
         with suppress(AttributeError):
             device_node = self.port
             Focuser._assigned_nodes.remove(device_node)
-            self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
+            self.logger.debug('Removed {} from assigned nodes list'.format(device_node))
         with suppress(AttributeError):
             self._serial_port.close()
             self.logger.debug('Closed serial port {}'.format(self._port))
