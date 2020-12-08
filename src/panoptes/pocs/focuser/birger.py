@@ -3,9 +3,8 @@ import re
 import serial
 import glob
 from warnings import warn
-from contextlib import suppress
 
-from panoptes.pocs.focuser import AbstractFocuser
+from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits
@@ -42,7 +41,7 @@ error_messages = ('No error',
                   'Distance stops not supported by the lens')
 
 
-class Focuser(AbstractFocuser):
+class Focuser(AbstractSerialFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
 
@@ -63,18 +62,15 @@ class Focuser(AbstractFocuser):
     # Class variable to cache the device node scanning results
     _birger_nodes = None
 
-    # Class variable to store the device nodes already in use. Prevents scanning known Birgers &
-    # acts as a check against Birgers assigned to incorrect ports.
-    _assigned_nodes = []
-
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
                  *args, **kwargs):
-        super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
+
+        self._serial_port.baudrate = 115200
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
@@ -117,53 +113,16 @@ class Focuser(AbstractFocuser):
             self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
             self.port = device_node
 
-        # Check that this node hasn't already been assigned to another Birgers
-        if self.port in Focuser._assigned_nodes:
-            message = 'Device node {} already in use!'.format(self.port)
-            self.logger.error(message)
-            warn(message)
-            return
+        super().__init__(name=name, model=model, *args, **kwargs)
 
-        try:
-            self.connect(self.port)
-        except (serial.SerialException,
-                serial.SerialTimeoutException,
-                AssertionError) as err:
-            message = 'Error connecting to {} on {}: {}'.format(self.name, self.port, err)
-            self.logger.error(message)
-            warn(message)
-            return
-
-        Focuser._assigned_nodes.append(self.port)
-        self._is_moving = False
-        self._initialise()
         if initial_position is not None:
             self.position = initial_position
-
-    def __del__(self):
-        with suppress(AttributeError):
-            device_node = self.port
-            Focuser._assigned_nodes.remove(device_node)
-            self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
-        with suppress(AttributeError):
-            self._serial_port.close()
-            self.logger.debug('Closed serial port {}'.format(self._port))
 
     ##################################################################################################
     # Properties
     ##################################################################################################
 
-    @property
-    def is_connected(self):
-        """
-        Checks status of serial port to determine if connected.
-        """
-        connected = False
-        if self._serial_port:
-            connected = self._serial_port.isOpen()
-        return connected
-
-    @AbstractFocuser.position.getter
+    @AbstractSerialFocuser.position.getter
     def position(self):
         """
         Returns current focus position in the lens focus encoder units.
