@@ -139,7 +139,7 @@ class Focuser(AbstractFocuser):
         # The line_buffering option causes an automatic flush() when
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
-                                           newline='\n', encoding='ascii', line_buffering=True)
+                                           newline='\r', encoding='ascii', line_buffering=True)
         self.logger.debug(f'Established serial connection to {self.name} on {port}.')
 
     def move_to(self, new_position):
@@ -205,7 +205,7 @@ class Focuser(AbstractFocuser):
                 be used if the number of lines expected is not known (e.g. 'ds' command).
 
         Returns:
-            list: possibly empty list containing the '\n' terminated lines of the response from the
+            list: possibly empty list containing the '\r' terminated lines of the response from the
                 adaptor.
         """
         if not self.is_connected:
@@ -216,7 +216,7 @@ class Focuser(AbstractFocuser):
         self._serial_port.reset_input_buffer()
 
         # Send command
-        self._serial_io.write(command + '\n')
+        self._serial_io.write(command + '\r')
 
         # Depending on which command was sent there may or may not be any further
         # response.
