@@ -175,36 +175,8 @@ class Focuser(AbstractSerialFocuser):
     ##################################################################################################
 
     def connect(self, port):
-        try:
-            # Configure serial port.
-            # Settings copied from Bob Abraham's birger.c
-            self._serial_port = serial.Serial()
-            self._serial_port.port = port
-            self._serial_port.baudrate = 115200
-            self._serial_port.bytesize = serial.EIGHTBITS
-            self._serial_port.parity = serial.PARITY_NONE
-            self._serial_port.stopbits = serial.STOPBITS_ONE
-            self._serial_port.timeout = 2.0
-            self._serial_port.xonxoff = False
-            self._serial_port.rtscts = False
-            self._serial_port.dsrdtr = False
-            self._serial_port.write_timeout = None
-            self._inter_byte_timeout = None
 
-            # Establish connection
-            self._serial_port.open()
-
-        except serial.SerialException as err:
-            self._serial_port = None
-            self.logger.critical('Could not open {}!'.format(port))
-            raise err
-
-        # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
-        # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
-        # a write contains a newline character.
-        self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
-                                           newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
+        self._connect(port)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
