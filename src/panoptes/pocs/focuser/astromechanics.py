@@ -16,6 +16,10 @@ class Focuser(AbstractFocuser):
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
     that class' documentation for a complete list.
+
+    Min/max commands do not exist for the astromechanics controller, as well as
+    other commands to get serial numbers and library/hardware versions. However,
+    as they are marked with the decorator @abstractmethod, we have to override them.
     """
 
     # Class variable to cache the device node scanning results
