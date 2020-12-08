@@ -14,8 +14,6 @@ from panoptes.pocs.camera.simulator.dslr import Camera
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser, AstroMechanicsFocuser]
 ids = ['simulator', 'birger', 'focuslynx', 'astromechanics']
 
-# Ugly hack to access id inside fixture
-
 
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
 def focuser(request):
