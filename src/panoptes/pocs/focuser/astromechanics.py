@@ -52,11 +52,6 @@ class Focuser(AbstractSerialFocuser):
         """
         return None
 
-    @property
-    def is_moving(self):
-        """ True if the focuser is currently moving. """
-        return self._is_moving
-
     ##################################################################################################
     # Public Methods
     ##################################################################################################

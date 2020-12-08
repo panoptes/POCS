@@ -66,6 +66,15 @@ class AbstractSerialFocuser(AbstractFocuser):
             connected = self._serial_port.isOpen()
         return connected
 
+    @property
+    def is_moving(self):
+        """ True if the focuser is currently moving. """
+        return self._is_moving
+
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
+
     def _connect(self, port):
         try:
             # Configure serial port.
