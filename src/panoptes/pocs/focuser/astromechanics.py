@@ -9,7 +9,7 @@ class Focuser(AbstractSerialFocuser):
         name (str, optional): default 'Astromechanics Focuser'
         model (str, optional): default 'Canon EF/EF-S'
 
-    Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
+    Additional positonal and keyword arguments are passed to the base class, AbstractSerialFocuser. See
     that class' documentation for a complete list.
 
     Min/max commands do not exist for the astromechanics controller, as well as
@@ -114,7 +114,7 @@ class Focuser(AbstractSerialFocuser):
     # Private Methods
     ##################################################################################################
 
-    def _send_command(self, command, response_length=None):
+    def _send_command(self, command):
         """
         Sends a command to the Focuser adaptor and retrieves the response.
 
