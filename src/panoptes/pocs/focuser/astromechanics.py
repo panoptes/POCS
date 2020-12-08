@@ -83,7 +83,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            self._send_command(f'M{int(new_position):d}#', response_length=0)
+            self._send_command(f'M{int(new_position):d}#')
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -106,7 +106,7 @@ class Focuser(AbstractSerialFocuser):
         try:
             ini_pos = self.position
             new_pos = int(ini_pos) + increment
-            self._send_command(f'M{int(new_pos):d}#', response_length=0)
+            self._send_command(f'M{int(new_pos):d}#')
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
