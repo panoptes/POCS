@@ -85,7 +85,7 @@ class Focuser(AbstractFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command('P#', response_length=1)[0].replace("#", "")
+        response = self._send_command('P#').split("#")[0]
         return int(response)
 
     @property
@@ -220,22 +220,7 @@ class Focuser(AbstractFocuser):
 
         # Depending on which command was sent there may or may not be any further
         # response.
-        response = []
-
-        if response_length == 0:
-            # Not expecting any further response. Should check the buffer anyway in case an error
-            # message has been sent.
-            if self._serial_port.in_waiting:
-                response.append(self._serial_io.readline())
-
-        elif response_length > 0:
-            # Expecting some number of lines of response. Attempt to read that many lines.
-            for i in range(response_length):
-                response.append(self._serial_io.readline())
-
-        else:
-            # Don't know what to expect. Call readlines() to get whatever is there.
-            response.append(self._serial_io.readlines())
+        response = self._serial_io.readline()
 
         return response
 
