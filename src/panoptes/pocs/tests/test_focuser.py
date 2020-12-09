@@ -56,6 +56,8 @@ def tolerance(focuser):
         return 0
     elif isinstance(focuser, BirgerFocuser):
         return 2
+    elif isinstance(focuser, AstroMechanicsFocuser):
+        return 2
     elif isinstance(focuser, FocusLynxFocuser):
         return 0
 
