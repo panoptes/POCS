@@ -59,9 +59,6 @@ class Focuser(AbstractSerialFocuser):
     that class' documentation for a complete list.
     """
 
-    # Class variable to cache the device node scanning results
-    _birger_nodes = None
-
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
