@@ -10,37 +10,6 @@ from panoptes.utils import error
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
 
-# Error codes should be 'ERR' followed by 1-2 digits
-error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
-
-error_messages = ('No error',
-                  'Unrecognised command',
-                  'Lens is in manual focus mode',
-                  'No lens connected',
-                  'Lens distance stop error',
-                  'Aperture not initialised',
-                  'Invalid baud rate specified',
-                  'Reserved',
-                  'Reserved',
-                  'A bad parameter was supplied to the command',
-                  'XModem timeout',
-                  'XModem error',
-                  'XModem unlock code incorrect',
-                  'Not used',
-                  'Invalid port',
-                  'Licence unlock failure',
-                  'Invalid licence file',
-                  'Invalid library file',
-                  'Reserved',
-                  'Reserved',
-                  'Not used',
-                  'Library not ready for lens communications',
-                  'Library not ready for commands',
-                  'Command not licensed',
-                  'Invalid focus range in memory. Try relearning the range',
-                  'Distance stops not supported by the lens')
-
-
 class Focuser(AbstractSerialFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
