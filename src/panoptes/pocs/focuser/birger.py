@@ -10,6 +10,7 @@ from panoptes.utils import error
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
 
+
 class Focuser(AbstractSerialFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
