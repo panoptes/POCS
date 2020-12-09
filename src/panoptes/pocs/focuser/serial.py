@@ -78,7 +78,6 @@ class AbstractSerialFocuser(AbstractFocuser):
     def _connect(self, port):
         try:
             # Configure serial port.
-            # Settings copied from Bob Abraham's birger.c
             self._serial_port = serial.Serial()
             self._serial_port.port = port
             self._serial_port.baudrate = 115200
