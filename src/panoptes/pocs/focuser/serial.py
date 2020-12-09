@@ -6,9 +6,6 @@ from contextlib import suppress
 
 from panoptes.pocs.focuser import AbstractFocuser
 
-# Birger adaptor serial numbers should be 5 digits
-serial_number_pattern = re.compile(r'^\d{5}$')
-
 # Error codes should be 'ERR' followed by 1-2 digits
 error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
 
