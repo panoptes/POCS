@@ -65,6 +65,7 @@ class Focuser(AbstractSerialFocuser):
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
                  *args, **kwargs):
+        super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
         self._serial_port.baudrate = 115200
@@ -109,8 +110,6 @@ class Focuser(AbstractSerialFocuser):
                 return
             self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
             self.port = device_node
-
-        super().__init__(name=name, model=model, *args, **kwargs)
 
         if initial_position is not None:
             self.position = initial_position
