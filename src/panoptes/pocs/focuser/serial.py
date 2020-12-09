@@ -105,12 +105,12 @@ class AbstractSerialFocuser(AbstractFocuser):
     # Private Methods
     ##################################################################################################
 
-    def _connect(self, port):
+    def _connect(self, port, baudrate):
         try:
             # Configure serial port.
             self._serial_port = serial.Serial()
             self._serial_port.port = port
-            self._serial_port.baudrate = 115200
+            self._serial_port.baudrate = baudrate
             self._serial_port.bytesize = serial.EIGHTBITS
             self._serial_port.parity = serial.PARITY_NONE
             self._serial_port.stopbits = serial.STOPBITS_ONE

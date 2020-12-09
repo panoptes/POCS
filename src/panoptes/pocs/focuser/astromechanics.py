@@ -24,8 +24,6 @@ class Focuser(AbstractSerialFocuser):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Astromechanics Lens Controller')
 
-        self._serial_port.baudrate = 38400
-
     ##################################################################################################
     # Properties
     ##################################################################################################
@@ -58,7 +56,7 @@ class Focuser(AbstractSerialFocuser):
 
     def connect(self, port):
 
-        self._connect(port)
+        self._connect(port, baudrate=38400)
 
         # Return string that makes it clear there is no serial number
         return "no_serial_number_available"

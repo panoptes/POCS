@@ -38,8 +38,6 @@ class Focuser(AbstractSerialFocuser):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
-        self._serial_port.baudrate = 115200
-
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
             self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
@@ -137,7 +135,7 @@ class Focuser(AbstractSerialFocuser):
 
     def connect(self, port):
 
-        self._connect(port)
+        self._connect(port, baudrate=115200)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
