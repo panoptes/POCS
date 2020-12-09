@@ -111,37 +111,6 @@ class Focuser(AbstractSerialFocuser):
     # Private Methods
     ##################################################################################################
 
-    def _send_command(self, command):
-        """
-        Sends a command to the Focuser adaptor and retrieves the response.
-
-        Args:
-            command (string): command string to send (without newline), e.g. "P#"
-            response length (integer, optional, default=None): number of lines of response expected.
-                For most commands this should be 0 or 1. If None readlines() will be called to
-                capture all responses. As this will block until the timeout expires it should only
-                be used if the number of lines expected is not known (e.g. 'ds' command).
-
-        Returns:
-            list: possibly empty list containing the '\r' terminated lines of the response from the
-                adaptor.
-        """
-        if not self.is_connected:
-            self.logger.critical(f"Attempt to send command to {self} when not connected!")
-            return
-
-        # Clear the input buffer in case there's anything left over in there.
-        self._serial_port.reset_input_buffer()
-
-        # Send command
-        self._serial_io.write(command + '\r')
-
-        # Depending on which command was sent there may or may not be any further
-        # response.
-        response = self._serial_io.readline()
-
-        return response
-
     def _initialise(self):
         self._is_moving = True
         try:
