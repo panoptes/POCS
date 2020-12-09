@@ -78,7 +78,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            self._send_command(f'M{int(new_position):d}#')
+            self._send_command(f'M{int(new_position):d}#', ignore_response=True)
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -99,9 +99,8 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            ini_pos = self.position
-            new_pos = int(ini_pos) + increment
-            self._send_command(f'M{int(new_pos):d}#')
+            new_pos = self.position + increment
+            self._send_command(f'M{int(new_pos):d}#', ignore_response=True)
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -156,5 +155,5 @@ class Focuser(AbstractSerialFocuser):
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        self._send_command('A00#')
+        self._send_command('A00#', ignore_response=True)
         self.logger.debug('Aperture initialised')
