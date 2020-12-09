@@ -112,7 +112,7 @@ def test_move_below_min_position(focuser, tolerance):
     assert focuser.position == pytest.approx(focuser.min_position, tolerance)
 
 
-def test_move_above_max_positons(focuser, tolerance):
+def test_move_above_max_position(focuser, tolerance):
     if isinstance(focuser, AstroMechanicsFocuser):
         pytest.skip("This does not exist for astromechanics, skipping test")
     focuser.move_to(focuser.max_position + 100)
