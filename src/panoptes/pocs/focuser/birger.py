@@ -73,10 +73,10 @@ class Focuser(AbstractSerialFocuser):
             # Have been given a serial number
             self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
 
-            if Focuser._birger_nodes is None:
+            if Focuser._adaptor_nodes is None:
                 # No cached device nodes scanning results, need to scan.
                 self.logger.debug('Getting serial numbers for all connected Birger focusers')
-                Focuser._birger_nodes = {}
+                Focuser._adaptor_nodes = {}
                 # Find nodes matching pattern
                 device_nodes = glob.glob(dev_node_pattern)
 
@@ -84,24 +84,24 @@ class Focuser(AbstractSerialFocuser):
                 for device_node in device_nodes:
                     try:
                         serial_number = self.connect(device_node)
-                        Focuser._birger_nodes[serial_number] = device_node
+                        Focuser._adaptor_nodes[serial_number] = device_node
                     except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
                         # No Birger focuser on this node.
                         pass
                     finally:
                         self._serial_port.close()
 
-                if not Focuser._birger_nodes:
+                if not Focuser._adaptor_nodes:
                     message = 'No Birger focuser devices found!'
                     self.logger.error(message)
                     warn(message)
                     return
                 else:
-                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._birger_nodes))
+                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._adaptor_nodes))
 
             # Search in cached device node scanning results for serial number
             try:
-                device_node = Focuser._birger_nodes[self.port]
+                device_node = Focuser._adaptor_nodes[self.port]
             except KeyError:
                 message = 'Could not find {} ({})!'.format(self.name, self.port)
                 self.logger.error(message)
