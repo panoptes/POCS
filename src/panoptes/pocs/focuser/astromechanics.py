@@ -35,7 +35,7 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command('P#').rstrip("#")
+        response = self._send_command("P#").rstrip("#")
         return int(response)
 
     @property
