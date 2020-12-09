@@ -157,4 +157,4 @@ class Focuser(AbstractSerialFocuser):
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
         self._send_command('A00#')
-        self.logger.debug('Aperture initialised at maximum value')
+        self.logger.debug('Aperture initialised')
