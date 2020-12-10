@@ -132,12 +132,12 @@ class AbstractSerialFocuser(AbstractFocuser):
         # Send command
         self._serial_io.write(command + '\r')
 
+        response = self._serial_io.readline()
         if self.model == "astromechanics":
-            response = self._serial_io.readline()
             return response
 
         # In verbose mode adaptor will first echo the command
-        echo = self._serial_io.readline().rstrip()
+        echo = response.rstrip()
         assert echo == command, self.logger.warning("echo != command: {} != {}".format(
             echo, command))
 
