@@ -10,6 +10,36 @@ from panoptes.utils import error
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
 
+# Error codes should be 'ERR' followed by 1-2 digits
+error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
+
+error_messages = ('No error',
+                  'Unrecognised command',
+                  'Lens is in manual focus mode',
+                  'No lens connected',
+                  'Lens distance stop error',
+                  'Aperture not initialised',
+                  'Invalid baud rate specified',
+                  'Reserved',
+                  'Reserved',
+                  'A bad parameter was supplied to the command',
+                  'XModem timeout',
+                  'XModem error',
+                  'XModem unlock code incorrect',
+                  'Not used',
+                  'Invalid port',
+                  'Licence unlock failure',
+                  'Invalid licence file',
+                  'Invalid library file',
+                  'Reserved',
+                  'Reserved',
+                  'Not used',
+                  'Library not ready for lens communications',
+                  'Library not ready for commands',
+                  'Command not licensed',
+                  'Invalid focus range in memory. Try relearning the range',
+                  'Distance stops not supported by the lens')
+
 
 class Focuser(AbstractSerialFocuser):
     """
@@ -91,7 +121,8 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command('pf', response_length=1)
+        response = self._send_command('pf', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)
         return int(response[0].rstrip())
 
     @property
@@ -139,10 +170,12 @@ class Focuser(AbstractSerialFocuser):
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
-        self._send_command('rm1,0', response_length=0)
+        self._send_command('rm1,0', response_length=0,
+                           error_pattern=error_pattern, error_messages=error_messages)
 
         # Return serial number
-        return self._send_command('sn', response_length=1)[0].rstrip()
+        return self._send_command('sn', response_length=1,
+                                  error_pattern=error_pattern, error_messages=error_messages)[0].rstrip()
 
     def move_to(self, position):
         """
@@ -159,7 +192,8 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+            response = self._send_command('fa{:d}'.format(int(position)), response_length=1,
+                                          error_pattern=error_pattern, error_messages=error_messages)
             new_position = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -184,7 +218,8 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command('mf{:d}'.format(int(increment)), response_length=1)
+            response = self._send_command('mf{:d}'.format(int(increment)), response_length=1,
+                                          error_pattern=error_pattern, error_messages=error_messages)
             moved_by = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -247,7 +282,8 @@ class Focuser(AbstractSerialFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_serial_number(self):
-        response = self._send_command('sn', response_length=1)
+        response = self._send_command('sn', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)
         self._serial_number = response[0].rstrip()
         self.logger.debug("Got serial number {} for {} on {}".format(
             self.uid,
@@ -255,21 +291,24 @@ class Focuser(AbstractSerialFocuser):
             self.port))
 
     def _get_library_version(self):
-        response = self._send_command('lv', response_length=1)
+        response = self._send_command('lv', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)
         self._library_version = response[0].rstrip()
         self.logger.debug("Got library version '{}' for {} on {}".format(self._library_version,
                                                                          self.name,
                                                                          self.port))
 
     def _get_hardware_version(self):
-        response = self._send_command('hv', response_length=1)
+        response = self._send_command('hv', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)
         self._hardware_version = response[0].rstrip()
         self.logger.debug("Got hardware version {} for {} on {}".format(self._hardware_version,
                                                                         self.name,
                                                                         self.port))
 
     def _get_lens_info(self):
-        response = self._send_command('id', response_length=1)
+        response = self._send_command('id', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)
         self._lens_info = response[0].rstrip()
         self.logger.debug("Got lens info '{}' for {} on {}".format(self._lens_info,
                                                                    self.name,
@@ -277,12 +316,14 @@ class Focuser(AbstractSerialFocuser):
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        response = self._send_command('in', response_length=1)[0].rstrip()
+        response = self._send_command('in', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)[0].rstrip()
         if response != 'DONE':
             self.logger.error(f"{self} got response={response!r}, expected 'DONE'!")
 
     def _move_zero(self):
-        response = self._send_command('mz', response_length=1)[0].rstrip()
+        response = self._send_command('mz', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)[0].rstrip()
         if response[:4] != 'DONE':
             self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:
@@ -292,16 +333,19 @@ class Focuser(AbstractSerialFocuser):
 
     def _zero_encoder(self):
         self.logger.debug('Setting focus encoder zero point')
-        self._send_command('sf0', response_length=0)
+        self._send_command('sf0', response_length=0,
+                           error_pattern=error_pattern, error_messages=error_messages)
 
     def _learn_focus_range(self):
         self.logger.debug('Learning absolute focus range')
-        response = self._send_command('la', response_length=1)[0].rstrip()
+        response = self._send_command('la', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)[0].rstrip()
         if response != 'DONE:LA':
             self.logger.error(f"{self} got response={response!r}, expected 'DONE:LA'!")
 
     def _move_inf(self):
-        response = self._send_command('mi', response_length=1)[0].rstrip()
+        response = self._send_command('mi', response_length=1,
+                                      error_pattern=error_pattern, error_messages=error_messages)[0].rstrip()
         if response[:4] != 'DONE':
             self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:

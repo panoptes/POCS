@@ -6,35 +6,6 @@ from contextlib import suppress
 
 from panoptes.pocs.focuser import AbstractFocuser
 
-# Error codes should be 'ERR' followed by 1-2 digits
-error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
-
-error_messages = ('No error',
-                  'Unrecognised command',
-                  'Lens is in manual focus mode',
-                  'No lens connected',
-                  'Lens distance stop error',
-                  'Aperture not initialised',
-                  'Invalid baud rate specified',
-                  'Reserved',
-                  'Reserved',
-                  'A bad parameter was supplied to the command',
-                  'XModem timeout',
-                  'XModem error',
-                  'XModem unlock code incorrect',
-                  'Not used',
-                  'Invalid port',
-                  'Licence unlock failure',
-                  'Invalid licence file',
-                  'Invalid library file',
-                  'Reserved',
-                  'Reserved',
-                  'Not used',
-                  'Library not ready for lens communications',
-                  'Library not ready for commands',
-                  'Command not licensed',
-                  'Invalid focus range in memory. Try relearning the range',
-                  'Distance stops not supported by the lens')
 
 class AbstractSerialFocuser(AbstractFocuser):
 
@@ -136,7 +107,7 @@ class AbstractSerialFocuser(AbstractFocuser):
                                            newline='\r', encoding='ascii', line_buffering=True)
         self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
 
-    def _send_command(self, command, response_length=None):
+    def _send_command(self, command, response_length=None, error_pattern=None, error_messages=[]):
         """
         Sends a command to the focuser adaptor and retrieves the response.
 
