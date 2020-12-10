@@ -42,7 +42,7 @@ class AbstractSerialFocuser(AbstractFocuser):
     _adaptor_nodes = None
 
     # Class variable to store the device nodes already in use. Prevents scanning
-    # known focuser devices & acts as a check against Birgers assigned to incorrect ports.
+    # known focuser devices & acts as a check against adaptors assigned to incorrect ports.
     _assigned_nodes = []
 
     def __init__(self, *args, **kwargs):
@@ -130,7 +130,7 @@ class AbstractSerialFocuser(AbstractFocuser):
             raise err
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
-        # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
+        # (focuser adaptors usually send '\r', not '\n'). The line_buffering option causes an automatic flush() when
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\r', encoding='ascii', line_buffering=True)
@@ -138,7 +138,7 @@ class AbstractSerialFocuser(AbstractFocuser):
 
     def _send_command(self, command, response_length=None):
         """
-        Sends a command to the Birger adaptor and retrieves the response.
+        Sends a command to the focuser adaptor and retrieves the response.
 
         Args:
             command (string): command string to send (without newline), e.g. 'fa1000', 'pf'
