@@ -122,5 +122,5 @@ class Focuser(AbstractSerialFocuser):
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        self._send_command('A05#', response_length=0)
+        self._send_command('A00#', response_length=0)
         self.logger.debug('Aperture initialised')
