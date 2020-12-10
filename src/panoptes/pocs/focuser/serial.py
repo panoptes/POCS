@@ -136,7 +136,7 @@ class AbstractSerialFocuser(AbstractFocuser):
                                            newline='\r', encoding='ascii', line_buffering=True)
         self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
 
-    def _send_command(self, command, response_length=None, ignore_response=False):
+    def _send_command(self, command, response_length=None):
         """
         Sends a command to the Birger adaptor and retrieves the response.
 
@@ -160,9 +160,6 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         # Send command
         self._serial_io.write(command + '\r')
-
-        if ignore_response:
-            return
 
         if self.model == "astromechanics":
             response = self._serial_io.readline()
