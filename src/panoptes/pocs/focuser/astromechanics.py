@@ -82,8 +82,8 @@ class Focuser(AbstractSerialFocuser):
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug(f"Moved to encoder position {new_position}")
-        return new_position
+        self.logger.debug(f"Moved to encoder position {self.position}")
+        return self.position
 
     def move_by(self, increment):
         """
