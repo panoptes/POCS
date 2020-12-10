@@ -33,7 +33,7 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command("P#", response_length=1).rstrip("#")
+        response = self._send_command("P#").rstrip("#")
         return int(response)
 
     @property
@@ -76,7 +76,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            self._send_command(f'M{int(new_position):d}#', response_length=0)
+            self._send_command(f'M{int(new_position):d}#')
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -98,7 +98,7 @@ class Focuser(AbstractSerialFocuser):
         self._is_moving = True
         try:
             new_pos = self.position + increment
-            self._send_command(f'M{int(new_pos):d}#', response_length=0)
+            self._send_command(f'M{int(new_pos):d}#')
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -111,6 +111,32 @@ class Focuser(AbstractSerialFocuser):
     # Private Methods
     ##################################################################################################
 
+    def _send_command(self, command):
+        """
+        Sends a command to the focuser adaptor and retrieves the response.
+
+        Args:
+            command (string): command string to send (without newline), e.g. 'P#'
+            response length (integer, optional, default=None): number of lines of response expected.
+                For most commands this should be 0 or 1. If None readlines() will be called to
+                capture all responses. As this will block until the timeout expires it should only
+                be used if the number of lines expected is not known (e.g. 'ds' command).
+
+        Returns:
+            string:  containing the '\r' terminated lines of the response from the adaptor.
+        """
+        if not self.is_connected:
+            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            return
+
+        # Clear the input buffer in case there's anything left over in there.
+        self._serial_port.reset_input_buffer()
+
+        # Send command
+        self._serial_io.write(command + '\r')
+
+        return self._serial_io.readline()
+
     def _initialise(self):
         self._is_moving = True
         try:
@@ -122,5 +148,5 @@ class Focuser(AbstractSerialFocuser):
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        self._send_command('A00#', response_length=0)
+        self._send_command('A00#')
         self.logger.debug('Aperture initialised')
