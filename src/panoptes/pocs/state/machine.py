@@ -29,7 +29,7 @@ class PanStateMachine(Machine):
             'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
-        self._states_location = state_machine_table.get('location', 'pocs/state/states')
+        self._states_location = state_machine_table.get('location', 'panoptes.pocs.state.states')
 
         # Setup Transitions.
         _transitions = [self._load_transition(transition)
@@ -343,11 +343,8 @@ class PanStateMachine(Machine):
     def _load_state(self, state, state_info=None):
         self.logger.debug(f"Loading state: {state}")
         try:
-            state_module = load_module('panoptes.{}.{}.{}'.format(
-                self._states_location.replace("/", "."),
-                self._state_table_name,
-                state
-            ))
+            state_location = self._states_location.replace("/", ".")
+            state_module = load_module(f"{state_location}.{self._state_table_name}.{state}")
 
             # Get the `on_enter` method
             self.logger.debug(f"Checking {state_module}")
