@@ -142,6 +142,11 @@ class Focuser(AbstractSerialFocuser):
         try:
             # Initialise the aperture motor. This also has the side effect of fully opening the iris.
             self._initialise_aperture()
+
+            # Initalise focus. First move the focus to the close stop.
+            self._move_zero()
+            self._min_position = 0
+
             self.logger.info(f'{self} initialised')
         finally:
             self._is_moving = False
@@ -150,3 +155,14 @@ class Focuser(AbstractSerialFocuser):
         self.logger.debug('Initialising aperture motor')
         self._send_command('A00#')
         self.logger.debug('Aperture initialised')
+
+    def _move_zero(self):
+        self.logger.debug('Setting focus encoder zero point')
+        self._is_moving = True
+        try:
+            # Set focuser to 0 position
+            self._send_command('M0#')
+
+            self.logger.debug('Moved to encoder position 0')
+        finally:
+            self._is_moving = False
