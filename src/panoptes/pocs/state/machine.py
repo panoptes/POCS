@@ -300,12 +300,10 @@ class PanStateMachine(Machine):
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
         """ Loads the state table
-
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
                 `$POCS/resources/state_table/` directory or to absolute path if
                 starts with "/". Default 'simple_state_table'.
-
         Returns:
             dict:   Dictionary with `states` and `transitions` keys.
         """
