@@ -386,10 +386,6 @@ def test_run_wait_until_safe(observatory,
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    # Wait until we are in the waiting state.
-    while not pocs.next_state == 'ready':
-        time.sleep(1)
-
     assert pocs.is_safe() is False
 
     # Wait to pretend we're waiting for weather
@@ -401,10 +397,9 @@ def test_run_wait_until_safe(observatory,
 
     assert pocs.is_safe() is True
 
+    pocs.logger.warning(f'Waiting to get to scheduling state...')
     while pocs.next_state != 'slewing':
-        pocs.logger.warning(
-            f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
-        time.sleep(1)
+        pass
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)

@@ -29,7 +29,7 @@ class PanStateMachine(Machine):
             'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
-        self._states_location = state_machine_table.get('location', 'panoptes.pocs.state.states')
+        self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
         # Setup Transitions.
         _transitions = [self._load_transition(transition)
@@ -113,11 +113,19 @@ class PanStateMachine(Machine):
             self.logger.info(f'Run loop: self.state={self.state!r} self.next_state={self.next_state!r}')
 
             # Before moving to next state, check for required horizon level and wait if necessary.
-            while not self._state_is_safe(self.next_state):
-                self.logger.info(f'Waiting for next state ({self.next_state!r}) to become safe.')
-                check_delay = self.get_config('wait_delay',
-                                              default=60 * 3)  # Check every 3 minutes.
-                self.wait(delay=check_delay)
+            if not self.get_state(self.next_state).is_always_safe:
+
+                required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
+                self.logger.debug(f'Checking for required_horizon={required_horizon!r} for '
+                                  f'self.next_state={self.next_state!r}')
+
+                while not self.is_safe(horizon=required_horizon, park_if_false=False):
+                    self.logger.info(f'Waiting for required_horizon={required_horizon!r} for'
+                                     f' self.next_state={self.next_state!r}')
+                    self.logger.debug(f"bbb {self.next_state} {self.state}")
+                    check_delay = self.get_config('wait_delay',
+                                                  default=60 * 3)  # Check every 3 minutes.
+                    self.wait(delay=check_delay)
 
                 # TRANSITION TO STATE
             self.logger.info(f'Going to self.next_state={self.next_state!r}')
@@ -226,7 +234,19 @@ class PanStateMachine(Machine):
             return self.is_safe()
 
         dest_state_name = event_data.transition.dest
-        return self._state_is_safe(dest_state_name)
+        dest_state = self.get_state(dest_state_name)
+
+        # See if the state requires a certain horizon limit.
+        required_horizon = self._horizon_lookup.get(dest_state_name, 'observe')
+
+        # It's always safe to be in some states
+        if dest_state.is_always_safe:
+            self.logger.debug(f"Always safe to move to {dest_state_name}")
+            is_safe = True
+        else:
+            is_safe = self.is_safe(horizon=required_horizon)
+
+        return is_safe
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.
@@ -306,23 +326,6 @@ class PanStateMachine(Machine):
     # Private Methods
     ##################################################################################################
 
-    def _state_is_safe(self, state_name):
-        """
-        """
-        state = self.get_state(state_name)
-
-        # See if the state requires a certain horizon limit.
-        required_horizon = self._horizon_lookup.get(state_name, 'observe')
-
-        # It's always safe to be in some states
-        if state.is_always_safe:
-            self.logger.debug(f"Always safe to move to {state_name}.")
-            is_safe = True
-        else:
-            is_safe = self.is_safe(horizon=required_horizon)
-
-        return is_safe
-
     def _lookup_trigger(self):
         if self.state == 'parking' and self.next_state == 'parking':
             return 'set_park'
@@ -340,8 +343,11 @@ class PanStateMachine(Machine):
     def _load_state(self, state, state_info=None):
         self.logger.debug(f"Loading state: {state}")
         try:
-            state_location = self._states_location.replace("/", ".")
-            state_module = load_module(f"{state_location}.{self._state_table_name}.{state}")
+            state_module = load_module('panoptes.{}.{}.{}'.format(
+                self._states_location.replace("/", "."),
+                self._state_table_name,
+                state
+            ))
 
             # Get the `on_enter` method
             self.logger.debug(f"Checking {state_module}")
