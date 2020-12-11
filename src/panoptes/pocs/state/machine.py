@@ -113,10 +113,8 @@ class PanStateMachine(Machine):
             self.logger.info(f'Run loop: self.state={self.state!r} self.next_state={self.next_state!r}')
 
             # Before moving to next state, check for required horizon level and wait if necessary.
-            required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-            self.logger.debug(f'Checking for required_horizon={required_horizon!r} for self.next_state={self.next_state!r}')
-            while not self.is_safe(no_warning=True, horizon=required_horizon):
-                self.logger.info(f'Waiting for required_horizon={required_horizon!r} for self.next_state={self.next_state!r}')
+            while not self._state_is_safe(self.next_state):
+                self.logger.info(f'Waiting for next state ({self.next_state!r}) to become safe.')
                 check_delay = self.get_config('wait_delay',
                                               default=60 * 3)  # Check every 3 minutes.
                 self.wait(delay=check_delay)
@@ -228,19 +226,7 @@ class PanStateMachine(Machine):
             return self.is_safe()
 
         dest_state_name = event_data.transition.dest
-        dest_state = self.get_state(dest_state_name)
-
-        # See if the state requires a certain horizon limit.
-        required_horizon = self._horizon_lookup.get(dest_state_name, 'observe')
-
-        # It's always safe to be in some states
-        if dest_state.is_always_safe:
-            self.logger.debug(f"Always safe to move to {dest_state_name}")
-            is_safe = True
-        else:
-            is_safe = self.is_safe(horizon=required_horizon)
-
-        return is_safe
+        return self._state_is_safe(dest_state_name)
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.
@@ -319,6 +305,23 @@ class PanStateMachine(Machine):
     ##################################################################################################
     # Private Methods
     ##################################################################################################
+
+    def _state_is_safe(self, state_name):
+        """
+        """
+        state = self.get_state(state_name)
+
+        # See if the state requires a certain horizon limit.
+        required_horizon = self._horizon_lookup.get(state_name, 'observe')
+
+        # It's always safe to be in some states
+        if state.is_always_safe:
+            self.logger.debug(f"Always safe to move to {state_name}.")
+            is_safe = True
+        else:
+            is_safe = self.is_safe(horizon=required_horizon)
+
+        return is_safe
 
     def _lookup_trigger(self):
         if self.state == 'parking' and self.next_state == 'parking':
