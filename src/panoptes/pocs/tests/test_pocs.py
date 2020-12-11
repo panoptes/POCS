@@ -41,6 +41,16 @@ def mount():
 
 
 @pytest.fixture(scope='function')
+def pocstime_night():
+    return "2020-01-01 08:00:00"
+
+
+@pytest.fixture(scope='function')
+def pocstime_day():
+    return "2020-01-01 22:00:00"
+
+
+@pytest.fixture(scope='function')
 def site_details():
     return create_location_from_config()
 
@@ -95,8 +105,8 @@ def pocs_with_dome(pocs, dome):
 @pytest.fixture(scope='module')
 def valid_observation():
     return {
-        'name': 'HIP 36850',
-        'position': '113.65 deg +31.887 deg',
+        'name': 'TEST TARGET',
+        'position': '300.00 deg +70.887 deg',
         'priority': '100',
         'exptime': 2,
         'min_nexp': 2,
@@ -142,21 +152,21 @@ def test_simple_simulator(pocs, caplog):
     assert pocs.is_safe()
 
 
-def test_is_weather_and_dark_simulator(pocs):
+def test_is_weather_and_dark_simulator(pocs, pocstime_night, pocstime_day):
     pocs.initialize()
 
     # Night simulator
     pocs.set_config('simulator', 'all')
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
+    os.environ['POCSTIME'] = pocstime_night  # is dark
     assert pocs.is_dark() is True
-    os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
+    os.environ['POCSTIME'] = pocstime_day  # is day
     assert pocs.is_dark() is True
 
     # No night simulator
     pocs.set_config('simulator', hardware.get_all_names(without=['night']))
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'  # is dark
+    os.environ['POCSTIME'] = pocstime_night  # is dark
     assert pocs.is_dark() is True
-    os.environ['POCSTIME'] = '2020-01-01 18:00:00'  # is day
+    os.environ['POCSTIME'] = pocstime_day  # is day
     assert pocs.is_dark() is False
 
     pocs.set_config('simulator', ['camera', 'mount', 'weather', 'night'])
@@ -179,11 +189,11 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
-def test_unsafe_park(pocs):
+def test_unsafe_park(pocs, pocstime_night):
     pocs.set_config('simulator', 'all')
     pocs.initialize()
     assert pocs.is_initialized is True
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    os.environ['POCSTIME'] = pocstime_night
     assert pocs.state == 'sleeping'
     pocs.get_ready()
     assert pocs.state == 'ready'
@@ -341,10 +351,8 @@ def test_pocs_park_to_ready_without_observations(pocs):
     assert pocs.is_safe() is False
 
 
-def test_run_wait_until_safe(observatory,
-                             valid_observation,
-                             ):
-    os.environ['POCSTIME'] = '2020-01-01 22:00:00'
+def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocstime_night):
+    os.environ['POCSTIME'] = pocstime_day
 
     # Remove weather simulator, else it would always be safe.
     observatory.set_config('simulator', hardware.get_all_names(without=['night']))
@@ -385,7 +393,8 @@ def test_run_wait_until_safe(observatory,
     assert pocs.is_safe(park_if_not_safe=False) is False
 
     # Wait to pretend we're waiting for horizon
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    time.sleep(5)
+    os.environ['POCSTIME'] = pocstime_night
     assert pocs.is_dark()
 
     pocs.logger.warning(f'Waiting to get to scheduling state...')
@@ -434,9 +443,9 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    while pocs.next_state != 'scheduling':
+    while pocs.next_state != 'slewing':
         pocs.logger.debug(
-            f'Waiting to get to scheduling state. Currently next_state={pocs.next_state}')
+            f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
