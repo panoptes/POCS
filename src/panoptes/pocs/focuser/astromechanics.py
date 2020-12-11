@@ -41,7 +41,7 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns position of close limit of focus travel, in encoder units.
         """
-        return None
+        return self._min_position
 
     @property
     def max_position(self):
