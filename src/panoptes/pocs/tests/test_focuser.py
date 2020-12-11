@@ -7,14 +7,12 @@ from panoptes.utils.config.helpers import load_config
 
 from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
+from panoptes.pocs.focuser.astromechanics import Focuser as AstroMechanicsFocuser
 from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from panoptes.pocs.camera.simulator.dslr import Camera
 
-params = [SimFocuser, BirgerFocuser, FocusLynxFocuser]
-ids = ['simulator', 'birger', 'focuslynx']
-
-
-# Ugly hack to access id inside fixture
+params = [SimFocuser, BirgerFocuser, FocusLynxFocuser, AstroMechanicsFocuser]
+ids = ['simulator', 'birger', 'focuslynx', 'astromechanics']
 
 
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
@@ -57,6 +55,8 @@ def tolerance(focuser):
     if isinstance(focuser, SimFocuser):
         return 0
     elif isinstance(focuser, BirgerFocuser):
+        return 2
+    elif isinstance(focuser, AstroMechanicsFocuser):
         return 2
     elif isinstance(focuser, FocusLynxFocuser):
         return 0
@@ -106,11 +106,15 @@ def test_position_setter(focuser, tolerance):
 
 
 def test_move_below_min_position(focuser, tolerance):
+    if isinstance(focuser, AstroMechanicsFocuser):
+        pytest.skip("This does not exist for astromechanics, skipping test")
     focuser.move_to(focuser.min_position - 100)
     assert focuser.position == pytest.approx(focuser.min_position, tolerance)
 
 
-def test_move_above_max_positons(focuser, tolerance):
+def test_move_above_max_position(focuser, tolerance):
+    if isinstance(focuser, AstroMechanicsFocuser):
+        pytest.skip("This does not exist for astromechanics, skipping test")
     focuser.move_to(focuser.max_position + 100)
     assert focuser.position == pytest.approx(focuser.max_position, tolerance)
 
