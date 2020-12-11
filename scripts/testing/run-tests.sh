@@ -21,7 +21,9 @@ echo "Checking to make sure panoptes-config-server is running"
 scripts/wait-for-it.sh --timeout=30 --strict "${PANOPTES_CONFIG_HOST}:${PANOPTES_CONFIG_PORT}" -- echo "Config-server up"
 
 echo "Starting testing"
-coverage run "$(command -v pytest)"
+#coverage run "$(command -v pytest)"
+cd $POCS/src/panoptes/pocs/tests
+pytest -xv --without-hardware test_pocs.py -k "test_run_wait_until_safe"
 echo "Stopping config server"
 panoptes-config-server --verbose --host "${PANOPTES_CONFIG_HOST}" --port "${PANOPTES_CONFIG_PORT}" stop
 

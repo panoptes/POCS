@@ -16,7 +16,7 @@ tail -F ${PANDIR}/logs/panoptes-testing.log
 Tests will begin in 5 seconds. Press Ctrl-c to cancel.
 EOF
 
-sleep "${SLEEP_TIME:-5}"
+# sleep "${SLEEP_TIME:-5}"
 
 # Hard-coded paths are *inside* the docker image and should not be changed.
 docker run --rm -i \

@@ -344,14 +344,10 @@ def test_pocs_park_to_ready_without_observations(pocs):
 def test_run_wait_until_safe(observatory,
                              valid_observation,
                              ):
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    os.environ['POCSTIME'] = '2020-01-01 22:00:00'
 
-    # Make sure DB is clear for current weather
-    observatory.db.clear_current('weather')
-
-    observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', hardware.get_all_names(without=['weather']))
+    observatory.set_config('simulator', hardware.get_all_names(without=['night']))
 
     pocs = POCS(observatory)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
@@ -365,7 +361,7 @@ def test_run_wait_until_safe(observatory,
     pocs.logger.info('Starting observatory run')
 
     # Weather is bad and unit is is connected but not set.
-    assert pocs.is_weather_safe() is False
+    assert not pocs.is_dark()
     assert pocs.is_initialized
     assert pocs.connected
     assert pocs.do_states
@@ -386,16 +382,11 @@ def test_run_wait_until_safe(observatory,
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    assert pocs.is_safe() is False
+    assert pocs.is_safe(park_if_not_safe=False) is False
 
-    # Wait to pretend we're waiting for weather
-    time.sleep(2)
-
-    # Insert a dummy weather record to break wait
-    observatory.logger.warning(f'Inserting safe weather reading')
-    observatory.db.insert_current('weather', {'safe': True})
-
-    assert pocs.is_safe() is True
+    # Wait to pretend we're waiting for horizon
+    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    assert pocs.is_dark()
 
     pocs.logger.warning(f'Waiting to get to scheduling state...')
     while pocs.next_state != 'slewing':

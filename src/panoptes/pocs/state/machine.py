@@ -29,7 +29,7 @@ class PanStateMachine(Machine):
             'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
-        self._states_location = state_machine_table.get('location', 'panoptes.pocs.state.states')
+        self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
         # Setup Transitions.
         _transitions = [self._load_transition(transition)
@@ -109,31 +109,36 @@ class PanStateMachine(Machine):
 
         self.logger.debug(f'Starting run loop')
         while self.keep_running:
+
             # BEFORE TRANSITION TO STATE
-            self.logger.info(f'Run loop: self.state={self.state!r} self.next_state={self.next_state!r}')
+            self.logger.info(f'Run loop: self.state={self.state!r}'
+                             f'self.next_state={self.next_state!r}')
 
-            # Before moving to next state, check for required horizon level and wait if necessary.
-            if not self.get_state(self.next_state).is_always_safe:
+            is_always_safe = self.get_state(self.next_state).is_always_safe
+            if not is_always_safe:
 
+                # Before moving to next state, wait for required horizon if necessary
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-                self.logger.debug(f'Checking for required_horizon={required_horizon!r} for '
-                                  f'self.next_state={self.next_state!r}')
 
-                while not self.is_safe(horizon=required_horizon, park_if_false=False):
-                    self.logger.info(f'Waiting for required_horizon={required_horizon!r} for'
-                                     f' self.next_state={self.next_state!r}')
-                    self.logger.debug(f"bbb {self.next_state} {self.state}")
-                    check_delay = self.get_config('wait_delay',
-                                                  default=60 * 3)  # Check every 3 minutes.
+                while not self.is_dark(horizon=required_horizon):
+                    self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
+                                     f"self.next_state={self.next_state!r}")
+
+                    # If not safe, go to park
+                    self.logger.debug("Checking safety while waiting for state horizon.")
+                    self.is_safe(park_if_not_safe=True, ignore_dark=True)
+
+                    check_delay = self.get_config('wait_delay', default=120)
                     self.wait(delay=check_delay)
 
-                # TRANSITION TO STATE
+            # TRANSITION TO STATE
             self.logger.info(f'Going to self.next_state={self.next_state!r}')
             try:
                 # The state's `on_enter` logic will be performed here.
                 state_changed = self.goto_next_state()
             except Exception as e:
-                self.logger.critical(f"Problem going from self.state={self.state!r} to self.next_state={self.next_state!r}"
+                self.logger.critical(f"Problem going from self.state={self.state!r} to "
+                                     f" self.next_state={self.next_state!r}"
                                      f", exiting loop [{e!r}]")
                 # TODO should we automatically park here?
                 self.stop_states()
@@ -143,14 +148,16 @@ class PanStateMachine(Machine):
 
             # If we didn't successfully transition, wait a while then try again
             if not state_changed:
-                self.logger.warning(f"Failed to move from self.state={self.state!r} to self.next_state={self.next_state!r}")
+                self.logger.warning(f"Failed to move from self.state={self.state!r} to "
+                                    f"self.next_state={self.next_state!r}")
                 if self.is_safe() is False:
                     self.logger.warning(
                         "Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = 'parking'
                 elif _transition_iteration > max_transition_attempts:
                     self.logger.warning(
-                        f"Stuck in current state for max_transition_attempts={max_transition_attempts!r}, parking")
+                        f"Stuck in current state for "
+                        f"max_transition_attempts={max_transition_attempts!r}, parking")
                     self.next_state = 'parking'
                 else:
                     _transition_iteration = _transition_iteration + 1
@@ -343,8 +350,11 @@ class PanStateMachine(Machine):
     def _load_state(self, state, state_info=None):
         self.logger.debug(f"Loading state: {state}")
         try:
-            state_location = self._states_location.replace("/", ".")
-            state_module = load_module(f"{state_location}.{self._state_table_name}.{state}")
+            state_module = load_module('panoptes.{}.{}.{}'.format(
+                self._states_location.replace("/", "."),
+                self._state_table_name,
+                state
+            ))
 
             # Get the `on_enter` method
             self.logger.debug(f"Checking {state_module}")

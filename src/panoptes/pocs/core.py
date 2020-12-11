@@ -278,7 +278,8 @@ class POCS(PanStateMachine, PanBase):
     # Safety Methods
     ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe', park_if_false=True):
+    def is_safe(self, no_warning=False, horizon='observe', ignore_dark=False,
+                park_if_not_safe=True):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -292,8 +293,9 @@ class POCS(PanStateMachine, PanBase):
                 defaults to False.
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
-            park_if_false (bool, optional): If True, will park the telescope if is_safe evaluates
-                to False.
+            ignore_dark (bool, optional): If True, will ignore whether it is dark or not when
+                deciding if safe.
+            park_if_not_safe (bool, optional): If True, will go to park if safety check fails.
         Returns:
             bool: Latest safety flag.
 
@@ -311,7 +313,8 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values['ac_power'] = has_power
 
         # Check if night time
-        is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
+        if not ignore_dark:
+            is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
@@ -333,7 +336,7 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
             # These states are already "parked" so don't send to parking.
-            if park_if_false:
+            if park_if_not_safe:
                 safe_states = [
                     'parked',
                     'parking',
