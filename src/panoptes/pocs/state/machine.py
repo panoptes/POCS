@@ -65,9 +65,9 @@ class PanStateMachine(Machine):
 
         self.logger.debug("State machine created")
 
-    ##################################################################################################
+    ################################################################################################
     # Properties
-    ##################################################################################################
+    ################################################################################################
 
     @property
     def next_state(self):
@@ -78,9 +78,9 @@ class PanStateMachine(Machine):
         """ Set the tracking rate """
         self._next_state = value
 
-    ##################################################################################################
+    ################################################################################################
     # Methods
-    ##################################################################################################
+    ################################################################################################
 
     def run(self, exit_when_done=False, run_once=False, initial_next_state='ready'):
         """Runs the state machine loop.
@@ -114,22 +114,27 @@ class PanStateMachine(Machine):
             self.logger.info(f'Run loop: self.state={self.state!r}'
                              f'self.next_state={self.next_state!r}')
 
-            is_always_safe = self.get_state(self.next_state).is_always_safe
-            if not is_always_safe:
+            # Before moving to next state, wait for required horizon if necessary
+            while True:
+                # If not safe, go to park
+                self.is_safe(park_if_not_safe=True, ignore_dark=True)
 
-                # Before moving to next state, wait for required horizon if necessary
+                # The state may have changed since the start of the while loop
+                # e.g. if self.park is called from self.is_safe
+                # So we need to check if the new state is always safe
+                if self.get_state(self.next_state).is_always_safe:
+                    break
+
+                # Check the horizon here because next state may have changed in loop
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
+                if self.is_dark(horizon=required_horizon):
+                    break
+                self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
+                                 f"self.next_state={self.next_state!r}")
 
-                while not self.is_dark(horizon=required_horizon):
-                    self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
-                                     f"self.next_state={self.next_state!r}")
-
-                    # If not safe, go to park
-                    self.logger.debug("Checking safety while waiting for state horizon.")
-                    self.is_safe(park_if_not_safe=True, ignore_dark=True)
-
-                    check_delay = self.get_config('wait_delay', default=120)
-                    self.wait(delay=check_delay)
+                # Wait if safe but not dark
+                check_delay = self.get_config('wait_delay', default=120)
+                self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
             self.logger.info(f'Going to self.next_state={self.next_state!r}')
