@@ -456,10 +456,12 @@ def test_run_wait_park(observatory, valid_observation, pocstime_day, pocstime_ni
 
     # Insert bad weather report while waiting for slewing state
     time.sleep(5)
+    assert pocs.state == "scheduling"
     observatory.db.insert_current('weather', {'safe': False})
 
     pocs.logger.warning(f'Waiting to get to parked state...')
     while pocs.next_state not in ['parking', 'parked']:
+        assert pocs.state != "slewing"  # Shouldn't go to slewing if weather not safe
         # Check frequently as POCS does not spend much time in these states
         pass
 
