@@ -459,8 +459,9 @@ def test_run_wait_park(observatory, valid_observation, pocstime_day, pocstime_ni
     observatory.db.insert_current('weather', {'safe': False})
 
     pocs.logger.warning(f'Waiting to get to parked state...')
-    while pocs.next_state != 'parked':
-        time.sleep(1)
+    while pocs.next_state not in ['parking', 'parked']:
+        # Check frequently as POCS does not spend much time in these states
+        pass
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
