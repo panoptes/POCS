@@ -368,7 +368,7 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
-    # Weather is bad and unit is is connected but not set.
+    # Not dark and unit is is connected but not set.
     assert not pocs.is_dark()
     assert pocs.is_initialized
     assert pocs.connected
@@ -397,9 +397,70 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     os.environ['POCSTIME'] = pocstime_night
     assert pocs.is_dark()
 
-    pocs.logger.warning(f'Waiting to get to scheduling state...')
+    pocs.logger.warning(f'Waiting to get to slewing state...')
     while pocs.next_state != 'slewing':
-        pass
+        time.sleep(1)
+
+    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    observatory.set_config('pocs.DO_STATES', False)
+
+    observatory.logger.warning(f'Waiting on pocs_thread')
+    pocs_thread.join(timeout=300)
+
+    assert pocs_thread.is_alive() is False
+
+
+def test_run_wait_park(observatory, valid_observation, pocstime_day, pocstime_night):
+    os.environ['POCSTIME'] = pocstime_day
+
+    # Remove weather simulator, else it would always be safe.
+    observatory.set_config('simulator', hardware.get_all_names(without=['night', 'weather']))
+
+    pocs = POCS(observatory)
+    pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
+
+    pocs.observatory.scheduler.clear_available_observations()
+    pocs.observatory.scheduler.add_observation(valid_observation)
+    observatory.logger.warning(f'Inserting safe weather reading')
+    observatory.db.insert_current('weather', {'safe': True})
+
+    assert pocs.connected is True
+    assert pocs.is_initialized is False
+    pocs.initialize()
+    pocs.logger.info('Starting observatory run')
+
+    # Weather is bad and unit is is connected but not set.
+    assert not pocs.is_dark()
+    assert pocs.is_safe(ignore_dark=True)
+    assert pocs.is_initialized
+    assert pocs.connected
+    assert pocs.do_states
+    assert pocs.next_state is None
+
+    pocs.set_config('wait_delay', 1)
+
+    def start_pocs():
+        # Start running, BLOCKING.
+        pocs.logger.info(f'start_pocs ENTER')
+        pocs.run(run_once=True, exit_when_done=True)
+
+        # After done running.
+        assert pocs.is_weather_safe() is True
+        pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
+
+    pocs_thread = threading.Thread(target=start_pocs, daemon=True)
+    pocs_thread.start()
+
+    assert not pocs.is_safe(park_if_not_safe=False)
+
+    # Insert bad weather report while waiting for slewing state
+    time.sleep(5)
+    observatory.db.insert_current('weather', {'safe': False})
+
+    pocs.logger.warning(f'Waiting to get to parked state...')
+    while pocs.next_state != 'parked':
+        time.sleep(1)
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
