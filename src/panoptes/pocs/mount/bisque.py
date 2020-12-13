@@ -212,7 +212,7 @@ class Mount(AbstractMount):
                     'ra': mount_coords[0], 'dec': mount_coords[1]}, timeout=timeout)
                 success = response['success']
                 if success:
-                    while not self.is_slewing:
+                    while self.is_slewing:
                         time.sleep(2)
                 else:
                     raise error.PanError(f"Slewing was unsuccessful: {response['response']}")
