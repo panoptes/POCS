@@ -320,6 +320,7 @@ def test_exposure(camera, tmpdir):
     fits_path = str(tmpdir.join('test_exposure.fits'))
 
     assert not camera.is_exposing
+    assert camera.is_ready
     # A one second normal exposure.
     camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
@@ -352,6 +353,29 @@ def test_exposure_blocking(camera, tmpdir):
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
+
+
+def test_long_exposure_blocking(camera, tmpdir):
+    """
+    Tests basic take_exposure functionality
+    """
+    fits_path = str(tmpdir.join('test_long_exposure_blocking.fits'))
+    original_timeout = camera._timeout
+    original_readout = camera._readout_time
+    try:
+        camera._timeout = 1
+        camera._readout_time = 0.5
+        assert not camera.is_exposing
+        assert camera.is_ready
+        seconds = 2 * (camera._timeout + camera._readout_time)
+        camera.take_exposure(filename=fits_path, seconds=seconds, blocking=True)
+        # Output file should exist, Event should be set and camera should say it's not exposing.
+        assert os.path.exists(fits_path)
+        assert not camera.is_exposing
+        assert camera.is_ready
+    finally:
+        camera._timeout = original_timeout
+        camera._readout_time = original_readout
 
 
 def test_exposure_dark(camera, tmpdir):

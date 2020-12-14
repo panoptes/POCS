@@ -1,10 +1,6 @@
 import os
 import random
-import time
-from abc import ABC
-
 from threading import Timer
-
 import numpy as np
 
 from astropy import units as u
@@ -53,6 +49,7 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _end_exposure(self):
+        self.logger.debug(f"Calling _end_exposure for {self}")
         self._is_exposing_event.clear()
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
@@ -64,14 +61,10 @@ class Camera(AbstractCamera):
         return readout_args
 
     def _readout(self, filename=None, header=None):
+        self.logger.debug(f'Calling _readout for {self}')
         timer = CountdownTimer(duration=self.readout_time)
-        self.logger.trace(f'Calling _readout for {self}')
         # Get example FITS file from test data directory
-        file_path = os.path.join(
-            os.environ['POCS'],
-            'tests', 'data',
-            'unsolved.fits'
-        )
+        file_path = os.path.join(os.environ['POCS'], 'tests', 'data', 'unsolved.fits')
         fake_data = fits.getdata(file_path)
 
         if header.get('IMAGETYP') == 'Dark Frame':
