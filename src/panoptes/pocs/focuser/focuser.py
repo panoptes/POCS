@@ -340,7 +340,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_type = 'coarse'
 
         initial_focus = self.position
-        self.logger.debug(f"Beginning {focus_type} autofocus of {self._camera} - initial position: {initial_focus}")
+        self.logger.debug(f"Beginning {focus_type} autofocus of {self._camera} - "
+                          f"initial position: {initial_focus}")
 
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.get_config('directories.images')
@@ -374,7 +375,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
-            initial_cutout = self._camera.get_thumbnail(seconds, initial_path, cutout_size, keep_file=True)
+            initial_cutout = self._camera.get_thumbnail(seconds, initial_path, cutout_size,
+                                                        keep_file=True)
             initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 initial_cutout = initial_cutout.astype(np.int32) - dark_cutout
@@ -414,17 +416,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             # Take exposure.
             try:
-                cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size, keep_file=keep_files)
+                cutouts[i] = self._camera.get_thumbnail(seconds, file_path, cutout_size,
+                                                        keep_file=keep_files)
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
                 focus_event.set()
                 raise err
 
-            masks[i] = mask_saturated(cutout, bit_depth=self.camera.bit_depth).mask
-            if dark_cutout is not None:
-                cutout = cutout.astype(np.int32) - dark_cutout
-            cutouts[i] = cutout
+            masks[i] = mask_saturated(cutouts[i], bit_depth=self.camera.bit_depth).mask
 
         self.logger.debug(f'Making master mask with binary dilation for {self._camera}')
         master_mask = masks.any(axis=0)
@@ -433,6 +433,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # Apply the master mask and then get metrics for each frame.
         for i, cutout in enumerate(cutouts):
             self.logger.debug(f'Applying focus metric to cutout {i:02d}')
+            if dark_cutout is not None:
+                cutout = cutout.astype(np.float32) - dark_cutout
             cutout = np.ma.array(cutout, mask=np.ma.mask_or(master_mask, np.ma.getmask(cutout)))
             metrics[i] = focus_utils.focus_metric(cutout, merit_function, **merit_function_kwargs)
             self.logger.debug(f'Focus metric for cutout {i:02d}: {metrics[i]}')
@@ -446,14 +448,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning(f"Best focus outside sweep range, stopping focus and using {focus_positions[imax]}")
+            self.logger.warning(f"Best focus outside sweep range, stopping focus and using"
+                                f" {focus_positions[imax]}")
             best_focus = focus_positions[imax]
 
         elif not coarse:
             # Fit data around the maximum value to determine best focus position.
             # Initialise models
             shift = models.Shift(offset=-focus_positions[imax])
-            # Small initial coeffs with expected sign. Helps the fitting set off in the correct direction.
+            # Small initial coeffs with expected sign. Helps fitting start in the right direction.
             poly = models.Polynomial1D(degree=4, c0=1, c1=0, c2=-1e-2, c3=0, c4=-1e-4,
                                        fixed={'c0': True, 'c1': True, 'c3': True})
             scale = models.Scale(factor=metrics[imax])
@@ -479,11 +482,13 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             min_focus = focus_positions[0]
             max_focus = focus_positions[-1]
             if best_focus < min_focus:
-                self.logger.warning(f"Fitting failure: best focus {best_focus} below sweep limit {min_focus}")
+                self.logger.warning(f"Fitting failure: best focus {best_focus} below sweep limit"
+                                    f" {min_focus}")
                 best_focus = focus_positions[1]
 
             if best_focus > max_focus:
-                self.logger.warning(f"Fitting failure: best focus {best_focus} above sweep limit {max_focus}")
+                self.logger.warning(f"Fitting failure: best focus {best_focus} above sweep limit"
+                                    f" {max_focus}")
                 best_focus = focus_positions[-2]
 
         else:
@@ -497,7 +502,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         final_fn = f"{final_focus}-{focus_type}-final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
-            final_cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size, keep_file=True)
+            final_cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size,
+                                                      keep_file=True)
             final_cutout = mask_saturated(final_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 final_cutout = final_cutout.astype(np.int32) - dark_cutout
@@ -510,7 +516,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         if make_plots:
             line_fit = None
             if fitted:
-                focus_range = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
+                focus_range = np.arange(focus_positions[fitting_indices[0]],
+                                        focus_positions[fitting_indices[1]] + 1)
                 fit_line = fit(focus_range)
                 line_fit = [focus_range, fit_line]
 
@@ -530,9 +537,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                                             line_fit=line_fit
                                             )
 
-            self.logger.info(f'{focus_type.capitalize()} focus plot for {self._camera} written to {plot_path}')
+            self.logger.info(f"{focus_type.capitalize()} focus plot for {self._camera} written to "
+                             f" {plot_path}")
 
-        self.logger.debug(f'Autofocus of {self._camera} complete - final focus position: {final_focus}')
+        self.logger.debug(f"Autofocus of {self._camera} complete - final focus"
+                          f" position: {final_focus}")
 
         if focus_event:
             focus_event.set()
