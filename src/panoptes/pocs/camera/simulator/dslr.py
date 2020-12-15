@@ -49,7 +49,6 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _end_exposure(self):
-        self.logger.debug(f"Calling _end_exposure for {self}")
         self._is_exposing_event.clear()
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):

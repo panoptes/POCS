@@ -481,11 +481,9 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     """
     fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
     # Make timeout extremely short to force a timeout error
-    original_timeout = camera._timeout
-    camera._timeout = 0.01
     # This should result in a timeout error in the poll thread, but the exception won't
     # be seen in the main thread. Can check for logged error though.
-    readout_thread = camera.take_exposure(seconds=2.0, filename=fits_path)
+    readout_thread = camera.take_exposure(seconds=2.0, filename=fits_path, timeout=0.01)
 
     # Wait for it all to be over.
     time.sleep(4)
@@ -497,9 +495,6 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert not camera.is_exposing
     assert not readout_thread.is_alive()
     assert not camera._is_exposing_event.is_set()
-
-    # Reset camera because it's scoped on a module level
-    camera._timeout = original_timeout
 
 
 def test_observation(camera, images_dir):

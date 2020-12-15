@@ -424,6 +424,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       filename=None,
                       dark=False,
                       blocking=False,
+                      timeout=None,
                       *args,
                       **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -439,7 +440,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-
+            timeout (astropy.Quantity): The timeout to use for the exposure. If None, will be
+                calculated automatically.
         Returns:
             threading.Thread: The readout thread, which joins when readout has finished.
         """
@@ -503,7 +505,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
-                                          args=(readout_args, seconds))
+                                          args=(readout_args, seconds),
+                                          kwargs=dict(timeout=timeout))
         readout_thread.start()
 
         if blocking:
