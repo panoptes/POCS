@@ -433,7 +433,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # Apply the master mask and then get metrics for each frame.
         for i, cutout in enumerate(cutouts):
             self.logger.debug(f'Applying focus metric to cutout {i:02d}')
-            cutout = cutout.astype(np.float32) - dark_cutout
+            if dark_cutout is not None:
+                cutout = cutout.astype(np.float32) - dark_cutout
             cutout = np.ma.array(cutout, mask=np.ma.mask_or(master_mask, np.ma.getmask(cutout)))
             metrics[i] = focus_utils.focus_metric(cutout, merit_function, **merit_function_kwargs)
             self.logger.debug(f'Focus metric for cutout {i:02d}: {metrics[i]}')
