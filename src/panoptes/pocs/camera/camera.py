@@ -424,6 +424,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       filename=None,
                       dark=False,
                       blocking=False,
+                      timeout=None,
                       *args,
                       **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -439,7 +440,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-
+            timeout (astropy.Quantity): The timeout to use for the exposure. If None, will be
+                calculated automatically.
         Returns:
             threading.Thread: The readout thread, which joins when readout has finished.
         """
@@ -502,7 +504,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             raise err
 
         # Start polling thread that will call camera type specific _readout method when done
-        readout_thread = threading.Thread(target=self._poll_exposure, args=(readout_args,))
+        readout_thread = threading.Thread(target=self._poll_exposure,
+                                          args=(readout_args, seconds),
+                                          kwargs=dict(timeout=timeout))
         readout_thread.start()
 
         if blocking:
@@ -777,13 +781,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
-        timer_duration = timeout or self._timeout + self._readout_time
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
+        reached, an `error.Timeout` is raised.
+        """
+        if timeout is None:
+            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+        else:
+            timer_duration = timeout
+        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
         timer = CountdownTimer(duration=timer_duration)
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on {self} to complete"
+                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on"
+                    f" {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:
