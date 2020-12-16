@@ -102,8 +102,21 @@ def pocs_with_dome(pocs, dome):
     pocs.power_down()
 
 
+# An observation that is valid during the day
 @pytest.fixture(scope='module')
 def valid_observation():
+    return {
+        'name': 'TEST TARGET',
+        'position': '100.00 deg +00.887 deg',
+        'priority': '100',
+        'exptime': 2,
+        'min_nexp': 2,
+        'exp_set_size': 2,
+    }
+
+# An observation that is valid at night
+@pytest.fixture(scope='module')
+def valid_observation_day():
     return {
         'name': 'TEST TARGET',
         'position': '300.00 deg +70.887 deg',
@@ -385,8 +398,8 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     assert pocs_thread.is_alive() is False
 
 
-def test_unsafe_park(observatory, valid_observation, pocstime_day, pocstime_night):
-    os.environ['POCSTIME'] = pocstime_day
+def test_unsafe_park(observatory, valid_observation, pocstime_night):
+    os.environ['POCSTIME'] = pocstime_night
 
     # Remove weather simulator, else it would always be safe.
     observatory.set_config('simulator', hardware.get_all_names(without=['night', 'weather']))
@@ -405,8 +418,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_day, pocstime_nigh
     pocs.logger.info('Starting observatory run')
 
     # Weather is bad and unit is is connected but not set.
-    assert not pocs.is_dark()
-    assert pocs.is_safe(ignore=['is_dark'])
+    assert pocs.is_safe()
     assert pocs.is_initialized
     assert pocs.connected
     assert pocs.do_states
@@ -427,18 +439,20 @@ def test_unsafe_park(observatory, valid_observation, pocstime_day, pocstime_nigh
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
-    assert not pocs.is_safe(park_if_not_safe=False)
-
-    # Insert bad weather report while waiting for slewing state
-    time.sleep(5)
-    assert pocs.state == "scheduling"
+    # Insert bad weather report while slewing
+    pocs.logger.info(f'Waiting to get to slewing state...')
+    while pocs.state != "slewing":
+        pass
+    pocs.logger.info("Inserting bad weather record.")
     observatory.db.insert_current('weather', {'safe': False})
 
-    pocs.logger.warning(f'Waiting to get to parked state...')
-    while pocs.next_state not in ['parking', 'parked']:
-        assert pocs.state != "slewing"  # Shouldn't go to slewing if weather not safe
-        # Check frequently as POCS does not spend much time in these states
-        pass
+    # No longer safe, so should transition to parking
+    pocs.logger.info(f'Waiting to get to parked state...')
+    while True:
+        if pocs.state in ['parking', 'parked']:
+            break
+        assert pocs.state in ["slewing", "parking", "parked"]  # Should be one of these states
+        time.sleep(0.5)
 
     pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
@@ -451,8 +465,9 @@ def test_unsafe_park(observatory, valid_observation, pocstime_day, pocstime_nigh
 
 def test_run_power_down_interrupt(observatory,
                                   valid_observation,
+                                  pocstime_night
                                   ):
-    os.environ['POCSTIME'] = '2020-01-01 08:00:00'
+    os.environ['POCSTIME'] = pocstime_night
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
