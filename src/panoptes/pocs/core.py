@@ -345,7 +345,8 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
             # These states are already "parked" so don't send to parking.
-            if not self.state.is_always_safe and park_if_not_safe:
+            state_always_safe = self.get_state(self.state).is_always_safe
+            if not state_always_safe and park_if_not_safe:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
 
