@@ -330,6 +330,11 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values['free_space_images'] = self.has_free_space(images_dir)
 
         # Check overall safety, ignoring some checks if necessary
+        missing_keys = [k for k in ignore if k not in is_safe_values.keys()]
+        if missing_keys:
+            self.logger.warning("Found the following invalid checks to ignore in "
+                                f"is_safe: {missing_keys}. Valid keys are: "
+                                f"{list(is_safe_values.keys())}.")
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
