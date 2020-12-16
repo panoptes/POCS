@@ -278,30 +278,34 @@ class POCS(PanStateMachine, PanBase):
     # Safety Methods
     ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe', ignore_dark=False,
-                park_if_not_safe=True):
+    def is_safe(self, no_warning=False, horizon='observe', ignore=None, park_if_not_safe=True):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
 
         Note:
-            This condition is called by the state machine during each transition
+            This condition is called by the state machine during each transition.
 
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
-            ignore_dark (bool, optional): If True, will ignore whether it is dark or not when
-                deciding if safe.
-            park_if_not_safe (bool, optional): If True, will go to park if safety check fails.
+            ignore (abc.Iterable, optional): A list of safety checks to ignore when deciding
+                whether it is safe or not. Valid list entries are: 'ac_power', 'is_dark',
+                'good_weather', 'free_space_root' and 'free_space_images'. Useful e.g. when
+                the state machine needs to wait for dark to enter the next state.
+            park_if_not_safe (bool, optional): If True (default), will go to park if safety check
+                fails. Set to False if you want to check the safety without sending the state
+                machine to parking.
         Returns:
             bool: Latest safety flag.
-
         """
         if not self.connected:
             return False
+        if ignore is None:
+            ignore = list()
 
         is_safe_values = dict()
 
@@ -313,8 +317,7 @@ class POCS(PanStateMachine, PanBase):
         is_safe_values['ac_power'] = has_power
 
         # Check if night time
-        if not ignore_dark:
-            is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
+        is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
@@ -326,7 +329,8 @@ class POCS(PanStateMachine, PanBase):
         images_dir = self.get_config('directories.images')
         is_safe_values['free_space_images'] = self.has_free_space(images_dir)
 
-        safe = all(is_safe_values.values())
+        # Check overall safety, ignoring some checks if necessary
+        safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
         self.db.insert_current('safety', is_safe_values)
@@ -336,17 +340,9 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
             # These states are already "parked" so don't send to parking.
-            if park_if_not_safe:
-                safe_states = [
-                    'parked',
-                    'parking',
-                    'sleeping',
-                    'housekeeping',
-                    'ready'
-                ]
-                if self.state not in safe_states:
-                    self.logger.warning('Safety failed so sending to park')
-                    self.park()
+            if not self.state.is_always_safe and park_if_not_safe:
+                self.logger.warning('Safety failed so sending to park')
+                self.park()
 
         return safe
 

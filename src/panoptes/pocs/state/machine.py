@@ -117,7 +117,7 @@ class PanStateMachine(Machine):
             # Before moving to next state, wait for required horizon if necessary
             while True:
                 # If not safe, go to park
-                self.is_safe(park_if_not_safe=True, ignore_dark=True)
+                self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
 
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe
@@ -132,7 +132,7 @@ class PanStateMachine(Machine):
                 self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
                                  f"self.next_state={self.next_state!r}")
 
-                # Wait if safe but not dark
+                # Sleep before checking again
                 check_delay = self.get_config('wait_delay', default=120)
                 self.wait(delay=check_delay)
 
