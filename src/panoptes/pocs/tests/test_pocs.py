@@ -431,7 +431,7 @@ def test_run_wait_park(observatory, valid_observation, pocstime_day, pocstime_ni
 
     # Weather is bad and unit is is connected but not set.
     assert not pocs.is_dark()
-    assert pocs.is_safe(ignore_dark=True)
+    assert pocs.is_safe(ignore=['dark'])
     assert pocs.is_initialized
     assert pocs.connected
     assert pocs.do_states
