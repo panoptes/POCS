@@ -189,31 +189,6 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
-def test_unsafe_park(pocs, pocstime_night):
-    pocs.set_config('simulator', 'all')
-    pocs.initialize()
-    assert pocs.is_initialized is True
-    os.environ['POCSTIME'] = pocstime_night
-    assert pocs.state == 'sleeping'
-    pocs.get_ready()
-    assert pocs.state == 'ready'
-    pocs.schedule()
-    assert pocs.state == 'scheduling'
-
-    # My time goes fast...
-    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
-    pocs.set_config('simulator', hardware.get_all_names(without=['night']))
-
-    assert pocs.is_safe() is False
-
-    assert pocs.state == 'parking'
-    pocs.set_park()
-    pocs.clean_up()
-    pocs.goto_sleep()
-    assert pocs.state == 'sleeping'
-    pocs.power_down()
-
-
 def test_no_ac_power(pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
@@ -410,7 +385,7 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     assert pocs_thread.is_alive() is False
 
 
-def test_run_wait_park(observatory, valid_observation, pocstime_day, pocstime_night):
+def test_unsafe_park(observatory, valid_observation, pocstime_day, pocstime_night):
     os.environ['POCSTIME'] = pocstime_day
 
     # Remove weather simulator, else it would always be safe.
