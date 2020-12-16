@@ -339,7 +339,7 @@ def test_pocs_park_to_ready_without_observations(pocs):
     assert pocs.is_safe() is False
 
 
-def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocstime_night):
+def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, pocstime_night):
     os.environ['POCSTIME'] = pocstime_day
 
     # Remove weather simulator, else it would always be safe.
@@ -349,7 +349,7 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
-    pocs.observatory.scheduler.add_observation(valid_observation)
+    pocs.observatory.scheduler.add_observation(valid_observation_day)
 
     assert pocs.connected is True
     assert pocs.is_initialized is False
