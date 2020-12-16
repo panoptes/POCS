@@ -106,6 +106,7 @@ class PanStateMachine(Machine):
 
         _transition_iteration = 0
         max_transition_attempts = self.get_config('max_transition_attempts', default=5)
+        check_delay = self.get_config('wait_delay', default=120)
 
         self.logger.debug(f'Starting run loop')
         while self.keep_running:
@@ -133,7 +134,6 @@ class PanStateMachine(Machine):
                                  f"self.next_state={self.next_state!r}")
 
                 # Sleep before checking again
-                check_delay = self.get_config('wait_delay', default=120)
                 self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
