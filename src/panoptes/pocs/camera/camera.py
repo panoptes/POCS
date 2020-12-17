@@ -709,10 +709,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not keep_file:
             os.unlink(file_path)
 
-        # Make sure thumbnail is not bigger than image.
-        actual_cutout_size = min(cutout_size, *image.shape)
-        if actual_cutout_size != cutout_size:
-            self.logger.info(f'Requested thumbnail size is smaller than image, using {actual_cutout_size}')
+        # Make sure cutout is not bigger than image.
+        actual_size = min(cutout_size, *image.shape)
+        if actual_size != cutout_size:  # noqa
+            self.logger.warning(f'Requested cutout size is larger than image, using {actual_size}')
 
         return img_utils.crop_data(image, box_width=cutout_size)
 
