@@ -135,7 +135,7 @@ class Mount(AbstractMount):
         except KeyError:
             self.logger.warning("Problem with status, key not found")
 
-        if not self.is_parked:
+        if not self._is_parked:
             status.update(self.query('get_coordinates'))
 
         return status
