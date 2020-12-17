@@ -30,6 +30,40 @@ class Mount(AbstractMount):
         self.template_dir = template_dir
 
     ##########################################################################
+    # Properties
+    ##########################################################################
+
+    @property
+    def is_parked(self):
+        """ bool: Mount parked status. """
+        self._update_status()
+        return self._is_parked
+
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        self._update_status()
+        return self._is_home
+
+    @property
+    def is_tracking(self):
+        """ bool: Mount tracking status.  """
+        self._update_status()
+        return self._is_tracking
+
+    @property
+    def is_slewing(self):
+        """ bool: Mount slewing status. """
+        self._update_status()
+        return self._is_slewing
+
+    @property
+    def at_mount_park(self):
+        """ bool: Mount slewing status. """
+        self._update_status()
+        return self._at_mount_park
+
+    ##########################################################################
     # Methods
     ##########################################################################
 
@@ -172,16 +206,16 @@ class Mount(AbstractMount):
             mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
 
             # Send coordinates to mount
+            self.logger.info(f"Slewing to target coordinates: {mount_coords}")
             try:
                 response = self.query('slew_to_coordinates', {
-                    'ra': mount_coords[0],
-                    'dec': mount_coords[1],
-                }, timeout=timeout)
+                    'ra': mount_coords[0], 'dec': mount_coords[1]}, timeout=timeout)
                 success = response['success']
                 if success:
                     while self.is_slewing:
                         time.sleep(2)
-
+                else:
+                    raise error.PanError(f"Slewing was unsuccessful: {response['response']}")
             except Exception as e:
                 self.logger.warning(f"Problem slewing to mount coordinates: {mount_coords} {e}")
 

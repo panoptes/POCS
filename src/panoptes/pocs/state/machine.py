@@ -65,9 +65,9 @@ class PanStateMachine(Machine):
 
         self.logger.debug("State machine created")
 
-    ##################################################################################################
+    ################################################################################################
     # Properties
-    ##################################################################################################
+    ################################################################################################
 
     @property
     def next_state(self):
@@ -78,9 +78,9 @@ class PanStateMachine(Machine):
         """ Set the tracking rate """
         self._next_state = value
 
-    ##################################################################################################
+    ################################################################################################
     # Methods
-    ##################################################################################################
+    ################################################################################################
 
     def run(self, exit_when_done=False, run_once=False, initial_next_state='ready'):
         """Runs the state machine loop.
@@ -106,28 +106,44 @@ class PanStateMachine(Machine):
 
         _transition_iteration = 0
         max_transition_attempts = self.get_config('max_transition_attempts', default=5)
+        check_delay = self.get_config('wait_delay', default=120)
 
         self.logger.debug(f'Starting run loop')
         while self.keep_running:
-            # BEFORE TRANSITION TO STATE
-            self.logger.info(f'Run loop: self.state={self.state!r} self.next_state={self.next_state!r}')
 
-            # Before moving to next state, check for required horizon level and wait if necessary.
-            required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-            self.logger.debug(f'Checking for required_horizon={required_horizon!r} for self.next_state={self.next_state!r}')
-            while not self.is_safe(no_warning=True, horizon=required_horizon):
-                self.logger.info(f'Waiting for required_horizon={required_horizon!r} for self.next_state={self.next_state!r}')
-                check_delay = self.get_config('wait_delay',
-                                              default=60 * 3)  # Check every 3 minutes.
+            # BEFORE TRANSITION TO STATE
+            self.logger.info(f'Run loop: self.state={self.state!r}'
+                             f'self.next_state={self.next_state!r}')
+
+            # Before moving to next state, wait for required horizon if necessary
+            while True:
+                # If not safe, go to park
+                self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
+
+                # The state may have changed since the start of the while loop
+                # e.g. if self.park is called from self.is_safe
+                # So we need to check if the new state is always safe
+                if self.get_state(self.next_state).is_always_safe:
+                    break
+
+                # Check the horizon here because next state may have changed in loop
+                required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
+                if self.is_dark(horizon=required_horizon):
+                    break
+                self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
+                                 f"self.next_state={self.next_state!r}")
+
+                # Sleep before checking again
                 self.wait(delay=check_delay)
 
-                # TRANSITION TO STATE
+            # TRANSITION TO STATE
             self.logger.info(f'Going to self.next_state={self.next_state!r}')
             try:
                 # The state's `on_enter` logic will be performed here.
                 state_changed = self.goto_next_state()
             except Exception as e:
-                self.logger.critical(f"Problem going from self.state={self.state!r} to self.next_state={self.next_state!r}"
+                self.logger.critical(f"Problem going from self.state={self.state!r} to "
+                                     f" self.next_state={self.next_state!r}"
                                      f", exiting loop [{e!r}]")
                 # TODO should we automatically park here?
                 self.stop_states()
@@ -137,14 +153,16 @@ class PanStateMachine(Machine):
 
             # If we didn't successfully transition, wait a while then try again
             if not state_changed:
-                self.logger.warning(f"Failed to move from self.state={self.state!r} to self.next_state={self.next_state!r}")
+                self.logger.warning(f"Failed to move from self.state={self.state!r} to "
+                                    f"self.next_state={self.next_state!r}")
                 if self.is_safe() is False:
                     self.logger.warning(
                         "Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = 'parking'
                 elif _transition_iteration > max_transition_attempts:
                     self.logger.warning(
-                        f"Stuck in current state for max_transition_attempts={max_transition_attempts!r}, parking")
+                        f"Stuck in current state for "
+                        f"max_transition_attempts={max_transition_attempts!r}, parking")
                     self.next_state = 'parking'
                 else:
                     _transition_iteration = _transition_iteration + 1
@@ -287,12 +305,10 @@ class PanStateMachine(Machine):
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
         """ Loads the state table
-
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
                 `$POCS/resources/state_table/` directory or to absolute path if
                 starts with "/". Default 'simple_state_table'.
-
         Returns:
             dict:   Dictionary with `states` and `transitions` keys.
         """
