@@ -86,7 +86,7 @@ def get_logger(console_log_file='panoptes.log',
             loguru_logger.remove(0)
 
         stderr_format = "<lvl>{level:.1s}</lvl> " \
-                        "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</> " \
+                        "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> " \
                         "<lvl>{message}</lvl>"
 
         stderr_id = loguru_logger.add(
