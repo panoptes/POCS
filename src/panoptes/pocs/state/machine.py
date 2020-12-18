@@ -145,8 +145,9 @@ class PanStateMachine(Machine):
                 self.logger.critical(f"Problem going from self.state={self.state!r} to "
                                      f" self.next_state={self.next_state!r}: {e}. Parking.")
                 try:
-                    self.next_state = "parking"
-                    self.goto_next_state()
+                    for next_state in ["parking", "parked"]:
+                        self.next_state = next_state
+                        self.goto_next_state()
                 except Exception as e:
                     self.logger.critical(f"Problem while parking after state machine error: {e}.")
                 finally:
