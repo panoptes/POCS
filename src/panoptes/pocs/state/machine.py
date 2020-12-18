@@ -143,10 +143,15 @@ class PanStateMachine(Machine):
                 state_changed = self.goto_next_state()
             except Exception as e:
                 self.logger.critical(f"Problem going from self.state={self.state!r} to "
-                                     f" self.next_state={self.next_state!r}"
-                                     f", exiting loop [{e!r}]")
+                                     f" self.next_state={self.next_state!r}: {e}. Parking")
                 # TODO should we automatically park here?
-                self.stop_states()
+                try:
+                    self.next_state = "parking"
+                    self.goto_next_state()
+                except Exception as e:
+                    self.logger.critical(f"Problem while parking after state machine error: {e}.")
+                finally:
+                    self.stop_states()
                 break
 
             # AFTER TRANSITION TO STATE (NOW INSIDE STATE)
