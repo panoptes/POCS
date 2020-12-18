@@ -135,7 +135,7 @@ class Mount(AbstractMount):
             self.logger.warning("Problem with status, key not found")
 
         status.update(self.query('get_coordinates'))
-        self.logger.debug(f"Status: {status}")
+        self.logger.debug(f"Mount status: {status}")
 
         return status
 
