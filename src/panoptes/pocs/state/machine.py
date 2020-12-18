@@ -144,7 +144,6 @@ class PanStateMachine(Machine):
             except Exception as e:
                 self.logger.critical(f"Problem going from self.state={self.state!r} to "
                                      f" self.next_state={self.next_state!r}: {e}. Parking.")
-                # TODO should we automatically park here?
                 try:
                     self.next_state = "parking"
                     self.goto_next_state()
