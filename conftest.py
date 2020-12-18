@@ -25,8 +25,8 @@ logger.enable('panoptes')
 # Add a level above TRACE and below DEBUG
 logger.level("testing", no=15, icon="🤖", color="<LIGHT-BLUE><white>")
 log_fmt = "<lvl>{level:.1s}</lvl> " \
-          "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
-          "<blue> ({time:HH:mm:ss.ss})</> " \
+          "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
+          "<blue> ({time:HH:mm:ss zz})</> " \
           "| <c>{name} {function}:{line}</c> | " \
           "<lvl>{message}</lvl>"
 
