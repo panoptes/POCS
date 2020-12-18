@@ -42,6 +42,7 @@ Bug fixes
 Changed
 ~~~~~~~
 
+* Change ``thumbnail_size`` to ``cutout_size`` consistently. (@wtgee #1040.)
 * Camera observation updates:
 
   * headers param fixed so truly optional. The POINTING keyword is checked in the metadata, not original headers. Closes #1002. (@wtgee #1009)

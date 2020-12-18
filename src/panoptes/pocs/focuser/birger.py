@@ -1,11 +1,9 @@
-import io
 import re
 import serial
 import glob
 from warnings import warn
-from contextlib import suppress
 
-from panoptes.pocs.focuser import AbstractFocuser
+from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits
@@ -42,7 +40,7 @@ error_messages = ('No error',
                   'Distance stops not supported by the lens')
 
 
-class Focuser(AbstractFocuser):
+class Focuser(AbstractSerialFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
 
@@ -60,13 +58,6 @@ class Focuser(AbstractFocuser):
     that class' documentation for a complete list.
     """
 
-    # Class variable to cache the device node scanning results
-    _birger_nodes = None
-
-    # Class variable to store the device nodes already in use. Prevents scanning known Birgers &
-    # acts as a check against Birgers assigned to incorrect ports.
-    _assigned_nodes = []
-
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
@@ -80,10 +71,10 @@ class Focuser(AbstractFocuser):
             # Have been given a serial number
             self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
 
-            if Focuser._birger_nodes is None:
+            if Focuser._adaptor_nodes is None:
                 # No cached device nodes scanning results, need to scan.
                 self.logger.debug('Getting serial numbers for all connected Birger focusers')
-                Focuser._birger_nodes = {}
+                Focuser._adaptor_nodes = {}
                 # Find nodes matching pattern
                 device_nodes = glob.glob(dev_node_pattern)
 
@@ -91,24 +82,24 @@ class Focuser(AbstractFocuser):
                 for device_node in device_nodes:
                     try:
                         serial_number = self.connect(device_node)
-                        Focuser._birger_nodes[serial_number] = device_node
+                        Focuser._adaptor_nodes[serial_number] = device_node
                     except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
                         # No Birger focuser on this node.
                         pass
                     finally:
                         self._serial_port.close()
 
-                if not Focuser._birger_nodes:
+                if not Focuser._adaptor_nodes:
                     message = 'No Birger focuser devices found!'
                     self.logger.error(message)
                     warn(message)
                     return
                 else:
-                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._birger_nodes))
+                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._adaptor_nodes))
 
             # Search in cached device node scanning results for serial number
             try:
-                device_node = Focuser._birger_nodes[self.port]
+                device_node = Focuser._adaptor_nodes[self.port]
             except KeyError:
                 message = 'Could not find {} ({})!'.format(self.name, self.port)
                 self.logger.error(message)
@@ -117,53 +108,14 @@ class Focuser(AbstractFocuser):
             self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
             self.port = device_node
 
-        # Check that this node hasn't already been assigned to another Birgers
-        if self.port in Focuser._assigned_nodes:
-            message = 'Device node {} already in use!'.format(self.port)
-            self.logger.error(message)
-            warn(message)
-            return
-
-        try:
-            self.connect(self.port)
-        except (serial.SerialException,
-                serial.SerialTimeoutException,
-                AssertionError) as err:
-            message = 'Error connecting to {} on {}: {}'.format(self.name, self.port, err)
-            self.logger.error(message)
-            warn(message)
-            return
-
-        Focuser._assigned_nodes.append(self.port)
-        self._is_moving = False
-        self._initialise()
         if initial_position is not None:
             self.position = initial_position
-
-    def __del__(self):
-        with suppress(AttributeError):
-            device_node = self.port
-            Focuser._assigned_nodes.remove(device_node)
-            self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
-        with suppress(AttributeError):
-            self._serial_port.close()
-            self.logger.debug('Closed serial port {}'.format(self._port))
 
     ##################################################################################################
     # Properties
     ##################################################################################################
 
-    @property
-    def is_connected(self):
-        """
-        Checks status of serial port to determine if connected.
-        """
-        connected = False
-        if self._serial_port:
-            connected = self._serial_port.isOpen()
-        return connected
-
-    @AbstractFocuser.position.getter
+    @AbstractSerialFocuser.position.getter
     def position(self):
         """
         Returns current focus position in the lens focus encoder units.
@@ -206,46 +158,13 @@ class Focuser(AbstractFocuser):
         """
         return self._hardware_version
 
-    @property
-    def is_moving(self):
-        """ True if the focuser is currently moving. """
-        return self._is_moving
-
     ##################################################################################################
     # Public Methods
     ##################################################################################################
 
     def connect(self, port):
-        try:
-            # Configure serial port.
-            # Settings copied from Bob Abraham's birger.c
-            self._serial_port = serial.Serial()
-            self._serial_port.port = port
-            self._serial_port.baudrate = 115200
-            self._serial_port.bytesize = serial.EIGHTBITS
-            self._serial_port.parity = serial.PARITY_NONE
-            self._serial_port.stopbits = serial.STOPBITS_ONE
-            self._serial_port.timeout = 2.0
-            self._serial_port.xonxoff = False
-            self._serial_port.rtscts = False
-            self._serial_port.dsrdtr = False
-            self._serial_port.write_timeout = None
-            self._inter_byte_timeout = None
 
-            # Establish connection
-            self._serial_port.open()
-
-        except serial.SerialException as err:
-            self._serial_port = None
-            self.logger.critical('Could not open {}!'.format(port))
-            raise err
-
-        # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
-        # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
-        # a write contains a newline character.
-        self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
-                                           newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
+        self._connect(port, baudrate=115200)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
@@ -308,9 +227,9 @@ class Focuser(AbstractFocuser):
     # Private Methods
     ##################################################################################################
 
-    def _send_command(self, command, response_length=None, ignore_response=False):
+    def _send_command(self, command, response_length=None):
         """
-        Sends a command to the Birger adaptor and retrieves the response.
+        Sends a command to the focuser adaptor and retrieves the response.
 
         Args:
             command (string): command string to send (without newline), e.g. 'fa1000', 'pf'
@@ -332,9 +251,6 @@ class Focuser(AbstractFocuser):
 
         # Send command
         self._serial_io.write(command + '\r')
-
-        if ignore_response:
-            return
 
         # In verbose mode adaptor will first echo the command
         echo = self._serial_io.readline().rstrip()

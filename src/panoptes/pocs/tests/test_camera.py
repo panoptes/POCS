@@ -320,6 +320,7 @@ def test_exposure(camera, tmpdir):
     fits_path = str(tmpdir.join('test_exposure.fits'))
 
     assert not camera.is_exposing
+    assert camera.is_ready
     # A one second normal exposure.
     camera.take_exposure(filename=fits_path)
     assert camera.is_exposing
@@ -352,6 +353,29 @@ def test_exposure_blocking(camera, tmpdir):
     header = fits_utils.getheader(fits_path)
     assert header['EXPTIME'] == 1.0
     assert header['IMAGETYP'] == 'Light Frame'
+
+
+def test_long_exposure_blocking(camera, tmpdir):
+    """
+    Tests basic take_exposure functionality
+    """
+    fits_path = str(tmpdir.join('test_long_exposure_blocking.fits'))
+    original_timeout = camera._timeout
+    original_readout = camera._readout_time
+    try:
+        camera._timeout = 1
+        camera._readout_time = 0.5
+        assert not camera.is_exposing
+        assert camera.is_ready
+        seconds = 2 * (camera._timeout + camera._readout_time)
+        camera.take_exposure(filename=fits_path, seconds=seconds, blocking=True)
+        # Output file should exist, Event should be set and camera should say it's not exposing.
+        assert os.path.exists(fits_path)
+        assert not camera.is_exposing
+        assert camera.is_ready
+    finally:
+        camera._timeout = original_timeout
+        camera._readout_time = original_readout
 
 
 def test_exposure_dark(camera, tmpdir):
@@ -457,11 +481,9 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     """
     fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
     # Make timeout extremely short to force a timeout error
-    original_timeout = camera._timeout
-    camera._timeout = 0.01
     # This should result in a timeout error in the poll thread, but the exception won't
     # be seen in the main thread. Can check for logged error though.
-    readout_thread = camera.take_exposure(seconds=2.0, filename=fits_path)
+    readout_thread = camera.take_exposure(seconds=2.0, filename=fits_path, timeout=0.01)
 
     # Wait for it all to be over.
     time.sleep(4)
@@ -473,9 +495,6 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     assert not camera.is_exposing
     assert not readout_thread.is_alive()
     assert not camera._is_exposing_event.is_set()
-
-    # Reset camera because it's scoped on a module level
-    camera._timeout = original_timeout
 
 
 def test_observation(camera, images_dir):
@@ -594,11 +613,11 @@ def test_autofocus_no_size(camera):
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
-    thumbnail_size = camera.focuser.autofocus_size
+    cutout_size = camera.focuser.autofocus_size
     camera.focuser.autofocus_size = None
     with pytest.raises(ValueError):
         camera.autofocus()
-    camera.focuser.autofocus_size = thumbnail_size
+    camera.focuser.autofocus_size = cutout_size
     assert camera.focuser.position == initial_focus
 
 
