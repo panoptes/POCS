@@ -125,7 +125,6 @@ class Mount(AbstractMount):
     def _update_status(self):
         """ """
         status = self.query('get_status')
-        self.logger.debug(f"Status: {status}")
 
         try:
             self._at_mount_park = status['parked']
@@ -135,8 +134,8 @@ class Mount(AbstractMount):
         except KeyError:
             self.logger.warning("Problem with status, key not found")
 
-        if not self._is_parked:
-            status.update(self.query('get_coordinates'))
+        status.update(self.query('get_coordinates'))
+        self.logger.debug(f"Status: {status}")
 
         return status
 
