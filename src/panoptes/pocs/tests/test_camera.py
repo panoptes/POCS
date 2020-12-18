@@ -613,11 +613,11 @@ def test_autofocus_no_size(camera):
     except AttributeError:
         pytest.skip("Camera does not have an exposed focuser attribute")
     initial_focus = camera.focuser.position
-    thumbnail_size = camera.focuser.autofocus_size
+    cutout_size = camera.focuser.autofocus_size
     camera.focuser.autofocus_size = None
     with pytest.raises(ValueError):
         camera.autofocus()
-    camera.focuser.autofocus_size = thumbnail_size
+    camera.focuser.autofocus_size = cutout_size
     assert camera.focuser.position == initial_focus
 
 

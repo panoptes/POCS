@@ -177,7 +177,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   seconds=None,
                   focus_range=None,
                   focus_step=None,
-                  thumbnail_size=None,
+                  cutout_size=None,
                   keep_files=None,
                   take_dark=None,
                   merit_function=None,
@@ -198,7 +198,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (int, optional): Size of square central region of image
+            cutout_size (int, optional): Size of square central region of image
                 to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
@@ -251,9 +251,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 raise ValueError(
                     "No focus exposure time specified, aborting autofocus of {}!", self._camera)
 
-        if not thumbnail_size:
+        if not cutout_size:
             if self.autofocus_size:
-                thumbnail_size = self.autofocus_size
+                cutout_size = self.autofocus_size
             else:
                 raise ValueError(
                     "No focus thumbnail size specified, aborting autofocus of {}!", self._camera)
@@ -297,7 +297,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             'seconds': seconds,
             'focus_range': focus_range,
             'focus_step': focus_step,
-            'cutout_size': thumbnail_size,
+            'cutout_size': cutout_size,
             'keep_files': keep_files,
             'take_dark': take_dark,
             'merit_function': merit_function,
@@ -355,11 +355,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             dark_path = os.path.join(file_path_root, f'dark.{self._camera.file_extension}')
             self.logger.debug(f'Taking dark frame {dark_path} on camera {self._camera}')
             try:
-                dark_cutout = self._camera.get_thumbnail(seconds,
-                                                         dark_path,
-                                                         cutout_size,
-                                                         keep_file=True,
-                                                         dark=True)
+                dark_cutout = self._camera.get_cutout(seconds,
+                                                      dark_path,
+                                                      cutout_size,
+                                                      keep_file=True,
+                                                      dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
                 dark_cutout = mask_saturated(dark_cutout,
                                              threshold=0.3,
@@ -375,7 +375,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
-            initial_cutout = self._camera.get_thumbnail(seconds, initial_path, cutout_size,
+            initial_cutout = self._camera.get_cutout(seconds, initial_path, cutout_size,
                                                         keep_file=True)
             initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
@@ -416,7 +416,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             # Take exposure.
             try:
-                cutouts[i] = self._camera.get_thumbnail(seconds, file_path, cutout_size,
+                cutouts[i] = self._camera.get_cutout(seconds, file_path, cutout_size,
                                                         keep_file=keep_files)
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
@@ -502,7 +502,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         final_fn = f"{final_focus}-{focus_type}-final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
-            final_cutout = self._camera.get_thumbnail(seconds, file_path, cutout_size,
+            final_cutout = self._camera.get_cutout(seconds, file_path, cutout_size,
                                                       keep_file=True)
             final_cutout = mask_saturated(final_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
