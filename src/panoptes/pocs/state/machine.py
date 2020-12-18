@@ -148,7 +148,7 @@ class PanStateMachine(Machine):
                     self.next_state = "parking"
                     self.goto_next_state()
                 except Exception as e:
-                    self.logger.critical(f"Problem while parking after state machine error: {e}.")
+                    self.logger.critical(f"Problem while parking after state machine error: {e!r}.")
                 finally:
                     self.stop_states()
                 break
