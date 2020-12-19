@@ -9,6 +9,8 @@ Added
 ~~~~~
 
 * Allow for arbitrary FITS headers. Keywords will be added as ``HIERARCH`` cards if they don't conform to FITS standard (using ``astropy`` machinery). (@wtgee #1016)
+* Add the `gsutil` to `google` install options. Required for uploading data. (@wtgee #1036, #1037)
+* Ability to specify autofocus plots in config file. (@wtgee #1029)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
 * Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
 * Added ``error.InvalidConfig`` exception. (@wtgee #1007)
@@ -31,12 +33,16 @@ Breaking
 Bug fixes
 ~~~~~~~~~
 
+* Fix incorrect import of autofocus plots. (@wtgee #1034)
 * DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
 * Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
+* Properly closed the autofocus matplotlib figures. (@wtgee #1029)
+* Prevent thumbnails from being larger than image. (@wtgee #1029)
 
 Changed
 ~~~~~~~
 
+* Change ``thumbnail_size`` to ``cutout_size`` consistently. (@wtgee #1040.)
 * Camera observation updates:
 
   * headers param fixed so truly optional. The POINTING keyword is checked in the metadata, not original headers. Closes #1002. (@wtgee #1009)
@@ -46,6 +52,7 @@ Changed
   * ``_process_fits`` is responsible for writing the headers rather than calling out to panoptes-utils. Allows for easier overrides. (@wtgee #1009)
   * dslr simulator readout time improved. (@wtgee #1009)
   * ``process_exposure`` doesn't require the exposure_event to be passed because that is the cameras is_exposing property. (@wtgee #1009)
+  * The autofocus plotting has been moved to an external file. (@wtgee #1029)
 
 
 * Changelog cleanup. (@wtgee #1008)
@@ -86,6 +93,7 @@ Changed
 Removed
 ~~~~~~~
 
+* Removed all arduino files, to be replaced by Firmata. See instructions on gitbook docs. (@wtgee #1035)
 * Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
 
 

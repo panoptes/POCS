@@ -28,6 +28,7 @@ USER root
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         gcc \
         gphoto2 \
+        less \
         udev
 
 # Install program dependencies.
@@ -51,6 +52,7 @@ RUN "${PANDIR}/conda/bin/pip" install -e ".${pip_extras}" && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/* && \
+    # Cleanup conda.
     "${PANDIR}/conda/bin/conda" clean -tipy
 
 USER root

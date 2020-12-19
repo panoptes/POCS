@@ -424,6 +424,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       filename=None,
                       dark=False,
                       blocking=False,
+                      timeout=None,
                       *args,
                       **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -439,11 +440,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-
+            timeout (astropy.Quantity): The timeout to use for the exposure. If None, will be
+                calculated automatically.
         Returns:
-            threading.Event: Event that indicates an exposure is in progress.
-                Will be set to False when exposure is complete.
-
+            threading.Thread: The readout thread, which joins when readout has finished.
         """
         self._exposure_error = None
 
@@ -468,7 +468,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       self.filterwheel.filter_name(self.filterwheel._dark_position))
                 except (AttributeError, error.NotFound):
                     # No filterwheel, or no opaque filter (dark_position not set)
-                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter."
+                                        " Is the lens cap on?")
             else:
                 with suppress(AttributeError, error.NotFound):
                     # Ignoring exceptions from no filterwheel, or no last light position
@@ -503,7 +504,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             raise err
 
         # Start polling thread that will call camera type specific _readout method when done
-        readout_thread = threading.Thread(target=self._poll_exposure, args=(readout_args,))
+        readout_thread = threading.Thread(target=self._poll_exposure,
+                                          args=(readout_args, seconds),
+                                          kwargs=dict(timeout=timeout))
         readout_thread.start()
 
         if blocking:
@@ -516,7 +519,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 time.sleep(0.1)
             self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
-        return self._is_exposing_event
+        return readout_thread
 
     def process_exposure(self,
                          metadata,
@@ -617,7 +620,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   seconds=None,
                   focus_range=None,
                   focus_step=None,
-                  thumbnail_size=None,
+                  cutout_size=None,
                   keep_files=None,
                   take_dark=None,
                   merit_function='vollath_F4',
@@ -639,7 +642,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (int, optional): Size of square central region of image
+            cutout_size (int, optional): Size of square central region of image
                 to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
@@ -674,7 +677,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       focus_step=focus_step,
                                       keep_files=keep_files,
                                       take_dark=take_dark,
-                                      thumbnail_size=thumbnail_size,
+                                      cutout_size=cutout_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
@@ -683,20 +686,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
+    def get_cutout(self, seconds, file_path, cutout_size, keep_file=False, *args, **kwargs):
         """
-        Takes an image and returns a thumbnail.
+        Takes an image and returns a thumbnail cutout.
 
         Takes an image, grabs the data, deletes the FITS file and
-        returns a thumbnail from the centre of the image.
+        returns a cutout from the centre of the image.
 
         Args:
             seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
             file_path (str): path to (temporarily) save the image file to.
-            thumbnail_size (int): size of the square region of the centre of the image to return.
+            cutout_size (int): size of the square region of the centre of the image to return.
             keep_file (bool, optional): if True the image file will be deleted, if False it will
                 be kept.
-            *args, **kwargs: passed to the take_exposure() method
+            *args, **kwargs: passed to the `take_exposure` method
         """
         kwargs['blocking'] = True
         self.take_exposure(seconds, filename=file_path, *args, **kwargs)
@@ -705,7 +708,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        return img_utils.crop_data(image, box_width=thumbnail_size)
+
+        # Make sure cutout is not bigger than image.
+        actual_size = min(cutout_size, *image.shape)
+        if actual_size != cutout_size:  # noqa
+            self.logger.warning(f'Requested cutout size is larger than image, using {actual_size}')
+
+        return img_utils.crop_data(image, box_width=cutout_size)
 
     @abstractmethod
     def _set_target_temperature(self, target):
@@ -772,13 +781,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
-        timer_duration = timeout or self._timeout + self._readout_time
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
+        reached, an `error.Timeout` is raised.
+        """
+        if timeout is None:
+            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+        else:
+            timer_duration = timeout
+        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
         timer = CountdownTimer(duration=timer_duration)
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on {self} to complete"
+                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on"
+                    f" {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:
@@ -923,7 +940,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata={metadata!r}')
+        self.logger.debug(
+            f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata='
+            f'{metadata!r}')
 
         return exptime, file_path, image_id, metadata
 
@@ -976,7 +995,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     fits_comment = ''
                     fits_value = metadata_value
 
-                self.logger.trace(f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
+                self.logger.trace(
+                    f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
             self.logger.debug(f"Finished FITS headers: {file_path=}")

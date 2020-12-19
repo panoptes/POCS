@@ -171,6 +171,11 @@ class AbstractMount(PanBase):
         return self._is_parked
 
     @property
+    def at_mount_park(self):
+        """ bool: True if mount is at park position. """
+        return self._at_mount_park
+
+    @property
     def is_home(self):
         """ bool: Mount home status. """
         return self._is_home
@@ -631,7 +636,7 @@ class AbstractMount(PanBase):
         else:
             self.logger.warning('Problem with slew_to_park')
 
-        while not self._at_mount_park:
+        while not self.at_mount_park:
             self.status
             time.sleep(2)
 
