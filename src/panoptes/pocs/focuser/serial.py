@@ -84,7 +84,7 @@ class AbstractSerialFocuser(AbstractFocuser):
             self._serial_port.bytesize = serial.EIGHTBITS
             self._serial_port.parity = serial.PARITY_NONE
             self._serial_port.stopbits = serial.STOPBITS_ONE
-            self._serial_port.timeout = 2.0
+            self._serial_port.timeout = self.timeout
             self._serial_port.xonxoff = False
             self._serial_port.rtscts = False
             self._serial_port.dsrdtr = False

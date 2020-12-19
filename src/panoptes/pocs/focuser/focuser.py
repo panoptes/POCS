@@ -25,6 +25,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         model (str, optional): model of the focuser
         port (str, optional): port the focuser is connected to, e.g. a device node
         camera (pocs.camera.Camera, optional): camera that this focuser is associated with.
+        timeout (int, optional): time to wait for response from focuser.
         initial_position (int, optional): if given the focuser will move to this position
             following initialisation.
         autofocus_range ((int, int) optional): Coarse & fine focus sweep range, in encoder units
@@ -51,6 +52,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                  model='simulator',
                  port=None,
                  camera=None,
+                 timeout=5,
                  initial_position=None,
                  autofocus_range=None,
                  autofocus_step=None,
@@ -72,6 +74,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self._connected = False
         self._serial_number = 'XXXXXX'
+
+        self.timeout = timeout
 
         if initial_position is None:
             self._position = None
@@ -376,7 +380,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         try:
             initial_cutout = self._camera.get_cutout(seconds, initial_path, cutout_size,
-                                                        keep_file=True)
+                                                     keep_file=True)
             initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 initial_cutout = initial_cutout.astype(np.int32) - dark_cutout
@@ -417,7 +421,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             # Take exposure.
             try:
                 cutouts[i] = self._camera.get_cutout(seconds, file_path, cutout_size,
-                                                        keep_file=keep_files)
+                                                     keep_file=keep_files)
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
@@ -503,7 +507,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         file_path = os.path.join(file_path_root, final_fn)
         try:
             final_cutout = self._camera.get_cutout(seconds, file_path, cutout_size,
-                                                      keep_file=True)
+                                                   keep_file=True)
             final_cutout = mask_saturated(final_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 final_cutout = final_cutout.astype(np.int32) - dark_cutout
