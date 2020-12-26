@@ -9,7 +9,8 @@ def on_enter(event_data):
     pocs.next_state = 'tracking'
     try:
 
-        pocs.observatory.analyze_recent()
+        if pocs.get_config('observations.analyize_recent_offset', default=True):
+            pocs.observatory.analyze_recent()
 
         if pocs.get_config('actions.FORCE_RESCHEDULE'):
             pocs.say("Forcing a move to the scheduler")

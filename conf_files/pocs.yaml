@@ -147,6 +147,7 @@ observations:
   record_observations: True
   make_pretty_images: True
   keep_jpgs: True
+  analyize_recent_offset: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
