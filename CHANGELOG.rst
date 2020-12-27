@@ -18,7 +18,7 @@ Added
   * ``cameras.defaults.compress_fits`` if FITS files should be fpacked. Default True.
   * ``cameras.defaults.record_observations`` if observation metadata should be recorded. Default True.
   * ``cameras.defaults.make_pretty_images`` to make jpgs from images. Default True.
-  * ``cameras.defaults.analyize_recent_offset`` to compare World Coordinate System (WCS) to last
+  * ``cameras.defaults.analyze_recent_offset`` to compare World Coordinate System (WCS) to last
 image. Default True.
 
 Breaking

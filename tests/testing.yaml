@@ -66,7 +66,7 @@ cameras:
     compress_fits: True
     make_pretty_images: True
     keep_jpgs: False
-    analyize_recent_offset: True
+    analyze_recent_offset: True
     readout_time: 0.5  # seconds
     timeout: 10  # seconds
     filter_type: RGGB

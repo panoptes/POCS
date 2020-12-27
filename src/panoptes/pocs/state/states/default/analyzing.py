@@ -9,7 +9,7 @@ def on_enter(event_data):
     pocs.next_state = 'tracking'
     try:
 
-        if pocs.get_config('observations.analyize_recent_offset', default=True):
+        if pocs.get_config('observations.analyze_recent_offset', default=True):
             pocs.observatory.analyze_recent()
 
         if pocs.get_config('actions.FORCE_RESCHEDULE'):
