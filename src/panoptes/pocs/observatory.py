@@ -14,6 +14,7 @@ from panoptes.pocs.images import Image
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.pocs.time import wait_for_events
 
 from panoptes.utils import current_time
 from panoptes.utils import error
@@ -652,6 +653,18 @@ class Observatory(PanBase):
             # No cameras specified, will try to autofocus all cameras from
             # self.cameras
             cameras = self.cameras
+
+        self.logger.debug('Moving all camera filterwheels to the luminance filter')
+
+        filterwheel_events = dict()
+
+        # Move all the camera filterwheels to the luminance filter.
+        for camera in cameras.values():
+            if camera.filterwheel.current_filter != 'luminance':
+                filterwheel_event = camera.filterwheel.move_to('luminance')
+                filterwheel_events[camera] = filterwheel_event
+        self.logger.debug('Waiting for all the filterwheels to move to the luminance filter')
+        wait_for_events(list(filterwheel_events.values()))
 
         autofocus_events = dict()
 
