@@ -14,11 +14,10 @@ from panoptes.pocs.images import Image
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.pocs.time import wait_for_events
 
 from panoptes.utils import current_time
 from panoptes.utils import error
-
+from panoptes.utils.time import wait_for_events
 
 class Observatory(PanBase):
 
