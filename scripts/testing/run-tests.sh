@@ -18,7 +18,7 @@ echo "PANOPTES_CONFIG_PORT=${PANOPTES_CONFIG_PORT}"
 panoptes-config-server --host "${PANOPTES_CONFIG_HOST}" --port "${PANOPTES_CONFIG_PORT}" run --no-load-local --no-save-local &
 
 echo "Checking to make sure panoptes-config-server is running"
-scripts/wait-for-it.sh --timeout=30 --strict "${PANOPTES_CONFIG_HOST}:${PANOPTES_CONFIG_PORT}" -- echo "Config-server up"
+wait-for-it --timeout=30 --strict "${PANOPTES_CONFIG_HOST}:${PANOPTES_CONFIG_PORT}" -- echo "Config-server up"
 
 echo "Starting testing"
 coverage run "$(command -v pytest)"

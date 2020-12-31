@@ -19,13 +19,11 @@ EOF
 sleep "${SLEEP_TIME:-5}"
 
 # Hard-coded paths are *inside* the docker image and should not be changed.
-docker run --rm -i \
+docker run --rm -it \
   --init \
   --network "host" \
-  -e "PANOPTES_CONFIG_FILE=/var/panoptes/POCS/tests/testing.yaml" \
-  -e "PANOPTES_CONFIG_HOST=0.0.0.0" \
-  -e "PANOPTES_CONFIG_PORT=8765" \
-  -v "${POCS}":/var/panoptes/POCS \
+  --env-file "./tests/env" \
+  -v "${PANDIR}/POCS":/var/panoptes/POCS \
   -v "${PANLOG}":/var/panoptes/logs \
   panoptes-pocs:develop \
   "/var/panoptes/POCS/scripts/testing/run-tests.sh"

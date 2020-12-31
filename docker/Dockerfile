@@ -8,7 +8,7 @@ LABEL repo="github.com/panoptes/POCS"
 
 ARG pan_dir=/var/panoptes
 ARG pocs_dir="${pan_dir}/POCS"
-ARG pip_extras="[testing,google]"
+ARG pip_extras="[testing]"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8

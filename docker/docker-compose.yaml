@@ -24,6 +24,8 @@ services:
     build:
       context: ../
       dockerfile: docker/Dockerfile
+      args:
+        image_url: panoptes-utils:develop
     init: true
     container_name: pocs
     hostname: pocs
