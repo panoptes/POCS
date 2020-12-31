@@ -30,7 +30,7 @@ class POCS(PanStateMachine, PanBase):
         observatory(Observatory): An instance of a `pocs.observatory.Observatory`
             class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
-            'simple_state_table'.
+            'panoptes'.
         simulators(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 

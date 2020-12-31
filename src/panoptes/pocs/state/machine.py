@@ -303,7 +303,7 @@ class PanStateMachine(Machine):
     ##################################################################################################
 
     @classmethod
-    def load_state_table(cls, state_table_name='simple_state_table'):
+    def load_state_table(cls, state_table_name='panoptes'):
         """ Loads the state table
         Args:
             state_table_name(str):  Name of state table. Corresponds to filename in
