@@ -61,7 +61,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.info(f'Initializing PANOPTES unit - {self.name} - {location}')
 
         if state_machine_file is None:
-            state_machine_file = self.get_config('state_machine', default='simple_state_table')
+            state_machine_file = self.get_config('state_machine', default='panoptes')
 
         self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
