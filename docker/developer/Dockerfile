@@ -1,4 +1,4 @@
-ARG image_url=gcr.io/panoptes-exp/panoptes-pocs:developer
+ARG image_url=gcr.io/panoptes-exp/panoptes-utils:develop
 FROM ${image_url} AS pocs-base
 
 LABEL description="Installs a number of developer tools. Runs jupyter lab instance."
@@ -29,6 +29,7 @@ RUN apt-get update && \
 
 USER $PANUSER
 RUN echo "Installing developer tools" && \
+    # TODO move this to a conda environment file.
     "${PANDIR}/conda/bin/conda" install --name "${conda_env_name}" \
         altair \
         bokeh \

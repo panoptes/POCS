@@ -1,47 +1,55 @@
 version: '3.7'
 services:
-  peas-shell:
-    image: gcr.io/panoptes-exp/panoptes-pocs:latest
+  config-server:
+    image: panoptes-utils:develop
     init: true
-    container_name: peas-shell
-    hostname: peas-shell
+    tty: true
+    container_name: config-server
     privileged: true
     network_mode: host
-    env_file: $PANDIR/env
+    environment:
+      # These need to be defined in the shell on the host.
+      PANDIR:
+      PANLOG:
+      PANOPTES_CONFIG_HOST:
+      PANOPTES_CONFIG_PORT:
+      PANOPTES_CONFIG_FILE:
+    restart: on-failure
     volumes:
-      - pandir:/var/panoptes
-    # No-op to keep machine running, use $POCS/bin/peas-shell to access
-    command:
-      - "$PANDIR/panoptes-utils/scripts/wait-for-it.sh"
-      - "localhost:6563"
-      - "--"
-      - "tail"
-      - "-f"
-      - "/dev/null"
-  pocs-shell:
-    image: gcr.io/panoptes-exp/panoptes-pocs:latest
+      - pocsdir:/var/panoptes/POCS
+      - confdir:/var/panoptes/config_files
+    command: [ "panoptes-config-server --verbose run" ]
+  pocs:
+    image: "${IMAGE:-panoptes-pocs}:${TAG:-develop}"
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
     init: true
-    container_name: pocs-shell
-    hostname: pocs-shell
+    container_name: pocs
+    hostname: pocs
     privileged: true
     network_mode: host
-    env_file: $PANDIR/env
-    depends_on:
-      - "peas-shell"
+    environment:
+      # These need to be defined in the shell on the host.
+      PANDIR:
+      PANLOG:
+      PANOPTES_CONFIG_HOST:
+      PANOPTES_CONFIG_PORT:
+      PANOPTES_CONFIG_FILE:
     volumes:
-      - pandir:/var/panoptes
+      - pocsdir:/var/panoptes/POCS
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command:
-      - "$PANDIR/panoptes-utils/scripts/wait-for-it.sh"
-      - "localhost:6563"
-      - "--"
-      - "tail"
-      - "-f"
-      - "/dev/null"
+    command: [ "$PANDIR/panoptes-utils/scripts/wait-for-it.sh ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- jupyter-lab --ip=0.0.0.0 --no-browser" ]
 volumes:
-    pandir:
-      driver: local
-      driver_opts:
-        type: none
-        device: /var/panoptes
-        o: bind
+  pocsdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/panoptes/POCS
+      o: bind
+  confdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/panoptes/config_files
+      o: bind
