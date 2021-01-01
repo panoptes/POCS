@@ -8,7 +8,6 @@ Changelog
 Added
 ~~~~~
 
-* Added "trucker" power board. (@wtgee #1038)
 * Add the `gsutil` to `google` install options. Required for uploading data. (@wtgee #1036, #1037)
 * Ability to specify autofocus plots in config file. (@wtgee #1029)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
@@ -469,4 +468,3 @@ Added
 * Automated testing with travis-ci.org
 * Code coverage via codecov.io
 * Basic install scripts
-
