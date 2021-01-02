@@ -166,7 +166,7 @@ if "${DEVELOPER}"; then
     else
       echo "Can't ssh to github.com. Have you set up your ssh keys?"
       echo "See https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
-      exit 0;
+      exit 0
     fi
   fi
 fi
@@ -236,14 +236,18 @@ function system_deps() {
   if [[ "${OS}" == "Linux" ]]; then
     sudo apt-get update | sudo tee -a "${LOGFILE}" 2>&1
     sudo apt-get --yes install \
-      wget curl \
-      git openssh-server \
       ack \
-      git \
-      jq httpie \
       byobu \
+      curl \
+      git \
       htop \
+      httpie \
+      jq \
+      openssh-server \
       speedometer \
+      vim-nox \
+      watchdog \
+      wget \
       zsh | sudo tee -a "${LOGFILE}" 2>&1
   elif [[ "${OS}" == "Darwin" ]]; then
     sudo brew update | sudo tee -a "${LOGFILE}"
@@ -274,6 +278,7 @@ function system_deps() {
   fi
 
   # Anaconda via mini-forge.
+  echo "Downloading and installing Miniforge3 (Anaconda)"
   mkdir -p "${PANDIR}/scripts"
   wget -q "${CONDA_URL}" -O "${PANDIR}/scripts/install-miniforge.sh"
   /bin/sh "${PANDIR}/scripts/install-miniforge.sh" -b -f -p "${PANDIR}/conda"
@@ -311,10 +316,7 @@ function get_docker() {
   if ! command_exists docker; then
     echo "Installing Docker"
     if [[ "${OS}" == "Linux" ]]; then
-      if ! /bin/bash -c "$(wget -qO- https://get.docker.com)"; then
-        sudo apt install --yes docker.io docker-compose ctop
-      fi
-
+      sudo apt install --yes docker.io docker-compose ctop | sudo tee -a "${LOGFILE}" 2>&1
       echo "Adding ${PANUSER} to docker group"
       sudo usermod -aG docker "${PANUSER}" | sudo tee -a "${LOGFILE}" 2>&1
     elif [[ "${OS}" == "Darwin" ]]; then
