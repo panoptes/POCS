@@ -249,13 +249,15 @@ class Focuser(AbstractSerialFocuser):
         # Clear the input buffer in case there's anything left over in there.
         self._serial_port.reset_input_buffer()
 
-        # Send command
-        self._serial_io.write(command + '\r')
-
         # In verbose mode adaptor will first echo the command
-        echo = self._serial_io.readline().rstrip()
-        assert echo == command, self.logger.warning("echo != command: {} != {}".format(
-            echo, command))
+        echo = [self._serial_io.readline().rstrip()]
+        while echo[0] != command:
+            # Send command
+            self._serial_io.write(command + '\r')
+            echo[0] = self._serial_io.readline().rstrip()
+
+        assert echo[0] == command, self.logger.warning("echo != command: {} != {}".format(
+            echo[0], command))
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()
