@@ -226,8 +226,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                               f" ({self.filter_name(new_position)})")
             return self._move_event
 
-        if new_position != self._dark_position:
-            # Store current position so we can revert back with move_to_light_position()
+        # Store current position so we can revert back with move_to_light_position()
+        if new_position == self._dark_position:
+            self._last_light_position = self.position
+        else:
             self._last_light_position = new_position
 
         self.logger.info("Moving {} to position {} ({})".format(
