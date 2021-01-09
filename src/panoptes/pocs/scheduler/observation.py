@@ -46,8 +46,9 @@ class Observation(PanBase):
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
-        assert exptime > 0.0, \
-            self.logger.error(f"Exposure time (exptime={exptime}) must be greater than 0")
+        assert exptime >= 0.0, \
+            self.logger.error(f"Exposure time (exptime={exptime}) must be greater than or equal \
+                              to 0.")
 
         assert min_nexp % exp_set_size == 0, \
             self.logger.error(
@@ -172,12 +173,20 @@ class Observation(PanBase):
         return len(self.exposure_list)
 
     @property
-    def n_completed_sets(self):
+    def num_completed_sets(self):
         """ Return the number of completed sets.
         Returns:
             int: The number of completed sets.
         """
         return int(self.current_exp_num / self.exp_set_size)
+
+    @property
+    def num_exposure_in_set(self):
+        """ The number of the exposure in the current set.
+        Returns:
+            int: The exposure number.
+        """
+        return self.current_exp_num - (self.num_completed_sets * self.exp_set_size)
 
     @property
     def set_is_finished(self):
