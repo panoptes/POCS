@@ -252,32 +252,28 @@ class Focuser(AbstractSerialFocuser):
         # Clear the input buffer in case there's anything left over in there.
         self._serial_port.reset_input_buffer()
 
-        # Send command for first time
-        self._serial_io.write(command + '\r')
+        for i in range(self.max_command_attempts):
+            # Send the command
+            self._serial_io.write(command + '\r')
 
-        # In verbose mode adaptor will first echo the command
-        echo = self._serial_io.readline().rstrip()
+            # In verbose mode adaptor will first echo the command
+            echo = self._serial_io.readline().rstrip()
 
-        if echo != command:
-            for i in range(self.max_command_attempts):
-                self.logger.warning("Incorrect response from birger. Retrying command.")
+            # Adaptor should then send 'OK', even if there was an error.
+            ok = self._serial_io.readline().rstrip()
 
-                # Send again the command
-                self._serial_io.write(command + '\r')
-                echo = self._serial_io.readline().rstrip()
+            if echo == command and ok == 'OK':
+                self.logger.debug(f"Got correct response after {i + 1} attempts")
+                break
 
-                if echo == command:
-                    self.logger.debug(f"Got correct response after {i + 1} attempts")
-                    break
+            elif echo != command or ok != 'OK':
+                self.logger.error(f"echo != command: {echo} != {command}. Retrying command.")
 
         try:
-            assert echo == command
-        except AssertionError:
-            raise error.PanError(f"echo != command: {echo} != {command}")
-
-        # Adaptor should then send 'OK', even if there was an error.
-        ok = self._serial_io.readline().rstrip()
-        assert ok == 'OK'
+            assert (echo, ok) == (command, 'OK')
+        except AssertionError as err:
+            self.logger.error(err)
+            warn(err)
 
         # Depending on which command was sent there may or may not be any further
         # response.
