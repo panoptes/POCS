@@ -103,9 +103,9 @@ def test_no_exposures(field):
 
 def test_n_completed_sets(self, field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=1, exp_set_size=2)
-    assert obs.n_completed_sets == 0
+    assert obs.num_completed_sets == 0
     obs.exposure_list = ["a", "b"]
-    assert obs.n_completed_sets == 1
+    assert obs.num_completed_sets == 1
 
 
 def test_last_exposure_and_reset(field):
