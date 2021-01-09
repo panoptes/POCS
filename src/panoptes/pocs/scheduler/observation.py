@@ -172,6 +172,21 @@ class Observation(PanBase):
         return len(self.exposure_list)
 
     @property
+    def set_is_finished(self):
+        """ Check if the current observing block has finished, which is True when the minimum
+        number of exposures have been obtained and and integer number of sets have been completed.
+        Returns:
+            bool: True if finished, False if not.
+        """
+        # Check the min required number of exposures have been obtained
+        has_min_exposures = self.current_exp_num >= self.min_nexp
+
+        # Check if the current set is finished
+        block_finished = self.current_exp_num % self.exp_set_size == 0
+
+        return has_min_exposures and block_finished
+
+    @property
     def first_exposure(self):
         """ Return the latest exposure information
 
