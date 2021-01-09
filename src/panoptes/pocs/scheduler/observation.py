@@ -172,6 +172,14 @@ class Observation(PanBase):
         return len(self.exposure_list)
 
     @property
+    def n_completed_sets(self):
+        """ Return the number of completed sets.
+        Returns:
+            int: The number of completed sets.
+        """
+        return int(self.current_exp_num / self.exp_set_size)
+
+    @property
     def set_is_finished(self):
         """ Check if the current observing block has finished, which is True when the minimum
         number of exposures have been obtained and and integer number of sets have been completed.

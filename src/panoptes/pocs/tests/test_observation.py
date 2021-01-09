@@ -101,6 +101,13 @@ def test_no_exposures(field):
     assert obs.pointing_image is None
 
 
+def test_n_completed_sets(self, field):
+    obs = Observation(field, exptime=17.5 * u.second, min_nexp=1, exp_set_size=2)
+    assert obs.n_completed_sets == 0
+    obs.exposure_list = ["a", "b"]
+    assert obs.n_completed_sets == 1
+
+
 def test_last_exposure_and_reset(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
                       exp_set_size=9)
