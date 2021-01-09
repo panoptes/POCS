@@ -266,8 +266,11 @@ class Focuser(AbstractSerialFocuser):
                 self.logger.debug(f"Got correct response after {i + 1} attempts")
                 break
 
-            elif echo != command or ok != 'OK':
-                self.logger.error(f"echo != command: {echo} != {command}. Retrying command.")
+            if echo != command:
+                self.logger.warning(f"echo != command: {echo} != {command}. Retrying command.")
+
+            if ok != 'OK':
+                self.logger.warning(f"ok != 'OK': {ok} != 'OK'. Retrying command.")
 
         try:
             assert (echo, ok) == (command, 'OK')
