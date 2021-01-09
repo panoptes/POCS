@@ -256,21 +256,24 @@ class Focuser(AbstractSerialFocuser):
         self._serial_io.write(command + '\r')
 
         # In verbose mode adaptor will first echo the command
-        echo = [self._serial_io.readline().rstrip()]
+        echo = self._serial_io.readline().rstrip()
 
-        if echo[0] != command:
+        if echo != command:
             for i in range(self.max_command_attempts):
-                self.logger.warning("Incorrect response from birger. Retrying command")
+                self.logger.warning("Incorrect response from birger. Retrying command.")
 
                 # Send again the command
                 self._serial_io.write(command + '\r')
-                echo[0] = self._serial_io.readline().rstrip()
+                echo = self._serial_io.readline().rstrip()
 
-                if echo[0] == command:
+                if echo == command:
+                    self.logger.debug(f"Got correct reply after {i + 1} attempts")
                     break
 
-        assert echo[0] == command, self.logger.warning("echo != command: {} != {}".format(
-            echo[0], command))
+        try:
+            assert echo == command
+        except AssertionError:
+            raise error.PanError(f"echo != command: {echo} != {command}")
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()
