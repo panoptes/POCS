@@ -252,6 +252,10 @@ class Focuser(AbstractSerialFocuser):
         # Clear the input buffer in case there's anything left over in there.
         self._serial_port.reset_input_buffer()
 
+        # Depending on which command was sent there may or may not be any further
+        # response.
+        response = []
+
         for i in range(self.max_command_attempts):
             # Send the command
             self._serial_io.write(command + '\r')
@@ -263,6 +267,21 @@ class Focuser(AbstractSerialFocuser):
             ok = self._serial_io.readline().rstrip()
 
             if echo == command and ok == 'OK':
+                if response_length == 0:
+                    # Not expecting any further response. Should check the buffer anyway in case an error
+                    # message has been sent.
+                    if self._serial_port.in_waiting:
+                        response.append(self._serial_io.readline())
+
+                elif response_length > 0:
+                    # Expecting some number of lines of response. Attempt to read that many lines.
+                    for i in range(response_length):
+                        response.append(self._serial_io.readline())
+
+                else:
+                    # Don't know what to expect. Call readlines() to get whatever is there.
+                    response.append(self._serial_io.readlines())
+
                 self.logger.debug(f"Got correct response after {i + 1} attempts")
                 break
 
@@ -277,25 +296,6 @@ class Focuser(AbstractSerialFocuser):
         except AssertionError as err:
             self.logger.error(err)
             warn(err)
-
-        # Depending on which command was sent there may or may not be any further
-        # response.
-        response = []
-
-        if response_length == 0:
-            # Not expecting any further response. Should check the buffer anyway in case an error
-            # message has been sent.
-            if self._serial_port.in_waiting:
-                response.append(self._serial_io.readline())
-
-        elif response_length > 0:
-            # Expecting some number of lines of response. Attempt to read that many lines.
-            for i in range(response_length):
-                response.append(self._serial_io.readline())
-
-        else:
-            # Don't know what to expect. Call readlines() to get whatever is there.
-            response.append(self._serial_io.readlines())
 
         # Check for an error message in response
         if response:
