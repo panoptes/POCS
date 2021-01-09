@@ -63,9 +63,12 @@ class Focuser(AbstractSerialFocuser):
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
+                 max_command_attempts=5,
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
+
+        self.max_command_attempts = max_command_attempts
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
@@ -249,15 +252,22 @@ class Focuser(AbstractSerialFocuser):
         # Clear the input buffer in case there's anything left over in there.
         self._serial_port.reset_input_buffer()
 
-        # Send command
+        # Send command for first time
         self._serial_io.write(command + '\r')
 
         # In verbose mode adaptor will first echo the command
         echo = [self._serial_io.readline().rstrip()]
-        while echo[0] != command:
-            # Send command again
-            self._serial_io.write(command + '\r')
-            echo[0] = self._serial_io.readline().rstrip()
+
+        if echo[0] != command:
+            for i in range(self.max_command_attempts):
+                self.logger.warning("Incorrect response from birger. Retrying command")
+
+                # Send again the command
+                self._serial_io.write(command + '\r')
+                echo[0] = self._serial_io.readline().rstrip()
+
+                if echo[0] == command:
+                    break
 
         assert echo[0] == command, self.logger.warning("echo != command: {} != {}".format(
             echo[0], command))
