@@ -267,7 +267,7 @@ class Focuser(AbstractSerialFocuser):
                 echo = self._serial_io.readline().rstrip()
 
                 if echo == command:
-                    self.logger.debug(f"Got correct reply after {i + 1} attempts")
+                    self.logger.debug(f"Got correct response after {i + 1} attempts")
                     break
 
         try:
