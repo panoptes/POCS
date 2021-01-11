@@ -28,7 +28,7 @@ def test_create_observation_exptime_no_units(field):
 
 def test_create_observation_exptime_bad(field):
     with pytest.raises(AssertionError):
-        Observation(field, exptime=0.0 * u.second)
+        Observation(field, exptime=-1.0 * u.second)
 
 
 def test_create_observation_exptime_minutes(field):

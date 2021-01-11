@@ -49,6 +49,17 @@ class Scheduler(BaseScheduler):
 
                     self.logger.debug(f"\t\tConstraint Score: {score:.03f}\tVeto: {veto}")
 
+                    # Check horizon limits for observation
+                    if observation.horizon_start is not None:
+                        if not self.is_dark(horizon=observation.horizon_start):
+                            self.logger.debug(f"Vetoing {observation} because it is not dark "
+                                              "enough.")
+                            veto = True
+                    if observation.horizon_stop is not None:
+                        if self.is_dark(horizon=observation.horizon_stop):
+                            self.logger.debug(f"Vetoing {observation} because it is too dark.")
+                            veto = True
+
                     if veto:
                         self.logger.debug(f"\t\tVetoed by {constraint}")
                         del valid_obs[obs_name]

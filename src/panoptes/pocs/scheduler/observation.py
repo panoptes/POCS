@@ -10,7 +10,8 @@ class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, filter_name=None, *args, **kwargs):
+                 exp_set_size=10, priority=100, filter_name=None,
+                 horizon_start=None, horizon_stop=None, *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -40,7 +41,10 @@ class Observation(PanBase):
                 (default: {100})
             filter_name {str} -- Name of the filter to be used. If specified,
                 will override the default filter name (default: {None}).
-
+            horizon_start (str, optional): If provided, the scheduler will veto this observation
+                unless `is_dark(horizon=horizon_start)` returns True.
+            horizon_stop (str, optional): If provided, the scheduler will veto this observation
+                unless `is_dark(horizon=horizon_stop)` returns False.
         """
         super().__init__(*args, **kwargs)
 
@@ -64,10 +68,12 @@ class Observation(PanBase):
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
         self.pointing_images = OrderedDict()
+        self.horizon_start = horizon_start
+        self.horizon_stop = horizon_stop
 
         self.priority = float(priority)
 
-        self.filter_name = filter_name
+        self._filter_name = filter_name
 
         self._min_duration = self.exptime * self.min_nexp
         self._set_duration = self.exptime * self.exp_set_size
@@ -134,6 +140,10 @@ class Observation(PanBase):
     def name(self):
         """ Name of the `~pocs.scheduler.field.Field` associated with the observation """
         return self.field.name
+
+    @property
+    def filter_name(self):
+        return self._filter_name
 
     @property
     def seq_time(self):
