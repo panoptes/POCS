@@ -463,7 +463,7 @@ class Observatory(PanBase):
         # If so, check if it safe to open, then open if safe
         # If dome is already open, or there is no dome, this has no effect
         if observation.requires_open_dome:
-            if self.can_open_dome():
+            if self.can_open_dome:
                 with suppress(AttributeError):
                     self.dome.open()
             else:
