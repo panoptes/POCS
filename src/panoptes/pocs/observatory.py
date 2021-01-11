@@ -465,6 +465,7 @@ class Observatory(PanBase):
         if observation.requires_open_dome:
             if self.can_open_dome:
                 with suppress(AttributeError):
+                    self.logger.debug(f"Ensuring dome is open for {observation}.")
                     self.dome.open()
             else:
                 raise error.PanError(f"Observation {observation} requires open dome but it is not"
