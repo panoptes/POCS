@@ -45,7 +45,7 @@ class Scheduler(BaseScheduler):
                         self.logger.debug(f"Vetoing {observation} because horizon check failed.")
                         del valid_obs[obs_name]
                         continue
-                        
+
                     current_score = valid_obs[obs_name]
                     self.logger.debug(f"\t{obs_name}\tCurrent score: {current_score:.03f}")
 

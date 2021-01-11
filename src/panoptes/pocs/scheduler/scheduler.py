@@ -7,12 +7,14 @@ from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
 
-from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import current_time
 from panoptes.utils import get_quantity_value
 from panoptes.utils.serializers import from_yaml
+from panoptes.utils.library import load_module
 from panoptes.pocs.scheduler.field import Field
+
+from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.observation import Observation
 
 
@@ -217,15 +219,21 @@ class BaseScheduler(PanBase):
             field_config (dict): Configuration items for `Observation`
         """
         with suppress(KeyError):
-            field_config['exptime'] = float(get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
+            field_config['exptime'] = float(get_quantity_value(field_config['exptime'],
+                                                               unit=u.second)) * u.second
 
-        self.logger.debug(f"Adding field_config={field_config!r} to scheduler")
+        self.logger.debug(f"Adding field_config={field_config!r} to scheduler.")
         field = Field(field_config['name'], field_config['position'])
-        self.logger.debug(f"Created field.name={field.name!r}")
+        self.logger.debug(f"Created field {field}.")
 
+        # Allow observations of different types
+        obs_class_name = field_config.get("observation_class",
+                                          default="panoptes.pocs.scheduler.observation")
+        ObsClass = load_module(obs_class_name)
+
+        self.logger.debug(f"Creating observation for {field_config!r}")
         try:
-            self.logger.debug(f"Creating observation for {field_config!r}")
-            obs = Observation(field, **field_config)
+            obs = ObsClass(field, **field_config)
             self.logger.debug(f"Observation created for field.name={field.name!r}")
         except Exception as e:
             raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
