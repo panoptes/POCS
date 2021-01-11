@@ -68,8 +68,6 @@ class Observation(PanBase):
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
         self.pointing_images = OrderedDict()
-        self.horizon_start = horizon_start
-        self.horizon_stop = horizon_stop
 
         self.priority = float(priority)
 
@@ -81,6 +79,9 @@ class Observation(PanBase):
         self._image_dir = self.get_config('directories.images')
         self._directory = None
         self._seq_time = None
+
+        self._horizon_start = horizon_start
+        self._horizon_stop = horizon_stop
 
         self.merit = 0.0
 
@@ -261,6 +262,24 @@ class Observation(PanBase):
         self.exposure_list = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
+
+    def check_horizon(self):
+        """ Check the horizon conditions are met to schedule this observation.
+        Returns:
+            bool: True if horizon conditions are met, False otherwise.
+        """
+        if self._horizon_start is not None:
+            if not self.is_dark(horizon=self._horizon_start):
+                self.logger.debug(f"Horizon check for {self} failed because it is not dark enough"
+                                  f" (horizon={self._horizon_start}).")
+                return False
+        if self._horizon_stop is not None:
+            if self.is_dark(horizon=self._horizon_stop):
+                self.logger.debug(f"Horizon check for {self} failed because it is too dark"
+                                  f" (horizon={self._horizon_stop}).")
+                return False
+        self.logger.debug(f"Horizon check for {self} passed.")
+        return True
 
     ##################################################################################################
     # Private Methods
