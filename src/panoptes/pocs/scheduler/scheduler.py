@@ -227,7 +227,7 @@ class BaseScheduler(PanBase):
 
         # Allow observations of different types
         obs_class_name = field_config.get("observation_class",
-                                          default="panoptes.pocs.scheduler.observation")
+                                          default="panoptes.pocs.scheduler.observation.Observation")
         ObsClass = load_module(obs_class_name)
 
         self.logger.debug(f"Creating observation for {field_config!r}")
