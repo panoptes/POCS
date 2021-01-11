@@ -15,7 +15,6 @@ from panoptes.utils.library import load_module
 from panoptes.pocs.scheduler.field import Field
 
 from panoptes.pocs.base import PanBase
-from panoptes.pocs.scheduler.observation import Observation
 
 
 class BaseScheduler(PanBase):
@@ -224,7 +223,7 @@ class BaseScheduler(PanBase):
 
         self.logger.debug(f"Adding field_config={field_config!r} to scheduler.")
         field = Field(field_config['name'], field_config['position'])
-        self.logger.debug(f"Created field {field}.")
+        self.logger.debug(f"Created field {field.name}.")
 
         # Allow observations of different types
         obs_class_name = field_config.get("observation_class",
@@ -234,14 +233,14 @@ class BaseScheduler(PanBase):
         self.logger.debug(f"Creating observation for {field_config!r}")
         try:
             obs = ObsClass(field, **field_config)
-            self.logger.debug(f"Observation created for field.name={field.name!r}")
+            self.logger.debug(f"Created observation {obs}.")
         except Exception as e:
             raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
         else:
             if field.name in self._observations:
-                self.logger.debug(f"Overriding existing entry for field.name={field.name!r}")
+                self.logger.debug(f"Overriding existing entry for field {field.name}.")
             self._observations[field.name] = obs
-            self.logger.debug(f"obs={obs!r} added")
+            self.logger.debug(f"Added observation {obs} to scheduler.")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
