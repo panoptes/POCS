@@ -1,5 +1,6 @@
 import os
 import subprocess
+from contextlib import suppress
 from collections import OrderedDict
 from datetime import datetime
 
@@ -459,10 +460,12 @@ class Observatory(PanBase):
         observation = self.current_observation()
 
         # Check if the observation requires the dome to be open
-        # If so, check
+        # If so, check if it safe to open, then open if safe
+        # If dome is already open, or there is no dome, this has no effect
         if observation.requires_open_dome:
             if self.can_open_dome():
-                self.dome.open()  # Check for dome attribute?
+                with suppress(AttributeError):
+                    self.dome.open()
             else:
                 raise error.PanError(f"Observation {observation} requires open dome but it is not"
                                      " currently safe to open it.")

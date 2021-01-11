@@ -254,6 +254,26 @@ class Observation(PanBase):
         except IndexError:
             self.logger.warning("No pointing image available")
 
+    @property
+    def can_be_scheduled(self):
+        """ Check conditions are met to schedule this observation.
+        Returns:
+            bool: True if conditions are met, False otherwise.
+        """
+        # Check horizon limits for observation
+        # This allows flat fields to be scheduled only during twilight
+        if not self._check_horizon():
+            self.logger.debug(f"{self} cannot be scheduled because horizon check failed.")
+            return False
+
+        # Check if we are able to open the dome
+        # This allows darks and biases to be scheduled when weather is bad
+        if self.requires_open_dome and not self.can_open_dome:
+            self.logger.debug(f"{self} cannot be scheduled because cannot open dome.")
+            return False
+
+        return True
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -266,7 +286,15 @@ class Observation(PanBase):
         self.merit = 0.0
         self.seq_time = None
 
-    def check_horizon(self):
+    ##################################################################################################
+    # Private Methods
+    ##################################################################################################
+
+    def __str__(self):
+        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
+            self.field, self.exptime, self.exp_set_size, self.min_nexp, self.priority)
+
+    def _check_horizon(self):
         """ Check the horizon conditions are met to schedule this observation.
         Returns:
             bool: True if horizon conditions are met, False otherwise.
@@ -283,11 +311,3 @@ class Observation(PanBase):
                 return False
         self.logger.debug(f"Horizon check for {self} passed.")
         return True
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
-
-    def __str__(self):
-        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exptime, self.exp_set_size, self.min_nexp, self.priority)

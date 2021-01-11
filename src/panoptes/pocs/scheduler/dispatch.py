@@ -40,20 +40,11 @@ class Scheduler(BaseScheduler):
             for obs_name, observation in self.observations.items():
                 if obs_name in valid_obs:
 
-                    # Check horizon limits for observation
-                    # This allows flat fields to be scheduled only during twilight
-                    if not observation.check_horizon():
-                        self.logger.debug(f"Vetoing {observation} because horizon check failed.")
+                    # Check observation-specific conditions
+                    if not observation.can_be_scheduled:
+                        self.logger.debug(f"Vetoing {observation} because conditions are not met.")
                         del valid_obs[obs_name]
                         continue
-
-                    # Check if we are able to open the dome
-                    # This allows darks and biases to be scheduled when weather is bad
-                    if observation.requires_open_dome:
-                        if not self.can_open_dome():
-                            self.logger.debug(f"Vetoing {observation} because can't open dome.")
-                            del valid_obs[obs_name]
-                            continue
 
                     current_score = valid_obs[obs_name]
                     self.logger.debug(f"\t{obs_name}\tCurrent score: {current_score:.03f}")
