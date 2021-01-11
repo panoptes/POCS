@@ -188,7 +188,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=False,
+                  make_plots=None,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
