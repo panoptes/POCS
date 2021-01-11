@@ -456,14 +456,24 @@ class Observatory(PanBase):
         corresponding exposure.
 
         """
+        observation = self.current_observation()
+
+        # Check if the observation requires the dome to be open
+        # If so, check
+        if observation.requires_open_dome:
+            if self.can_open_dome():
+                self.dome.open()  # Check for dome attribute?
+            else:
+                raise error.PanError(f"Observation {observation} requires open dome but it is not"
+                                     " currently safe to open it.")
+
         # Get observatory metadata
         headers = self.get_standard_headers()
 
         # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
-        # List of camera events to wait for to signal exposure is done
-        # processing
+        # List of camera events to wait for to signal exposure is done processing
         observing_events = dict()
 
         # Take exposure with each camera
@@ -472,8 +482,7 @@ class Observatory(PanBase):
 
             try:
                 # Start the exposures
-                camera_observe_event = camera.take_observation(self.current_observation, headers)
-
+                camera_observe_event = camera.take_observation(observation, headers)
                 observing_events[cam_name] = camera_observe_event
 
             except Exception as e:

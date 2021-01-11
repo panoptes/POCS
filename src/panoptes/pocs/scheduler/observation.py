@@ -9,9 +9,9 @@ from panoptes.pocs.scheduler.field import Field
 class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
-    def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, filter_name=None,
-                 horizon_start=None, horizon_stop=None, *args, **kwargs):
+    def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
+                 filter_name=None, horizon_start=None, horizon_stop=None,
+                 requires_open_dome=True,  *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -45,6 +45,8 @@ class Observation(PanBase):
                 unless `is_dark(horizon=horizon_start)` returns True.
             horizon_stop (str, optional): If provided, the scheduler will veto this observation
                 unless `is_dark(horizon=horizon_stop)` returns False.
+            requires_open_dome (bool, optional): If True (default), the observation will only be
+                scheduled when the weather is good.
         """
         super().__init__(*args, **kwargs)
 
@@ -68,6 +70,7 @@ class Observation(PanBase):
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
         self.pointing_images = OrderedDict()
+        self.requires_open_dome = requires_open_dome
 
         self.priority = float(priority)
 

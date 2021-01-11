@@ -166,6 +166,10 @@ class POCS(PanStateMachine, PanBase):
         return self._obs_run_retries >= 0
 
     @property
+    def can_open_dome(self):
+        return self.is_safe(park_if_not_safe=False)
+
+    @property
     def status(self):
         status = dict()
 
