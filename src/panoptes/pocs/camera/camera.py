@@ -627,7 +627,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=False,
+                  make_plots=None,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -659,7 +659,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
             make_plots (bool, optional: Whether to write focus plots to images folder, default
-                False.
+                behaviour is to check the focuser autofocus_make_plots attribute.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
