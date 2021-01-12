@@ -68,7 +68,7 @@ class Focuser(AbstractSerialFocuser):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
-        self.max_command_attempts = max_command_attempts
+        self._max_command_attempts = max_command_attempts
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
@@ -256,7 +256,7 @@ class Focuser(AbstractSerialFocuser):
         # response.
         response = []
 
-        for i in range(self.max_command_attempts):
+        for i in range(self._max_command_attempts):
             # Send the command
             self._serial_io.write(command + '\r')
 
