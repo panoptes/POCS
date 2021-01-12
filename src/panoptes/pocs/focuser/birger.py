@@ -65,10 +65,11 @@ class Focuser(AbstractSerialFocuser):
                  dev_node_pattern='/dev/tty.USA49*.?',
                  max_command_attempts=5,
                  *args, **kwargs):
-        super().__init__(name=name, model=model, *args, **kwargs)
-        self.logger.debug('Initialising Birger focuser')
 
         self._max_command_attempts = max_command_attempts
+
+        super().__init__(name=name, model=model, *args, **kwargs)
+        self.logger.debug('Initialising Birger focuser')
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
