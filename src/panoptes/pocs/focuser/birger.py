@@ -250,8 +250,7 @@ class Focuser(AbstractSerialFocuser):
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
             return
 
-        # Depending on which command was sent there may or may not be any further
-        # response.
+        # Depending on which command was sent there may or may not be any further response.
         response = []
 
         # Success variable to verify that the command sent is read by the focuser.
@@ -278,8 +277,8 @@ class Focuser(AbstractSerialFocuser):
                 continue
 
             if response_length == 0:
-                # Not expecting any further response. Should check the buffer anyway in case an error
-                # message has been sent.
+                # Not expecting any further response. Should check the buffer anyway in case an
+                # error message has been sent.
                 if self._serial_port.in_waiting:
                     response.append(self._serial_io.readline())
 
