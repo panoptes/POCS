@@ -305,7 +305,7 @@ class Focuser(AbstractSerialFocuser):
         try:
             assert(success)
         except AssertionError:
-            raise error.PanError()
+            raise error.PanError(f'The command {command!r} was not properly read by {self}')
 
         # Check for an error message in response
         if response:
