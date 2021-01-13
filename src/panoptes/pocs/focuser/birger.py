@@ -297,10 +297,10 @@ class Focuser(AbstractSerialFocuser):
                 break
 
             if echo != command:
-                self.logger.warning(f"echo != command: {echo} != {command}. Retrying command.")
+                self.logger.warning(f"echo != command: {echo!r} != {command!r}. Retrying command.")
 
             if ok != 'OK':
-                self.logger.warning(f"ok != 'OK': {ok} != 'OK'. Retrying command.")
+                self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
 
         try:
             assert(success)
