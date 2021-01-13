@@ -267,7 +267,7 @@ class Focuser(AbstractSerialFocuser):
             echo = self._serial_io.readline().rstrip()
 
             if echo != command:
-                self.logger.warning(f"echo != command: {echo!r} != {command!r}. Retrying command.")
+                self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying command.')
                 continue
 
             # Adaptor should then send 'OK', even if there was an error.
