@@ -268,7 +268,7 @@ class Focuser(AbstractSerialFocuser):
             ok = self._serial_io.readline().rstrip()
 
             if echo == command and ok == 'OK':
-                # Get any avaialble response left in buffer.
+                # Get any available response left in buffer.
                 response.append(self._serial_io.readlines())
 
                 self.logger.debug(f"Got correct response after {i + 1} attempts")
