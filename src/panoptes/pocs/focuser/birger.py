@@ -63,7 +63,11 @@ class Focuser(AbstractSerialFocuser):
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
+                 max_command_retries=5,
                  *args, **kwargs):
+
+        self._max_command_retries = max_command_retries
+
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
@@ -246,39 +250,52 @@ class Focuser(AbstractSerialFocuser):
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
             return
 
-        # Clear the input buffer in case there's anything left over in there.
-        self._serial_port.reset_input_buffer()
-
-        # Send command
-        self._serial_io.write(command + '\r')
-
-        # In verbose mode adaptor will first echo the command
-        echo = self._serial_io.readline().rstrip()
-        assert echo == command, self.logger.warning("echo != command: {} != {}".format(
-            echo, command))
-
-        # Adaptor should then send 'OK', even if there was an error.
-        ok = self._serial_io.readline().rstrip()
-        assert ok == 'OK'
-
-        # Depending on which command was sent there may or may not be any further
-        # response.
+        # Depending on which command was sent there may or may not be any further response.
         response = []
 
-        if response_length == 0:
-            # Not expecting any further response. Should check the buffer anyway in case an error
-            # message has been sent.
-            if self._serial_port.in_waiting:
-                response.append(self._serial_io.readline())
+        # Success variable to verify that the command sent is read by the focuser.
+        success = False
 
-        elif response_length > 0:
-            # Expecting some number of lines of response. Attempt to read that many lines.
-            for i in range(response_length):
-                response.append(self._serial_io.readline())
+        for i in range(self._max_command_retries):
+            # Clear the input buffer in case there's anything left over in there.
+            self._serial_port.reset_input_buffer()
 
-        else:
-            # Don't know what to expect. Call readlines() to get whatever is there.
-            response.append(self._serial_io.readlines())
+            # Send the command
+            self._serial_io.write(command + '\r')
+
+            # In verbose mode adaptor will first echo the command
+            echo = self._serial_io.readline().rstrip()
+
+            if echo != command:
+                self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying command.')
+                continue
+
+            # Adaptor should then send 'OK', even if there was an error.
+            ok = self._serial_io.readline().rstrip()
+            if ok != 'OK':
+                self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
+                continue
+
+            if response_length == 0:
+                # Not expecting any further response. Should check the buffer anyway in case an
+                # error message has been sent.
+                if self._serial_port.in_waiting:
+                    response.append(self._serial_io.readline())
+
+            elif response_length > 0:
+                # Expecting some number of lines of response. Attempt to read that many lines.
+                for i in range(response_length):
+                    response.append(self._serial_io.readline())
+
+            else:
+                # Don't know what to expect. Call readlines() to get whatever is there.
+                response.extend(self._serial_io.readlines())
+
+            success = True
+            break
+
+        if not success:
+            raise error.PanError(f'Failed command {command!r} on {self}')
 
         # Check for an error message in response
         if response:
