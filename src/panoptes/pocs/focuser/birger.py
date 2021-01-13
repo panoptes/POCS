@@ -280,7 +280,6 @@ class Focuser(AbstractSerialFocuser):
             if response_length == 0:
                 # Not expecting any further response. Should check the buffer anyway in case an
                 # error message has been sent.
-                time.sleep(2)
                 if self._serial_port.in_waiting:
                     response.append(self._serial_io.readline())
 
