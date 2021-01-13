@@ -283,6 +283,12 @@ class Focuser(AbstractSerialFocuser):
                     # Don't know what to expect. Call readlines() to get whatever is there.
                     response.append(self._serial_io.readlines())
 
+                try:
+                    assert (echo, ok) == (command, 'OK')
+                except AssertionError as err:
+                    self.logger.error(err)
+                    warn(err)
+
                 self.logger.trace(f"Got correct response after {i + 1} attempts")
                 break
 
@@ -291,12 +297,6 @@ class Focuser(AbstractSerialFocuser):
 
             if ok != 'OK':
                 self.logger.warning(f"ok != 'OK': {ok} != 'OK'. Retrying command.")
-
-        try:
-            assert (echo, ok) == (command, 'OK')
-        except AssertionError as err:
-            self.logger.error(err)
-            warn(err)
 
         # Check for an error message in response
         if response:
