@@ -267,45 +267,36 @@ class Focuser(AbstractSerialFocuser):
             # In verbose mode adaptor will first echo the command
             echo = self._serial_io.readline().rstrip()
 
-            # Adaptor should then send 'OK', even if there was an error.
-            ok = self._serial_io.readline().rstrip()
-
-            if echo == command and ok == 'OK':
-                if response_length == 0:
-                    # Not expecting any further response. Should check the buffer anyway in case an error
-                    # message has been sent.
-                    if self._serial_port.in_waiting:
-                        response.append(self._serial_io.readline())
-
-                elif response_length > 0:
-                    # Expecting some number of lines of response. Attempt to read that many lines.
-                    for i in range(response_length):
-                        response.append(self._serial_io.readline())
-
-                else:
-                    # Don't know what to expect. Call readlines() to get whatever is there.
-                    response.append(self._serial_io.readlines())
-
-                try:
-                    assert (echo, ok) == (command, 'OK')
-                    success = True
-                except AssertionError as err:
-                    self.logger.error(err)
-                    warn(err)
-
-                self.logger.trace(f"Got correct response after {i + 1} attempts")
-                break
-
             if echo != command:
                 self.logger.warning(f"echo != command: {echo!r} != {command!r}. Retrying command.")
+                continue
 
+            # Adaptor should then send 'OK', even if there was an error.
+            ok = self._serial_io.readline().rstrip()
             if ok != 'OK':
                 self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
+                continue
 
-        try:
-            assert(success)
-        except AssertionError:
-            raise error.PanError(f'The command {command!r} was not properly read by {self}')
+            if response_length == 0:
+                # Not expecting any further response. Should check the buffer anyway in case an error
+                # message has been sent.
+                if self._serial_port.in_waiting:
+                    response.append(self._serial_io.readline())
+
+            elif response_length > 0:
+                # Expecting some number of lines of response. Attempt to read that many lines.
+                for i in range(response_length):
+                    response.append(self._serial_io.readline())
+
+            else:
+                # Don't know what to expect. Call readlines() to get whatever is there.
+                response.append(self._serial_io.readlines())
+
+            success = True
+            break
+
+        if not success:
+            raise error.PanError(f'Failed command {command!r} on {self}')
 
         # Check for an error message in response
         if response:
