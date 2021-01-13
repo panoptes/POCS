@@ -1,7 +1,6 @@
 import re
 import serial
 import glob
-import time
 from warnings import warn
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
