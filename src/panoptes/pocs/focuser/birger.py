@@ -1,6 +1,7 @@
 import re
 import serial
 import glob
+import time
 from warnings import warn
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
@@ -279,6 +280,7 @@ class Focuser(AbstractSerialFocuser):
             if response_length == 0:
                 # Not expecting any further response. Should check the buffer anyway in case an
                 # error message has been sent.
+                time.sleep(2)
                 if self._serial_port.in_waiting:
                     response.append(self._serial_io.readline())
 
@@ -289,7 +291,7 @@ class Focuser(AbstractSerialFocuser):
 
             else:
                 # Don't know what to expect. Call readlines() to get whatever is there.
-                response.append(self._serial_io.readlines())
+                response.extend(self._serial_io.readlines())
 
             success = True
             break
