@@ -63,10 +63,10 @@ class Focuser(AbstractSerialFocuser):
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
-                 max_command_attempts=5,
+                 max_command_retries=5,
                  *args, **kwargs):
 
-        self._max_command_attempts = max_command_attempts
+        self._max_command_retries = max_command_retries
 
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
@@ -257,7 +257,7 @@ class Focuser(AbstractSerialFocuser):
         # response.
         response = []
 
-        for i in range(self._max_command_attempts):
+        for i in range(self._max_command_retries):
             # Send the command
             self._serial_io.write(command + '\r')
 
