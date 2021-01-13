@@ -250,14 +250,14 @@ class Focuser(AbstractSerialFocuser):
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
             return
 
-        # Clear the input buffer in case there's anything left over in there.
-        self._serial_port.reset_input_buffer()
-
         # Depending on which command was sent there may or may not be any further
         # response.
         response = []
 
         for i in range(self._max_command_retries):
+            # Clear the input buffer in case there's anything left over in there.
+            self._serial_port.reset_input_buffer()
+
             # Send the command
             self._serial_io.write(command + '\r')
 
