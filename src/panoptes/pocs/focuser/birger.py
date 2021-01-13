@@ -283,7 +283,7 @@ class Focuser(AbstractSerialFocuser):
                     # Don't know what to expect. Call readlines() to get whatever is there.
                     response.append(self._serial_io.readlines())
 
-                self.logger.debug(f"Got correct response after {i + 1} attempts")
+                self.logger.trace(f"Got correct response after {i + 1} attempts")
                 break
 
             if echo != command:
