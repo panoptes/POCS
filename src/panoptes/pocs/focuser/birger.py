@@ -254,6 +254,9 @@ class Focuser(AbstractSerialFocuser):
         # response.
         response = []
 
+        # Success variable to verify that the command sent is read by the focuser.
+        success = False
+
         for i in range(self._max_command_retries):
             # Clear the input buffer in case there's anything left over in there.
             self._serial_port.reset_input_buffer()
@@ -285,6 +288,7 @@ class Focuser(AbstractSerialFocuser):
 
                 try:
                     assert (echo, ok) == (command, 'OK')
+                    success = True
                 except AssertionError as err:
                     self.logger.error(err)
                     warn(err)
@@ -297,6 +301,11 @@ class Focuser(AbstractSerialFocuser):
 
             if ok != 'OK':
                 self.logger.warning(f"ok != 'OK': {ok} != 'OK'. Retrying command.")
+
+        try:
+            assert(success)
+        except AssertionError:
+            raise error.PanError()
 
         # Check for an error message in response
         if response:
