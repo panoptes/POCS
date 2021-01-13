@@ -268,35 +268,17 @@ class Focuser(AbstractSerialFocuser):
             ok = self._serial_io.readline().rstrip()
 
             if echo == command and ok == 'OK':
-                if response_length == 0:
-                    # Not expecting any further response. Should check the buffer anyway in case an error
-                    # message has been sent.
-                    if self._serial_port.in_waiting:
-                        response.append(self._serial_io.readline())
-
-                elif response_length > 0:
-                    # Expecting some number of lines of response. Attempt to read that many lines.
-                    for i in range(response_length):
-                        response.append(self._serial_io.readline())
-
-                else:
-                    # Don't know what to expect. Call readlines() to get whatever is there.
-                    response.append(self._serial_io.readlines())
+                # Get any avaialble response left in buffer.
+                response.append(self._serial_io.readlines())
 
                 self.logger.debug(f"Got correct response after {i + 1} attempts")
                 break
 
             if echo != command:
-                self.logger.warning(f"echo != command: {echo} != {command}. Retrying command.")
+                self.logger.warning(f"echo != command: {echo!r} != {command!r}. Retrying command.")
 
             if ok != 'OK':
-                self.logger.warning(f"ok != 'OK': {ok} != 'OK'. Retrying command.")
-
-        try:
-            assert (echo, ok) == (command, 'OK')
-        except AssertionError as err:
-            self.logger.error(err)
-            warn(err)
+                self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
 
         # Check for an error message in response
         if response:
