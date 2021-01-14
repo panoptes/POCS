@@ -126,8 +126,11 @@ class Mount(AbstractMount):
         return self.is_initialized
 
     def query(self, *args, **kwargs):
-        """ Override the query method to use the command lock. This is required because TheSkyX
-        cannot handle simulataneous commands."""
+        """ Override the query method to use the command lock.
+
+        This is required because TheSkyX cannot handle simulataneous commands. This function will
+        block until the lock is released.
+        """
         with self._command_lock:
             return super().query(*args, **kwargs)
 
