@@ -269,13 +269,14 @@ class AbstractMount(PanBase):
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
-
         Args:
-            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
+            coords (astropy.coordinates.SkyCoord): coordinates specifying target location.
         Returns:
             bool:  Boolean indicating success
         """
+        if not isinstance(coords, SkyCoord):
+            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
+                            f" got {type(coords)}.")
         target_set = False
 
         # Save the skycoord coordinates
@@ -291,9 +292,9 @@ class AbstractMount(PanBase):
             self.query('set_dec', mount_coords[1])
             target_set = True
         except Exception as e:
-            self.logger.warning(f"Problem setting mount coordinates: {mount_coords} {e!r}")
+            raise error.PanError(f"Unable to set mount coordinates: {mount_coords}: {e!r}")
 
-        self.logger.debug(f'Mount simulator set target coordinates: {target_set}')
+        self.logger.debug(f'Mount set target coordinates: {target_set}.')
         return target_set
 
     def get_current_coordinates(self):
@@ -471,7 +472,7 @@ class AbstractMount(PanBase):
     ##################################################################################################
 
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
-        """ Slews to given coordinates.
+        """ Convenience function to set target coordinates and slew over to them.
 
         Note:
             Slew rates are not implemented yet.
@@ -486,19 +487,8 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        if not isinstance(coords, SkyCoord):
-            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
-                            f" got {type(coords)}.")
-        response = 0
-
-        if not self.is_parked:
-            # Set the coordinates
-            if self.set_target_coordinates(coords):
-                response = self.slew_to_target(*args, **kwargs)
-            else:
-                self.logger.warning("Could not set target_coordinates")
-
-        return response
+        self.set_target_coordinates(coords)
+        self.slew_to_target(*args, **kwargs)
 
     def home_and_park(self, *args, **kwargs):
         """ Convenience method to first slew to the home position and then park.
@@ -541,34 +531,35 @@ class AbstractMount(PanBase):
         success = False
 
         if self.is_parked:
-            self.logger.info("Mount is parked")
+            raise error.PanError("Could not slew to target because mount is parked.")
+
         elif not self.has_target:
-            self.logger.info("Target Coordinates not set")
+            raise error.PanError("Could not slew to target because target coordinates are not set.")
+
         else:
-            self.logger.debug('Slewing to target')
+            self.logger.debug('Slewing to target...')
             success = self.query('slew_to_target')
+            self.logger.debug("Mount response to slew command: {success}")
 
-            self.logger.debug("Mount response: {}".format(success))
-            if success:
-                if blocking:
-                    # Set up the timeout timer
-                    self.logger.debug(f'Setting slew timeout timer for {timeout} sec')
-                    timeout_timer = CountdownTimer(timeout)
-                    block_time = 3  # seconds
+            if not success:
+                raise error.PanError("Unable to slew to target.")
 
-                    while self.is_tracking is False:
-                        if timeout_timer.expired():
-                            self.logger.warning(f'slew_to_target timout: {timeout} seconds')
-                            raise error.Timeout('Problem slewing to target')
+            if blocking:
+                # Set up the timeout timer
+                self.logger.debug(f'Setting slew timeout timer for {timeout} seconds.')
+                timeout_timer = CountdownTimer(timeout)
+                block_time = 3  # seconds
 
-                        self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
-                        timeout_timer.sleep(max_sleep=block_time)
+                while self.is_tracking is False:
 
-                    self.logger.debug(f'Done with slew_to_target block')
-            else:
-                self.logger.warning('Problem with slew_to_target')
+                    if timeout_timer.expired():
+                        self.logger.warning(f'slew_to_target timout: {timeout} seconds.')
+                        raise error.Timeout("Timeout while slewing to target.")
 
-        return success
+                    self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds.')
+                    timeout_timer.sleep(max_sleep=block_time)
+
+                    self.logger.debug('Finished blocking on slew_to_target.')
 
     def slew_to_home(self, blocking=False, timeout=180):
         """Slews the mount to the home position.
@@ -588,29 +579,28 @@ class AbstractMount(PanBase):
             blocking (bool, optional): If command should block while slewing to
                 home, default False.
         """
-        response = 0
-
         # Set up the timeout timer
         timeout_timer = CountdownTimer(timeout)
         block_time = 3  # seconds
 
-        if not self.is_parked:
-            # Reset target coordinates
-            self._target_coordinates = None
-            # Start the slew
-            response = self.query('slew_to_home')
-            if response and blocking:
-                while self.is_home is False:
-                    if timeout_timer.expired():
-                        self.logger.warning(f'slew_to_home timout: {timeout} seconds')
-                        response = 0
-                        break
-                    self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
-                    timeout_timer.sleep(max_sleep=block_time)
-        else:
-            self.logger.info('Mount is parked')
+        if self.is_parked:
+            raise error.PanError("Could not slew to home because mount is parked.")
 
-        return response
+        # Reset target coordinates
+        self._target_coordinates = None
+
+        # Start the slew
+        success = self.query('slew_to_home')
+        if not success:
+            raise error.PanError("Unable to slew to home.")
+
+        if blocking:
+            while self.is_home is False:
+                if timeout_timer.expired():
+                    raise error.Timeout("Timeout while slewing to home.")
+
+                self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds.')
+                timeout_timer.sleep(max_sleep=block_time)
 
     def slew_to_zero(self, blocking=False):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
@@ -625,24 +615,20 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-
         self.set_park_coordinates()
         self.set_target_coordinates(self._park_coordinates)
 
-        response = self.query('park')
+        success = self.query('park')
+        if not success:
+            raise error.PanError("Unable to park mount.")
 
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        while not self.at_mount_park:
+        self.logger.debug('Slewing to park position.')
+        while not self.at_mount_park:  # TODO: Implement timeout
             self.status
             time.sleep(2)
 
+        self.logger.info('Successfully parked mount.')
         self._is_parked = True
-
-        return response
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
@@ -650,16 +636,11 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-
-        response = self.query('unpark')
-
-        if response:
-            self._is_parked = False
-            self.logger.debug('Mount unparked')
-        else:
-            self.logger.warning('Problem with unpark')
-
-        return response
+        success = self.query('unpark')
+        if not success:
+            raise error.PanError("Unable to unpark mount.")
+        self._is_parked = False
+        self.logger.info('Successfully unparked mount.')
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
