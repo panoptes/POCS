@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from threading import Lock
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -19,6 +20,8 @@ class Mount(AbstractMount):
         """"""
         super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
+
+        self._command_lock = Lock()
 
         template_dir = self.get_config('mount.template_dir')
         if template_dir.startswith('/') is False:
@@ -121,6 +124,12 @@ class Mount(AbstractMount):
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
         return self.is_initialized
+
+    def query(self, *args, **kwargs):
+        """ Override the query method to use the command lock. This is required because TheSkyX
+        cannot handle simulataneous commands."""
+        with self._command_lock:
+            return super().query(*args, **kwargs)
 
     def _update_status(self):
         """ """
