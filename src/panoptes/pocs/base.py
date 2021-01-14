@@ -1,18 +1,14 @@
 import os
-from requests.exceptions import ConnectionError
-from dotenv import load_dotenv
 
 from panoptes.pocs import __version__
-from panoptes.utils.database import PanDB
-from panoptes.utils.config import client
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs import hardware
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.utils.config import client
+from panoptes.utils.database import PanDB
+from requests.exceptions import ConnectionError
 
 # Global database.
 PAN_DB_OBJ = None
-
-# look for environment files.
-load_dotenv()
 
 
 class PanBase(object):
