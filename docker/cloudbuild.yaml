@@ -7,7 +7,7 @@ substitutions:
   _PLATFORMS: linux/amd64,linux/arm64
   _IMAGE_NAME: panoptes-pocs
   _REPO_URL: https://github.com/panoptes/POCS
-  _TAG: develop
+  _TAG: latest
 
 steps:
   # Fetch the repo from github
