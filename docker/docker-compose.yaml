@@ -1,11 +1,14 @@
 version: '3.7'
 services:
   config-server:
-    image: panoptes-utils:develop
+    image: panoptes-pocs:latest
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
     init: true
     tty: true
     container_name: config-server
-    privileged: true
+    hostname: config-server
     network_mode: host
     environment:
       # These need to be defined in the shell on the host.
@@ -20,12 +23,10 @@ services:
       - confdir:/var/panoptes/config_files
     command: [ "panoptes-config-server --verbose run" ]
   pocs:
-    image: "${IMAGE:-panoptes-pocs}:${TAG:-develop}"
+    image: panoptes-pocs:latest
     build:
       context: ../
       dockerfile: docker/Dockerfile
-      args:
-        image_url: panoptes-utils:develop
     init: true
     container_name: pocs
     hostname: pocs
@@ -41,7 +42,7 @@ services:
     volumes:
       - pocsdir:/var/panoptes/POCS
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: [ "$PANDIR/panoptes-utils/scripts/wait-for-it.sh ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- jupyter-lab --ip=0.0.0.0 --no-browser" ]
+    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- echo POCS yo!" ]
 volumes:
   pocsdir:
     driver: local
