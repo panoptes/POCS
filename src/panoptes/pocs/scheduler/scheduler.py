@@ -1,24 +1,23 @@
 import os
-
 from collections import OrderedDict
 from contextlib import suppress
 
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
-
 from panoptes.pocs.base import PanBase
-from panoptes.utils import error
-from panoptes.utils import current_time
-from panoptes.utils import get_quantity_value
-from panoptes.utils.serializers import from_yaml
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation import Observation
+from panoptes.utils import error
+from panoptes.utils.serializers import from_yaml
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class BaseScheduler(PanBase):
 
-    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs):
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
+                 **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
@@ -217,7 +216,8 @@ class BaseScheduler(PanBase):
             field_config (dict): Configuration items for `Observation`
         """
         with suppress(KeyError):
-            field_config['exptime'] = float(get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
+            field_config['exptime'] = float(
+                get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
 
         self.logger.debug(f"Adding field_config={field_config!r} to scheduler")
         field = Field(field_config['name'], field_config['position'])

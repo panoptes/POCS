@@ -1,14 +1,13 @@
 import os
+
 import pytest
-
 from astropy.coordinates import EarthLocation
-
 from panoptes.pocs.core import POCS
 from panoptes.pocs.dome.bisque import Dome
+from panoptes.pocs.utils.theskyx import TheSkyX
 from panoptes.utils.config.client import get_config
-from panoptes.utils import altaz_to_radec
-from panoptes.utils import current_time
-from panoptes.utils.theskyx import TheSkyX
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import altaz_to_radec
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
@@ -39,7 +38,8 @@ def pocs(target):
 
     config = get_config()
 
-    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config, db='panoptes_testing')
+    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config,
+                db='panoptes_testing')
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Testing Target',

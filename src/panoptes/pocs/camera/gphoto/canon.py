@@ -1,17 +1,16 @@
 import os
 import subprocess
 from abc import ABC
-
-from astropy import units as u
 from threading import Event
 from threading import Timer
 
-from panoptes.utils import current_time
-from panoptes.utils import CountdownTimer
-from panoptes.utils import error
-from panoptes.utils import get_quantity_value
-from panoptes.utils.images import cr2 as cr2_utils
+from astropy import units as u
 from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
+from panoptes.utils import error
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractGPhotoCamera, ABC):

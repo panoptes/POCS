@@ -8,11 +8,10 @@ import os
 
 import numpy as np
 from astropy import units as u
-
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
-from panoptes.utils import get_quantity_value
+from panoptes.utils.utils import get_quantity_value
 
 valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                    c.FLIDOMAIN_USB,
@@ -30,6 +29,7 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
                                c.FLI_FRAME_TYPE_DARK,
                                c.FLI_FRAME_TYPE_FLOOD,
                                c.FLI_FRAME_TYPE_RBI_FLUSH)}
+
 
 ################################################################################
 # Main SBIGDriver class

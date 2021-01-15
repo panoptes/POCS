@@ -4,7 +4,7 @@ from contextlib import suppress
 from transitions.extensions.states import Tags as MachineState
 
 from panoptes.utils import error
-from panoptes.utils import listify
+from panoptes.utils.utils import listify
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 

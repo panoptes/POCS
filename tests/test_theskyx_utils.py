@@ -1,9 +1,7 @@
 import pytest
-
 from mocket import Mocket
-
+from panoptes.pocs.utils.theskyx import TheSkyX
 from panoptes.utils import error
-from panoptes.utils.theskyx import TheSkyX
 
 
 @pytest.fixture(scope="function")

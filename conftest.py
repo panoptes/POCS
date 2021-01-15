@@ -1,17 +1,17 @@
 import logging
 import os
-import stat
-import pytest
-import tempfile
 import shutil
+import stat
+import tempfile
 from contextlib import suppress
+
+import pytest
 from _pytest.logging import caplog as _caplog  # noqa
-
 from panoptes.pocs import hardware
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
-from panoptes.utils.database import PanDB
-
-from panoptes.pocs.utils.logger import get_logger, PanLogger
+from panoptes.utils.config.server import config_server
 
 # TODO download IERS files.
 
@@ -50,6 +50,21 @@ logger.log('testing', '*' * 25 + startup_message + '*' * 25)
 os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
 
+def pytest_configure(config):
+    """Set up the testing."""
+    logger.info('Setting up the config server.')
+    config_file = 'tests/testing.yaml'
+
+    host = 'localhost'
+    port = '8765'
+
+    os.environ['PANOPTES_CONFIG_HOST'] = host
+    os.environ['PANOPTES_CONFIG_PORT'] = port
+
+    config_server(config_file, host=host, port=port, load_local=False, save_local=False)
+    logger.success('Config server set up')
+
+
 def pytest_addoption(parser):
     hw_names = ",".join(hardware.get_all_names()) + ' (or all for all hardware)'
     db_names = ",".join(_all_databases) + ' (or all for all databases)'
@@ -71,6 +86,11 @@ def pytest_addoption(parser):
         help=f"Test databases in the list. List items can include: {db_names}. Note that "
              f"travis-ci will test all of "
              f"them by default.")
+    group.addoption(
+        "--theskyx",
+        action='store_true',
+        default=False,
+        help=f"Test TheSkyX commands, default False -- CURRENTLY NOT WORKING!")
 
 
 def pytest_collection_modifyitems(config, items):

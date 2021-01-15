@@ -10,7 +10,7 @@
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
 #         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
-name: Generic PANOPTES Unit
+name: Testing PANOPTES Unit
 pan_id: PAN000
 
 pocs:

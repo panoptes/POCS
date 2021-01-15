@@ -4,7 +4,7 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error as error
 from panoptes.pocs.mount.serial import AbstractSerialMount
 

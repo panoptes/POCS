@@ -2,22 +2,21 @@ import copy
 import os
 import threading
 import time
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
-from abc import ABCMeta, abstractmethod
 
+import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
-import astropy.units as u
-
-from panoptes.utils import current_time
+from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
-from panoptes.utils import get_quantity_value
-from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
-
-from panoptes.pocs.base import PanBase
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -125,7 +124,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.debug(f'Found subcomponent={subcomponent!r}, creating instance')
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
+                self.logger.debug(
+                    f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
@@ -484,12 +484,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
+        self.logger.debug(
+            f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
 
         header = self._create_fits_header(seconds, dark)
 
         if self.is_exposing:
-            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
+            err = error.PanError(
+                f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
@@ -578,8 +580,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Make sure image exists.
         if not os.path.exists(file_path):
             observation_event.set()
-            raise FileNotFoundError(f"Expected image at file_path={file_path!r} does not exist or " +
-                                    "cannot be accessed, cannot process.")
+            raise FileNotFoundError(
+                f"Expected image at file_path={file_path!r} does not exist or " +
+                "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, metadata)
@@ -883,7 +886,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(
+            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -1025,16 +1029,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # If we get an instance, just use it.
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
+            self.logger.debug(
+                f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
         # If we get a dict, use them as params to create instance.
         elif isinstance(subcomponent, dict):
             try:
                 model = subcomponent['model']
-                self.logger.debug(f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
-                                  f"trying to create a base_class={base_class!r} instance")
+                self.logger.debug(
+                    f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
+                    f"trying to create a base_class={base_class!r} instance")
                 base_class = load_module(model)
             except (KeyError, error.NotFound) as err:
-                raise error.NotFound(f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
+                raise error.NotFound(
+                    f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
 
             self.logger.debug(f'Creating the base_class_name={base_class_name!r} object from dict')
 
@@ -1051,7 +1058,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
-            raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
+            raise error.NotFound(
+                f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
 
         # Give the subcomponent a reference back to the camera.
         setattr(subcomponent, 'camera', self)
