@@ -20,7 +20,7 @@ ENV PANDIR $pan_dir
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         bzip2 ca-certificates \
         wget gcc git pkg-config sudo gosu less udev \
-        astrometry.net astrometry-data-tycho2 dcraw exiftool \
+        astrometry.net astrometry-data-tycho2-10-19 dcraw exiftool \
         libcfitsio-dev libcfitsio-bin \
         libfreetype6-dev libpng-dev libjpeg-dev libffi-dev \
         gphoto2 && \
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install --no-install-recommends --yes \
 
 # Miniconda
 WORKDIR /tmp
-RUN wget -q "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" \
+RUN wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" \
         -O install-miniforge.sh && \
     /bin/sh /tmp/install-miniforge.sh -b -f -p /conda && \
     # Initialize conda for the shells.
