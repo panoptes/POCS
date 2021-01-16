@@ -15,7 +15,6 @@ ENV PANUSER $panuser
 ENV USERID $userid
 ENV PANDIR $pan_dir
 
-
 # Install system dependencies.
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         bzip2 ca-certificates \
