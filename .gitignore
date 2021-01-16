@@ -50,3 +50,5 @@ MANIFEST
 # Per-project virtualenvs
 .venv*/
 **/.ipynb_checkpoints/**
+
+logs

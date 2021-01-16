@@ -1,4 +1,4 @@
-ARG image_url=gcr.io/panoptes-exp/panoptes-utils:develop
+ARG image_url=gcr.io/panoptes-exp/panoptes-utils:latest
 FROM ${image_url} AS pocs-base
 
 LABEL description="Installs a number of developer tools. Runs jupyter lab instance."
