@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
         run: |
-          docker build -t panoptes-utils:testing -f docker/Dockerfile .
+          docker build -t panoptes-pocs:testing -f docker/Dockerfile .
       - name: Test with pytest in panoptes-pocs container
         run: |
           mkdir -p logs && chmod -R 777 logs
