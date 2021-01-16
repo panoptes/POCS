@@ -486,9 +486,9 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        assert isinstance(coords, tuple), self.logger.warning(
-            'slew_to_coordinates expects RA-Dec coords')
-
+        if not isinstance(coords, SkyCoord):
+            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
+                            f" got {type(coords)}.")
         response = 0
 
         if not self.is_parked:
