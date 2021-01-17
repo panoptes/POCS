@@ -42,7 +42,7 @@ jobs:
         if: success()
         with:
           name: codecov-upload
-          file: logs/coverage.xml
+          file: build/coverage.xml
           fail_ci_if_error: true
       - name: Create log file artifact
         uses: actions/upload-artifact@v1
