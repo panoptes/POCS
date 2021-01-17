@@ -33,3 +33,19 @@ services:
       PANOPTES_CONFIG_FILE:
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
     command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- pytest" ]
+    volumes:
+      - logdir:/var/panoptes/logs
+      - builddir:/var/panoptes/POCS/build
+volumes:
+  logdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: logs
+      o: bind
+  builddir:
+    driver: local
+    driver_opts:
+      type: none
+      device: build
+      o: bind
