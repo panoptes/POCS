@@ -2,4 +2,4 @@
 set -e
 
 # Pass arguments
-exec gosu panoptes /usr/bin/env bash -ic "$@"
+exec gosu pocs-user /usr/bin/env bash -ic "$@"
