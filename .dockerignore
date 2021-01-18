@@ -29,5 +29,3 @@ coverage.xml
 build/*
 dist/*
 sdist/*
-
-docker
