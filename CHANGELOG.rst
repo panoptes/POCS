@@ -81,6 +81,7 @@ Changed
 
 * Docker:
 
+  * Default ``$PANUSER`` is now ``pocs-user`` instead of ``panoptes``. (@wtgee #1066)
   * Docker images default to ``latest`` instead of ``develop``. (@wtgee #1066)
   * Removed ``developer`` docker image. (@wtgee #1066)
   * Updated to match ``panoptes-utils`` Docker updates: removal of ``source-extractor`` and more. (@wtgee #1008)
