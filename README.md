@@ -2,7 +2,7 @@ Welcome to POCS documentation!
 ==============================
 
 <p align="center">
-<img src="https://projectpanoptes.org/uploads/2018/12/16/PAN001_sunset.png" alt="PAN001" />  
+<img src="https://projectpanoptes.org/uploads/2018/12/16/PAN001_sunset.png" alt="PAN001" />
 </p>
 <br>
 
@@ -10,40 +10,31 @@ Welcome to POCS documentation!
 
 # Project PANOPTES
 
-[PANOPTES](https://www.projectpanoptes.org) is an open source citizen science project 
-designed to find [transiting exoplanets](https://spaceplace.nasa.gov/transits/en/) with 
-digital cameras. The goal of PANOPTES is to establish a global network of of robotic 
-cameras run by amateur astronomers and schools (or anyone!) in order to monitor, 
-as continuously as possible, a very large number of stars. For more general information 
-about the project, including the science case and resources for interested individuals, see the 
+[PANOPTES](https://www.projectpanoptes.org) is an open source citizen science project
+designed to find [transiting exoplanets](https://spaceplace.nasa.gov/transits/en/) with
+digital cameras. The goal of PANOPTES is to establish a global network of of robotic
+cameras run by amateur astronomers and schools (or anyone!) in order to monitor,
+as continuously as possible, a very large number of stars. For more general information
+about the project, including the science case and resources for interested individuals, see the
 [project overview](https://projectpanoptes.org/articles/).
 
 # POCS
 
-POCS (PANOPTES Observatory Control System) is the main software driver for a 
-PANOPTES unit, responsible for high-level control of the unit. 
+POCS (PANOPTES Observatory Control System) is the main software driver for a
+PANOPTES unit, responsible for high-level control of the unit.
 
 For more information, see the full documentation at: https://pocs.readthedocs.io.
-
-[`panoptes-utils`](https://www.github.com/panoptes/panoptes-utils) is a related repository and POCS
-relies on most of the tools within `panoptes-utils`.
 
 ## Install
 
 ### POCS Environment
 
-If you are running a PANOPTES unit then you will most likely want an entire PANOPTES environment.
+If you are running a PANOPTES unit then you will most likely want an  entire PANOPTES environment, which includes things like plate-solvers (to tell you what stars you are looking at) and other necessary tools for operation.
 
-There is a bash shell script that will install an entire working POCS system on your computer.  Some 
+There is a bash shell script that will install an entire working POCS system on your computer.  Some
 folks even report that it works on a Mac.
 
-The script will ask if you want to install in "developer" mode or not. If so, you should fork this repo, [panoptes-utils](https://github.com/panoptes/panoptes-utils), and [panoptes-tutorials](https://github.com/panoptes/panoptes-tutorials),
-and then give your github username when prompted.
-
-The non-developer mode of the script is intended for PANOPTES units.
-   
-
-To install POCS via the script, open a terminal and enter:
+To install POCS via the script, open a terminal and enter (you will be prompted for your `sudo` password):
 
 ```bash
 curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
@@ -72,14 +63,26 @@ If you want the extra features, such as Google Cloud Platform connectivity, then
 use the extras options:
 
 ```bash
-pip install "panoptes-pocs[google,testing]"
+pip install "panoptes-pocs[google,focuser,testing]"
 ```
-   
+
 See the full documentation at: https://pocs.readthedocs.io
 
-### For helping develop POCS software
+### For helping developing POCS software
 
 See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
+
+#### [Testing]
+
+To test the software, you can build a local [Docker](https://docs.docker.com/) image using [docker-compose](https://docs.docker.com/compose/install/).
+
+First clone the repository, then run the following from the project's root directory:
+
+```bash
+docker-compose -f tests/docker-compose.yaml --env-file tests/env build
+
+docker-compose -f tests/docker-compose.yaml --env-file tests/env run pocs pytest
+```
 
 Links
 -----
@@ -88,3 +91,5 @@ Links
 - Forum: https://forum.projectpanoptes.org
 - Documentation: https://pocs.readthedocs.io
 - Source Code: https://github.com/panoptes/POCS
+
+[Testing]: #testing
