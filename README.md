@@ -96,7 +96,7 @@ I 01-20 01:01:16.158 Initializing observatory
 I 01-20 01:01:16.158 Setting up location
 S 01-20 01:01:17.070 Observatory initialized
 
-pocs = POCS(observatory)
+pocs = POCS(observatory, simulators=['all'])
 I 01-20 01:01:20.408 Initializing PANOPTES unit - Generic PANOPTES Unit - Mauna Loa Observatory
 I 01-20 01:01:20.419 Making a POCS state machine from panoptes
 I 01-20 01:01:20.420 Loading state table: panoptes
