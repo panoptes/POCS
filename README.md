@@ -113,7 +113,9 @@ S 01-20 01:01:28.390 Unit says: Looks like we're missing some required hardware.
 Out[10]: False
 ```
 
-See the full documentation at: [https://pocs.readthedocs.io](https://pocs.readthedocs.io).
+For a more realistic usage, see the full documentation at: [https://pocs.readthedocs.io](https://pocs.readthedocs.io).
+
+For actually deploying a PANOPTES unit, refer to the [Operating Guider](https://projectpanoptes.gitbook.io/pocs-user-guide/operation/operating-guides).
 
 #### Developing POCS
 
