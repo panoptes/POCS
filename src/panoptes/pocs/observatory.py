@@ -15,7 +15,7 @@ from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
 
 
@@ -116,16 +116,16 @@ class Observatory(PanBase):
         """Return primary camera.
 
         Note:
-            If no camera has been marked as primary this will set and return
-            the first camera in the OrderedDict as primary.
+            If no camera has been marked as primary this will return the first
+            camera in the OrderedDict as primary.
 
         Returns:
             `pocs.camera.Camera`: The primary camera.
         """
         if not self._primary_camera and self.has_cameras:
-            self._primary_camera = self.cameras[list(self.cameras.keys())[0]]
-
-        return self._primary_camera
+            return self.cameras[list(self.cameras.keys())[0]]
+        else:
+            return self._primary_camera
 
     @primary_camera.setter
     def primary_camera(self, cam):
@@ -246,7 +246,7 @@ class Observatory(PanBase):
             setattr(self, hw_type, new_hardware)
         elif new_hardware is None:
             if hw_attr is not None:
-                self.logger.success(f'Removing {hw_attr=}')
+                self.logger.success(f'Removing hw_attr={hw_attr!r}')
             setattr(self, hw_type, None)
         else:
             raise TypeError(f"{hw_type.title()} is not an instance of {str(hw_class)} class")
@@ -464,22 +464,22 @@ class Observatory(PanBase):
 
         # List of camera events to wait for to signal exposure is done
         # processing
-        camera_events = dict()
+        observing_events = dict()
 
         # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
-            self.logger.debug("Exposing for camera: {}".format(cam_name))
+            self.logger.debug(f"Exposing for camera: {cam_name}")
 
             try:
                 # Start the exposures
-                cam_event = camera.take_observation(self.current_observation, headers)
+                camera_observe_event = camera.take_observation(self.current_observation, headers)
 
-                camera_events[cam_name] = cam_event
+                observing_events[cam_name] = camera_observe_event
 
             except Exception as e:
-                self.logger.error("Problem waiting for images: {}".format(e))
+                self.logger.error(f"Problem waiting for images: {e!r}")
 
-        return camera_events
+        return observing_events
 
     def analyze_recent(self):
         """Analyze the most recent exposure

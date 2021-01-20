@@ -1,10 +1,115 @@
-CHANGELOG
+=========
+Changelog
 =========
 
-All notable changes to this project will be documented in this file.
+[0.7.7] - 2021-01-19
+--------------------
 
-The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
-adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
+Added
+~~~~~
+
+* Conda environment file. (@wtgee #1066)
+* Add the `gsutil` to `google` install options. Required for uploading data. (@wtgee #1036, #1037)
+* Ability to specify autofocus plots in config file. (@wtgee #1029)
+* A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
+* Better error checking in cameras, including ability to store error. (@AnthonyHorton #1007)
+* Added ``error.InvalidConfig`` exception. (@wtgee #1007)
+* Config options to control camera processing options and allow for `defaults` in the config that applies to all cameras: (@wtgee #1007)
+
+  * ``cameras.defaults.compress_fits`` if FITS files should be fpacked. Default True.
+  * ``cameras.defaults.record_observations`` if observation metadata should be recorded. Default True.
+  * ``cameras.defaults.make_pretty_images`` to make jpgs from images. Default True.
+
+Breaking
+~~~~~~~~
+
+* The ``model`` parameter for the camera and subcomponents needs a fully resolved namespace for either the module or class. (@wtgee #1007)
+* The ``take_exposure`` method returns an event to indicate that exposure is in progress, **not** to indicate when exposure has completed. The event is stored in the camera object and accessible via ``camera.is_exposing``. (@wtgee #1007)
+* Removed camera temperature stability checking for now. (@wtgee #1007)
+* Moved the ``AbstractGphotoCamera`` class into it's own namespace and file. (@wtgee #1007)
+* Python moved back to 3.7. (#1021)
+
+
+Bug fixes
+~~~~~~~~~
+
+* Fix incorrect import of autofocus plots. (@wtgee #1034)
+* DSLR simulator cameras properly override the cooling defaults. (@wtgee #1001)
+* Stability checks for cooled cameras so they are only marked ``ready`` when cooled condition has stabilized. (@danjampro #990)
+* Properly closed the autofocus matplotlib figures. (@wtgee #1029)
+* Prevent thumbnails from being larger than image. (@wtgee #1029)
+
+Changed
+~~~~~~~
+
+* Clean up dependencies and offer extras install options. (@wtgee #1066)
+
+  * Split some hardware options, such as ``focuser``, which has extra dependencies.
+
+* Consolidate config files into ``conf_files`` dir. This includes targets and state machine files. (@wtgee #1066)
+* Change ``thumbnail_size`` to ``cutout_size`` consistently. (@wtgee #1040.)
+* Camera observation updates:
+
+  * TheSkyX utilities added (from ``panoptes-utils``). (@wtgee #1066)
+  * headers param fixed so truly optional. The POINTING keyword is checked in the metadata, not original headers. Closes #1002. (@wtgee #1009)
+  * Passing approved headers will actually write them to file. (@wtgee #1009)
+  * ``blocking=False`` param added. If True, will wait on observation_event. (@wtgee #1009)
+  * Renamed metadata variables to be consistent. (@wtgee #1009)
+  * ``_process_fits`` is responsible for writing the headers rather than calling out to panoptes-utils. Allows for easier overrides. (@wtgee #1009)
+  * dslr simulator readout time improved. (@wtgee #1009)
+  * ``process_exposure`` doesn't require the exposure_event to be passed because that is the cameras is_exposing property. (@wtgee #1009)
+  * The autofocus plotting has been moved to an external file. (@wtgee #1029)
+
+
+* Changelog cleanup. (@wtgee #1008)
+* ``panoptes-utils`` updates:
+
+  * Updated ``panoptes-utils`` to ``v0.2.30``. (@wtgee #1066)
+  * Updated ``panoptes-utils`` to ``v0.2.29``. (@wtgee #1021)
+  * Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
+  * Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
+
+* Move the ``wait-for-it.sh`` script into ``scripts``. (@wtgee #1001)
+* Camera:
+
+  * Changed how subcomponents for camera are created. (@wtgee #1007)
+  * Camera and subcomponent stringification changed for clarity. (@wtgee #1007)
+  * Can reassign SDK camera if same UID is presented with flag to ``create_cameras_from_config``. (@wtgee #1007)
+  * Add support for taking "dark" frames for cameras with mechanical shutters or opaque filters in the filterwheel. (@AnthonyHorton #989)
+  * ``_poll_exposure`` was needlessly being called in a ``threading.Timer`` rather than a simple ``threading.Event``. (@wtgee @1007)
+  * Slight improvements to the timeout and readout for exposures with the simulators. (@wtgee #1007)
+
+* Docker:
+
+  * Default ``$PANUSER`` is now ``pocs-user`` instead of ``panoptes``. (@wtgee #1066)
+  * Docker images default to ``latest`` instead of ``develop``. (@wtgee #1066)
+  * Removed ``developer`` docker image. (@wtgee #1066)
+  * Updated to match ``panoptes-utils`` Docker updates: removal of ``source-extractor`` and more. (@wtgee #1008)
+  * ``gphoto2`` comes from apt. (@wtgee #1007)
+  * Local setup script doesn't build ``panoptes-utils`` but assumes done otherwise or uses ``gcr.io``. (@wtgee #1007)
+
+* Testing:
+
+  * Added ``tests/env`` file for setting up testing. (@wtgee #1066)
+  * Config server is started as part of pytest again (reverting below). (@wtgee #1066)
+  * Testing is run from a locally built Docker image for both local and CI testing. (@wtgee #1001)
+  * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``. (@wtgee #1001)
+  * Config server for testing is started external to ``pytest``, which is currently lowering coverage. (@wtgee #1001)
+  * Coverage reports are generated inside the Docker container. (@wtgee #1001)
+  * Default log level set to TRACE. (@wtgee #1007)
+  * Less hard-coding of fixtures and answers, more config server. (@wtgee #1007)
+  * Renamed the cameras in testing fixtures. (@wtgee #1007)
+  * Cooled cameras have temperature stability check in conftest. (@wtgee #1007)
+
+
+Removed
+~~~~~~~
+
+* Removed testing and local setup scripts. (@wtgee #1066)
+* Removed manuals from ``resources`` directory. (@wtgee #1066)
+* Removed all arduino files, to be replaced by Firmata. See instructions on gitbook docs. (@wtgee #1035)
+* Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
+
 
 [0.7.6] - 2020-08-21
 --------------------
@@ -14,18 +119,18 @@ Changed
 
 * Dependency updates:
 
-  * `panoptes-utils` to `0.2.26`. (#995)
-  * `panoptes-utils` to `0.2.21`. (#979)
-  * `panoptes-utils` to `0.2.20`. (#974)
+  * ``panoptes-utils`` to ``0.2.26``. (#995)
+  * ``panoptes-utils`` to ``0.2.21``. (#979)
+  * ``panoptes-utils`` to ``0.2.20``. (#974)
 
 * Install script. (#974)
 
   * Env var file is sourced for zshrc and bashrc.
   * Fix the clone of the repos in install script. (#978)
   * Adding a date version to script. (#979)
-  * `docker-compose` version bumped to `1.26.2`. (#979)
+  * ``docker-compose`` version bumped to ``1.26.2``. (#979)
   * Better testing for ssh access. (#984)
-  * Using `linuxserver.io docker-compose <https://hub.docker.com/r/linuxserver/docker-compose>`_ so we also have `arm` version without work. (#986)
+  * Using `linuxserver.io docker-compose <https://hub.docker.com/r/linuxserver/docker-compose>`_ so we also have ``arm`` version without work. (#986)
   * Fixing conditional so script can proceed without restart. (#986)
   * Generalizing install script in sections. (#986)
 
@@ -37,7 +142,7 @@ Changed
 
 * Docker image updates (#972)
 
-  * Updated `install-pocs.sh` script.
+  * Updated ``install-pocs.sh`` script.
   * ``latest`` installs the ``panoptes-pocs`` module from pip
   * ``develop`` installs via ``pip install -e[google.testing]`` and is used for running the CI tests.
   * ``developer-env`` installs locally but with all options, i.e. ``pip install -e[google,testing,plotting,developer]``. Also builds ``jupyterlab`` and other developer tools. Starts a ``jupyterlab`` instance by default.
@@ -52,29 +157,29 @@ Changed
 * Testing (#974)
 
   * Removing all the dynamic config server info, making things a lot simpler.
-  * `docker-compose` files for running tests.
+  * ``docker-compose`` files for running tests.
   * Misc documentation updates.
   * Code coverage no longer ignores test.
-  * Testing is run via `panoptes-develop test`.
+  * Testing is run via ``panoptes-develop test``.
   * Log files are rotated during each run.
 
 * POCS (#974)
 
-  * POCS instance cannot `initialize` unless it's `observatory.can_observe`.
-  * Set `simulator` config item at start of `POCS` init method if `simulators` (note plural) is passed.
-  * Simplification of the `run` method and the various predicates used to control it.  Now just use the computed `keep_running`.
-  * Adding some action flags to the `pocs.yaml` file.
-  * Remove `POCS.check_environment` class method.
-  * Add a `console_log_level` and `stderr_log_level`. The former is written to the log file in `$PANLOG` and is meant to be tailed in the console. The `stderr_log_level` is what would be displayed, e.g. in a jupyter notebook. (#977)
+  * POCS instance cannot ``initialize`` unless it's ``observatory.can_observe``.
+  * Set ``simulator`` config item at start of ``POCS`` init method if ``simulators`` (note plural) is passed.
+  * Simplification of the ``run`` method and the various predicates used to control it.  Now just use the computed ``keep_running``.
+  * Adding some action flags to the ``pocs.yaml`` file.
+  * Remove ``POCS.check_environment`` class method.
+  * Add a ``console_log_level`` and ``stderr_log_level``. The former is written to the log file in ``$PANLOG`` and is meant to be tailed in the console. The ``stderr_log_level`` is what would be displayed, e.g. in a jupyter notebook. (#977)
   * Mount simulator better name and stringify. (#977)
-  * Global db object for `PanBase` (#977)
+  * Global db object for ``PanBase`` (#977)
   * Allow for custom folder for metadata. (#979)
-    * Default changed to `metadata`.
+    * Default changed to ``metadata``.
 
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
 
-    * The `fields_file` is read when scheduler is created.
+    * The ``fields_file`` is read when scheduler is created.
 
 [0.7.4] - 2020-05-31
 --------------------
@@ -164,13 +269,13 @@ Changed
 * Renamed codecov configuration file to be compliant.
 * Switch to pyscaffold for package maintenance.
 * "Waiting" method changes:
-    * `sleep` has been renamed to `wait`.
+    * ``sleep`` has been renamed to ``wait``.
 * All `status()` methods have been converted to properties that return a useful dict.
 * Making proper abstractmethods.
 * Documentation updates where found.
 * Many log and f-string fixes.
-* `pocs.config_port` property available publicly.
-* horizon check for state happens directly in `run`.
+* ``pocs.config_port`` property available publicly.
+* horizon check for state happens directly in ``run``.
 
 Removed
 ~~~~~~~
@@ -335,7 +440,7 @@ Changed
 * State machine location more flexible
    `209 <https://github.com/panoptes/POCS/pull/209>`__,
    `219 <https://github.com/panoptes/POCS/pull/219>`__
-* Testing improvments
+* Testing improvements
    `249 <https://github.com/panoptes/POCS/pull/249>`__.
 * Updates to many wiki pages.
 * Misc bug fixes and improvements.
@@ -378,4 +483,3 @@ Added
 * Automated testing with travis-ci.org
 * Code coverage via codecov.io
 * Basic install scripts
-

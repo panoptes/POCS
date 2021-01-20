@@ -1,5 +1,6 @@
 import os
 import time
+from contextlib import suppress
 
 import pytest
 from astropy.time import Time
@@ -18,18 +19,15 @@ from panoptes.pocs.scheduler.observation import Observation
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
-from panoptes.pocs.camera import create_camera_simulator
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 import requests
 
-config_host = 'localhost'
-config_port = 6563
-url = f'http://{config_host}:{config_port}/reset-config'
 
-
-def reset_conf():
+def reset_conf(config_host, config_port):
+    url = f'http://{config_host}:{config_port}/reset-config'
     response = requests.post(url,
                              data=to_json({'reset': True}),
                              headers={'Content-Type': 'application/json'}
@@ -39,7 +37,7 @@ def reset_conf():
 
 @pytest.fixture(scope='function')
 def cameras():
-    return create_camera_simulator()
+    return create_cameras_from_config(recreate_existing=True)
 
 
 @pytest.fixture(scope='function')
@@ -72,19 +70,19 @@ def test_remove_cameras(observatory, cameras):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site():
+def test_bad_site(config_host, config_port):
     set_config('location', {})
     with pytest.raises(error.PanError):
         Observatory()
 
-    reset_conf()
+    reset_conf(config_host, config_port)
 
 
 def test_cannot_observe(caplog):
     obs = Observatory()
 
     site_details = create_location_from_config()
-    cameras = create_camera_simulator()
+    cameras = create_cameras_from_config()
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
@@ -117,7 +115,7 @@ def test_camera_wrong_type():
 
 
 def test_camera():
-    cameras = create_camera_simulator()
+    cameras = create_cameras_from_config()
     obs = Observatory(cameras=cameras)
     assert obs.has_cameras
 
@@ -183,7 +181,7 @@ def test_set_mount():
     set_config('mount', {
         'brand': 'Simulacrum',
         'driver': 'simulator',
-        'model': 'simulator',
+        'model': 'panoptes.pocs.camera.simulator.dslr',
     })
     mount = create_mount_from_config()
     obs.set_mount(mount=mount)
@@ -360,7 +358,12 @@ def test_autofocus_coarse(observatory):
 
 
 def test_autofocus_named(observatory):
-    cam_names = [name for name in observatory.cameras.keys()]
+    # Get the list of cameras with a focuser.
+    cam_names = [name
+                 for name, camera
+                 in observatory.cameras.items()
+                 if hasattr(camera, 'focuser') and camera.focuser is not None
+                 ]
     # Call autofocus on just one camera.
     events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
     assert len(events) == 1
@@ -377,7 +380,8 @@ def test_autofocus_bad_name(observatory):
 
 def test_autofocus_focusers_disconnected(observatory):
     for camera in observatory.cameras.values():
-        camera.focuser._connected = False
+        if hasattr(camera, 'focuser') and camera.focuser is not None:
+            camera.focuser._connected = False
     events = observatory.autofocus_cameras()
     assert events == {}
 

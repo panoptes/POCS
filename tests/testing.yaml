@@ -1,0 +1,233 @@
+---
+######################### PANOPTES UNIT ########################################
+# name:   Can be anything you want it to be. This name is displayed in several
+#         places and should be a "personal" name for the unit.
+#
+# pan_id: This is an identification number assigned by the PANOPTES team and is
+#         the official designator for your unit. This id is used to store image
+#         files and communicate with the Google Cloud network.
+#
+#         Leave the pan_id at `PAN000` for testing until you have been assigned
+#         an official id. Update pocs_local.yaml with official name once received.
+################################################################################
+name: Testing PANOPTES Unit
+pan_id: PAN000
+
+pocs:
+  INITIALIZED: false
+  CONNECTED: false
+  INTERRUPTED: false
+location:
+  name: Mauna Loa Observatory
+  latitude: 19.54 deg
+  longitude: -155.58 deg
+  elevation: 3400.0 m
+  horizon: 30 deg # targets must be above this to be considered valid.
+  flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+  focus_horizon: -12 deg # Dark enough to focus on stars.
+  observe_horizon: -18 deg # Sun below this limit to observe.
+  obstructions: [ ]
+  timezone: US/Hawaii
+  gmt_offset: -600 # Offset in minutes from GMT during.
+  # standard time (not daylight saving).
+directories:
+  base: /var/panoptes
+  images: images
+  data: data
+  resources: POCS/resources/
+  targets: POCS/conf_files/targets
+  mounts: POCS/resources/mounts
+db:
+  name: panoptes_testing
+  type: file
+scheduler:
+  type: dispatch
+  fields_file: simulator.yaml
+  check_file: False
+mount:
+  brand: ioptron
+  model: 30
+  driver: ioptron
+  serial:
+    port: /dev/ttyUSB0
+    timeout: 0.
+    baudrate: 9600
+  non_sidereal_available: True
+pointing:
+  auto_correct: True
+  threshold: 500 # arcseconds ~ 50 pixels
+  exptime: 30 # seconds
+  max_iterations: 3
+cameras:
+  defaults:
+    primary: None
+    auto_detect: False
+    file_extension: fits
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: False
+    readout_time: 0.5  # seconds
+    timeout: 10  # seconds
+    filter_type: RGGB
+    cooling:
+      enabled: True
+      temperature:
+        target: 0  # celsius
+        tolerance: 0.1  # celsius
+      stable_time: 60  # seconds
+      check_interval: 5  # seconds
+      timeout: 300  # seconds
+    focuser:
+      enabled: True
+      autofocus_seconds: 0.1  # seconds
+      autofocus_size: 500  # seconds
+      autofocus_keep_files: False
+  devices:
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.00
+      port: /dev/fake/dslr.00
+      readout_time: 0.5
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.focuser.cooling.00
+      port: /dev/fake/dslr.focuser.cooling.00
+      # Different defaults for this camera.
+      cooling:
+        enabled: True
+        target: 1
+        tolerance: 0.1
+        stable_time: 1
+        check_interval: 0.5
+        timeout: 2.5
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/fake/focuser.00
+        initial_position: 20000
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.filterwheel.cooling.00
+      port: /dev/fake/dslr.filterwheel.cooling.00
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      filterwheel:
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+          - blank
+        move_time: 0.1
+        timeout: 0.5
+    - model: panoptes.pocs.camera.simulator.ccd.Camera
+      name: ccd.filterwheel.focuser.cooling.00
+      serial_number: ccd.filterwheel.focuser.cooling.00
+      cooling:
+        enabled: True
+        target: 0
+        tolerance: 0.1
+        stable_time: 60
+        check_interval: 5
+        timeout: 300
+      focuser:
+        model: panoptes.pocs.focuser.simulator.Focuser
+        focus_port: /dev/fake/focuser.00
+        initial_position: 20000
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
+        autofocus_seconds: 0.1
+        autofocus_size: 500
+        autofocus_keep_files: False
+      filterwheel:
+        model: panoptes.pocs.filterwheel.simulator.FilterWheel
+        filter_names:
+          - one
+          - deux
+          - drei
+          - quattro
+          - blank
+        move_time: 0.1
+        timeout: 0.5
+        dark_position: blank
+
+########################## Observations ########################################
+# An observation folder contains a contiguous sequence of images of a target/field
+# recorded by a single camera, with no slewing of the mount during the sequence;
+# there may be tracking adjustments during the observation.
+#
+# An example folder structure would be:
+#
+#   $PANDIR/images/fields/Hd189733/14d3bd/20180901T120001/
+#
+# In this folder will be stored JPG and FITS images. A timelapse of the
+# observation can be made (one per camera) and the JPGs optionally removed
+# afterward.
+#
+# TODO: Add options for cleaning up old data (e.g. >30 days)
+################################################################################
+observations:
+  make_timelapse: True
+  record_observations: True
+
+######################## Google Network ########################################
+# By default all images are stored on googlecloud servers and we also
+# use a few google services to store metadata, communicate with servers, etc.
+#
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
+#
+# Options to change:
+#   image_storage: If images should be uploaded to Google Cloud Storage.
+#   service_account_key: Location of the JSON service account key.
+################################################################################
+panoptes_network:
+  image_storage: True
+  service_account_key: # Location of JSON account key
+  project_id: panoptes-survey
+  buckets:
+    images: panoptes-survey
+
+#Enable to output POCS messages to social accounts
+# social_accounts:
+#     twitter:
+#         consumer_key: [your_consumer_key]
+#         consumer_secret: [your_consumer_secret]
+#         access_token: [your_access_token]
+#         access_token_secret: [your_access_token_secret]
+#     slack:
+#         webhook_url: [your_webhook_url]
+#         output_timestamp: False
+
+state_machine: panoptes
+
+######################### Environmental Sensors ################################
+# Configure the environmental sensors that are attached.
+#
+# Use `auto_detect: True` for most options. Or use a manual configuration:
+#
+#   camera_board:
+#       serial_port: /dev/ttyACM0
+#   control_board:
+#       serial_port: /dev/ttyACM1
+################################################################################
+environment:
+  auto_detect: True
+
+######################### Weather Station ######################################
+# Weather station options.
+#
+# Configure the serial_port as necessary.
+#
+# Default thresholds should be okay for most locations.
+################################################################################
+weather:
+  aag_cloud:
+    #        serial_port: '/dev/ttyUSB1'
+    serial_port: '/dev/ttyUSB1'

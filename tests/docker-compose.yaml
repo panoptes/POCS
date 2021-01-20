@@ -1,0 +1,51 @@
+version: '3.7'
+services:
+  config-server:
+    image: panoptes-pocs:latest
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    init: true
+    tty: true
+    network_mode: host
+    environment:
+      # These need to be defined in the shell on the host.
+      PANDIR:
+      PANLOG:
+      PANOPTES_CONFIG_HOST:
+      PANOPTES_CONFIG_PORT:
+      PANOPTES_CONFIG_FILE:
+    command: [ "panoptes-config-server --verbose run" ]
+  pocs:
+    image: panoptes-pocs:latest
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    init: true
+    privileged: true
+    network_mode: host
+    environment:
+      # These need to be defined in the shell on the host.
+      PANDIR:
+      PANLOG:
+      PANOPTES_CONFIG_HOST:
+      PANOPTES_CONFIG_PORT:
+      PANOPTES_CONFIG_FILE:
+    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
+    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- pytest" ]
+    volumes:
+      - logdir:/var/panoptes/logs
+      - builddir:/var/panoptes/POCS/build
+volumes:
+  logdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: logs
+      o: bind
+  builddir:
+    driver: local
+    driver_opts:
+      type: none
+      device: build
+      o: bind

@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 import readline
 import time
-
 from cmd import Cmd
 from pprint import pprint
 
 from astropy.utils import console
-
 from panoptes.pocs import hardware
+from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.core import POCS
+from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.observatory import Observatory
-from panoptes.utils import current_time
-from panoptes.utils import string_to_params
+from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.config import client
-
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.scheduler import create_scheduler_from_config
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import string_to_params
 
 
 class PocsShell(Cmd):

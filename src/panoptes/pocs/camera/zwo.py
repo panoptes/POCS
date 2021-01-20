@@ -1,20 +1,18 @@
-import time
 import threading
+import time
 from contextlib import suppress
 
 import numpy as np
 from astropy import units as u
 from astropy.time import Time
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.utils import error
-from panoptes.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
-
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
@@ -44,7 +42,9 @@ class Camera(AbstractSDKCamera):
             its serial number or, if it doesn't have one, by the user set ID.
         """
         kwargs['readout_time'] = kwargs.get('readout_time', 0.1)
-        kwargs['timeout'] = kwargs.get('timeout', 0.5)
+        kwargs['timeout'] = kwargs.get('timeout', 5)
+        # ZWO cameras cannot take internal darks (not even supported in the API yet).
+        kwargs['internal_darks'] = kwargs.get('internal_darks', False)
 
         self._video_event = threading.Event()
 
@@ -102,7 +102,7 @@ class Camera(AbstractSDKCamera):
         """ Current temperature of the camera's image sensor """
         return self._control_getter('TEMPERATURE')[0]
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """ Current value of the target temperature for the camera's image sensor cooling control.
 
@@ -110,21 +110,10 @@ class Camera(AbstractSDKCamera):
         """
         return self._control_getter('TARGET_TEMP')[0]
 
-    @target_temperature.setter
-    def target_temperature(self, target):
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
-        self._control_setter('TARGET_TEMP', target)
-
-    @property
+    @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
         """ Current status of the camera's image sensor cooling system (enabled/disabled) """
         return self._control_getter('COOLER_ON')[0]
-
-    @cooling_enabled.setter
-    def cooling_enabled(self, enable):
-        self._control_setter('COOLER_ON', enable)
 
     @property
     def cooling_power(self):
@@ -218,6 +207,13 @@ class Camera(AbstractSDKCamera):
 
     # Private methods
 
+    def _set_target_temperature(self, target):
+        self._control_setter('TARGET_TEMP', target)
+        self._target_temperature = target
+
+    def _set_cooling_enabled(self, enable):
+        self._control_setter('COOLER_ON', enable)
+
     def _video_readout(self,
                        width,
                        height,
@@ -298,10 +294,9 @@ class Camera(AbstractSDKCamera):
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger)
+                fits_utils.write_fits(data=image_data,
+                                      header=header,
+                                      filename=filename)
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':

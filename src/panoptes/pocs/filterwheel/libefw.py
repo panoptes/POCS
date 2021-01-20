@@ -6,7 +6,7 @@ import time
 from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import CountdownTimer
 
 
 class EFWDriver(AbstractSDKDriver):

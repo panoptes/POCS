@@ -1,11 +1,12 @@
 import threading
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
+from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
-from panoptes.utils import listify
 from panoptes.utils import error
+from panoptes.utils.utils import listify
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -21,6 +22,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             a Quantity with time units. If a numeric type without units is given seconds will be
             assumed. Default is None (no timeout).
         serial_number (str, optional): serial number of the filter wheel, default 'XXXXXX'
+        dark_position (int or str, optional): used to specify either a filter wheel position or
+            a filter name that should be used when taking dark exposures with a camera that is
+            not able to take internal darks.
     """
 
     def __init__(self,
@@ -30,6 +34,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                  filter_names=None,
                  timeout=None,
                  serial_number='XXXXXX',
+                 dark_position=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -43,11 +48,18 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.error(msg)
             raise ValueError(msg)
         self._n_positions = len(filter_names)
-        if isinstance(timeout, u.Quantity):
-            self._timeout = timeout.to(u.second).value
-        else:
+        try:
+            self._timeout = timeout.to_value(unit=u.second)
+        except AttributeError:
             self._timeout = timeout
         self._serial_number = serial_number
+        if dark_position is not None:
+            # Will raise ValueError is dark_position is not a valid position for this filterwheel
+            self._dark_position = self._parse_position(dark_position)
+        else:
+            self._dark_position = None
+
+        self._last_light_position = None
         self._connected = False
 
         # Some filter wheels needs this to track whether they are moving or not.
@@ -56,9 +68,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         self.logger.debug('Filter wheel created: {}'.format(self))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def model(self):
@@ -101,10 +113,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @camera.setter
     def camera(self, camera):
-        if self._camera:
-            self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
-                                self, self.camera, camera)
-        else:
+        if self._camera and self._camera.uid != camera.uid:
+            self.logger.warning(f"{self} assigned to {self.camera.name}, "
+                                f"skipping attempted assignment to {camera.name}!")
+        elif self._camera:
             self._camera = camera
 
     @property
@@ -131,8 +143,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def current_filter(self):
         """ Name of the filter in the current position """
         try:
-            filter_name = self.filter_names[self.position - 1]  # 1 based numbering
-        except (IndexError, TypeError):
+            filter_name = self.filter_name(self.position)
+        except ValueError:
             # Some filter wheels sometimes cannot return their current position
             filter_name = "UNKNOWN"
         return filter_name
@@ -145,16 +157,22 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
     def is_unidirectional(self):
         raise NotImplementedError
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     @abstractmethod
     def connect(self):
         """ Connect to filter wheel """
         raise NotImplementedError
 
-    def move_to(self, position, blocking=False):
+    def filter_name(self, position):
+        """ Name of the filter in the given integer position. """
+        # Validate input by passing it through _parse_position(), may raise ValueError
+        int_position = self._parse_position(position)
+        return self.filter_names[int_position - 1]
+
+    def move_to(self, new_position, blocking=False):
         """
         Move the filter wheel to the given position.
 
@@ -164,12 +182,15 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         of the names in the filter_names list, provided that this produces only one match.
 
         Args:
-            position (int or str): position to move to.
+            new_position (int or str): position to move to.
             blocking (bool, optional): If False (default) return immediately, if True block until
                 the filter wheel move has been completed.
 
         Returns:
             threading.Event: Event that will be set to signal when the move has completed
+
+        Raise:
+            ValueError: if new_position is not a valid position specifier for this filterwheel.
 
         Examples:
             Substring matching is useful when the filter names contain both the type of filter
@@ -196,28 +217,56 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.error(msg)
             raise error.PanError(msg)
 
-        position = self._parse_position(position)
-        self.logger.info("Moving {} to position {} ({})".format(
-            self, position, self.filter_names[position - 1]))
+        # Will raise a ValueError at this point if new_position is not a valid position
+        new_position = self._parse_position(new_position)
 
-        if position == self.position:
+        if new_position == self.position:
             # Already at requested position, don't go nowhere.
+            self.logger.debug(f"{self} already at position {new_position}"
+                              f" ({self.filter_name(new_position)})")
             return self._move_event
 
+        # Store current position so we can revert back with move_to_light_position()
+        if new_position == self._dark_position:
+            self._last_light_position = self.position
+        else:
+            self._last_light_position = new_position
+
+        self.logger.info("Moving {} to position {} ({})".format(
+            self, new_position, self.filter_name(new_position)))
         self._move_event.clear()
-        self._move_to(position)  # Private method to actually perform the move.
+        self._move_to(new_position)  # Private method to actually perform the move.
 
         if blocking:
             self._move_event.wait()
 
         return self._move_event
 
-##################################################################################################
-# Private methods
-##################################################################################################
+    def move_to_dark_position(self, blocking=False):
+        """ Move to filterwheel position for taking darks. """
+        try:
+            self.logger.debug(f"Ensuring filterwheel {self} is at dark position.")
+            return self.move_to(self._dark_position, blocking=blocking)
+        except ValueError:
+            msg = f"Request to move to dark position but {self} has no dark_position set."
+            raise error.NotFound(msg)
+
+    def move_to_light_position(self, blocking=False):
+        """ Return to last filterwheel position from before taking darks. """
+        try:
+            self.logger.debug(f"Ensuring filterwheel {self} is not at dark position.")
+            return self.move_to(self._last_light_position, blocking=blocking)
+        except ValueError:
+            msg = f"Request to revert to last light position but {self} has" + \
+                  "no light position stored."
+            raise error.NotFound(msg)
+
+    ##################################################################################################
+    # Private methods
+    ##################################################################################################
 
     @abstractmethod
-    def _move_to(self, position, move_event):
+    def _move_to(self, position):
         raise NotImplementedError
 
     def _parse_position(self, position):
@@ -226,7 +275,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         If position is a string it will search the list of filter names for one that begins with
         that string and return the corresponding integer position, otherwise (or if there is no
-        match) it will do an explicity case to an integer.
+        match) it will do an explicit cast to an integer.
         """
         int_position = None
         if isinstance(position, str):
@@ -246,8 +295,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             # Not a string or no match. Try to use as an integer position number.
             try:
                 int_position = int(position)
-            except ValueError:
-                msg = "No match for '{}' in filter_names, & not an integer either".format(position)
+            except (ValueError, TypeError):
+                msg = f"No match for '{position}' in filter_names and not an integer either"
                 self.logger.error(msg)
                 raise ValueError(msg)
 
@@ -266,12 +315,13 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         return header
 
     def __str__(self):
+        s = f'{self.name} ({self.uid})'
+
         try:
-            if self.camera:
-                s = "{} ({}) on {}".format(self.name, self.uid, self.camera.uid)
-            else:
-                s = "{} ({})".format(self.name, self.uid)
-        except Exception:
+            with suppress(AttributeError):
+                s += f' [Camera: {self.camera.name}]'
+        except Exception as e:  # noqa
+            self.logger.warning(f'Unable to stringify filterwheel: e={e!r}')
             s = str(self.__class__)
 
         return s

@@ -8,6 +8,13 @@ from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.pocs.utils.logger import get_logger
 
+# Would usually use self.logger but that won't exist until after calling super().__init__(),
+# and don't want to do that until after the serial number and port have both been determined
+# in order to avoid log entries with misleading values. To enable logging during the device
+# scanning phase use get_logger() instead.
+# TODO figure out how to remove this.
+logger = get_logger()
+
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
     def __init__(self, name, library_path=None, *args, **kwargs):
@@ -28,6 +35,8 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
+        # Most SDK cameras can take internal darks so set to True by default.
+        kwargs['internal_darks'] = kwargs.get('internal_darks', True)
         super().__init__(**kwargs)
         self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()
@@ -54,7 +63,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
 class AbstractSDKCamera(AbstractCamera):
     _driver = None
-    _cameras = {}
+    _cameras = dict()
     _assigned_cameras = set()
 
     def __init__(self,
@@ -64,18 +73,13 @@ class AbstractSDKCamera(AbstractCamera):
                  filter_type=None,
                  target_temperature=None,
                  *args, **kwargs):
-        # Would usually use self.logger but that won't exist until after calling super().__init__(),
-        # and don't want to do that until after the serial number and port have both been determined
-        # in order to avoid log entries with misleading values. To enable logging during the device
-        # scanning phase use get_logger() instead.
-        logger = get_logger()
 
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
         # which is some form of unique ID readable via the camera SDK.
         kwargs['port'] = None
         serial_number = kwargs.get('serial_number')
         if not serial_number:
-            msg = "Must specify serial_number for {}.".format(name)
+            msg = f"Must specify serial_number for {name}."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -86,28 +90,32 @@ class AbstractSDKCamera(AbstractCamera):
             # Initialise the driver if it hasn't already been done
             my_class._driver = driver(library_path=library_path)
 
-        logger.debug("Looking for {} with UID '{}'.".format(name, serial_number))
+        logger.debug(f"Looking for name={name!r} with UID 'serial_number={serial_number!r}'.")
 
         if not my_class._cameras:
             # No cached camera details, need to probe for connected cameras
             # This will raise a PanError if there are no cameras.
             my_class._cameras = my_class._driver.get_devices()
-            logger.debug("Connected {}s: {}".format(name, my_class._cameras))
+
+        logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with UID '{serial_number}' at {my_class._cameras[serial_number]}.")
+            logger.debug(f"Found {name} with UID serial_number={serial_number!r} at {my_class._cameras[serial_number]}.")
         else:
-            raise error.PanError(f"Could not find {name} with UID '{serial_number}'.")
+            raise error.InvalidConfig(f"No config information found for "
+                                      f"name={name!r} with serial_number={serial_number!r} in {my_class._cameras}")
 
         if serial_number in my_class._assigned_cameras:
-            raise error.PanError(f"{name} with UID '{serial_number}' already in use.")
+            raise error.PanError(f"{name} with UID serial_number={serial_number!r} already in use.")
+        else:
+            my_class._assigned_cameras.add(serial_number)
 
-        my_class._assigned_cameras.add(serial_number)
+        self._info = dict()
         super().__init__(name, *args, **kwargs)
         self._address = my_class._cameras[self.uid]
         self.connect()
         if not self.is_connected:
-            raise error.PanError("Could not connect to {}.".format(self))
+            raise error.PanError(f"Could not connect to {self}.")
 
         if filter_type:
             # connect() will have set this based on camera info, but that doesn't know about filters
@@ -117,8 +125,11 @@ class AbstractSDKCamera(AbstractCamera):
         if target_temperature is not None:
             if self.is_cooled_camera:
                 self.target_temperature = target_temperature
+
+                # Setting this will call _check_temperature_stability
                 self.cooling_enabled = True
-                # Allow for cooling
+
+                # Block here while camera temperature stabilises
                 while self.is_temperature_stable is False:
                     time.sleep(0.5)
 
@@ -129,10 +140,12 @@ class AbstractSDKCamera(AbstractCamera):
                 self.logger.warning(msg)
 
     def __del__(self):
-        """ Attempt some clean up """
-        with suppress(AttributeError):
-            uid = self.uid
-            type(self)._assigned_cameras.discard(uid)
+        """ Attempt some clean up. """
+        if hasattr(self, 'uid'):
+            logger.trace(f'Removing {self.uid} from {type(self)._assigned_cameras}')
+            type(self)._assigned_cameras.discard(self.uid)
+
+        logger.trace(f'Assigned cameras after removing {type(self)._assigned_cameras}')
 
     # Properties
 
@@ -143,21 +156,24 @@ class AbstractSDKCamera(AbstractCamera):
 
     # Methods
 
-    def _create_fits_header(self, seconds, dark):
-        header = super()._create_fits_header(seconds, dark)
+    def _create_fits_header(self, seconds, dark=None):
+        header = super()._create_fits_header(seconds, dark=dark)
         header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
         return header
 
     def __str__(self):
         # SDK cameras don't have a port so just include the serial number in the string
         # representation.
-        s = "{} ({})".format(self.name, self.uid)
+        s = f"{self.name} ({self.uid})"
 
-        if self.focuser:
-            s += ' with {}'.format(self.focuser.name)
+        with suppress(AttributeError):
+            if self.focuser:
+                s += f' with {self.focuser.name}'
+                if self.filterwheel:
+                    s += f' & {self.filterwheel.name}'
+
+        with suppress(AttributeError):
             if self.filterwheel:
-                s += ' & {}'.format(self.filterwheel.name)
-        elif self.filterwheel:
-            s += ' with {}'.format(self.filterwheel.name)
+                s += f' with {self.filterwheel.name}'
 
         return s

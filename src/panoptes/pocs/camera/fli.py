@@ -40,7 +40,7 @@ class Camera(AbstractSDKCamera):
         """
         return self._driver.FLIGetTemperature(self._handle)
 
-    @property
+    @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """
         Current value of the target temperature for the camera's image sensor cooling control.
@@ -48,14 +48,6 @@ class Camera(AbstractSDKCamera):
         Can be set by assigning an astropy.units.Quantity.
         """
         return self._target_temperature
-
-    @target_temperature.setter
-    def target_temperature(self, target):
-        if not isinstance(target, u.Quantity):
-            target = target * u.Celsius
-        self.logger.debug("Setting {} cooling set point to {}".format(self, target))
-        self._driver.FLISetTemperature(self._handle, target)
-        self._target_temperature = target
 
     @property
     def cooling_enabled(self):
@@ -106,6 +98,14 @@ class Camera(AbstractSDKCamera):
 
 # Private Methods
 
+    def _set_target_temperature(self, target):
+        self._driver.FLISetTemperature(self._handle, target)
+        # Check for success?
+        self._target_temperature = target
+
+    def _set_cooling_enabled():
+        raise NotImplementedError
+
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         self._driver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
@@ -153,7 +153,9 @@ class Camera(AbstractSDKCamera):
                 self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(image_data, header, filename)
+            fits_utils.write_fits(data=image_data,
+                                  header=header,
+                                  filename=filename)
 
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)

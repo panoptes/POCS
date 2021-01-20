@@ -1,63 +1,68 @@
-ARG image_url=gcr.io/panoptes-exp/panoptes-utils:latest
-FROM ${image_url} AS pocs-base
+FROM ubuntu:latest
 
-LABEL description="Installs the panoptes-pocs module from GitHub. \
-Used as a production image, i.e. for running on PANOPTES units."
+LABEL description="Installs the panoptes-pocs module from GitHub."
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
-
-ARG panuser=panoptes
-ARG userid=1000
-ARG pan_dir=/var/panoptes
-ARG pocs_dir="${pan_dir}/POCS"
-ARG conda_env_name="panoptes"
-
-ARG arduino_url="https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh"
-ARG gphoto2_url="https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh"
-ARG pip_extras="[testing,google]"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-ENV PANDIR $pan_dir
-ENV PANLOG "$pan_dir/logs"
+ARG panuser=pocs-user
+ARG userid=1000
+ARG pan_dir=/var/panoptes
+
 ENV PANUSER $panuser
-ENV POCS $pocs_dir
+ENV USERID $userid
+ENV PANDIR $pan_dir
 
 # Install system dependencies.
-USER root
 RUN apt-get update && apt-get install --no-install-recommends --yes \
-        gcc \
-        gphoto2 \
-        ncurses-dev \
-        readline-common \
-        udev
+        bzip2 ca-certificates \
+        wget gcc git pkg-config sudo gosu less udev \
+        astrometry.net astrometry-data-tycho2-10-19 dcraw exiftool \
+        libcfitsio-dev libcfitsio-bin \
+        libfreetype6-dev libpng-dev libjpeg-dev libffi-dev \
+        gphoto2 && \
+    useradd -u ${USERID} -o -c "PANOPTES POCS" \
+        -p panoptes -m -G plugdev,dialout,users,sudo ${PANUSER} && \
+    # Allow sudo without password.
+    echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# Install program dependencies.
-USER ${PANUSER}
-WORKDIR ${POCS}
-RUN mkdir -p "${PANDIR}/scripts" && \
-    cd "${PANDIR}/scripts" && \
-    # Install gphoto2 auto-updater
-    wget $gphoto2_url -O gphoto2-updater.sh && \
-    chmod +x gphoto2-updater.sh && \
-    # Don't actually update gphoto2 as of right now.
-    # sudo /bin/bash gphoto2-updater.sh --stable && \
-    # Install arduino-cli.
-    wget -q "${arduino_url}" -O install-arduino-cli.sh && \
-    sudo BINDIR="/usr/local/bin" /bin/sh install-arduino-cli.sh && \
-    sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+# Miniconda
+WORKDIR /tmp
+RUN wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" \
+        -O install-miniforge.sh && \
+    /bin/sh /tmp/install-miniforge.sh -b -f -p /conda && \
+    # Initialize conda for the shells.
+    /conda/bin/conda init bash
 
-# Install the module.
-USER ${PANUSER}
-# Can't seem to get around the hard-coding here.
-COPY --chown=panoptes:panoptes . .
-RUN "${PANDIR}/conda/envs/${conda_env_name}/bin/pip" install -e ".${pip_extras}" && \
+COPY environment.yaml .
+RUN /conda/bin/conda env update -n base -f environment.yaml && \
+    # Create PANOPTES directories.
+    mkdir -p ${PANDIR} && \
+    mkdir -p ${PANDIR}/logs && \
+    mkdir -p ${PANDIR}/images
+
+ARG pocs_dir="${PANDIR}/POCS"
+ENV POCS $pocs_dir
+ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
+
+ARG pip_extras="[google,testing]"
+
+USER "${userid}"
+WORKDIR "${POCS}"
+COPY --chown="${userid}:${userid}" . .
+RUN echo "Installing editable module with ${pip_extras}" && \
+    sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR} && \
+    /conda/bin/pip install -e ".${pip_extras}" && \
+    # Remove git folder
+    rm -rf "${POCS}/.git" && \
     # Cleanup
     sudo apt-get autoremove --purge --yes && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
-    sudo rm -rf /var/lib/apt/lists/* && \
-    "${PANDIR}/conda/bin/conda" clean -tipy
+    sudo rm -rf /var/lib/apt/lists/*
 
 USER root
+ENTRYPOINT ["/bin/sh", "/var/panoptes/POCS/scripts/entrypoint.sh"]
+CMD [ "/bin/bash" ]
