@@ -90,7 +90,7 @@ Changed
 
 * Testing:
 
-  * Added ``env`` file for setting up testing. (@wtgee #1066)
+  * Added ``tests/env`` file for setting up testing. (@wtgee #1066)
   * Config server is started as part of pytest again (reverting below). (@wtgee #1066)
   * Testing is run from a locally built Docker image for both local and CI testing. (@wtgee #1001)
   * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``. (@wtgee #1001)
