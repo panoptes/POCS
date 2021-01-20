@@ -1,12 +1,9 @@
-docs/*
 .idea
 .venv
 venv
 
 # Pass the git folder to the local build context.
 # This is only needed for local builds because of setuptools_scm.
-# The cloudbuild version ignores this folder (and creates a smaller image)
-# because it installs from pypi rather than local.
 !.git
 .github
 

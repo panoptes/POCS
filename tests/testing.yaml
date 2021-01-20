@@ -10,7 +10,7 @@
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
 #         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
-name: Generic PANOPTES Unit
+name: Testing PANOPTES Unit
 pan_id: PAN000
 
 pocs:
@@ -35,7 +35,7 @@ directories:
   images: images
   data: data
   resources: POCS/resources/
-  targets: POCS/resources/targets
+  targets: POCS/conf_files/targets
   mounts: POCS/resources/mounts
 db:
   name: panoptes_testing
@@ -205,7 +205,7 @@ panoptes_network:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
 
-state_machine: simple_state_table
+state_machine: panoptes
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.

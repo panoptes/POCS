@@ -7,8 +7,6 @@ services:
       dockerfile: docker/Dockerfile
     init: true
     tty: true
-    container_name: config-server
-    hostname: config-server
     network_mode: host
     environment:
       # These need to be defined in the shell on the host.
@@ -17,10 +15,6 @@ services:
       PANOPTES_CONFIG_HOST:
       PANOPTES_CONFIG_PORT:
       PANOPTES_CONFIG_FILE:
-    restart: on-failure
-    volumes:
-      - pocsdir:/var/panoptes/POCS
-      - confdir:/var/panoptes/config_files
     command: [ "panoptes-config-server --verbose run" ]
   pocs:
     image: panoptes-pocs:latest
@@ -28,8 +22,6 @@ services:
       context: ../
       dockerfile: docker/Dockerfile
     init: true
-    container_name: pocs
-    hostname: pocs
     privileged: true
     network_mode: host
     environment:
@@ -39,20 +31,21 @@ services:
       PANOPTES_CONFIG_HOST:
       PANOPTES_CONFIG_PORT:
       PANOPTES_CONFIG_FILE:
-    volumes:
-      - pocsdir:/var/panoptes/POCS
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- echo POCS yo!" ]
+    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- pytest" ]
+    volumes:
+      - logdir:/var/panoptes/logs
+      - builddir:/var/panoptes/POCS/build
 volumes:
-  pocsdir:
+  logdir:
     driver: local
     driver_opts:
       type: none
-      device: /var/panoptes/POCS
+      device: logs
       o: bind
-  confdir:
+  builddir:
     driver: local
     driver_opts:
       type: none
-      device: /var/panoptes/config_files
+      device: build
       o: bind

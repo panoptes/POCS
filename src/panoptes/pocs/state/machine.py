@@ -4,7 +4,7 @@ from contextlib import suppress
 from transitions.extensions.states import Tags as MachineState
 
 from panoptes.utils import error
-from panoptes.utils import listify
+from panoptes.utils.utils import listify
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 
@@ -303,12 +303,12 @@ class PanStateMachine(Machine):
     ##################################################################################################
 
     @classmethod
-    def load_state_table(cls, state_table_name='simple_state_table'):
+    def load_state_table(cls, state_table_name='panoptes'):
         """ Loads the state table
         Args:
-            state_table_name(str):  Name of state table. Corresponds to file name in
-                `$POCS/resources/state_table/` directory or to absolute path if
-                starts with "/". Default 'simple_state_table'.
+            state_table_name(str):  Name of state table. Corresponds to filename in
+                `$POCS/conf_files/state_table/` directory or to absolute path if
+                starts with "/". Default 'panoptes.yaml'.
         Returns:
             dict:   Dictionary with `states` and `transitions` keys.
         """
@@ -316,7 +316,7 @@ class PanStateMachine(Machine):
         if not state_table_name.startswith('/'):
             state_table_file = os.path.join(
                 os.getenv('POCS', default='/var/panoptes/POCS'),
-                'resources',
+                'conf_files',
                 'state_table',
                 f'{state_table_name}.yaml'
             )

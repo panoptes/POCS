@@ -9,9 +9,9 @@ from astropy import units as u
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.state.machine import PanStateMachine
-from panoptes.utils import current_time
-from panoptes.utils import get_free_space
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_free_space
+from panoptes.utils.time import CountdownTimer
 
 
 class POCS(PanStateMachine, PanBase):
@@ -30,7 +30,7 @@ class POCS(PanStateMachine, PanBase):
         observatory(Observatory): An instance of a `pocs.observatory.Observatory`
             class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
-            'simple_state_table'.
+            'panoptes'.
         simulators(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
@@ -61,7 +61,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.info(f'Initializing PANOPTES unit - {self.name} - {location}')
 
         if state_machine_file is None:
-            state_machine_file = self.get_config('state_machine', default='simple_state_table')
+            state_machine_file = self.get_config('state_machine', default='panoptes')
 
         self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)

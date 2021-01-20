@@ -1,14 +1,13 @@
 import os
-import pytest
 
+import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
-
 from panoptes.pocs.mount.simulator import Mount
-from panoptes.utils.config.client import get_config
 from panoptes.utils import error
-from panoptes.utils import altaz_to_radec
+from panoptes.utils.config.client import get_config
+from panoptes.utils.utils import altaz_to_radec
 
 
 @pytest.fixture

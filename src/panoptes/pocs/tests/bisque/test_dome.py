@@ -1,8 +1,8 @@
 import os
-import pytest
 
+import pytest
 from panoptes.pocs.dome.bisque import Dome
-from panoptes.utils.theskyx import TheSkyX
+from panoptes.pocs.utils.theskyx import TheSkyX
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 

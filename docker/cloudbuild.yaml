@@ -5,7 +5,6 @@ timeout: 18000s  # 5 hours
 
 substitutions:
   _PLATFORMS: linux/amd64,linux/arm64
-  _BASE_IMAGE: panoptes-utils
   _IMAGE_NAME: panoptes-pocs
   _REPO_URL: https://github.com/panoptes/POCS
   _TAG: latest
@@ -14,15 +13,15 @@ steps:
   # Fetch the repo from github
   - name: gcr.io/cloud-builders/git
     id: "clone-repo"
-    args: ["clone", "${_REPO_URL}"]
-    waitFor: ["-"]
+    args: [ "clone", "${_REPO_URL}" ]
+    waitFor: [ "-" ]
 
   # Pull the cached image.
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: ['-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0']
-    waitFor: ["-"]
+    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0' ]
+    waitFor: [ "-" ]
 
   # Set up multiarch support
   - name: "gcr.io/cloud-builders/docker"
@@ -34,7 +33,7 @@ steps:
       - "--privileged"
       - "--rm"
       - "docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64"
-    waitFor: ["-"]
+    waitFor: [ "-" ]
 
   # Build builder
   - name: "gcr.io/cloud-builders/docker"
@@ -46,7 +45,7 @@ steps:
       - "create"
       - "--use"
       - "--driver=docker-container"
-    waitFor: ["setup-buildx"]
+    waitFor: [ "setup-buildx" ]
 
   # Build with cloned panoptes-utils as source directory.
   - name: "gcr.io/cloud-builders/docker"
@@ -59,25 +58,7 @@ steps:
       - "--push"
       - "--platform=${_PLATFORMS}"
       - "-f=docker/Dockerfile"
-      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_BASE_IMAGE}:${_TAG}"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
       - "POCS"
-    waitFor: ["build-builder", "clone-repo"]
-
-  # Build a developer version.
-  - name: "gcr.io/cloud-builders/docker"
-    id: "build-developer-images"
-    env:
-      - "DOCKER_CLI_EXPERIMENTAL=enabled"
-    args:
-      - "buildx"
-      - "build"
-      - "--push"
-      - "--platform=linux/amd64"
-      - "-f=docker/developer/Dockerfile"
-      - "--build-arg=image_url=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
-      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:developer"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:developer"
-      - "POCS"
-    waitFor: ["build-images"]
+    waitFor: [ "build-builder", "clone-repo" ]

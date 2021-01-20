@@ -7,9 +7,9 @@ from astropy.coordinates import SkyCoord
 
 from panoptes.pocs.base import PanBase
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import CountdownTimer
 
 
 class AbstractMount(PanBase):

@@ -3,10 +3,10 @@ import enum
 
 import numpy as np
 from astropy import units as u
-
 from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
-from panoptes.utils import get_quantity_value
+from panoptes.utils.utils import get_quantity_value
+
 
 ####################################################################################################
 #
@@ -41,6 +41,7 @@ class ASIDriver(AbstractSDKDriver):
         """
         super().__init__(name='ASICamera2', library_path=library_path, **kwargs)
         self._product_ids = self.get_product_ids()  # Supported camera models
+
     # Methods
 
     def get_SDK_version(self):

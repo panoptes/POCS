@@ -15,7 +15,7 @@ from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
 
 

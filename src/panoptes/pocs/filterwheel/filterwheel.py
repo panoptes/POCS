@@ -1,12 +1,12 @@
 import threading
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
-from panoptes.utils import listify
 from panoptes.utils import error
+from panoptes.utils.utils import listify
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):

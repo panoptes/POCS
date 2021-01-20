@@ -1,20 +1,18 @@
-import time
 import threading
+import time
 from contextlib import suppress
 
 import numpy as np
 from astropy import units as u
 from astropy.time import Time
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.utils import error
-from panoptes.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
-
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
