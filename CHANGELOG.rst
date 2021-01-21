@@ -5,13 +5,19 @@ Changelog
 [0.7.dev8]
 ----------
 
-Changed
+Docker
+~~~~~~
+
+* ``PANUSER`` owns ``conda``. #1068
+* Dockerfile cleanup for better builds. #1068
+* Docker image does not contain ``focuser`` extras by default. #1068
+
+Testing
 ~~~~~~~
 
-* ``PANUSER`` owns ``conda``.
-* Dockerfile cleanup for better builds.
-* Move all tests into ``tests`` subdir from project root.
-* Cleanup of testing setup, especially for GHA.
+* Fix the log level in conftest. #1068
+* Move all tests into ``tests`` subdir from project root. #1068
+* Cleanup of testing setup, especially for GHA. #1068
 
 [0.7.7] - 2021-01-19
 --------------------
