@@ -41,11 +41,11 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: "${PANLOG:-logs}"
+      device: logs
       o: bind
   builddir:
     driver: local
     driver_opts:
       type: none
-      device: "${BUILDDIR:-build}"
+      device: logs
       o: bind
