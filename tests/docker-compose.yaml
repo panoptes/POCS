@@ -47,5 +47,5 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: logs
+      device: build
       o: bind
