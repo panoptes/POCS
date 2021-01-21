@@ -1,5 +1,7 @@
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 
+import usb
+
 
 class Focuser(AbstractSerialFocuser):
     """
@@ -58,8 +60,14 @@ class Focuser(AbstractSerialFocuser):
 
         self._connect(port, baudrate=38400)
 
+        try:
+            dev = usb.core.find(idVendor=0x0403)
+            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
+        except AttributeError:
+            self._serial_number = 'XXXXXX'
+
         # Return string that makes it clear there is no serial number
-        return "no_serial_number_available"
+        return self._serial_number
 
     def move_to(self, new_position):
         """
