@@ -5,6 +5,13 @@ Changelog
 [0.7.dev8]
 ----------
 
+Changed
+~~~~~~~
+
+* ``PANUSER`` owns ``conda``.
+* Dockerfile cleanup for better builds.
+* Move all tests into ``tests`` subdir from project root.
+* Cleanup of testing setup, especially for GHA.
 
 [0.7.7] - 2021-01-19
 --------------------
