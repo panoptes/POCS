@@ -20,7 +20,7 @@ _all_databases = ['file', 'memory']
 TESTING_LOG_LEVEL = 'TRACE'
 LOGGER_INFO = PanLogger()
 
-logger = get_logger(console_log_file=TESTING_LOG_LEVEL)
+logger = get_logger(console_log_level=TESTING_LOG_LEVEL)
 logger.enable('panoptes')
 # Add a level above TRACE and below DEBUG
 logger.level("testing", no=15, icon="🤖", color="<LIGHT-BLUE><white>")
