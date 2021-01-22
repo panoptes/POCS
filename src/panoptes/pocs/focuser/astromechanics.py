@@ -1,6 +1,11 @@
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+from panoptes.utils import error
 
+import re
 import usb
+
+# Adaptors serial numbers of astromechs are random alphanumeric combinations
+serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
 
 
 class Focuser(AbstractSerialFocuser):
@@ -22,8 +27,15 @@ class Focuser(AbstractSerialFocuser):
     def __init__(self,
                  name='Astromechanics Focuser Controller',
                  model='astromechanics',
+                 initial_position=0,
+                 dev_node_pattern='/dev/tty.usbserial-AG0*',
+                 serial_number_pattern=serial_number_pattern,
                  *args, **kwargs):
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, model=model,
+                         dev_node_pattern=dev_node_pattern,
+                         initial_position=initial_position,
+                         serial_number_pattern=serial_number_pattern,
+                         *args, **kwargs)
         self.logger.debug('Initialising Astromechanics Lens Controller')
 
     ##################################################################################################
@@ -60,14 +72,18 @@ class Focuser(AbstractSerialFocuser):
 
         self._connect(port, baudrate=38400)
 
-        try:
-            dev = usb.core.find(idVendor=0x0403)
-            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
-        except AttributeError:
-            self._serial_number = 'XXXXXX'
+        # Send get position command to see if response ends with '#', proper of the astromechs
+        res = self._send_command("P#")
 
-        # Return string that makes it clear there is no serial number
-        return self._serial_number
+        if res and res.endswith("#"):
+            try:
+                dev = usb.core.find(idVendor=0x0403, idProduct=0x6001)
+                self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
+                # Return string that makes it clear there is no serial number
+                return self._serial_number
+
+            except Exception:
+                raise error.PanError(f"{self.name} not found in {self.port}")
 
     def move_to(self, new_position):
         """
@@ -169,7 +185,7 @@ class Focuser(AbstractSerialFocuser):
         self._is_moving = True
         try:
             # Set focuser to 0 position
-            self._send_command('M0#')
+            self._send_command(f'M{self.initial_position}#')
 
             self.logger.debug('Moved to encoder position 0')
         finally:

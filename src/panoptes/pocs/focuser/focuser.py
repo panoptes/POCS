@@ -77,6 +77,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self.timeout = timeout
 
+        self.initial_position = initial_position
+
         if initial_position is None:
             self._position = None
         else:

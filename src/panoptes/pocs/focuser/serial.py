@@ -1,5 +1,6 @@
 import io
 import serial
+import glob
 from warnings import warn
 from contextlib import suppress
 
@@ -15,12 +16,54 @@ class AbstractSerialFocuser(AbstractFocuser):
     # known focuser devices & acts as a check against adaptors assigned to incorrect ports.
     _assigned_nodes = []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, dev_node_pattern="", initial_position=None,
+                 serial_number_pattern="", *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
             Opens a connection to the serial device, if it is valid.
         """
 
         super().__init__(*args, **kwargs)
+
+        if serial_number_pattern.match(self.port):
+            # Have been given a serial number
+            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
+
+            if AbstractSerialFocuser._adaptor_nodes is None:
+                # No cached device nodes scanning results, need to scan.
+                self.logger.debug('Getting serial numbers for all connected focusers')
+                AbstractSerialFocuser._adaptor_nodes = {}
+                # Find nodes matching pattern
+                device_nodes = glob.glob(dev_node_pattern)
+
+                # Open each device node and see if a focuser answers
+                for device_node in device_nodes:
+                    try:
+                        serial_number = self.connect(device_node)
+                        AbstractSerialFocuser._adaptor_nodes[serial_number] = device_node
+                    except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
+                        # No focuser on this node.
+                        pass
+                    finally:
+                        self._serial_port.close()
+
+                if not AbstractSerialFocuser._adaptor_nodes:
+                    message = 'No focuser devices found!'
+                    self.logger.error(message)
+                    warn(message)
+                    return
+                else:
+                    self.logger.debug('Connected focusers: {}'.format(AbstractSerialFocuser._adaptor_nodes))
+
+            # Search in cached device node scanning results for serial number
+            try:
+                device_node = AbstractSerialFocuser._adaptor_nodes[self.port]
+            except KeyError:
+                message = 'Could not find {} ({})!'.format(self.name, self.port)
+                self.logger.error(message)
+                warn(message)
+                return
+            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
+            self.port = device_node
 
         # Check that this node hasn't already been assigned to another focuser device
         if self.port in AbstractSerialFocuser._assigned_nodes:
@@ -42,6 +85,9 @@ class AbstractSerialFocuser(AbstractFocuser):
         AbstractSerialFocuser._assigned_nodes.append(self.port)
         self._is_moving = False
         self._initialise()
+
+        if initial_position is not None:
+            self.position = initial_position
 
     def __del__(self):
         with suppress(AttributeError):

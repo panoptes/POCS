@@ -1,12 +1,9 @@
 import re
-import serial
-import glob
-from warnings import warn
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
-# Birger adaptor serial numbers should be 5 digits
+# Adaptors serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
 
 # Error codes should be 'ERR' followed by 1-2 digits
@@ -63,57 +60,14 @@ class Focuser(AbstractSerialFocuser):
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
-                 max_command_retries=5,
+                 serial_number_pattern=serial_number_pattern,
                  *args, **kwargs):
-
-        self._max_command_retries = max_command_retries
-
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, model=model,
+                         dev_node_pattern=dev_node_pattern,
+                         initial_position=initial_position,
+                         serial_number_pattern=serial_number_pattern,
+                         *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
-
-        if serial_number_pattern.match(self.port):
-            # Have been given a serial number
-            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
-
-            if Focuser._adaptor_nodes is None:
-                # No cached device nodes scanning results, need to scan.
-                self.logger.debug('Getting serial numbers for all connected Birger focusers')
-                Focuser._adaptor_nodes = {}
-                # Find nodes matching pattern
-                device_nodes = glob.glob(dev_node_pattern)
-
-                # Open each device node and see if a Birger focuser answers
-                for device_node in device_nodes:
-                    try:
-                        serial_number = self.connect(device_node)
-                        Focuser._adaptor_nodes[serial_number] = device_node
-                    except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
-                        # No Birger focuser on this node.
-                        pass
-                    finally:
-                        self._serial_port.close()
-
-                if not Focuser._adaptor_nodes:
-                    message = 'No Birger focuser devices found!'
-                    self.logger.error(message)
-                    warn(message)
-                    return
-                else:
-                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._adaptor_nodes))
-
-            # Search in cached device node scanning results for serial number
-            try:
-                device_node = Focuser._adaptor_nodes[self.port]
-            except KeyError:
-                message = 'Could not find {} ({})!'.format(self.name, self.port)
-                self.logger.error(message)
-                warn(message)
-                return
-            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
-            self.port = device_node
-
-        if initial_position is not None:
-            self.position = initial_position
 
     ##################################################################################################
     # Properties
@@ -312,21 +266,6 @@ class Focuser(AbstractSerialFocuser):
                         error_match.group(), self))
 
         return response
-
-    def _parse_move_response(self, response):
-        try:
-            response = response[0].rstrip()
-            reply = response[:4]
-            amount = int(response[4:-2])
-            hit_limit = bool(int(response[-1]))
-            assert reply == "DONE"
-        except (IndexError, AssertionError):
-            raise error.PanError("{} got response '{}', expected 'DONENNNNN,N'!".format(self,
-                                                                                        response))
-        if hit_limit:
-            self.logger.warning('{} reported hitting a focus stop'.format(self))
-
-        return amount
 
     def _initialise(self):
         # Get serial number. Note, this is the serial number of the Birger adaptor,
