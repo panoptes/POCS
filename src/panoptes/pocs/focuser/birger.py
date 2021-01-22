@@ -3,7 +3,7 @@ import re
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
-# Adaptors serial numbers should be 5 digits
+# Birger adaptors serial numbers should be 5 digits
 serial_number_pattern = re.compile(r'^\d{5}$')
 
 # Error codes should be 'ERR' followed by 1-2 digits

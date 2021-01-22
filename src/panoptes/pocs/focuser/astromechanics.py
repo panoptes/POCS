@@ -4,7 +4,7 @@ from panoptes.utils import error
 import re
 import usb
 
-# Adaptors serial numbers of astromechs are random alphanumeric combinations
+# Astromechanics adaptors serial numbers are random alphanumeric combinations
 serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
 
 
