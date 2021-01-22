@@ -50,6 +50,7 @@ class Focuser(AbstractSerialFocuser):
             may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
             to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
             used at the time of writing by Huntsman.
+        serial_number_pattern (re.Pattern, optional): Birger adaptor serial number pattern.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
     that class' documentation for a complete list.
