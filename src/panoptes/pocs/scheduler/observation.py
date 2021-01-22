@@ -9,8 +9,8 @@ from panoptes.pocs.scheduler.field import Field
 class Observation(PanBase):
 
     @u.quantity_input(exptime=u.second)
-    def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, filter_name=None, *args, **kwargs):
+    def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
+                 filter_name=None, dark=False, *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -40,7 +40,8 @@ class Observation(PanBase):
                 (default: {100})
             filter_name {str} -- Name of the filter to be used. If specified,
                 will override the default filter name (default: {None}).
-
+            dark (bool, optional): If True, exposures should be taken with the shutter closed.
+                Default: False.
         """
         super().__init__(*args, **kwargs)
 
@@ -56,6 +57,7 @@ class Observation(PanBase):
         assert float(priority) > 0.0, self.logger.error(f"Priority must be 1.0 or larger, currently {priority}")
 
         self.field = field
+        self.dark = dark
 
         self.exptime = exptime
         self.min_nexp = min_nexp
