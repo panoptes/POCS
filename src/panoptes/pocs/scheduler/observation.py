@@ -46,13 +46,12 @@ class Observation(PanBase):
 
         assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
 
-        assert exptime > 0.0, \
-            self.logger.error(f"Exposure time (exptime={exptime}) must be greater than 0")
+        assert exptime >= 0.0, \
+            self.logger.error(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
         assert min_nexp % exp_set_size == 0, \
-            self.logger.error(
-                f"Minimum number of exposures (min_nexp={min_nexp}) must be " +
-                f"multiple of set size (exp_set_size={exp_set_size})")
+            self.logger.error(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
+                              f"a multiple of set size (exp_set_size={exp_set_size}).")
 
         assert float(priority) > 0.0, self.logger.error(f"Priority must be 1.0 or larger, currently {priority}")
 
@@ -207,6 +206,21 @@ class Observation(PanBase):
             return list(self.pointing_images.items())[-1]
         except IndexError:
             self.logger.warning("No pointing image available")
+
+    @property
+    def set_is_finished(self):
+        """ Check if the current observing block has finished, which is True when the minimum
+        number of exposures have been obtained and and integer number of sets have been completed.
+        Returns:
+            bool: True if finished, False if not.
+        """
+        # Check the min required number of exposures have been obtained
+        has_min_exposures = self.current_exp_num >= self.min_nexp
+
+        # Check if the current set is finished
+        this_set_finished = self.current_exp_num % self.exp_set_size == 0
+
+        return has_min_exposures and this_set_finished
 
     ##################################################################################################
     # Methods
