@@ -267,6 +267,21 @@ class Focuser(AbstractSerialFocuser):
 
         return response
 
+    def _parse_move_response(self, response):
+        try:
+            response = response[0].rstrip()
+            reply = response[:4]
+            amount = int(response[4:-2])
+            hit_limit = bool(int(response[-1]))
+            assert reply == "DONE"
+        except (IndexError, AssertionError):
+            raise error.PanError("{} got response '{}', expected 'DONENNNNN,N'!".format(self,
+                                                                                        response))
+        if hit_limit:
+            self.logger.warning('{} reported hitting a focus stop'.format(self))
+
+        return amount
+
     def _initialise(self):
         # Get serial number. Note, this is the serial number of the Birger adaptor,
         # *not* the attached lens (which would be more useful). Accessible as self.uid
