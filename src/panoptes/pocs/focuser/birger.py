@@ -50,6 +50,7 @@ class Focuser(AbstractSerialFocuser):
             may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
             to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
             used at the time of writing by Huntsman.
+        max_command_retries (int, optional): Maximum number of times to retry a command.
         serial_number_pattern (re.Pattern, optional): Birger adaptor serial number pattern.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
@@ -61,8 +62,12 @@ class Focuser(AbstractSerialFocuser):
                  model='Canon EF-232',
                  initial_position=None,
                  dev_node_pattern='/dev/tty.USA49*.?',
+                 max_command_retries=5,
                  serial_number_pattern=serial_number_pattern,
                  *args, **kwargs):
+
+        self._max_command_retries = max_command_retries
+
         super().__init__(name=name, model=model,
                          dev_node_pattern=dev_node_pattern,
                          initial_position=initial_position,
