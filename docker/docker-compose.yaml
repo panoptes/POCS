@@ -41,6 +41,7 @@ services:
       PANOPTES_CONFIG_FILE:
     volumes:
       - pocsdir:/var/panoptes/POCS
+      - /var/panoptes/logs:/var/panoptes/logs
     # No-op to keep machine running, use $POCS/bin/pocs-shell to access
     command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- echo POCS yo!" ]
 volumes:
