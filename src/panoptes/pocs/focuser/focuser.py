@@ -79,7 +79,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self.initial_position = initial_position
 
-        if initial_position is None:
+        if self.initial_position is None:
             self._position = None
         else:
             self._position = int(initial_position)
@@ -98,7 +98,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self._camera = camera
 
-        self.logger.debug('Focuser created: {} on {}'.format(self.name, self.port))
+        self.logger.debug(f'Focuser created: {self.name} on {self.port}')
 
     ##################################################################################################
     # Properties
@@ -241,28 +241,28 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 focus_range = self.autofocus_range
             else:
                 raise ValueError(
-                    "No focus_range specified, aborting autofocus of {}!".format(self._camera))
+                    f"No focus_range specified, aborting autofocus of {self._camera}!")
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
                 raise ValueError(
-                    "No focus_step specified, aborting autofocus of {}!".format(self._camera))
+                    f"No focus_step specified, aborting autofocus of {self._camera}!")
 
         if not seconds:
             if self.autofocus_seconds:
                 seconds = self.autofocus_seconds
             else:
                 raise ValueError(
-                    "No focus exposure time specified, aborting autofocus of {}!", self._camera)
+                    f"No focus exposure time specified, aborting autofocus of {self._camera}!")
 
         if not cutout_size:
             if self.autofocus_size:
                 cutout_size = self.autofocus_size
             else:
                 raise ValueError(
-                    "No focus thumbnail size specified, aborting autofocus of {}!", self._camera)
+                    f"No focus thumbnail size specified, aborting autofocus of {self._camera}!")
 
         if keep_files is None:
             if self.autofocus_keep_files:
@@ -594,7 +594,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     def __str__(self):
         try:
-            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+            s = f"{self.name} ({self.uid}) on {self.port}"
         except Exception:
             s = str(__class__)
 

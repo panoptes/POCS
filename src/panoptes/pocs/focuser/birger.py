@@ -41,25 +41,23 @@ class Focuser(AbstractSerialFocuser):
     Args:
         name (str, optional): default 'Birger Focuser'
         model (str, optional): default 'Canon EF-232'
-        initial_position (int, optional): if given the focuser will drive to this encoder position
-            following initialisation.
-        max_command_retries (int, optional): Maximum number of times to retry a command.
+        max_command_retries (int, optional): Maximum number of times to retry a command. Default 5
 
-    Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
-    that class' documentation for a complete list.
+    Additional positonal and keyword arguments are passed to the base class, AbstractSerialFocuser.
+        See that class' documentation for a complete list.
     """
 
-    def __init__(self, name='Birger Focuser', model='Canon EF-232', initial_position=None,
-                 max_command_retries=5, *args, **kwargs):
+    def __init__(self, name='Birger Focuser', model='Canon EF-232', max_command_retries=5,
+                 *args, **kwargs):
 
         self._max_command_retries = max_command_retries
 
-        super().__init__(name=name, model=model, initial_position=initial_position, *args, **kwargs)
+        super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
-    ##################################################################################################
+    ###############################################################################################
     # Properties
-    ##################################################################################################
+    ###############################################################################################
 
     @AbstractSerialFocuser.position.getter
     def position(self):
@@ -104,9 +102,9 @@ class Focuser(AbstractSerialFocuser):
         """
         return self._hardware_version
 
-    ##################################################################################################
+    ###############################################################################################
     # Public Methods
-    ##################################################################################################
+    ###############################################################################################
 
     def connect(self, port):
 
@@ -134,14 +132,14 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+            response = self._send_command(f'fa{int(position)}', response_length=1)
             new_position = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug("Moved to encoder position {}".format(new_position))
+        self.logger.debug(f"Moved to encoder position {new_position}")
         return new_position
 
     def move_by(self, increment):
@@ -169,9 +167,9 @@ class Focuser(AbstractSerialFocuser):
         self.logger.debug("Moved by {} encoder units".format(moved_by))
         return moved_by
 
-    ##################################################################################################
+    ###############################################################################################
     # Private Methods
-    ##################################################################################################
+    ###############################################################################################
 
     def _send_command(self, command, response_length=None):
         """
@@ -189,7 +187,7 @@ class Focuser(AbstractSerialFocuser):
                 adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(f"Attempt to send command to {self} when not connected!")
             return
 
         # Depending on which command was sent there may or may not be any further response.
@@ -263,10 +261,9 @@ class Focuser(AbstractSerialFocuser):
             hit_limit = bool(int(response[-1]))
             assert reply == "DONE"
         except (IndexError, AssertionError):
-            raise error.PanError("{} got response '{}', expected 'DONENNNNN,N'!".format(self,
-                                                                                        response))
+            raise error.PanError(f"{self} got response '{response}', expected 'DONENNNNN,N'!")
         if hit_limit:
-            self.logger.warning('{} reported hitting a focus stop'.format(self))
+            self.logger.warning(f'{self} reported hitting a focus stop')
 
         return amount
 
@@ -306,31 +303,24 @@ class Focuser(AbstractSerialFocuser):
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
-        self.logger.debug("Got serial number {} for {} on {}".format(
-            self.uid,
-            self.name,
-            self.port))
+        self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
 
     def _get_library_version(self):
         response = self._send_command('lv', response_length=1)
         self._library_version = response[0].rstrip()
-        self.logger.debug("Got library version '{}' for {} on {}".format(self._library_version,
-                                                                         self.name,
-                                                                         self.port))
+        self.logger.debug(f"Got library version '{self._library_version}' \
+            for {self.name} on {self.port}")
 
     def _get_hardware_version(self):
         response = self._send_command('hv', response_length=1)
         self._hardware_version = response[0].rstrip()
-        self.logger.debug("Got hardware version {} for {} on {}".format(self._hardware_version,
-                                                                        self.name,
-                                                                        self.port))
+        self.logger.debug(f"Got hardware version {self._hardware_version} \
+            for {self.name} on {self.port}")
 
     def _get_lens_info(self):
         response = self._send_command('id', response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug("Got lens info '{}' for {} on {}".format(self._lens_info,
-                                                                   self.name,
-                                                                   self.port))
+        self.logger.debug(f"Got lens info '{self._lens_info}' for {self.name} on {self.port}")
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')

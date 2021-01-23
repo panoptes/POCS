@@ -11,25 +11,25 @@ class Focuser(AbstractSerialFocuser):
     Args:
         name (str, optional): default 'Astromechanics Focuser'
         model (str, optional): default 'Canon EF/EF-S'
-        initial_position (int, optional): if given the focuser will drive to this encoder position
-            following initialisation.
+        id_vendor (str, optional): idVendor of device, can be retrieved with lsusb -v from terminal.
+        id_product (str, optional): idProduct of device, can be retrieved with lsusb -v from terminal.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractSerialFocuser. See
     that class' documentation for a complete list.
-
-    Min/max commands do not exist for the astromechanics controller, as well as
-    other commands to get serial numbers and library/hardware versions. However,
-    as they are marked with the decorator @abstractmethod, we have to override them.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232',
-                 initial_position=0, *args, **kwargs):
-        super().__init__(name=name, model=model, initial_position=initial_position, *args, **kwargs)
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', id_vendor=None,
+                 id_product=None, *args, **kwargs):
+
+        self._id_vendor = id_vendor
+        self._id_product = id_product
+
+        super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Astromechanics Focuser')
 
-    ##################################################################################################
+    ###############################################################################################
     # Properties
-    ##################################################################################################
+    ###############################################################################################
 
     @AbstractSerialFocuser.position.getter
     def position(self):
@@ -53,24 +53,15 @@ class Focuser(AbstractSerialFocuser):
         """
         return None
 
-    ##################################################################################################
+    ###############################################################################################
     # Public Methods
-    ##################################################################################################
+    ###############################################################################################
 
     def connect(self, port):
 
         self._connect(port)
 
-        # Send get position command to see if response ends with '#', proper of the astromechs
-        res = self._send_command("P#")
-
-        if res == '0#':
-            dev = usb.core.find(idVendor=0x0403, idProduct=0x6001)
-            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
-            # Return string that makes it clear there is no serial number
-            return self._serial_number
-        else:
-            raise error.BadSerialConnection(f"{self.name} not found in {self.port}")
+        return self._serial_number
 
     def move_to(self, new_position):
         """
@@ -118,9 +109,9 @@ class Focuser(AbstractSerialFocuser):
         self.logger.debug(f"Moved by {increment} encoder units. Current position is {new_pos}")
         return new_pos
 
-    ##################################################################################################
+    ###############################################################################################
     # Private Methods
-    ##################################################################################################
+    ###############################################################################################
 
     def _send_command(self, command):
         """
@@ -137,7 +128,7 @@ class Focuser(AbstractSerialFocuser):
             string:  containing the '\r' terminated lines of the response from the adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(f"Attempt to send command to {self} when not connected!")
             return
 
         # Clear the input buffer in case there's anything left over in there.
@@ -149,30 +140,44 @@ class Focuser(AbstractSerialFocuser):
         return self._serial_io.readline()
 
     def _initialise(self):
-        self._is_moving = True
-        try:
-            # Initialise the aperture motor. This also has the side effect of fully opening the iris.
-            self._initialise_aperture()
+        # Get serial number. Note, this is the serial number of the Astromechanics device.
+        self._get_serial_number()
 
-            # Initalise focus. First move the focus to the close stop.
-            self._move_zero()
-            self._min_position = 0
+        # Initialise the aperture motor. This also has the side effect of fully opening the iris.
+        self._initialise_aperture()
 
-            self.logger.info(f'{self} initialised')
-        finally:
-            self._is_moving = False
+        # Initalise focus. First move the focus to the close stop.
+        self._move_zero()
+        self._min_position = 0
+
+        self.logger.info(f'{self} initialised')
+
+    def _get_serial_number(self):
+        # Send get position command to see if response is what expected.
+        res = self._send_command("P#").rstrip('#')
+
+        if res == self.position:
+            dev = usb.core.find(idVendor=self._id_vendor, idProduct=self._id_product)
+            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
+            self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
+        else:
+            raise error.BadSerialConnection(f"{self.name} not found in {self.port}")
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
-        self._send_command('A00#')
-        self.logger.debug('Aperture initialised')
+        self._is_moving = True
+        try:
+            self._send_command('A00#')
+            self.logger.debug('Aperture initialised')
+        finally:
+            self._is_moving = False
 
     def _move_zero(self):
         self.logger.debug('Setting focus encoder zero point')
         self._is_moving = True
         try:
             # Set focuser to 0 position
-            self._send_command(f'M{self.initial_position}#')
+            self._send_command('M0#')
 
             self.logger.debug('Moved to encoder position 0')
         finally:

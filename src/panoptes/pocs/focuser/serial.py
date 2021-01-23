@@ -10,14 +10,19 @@ from panoptes.pocs.focuser import AbstractFocuser
 
 class AbstractSerialFocuser(AbstractFocuser):
 
-    """Serial class of a focuser controller
+    """
+    Serial class of a focuser controller
 
     Args:
         dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
             may have a Birger adaptor attached. Default is None.
         serial_number_pattern (str, optional): Adaptor serial number pattern. Default is None
         baudrate (int, optional): Rate at which information is transferred in the serial
-            communication channel. Default is None"""
+            communication channel. Default is None
+
+    Additional positonal and keyword arguments are passed to the base class, AbstractFocuser.
+        See that class' documentation for a complete list.
+    """
 
     # Class variable to cache the device node scanning results
     _adaptor_nodes = None
@@ -43,7 +48,7 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         # Check that this node hasn't already been assigned to another focuser device
         if self.port in AbstractSerialFocuser._assigned_nodes:
-            message = 'Device node {} already in use!'.format(self.port)
+            message = f'Device node {self.port} already in use!'
             self.logger.error(message)
             warn(message)
             return
@@ -53,7 +58,7 @@ class AbstractSerialFocuser(AbstractFocuser):
         except (serial.SerialException,
                 serial.SerialTimeoutException,
                 AssertionError) as err:
-            message = 'Error connecting to {} on {}: {}'.format(self.name, self.port, err)
+            message = f'Error connecting to {self.name} on {self.port}: {err}'
             self.logger.error(message)
             warn(message)
             return
@@ -74,9 +79,9 @@ class AbstractSerialFocuser(AbstractFocuser):
             self._serial_port.close()
             self.logger.debug(f'Closed serial port {self._port}')
 
-    ##################################################################################################
+    ###############################################################################################
     # Properties
-    ##################################################################################################
+    ###############################################################################################
 
     @property
     def is_connected(self):
@@ -93,9 +98,9 @@ class AbstractSerialFocuser(AbstractFocuser):
         """ True if the focuser is currently moving. """
         return self._is_moving
 
-    ##################################################################################################
+    ###############################################################################################
     # Private Methods
-    ##################################################################################################
+    ###############################################################################################
 
     def _connect(self, port):
         try:
@@ -118,15 +123,15 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         except serial.SerialException as err:
             self._serial_port = None
-            self.logger.critical('Could not open {}!'.format(port))
+            self.logger.critical(f'Could not open {port}!')
             raise err
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
-        # (focuser adaptors usually send '\r', not '\n'). The line_buffering option causes an automatic flush() when
-        # a write contains a newline character.
+        # (focuser adaptors usually send '\r', not '\n'). The line_buffering option causes an
+        # automatic flush() when a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
+        self.logger.debug(f'Established serial connection to {self.name} on {port}.')
 
     def _search_adaptor_node(self):
 
@@ -140,7 +145,7 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         if self._serial_number_pattern.match(self.port):
             # Have been given a serial number
-            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
+            self.logger.debug(f'Looking for {self.name} ({self.port})...')
 
             if AbstractSerialFocuser._adaptor_nodes is None:
                 # No cached device nodes scanning results, need to scan.
@@ -166,15 +171,15 @@ class AbstractSerialFocuser(AbstractFocuser):
                     warn(message)
                     return
                 else:
-                    self.logger.debug('Connected focusers: {}'.format(AbstractSerialFocuser._adaptor_nodes))
+                    self.logger.debug(f'Connected focusers: {AbstractSerialFocuser._adaptor_nodes}')
 
             # Search in cached device node scanning results for serial number
             try:
                 device_node = AbstractSerialFocuser._adaptor_nodes[self.port]
             except KeyError:
-                message = 'Could not find {} ({})!'.format(self.name, self.port)
+                message = f'Could not find {self.name} ({self.port})!'
                 self.logger.error(message)
                 warn(message)
                 return
-            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
+            self.logger.debug(f'Found {self.name} ({self.port}) on {device_node}')
             self.port = device_node
