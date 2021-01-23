@@ -3,9 +3,6 @@ import re
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
-# Birger adaptors serial numbers should be 5 digits
-serial_number_pattern = re.compile(r'^\d{5}$')
-
 # Error codes should be 'ERR' followed by 1-2 digits
 error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
 
@@ -46,33 +43,18 @@ class Focuser(AbstractSerialFocuser):
         model (str, optional): default 'Canon EF-232'
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
-        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
-            may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
-            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
-            used at the time of writing by Huntsman.
         max_command_retries (int, optional): Maximum number of times to retry a command.
-        serial_number_pattern (re.Pattern, optional): Birger adaptor serial number pattern.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
     that class' documentation for a complete list.
     """
 
-    def __init__(self,
-                 name='Birger Focuser',
-                 model='Canon EF-232',
-                 initial_position=None,
-                 dev_node_pattern='/dev/tty.USA49*.?',
-                 max_command_retries=5,
-                 serial_number_pattern=serial_number_pattern,
-                 *args, **kwargs):
+    def __init__(self, name='Birger Focuser', model='Canon EF-232', initial_position=None,
+                 max_command_retries=5, *args, **kwargs):
 
         self._max_command_retries = max_command_retries
 
-        super().__init__(name=name, model=model,
-                         dev_node_pattern=dev_node_pattern,
-                         initial_position=initial_position,
-                         serial_number_pattern=serial_number_pattern,
-                         *args, **kwargs)
+        super().__init__(name=name, model=model, initial_position=initial_position, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
     ##################################################################################################
@@ -128,7 +110,7 @@ class Focuser(AbstractSerialFocuser):
 
     def connect(self, port):
 
-        self._connect(port, baudrate=115200)
+        self._connect(port)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'

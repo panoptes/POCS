@@ -1,11 +1,7 @@
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
-import re
 import usb
-
-# Astromechanics adaptors serial numbers are random alphanumeric combinations
-serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
 
 
 class Focuser(AbstractSerialFocuser):
@@ -31,19 +27,10 @@ class Focuser(AbstractSerialFocuser):
     as they are marked with the decorator @abstractmethod, we have to override them.
     """
 
-    def __init__(self,
-                 name='Astromechanics Focuser Controller',
-                 model='astromechanics',
-                 initial_position=0,
-                 dev_node_pattern='/dev/tty.usbserial-AG0*',
-                 serial_number_pattern=serial_number_pattern,
-                 *args, **kwargs):
-        super().__init__(name=name, model=model,
-                         dev_node_pattern=dev_node_pattern,
-                         initial_position=initial_position,
-                         serial_number_pattern=serial_number_pattern,
-                         *args, **kwargs)
-        self.logger.debug('Initialising Astromechanics Lens Controller')
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232',
+                 initial_position=0, *args, **kwargs):
+        super().__init__(name=name, model=model, initial_position=initial_position, *args, **kwargs)
+        self.logger.debug('Initialising Astromechanics Focuser')
 
     ##################################################################################################
     # Properties
@@ -77,20 +64,18 @@ class Focuser(AbstractSerialFocuser):
 
     def connect(self, port):
 
-        self._connect(port, baudrate=38400)
+        self._connect(port)
 
         # Send get position command to see if response ends with '#', proper of the astromechs
         res = self._send_command("P#")
 
-        if res and res.endswith("#"):
-            try:
-                dev = usb.core.find(idVendor=0x0403, idProduct=0x6001)
-                self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
-                # Return string that makes it clear there is no serial number
-                return self._serial_number
-
-            except Exception:
-                raise error.PanError(f"{self.name} not found in {self.port}")
+        if res == '0#':
+            dev = usb.core.find(idVendor=0x0403, idProduct=0x6001)
+            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
+            # Return string that makes it clear there is no serial number
+            return self._serial_number
+        else:
+            raise error.BadSerialConnection(f"{self.name} not found in {self.port}")
 
     def move_to(self, new_position):
         """
