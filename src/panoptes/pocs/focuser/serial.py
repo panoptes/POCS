@@ -15,8 +15,9 @@ class AbstractSerialFocuser(AbstractFocuser):
     Args:
         dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
             may have a Birger adaptor attached. Default is None.
-        serial_number_pattern (str, optional): adaptor serial number pattern. Default is None
-        baudrate: Rate at which information is transferred in the serial communication channel"""
+        serial_number_pattern (str, optional): Adaptor serial number pattern. Default is None
+        baudrate (int, optional): Rate at which information is transferred in the serial
+            communication channel. Default is None"""
 
     # Class variable to cache the device node scanning results
     _adaptor_nodes = None
