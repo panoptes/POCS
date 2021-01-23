@@ -14,10 +14,8 @@ class AbstractSerialFocuser(AbstractFocuser):
 
     Args:
         dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
-            may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
-            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
-            used at the time of writing by Huntsman.
-        serial_number_pattern (str, optional): adaptor serial number pattern
+            may have a Birger adaptor attached. Default is None.
+        serial_number_pattern (str, optional): adaptor serial number pattern. Default is None
     rate at which information is transferred in a communication channel"""
 
     # Class variable to cache the device node scanning results

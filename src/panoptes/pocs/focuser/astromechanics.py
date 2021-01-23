@@ -13,11 +13,6 @@ class Focuser(AbstractSerialFocuser):
         model (str, optional): default 'Canon EF/EF-S'
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
-        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
-            may have an Astromechanics adaptor attached. Default is '/dev/tty.usbserial-AG0*.?',
-            which is intended to match all the nodes created by FT232R USB UART serial
-            adaptors, as used at the time of writing by Huntsman.
-        serial_number_pattern (re.Pattern, optional): Astromechanics adaptor serial number pattern.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractSerialFocuser. See
     that class' documentation for a complete list.
