@@ -34,9 +34,12 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         self.baudrate = baudrate
 
+        self._dev_node_pattern = dev_node_pattern
+        self._serial_number_pattern = serial_number_pattern
+
         super().__init__(*args, **kwargs)
 
-        self._search_adaptor_node(dev_node_pattern, serial_number_pattern)
+        self._search_adaptor_node()
 
         # Check that this node hasn't already been assigned to another focuser device
         if self.port in AbstractSerialFocuser._assigned_nodes:
@@ -125,17 +128,17 @@ class AbstractSerialFocuser(AbstractFocuser):
                                            newline='\r', encoding='ascii', line_buffering=True)
         self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
 
-    def _search_adaptor_node(self, dev_node_pattern, serial_number_pattern):
+    def _search_adaptor_node(self):
 
         if self.name.startwith('Birger'):
             # Birger adaptors serial numbers should be 5 digits
-            serial_number_pattern = re.compile(r'^\d{5}$')
+            self._serial_number_pattern = re.compile(r'^\d{5}$')
 
         elif self.name.startwith('Astromechanics'):
             # Astromechanics adaptors serial numbers are random alphanumeric combinations
-            serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
+            self._serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
 
-        if serial_number_pattern.match(self.port):
+        if self._serial_number_pattern.match(self.port):
             # Have been given a serial number
             self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
 
@@ -144,7 +147,7 @@ class AbstractSerialFocuser(AbstractFocuser):
                 self.logger.debug('Getting serial numbers for all connected focusers')
                 AbstractSerialFocuser._adaptor_nodes = {}
                 # Find nodes matching pattern
-                device_nodes = glob.glob(dev_node_pattern)
+                device_nodes = glob.glob(self._dev_node_pattern)
 
                 # Open each device node and see if a focuser answers
                 for device_node in device_nodes:
