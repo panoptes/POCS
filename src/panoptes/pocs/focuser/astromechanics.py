@@ -2,6 +2,7 @@ from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
 import usb
+import re
 
 
 class Focuser(AbstractSerialFocuser):
@@ -140,9 +141,6 @@ class Focuser(AbstractSerialFocuser):
         return self._serial_io.readline()
 
     def _initialise(self):
-        # Get serial number. Note, this is the serial number of the Astromechanics device.
-        self._get_serial_number()
-
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
 
@@ -153,10 +151,9 @@ class Focuser(AbstractSerialFocuser):
         self.logger.info(f'{self} initialised')
 
     def _get_serial_number(self):
-        # Send get position command to see if response is what expected.
-        res = self._send_command("P#").rstrip('#')
-
-        if res == '5000':  # Every time an astromech is connected, it returns the position 5000.
+        # Get position and see if the response is a combination of digits [0-9] and a trailing '#'.
+        res = re.compile('^[0-9]+#$')
+        if res.match(self._send_command("P#")):
             dev = usb.core.find(idVendor=self._id_vendor, idProduct=self._id_product)
             self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
             self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
@@ -175,11 +172,15 @@ class Focuser(AbstractSerialFocuser):
 
     def _move_zero(self):
         self.logger.debug('Setting focus encoder zero point')
-        self._is_moving = True
-        try:
-            # Set focuser to 0 position
-            self._send_command('M0#')
 
-            self.logger.debug('Moved to encoder position 0')
-        finally:
-            self._is_moving = False
+        if self.position != 0:
+            self._is_moving = True
+            try:
+                # Set focuser to 0 position
+                self._send_command('M0#')
+
+                self.logger.debug('Focuser has been set to encoder position 0')
+            finally:
+                self._is_moving = False
+        else:
+            self.logger.debug('Focuser was already at encoder position 0')
