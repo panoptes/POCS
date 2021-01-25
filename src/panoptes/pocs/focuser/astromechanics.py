@@ -151,9 +151,9 @@ class Focuser(AbstractSerialFocuser):
         self.logger.info(f'{self} initialised')
 
     def _get_serial_number(self):
-        # Get position and see if the response is a combination of digits [0-9] and a trailing '#'.
-        res = re.compile('^[0-9]+#$')
-        if res.match(self._send_command("P#")):
+        # Get position and see if the response follows pattern of digits [0-9] and a trailing '#'.
+        response_pattern = re.compile('^[0-9]+#$')
+        if response_pattern.match(self._send_command("P#")):
             dev = usb.core.find(idVendor=self._id_vendor, idProduct=self._id_product)
             self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
             self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
