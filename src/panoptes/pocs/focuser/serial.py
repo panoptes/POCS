@@ -135,11 +135,11 @@ class AbstractSerialFocuser(AbstractFocuser):
 
     def _search_adaptor_node(self):
 
-        if self.name.startwith('Birger'):
+        if self.name.startswith('Birger'):
             # Birger adaptors serial numbers should be 5 digits
             self._serial_number_pattern = re.compile(r'^\d{5}$')
 
-        elif self.name.startwith('Astromechanics'):
+        elif self.name.startswith('Astromechanics'):
             # Astromechanics adaptors serial numbers are random alphanumeric combinations
             self._serial_number_pattern = re.compile(r'^[a-zA-Z0-9_]*$')
 

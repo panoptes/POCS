@@ -61,7 +61,7 @@ class Focuser(AbstractSerialFocuser):
 
         self._connect(port)
 
-        return self._serial_number
+        return self._get_serial_number()
 
     def move_to(self, new_position):
         """
@@ -156,10 +156,11 @@ class Focuser(AbstractSerialFocuser):
         # Send get position command to see if response is what expected.
         res = self._send_command("P#").rstrip('#')
 
-        if res == self.position:
+        if res == '5000':  # Every time an astromech is connected, it returns the position 5000.
             dev = usb.core.find(idVendor=self._id_vendor, idProduct=self._id_product)
             self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
             self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
+            return self._serial_number
         else:
             raise error.BadSerialConnection(f"{self.name} not found in {self.port}")
 

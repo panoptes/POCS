@@ -235,7 +235,7 @@ class Focuser(AbstractSerialFocuser):
             break
 
         if not success:
-            raise error.PanError(f'Failed command {command!r} on {self}')
+            raise error.BadSerialConnection(f'Failed command {command!r} on {self}')
 
         # Check for an error message in response
         if response:
