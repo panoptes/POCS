@@ -21,6 +21,7 @@ class Camera(AbstractSDKCamera):
                  name='ZWO ASI Camera',
                  gain=None,
                  image_type=None,
+                 bandwidthoverload=None,
                  *args, **kwargs):
         """
         ZWO ASI Camera class
@@ -56,6 +57,9 @@ class Camera(AbstractSDKCamera):
 
         if gain:
             self.gain = gain
+
+        if bandwidthoverload is not None:
+            self.bandwidthoverload = bandwidthoverload
 
         if image_type:
             self.image_type = image_type
@@ -142,6 +146,15 @@ class Camera(AbstractSDKCamera):
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
         return Camera._driver.get_exposure_status(self._handle) == "WORKING"
+
+    @property
+    def bandwidthoverload(self):
+        return self._control_getter('BANDWIDTHOVERLOAD')[0]
+
+    @bandwidthoverload.setter
+    def bandwidthoverload(self, value):
+        value = get_quantity_value(value, u.percent) * u.percent
+        self._control_setter('BANDWIDTHOVERLOAD', value)
 
     # Methods
 
