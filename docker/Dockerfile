@@ -20,6 +20,11 @@ RUN /conda/bin/conda env update -n base -f environment.yaml
 
 # Set up some common directories
 RUN echo "Building from ${image_name}:${image_tag}" && \
+    RUN sudo apt-get update && \
+    sudo apt-get install -y --no-install-recommends \
+        astrometry-data-tycho2 \
+        astrometry-data-2mass && \
+    sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
@@ -28,7 +33,7 @@ ARG pip_install_extras="[google]"
 
 WORKDIR "${POCS}"
 RUN echo "Installing panoptes-pocs module with ${pip_install_extras}" && \
-    /conda/bin/pip install -e "panoptes-pocs${pip_install_extras}" && \
+    /conda/bin/pip install "panoptes-pocs${pip_install_extras}" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipy && \

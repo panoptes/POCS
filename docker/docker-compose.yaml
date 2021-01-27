@@ -1,57 +1,39 @@
 version: '3.7'
 services:
   config-server:
-    image: panoptes-pocs:latest
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
+    image: gcr.io/panoptes-exp/panoptes-utils:develop
+    deploy:
+      mode: global
     init: true
     tty: true
     container_name: config-server
     hostname: config-server
     network_mode: host
-    environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
-    restart: on-failure
+    env_file:
+      - env
+    command: [ "panoptes-config-server --verbose run --config-file /app/config.yaml" ]
     volumes:
-      - pocsdir:/var/panoptes/POCS
-      - confdir:/var/panoptes/config_files
-    command: [ "panoptes-config-server --verbose run" ]
-  pocs:
-    image: panoptes-pocs:latest
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
+      - type: bind
+        source: "${PANOPTES_CONFIG_FILE}"
+        target: /app/config.yaml
+  pocs-control:
+    image: gcr.io/panoptes-exp/panoptes-pocs:develop
+    deploy:
+      mode: global
     init: true
-    container_name: pocs
-    hostname: pocs
+    container_name: pocs-control
+    hostname: pocs-control
     privileged: true
     network_mode: host
-    environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
+    env_file:
+      - env
     volumes:
-      - pocsdir:/var/panoptes/POCS
-      - /var/panoptes/logs:/var/panoptes/logs
-    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- echo POCS yo!" ]
+      - logdir:/logs
+    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- /bin/bash" ]
 volumes:
-  pocsdir:
+  logdir:
     driver: local
     driver_opts:
       type: none
-      device: /var/panoptes/POCS
-      o: bind
-  confdir:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/panoptes/config_files
+      device: "${PANLOG:-${PWD}/logs}"
       o: bind
