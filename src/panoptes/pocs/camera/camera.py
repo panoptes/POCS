@@ -873,7 +873,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e!r}')
                     raise (e)
 
-            elif not dark:
+            elif not (dark and observation.filter_name is None):
                 self.logger.warning(f'Filter {observation.filter_name} requested by'
                                     f' observation but {self.filterwheel} is missing that filter, '
                                     f'using {self.filter_type}.')
