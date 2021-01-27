@@ -13,7 +13,6 @@ services:
     environment:
       # These need to be defined in the shell on the host.
       PANDIR:
-      PANLOG:
       PANOPTES_CONFIG_HOST:
       PANOPTES_CONFIG_PORT:
       PANOPTES_CONFIG_FILE:
@@ -35,7 +34,6 @@ services:
     environment:
       # These need to be defined in the shell on the host.
       PANDIR:
-      PANLOG:
       PANOPTES_CONFIG_HOST:
       PANOPTES_CONFIG_PORT:
       PANOPTES_CONFIG_FILE:

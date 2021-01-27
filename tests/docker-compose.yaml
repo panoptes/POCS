@@ -10,7 +10,6 @@ services:
     environment:
       - PANDIR=/POCS
       - POCS=/POCS
-      - PANLOG=/logs
       - PANOPTES_CONFIG_FILE=/POCS/tests/testing.yaml
       - PANOPTES_CONFIG_HOST=localhost
       - PANOPTES_CONFIG_PORT=8765
