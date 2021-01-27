@@ -1,26 +1,29 @@
 options:
-  machineType: "N1_HIGHCPU_8"
   substitutionOption: "ALLOW_LOOSE"
 timeout: 18000s  # 5 hours
 
 substitutions:
-  _PLATFORMS: linux/amd64,linux/arm64
   _IMAGE_NAME: panoptes-pocs
-  _REPO_URL: https://github.com/panoptes/POCS
-  _TAG: latest
+  _PLATFORM: linux/arm64,linux/amd64
 
 steps:
   # Fetch the repo from github
   - name: gcr.io/cloud-builders/git
     id: "clone-repo"
-    args: [ "clone", "${_REPO_URL}" ]
+    args: [ "clone", "${REPO_NAME}" ]
     waitFor: [ "-" ]
+
+  # Fetch the repo from github
+  - name: gcr.io/cloud-builders/git
+    id: "checkout-branch"
+    args: [ "checkout", "${COMMIT_SHA}" ]
+    waitFor: [ "clone-repo" ]
 
   # Pull the cached image.
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0' ]
+    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME} || exit 0' ]
     waitFor: [ "-" ]
 
   # Set up multiarch support
@@ -43,6 +46,7 @@ steps:
     args:
       - "buildx"
       - "create"
+      - "--name=build"
       - "--use"
       - "--driver=docker-container"
     waitFor: [ "setup-buildx" ]
@@ -55,10 +59,10 @@ steps:
     args:
       - "buildx"
       - "build"
-      - "--push"
-      - "--platform=${_PLATFORMS}"
+      - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
-      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
-      - "POCS"
-    waitFor: [ "build-builder", "clone-repo" ]
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
+      - "--push"
+      - "."
+    waitFor: [ "build-builder", "checkout-branch" ]
