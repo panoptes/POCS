@@ -31,12 +31,12 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
 directories:
-  base: /var/panoptes
+  base: /POCS
   images: images
   data: data
-  resources: POCS/resources/
-  targets: POCS/conf_files/targets
-  mounts: POCS/resources/mounts
+  resources: resources/
+  targets: conf_files/targets
+  mounts: resources/mounts
 db:
   name: panoptes_testing
   type: file
