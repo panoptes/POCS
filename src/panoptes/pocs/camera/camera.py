@@ -379,6 +379,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 override the default file naming system.
             blocking (bool): If method should wait for observation event to be complete
                 before returning, default False.
+            dark (bool, optional): Observation exposure is a dark frame, default False.
             **kwargs (dict): Optional keyword arguments (`exptime`, dark)
 
         Returns:
