@@ -361,7 +361,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     def connect(self):
         raise NotImplementedError  # pragma: no cover
 
-    def take_observation(self, observation, headers=None, filename=None, blocking=False, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, blocking=False,
+                         dark=False, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -388,13 +389,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
                                                                          filename,
+                                                                         dark,
                                                                          **kwargs)
 
         # pop exptime from kwarg as its now in exptime
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, **kwargs)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, dark=dark,
+                           **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -853,7 +856,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return header
 
-    def _setup_observation(self, observation, headers, filename, **kwargs):
+    def _setup_observation(self, observation, headers, filename, dark, **kwargs):
         headers = headers or None
 
         # Move the filterwheel if necessary
@@ -870,11 +873,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e!r}')
                     raise (e)
 
-            else:
-                self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 f' observation but {self.filterwheel} is missing that filter, '
-                                 f'using'
-                                 f' {self.filter_type}.')
+            elif not dark:
+                self.logger.warning(f'Filter {observation.filter_name} requested by'
+                                    f' observation but {self.filterwheel} is missing that filter, '
+                                    f'using {self.filter_type}.')
 
         if headers is None:
             start_time = current_time(flatten=True)
