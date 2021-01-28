@@ -16,7 +16,7 @@ USER "${userid}"
 WORKDIR /tmp
 RUN sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
-        astrometry-data-2mass-08-19 && \
+        astrometry-data-tycho2-10-19 && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
 COPY docker/environment.yaml .
