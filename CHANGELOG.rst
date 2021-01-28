@@ -2,8 +2,22 @@
 Changelog
 =========
 
-[0.7.dev8]
+[0.7.8dev]
 ----------
+
+Generic
+~~~~~~~
+
+* **Breaking changes** #1068
+
+  * Docker services use the ``pip`` module, so don't include recent changes unless merged into ``develop``.
+  * Default service install does not include ``focuser`` dependencies.
+  * Default Docker command is a ``bash`` shell and will be changed with future PR to ``pocs`` cli.
+  * Directories inside the service image have been simplified for easier mapping onto desired targets on the host:
+
+    *  ``/POCS``
+    *  ``/logs``
+    *  ``/images``
 
 Docker
 ~~~~~~
@@ -11,6 +25,10 @@ Docker
 * ``PANUSER`` owns ``conda``. #1068
 * Dockerfile cleanup for better builds. #1068
 * Docker image does not contain ``focuser`` extras by default. #1068
+* Images use ``gcr.io/panoptes-exp/panoptes-utils`` as base. #1074
+* Docker files are all contained within ``docker`` folder. #1074
+* Both tycho2 (wide-field) and 2mass (narrow-field) index files are included. #1074
+  * Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
 
 Testing
 ~~~~~~~
@@ -18,6 +36,7 @@ Testing
 * Fix the log level in conftest. #1068
 * Move all tests into ``tests`` subdir from project root. #1068
 * Cleanup of testing setup, especially for GHA. #1068
+* Simplify testing service by removing ``tests/env`` file. #1074
 
 [0.7.7] - 2021-01-19
 --------------------
