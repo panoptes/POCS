@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from collections import namedtuple
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -7,10 +8,8 @@ from astropy.coordinates import FK5
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
-from collections import namedtuple
-
-from .base import PanBase
 from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.base import PanBase
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 
@@ -201,7 +200,8 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
+        assert isinstance(ref_image, Image), self.logger.warning(
+            "Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

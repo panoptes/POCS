@@ -9,8 +9,10 @@ services:
     container_name: config-server
     hostname: config-server
     network_mode: host
-    env_file:
-      - env
+    environment:
+      - PANOPTES_CONFIG_FILE=/POCS/conf_files/pocs.yaml
+      - PANOPTES_CONFIG_HOST=0.0.0.0
+      - PANOPTES_CONFIG_PORT=6563
     command: [ "panoptes-config-server --verbose run --config-file /app/config.yaml" ]
     volumes:
       - type: bind
@@ -25,8 +27,10 @@ services:
     hostname: pocs-control
     privileged: true
     network_mode: host
-    env_file:
-      - env
+    environment:
+      - PANOPTES_CONFIG_FILE=/POCS/conf_files/pocs.yaml
+      - PANOPTES_CONFIG_HOST=0.0.0.0
+      - PANOPTES_CONFIG_PORT=6563
     volumes:
       - logdir:/logs
     command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- /bin/bash" ]
