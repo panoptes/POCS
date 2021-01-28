@@ -17,18 +17,4 @@ services:
     network_mode: host
     command: [ "pytest" ]
     volumes:
-      - logdir:/POCS/logs
-      - builddir:/POCS/build
-volumes:
-  logdir:
-    driver: local
-    driver_opts:
-      type: none
-      device: logs
-      o: bind
-  builddir:
-    driver: local
-    driver_opts:
-      type: none
-      device: build
-      o: bind
+      - "$PWD:/POCS"

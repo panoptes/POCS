@@ -1,11 +1,10 @@
 import os
-import pytest
 import shutil
 import tempfile
 
+import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-
 from panoptes.pocs.images import Image
 from panoptes.pocs.images import OffsetError
 from panoptes.utils.error import SolveError
@@ -42,7 +41,7 @@ def test_solve_timeout(tiny_fits_file):
         im0 = Image(tiny_fits_file)
         assert str(im0)
         with pytest.raises(Timeout):
-            im0.solve_field(verbose=True, replace=False, radius=4, timeout=1)
+            im0.solve_field(verbose=True, replace=False, radius=4, timeout=0)
 
 
 def test_fail_solve(tiny_fits_file):
