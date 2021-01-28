@@ -19,9 +19,9 @@ USER "${userid}"
 RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
-        gphoto2 \
-        astrometry-data-tycho2 \
-        astrometry-data-2mass && \
+        gphoto2 && \
+#        astrometry-data-tycho2 \
+#        astrometry-data-2mass && \
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
@@ -51,4 +51,4 @@ COPY --chown="${userid}:${userid}" resources resources
 COPY --chown="${userid}:${userid}" scripts scripts
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
 
-CMD [ "ipython -i scripts/load-ipython.py" ]
+CMD [ "ipython" ]
