@@ -7,6 +7,8 @@ services:
       dockerfile: tests/Dockerfile
     init: true
     tty: true
+    deploy:
+      mode: global
     environment:
       - PANDIR=/POCS
       - POCS=/POCS

@@ -76,7 +76,6 @@ def test_solve_field_unsolved(unsolved_fits_file,
         # Compare it to another file of known offset.
         im1 = Image(copy_file_to_dir(tmpdir, solved_fits_file))
         offset_info = im0.compute_offset(im1)
-        # print('offset_info:', offset_info)
         expected_offset = [10.1 * u.arcsec, 5.29 * u.arcsec, 8.77 * u.arcsec]
         assert u.allclose(offset_info, expected_offset, rtol=0.1)
 
