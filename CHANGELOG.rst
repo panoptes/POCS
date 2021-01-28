@@ -8,16 +8,23 @@ Changelog
 Generic
 ~~~~~~~
 
-* **Breaking changes** #1068
+* **Breaking changes** #1074
 
-  * Docker services use the ``pip`` module, so don't include recent changes unless merged into ``develop``.
   * Default service install does not include ``focuser`` dependencies.
-  * Default Docker command is a ``bash`` shell and will be changed with future PR to ``pocs`` cli.
+  * Default Docker command is a ``ipython`` console and will be changed with future PR to ``pocs`` cli.
+  * Docker image only contains limited set of files.
   * Directories inside the service image have been simplified for easier mapping onto desired targets on the host:
 
     *  ``/POCS``
     *  ``/logs``
     *  ``/images``
+
+  * Removing ``peas`` scripts.
+
+Added
+~~~~~
+
+* Simple example script for creating a ``POCS`` instance with all simulators. #1074
 
 Docker
 ~~~~~~
@@ -28,7 +35,12 @@ Docker
 * Images use ``gcr.io/panoptes-exp/panoptes-utils`` as base. #1074
 * Docker files are all contained within ``docker`` folder. #1074
 * Both tycho2 (wide-field) and 2mass (narrow-field) index files are included. #1074
-  * Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
+* Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
+
+Removing
+~~~~~~~~
+
+* Old scripts and config files. #1074
 
 Testing
 ~~~~~~~
