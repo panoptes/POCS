@@ -17,7 +17,7 @@ services:
     network_mode: host
     command: [ "pytest" ]
     volumes:
-      - logdir:/logs
+      - logdir:/POCS/logs
       - builddir:/POCS/build
 volumes:
   logdir:

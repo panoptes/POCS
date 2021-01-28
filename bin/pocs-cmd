@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-set -e
-
-DOCKER_NAME="pocs-control"
-
-docker exec -it "${DOCKER_NAME}" "$@" &>/dev/null || echo "${DOCKER_NAME} not running"
