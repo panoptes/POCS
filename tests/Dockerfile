@@ -13,10 +13,15 @@ ARG pip_extras="[focuser,google,testing]"
 
 USER "${userid}"
 
+# Set up some common directories
 WORKDIR /tmp
-RUN sudo apt-get update && \
+RUN echo "Building from ${image_name}:${image_tag}" && \
+    sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
+        gphoto2 \
         astrometry-data-tycho2-10-19 && \
+    sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
+    sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
 COPY docker/environment.yaml .
