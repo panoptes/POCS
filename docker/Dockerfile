@@ -48,6 +48,6 @@ COPY --chown="${userid}:${userid}" docker/docker-compose.yaml .
 COPY --chown="${userid}:${userid}" conf_files conf_files
 COPY --chown="${userid}:${userid}" resources resources
 COPY --chown="${userid}:${userid}" scripts scripts
-ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
 
+ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
 CMD [ "ipython" ]
