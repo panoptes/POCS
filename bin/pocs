@@ -1,9 +1,11 @@
-#!/bin/bash -ie
+#!/usr/bin/env bash
+
+set -e
 
 usage() {
-  echo -n "##################################################
+  echo -n "
+##################################################
 # Start POCS via Docker.
-#
 ##################################################
 
  $ $(basename $0) [COMMAND]
@@ -35,27 +37,16 @@ usage() {
 
 START=${1:-help}
 if [ "${START}" = 'help' ] || [ "${START}" = '-h' ] || [ "${START}" = '--help' ]; then
-    usage
-    exit 1
+  usage
+  exit 1
 fi
 
 PARAMS="$@"
-
-cd "$PANDIR"
-CMD="docker-compose \
-    --project-directory ${PANDIR} \
-    -f panoptes-utils/docker/docker-compose.yaml \
-    -f POCS/docker/docker-compose-aag.yaml \
-    -f POCS/docker/docker-compose.yaml \
-    -p panoptes"
+CMD="docker-compose -f docker/docker-compose.yaml"
 
 # If user only asked to start, check if already running and if so use "-d" option.
 if [[ "$PARAMS" == "up" ]]; then
-    if [[ ! -z $(eval "${CMD} top") ]]; then
-        echo "Some containers already running, using -d to only start non-running containers."
-     echo "For more info on managing docker containers manually, run bin/pocs --help".
-        PARAMS="up -d"
-    fi
+  PARAMS="up -d"
 fi
 
 # Run the docker-compose command with user params.
