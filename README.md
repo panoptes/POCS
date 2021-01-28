@@ -129,9 +129,15 @@ To test the software, you can build a local [Docker](https://docs.docker.com/) i
 First clone the repository, then run the following from the project's root directory:
 
 ```bash
-docker-compose -f tests/docker-compose.yaml --env-file tests/env build
+docker-compose -f tests/docker-compose.yaml build
 
-docker-compose -f tests/docker-compose.yaml --env-file tests/env run pocs pytest
+docker-compose -f tests/docker-compose.yaml up
+```
+
+By default that will build and run all tests. If you want to run one specific test, run the `pytests test_file.py` on the `pocs` service:
+
+```bash
+docker-compose -f tests/docker-compose.yaml run pocs "pytest tests/test_mount.py"
 ```
 
 Links
