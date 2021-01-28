@@ -19,7 +19,7 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
         gphoto2 \
-        astrometry-data-tycho2-10-19 && \
+        astrometry-data-2mass-08-19 && \
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
