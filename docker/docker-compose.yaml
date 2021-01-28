@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   config-server:
-    image: gcr.io/panoptes-exp/panoptes-utils:develop
+    image: "${IMAGE_URL:-gcr.io/panoptes-exp/panoptes-pocs:develop}"
     deploy:
       mode: global
     init: true
@@ -10,34 +10,37 @@ services:
     hostname: config-server
     network_mode: host
     environment:
-      - PANOPTES_CONFIG_FILE=/POCS/conf_files/pocs.yaml
       - PANOPTES_CONFIG_HOST=0.0.0.0
       - PANOPTES_CONFIG_PORT=6563
-    command: [ "panoptes-config-server --verbose run --config-file /app/config.yaml" ]
     volumes:
-      - type: bind
-        source: "${PANOPTES_CONFIG_FILE}"
-        target: /app/config.yaml
+      - confdir:/POCS/conf_files
+    command: [ "panoptes-config-server --verbose run --config-file /POCS/conf_files/pocs.yaml" ]
   pocs-control:
-    image: gcr.io/panoptes-exp/panoptes-pocs:develop
+    image: "${IMAGE_URL:-gcr.io/panoptes-exp/panoptes-pocs:develop}"
     deploy:
       mode: global
     init: true
+    tty: true
     container_name: pocs-control
     hostname: pocs-control
     privileged: true
     network_mode: host
     environment:
-      - PANOPTES_CONFIG_FILE=/POCS/conf_files/pocs.yaml
       - PANOPTES_CONFIG_HOST=0.0.0.0
       - PANOPTES_CONFIG_PORT=6563
     volumes:
       - logdir:/logs
-    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- /bin/bash" ]
+    command: [ "wait-for-it $${PANOPTES_CONFIG_PORT}:$${PANOPTES_CONFIG_PORT} -- tail -f /dev/null" ]
 volumes:
   logdir:
     driver: local
     driver_opts:
       type: none
-      device: "${PANLOG:-${PWD}/logs}"
+      device: "${PANLOG:-logs}"
+      o: bind
+  confdir:
+    driver: local
+    driver_opts:
+      type: none
+      device: conf_files
       o: bind
