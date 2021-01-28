@@ -34,7 +34,7 @@ Docker
 * Docker image does not contain ``focuser`` extras by default. #1068
 * Images use ``gcr.io/panoptes-exp/panoptes-utils`` as base. #1074
 * Docker files are all contained within ``docker`` folder. #1074
-* Both tycho2 (wide-field) and 2mass (narrow-field) index files are included. #1074
+* Docker image has tycho2 10-19 index files for plate-solving. #1074
 * Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
 
 Removing
