@@ -19,4 +19,7 @@ services:
     network_mode: host
     command: [ "pytest" ]
     volumes:
-      - "$PWD:/POCS"
+      - "$PWD/logs:/POCS/logs"
+      - "$PWD/build:/POCS/build"
+      - "$PWD/src:/POCS/src"
+      - "$PWD/tests:/POCS/tests"
