@@ -52,3 +52,4 @@ MANIFEST
 **/.ipynb_checkpoints/**
 
 logs
+conf_files/*_local.yaml
