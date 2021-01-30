@@ -581,7 +581,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not os.path.exists(file_path):
             observation_event.set()
             raise FileNotFoundError(
-                f"Expected image at file_path={file_path!r} does not exist or " +
+                f"Expected image at {file_path=!r} does not exist or " +
                 "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')

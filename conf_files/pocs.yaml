@@ -28,11 +28,9 @@ location:
 
 directories:
   base: /POCS
-  data: data
-  images: images
-  mounts: resources/mounts
-  resources: resources/
-  targets: conf_files/targets
+  images: /POCS/images
+  mounts: /POCS/resources/mounts
+  targets: /POCS/conf_files/targets
 
 db:
   name: panoptes
@@ -63,10 +61,10 @@ mount:
   max_tracking_threshold: 99999 # ms
 
 pointing:
+  max_iterations: 5  # Set to 0 to disable
   auto_correct: True
   threshold: 100 # arcseconds ~ 10 pixels
   exptime: 30 # seconds
-  max_iterations: 5
 
 cameras:
   defaults:
