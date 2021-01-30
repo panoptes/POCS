@@ -505,6 +505,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._is_exposing_event.clear()
             raise err
 
+        def log_thread_error(exc_info):
+            self.logger.warning(f'{exc_info!r}')
+
+        threading.excepthook = log_thread_error
+
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
                                           args=(readout_args, seconds),
