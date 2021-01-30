@@ -10,8 +10,9 @@ Generic
 
 * **Breaking changes** #1074
 
+  * Python 3.8
   * Default service install does not include ``focuser`` dependencies.
-  * Default Docker command is a ``ipython`` console and will be changed with future PR to ``pocs`` cli.
+  * Default Docker command is a ``ipython`` console with the simulators loaded.
   * Docker image only contains limited set of files.
   * Directories inside the service image have been simplified for easier mapping onto desired targets on the host:
 
@@ -26,6 +27,12 @@ Added
 
 * Simple example script for creating a ``POCS`` instance with all simulators. #1074
 
+Changed
+~~~~~~~
+
+* Updated install script (includes ZSH again). #1074
+* Pointing state is skipped if ``num_pointing_images==0`. #1074
+
 Docker
 ~~~~~~
 
@@ -36,6 +43,7 @@ Docker
 * Docker files are all contained within ``docker`` folder. #1074
 * Docker image has tycho2 10-19 index files for plate-solving. #1074
 * Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
+* Config changed to run with simulators out of the box. #1074
 
 Removing
 ~~~~~~~~
