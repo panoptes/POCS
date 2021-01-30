@@ -506,7 +506,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             raise err
 
         def log_thread_error(exc_info):
-            self.logger.warning(f'{exc_info!r}')
+            self.logger.error(f'{exc_info!r}')
 
         threading.excepthook = log_thread_error
 
