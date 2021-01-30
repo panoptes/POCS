@@ -81,8 +81,8 @@ function system_deps() {
   sudo apt-get --yes install \
     ack \
     byobu \
-    docker.io \
     docker-compose \
+    docker.io \
     htop \
     httpie \
     jq \
@@ -106,6 +106,36 @@ function get_or_build_images() {
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
 }
 
+function install_zsh() {
+  echo "Setting up zsh for a better experience."
+
+  # Oh my zsh
+  wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
+  bash /tmp/install-ohmyzsh.sh --unattended
+
+  export ZSH_CUSTOM="$HOME/.oh-my-zsh"
+
+  # Autosuggestions plugin
+  git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+  # Spaceship theme
+  git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
+  ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
+
+  write_zshrc
+}
+
+function write_zshrc() {
+  cat >"${HOME}/.zshrc" <<'EOT'
+export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+export ZSH="/home/panoptes/.oh-my-zsh"
+ZSH_THEME="spaceship"
+plugins=(git sudo zsh-autosuggestions docker docker-compose python)
+source $ZSH/oh-my-zsh.sh
+unsetopt share_history
+EOT
+}
+
 function do_install() {
   clear
 
@@ -122,6 +152,8 @@ function do_install() {
   system_deps
 
   get_or_build_images
+
+  install_zsh
 
   echo "Please reboot your machine before using POCS."
 
