@@ -187,6 +187,7 @@ class Image(PanBase):
         solve_info = fits_utils.get_solve_field(self.fits_file,
                                                 ra=self.header_pointing.ra.value,
                                                 dec=self.header_pointing.dec.value,
+                                                radius=15,  # degrees
                                                 **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']

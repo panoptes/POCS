@@ -19,8 +19,10 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get -y full-upgrade && \
     sudo apt-get install -y --no-install-recommends \
-        gphoto2 \
-        astrometry-data-2mass && \
+        gphoto2 && \
+    # Index file used for tests.
+    sudo wget http://data.astrometry.net/4100/index-4111.fits -O /usr/share/astrometry/index-4111.fits
+    # Support directories.
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
