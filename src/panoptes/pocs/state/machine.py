@@ -148,7 +148,7 @@ class PanStateMachine(Machine):
 
             # If we didn't successfully transition, wait a while then try again
             if not state_changed:
-                self.logger.warning(f"Failed to move from {self.state=!r} to {self.next_state=!r}")
+                self.logger.warning(f"Failed to move from {self.state!r} to {self.next_state!r}")
                 if self.is_safe() is False:
                     self.logger.warning(
                         "Conditions have become unsafe; setting next state to 'parking'")
