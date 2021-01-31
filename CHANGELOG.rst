@@ -21,6 +21,7 @@ Added
 ~~~~~
 
 * Simple example script for creating a ``POCS`` instance with all simulators. #1074
+* Using ``threading.excepthook`` to log errors in camera exposure threads. #1074
 
 Changed
 ~~~~~~~
