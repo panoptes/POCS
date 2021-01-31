@@ -178,16 +178,17 @@ class Image(PanBase):
             # Precess to the current equinox otherwise the RA - LST method will be off.
             self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
-    def solve_field(self, **kwargs):
+    def solve_field(self, radius=15, **kwargs):
         """ Solve field and populate WCS information.
 
         Args:
+            radius (scalar): The radius (in degrees) to search near RA-Dec. Defaults to 15°.
             **kwargs: Options to be passed to `get_solve_field`.
         """
         solve_info = fits_utils.get_solve_field(self.fits_file,
                                                 ra=self.header_pointing.ra.value,
                                                 dec=self.header_pointing.dec.value,
-                                                radius=15,  # degrees
+                                                radius=radius,
                                                 **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']

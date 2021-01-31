@@ -28,6 +28,7 @@ Changed
 
 * Updated install script (includes ZSH again). #1074
 * Pointing state is skipped if ``num_pointing_images==0`. #1074
+* The default ``radius`` for solving images is 15°.
 
 Docker
 ~~~~~~
