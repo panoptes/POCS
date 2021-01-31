@@ -7,9 +7,9 @@ from astropy.coordinates import SkyCoord
 
 from panoptes.pocs.base import PanBase
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import CountdownTimer
 
 
 class AbstractMount(PanBase):
@@ -169,6 +169,11 @@ class AbstractMount(PanBase):
     def is_parked(self):
         """ bool: Mount parked status. """
         return self._is_parked
+
+    @property
+    def at_mount_park(self):
+        """ bool: True if mount is at park position. """
+        return self._at_mount_park
 
     @property
     def is_home(self):
@@ -481,9 +486,9 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        assert isinstance(coords, tuple), self.logger.warning(
-            'slew_to_coordinates expects RA-Dec coords')
-
+        if not isinstance(coords, SkyCoord):
+            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
+                            f" got {type(coords)}.")
         response = 0
 
         if not self.is_parked:
@@ -631,7 +636,7 @@ class AbstractMount(PanBase):
         else:
             self.logger.warning('Problem with slew_to_park')
 
-        while not self._at_mount_park:
+        while not self.at_mount_park:
             self.status
             time.sleep(2)
 

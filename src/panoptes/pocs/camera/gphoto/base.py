@@ -3,11 +3,9 @@ import shutil
 import subprocess
 
 from panoptes.pocs.camera import AbstractCamera
-from panoptes.utils import error, listify
-
-import re
-
+from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
+from panoptes.utils.utils import listify
 
 
 def parse_config(lines):  # pragma: no cover

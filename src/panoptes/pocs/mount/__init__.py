@@ -1,7 +1,7 @@
 from contextlib import suppress
 from glob import glob
 
-from panoptes.pocs.mount.mount import AbstractMount  # pragma: no flakes
+from panoptes.pocs.mount.mount import AbstractMount  # noqa
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
@@ -104,6 +104,7 @@ def create_mount_from_config(mount_info=None,
 
 def create_mount_simulator(mount_info=None,
                            earth_location=None,
+                           db_type='memory',
                            *args, **kwargs):
     # Remove mount simulator
     current_simulators = get_config('simulator', default=[])
@@ -130,7 +131,7 @@ def create_mount_simulator(mount_info=None,
     except error.NotFound as e:
         raise error.MountNotFound(f'Error loading mount module: {e!r}')
 
-    mount = module.Mount(earth_location, *args, **kwargs)
+    mount = module.Mount(earth_location, db_type=db_type, *args, **kwargs)
 
     logger.success(f"{mount_config['driver'].title()} mount created")
 

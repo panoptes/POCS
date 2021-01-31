@@ -6,16 +6,14 @@ from datetime import datetime
 from astropy import units as u
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
-
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
-from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
-
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
 
 
@@ -246,7 +244,7 @@ class Observatory(PanBase):
             setattr(self, hw_type, new_hardware)
         elif new_hardware is None:
             if hw_attr is not None:
-                self.logger.success(f'Removing {hw_attr=}')
+                self.logger.success(f'Removing hw_attr={hw_attr!r}')
             setattr(self, hw_type, None)
         else:
             raise TypeError(f"{hw_type.title()} is not an instance of {str(hw_class)} class")
@@ -646,34 +644,29 @@ class Observatory(PanBase):
             cameras = {cam_name: self.cameras[
                 cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
             if cameras == {}:
-                self.logger.warning(
-                    "Passed a list of camera names ({}) but no matches found".format(camera_list))
+                self.logger.warning(f"No matching camera names in ({camera_list})")
         else:
-            # No cameras specified, will try to autofocus all cameras from
-            # self.cameras
+            # No cameras specified, will try to autofocus all cameras from self.cameras
             cameras = self.cameras
 
         autofocus_events = dict()
 
         # Start autofocus with each camera
         for cam_name, camera in cameras.items():
-            self.logger.debug("Autofocusing camera: {}".format(cam_name))
+            self.logger.debug(f"Autofocusing camera: {cam_name}")
 
             try:
                 assert camera.focuser.is_connected
             except AttributeError:
-                self.logger.debug(
-                    'Camera {} has no focuser, skipping autofocus'.format(cam_name))
+                self.logger.debug(f'Camera {cam_name} has no focuser, skipping autofocus')
             except AssertionError:
-                self.logger.debug(
-                    'Camera {} focuser not connected, skipping autofocus'.format(cam_name))
+                self.logger.debug(f'Camera {cam_name} focuser not connected, skipping autofocus')
             else:
                 try:
                     # Start the autofocus
                     autofocus_event = camera.autofocus(**kwargs)
                 except Exception as e:
-                    self.logger.error(
-                        "Problem running autofocus: {}".format(e))
+                    self.logger.error(f"Problem running autofocus: {e!r}")
                 else:
                     autofocus_events[cam_name] = autofocus_event
 

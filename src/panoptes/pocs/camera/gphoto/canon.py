@@ -1,17 +1,16 @@
 import os
 import subprocess
 from abc import ABC
-
-from astropy import units as u
 from threading import Event
 from threading import Timer
 
-from panoptes.utils import current_time
-from panoptes.utils import CountdownTimer
-from panoptes.utils import error
-from panoptes.utils import get_quantity_value
-from panoptes.utils.images import cr2 as cr2_utils
+from astropy import units as u
 from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
+from panoptes.utils import error
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractGPhotoCamera, ABC):
@@ -149,7 +148,7 @@ class Camera(AbstractGPhotoCamera, ABC):
 
         # Take Picture
         try:
-            self.is_exposing = True
+            self._is_exposing_event.set()
             self._exposure_proc = subprocess.Popen(run_cmd,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.PIPE,
@@ -197,4 +196,4 @@ class Camera(AbstractGPhotoCamera, ABC):
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')
             self._exposure_proc = None
-            self.is_exposing = False  # Make sure this gets set regardless of readout errors
+            self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors

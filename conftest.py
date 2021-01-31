@@ -1,17 +1,17 @@
 import logging
 import os
-import stat
-import pytest
-import tempfile
 import shutil
+import stat
+import tempfile
 from contextlib import suppress
+
+import pytest
 from _pytest.logging import caplog as _caplog  # noqa
-
 from panoptes.pocs import hardware
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
-from panoptes.utils.database import PanDB
-
-from panoptes.pocs.utils.logger import get_logger, PanLogger
+from panoptes.utils.config.server import config_server
 
 # TODO download IERS files.
 
@@ -20,17 +20,18 @@ _all_databases = ['file', 'memory']
 TESTING_LOG_LEVEL = 'TRACE'
 LOGGER_INFO = PanLogger()
 
-logger = get_logger(console_log_file=TESTING_LOG_LEVEL)
+logger = get_logger(console_log_level=TESTING_LOG_LEVEL)
 logger.enable('panoptes')
 # Add a level above TRACE and below DEBUG
 logger.level("testing", no=15, icon="🤖", color="<LIGHT-BLUE><white>")
 log_fmt = "<lvl>{level:.1s}</lvl> " \
-          "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
-          "<blue> ({time:HH:mm:ss.ss})</> " \
+          "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
+          "<blue> ({time:HH:mm:ss zz})</> " \
           "| <c>{name} {function}:{line}</c> | " \
           "<lvl>{message}</lvl>"
 
-log_file_path = os.path.expandvars('${PANLOG}/panoptes-testing.log')
+log_dir = os.getenv('PANLOG', 'logs')
+log_file_path = os.path.join(log_dir, 'panoptes-testing.log')
 startup_message = f' STARTING NEW PYTEST RUN - LOGS: {log_file_path} '
 logger.add(log_file_path,
            enqueue=True,  # multiprocessing
@@ -48,6 +49,21 @@ logger.log('testing', '*' * 25 + startup_message + '*' * 25)
 
 # Make the log file world readable.
 os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+
+def pytest_configure(config):
+    """Set up the testing."""
+    logger.info('Setting up the config server.')
+    config_file = 'tests/testing.yaml'
+
+    host = 'localhost'
+    port = '8765'
+
+    os.environ['PANOPTES_CONFIG_HOST'] = host
+    os.environ['PANOPTES_CONFIG_PORT'] = port
+
+    config_server(config_file, host=host, port=port, load_local=False, save_local=False)
+    logger.success('Config server set up')
 
 
 def pytest_addoption(parser):
@@ -71,6 +87,11 @@ def pytest_addoption(parser):
         help=f"Test databases in the list. List items can include: {db_names}. Note that "
              f"travis-ci will test all of "
              f"them by default.")
+    group.addoption(
+        "--theskyx",
+        action='store_true',
+        default=False,
+        help=f"Test TheSkyX commands, default False -- CURRENTLY NOT WORKING!")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -94,7 +115,7 @@ def pytest_collection_modifyitems(config, items):
     # with_hardware is a list of hardware names for which we have that hardware attached.
     with_hardware = hardware.get_simulator_names(simulator=config.getoption('--with-hardware'))
 
-    for name in without_hardware:
+    for name in without_hardware:  # noqa
         # User does not want to run tests that interact with hardware called name,
         # whether it is marked as with_name or without_name.
         if name in with_hardware:
@@ -145,24 +166,6 @@ def pytest_runtest_logfinish(nodeid, location):
         logger.log('testing', '##########' * 8)
 
 
-def pytest_runtest_logreport(report):
-    """Adds the failure info that pytest prints to stdout into the log."""
-    if report.skipped or report.outcome != 'failed':
-        return
-    with suppress(Exception):
-        logger.log('testing', '')
-        logger.log('testing',
-                   f'  TEST {report.nodeid} FAILED during {report.when} {report.longreprtext} ')
-        if report.capstdout:
-            logger.log('testing',
-                       f'============ Captured stdout during {report.when} {report.capstdout} '
-                       f'============')
-        if report.capstderr:
-            logger.log('testing',
-                       f'============ Captured stdout during {report.when} {report.capstderr} '
-                       f'============')
-
-
 @pytest.fixture(scope='session')
 def config_host():
     return os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
@@ -173,23 +176,14 @@ def config_port():
     return os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
 
-@pytest.fixture(scope='session')
-def config_path():
-    return os.getenv('PANOPTES_CONFIG_FILE', '/var/panoptes/POCS/tests/testing.yaml')
-
-
 @pytest.fixture
 def temp_file(tmp_path):
     d = tmp_path
     d.mkdir(exist_ok=True)
     f = d / 'temp'
     yield f
-    f.unlink(missing_ok=True)
-
-
-@pytest.fixture(scope='session')
-def db_name():
-    return 'panoptes_testing'
+    with suppress(FileNotFoundError):
+        f.unlink()
 
 
 @pytest.fixture(scope='session')
@@ -197,27 +191,6 @@ def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp('images')
     set_config('directories.images', str(directory))
     return str(directory)
-
-
-@pytest.fixture(scope='function', params=_all_databases)
-def db_type(request, db_name):
-    db_list = request.config.option.test_databases
-    if request.param not in db_list and 'all' not in db_list:
-        pytest.skip(f"Skipping {request.param} DB, set --test-all-databases=True")
-
-    PanDB.permanently_erase_database(request.param, db_name, really='Yes', dangerous='Totally')
-    return request.param
-
-
-@pytest.fixture(scope='function')
-def db(db_type, db_name):
-    return PanDB(db_type=db_type, db_name=db_name, connect=True)
-
-
-@pytest.fixture(scope='function')
-def memory_db(db_name):
-    PanDB.permanently_erase_database('memory', db_name, really='Yes', dangerous='Totally')
-    return PanDB(db_type='memory', db_name=db_name)
 
 
 @pytest.fixture(scope='session')
@@ -262,7 +235,7 @@ def noheader_fits_file(data_dir):
 
 
 @pytest.fixture(scope='function')
-def cr2_file(data_dir):
+def cr2_file(data_dir):  # noqa
     cr2_path = os.path.join(data_dir, 'canon.cr2')
 
     if not os.path.exists(cr2_path):

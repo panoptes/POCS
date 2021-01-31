@@ -2,22 +2,21 @@ import copy
 import os
 import threading
 import time
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
-from abc import ABCMeta, abstractmethod
 
+import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
-import astropy.units as u
-
-from panoptes.utils import current_time
+from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
-from panoptes.utils import get_quantity_value
-from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
-
-from panoptes.pocs.base import PanBase
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -107,7 +106,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._connected = False
         self._current_observation = None
         self._is_exposing_event = threading.Event()
-        self.is_exposing = False
         self._exposure_error = None
 
         # By default assume camera isn't capable of internal darks.
@@ -117,16 +115,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.subcomponents = dict()
         for attr_name, class_path in self._SUBCOMPONENT_LIST.items():
             # Create the subcomponent as an attribute with default None.
-            self.logger.debug(f'Setting default {attr_name=} to None')
+            self.logger.debug(f'Setting default attr_name={attr_name!r} to None')
             setattr(self, attr_name, None)
 
             # If given subcomponent class (or dict), try to create instance.
             subcomponent = kwargs.get(attr_name)
             if subcomponent is not None:
-                self.logger.debug(f'Found {subcomponent=}, creating instance')
+                self.logger.debug(f'Found subcomponent={subcomponent!r}, creating instance')
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(f'Assigning {subcomponent=} to {attr_name=}')
+                self.logger.debug(
+                    f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
@@ -302,13 +301,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ True if an exposure is currently under way, otherwise False. """
         return self._is_exposing_event.is_set()
 
-    @is_exposing.setter
-    def is_exposing(self, set_exposing):
-        if set_exposing:
-            self._is_exposing_event.set()
-        else:
-            self._is_exposing_event.clear()
-
     @property
     def readiness(self):
         """ Dictionary detailing the readiness of the camera system to take an exposure. """
@@ -432,6 +424,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       filename=None,
                       dark=False,
                       blocking=False,
+                      timeout=None,
                       *args,
                       **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -447,11 +440,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-
+            timeout (astropy.Quantity): The timeout to use for the exposure. If None, will be
+                calculated automatically.
         Returns:
-            threading.Event: Event that indicates an exposure is in progress.
-                Will be set to False when exposure is complete.
-
+            threading.Thread: The readout thread, which joins when readout has finished.
         """
         self._exposure_error = None
 
@@ -476,7 +468,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       self.filterwheel.filter_name(self.filterwheel._dark_position))
                 except (AttributeError, error.NotFound):
                     # No filterwheel, or no opaque filter (dark_position not set)
-                    self.logger.warning("Taking dark exposure without shutter or opaque filter. Is the lens cap on?")
+                    self.logger.warning("Taking dark exposure without shutter or opaque filter."
+                                        " Is the lens cap on?")
             else:
                 with suppress(AttributeError, error.NotFound):
                     # Ignoring exceptions from no filterwheel, or no last light position
@@ -491,27 +484,36 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(f'Taking {seconds=} exposure on {self.name}: {filename=}')
+        self.logger.debug(
+            f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
 
         header = self._create_fits_header(seconds, dark)
 
         if self.is_exposing:
-            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
+            err = error.PanError(
+                f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
         try:
             # Camera type specific exposure set up and start
-            self.is_exposing = True
+            self._is_exposing_event.set()
             readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
-            self.is_exposing = False
+            self._is_exposing_event.clear()
             raise err
 
+        def log_thread_error(exc_info):
+            self.logger.error(f'{exc_info!r}')
+
+        threading.excepthook = log_thread_error
+
         # Start polling thread that will call camera type specific _readout method when done
-        readout_thread = threading.Thread(target=self._poll_exposure, args=(readout_args,))
+        readout_thread = threading.Thread(target=self._poll_exposure,
+                                          args=(readout_args, seconds),
+                                          kwargs=dict(timeout=timeout))
         readout_thread.start()
 
         if blocking:
@@ -522,9 +524,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
             while not os.path.exists(filename):
                 time.sleep(0.1)
-            self.logger.debug(f"Blocking complete on {self} for {filename=}")
+            self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
-        return self._is_exposing_event
+        return readout_thread
 
     def process_exposure(self,
                          metadata,
@@ -583,8 +585,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Make sure image exists.
         if not os.path.exists(file_path):
             observation_event.set()
-            raise FileNotFoundError(f"Expected image at {file_path=} does not exist or " +
-                                    "cannot be accessed, cannot process.")
+            raise FileNotFoundError(
+                f"Expected image at {file_path=!r} does not exist or " +
+                "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, metadata)
@@ -595,7 +598,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                self.logger.debug(f"Making pretty image for {file_path=}")
+                self.logger.debug(f"Making pretty image for file_path={file_path!r}")
                 link_path = None
                 if metadata['is_primary']:
                     # This should be in the config somewhere.
@@ -614,7 +617,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.db.insert_current('observations', metadata)
 
         if compress_fits:
-            self.logger.debug(f'Compressing {file_path=}')
+            self.logger.debug(f'Compressing file_path={file_path!r}')
             compressed_file_path = fits_utils.fpack(file_path)
             self.logger.debug(f'Compressed {compressed_file_path}')
 
@@ -625,14 +628,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   seconds=None,
                   focus_range=None,
                   focus_step=None,
-                  thumbnail_size=None,
+                  cutout_size=None,
                   keep_files=None,
                   take_dark=None,
                   merit_function='vollath_F4',
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=False,
+                  make_plots=None,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -647,7 +650,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
                 encoder units. Specify to override values from config.
-            thumbnail_size (int, optional): Size of square central region of image
+            cutout_size (int, optional): Size of square central region of image
                 to use, default 500 x 500 pixels.
             keep_files (bool, optional): If True will keep all images taken
                 during focusing. If False (default) will delete all except the
@@ -664,7 +667,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
             make_plots (bool, optional: Whether to write focus plots to images folder, default
-                False.
+                behaviour is to check the focuser autofocus_make_plots attribute.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -682,7 +685,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       focus_step=focus_step,
                                       keep_files=keep_files,
                                       take_dark=take_dark,
-                                      thumbnail_size=thumbnail_size,
+                                      cutout_size=cutout_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
                                       mask_dilations=mask_dilations,
@@ -691,20 +694,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
+    def get_cutout(self, seconds, file_path, cutout_size, keep_file=False, *args, **kwargs):
         """
-        Takes an image and returns a thumbnail.
+        Takes an image and returns a thumbnail cutout.
 
         Takes an image, grabs the data, deletes the FITS file and
-        returns a thumbnail from the centre of the image.
+        returns a cutout from the centre of the image.
 
         Args:
             seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
             file_path (str): path to (temporarily) save the image file to.
-            thumbnail_size (int): size of the square region of the centre of the image to return.
+            cutout_size (int): size of the square region of the centre of the image to return.
             keep_file (bool, optional): if True the image file will be deleted, if False it will
                 be kept.
-            *args, **kwargs: passed to the take_exposure() method
+            *args, **kwargs: passed to the `take_exposure` method
         """
         kwargs['blocking'] = True
         self.take_exposure(seconds, filename=file_path, *args, **kwargs)
@@ -713,7 +716,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        return img_utils.crop_data(image, box_width=thumbnail_size)
+
+        # Make sure cutout is not bigger than image.
+        actual_size = min(cutout_size, *image.shape)
+        if actual_size != cutout_size:  # noqa
+            self.logger.warning(f'Requested cutout size is larger than image, using {actual_size}')
+
+        return img_utils.crop_data(image, box_width=cutout_size)
 
     @abstractmethod
     def _set_target_temperature(self, target):
@@ -780,13 +789,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
-        timer_duration = timeout or self._timeout + self._readout_time
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
+        reached, an `error.Timeout` is raised.
+        """
+        if timeout is None:
+            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+        else:
+            timer_duration = timeout
+        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
         timer = CountdownTimer(duration=timer_duration)
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self} to complete"
+                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on"
+                    f" {self} to complete"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:
@@ -804,7 +821,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 raise err
         finally:
             # Make sure this gets set regardless of any errors
-            self.is_exposing = False
+            self._is_exposing_event.clear()
 
     def _create_fits_header(self, seconds, dark=None):
         header = fits.Header()
@@ -874,7 +891,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(
+            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -931,7 +949,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(f'Observation setup: {exptime=} {file_path=} {image_id=} {metadata=}')
+        self.logger.debug(
+            f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata='
+            f'{metadata!r}')
 
         return exptime, file_path, image_id, metadata
 
@@ -962,7 +982,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'tracking_rate_ra': {'keyword': 'RA-RATE', 'comment': 'RA Tracking Rate'},
         }
 
-        self.logger.debug(f"Updating FITS headers: {file_path} with {metadata=}")
+        self.logger.debug(f"Updating FITS headers: {file_path} with metadata={metadata!r}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             # Try to lookup header from list above, otherwise add whatever was given.
@@ -1012,31 +1032,34 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         sub_parts = class_path.split('.')
         base_class_name = sub_parts.pop()
         base_module_name = '.'.join(sub_parts)
-        self.logger.debug(f'Loading {base_module_name=}')
+        self.logger.debug(f'Loading base_module_name={base_module_name!r}')
         try:
             base_module = load_module(base_module_name)
         except error.NotFound as err:
-            self.logger.critical(f"Couldn't import {base_module_name=}")
+            self.logger.critical(f"Couldn't import base_module_name={base_module_name!r}")
             raise err
 
         # Get the base class from the loaded module.
-        self.logger.debug(f'Trying to get {base_class_name=} from {base_module}')
+        self.logger.debug(f'Trying to get base_class_name={base_class_name!r} from {base_module}')
         base_class = getattr(base_module, base_class_name)
 
         # If we get an instance, just use it.
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"{subcomponent=} is already a {base_class=} instance")
+            self.logger.debug(
+                f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
         # If we get a dict, use them as params to create instance.
         elif isinstance(subcomponent, dict):
             try:
                 model = subcomponent['model']
-                self.logger.debug(f"{subcomponent=} is a dict but has {model=} keyword, "
-                                  f"trying to create a {base_class=} instance")
+                self.logger.debug(
+                    f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
+                    f"trying to create a base_class={base_class!r} instance")
                 base_class = load_module(model)
             except (KeyError, error.NotFound) as err:
-                raise error.NotFound(f"Can't create a {class_path=} from {subcomponent=}")
+                raise error.NotFound(
+                    f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
 
-            self.logger.debug(f'Creating the {base_class_name=} object from dict')
+            self.logger.debug(f'Creating the base_class_name={base_class_name!r} object from dict')
 
             # Copy dict creation items and add the camera.
             subcomponent_kwargs = copy.deepcopy(subcomponent)
@@ -1045,13 +1068,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             try:
                 subcomponent = base_class(**subcomponent_kwargs)
             except TypeError:
-                raise error.NotFound(f'{base_class=} is not a callable class. '
+                raise error.NotFound(f'base_class={base_class!r} is not a callable class. '
                                      f'Please specify full path to class (not module).')
             self.logger.success(f'{subcomponent} created for {base_class_name}')
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
-            raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
+            raise error.NotFound(
+                f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
 
         # Give the subcomponent a reference back to the camera.
         setattr(subcomponent, 'camera', self)
@@ -1073,7 +1097,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 s += f" with {sub_names}"
 
         except Exception as e:
-            self.logger.warning(f'Unable to stringify camera: {e=}')
+            self.logger.warning(f'Unable to stringify camera: e={e!r}')
             s = str(self.__class__)
 
         return s

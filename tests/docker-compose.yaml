@@ -1,0 +1,25 @@
+version: '3.7'
+services:
+  pocs:
+    image: panoptes-pocs:testing
+    build:
+      context: ../
+      dockerfile: tests/Dockerfile
+    init: true
+    tty: true
+    deploy:
+      mode: global
+    environment:
+      - PANDIR=/POCS
+      - POCS=/POCS
+      - PANOPTES_CONFIG_FILE=/POCS/tests/testing.yaml
+      - PANOPTES_CONFIG_HOST=localhost
+      - PANOPTES_CONFIG_PORT=8765
+    privileged: true
+    network_mode: host
+    command: [ "pytest" ]
+    volumes:
+      - "$PWD/logs:/POCS/logs"
+      - "$PWD/build:/POCS/build"
+      - "$PWD/src:/POCS/src"
+      - "$PWD/tests:/POCS/tests"

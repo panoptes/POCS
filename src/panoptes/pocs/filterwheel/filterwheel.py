@@ -1,12 +1,12 @@
 import threading
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
-from panoptes.utils import listify
 from panoptes.utils import error
+from panoptes.utils.utils import listify
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -222,14 +222,15 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
-            self.logger.debug(f"{self} already at position {new_position}" + \
+            self.logger.debug(f"{self} already at position {new_position}"
                               f" ({self.filter_name(new_position)})")
             return self._move_event
 
+        # Store current position so we can revert back with move_to_light_position()
         if new_position == self._dark_position:
-            # Moving from light into darkness... Store current position so we can revert
-            # back to it if requested with move_to_light_position()
             self._last_light_position = self.position
+        else:
+            self._last_light_position = new_position
 
         self.logger.info("Moving {} to position {} ({})".format(
             self, new_position, self.filter_name(new_position)))
@@ -320,7 +321,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             with suppress(AttributeError):
                 s += f' [Camera: {self.camera.name}]'
         except Exception as e:  # noqa
-            self.logger.warning(f'Unable to stringify filterwheel: {e=}')
+            self.logger.warning(f'Unable to stringify filterwheel: e={e!r}')
             s = str(self.__class__)
 
         return s

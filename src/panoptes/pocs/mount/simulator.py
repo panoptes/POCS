@@ -3,7 +3,7 @@ from threading import Timer
 
 from astropy import units as u
 
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
 from panoptes.pocs.mount import AbstractMount
 

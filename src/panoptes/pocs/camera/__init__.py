@@ -88,7 +88,7 @@ def create_cameras_from_config(config=None,
         logger.info('No camera information in config.')
         return None
 
-    logger.debug(f"{camera_config=}")
+    logger.debug(f"camera_config={camera_config!r}")
     camera_defaults = camera_config.get('defaults', dict())
 
     cameras = cameras or OrderedDict()
@@ -107,7 +107,7 @@ def create_cameras_from_config(config=None,
         if len(ports) == 0:
             raise error.CameraNotFound(msg="No cameras detected. For testing, use camera simulator.")
         else:
-            logger.debug(f"Detected {ports=}")
+            logger.debug(f"Detected ports={ports!r}")
 
     primary_camera = None
 
@@ -136,7 +136,7 @@ def create_cameras_from_config(config=None,
 
         try:
             module = load_module(model)
-            logger.debug(f'Camera module: {module=}')
+            logger.debug(f'Camera module: module={module!r}')
 
             if recreate_existing:
                 with suppress(AttributeError):
@@ -149,7 +149,7 @@ def create_cameras_from_config(config=None,
                 if hasattr(module, 'Camera'):
                     camera = module.Camera(**device_config)
                 else:
-                    raise error.NotFound(f'{module=} does not have a Camera object')
+                    raise error.NotFound(f'module={module!r} does not have a Camera object')
         except error.NotFound:
             logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
@@ -160,7 +160,7 @@ def create_cameras_from_config(config=None,
                 camera.is_primary = True
                 primary_camera = camera
 
-            logger.debug(f"Camera created: {camera=}")
+            logger.debug(f"Camera created: camera={camera!r}")
 
             cameras[cam_name] = camera
 
@@ -169,7 +169,7 @@ def create_cameras_from_config(config=None,
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f'No primary camera given, assigning the first camera ({auto_primary=})')
+        logger.info(f'No primary camera given, assigning the first camera (auto_primary={auto_primary!r})')
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 

@@ -19,8 +19,8 @@ class PanLogger:
         self.padding = 0
         # Level Time_UTC Time_Local dynamic_padding Message
         self.fmt = "<lvl>{level:.1s}</lvl> " \
-                   "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</>" \
-                   " <blue>({time:HH:mm:ss.ss})</> " \
+                   "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
+                   " <blue>({time:HH:mm:ss zz})</> " \
                    "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
                    "<lvl>{message}</lvl>\n"
         self.handlers = dict()
@@ -38,7 +38,7 @@ LOGGER_INFO = PanLogger()
 
 def get_logger(console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
-               log_dir=None,
+               log_dir='logs',
                console_log_level='DEBUG',
                stderr_log_level='INFO',
                ):
@@ -50,9 +50,6 @@ def get_logger(console_log_file='panoptes.log',
 
     Note: This clobbers all existing loggers and forces the two files.
 
-    Note: The `log_dir` is determined first from `$PANLOG` if it exists, then
-      `$PANDIR/logs` if `$PANDIR` exists, otherwise defaults to `.`.
-
     Args:
         console_log_file (str|None, optional): Filename for the file that is suitable for
             tailing in a shell (i.e., read by humans). This file is rotated daily however
@@ -61,7 +58,7 @@ def get_logger(console_log_file='panoptes.log',
             and is serialized and rotated automatically. Useful for uploading to log service
             website. Defaults to `panoptes_{time:YYYYMMDD!UTC}.log.gz` with a daily rotation
             at 11:30am and a 7 day retention policy. If `None` then no file will be generated.
-        log_dir (str|None, optional): The directory to place the log file, see note.
+        log_dir (str|None, optional): The directory to place the log file, default local `logs`.
         stderr_log_level (str, optional): The log level to show on stderr, default INFO.
         console_log_level (str, optional): Log level for console file output, defaults to 'DEBUG'.
             Note that it should be a string that matches standard `logging` levels and
@@ -71,12 +68,6 @@ def get_logger(console_log_file='panoptes.log',
     Returns:
         `loguru.logger`: A configured instance of the logger.
     """
-
-    if log_dir is None:
-        try:
-            log_dir = os.environ['PANLOG']
-        except KeyError:
-            log_dir = os.path.join(os.getenv('PANDIR', '.'), 'logs')
     log_dir = os.path.normpath(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
@@ -86,7 +77,7 @@ def get_logger(console_log_file='panoptes.log',
             loguru_logger.remove(0)
 
         stderr_format = "<lvl>{level:.1s}</lvl> " \
-                        "<light-blue>{time:MM-DD HH:mm:ss.ss!UTC}</> " \
+                        "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> " \
                         "<lvl>{message}</lvl>"
 
         stderr_id = loguru_logger.add(

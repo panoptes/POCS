@@ -169,10 +169,10 @@ class Camera(AbstractSDKCamera):
             except RuntimeError as err:
                 raise error.PanError('Readout error on {}, {}'.format(self, err))
             else:
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger)
+                fits_utils.write_fits(data=image_data,
+                                      header=header,
+                                      filename=filename)
+
         elif exposure_status == 'CS_IDLE':
             raise error.PanError("Exposure missing on {}".format(self))
         else:

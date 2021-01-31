@@ -5,7 +5,7 @@ from string import Template
 
 from panoptes.pocs import dome
 from panoptes.utils import error
-from panoptes.utils import theskyx
+from panoptes.pocs.utils import theskyx
 from panoptes.utils.serializers import from_json
 
 
