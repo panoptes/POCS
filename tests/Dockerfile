@@ -10,6 +10,7 @@ ENV POCS "/POCS"
 
 ARG userid=1000
 ARG pip_extras="[focuser,google,testing]"
+ARG index_url="http://data.astrometry.net/4100/index-4111.fits"
 
 USER "${userid}"
 
@@ -21,7 +22,7 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo apt-get install -y --no-install-recommends \
         gphoto2 && \
     # Index file used for tests.
-    sudo wget http://data.astrometry.net/4100/index-4111.fits -O /usr/share/astrometry/index-4111.fits
+    sudo wget "${index_url}" -O /usr/share/astrometry/index-4111.fits && \
     # Support directories.
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
