@@ -1,59 +1,46 @@
 version: '3.7'
 services:
-  config-server:
-    image: panoptes-pocs:latest
+  pocs-config-server:
+    image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
     build:
       context: ../
-      dockerfile: docker/Dockerfile
+      dockerfile: ./docker/Dockerfile
+    deploy:
+      mode: global
+    restart: on-failure
+    init: true
+    container_name: pocs-config-server
+    hostname: pocs-config-server
+    network_mode: host
+    environment:
+      PANOPTES_CONFIG_HOST: 0.0.0.0
+      PANOPTES_CONFIG_PORT: 6563
+      PANOPTES_CONFIG_FILE:
+    command: [ "panoptes-config-server --verbose run --no-save-local --no-load-local --config-file /POCS/conf_files/pocs.yaml" ]
+    volumes:
+      - "$PWD/logs:/POCS/logs"
+      - "$PWD/conf_files:/POCS/conf_files"
+  pocs-control:
+    image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
+    depends_on:
+      - pocs-config-server
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    deploy:
+      mode: global
     init: true
     tty: true
-    container_name: config-server
-    hostname: config-server
-    network_mode: host
-    environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANLOG:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
-    restart: on-failure
-    volumes:
-      - pocsdir:/var/panoptes/POCS
-      - confdir:/var/panoptes/config_files
-    command: [ "panoptes-config-server --verbose run" ]
-  pocs:
-    image: panoptes-pocs:latest
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
-    init: true
-    container_name: pocs
-    hostname: pocs
+    stdin_open: true
     privileged: true
+    container_name: pocs-control
+    hostname: pocs-control
     network_mode: host
     environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANLOG:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
+      PANOPTES_CONFIG_HOST: localhost
+      PANOPTES_CONFIG_PORT: 6563
+    command: [ "wait-for-it localhost:6563 -- ipython -i /POCS/scripts/load-simulators.py" ]
     volumes:
-      - pocsdir:/var/panoptes/POCS
-      - /var/panoptes/logs:/var/panoptes/logs
-    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- echo POCS yo!" ]
-volumes:
-  pocsdir:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/panoptes/POCS
-      o: bind
-  confdir:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/panoptes/config_files
-      o: bind
+      - "$PWD/logs:/POCS/logs"
+      - "/var/panoptes/images:/POCS/images"
+      - "/var/panoptes/json_store:/POCS/json_store"

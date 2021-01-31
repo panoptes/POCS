@@ -2,8 +2,33 @@
 Changelog
 =========
 
-[0.7.dev8]
+[0.7.8dev]
 ----------
+
+Generic
+~~~~~~~
+
+* **Breaking changes** #1074
+
+  * Python 3.8
+  * Default service install does not include ``focuser`` dependencies.
+  * Default Docker command is a ``ipython`` console with the simulators loaded.
+  * Docker image only contains limited set of files.
+  * Directories inside the service image have been simplified for easier mapping onto desired targets on the host. The main top-level directory (i.e. ``$PANDIR``) is now ``/POCS`` with other folders nested underneath.
+  * Removing ``peas`` scripts.
+
+Added
+~~~~~
+
+* Simple example script for creating a ``POCS`` instance with all simulators. #1074
+* Using ``threading.excepthook`` to log errors in camera exposure threads. #1074
+
+Changed
+~~~~~~~
+
+* Updated install script (includes ZSH again). #1074
+* Pointing state is skipped if ``num_pointing_images==0`. #1074
+* The default ``radius`` for solving images is 15°.
 
 Docker
 ~~~~~~
@@ -11,6 +36,16 @@ Docker
 * ``PANUSER`` owns ``conda``. #1068
 * Dockerfile cleanup for better builds. #1068
 * Docker image does not contain ``focuser`` extras by default. #1068
+* Images use ``gcr.io/panoptes-exp/panoptes-utils`` as base. #1074
+* Docker files are all contained within ``docker`` folder. #1074
+* Docker image has tycho2 10-19 index files for plate-solving. #1074
+* Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
+* Config changed to run with simulators out of the box. #1074
+
+Removing
+~~~~~~~~
+
+* Old scripts and config files. #1074
 
 Testing
 ~~~~~~~
@@ -18,6 +53,7 @@ Testing
 * Fix the log level in conftest. #1068
 * Move all tests into ``tests`` subdir from project root. #1068
 * Cleanup of testing setup, especially for GHA. #1068
+* Simplify testing service by removing ``tests/env`` file. #1074
 
 [0.7.7] - 2021-01-19
 --------------------
