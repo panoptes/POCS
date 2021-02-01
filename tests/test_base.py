@@ -3,10 +3,6 @@ from panoptes.pocs.base import PanBase
 from panoptes.utils.database import PanDB
 
 
-def test_fail():
-    assert False
-
-
 def test_with_logger():
     PanBase()
 
