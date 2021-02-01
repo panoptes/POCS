@@ -1,5 +1,3 @@
-import pytest
-
 from panoptes.pocs.base import PanBase
 
 from panoptes.utils.database import PanDB
