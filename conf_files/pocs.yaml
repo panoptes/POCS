@@ -27,17 +27,15 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
-  base: /var/panoptes
-  images: images
-  data: data
-  resources: POCS/resources/
-  targets: POCS/resources/targets
-  mounts: POCS/resources/mounts
+  base: /POCS
+  images: /POCS/images
+  mounts: /POCS/resources/mounts
+  targets: /POCS/conf_files/targets
 
 db:
   name: panoptes
   type: file
-  folder: metadata
+  folder: json_store
 
 wait_delay: 180 # time in seconds before checking safety/etc while waiting.
 max_transition_attempts: 5  # number of transitions attempts.
@@ -63,48 +61,29 @@ mount:
   max_tracking_threshold: 99999 # ms
 
 pointing:
+  max_iterations: 5  # Set to 0 to disable
   auto_correct: True
   threshold: 100 # arcseconds ~ 10 pixels
   exptime: 30 # seconds
-  max_iterations: 5
 
 cameras:
   defaults:
     primary: None
     auto_detect: False
-    file_extension: fits
-    compress_fits: False
-    make_pretty_images: False
-    keep_jpgs: False
-    readout_time: 0.5  # seconds
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: True
+    readout_time: 1.0  # seconds
     timeout: 10  # seconds
     filter_type: RGGB
-    cooling:
-      enabled: False
-      temperature:
-        target: 0  # celsius
-        tolerance: 0.1  # celsius
-      stable_time: 60  # seconds
-      check_interval: 5  # seconds
-      timeout: 300  # seconds
-    filterwheel:
-      model: panoptes.pocs.filterwheel.simulator.FilterWheel
-      filter_names: [ ]
-      move_time: 0.1  # seconds
-      timeout: 0.5  # seconds
-    focuser:
-      enabled: False
-      autofocus_seconds: 0.1  # seconds
-      autofocus_size: 500  # seconds
-      autofocus_keep_files: False
-      autofocus_make_plots: False
   devices:
-    - model: panoptes.pocs.camera.gphoto.canon.Camera
-      name: dslr.00
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.sim.00
       file_extension: cr2
-    - model: panoptes.pocs.camera.gphoto.canon.Camera
-      name: dslr.01
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.sim.01
       file_extension: cr2
+      primary: True
 
 ######################### Environmental Sensors ################################
 # Configuration for the power distribution board and other environmental sensors.
@@ -154,9 +133,9 @@ observations:
 panoptes_network:
   image_storage: False
   service_account_key: # Location of JSON account key
-  project_id: panoptes-survey
+  project_id: panoptes-exp
   buckets:
-    images: panoptes-survey
+    images: panoptes-exp
 
 ############################### pocs ##################################
 # POCS status flags. The values below represent initial values but

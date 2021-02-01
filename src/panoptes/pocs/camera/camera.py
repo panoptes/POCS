@@ -506,6 +506,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._is_exposing_event.clear()
             raise err
 
+        def log_thread_error(exc_info):
+            self.logger.error(f'{exc_info!r}')
+
+        threading.excepthook = log_thread_error
+
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
                                           args=(readout_args, seconds),
@@ -582,7 +587,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not os.path.exists(file_path):
             observation_event.set()
             raise FileNotFoundError(
-                f"Expected image at file_path={file_path!r} does not exist or " +
+                f"Expected image at {file_path=!r} does not exist or " +
                 "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')

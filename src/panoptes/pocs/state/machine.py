@@ -1,14 +1,12 @@
 import os
-
 from contextlib import suppress
-from transitions.extensions.states import Tags as MachineState
 
+from transitions.extensions.states import Tags as MachineState
+from transitions import Machine
 from panoptes.utils import error
 from panoptes.utils.utils import listify
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
-
-from transitions import Machine
 
 
 class PanStateMachine(Machine):
@@ -112,8 +110,7 @@ class PanStateMachine(Machine):
         while self.keep_running:
 
             # BEFORE TRANSITION TO STATE
-            self.logger.info(f'Run loop: self.state={self.state!r}'
-                             f'self.next_state={self.next_state!r}')
+            self.logger.info(f'Run loop: {self.state!r} -> {self.next_state!r}')
 
             # Before moving to next state, wait for required horizon if necessary
             while True:
@@ -130,21 +127,19 @@ class PanStateMachine(Machine):
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
                 if self.is_dark(horizon=required_horizon):
                     break
-                self.logger.info(f"Waiting for required_horizon={required_horizon!r} for "
-                                 f"self.next_state={self.next_state!r}")
+                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")
 
                 # Sleep before checking again
                 self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
-            self.logger.info(f'Going to self.next_state={self.next_state!r}')
+            self.logger.info(f'Going to {self.next_state!r}')
             try:
                 # The state's `on_enter` logic will be performed here.
                 state_changed = self.goto_next_state()
             except Exception as e:
-                self.logger.critical(f"Problem going from self.state={self.state!r} to "
-                                     f" self.next_state={self.next_state!r}"
-                                     f", exiting loop [{e!r}]")
+                self.logger.critical(f"Problem going from {self.state!r} to {self.next_state!r}, "
+                                     f"exiting loop [{e!r}]")
                 # TODO should we automatically park here?
                 self.stop_states()
                 break
@@ -153,37 +148,34 @@ class PanStateMachine(Machine):
 
             # If we didn't successfully transition, wait a while then try again
             if not state_changed:
-                self.logger.warning(f"Failed to move from self.state={self.state!r} to "
-                                    f"self.next_state={self.next_state!r}")
+                self.logger.warning(f"Failed to move from {self.state!r} to {self.next_state!r}")
                 if self.is_safe() is False:
                     self.logger.warning(
                         "Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = 'parking'
                 elif _transition_iteration > max_transition_attempts:
                     self.logger.warning(
-                        f"Stuck in current state for "
-                        f"max_transition_attempts={max_transition_attempts!r}, parking")
+                        f"Stuck in current state for {max_transition_attempts=!r}, parking")
                     self.next_state = 'parking'
                 else:
                     _transition_iteration = _transition_iteration + 1
                     self.logger.warning(
                         f"Sleeping before trying again ({_transition_iteration}/"
                         f"{max_transition_attempts})")
-                    self.wait(with_status=False, delay=7)  # wait 7 seconds (no good reason)
+                    self.wait(delay=7)  # wait 7 seconds (no good reason)
             else:
                 _transition_iteration = 0
 
             # Note that `self.state` below has changed from above
 
-            # We started in the sleeping state, so if we are back here we have
-            # done a full iteration.
+            # We started in the sleeping state, so if we are back here we have done a full loop.
             if self.state == 'sleeping':
                 self._obs_run_retries -= 1
                 if run_once:
                     self.stop_states()
 
                 if exit_when_done:
-                    self.logger.info(f'Leaving run loop exit_when_done={exit_when_done!r}')
+                    self.logger.info(f'Leaving run loop {exit_when_done=!r}')
                     break
 
     def goto_next_state(self):

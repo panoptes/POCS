@@ -1,11 +1,10 @@
-import pytest
-
 import os
 import time
 import glob
 from ctypes.util import find_library
 from contextlib import suppress
 
+import pytest
 import astropy.units as u
 from astropy.io import fits
 import requests
@@ -13,7 +12,7 @@ import requests
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from panoptes.pocs.camera.sbig import Camera as SBIGCamera
-from panoptes.pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
+from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.fli import Camera as FLICamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
 

@@ -4,16 +4,12 @@ import time
 
 import pytest
 import requests
-
 from astropy import units as u
-
 from panoptes.pocs import hardware
-
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json, to_yaml
-
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.camera import create_cameras_from_config
@@ -113,6 +109,7 @@ def valid_observation():
         'min_nexp': 2,
         'exp_set_size': 2,
     }
+
 
 # An observation that is valid at night
 @pytest.fixture(scope='module')
@@ -432,7 +429,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
         pocs.run(run_once=True, exit_when_done=True)
 
         # After done running.
-        assert pocs.is_weather_safe() is True
+        assert pocs.is_weather_safe() is False
         pocs.power_down()
         observatory.logger.info('start_pocs EXIT')
 
