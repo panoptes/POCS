@@ -7,7 +7,7 @@ from astropy import units as u
 from astropy.coordinates import get_moon
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.observation.observation import Observation
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time

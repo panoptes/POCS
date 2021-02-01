@@ -18,7 +18,9 @@ from panoptes.pocs.camera.zwo import Camera as ZWOCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.observation.observation import Observation
+from panoptes.pocs.scheduler.observation.bias import BiasObservation
+from panoptes.pocs.scheduler.observation.dark import DarkObservation
 
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
@@ -422,6 +424,7 @@ def test_exposure_collision(camera, tmpdir):
     # Wait for readout on file.
     while not os.path.exists(fits_path_1):
         time.sleep(0.5)
+    time.sleep(1)  # Make sure the file is fully-written
 
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
@@ -537,6 +540,42 @@ def test_observation_nofilter(camera, images_dir):
     observation.seq_time = '19991231T235159'
     camera.take_observation(observation, blocking=True)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
+
+
+def test_observation_dark(camera, images_dir):
+    """
+    Tests functionality of take_observation()
+    """
+    position = '20h00m43.7135s +22d42m39.0645s'
+    observation = DarkObservation(position, exptimes=[1])
+    assert observation.dark
+
+    observation.seq_time = '19991231T235959'
+    observation_event = camera.take_observation(observation)
+    while not observation_event.is_set():
+        camera.logger.trace(f'Waiting for observation event from inside test.')
+        time.sleep(1)
+    observation_pattern = os.path.join(images_dir, 'dark',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
+
+
+def test_observation_bias(camera, images_dir):
+    """
+    Tests functionality of take_observation()
+    """
+    position = '20h00m43.7135s +22d42m39.0645s'
+    observation = BiasObservation(position)
+    assert observation.dark
+
+    observation.seq_time = '19991231T235959'
+    observation_event = camera.take_observation(observation)
+    while not observation_event.is_set():
+        camera.logger.trace(f'Waiting for observation event from inside test.')
+        time.sleep(1)
+    observation_pattern = os.path.join(images_dir, 'bias',
                                        camera.uid, observation.seq_time, '*.fits*')
     assert len(glob.glob(observation_pattern)) == 1
 

@@ -1,7 +1,9 @@
 import os
 from collections import OrderedDict
-
 from astropy import units as u
+
+from panoptes.utils.utils import get_quantity_value
+
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
 
@@ -45,21 +47,23 @@ class Observation(PanBase):
         """
         super().__init__(*args, **kwargs)
 
-        assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
+        if not isinstance(field, Field):
+            raise TypeError(f"field must be a valid Field instance, got {type(field)}.")
 
-        assert exptime >= 0.0, \
-            self.logger.error(f"Exposure time must be greater than or equal to 0, got {exptime}.")
+        if not exptime >= 0.0:  # 0 second exposures correspond to bias frames
+            raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
-        assert min_nexp % exp_set_size == 0, \
-            self.logger.error(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
-                              f"a multiple of set size (exp_set_size={exp_set_size}).")
+        if not min_nexp % exp_set_size == 0:
+            raise ValueError(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
+                             f"a multiple of set size (exp_set_size={exp_set_size}).")
 
-        assert float(priority) > 0.0, self.logger.error(f"Priority must be 1.0 or larger, currently {priority}")
+        if not float(priority) > 0.0:
+            raise ValueError("Priority must be larger than 0.")
 
         self.field = field
         self.dark = dark
 
-        self.exptime = exptime
+        self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
@@ -116,9 +120,18 @@ class Observation(PanBase):
             'ra_mnt': self.field.coord.ra.value,
             'seq_time': self.seq_time,
             'set_duration': self.set_duration.value,
+            'dark': self.dark
         }
 
         return status
+
+    @property
+    def exptime(self):
+        return self._exptime
+
+    @exptime.setter
+    def exptime(self, value):
+        self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property
     def minimum_duration(self):
