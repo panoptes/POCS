@@ -2,25 +2,28 @@ ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
 FROM ${image_url}:${image_tag} AS pocs-base
 
-LABEL description="PANOPTES Observatory Control System Service"
-LABEL maintainers="developers@projectpanoptes.org"
-LABEL repo="github.com/panoptes/POCS"
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV SHELL /bin/bash
+
 ENV POCS "/POCS"
 
 ARG userid=1000
-ENV USERID $userid
+ARG pip_extras="[focuser,google,testing]"
+ARG index_url="http://data.astrometry.net/4100/index-4111.fits"
 
 USER "${userid}"
 
 # Set up some common directories
+WORKDIR /tmp
 RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo apt-get update && \
+    sudo apt-get -y full-upgrade && \
     sudo apt-get install -y --no-install-recommends \
-        gphoto2 \
-        astrometry-data-tycho2-10-19 && \
+        gphoto2 && \
+    # Index file used for tests.
+    sudo wget "${index_url}" -O /usr/share/astrometry/index-4111.fits && \
+    # Support directories.
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
@@ -28,27 +31,17 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
 COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
 
-ARG pip_install_name="."
-ARG pip_install_extras="[google]"
-
+WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
-RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
-    /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
+RUN /conda/bin/pip install -e ".${pip_extras}" && \
     # Cleanup
     /conda/bin/pip cache purge && \
-    /conda/bin/conda clean -fay && \
+    /conda/bin/conda clean -tipy && \
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config git && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
-WORKDIR "${POCS}"
-COPY --chown="${userid}:${userid}" docker/docker-compose.yaml .
-COPY --chown="${userid}:${userid}" conf_files conf_files
-COPY --chown="${userid}:${userid}" resources resources
-COPY --chown="${userid}:${userid}" scripts scripts
-COPY --chown="${userid}:${userid}" tests/data tests/data
-
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
-CMD [ "ipython" ]
+CMD [ "pytest" ]

@@ -22,7 +22,6 @@ logs/
 notebooks
 examples
 docs
-build
 coverage.xml
 
 # Build and docs folder/files

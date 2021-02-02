@@ -17,6 +17,10 @@ def on_enter(event_data):
     # Get pointing parameters
     pointing_config = pocs.get_config('pointing')
     num_pointing_images = int(pointing_config.get('max_iterations', 3))
+    if num_pointing_images == 0:
+        pocs.next_state = 'tracking'
+        return
+
     should_correct = pointing_config.get('auto_correct', False)
     pointing_threshold = pointing_config.get('threshold', 0.05)  # degrees
     exptime = pointing_config.get('exptime', 30)  # seconds
@@ -57,7 +61,8 @@ def on_enter(event_data):
                 pocs.logger.info(f'Waiting for pointing image {img_num + 1}/{num_pointing_images}')
                 return pocs.is_safe()
 
-            wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb, sleep_delay=wait_delay)
+            wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb,
+                            sleep_delay=wait_delay)
 
             # Analyze pointing
             if observation is not None:
