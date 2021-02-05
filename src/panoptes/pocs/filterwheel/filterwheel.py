@@ -349,7 +349,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         focus_offset = new_offset - current_offset
 
         self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
-                          f"{new_filter} to {self.current_filter}.")
+                          f"{self.current_filter} to {new_filter}.")
         self.camera.focuser.move_by(focus_offset)
 
     def __str__(self):

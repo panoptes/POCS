@@ -715,8 +715,8 @@ def test_move_filterwheel_focus_offset(camera):
     focus_offsets = camera.filterwheel._focus_offsets
 
     for filter_name in camera.filterwheel.filter_names:
+        offset = focus_offsets[filter_name] - focus_offsets[camera.filterwheel.current_filter]
         initial_position = camera.focuser.position
         camera.filterwheel.move_to(filter_name, blocking=True)
         new_position = camera.focuser.position
-        offset = focus_offsets[filter_name] - focus_offsets[camera.filterwheel.current_filter]
         assert new_position == initial_position + offset
