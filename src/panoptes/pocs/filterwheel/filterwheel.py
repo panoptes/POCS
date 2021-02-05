@@ -219,7 +219,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         if self.camera.has_focuser:
             try:
                 self._apply_filter_focus_offset(new_position)
-            except error.PanError as err:
+            except Exception as err:
                 self.logger.error(f"Unable to apply focus position offset on {self}: {err!r}")
 
         if self.camera and self.camera.is_exposing:
