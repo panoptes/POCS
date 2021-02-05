@@ -1,4 +1,5 @@
 import threading
+from collections import abc
 from abc import ABCMeta
 from abc import abstractmethod
 from contextlib import suppress
@@ -25,6 +26,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         dark_position (int or str, optional): used to specify either a filter wheel position or
             a filter name that should be used when taking dark exposures with a camera that is
             not able to take internal darks.
+        focus_offsets (abc.Mapping, optional): Dictionary of filter_name: focus offset pairs to
+            apply when moving between filters. If None (default), no offsets are applied.
     """
 
     def __init__(self,
@@ -35,8 +38,14 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                  timeout=None,
                  serial_number='XXXXXX',
                  dark_position=None,
+                 focus_offsets=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if (focus_offsets is not None) and not isinstance(focus_offsets, abc.Mapping):
+            raise TypeError("focus_offsets should be a mapping (e.g. a dict),"
+                            f" got {type(focus_offsets)}.")
+        self._focus_offsets = focus_offsets
 
         self._model = model
         self._name = name
@@ -207,6 +216,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
 
+        if self.camera.has_focuser:
+            try:
+                self._apply_filter_focus_offset(new_position)
+            except error.PanError as err:
+                self.logger.error(f"Unable to apply focus position offset on {self}: {err!r}")
+
         if self.camera and self.camera.is_exposing:
             msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
             self.logger.error(msg)
@@ -313,6 +328,29 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         header.set('FW-ID', self.uid, 'Filter wheel serial number')
         header.set('FW-POS', self.position, 'Filter wheel position')
         return header
+
+    def _apply_filter_focus_offset(self, new_position):
+        """ Apply the filter-specific focus offset.
+        Args:
+            new_position (int or str): The new filter name or filter position.
+        """
+        if self._focus_offsets is None:  # Nothing to do here
+            self.logger.debug("Found no filter focus offsets to apply.")
+            return
+
+        new_filter = self.filter_name(new_position)
+        try:
+            new_offset = self._focus_offsets[new_filter]
+        except KeyError:
+            self.logger.warning(f"No focus offset found for {new_filter} filter.")
+            return
+
+        current_offset = self._focus_offsets[self.current_filter]
+        focus_offset = new_offset - current_offset
+
+        self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
+                          f"{new_filter} to {self.current_filter}.")
+        self.camera.focuser.move_by(focus_offset)
 
     def __str__(self):
         s = f'{self.name} ({self.uid})'

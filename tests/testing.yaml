@@ -157,6 +157,12 @@ cameras:
         move_time: 0.1
         timeout: 0.5
         dark_position: blank
+        focus_offsets:
+          one: 0
+          deux: 1
+          drei: 2
+          quattro: 3
+          blank: 0
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field

@@ -700,3 +700,21 @@ def test_autofocus_no_focuser(camera):
         camera.autofocus()
     camera.focuser = focuser
     assert camera.focuser.position == initial_focus
+
+
+def test_move_filterwheel_focus_offset(camera):
+    if not camera.has_filterwheel:
+        pytest.skip("Camera does not have a filterwheel.")
+    if not camera.has_focuser:
+        pytest.skip("Camera does not have a focuser.")
+    if camera._focus_offsets is None:
+        pytest.skip("Camera does not have focus offsets.")
+
+    focus_offsets = camera.filterwheel._focus_offsets
+
+    for filter_name in camera.filterwheel.filter_names:
+        initial_position = camera.focuser.position
+        camera.filterwheel.move_to(filter_name)
+        new_position = camera.focuser.position
+        offset = focus_offsets[filter_name] - focus_offsets[camera.filterwheel.current_filter]
+        assert new_position == initial_position + offset
