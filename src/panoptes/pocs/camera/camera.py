@@ -358,6 +358,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Return True if the camera has a focuser, False if not. """
         return self.focuser is not None
 
+    @property
+    def has_filterwheel(self):
+        """ Return True if the camera has a filterwheel, False if not. """
+        return self.filterwheel is not None
+
     ##################################################################################################
     # Methods
     ##################################################################################################
