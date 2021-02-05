@@ -219,9 +219,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         if self.camera is not None:
 
             if self.camera.is_exposing:
-                msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
-                self.logger.error(msg)
-                raise error.PanError(msg)
+                raise error.PanError(f'Attempt to move filter wheel {self} while camera is exposing, ignoring.')
 
             if self.camera.has_focuser:
                 try:
