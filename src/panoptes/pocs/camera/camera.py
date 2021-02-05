@@ -353,6 +353,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Error message from the most recent exposure or None, if there was no error."""
         return self._exposure_error
 
+    @property
+    def has_focuser(self):
+        """ Return True if the camera has a focuser, False if not. """
+        return self.focuser is not None
+
+    @property
+    def has_filterwheel(self):
+        """ Return True if the camera has a filterwheel, False if not. """
+        return self.filterwheel is not None
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -676,7 +686,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Raises:
             ValueError: If invalid values are passed for any of the focus parameters.
         """
-        if self.focuser is None:
+        if not self.has_focuser:
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
