@@ -216,16 +216,18 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
 
-        if self.camera.has_focuser:
-            try:
-                self._apply_filter_focus_offset(new_position)
-            except Exception as err:
-                self.logger.error(f"Unable to apply focus position offset on {self}: {err!r}")
+        if self.camera is not None:
 
-        if self.camera and self.camera.is_exposing:
-            msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
-            self.logger.error(msg)
-            raise error.PanError(msg)
+            if self.camera.is_exposing:
+                msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
+                self.logger.error(msg)
+                raise error.PanError(msg)
+
+            if self.camera.has_focuser:
+                try:
+                    self._apply_filter_focus_offset(new_position)
+                except Exception as err:
+                    self.logger.error(f"Unable to apply focus position offset on {self}: {err!r}")
 
         if self.is_moving:
             msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
