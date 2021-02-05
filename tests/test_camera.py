@@ -707,8 +707,10 @@ def test_move_filterwheel_focus_offset(camera):
         pytest.skip("Camera does not have a filterwheel.")
     if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser.")
-    if camera._focus_offsets is None:
-        pytest.skip("Camera does not have focus offsets.")
+    if camera.filterwheel._focus_offsets is None:
+        pytest.skip("Filterwheel does not have focus offsets.")
+
+    camera.filterwheel.move_to("one")
 
     focus_offsets = camera.filterwheel._focus_offsets
 
