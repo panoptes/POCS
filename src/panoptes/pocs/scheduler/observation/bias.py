@@ -1,19 +1,17 @@
 import os
 from astropy import units as u
 
-from panoptes.utils.config.client import get_config
-
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BiasObservation(Observation):
 
     def __init__(self, position, min_nexp=None, exp_set_size=None):
         if min_nexp is None:
-            min_nexp = get_config("calibs.bias.min_nexp", default=10)
+            min_nexp = self.get_config("calibs.bias.min_nexp", default=10)
         if exp_set_size is None:
-            exp_set_size = get_config("calibs.bias.exp_set_size", default=min_nexp)
+            exp_set_size = self.get_config("calibs.bias.exp_set_size", default=min_nexp)
 
         # Create a bias field
         field = Field('Bias', position=position)

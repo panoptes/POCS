@@ -18,7 +18,7 @@ from panoptes.pocs.camera.zwo import Camera as ZWOCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.bias import BiasObservation
 from panoptes.pocs.scheduler.observation.dark import DarkObservation
 

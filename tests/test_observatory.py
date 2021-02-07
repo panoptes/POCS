@@ -14,7 +14,7 @@ from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.dispatch import Scheduler
-from panoptes.pocs.scheduler.observation.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
