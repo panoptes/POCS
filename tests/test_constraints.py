@@ -9,7 +9,7 @@ from astropy.time import Time
 from collections import OrderedDict
 
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 
 from panoptes.pocs.scheduler.constraint import Altitude
 from panoptes.pocs.scheduler.constraint import BaseConstraint
