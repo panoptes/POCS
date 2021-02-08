@@ -47,12 +47,6 @@ class Observation(PanBase):
         """
         super().__init__(*args, **kwargs)
 
-        if not isinstance(field, Field):
-            raise TypeError(f"field must be a valid Field instance, got {type(field)}.")
-
-        if not exptime >= 0.0:  # 0 second exposures correspond to bias frames
-            raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
-
         if not min_nexp % exp_set_size == 0:
             raise ValueError(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
                              f"a multiple of set size (exp_set_size={exp_set_size}).")
@@ -60,10 +54,13 @@ class Observation(PanBase):
         if not float(priority) > 0.0:
             raise ValueError("Priority must be larger than 0.")
 
+        # Use the property setters to set the field and exptime
+        # The setters can be easily overridden from subclasses
         self.field = field
+        self.exptime = exptime
+
         self.dark = dark
 
-        self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
@@ -130,8 +127,21 @@ class Observation(PanBase):
         return self._exptime
 
     @exptime.setter
-    def exptime(self, value):
-        self._exptime = get_quantity_value(value, u.second) * u.second
+    def exptime(self, exptime):
+        exptime = get_quantity_value(exptime, u.second) * u.second
+        if not exptime >= 0.0 * u.second:  # 0 second exposures correspond to bias frames
+            raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
+        self._exptime = exptime
+
+    @property
+    def field(self):
+        return self._field
+
+    @field.setter
+    def field(self, field):
+        if not isinstance(field, Field):
+            raise TypeError(f"field must be a valid Field instance, got {type(field)}.")
+        self._field = field
 
     @property
     def minimum_duration(self):
