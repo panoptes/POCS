@@ -10,7 +10,6 @@ from panoptes.pocs.scheduler.field import Field
 
 class Observation(PanBase):
 
-    @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
                  filter_name=None, dark=False, *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
@@ -59,7 +58,7 @@ class Observation(PanBase):
         self.field = field
         self.exptime = exptime
 
-        self.dark = dark
+        self.dark = dark  # This is parsed to the take_exposure camera method
 
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
