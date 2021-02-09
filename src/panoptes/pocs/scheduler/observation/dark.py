@@ -5,7 +5,7 @@ from panoptes.utils.utils import get_quantity_value
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.scheduler.field import Field
-from huntsman.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class DarkObservation(Observation):
