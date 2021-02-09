@@ -337,12 +337,14 @@ class Camera(AbstractSDKCamera):
                 self.logger.warning(f"Cannot set {control_name} to {value}, clipping to max value:"
                                     f" {max_value}.")
                 Camera._driver.set_control_value(self._handle, control_type, max_value)
+                return
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
                 self.logger.warning(f"Cannot set {control_name} to {value}, clipping to min value:"
                                     f" {min_value}.")
                 Camera._driver.set_control_value(self._handle, control_type, min_value)
+                return
         else:
             if not self._control_info[control_type]['is_auto_supported']:
                 raise error.IllegalValue(f"{self.model} cannot set {control_name} to AUTO")
