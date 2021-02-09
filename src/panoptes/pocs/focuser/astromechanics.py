@@ -1,7 +1,9 @@
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
-import usb
+from usb.core import find as finddev
+from usb.util import get_string
+
 import re
 
 
@@ -12,18 +14,18 @@ class Focuser(AbstractSerialFocuser):
     Args:
         name (str, optional): default 'Astromechanics Focuser'
         model (str, optional): default 'Canon EF/EF-S'
-        id_vendor (str, optional): idVendor of device, can be retrieved with lsusb -v from terminal.
-        id_product (str, optional): idProduct of device, can be retrieved with lsusb -v from terminal.
+        vendor_id (str, optional): idVendor of device, can be retrieved with lsusb -v from terminal.
+        product_id (str, optional): idProduct of device, can be retrieved with lsusb -v from terminal.
 
     Additional positonal and keyword arguments are passed to the base class, AbstractSerialFocuser. See
     that class' documentation for a complete list.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', id_vendor=None,
-                 id_product=None, *args, **kwargs):
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', vendor_id=None,
+                 product_id=None, *args, **kwargs):
 
-        self._id_vendor = id_vendor
-        self._id_product = id_product
+        self._vendor_id = vendor_id
+        self._product_id = product_id
 
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Astromechanics Focuser')
@@ -154,8 +156,8 @@ class Focuser(AbstractSerialFocuser):
         # Get position and see if the response follows pattern of digits [0-9] and a trailing '#'.
         response_pattern = re.compile('^[0-9]+#$')
         if response_pattern.match(self._send_command("P#")):
-            dev = usb.core.find(idVendor=self._id_vendor, idProduct=self._id_product)
-            self._serial_number = usb.util.get_string(dev, dev.iSerialNumber)
+            dev = finddev(idVendor=self._vendor_id, idProduct=self._product_id)
+            self._serial_number = get_string(dev, dev.iSerialNumber)
             self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
             return self._serial_number
         else:
