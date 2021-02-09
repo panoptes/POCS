@@ -67,6 +67,8 @@ PANDIR=${PANDIR:-/panoptes}
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
+CONDA_ENV_NAME=conda-pocs
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -77,18 +79,20 @@ function make_directories() {
 }
 
 function system_deps() {
-  sudo apt-get update | sudo tee -a "${LOGFILE}" 2>&1
+  sudo apt-get update
+  #  sudo apt-get -y full-upgrade
   sudo apt-get --yes install \
     ack \
     byobu \
-    docker-compose \
-    docker.io \
+    gcc \
     htop \
-    httpie \
-    jq \
-    openssh-server \
+    make \
     wget \
-    zsh | sudo tee -a "${LOGFILE}" 2>&1
+    zsh
+  #  sudo apt-get -y autoremove
+
+  # Use zsh
+  sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -96,14 +100,41 @@ function system_deps() {
     ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa"
   fi
 
+}
+
+function install_docker() {
+  wget -q https://get.docker.com -O get-docker.sh
+  bash get-docker.sh
+
   # Add to docker group if not already.
-  sudo usermod -aG docker "${PANUSER}" | sudo tee -a "${LOGFILE}" 2>&1
+  sudo usermod -aG docker "${PANUSER}"
+
+  pip install docker-compose
 }
 
 function get_or_build_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
+
+  # Copy the docker-compose file
+  sudo docker run --rm -it -v "${PANDIR}:/temp" "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" cp docker/docker-compose.yaml /temp/pocs-compose.yaml
+  sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
+}
+
+function install_conda() {
+  echo "Installing miniforge conda"
+
+  wget "${CONDA_URL}" -O install-miniforge.sh
+  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda"
+  # Initialize conda for the shells.
+  "${PANDIR}/conda/bin/conda" init bash
+  "${PANDIR}/conda/bin/conda" init zsh
+
+  "${PANDIR}/conda/bin/conda" create -y -n "${CONDA_ENV_NAME}" python=3
+
+  # Activate by default
+  echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 }
 
 function install_zsh() {
@@ -126,13 +157,18 @@ function install_zsh() {
 }
 
 function write_zshrc() {
-  cat >"${HOME}/.zshrc" <<'EOT'
-export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
-export ZSH="/home/panoptes/.oh-my-zsh"
+  cat >"${HOME}/.zshrc" <<EOT
+
+export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
+export ZSH="/home/${PANUSER}/.oh-my-zsh"
+export PANDIR="${PANDIR}"
+
 ZSH_THEME="spaceship"
+
 plugins=(git sudo zsh-autosuggestions docker docker-compose python)
-source $ZSH/oh-my-zsh.sh
+source \$ZSH/oh-my-zsh.sh
 unsetopt share_history
+
 EOT
 }
 
@@ -151,9 +187,16 @@ function do_install() {
   echo "Installing system dependencies"
   system_deps
 
-  get_or_build_images
+  # Turning on byobu by default.
+  byobu-enable
 
   install_zsh
+
+  install_conda
+
+  install_docker
+
+  get_or_build_images
 
   echo "Please reboot your machine before using POCS."
 
