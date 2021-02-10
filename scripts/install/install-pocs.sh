@@ -79,8 +79,8 @@ function make_directories() {
 }
 
 function system_deps() {
-  sudo apt-get update
-  #  sudo apt-get -y full-upgrade
+  sudo apt-get update --fix-missing
+  sudo apt-get -y full-upgrade
   sudo apt-get --yes install \
     ack \
     byobu \
@@ -89,7 +89,7 @@ function system_deps() {
     make \
     wget \
     zsh
-  #  sudo apt-get -y autoremove
+  sudo apt-get -y autoremove
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
@@ -109,7 +109,7 @@ function install_docker() {
   # Add to docker group if not already.
   sudo usermod -aG docker "${PANUSER}"
 
-  pip install docker-compose
+  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 }
 
 function get_or_build_images() {
