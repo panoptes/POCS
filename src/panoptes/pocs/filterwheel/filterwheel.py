@@ -345,7 +345,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"No focus offset found for {new_filter} filter.")
             return
 
-        current_offset = self._focus_offsets[self.current_filter]
+        current_offset = self._focus_offsets.get(self.current_filter, 0)
         focus_offset = new_offset - current_offset
 
         self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
