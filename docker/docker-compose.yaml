@@ -39,7 +39,7 @@ services:
     environment:
       PANOPTES_CONFIG_HOST: localhost
       PANOPTES_CONFIG_PORT: 6563
-    command: [ "wait-for-it localhost:6563 -- ipython -i /POCS/scripts/load-simulators.py" ]
+    command: [ "wait-for-it localhost:6563 -- ipython" ]
     volumes:
       - "./logs:/POCS/logs"
       - "./images:/POCS/images"
