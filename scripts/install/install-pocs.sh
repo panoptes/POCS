@@ -78,6 +78,7 @@ CONDA_ENV_NAME=conda-pocs
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 function make_directories() {
+  echo "Creating directories in ${PANDIR}"
   sudo mkdir -p "${PANDIR}/logs"
   sudo mkdir -p "${PANDIR}/images"
   sudo mkdir -p "${PANDIR}/json_store"
@@ -101,6 +102,9 @@ function which_version() {
     *) echo "invalid option $REPLY" ;;
     esac
   done
+
+  echo "Setting hostname to ${HOST}"
+  sudo hostnamectl set-hostname "$HOST"
 }
 
 function system_deps() {
@@ -142,19 +146,21 @@ function get_or_build_images() {
 
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
 
-  # Copy the docker-compose file
-  sudo docker run --rm -it \
-    -v "${PANDIR}:/temp" \
-    "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-    "cp /app/docker/docker-compose.yaml /temp/pocs-compose.yaml"
-  sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
+  if [ $HOST == "pocs-control-box" ]; then
+    # Copy the docker-compose file
+    sudo docker run --rm -it \
+      -v "${PANDIR}:/temp" \
+      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "cp /app/docker/docker-compose.yaml /temp/pocs-compose.yaml"
+    sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
 
-  # Copy the docker-compose file
-  sudo docker run --rm -it \
-    -v "${PANDIR}:/temp" \
-    "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-    "cp /app/docker/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
-  sudo chown "${PANUSER}:${PANUSER}" conf_files/pocs.yaml
+    # Copy the docker-compose file
+    sudo docker run --rm -it \
+      -v "${PANDIR}:/temp" \
+      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "cp /app/docker/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
+    sudo chown "${PANUSER}:${PANUSER}" conf_files/pocs.yaml
+  fi
 }
 
 function install_conda() {
@@ -227,29 +233,25 @@ function do_install() {
   echo "OS: ${OS}"
   echo "Logfile: ${LOGFILE}"
 
-  #  echo "Creating directories in ${PANDIR}"
-  #  make_directories
-  #
-  #  echo "Installing system dependencies"
-  #  system_deps
-  #
-  #  # Turning on byobu by default.
-  #  byobu-enable
-  #
-  #  install_zsh
-  #
-  #  install_conda
-  #
-  #  install_docker
-  #
-  #  get_or_build_images
-  #
-  #  echo "Please reboot your machine before using POCS."
-  #
-  #  read -p "Reboot now? [y/N]: " -r
-  #  if [[ $REPLY =~ ^[Yy]$ ]]; then
-  #    sudo reboot
-  #  fi
+  make_directories
+
+  echo "Installing system dependencies"
+  system_deps
+
+  install_zsh
+
+  install_conda
+
+  install_docker
+
+  get_or_build_images
+
+  echo "Please reboot your machine before using POCS."
+
+  read -p "Reboot now? [y/N]: " -r
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    sudo reboot
+  fi
 }
 
 do_install
