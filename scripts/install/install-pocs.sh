@@ -61,17 +61,14 @@ usage() {
 # Better select prompt.
 PS3="Select: "
 
-# TODO set hostname
-# TODO byobu-enable
 # run docker-compose:
 #  * copy pocs.yaml and docker-compose.yaml from container to host
-#  * create images, json_store, logs, conf_files on host
 #  * set PANOPTES_CONFIG_FILE=conf_files above
-#  *
 
 # TODO should be checking to matching userid=1000
-PANUSER=${PANUSER:-$USER}
-PANDIR=${PANDIR:-/panoptes}
+PANUSER="${PANUSER:-$USER}"
+PANDIR="${PANDIR:-/panoptes}"
+HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
@@ -83,7 +80,27 @@ DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 function make_directories() {
   sudo mkdir -p "${PANDIR}/logs"
   sudo mkdir -p "${PANDIR}/images"
+  sudo mkdir -p "${PANDIR}/json_store"
+  sudo mkdir -p "${PANDIR}/conf_files"
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+}
+
+function which_version() {
+  PS3='Where are you installing?: '
+  versions=("Control box" "Camera Box")
+  select ver in "${versions[@]}"; do
+    case $ver in
+    "Control box")
+      HOST="pocs-control-box"
+      break
+      ;;
+    "Camera box")
+      HOST="pocs-camera-box"
+      break
+      ;;
+    *) echo "invalid option $REPLY" ;;
+    esac
+  done
 }
 
 function system_deps() {
@@ -131,6 +148,13 @@ function get_or_build_images() {
     "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
     "cp /app/docker/docker-compose.yaml /temp/pocs-compose.yaml"
   sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
+
+  # Copy the docker-compose file
+  sudo docker run --rm -it \
+    -v "${PANDIR}:/temp" \
+    "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+    "cp /app/docker/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
+  sudo chown "${PANUSER}:${PANUSER}" conf_files/pocs.yaml
 }
 
 function install_conda() {
@@ -184,40 +208,48 @@ source \$ZSH/oh-my-zsh.sh
 unsetopt share_history
 
 EOT
+
+  # Enable byobu by defaul on the shells.
+  cat >>"${HOME}/.profile" <<EOT
+_byobu_sourced=1 . /usr/bin/byobu-launch 2>/dev/null || true
+EOT
 }
 
 function do_install() {
   clear
 
-  echo "Installing POCS software."
+  which_version
+
+  echo "Installing POCS software for ${HOST}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
+  echo "HOST: ${HOST}"
   echo "OS: ${OS}"
   echo "Logfile: ${LOGFILE}"
 
-  echo "Creating directories in ${PANDIR}"
-  make_directories
-
-  echo "Installing system dependencies"
-  system_deps
-
-  # Turning on byobu by default.
-  byobu-enable
-
-  install_zsh
-
-  install_conda
-
-  install_docker
-
-  get_or_build_images
-
-  echo "Please reboot your machine before using POCS."
-
-  read -p "Reboot now? [y/N]: " -r
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    sudo reboot
-  fi
+  #  echo "Creating directories in ${PANDIR}"
+  #  make_directories
+  #
+  #  echo "Installing system dependencies"
+  #  system_deps
+  #
+  #  # Turning on byobu by default.
+  #  byobu-enable
+  #
+  #  install_zsh
+  #
+  #  install_conda
+  #
+  #  install_docker
+  #
+  #  get_or_build_images
+  #
+  #  echo "Please reboot your machine before using POCS."
+  #
+  #  read -p "Reboot now? [y/N]: " -r
+  #  if [[ $REPLY =~ ^[Yy]$ ]]; then
+  #    sudo reboot
+  #  fi
 }
 
 do_install
