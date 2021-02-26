@@ -63,7 +63,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/POCS/conf_files/
+      device: ${PANDIR}/conf_files/
       o: bind
   json_store:
     driver: local

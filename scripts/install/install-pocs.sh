@@ -152,10 +152,10 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /app/docker/docker-compose.yaml /temp/pocs-compose.yaml"
-    sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
+      "cp /app/docker/docker-compose.yaml /temp/docker-compose.yaml"
+    sudo chown "${PANUSER}:${PANUSER}" docker-compose.yaml
 
-    # Copy the docker-compose file
+    # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
