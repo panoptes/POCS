@@ -45,17 +45,17 @@ state_machine: panoptes
 
 scheduler:
   type: dispatch
-  fields_file: simple.yaml
+  fields_file: /POCS/conf_files/targets/simple.yaml
   check_file: False
 
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: 40
+  driver: cem40
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
-    baudrate: 9600
+    baudrate: 115200
   non_sidereal_available: True
   min_tracking_threshold: 100 # ms
   max_tracking_threshold: 99999 # ms

@@ -2,7 +2,6 @@ import os
 
 from panoptes.utils import error
 from panoptes.utils import rs232
-
 from panoptes.pocs.mount import AbstractMount
 from panoptes.utils.serializers import from_yaml
 
@@ -173,17 +172,17 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.get_config('mount.brand')
-            if model is not None:
+            driver = self.get_config('mount.driver')
+            if driver is not None:
                 mount_dir = self.get_config('directories.mounts')
-                conf_file = "{}/{}.yaml".format(mount_dir, model)
+                conf_file = "{}/{}.yaml".format(mount_dir, driver)
 
                 if os.path.isfile(conf_file):
                     self.logger.info(
                         "Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
-                            commands.update(from_yaml(f.read()))
+                            commands.update(from_yaml(f.read(), parse=False))
                             self.logger.debug(
                                 "Mount commands updated from {}".format(conf_file))
                     except OSError as err:
