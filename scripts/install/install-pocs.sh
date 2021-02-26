@@ -83,6 +83,7 @@ function make_directories() {
   sudo mkdir -p "${PANDIR}/images"
   sudo mkdir -p "${PANDIR}/json_store"
   sudo mkdir -p "${PANDIR}/conf_files"
+  sudo mkdir -p "${PANDIR}/notebooks"
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 }
 
