@@ -61,6 +61,14 @@ usage() {
 # Better select prompt.
 PS3="Select: "
 
+# TODO set hostname
+# TODO byobu-enable
+# run docker-compose:
+#  * copy pocs.yaml and docker-compose.yaml from container to host
+#  * create images, json_store, logs, conf_files on host
+#  * set PANOPTES_CONFIG_FILE=conf_files above
+#  *
+
 # TODO should be checking to matching userid=1000
 PANUSER=${PANUSER:-$USER}
 PANDIR=${PANDIR:-/panoptes}
@@ -118,7 +126,10 @@ function get_or_build_images() {
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
 
   # Copy the docker-compose file
-  sudo docker run --rm -it -v "${PANDIR}:/temp" "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" cp docker/docker-compose.yaml /temp/pocs-compose.yaml
+  sudo docker run --rm -it \
+    -v "${PANDIR}:/temp" \
+    "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+    "cp /app/docker/docker-compose.yaml /temp/pocs-compose.yaml"
   sudo chown "${PANUSER}:${PANUSER}" pocs-compose.yaml
 }
 
@@ -135,6 +146,9 @@ function install_conda() {
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
+
+  # Install panoptes-utils (so we get panoptes-config-server)
+  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 }
 
 function install_zsh() {
