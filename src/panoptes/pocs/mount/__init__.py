@@ -7,7 +7,6 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
 
 logger = get_logger()
 
@@ -57,12 +56,13 @@ def create_mount_from_config(mount_info=None,
         site_details = create_location_from_config()
         earth_location = site_details['earth_location']
 
+    brand = mount_info.get('brand')
     driver = mount_info.get('driver')
+    model = mount_info.get('model', driver)
     if not driver or not isinstance(driver, str):
         raise error.MountNotFound('Mount info in config is missing a driver name.')
 
-    model = mount_info.get('model', driver)
-    logger.debug(f'Mount: driver={driver} model={model}')
+    logger.debug(f'Mount: {brand=} {driver=} {model=}')
 
     # Check if we should be using a simulator
     use_simulator = 'mount' in get_config('simulator', default=[])
@@ -78,8 +78,7 @@ def create_mount_from_config(mount_info=None,
         port = mount_info['serial']['port']
         logger.info(f'Looking for {driver} on {port}.')
         if port is None or len(glob(port)) == 0:
-            msg = f'Mount port ({port}) not available. Use simulator = mount for simulator.'
-            raise error.MountNotFound(msg=msg)
+            raise error.MountNotFound(msg=f'Mount {port=} not available.')
     except KeyError:
         # See Issue 866
         if model == 'bisque':
@@ -88,9 +87,9 @@ def create_mount_from_config(mount_info=None,
             msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
             raise error.MountNotFound(msg=msg)
 
-    logger.debug(f'Loading mount driver: pocs.mount.{driver}')
+    logger.debug(f'Loading mount {driver=}')
     try:
-        module = load_module(f'panoptes.pocs.mount.{driver}')
+        module = load_module(driver)
     except error.NotFound as e:
         raise error.MountNotFound(e)
 
@@ -119,9 +118,6 @@ def create_mount_simulator(mount_info=None,
             'port': '/dev/FAKE'
         }
     }
-
-    # Set mount device info to simulator
-    set_config('mount', mount_config)
 
     earth_location = earth_location or create_location_from_config()['earth_location']
 
