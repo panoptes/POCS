@@ -175,7 +175,7 @@ def test_set_mount():
 
     set_config('mount', {
         'brand': 'Simulacrum',
-        'driver': 'panotpes.pocs.mount.simulator',
+        'driver': 'panoptes.pocs.mount.simulator',
         'model': 'panoptes.pocs.camera.simulator.dslr',
     })
     mount = create_mount_from_config()
