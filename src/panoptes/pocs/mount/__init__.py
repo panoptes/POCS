@@ -124,9 +124,9 @@ def create_mount_simulator(mount_info=None,
 
     earth_location = earth_location or create_location_from_config()['earth_location']
 
-    logger.debug(f"Loading mount driver: pocs.mount.{mount_config['driver']}")
+    logger.debug(f"Loading mount driver: {mount_config['driver']}")
     try:
-        module = load_module(f"panoptes.pocs.mount.{mount_config['driver']}")
+        module = load_module(f"{mount_config['driver']}")
     except error.NotFound as e:
         raise error.MountNotFound(f'Error loading mount module: {e!r}')
 
