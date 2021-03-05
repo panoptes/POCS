@@ -51,12 +51,13 @@ scheduler:
 mount:
   # The brand and model determine the commands file to load from the resources/mounts dir.
   brand: ioptron
-  model: cem40   #  ieq30pro
-  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
+  model: ieq30pro   #  cem40
+  # Driver for mount should correspond to file.
+  driver: panoptes.pocs.mount.ioptron.cem40
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
-    baudrate: 115200
+    baudrate: 9600  #  115200 for cem40
   non_sidereal_available: True
   min_tracking_threshold: 100 # ms
   max_tracking_threshold: 99999 # ms
