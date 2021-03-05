@@ -49,9 +49,10 @@ scheduler:
   check_file: False
 
 mount:
+  # The brand and model determine the commands file to load from the resources/mounts dir.
   brand: ioptron
-  model: 40
-  driver: cem40
+  model: cem40   #  ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
