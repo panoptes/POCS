@@ -69,7 +69,7 @@ def create_mount_from_config(mount_info=None,
     logger.debug(f'Mount is simulator: {use_simulator}')
 
     # Create simulator if requested
-    if use_simulator or (driver == 'simulator'):
+    if use_simulator or ('simulator' in driver):
         logger.debug(f'Creating mount simulator')
         return create_mount_simulator(mount_info=mount_info, earth_location=earth_location)
 
@@ -113,7 +113,7 @@ def create_mount_simulator(mount_info=None,
 
     mount_config = mount_info or {
         'model': 'Mount Simulator',
-        'driver': 'simulator',
+        'driver': 'panoptes.pocs.mount.simulator',
         'serial': {
             'port': '/dev/FAKE'
         }
