@@ -433,7 +433,6 @@ def test_exposure_collision(camera, tmpdir):
 
 def test_exposure_scaling(camera, tmpdir):
     """Regression test for incorrect pixel value scaling.
-
     Checks for zero padding of LSBs instead of MSBs, as encountered
     with ZWO ASI cameras.
     """
