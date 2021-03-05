@@ -6,7 +6,7 @@ from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.library import load_module
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.client import get_config, set_config
 
 logger = get_logger()
 
@@ -120,7 +120,7 @@ def create_mount_simulator(mount_info=None,
     }
 
     # Set mount device info to simulator
-    # set_config('mount', mount_config)
+    set_config('mount', mount_config)
 
     earth_location = earth_location or create_location_from_config()['earth_location']
 
