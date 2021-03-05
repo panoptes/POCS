@@ -74,6 +74,7 @@ LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
+DEV_BOX=false
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -89,7 +90,7 @@ function make_directories() {
 
 function which_version() {
   PS3='Where are you installing?: '
-  versions=("Control box" "Camera Box")
+  versions=("Control box" "Camera Box" "My computer")
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
@@ -98,6 +99,11 @@ function which_version() {
       ;;
     "Camera box")
       HOST="pocs-camera-box"
+      break
+      ;;
+    "My computer")
+      echo "Installing on personal computer"
+      DEV_BOX=true
       break
       ;;
     *) echo "invalid option $REPLY" ;;
@@ -216,7 +222,7 @@ unsetopt share_history
 
 EOT
 
-  # Enable byobu by defaul on the shells.
+  # Enable byobu by default on the shells.
   cat >>"${HOME}/.profile" <<EOT
 _byobu_sourced=1 . /usr/bin/byobu-launch 2>/dev/null || true
 EOT
@@ -239,7 +245,9 @@ function do_install() {
   echo "Installing system dependencies"
   system_deps
 
-  install_zsh
+  if [ "$DEV_BOX" = true ]; then
+    install_zsh
+  fi
 
   install_conda
 
