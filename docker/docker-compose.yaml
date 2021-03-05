@@ -9,6 +9,7 @@ services:
       mode: global
     restart: on-failure
     init: true
+    tty: true
     container_name: pocs-config-server
     hostname: pocs-config-server
     network_mode: host
