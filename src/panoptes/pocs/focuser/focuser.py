@@ -8,12 +8,10 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from astropy.modeling import models
 from astropy.modeling import fitting
-
 from panoptes.pocs.base import PanBase
 from panoptes.utils.time import current_time
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images import mask_saturated
-
 from panoptes.pocs.utils.plotting import make_autofocus_plot
 
 
@@ -230,7 +228,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             ValueError: If invalid values are passed for any of the focus parameters.
         """
         self.logger.debug('Starting autofocus')
-        assert self._camera.is_connected, self.logger.error("Camera must be connected for autofocus!")
+        assert self._camera.is_connected, self.logger.error(
+            "Camera must be connected for autofocus!")
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 
@@ -402,12 +401,12 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # Get focus steps.
         focus_positions = np.arange(max(initial_focus - focus_range / 2, self.min_position),
                                     min(initial_focus + focus_range / 2, self.max_position) + 1,
-                                    focus_step, dtype=np.int)
+                                    focus_step, dtype=int)
         n_positions = len(focus_positions)
 
         # Set up empty array holders
         cutouts = np.zeros((n_positions, cutout_size, cutout_size), dtype=initial_cutout.dtype)
-        masks = np.empty((n_positions, cutout_size, cutout_size), dtype=np.bool)
+        masks = np.empty((n_positions, cutout_size, cutout_size), dtype=bool)
         metrics = np.empty(n_positions)
 
         # Take and store an exposure for each focus position.
