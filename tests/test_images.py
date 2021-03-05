@@ -35,7 +35,7 @@ def test_fits_noheader(noheader_fits_file):
         Image(noheader_fits_file)
 
 
-@pytest.skip('Need to fix timeout buffer in panoptes-utils')
+@pytest.mark.skip('Need to fix timeout buffer in panoptes-utils')
 def test_solve_timeout(tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
