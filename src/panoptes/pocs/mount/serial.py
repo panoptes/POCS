@@ -1,8 +1,7 @@
-import os
+from pathlib import Path
 
 from panoptes.utils import error
 from panoptes.utils import rs232
-
 from panoptes.pocs.mount import AbstractMount
 from panoptes.utils.serializers import from_yaml
 
@@ -50,13 +49,13 @@ class AbstractSerialMount(AbstractMount):
             try:
                 self._connect()
             except OSError as err:
-                self.logger.error("OS error: {0}".format(err))
+                self.logger.error(f"{err!r}")
             except error.BadSerialConnection as err:
                 self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+                self.logger.warning(f'NO MOUNT CONTROL AVAILABLE {err!r}')
 
         self._is_connected = True
-        self.logger.info('Mount connected: {}'.format(self.is_connected))
+        self.logger.info(f'Mount connected: {self.is_connected}')
 
         return self.is_connected
 
@@ -154,7 +153,7 @@ class AbstractSerialMount(AbstractMount):
 
     def _connect(self):
         """ Sets up serial connection """
-        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
+        self.logger.debug(f'Making serial connection for mount at {self._port}')
 
         try:
             self.serial.connect()
@@ -173,28 +172,24 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.get_config('mount.brand')
-            if model is not None:
-                mount_dir = self.get_config('directories.mounts')
-                conf_file = "{}/{}.yaml".format(mount_dir, model)
+            brand = self.get_config('mount.brand')
+            model = self.get_config('mount.model')
+            mount_dir = self.get_config('directories.mounts')
 
-                if os.path.isfile(conf_file):
-                    self.logger.info(
-                        "Loading mount commands file: {}".format(conf_file))
-                    try:
-                        with open(conf_file, 'r') as f:
-                            commands.update(from_yaml(f.read()))
-                            self.logger.debug(
-                                "Mount commands updated from {}".format(conf_file))
-                    except OSError as err:
-                        self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
-                    except Exception:
-                        self.logger.warning(
-                            "Problem loading mount command file")
-                else:
-                    self.logger.warning(
-                        "No such config file for mount commands: {}".format(conf_file))
+            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
+
+            if commands_file.is_file():
+                self.logger.info(f"Loading mount commands file: {commands_file}")
+                try:
+                    with commands_file.open() as f:
+                        commands.update(from_yaml(f.read(), parse=False))
+                        self.logger.debug(f"Mount commands updated from {commands_file}")
+                except OSError as err:
+                    self.logger.warning(f'Cannot load {commands_file=} {err!r}')
+                except Exception:
+                    self.logger.warning("Problem loading mount command file")
+            else:
+                self.logger.warning(f"No such config file for mount commands: {commands_file}")
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')

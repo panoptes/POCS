@@ -1,17 +1,21 @@
 import os
 import random
 from threading import Timer
-import numpy as np
 
+import numpy as np
 from astropy import units as u
 from astropy.io import fits
-
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import get_quantity_value, CountdownTimer
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
+
+    @property
+    def egain(self):
+        return 1
 
     @property
     def bit_depth(self):
@@ -51,7 +55,8 @@ class Camera(AbstractCamera):
     def _end_exposure(self):
         self._is_exposing_event.clear()
 
-    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
+                        **kwargs):
         self._is_exposing_event.set()
         exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second),
                                 function=self._end_exposure)

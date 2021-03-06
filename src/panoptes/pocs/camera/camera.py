@@ -2,22 +2,21 @@ import copy
 import os
 import threading
 import time
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
-from abc import ABCMeta, abstractmethod
 
+import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
-import astropy.units as u
-
-from panoptes.utils import current_time
+from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
-from panoptes.utils import get_quantity_value
-from panoptes.utils import CountdownTimer
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.library import load_module
-
-from panoptes.pocs.base import PanBase
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -125,7 +124,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.debug(f'Found subcomponent={subcomponent!r}, creating instance')
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
+                self.logger.debug(
+                    f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
@@ -353,6 +353,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Error message from the most recent exposure or None, if there was no error."""
         return self._exposure_error
 
+    @property
+    def has_focuser(self):
+        """ Return True if the camera has a focuser, False if not. """
+        return self.focuser is not None
+
+    @property
+    def has_filterwheel(self):
+        """ Return True if the camera has a filterwheel, False if not. """
+        return self.filterwheel is not None
+
     ##################################################################################################
     # Methods
     ##################################################################################################
@@ -394,7 +404,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, **kwargs)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
+                           dark=observation.dark, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -484,12 +495,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
+        self.logger.debug(
+            f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
 
         header = self._create_fits_header(seconds, dark)
 
         if self.is_exposing:
-            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
+            err = error.PanError(
+                f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
@@ -502,6 +515,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._exposure_error = repr(err)
             self._is_exposing_event.clear()
             raise err
+
+        def log_thread_error(exc_info):
+            self.logger.error(f'{exc_info!r}')
+
+        threading.excepthook = log_thread_error
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
@@ -578,8 +596,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Make sure image exists.
         if not os.path.exists(file_path):
             observation_event.set()
-            raise FileNotFoundError(f"Expected image at file_path={file_path!r} does not exist or " +
-                                    "cannot be accessed, cannot process.")
+            raise FileNotFoundError(
+                f"Expected image at {file_path=!r} does not exist or " +
+                "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, metadata)
@@ -627,7 +646,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                   merit_function_kwargs=None,
                   mask_dilations=None,
                   coarse=False,
-                  make_plots=False,
+                  make_plots=None,
                   blocking=False,
                   *args, **kwargs):
         """
@@ -659,7 +678,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             coarse (bool, optional): Whether to perform a coarse focus, otherwise will perform
                 a fine focus. Default False.
             make_plots (bool, optional: Whether to write focus plots to images folder, default
-                False.
+                behaviour is to check the focuser autofocus_make_plots attribute.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -668,7 +687,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Raises:
             ValueError: If invalid values are passed for any of the focus parameters.
         """
-        if self.focuser is None:
+        if not self.has_focuser:
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
@@ -867,11 +886,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e!r}')
                     raise (e)
 
-            else:
-                self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 f' observation but {self.filterwheel} is missing that filter, '
-                                 f'using'
-                                 f' {self.filter_type}.')
+            elif not observation.dark:
+                self.logger.warning(f'Filter {observation.filter_name} requested by'
+                                    f' observation but {self.filterwheel} is missing that filter, '
+                                    f'using {self.filter_type}.')
 
         if headers is None:
             start_time = current_time(flatten=True)
@@ -883,7 +901,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
+        self.logger.debug(
+            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
         image_dir = os.path.join(
             observation.directory,
             self.uid,
@@ -1025,16 +1044,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # If we get an instance, just use it.
         if isinstance(subcomponent, base_class):
-            self.logger.debug(f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
+            self.logger.debug(
+                f"subcomponent={subcomponent!r} is already a base_class={base_class!r} instance")
         # If we get a dict, use them as params to create instance.
         elif isinstance(subcomponent, dict):
             try:
                 model = subcomponent['model']
-                self.logger.debug(f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
-                                  f"trying to create a base_class={base_class!r} instance")
+                self.logger.debug(
+                    f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
+                    f"trying to create a base_class={base_class!r} instance")
                 base_class = load_module(model)
             except (KeyError, error.NotFound) as err:
-                raise error.NotFound(f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
+                raise error.NotFound(
+                    f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
 
             self.logger.debug(f'Creating the base_class_name={base_class_name!r} object from dict')
 
@@ -1051,7 +1073,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         else:
             # Should have been passed either an instance of base_class or dict with subcomponent
             # configuration. Got something else...
-            raise error.NotFound(f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
+            raise error.NotFound(
+                f"Expected either a {base_class_name} instance or dict, got {subcomponent!r}")
 
         # Give the subcomponent a reference back to the camera.
         setattr(subcomponent, 'camera', self)

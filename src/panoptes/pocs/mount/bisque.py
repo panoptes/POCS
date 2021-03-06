@@ -1,15 +1,14 @@
 import json
 import os
 import time
+from string import Template
+from threading import Lock
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from string import Template
-
-from panoptes.utils import error
-from panoptes.utils import theskyx
-
 from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.utils import theskyx
+from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
 
 
@@ -19,6 +18,8 @@ class Mount(AbstractMount):
         """"""
         super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
+
+        self._command_lock = Lock()
 
         template_dir = self.get_config('mount.template_dir')
         if template_dir.startswith('/') is False:
@@ -121,6 +122,15 @@ class Mount(AbstractMount):
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
         return self.is_initialized
+
+    def query(self, *args, **kwargs):
+        """ Override the query method to use the command lock.
+
+        This is required because TheSkyX cannot handle simulataneous commands. This function will
+        block until the lock is released.
+        """
+        with self._command_lock:
+            return super().query(*args, **kwargs)
 
     def _update_status(self):
         """ """
@@ -367,7 +377,8 @@ class Mount(AbstractMount):
                             commands.update(from_yaml(f.read()))
                             self.logger.debug(f"Mount commands updated from {conf_file}")
                     except OSError as err:
-                        self.logger.warning(f'Cannot load commands config file: {conf_file} \n {err}')
+                        self.logger.warning(
+                            f'Cannot load commands config file: {conf_file} \n {err}')
                     except Exception:
                         self.logger.warning("Problem loading mount command file")
                 else:

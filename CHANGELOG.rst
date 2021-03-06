@@ -2,13 +2,84 @@
 Changelog
 =========
 
-[0.7.7dev]
+[0.7.8dev]
 ----------
+
+Generic
+~~~~~~~
+
+* **Breaking changes** #1074
+
+  * Python 3.8
+  * Default service install does not include ``focuser`` dependencies.
+  * Default Docker command is a ``ipython`` console with the simulators loaded.
+  * Docker image only contains limited set of files.
+  * Directories inside the service image have been simplified for easier mapping onto desired targets on the host. The main top-level directory (i.e. ``$PANDIR``) is now ``/POCS`` with other folders nested underneath.
+  * Removing ``peas`` scripts.
+  * Serial Mount: clarify the ``driver``, ``brand``, and ``model`` options.  #1085
+
+    * ``brand`` and ``model`` determine the directory/file to use for looking up the mount commands. ``brand`` should be a subdir of the ``directories.mounts`` config entry (which is set to ``resources/mounts`` by default) and ``model`` should be the name of the yaml file (without the extension).
+    * ``driver`` should be the fully qualified namespace to the python file. Fixes #1081
+
+    Example::
+
+        # This will look for `resources/mounts/ioptron/cem40.yaml`
+        # for the command file and will load the `driver` via `load_module`
+        mount:
+          brand: ioptron
+          model: cem40
+          driver: panoptes.pocs.mount.ioptron.cem40
 
 Added
 ~~~~~
 
-* Added "trucker" power board. (@wtgee #1038)
+* Simple example script for creating a ``POCS`` instance with all simulators. #1074
+* Using ``threading.excepthook`` to log errors in camera exposure threads. #1074
+* Adding ``cem40.py`` mount driver and commands file. #1085
+
+
+Changed
+~~~~~~~
+
+* Updated install script (includes ZSH again). #1074
+* Pointing state is skipped if ``num_pointing_images==0``. #1074
+* The default ``radius`` for solving images is 15°.
+* Don't parse mount commands with new serializers, which was turning the ``0040`` mount version into a date for some reason.  #1085
+* Organized the mount command files better. #1085
+* Don't update config server when creating simulator. Fixes #1080
+
+Docker
+~~~~~~
+
+* ``PANUSER`` owns ``conda``. #1068
+* Dockerfile cleanup for better builds. #1068
+* Docker image does not contain ``focuser`` extras by default. #1068
+* Images use ``gcr.io/panoptes-exp/panoptes-utils`` as base. #1074
+* Docker files are all contained within ``docker`` folder. #1074
+* Docker image has tycho2 10-19 index files for plate-solving. #1074
+* Docker services (``config-server`` and ``pocs-control``) are started in ``global`` mode so tehre can be only one. # 1074
+* Config changed to run with simulators out of the box. #1074
+
+Removing
+~~~~~~~~
+
+* Old scripts and config files. #1074
+
+Testing
+~~~~~~~
+
+* Fix the log level in conftest. #1068
+* Move all tests into ``tests`` subdir from project root. #1068
+* Cleanup of testing setup, especially for GHA. #1068
+* Simplify testing service by removing ``tests/env`` file. #1074
+
+[0.7.7] - 2021-01-19
+--------------------
+
+Added
+~~~~~
+
+* Conda environment file. (@wtgee #1066)
 * Add the `gsutil` to `google` install options. Required for uploading data. (@wtgee #1036, #1037)
 * Ability to specify autofocus plots in config file. (@wtgee #1029)
 * A "developer" version of the ``panoptes-pocs`` docker image is cloudbuilt automatically on merge with ``develop``. (@wtgee #1010)
@@ -42,9 +113,15 @@ Bug fixes
 Changed
 ~~~~~~~
 
+* Clean up dependencies and offer extras install options. (@wtgee #1066)
+
+  * Split some hardware options, such as ``focuser``, which has extra dependencies.
+
+* Consolidate config files into ``conf_files`` dir. This includes targets and state machine files. (@wtgee #1066)
 * Change ``thumbnail_size`` to ``cutout_size`` consistently. (@wtgee #1040.)
 * Camera observation updates:
 
+  * TheSkyX utilities added (from ``panoptes-utils``). (@wtgee #1066)
   * headers param fixed so truly optional. The POINTING keyword is checked in the metadata, not original headers. Closes #1002. (@wtgee #1009)
   * Passing approved headers will actually write them to file. (@wtgee #1009)
   * ``blocking=False`` param added. If True, will wait on observation_event. (@wtgee #1009)
@@ -58,6 +135,7 @@ Changed
 * Changelog cleanup. (@wtgee #1008)
 * ``panoptes-utils`` updates:
 
+  * Updated ``panoptes-utils`` to ``v0.2.30``. (@wtgee #1066)
   * Updated ``panoptes-utils`` to ``v0.2.29``. (@wtgee #1021)
   * Updated ``panoptes-utils`` to ``v0.2.28``. (@wtgee #1007)
   * Updated ``panoptes-utils`` to ``v0.2.27`` to support the envvars for starting config server. (@wtgee #1001)
@@ -74,12 +152,17 @@ Changed
 
 * Docker:
 
+  * Default ``$PANUSER`` is now ``pocs-user`` instead of ``panoptes``. (@wtgee #1066)
+  * Docker images default to ``latest`` instead of ``develop``. (@wtgee #1066)
+  * Removed ``developer`` docker image. (@wtgee #1066)
   * Updated to match ``panoptes-utils`` Docker updates: removal of ``source-extractor`` and more. (@wtgee #1008)
   * ``gphoto2`` comes from apt. (@wtgee #1007)
   * Local setup script doesn't build ``panoptes-utils`` but assumes done otherwise or uses ``gcr.io``. (@wtgee #1007)
 
 * Testing:
 
+  * Added ``tests/env`` file for setting up testing. (@wtgee #1066)
+  * Config server is started as part of pytest again (reverting below). (@wtgee #1066)
   * Testing is run from a locally built Docker image for both local and CI testing. (@wtgee #1001)
   * Config file for testing is moved to ``$PANDIR/tests/testing.yaml``. (@wtgee #1001)
   * Config server for testing is started external to ``pytest``, which is currently lowering coverage. (@wtgee #1001)
@@ -93,6 +176,8 @@ Changed
 Removed
 ~~~~~~~
 
+* Removed testing and local setup scripts. (@wtgee #1066)
+* Removed manuals from ``resources`` directory. (@wtgee #1066)
 * Removed all arduino files, to be replaced by Firmata. See instructions on gitbook docs. (@wtgee #1035)
 * Remove ``create_camera_simulator`` helper function. (@wtgee #1007)
 
@@ -469,4 +554,3 @@ Added
 * Automated testing with travis-ci.org
 * Code coverage via codecov.io
 * Basic install scripts
-

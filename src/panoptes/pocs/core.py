@@ -1,17 +1,14 @@
 import os
-import sys
-import warnings
 from threading import Thread
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.state.machine import PanStateMachine
-from panoptes.utils import current_time
-from panoptes.utils import get_free_space
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_free_space
+from panoptes.utils.time import CountdownTimer
 
 
 class POCS(PanStateMachine, PanBase):
@@ -426,7 +423,8 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte,
+                       low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:

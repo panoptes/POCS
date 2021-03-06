@@ -4,12 +4,10 @@ from contextlib import suppress
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
-
 from panoptes.pocs.base import PanBase
-
-from panoptes.utils import current_time
+from panoptes.utils.time import current_time
 from panoptes.utils import error
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import CountdownTimer
 
 
 class AbstractMount(PanBase):
@@ -486,9 +484,9 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        assert isinstance(coords, tuple), self.logger.warning(
-            'slew_to_coordinates expects RA-Dec coords')
-
+        if not isinstance(coords, SkyCoord):
+            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
+                            f" got {type(coords)}.")
         response = 0
 
         if not self.is_parked:

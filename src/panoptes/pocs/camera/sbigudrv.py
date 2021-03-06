@@ -9,18 +9,18 @@ ctypes.Structures, plus a class (SBIGDriver) to load the library
 and call the single command function (SBIGDriver._send_command()).
 """
 import ctypes
-import time
-import threading
 import enum
+import threading
+import time
 
 import numpy as np
-from numpy.ctypeslib import as_ctypes
 from astropy import units as u
-
+from numpy.ctypeslib import as_ctypes
 from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
-from panoptes.utils import CountdownTimer
-from panoptes.utils import get_quantity_value
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.utils import get_quantity_value
+
 
 ################################################################################
 # Main SBIGDriver class
@@ -527,7 +527,7 @@ class SBIGDriver(AbstractSDKDriver):
 
         return self._cfw_parse_results(cfw_goto_results)
 
-# Private methods
+    # Private methods
 
     def _cfw_poll(self, handle, position, model='AUTO', cfw_event=None, timeout=None):
         """
@@ -819,7 +819,6 @@ command_codes = {'CC_NULL': 0,
 # command code.
 commands = {code: command for command, code in command_codes.items()}
 
-
 # Camera error messages
 errors = {0: 'CE_NO_ERROR',
           1: 'CE_CAMERA_NOT_FOUND',
@@ -936,7 +935,6 @@ camera_types = {4: "ST7_CAMERA",
 
 # Reverse dictionary
 camera_type_codes = {camera: code for code, camera in camera_types.items()}
-
 
 #################################################################################
 # Open Device, Establish Link, Get Link status related
@@ -1345,7 +1343,6 @@ readout_modes = {0: 'RM_1X1',
                  10: 'RM_NXN'}
 
 readout_mode_codes = {mode: code for code, mode in readout_modes.items()}
-
 
 # Command status codes and corresponding messages as returned by
 # Query Command Status
