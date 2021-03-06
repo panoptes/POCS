@@ -1,11 +1,11 @@
 from contextlib import suppress
 import time
 from enum import IntEnum
+
 from pymata4 import pymata4
 import pandas as pd
 from streamz import Stream
-from streamz.dataframe import PeriodicDataFrame
-
+from streamz.dataframe import PeriodicDataFrame as DataFrame
 from panoptes.pocs.base import PanBase
 
 
@@ -89,7 +89,8 @@ class PowerBoard(PanBase):
 
         arduino_instance_id = arduino_instance_id or self.config.get('arduino_instance_id', 1)
         self._current_stream = Stream()
-        self.current_df = DataFrame(self._current_stream, example=pd.DataFrame({'channel': [], 'reading': []}))
+        self.current_df = DataFrame(self._current_stream,
+                                    example=pd.DataFrame({'channel': [], 'reading': []}))
 
         # Set up the PymataExpress board.
         self.logger.debug(f'Setting up Power board connection')
@@ -267,7 +268,8 @@ class PowerBoard(PanBase):
 class Relay(PanBase):
     """A relay object."""
 
-    def __init__(self, board, pin_number, name, label=None, initial_state=PinState.LOW, sensing_enabled=True,
+    def __init__(self, board, pin_number, name, label=None, initial_state=PinState.LOW,
+                 sensing_enabled=True,
                  sensing_pin=None, *args, **kwargs):
         """Initialize a relay object."""
 
@@ -333,7 +335,8 @@ class Relay(PanBase):
         self.label = label
         if save:
             self.set_config(f'environment.power.relays.{self.name}.label', label)
-            self.logger.info(f'Saved relay={self.name} label={label} to pin_number={self.pin_number}')
+            self.logger.info(
+                f'Saved relay={self.name} label={label} to pin_number={self.pin_number}')
 
     def __str__(self):
         return f'{self.label:12s} [{self.name} {self.pin_number:02d}] - {self.state}'
