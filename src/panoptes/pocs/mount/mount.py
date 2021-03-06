@@ -4,9 +4,7 @@ from contextlib import suppress
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
-
 from panoptes.pocs.base import PanBase
-
 from panoptes.utils.time import current_time
 from panoptes.utils import error
 from panoptes.utils.time import CountdownTimer
