@@ -46,8 +46,8 @@ scheduler:
   check_file: False
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: cem40   #  ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
