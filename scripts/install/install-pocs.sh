@@ -249,6 +249,9 @@ function do_install() {
 
   get_or_build_images
 
+  # Enable byobu
+  byobu-enable
+
   echo "Please reboot your machine before using POCS."
 
   read -p "Reboot now? [y/N]: " -r
