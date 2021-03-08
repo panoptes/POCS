@@ -141,6 +141,8 @@ function install_docker() {
   sudo usermod -aG docker "${PANUSER}"
 
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
+
+  rm "${HOME}/install-pocs.sh"
 }
 
 function get_or_build_images() {
@@ -181,6 +183,8 @@ function install_conda() {
 
   # Install panoptes-utils (so we get panoptes-config-server)
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
+
+  rm "${HOME}/install-pocs.sh"
 }
 
 function install_zsh() {
