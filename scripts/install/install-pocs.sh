@@ -255,9 +255,6 @@ function do_install() {
 
   get_or_build_images
 
-  # Fix the time?
-  sudo date -s "$(wget -qSO- --max-redirect=0 google.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
-
   echo "Please reboot your machine before using POCS."
 
   read -p "Reboot now? [y/N]: " -r
