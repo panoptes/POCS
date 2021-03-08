@@ -9,6 +9,7 @@ services:
       mode: global
     restart: on-failure
     init: true
+    tty: true
     container_name: pocs-config-server
     hostname: pocs-config-server
     network_mode: host
@@ -18,8 +19,8 @@ services:
       PANOPTES_CONFIG_FILE:
     command: [ "panoptes-config-server --verbose run --no-save-local --no-load-local --config-file /POCS/conf_files/pocs.yaml" ]
     volumes:
-      - "./logs:/POCS/logs"
-      - "./conf_files:/POCS/conf_files"
+      - config:/POCS/conf_files
+      - panlog:/POCS/logs
   pocs-control:
     image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
     depends_on:
@@ -39,8 +40,34 @@ services:
     environment:
       PANOPTES_CONFIG_HOST: localhost
       PANOPTES_CONFIG_PORT: 6563
-    command: [ "wait-for-it localhost:6563 -- ipython" ]
+    command: [ "wait-for-it localhost:6563 -- jupyter lab --no-browser --ip 0.0.0.0 -y" ]
     volumes:
-      - "./logs:/POCS/logs"
-      - "./images:/POCS/images"
-      - "./json_store:/POCS/json_store"
+      - config:/POCS/conf_files
+      - panlog:/POCS/logs
+      - images:/POCS/images
+      - json_store:/POCS/json_store
+volumes:
+  panlog:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PANDIR}/logs
+      o: bind
+  images:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PANDIR}/images
+      o: bind
+  config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PANDIR}/conf_files/
+      o: bind
+  json_store:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PANDIR}/json_store
+      o: bind
