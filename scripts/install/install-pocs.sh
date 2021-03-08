@@ -63,7 +63,7 @@ PS3="Select: "
 
 # TODO should be checking to matching userid=1000
 PANUSER="${PANUSER:-$USER}"
-PANDIR="${PANDIR:-${HOME}/panoptes}"
+PANDIR="${PANDIR:-${HOME}/pocs}"
 HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
