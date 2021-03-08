@@ -1,7 +1,7 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
-  - ipython  # Interactive
+  - jupyterlab  # Interactive
   - matplotlib-base
   - numpy
   - photutils

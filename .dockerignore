@@ -19,7 +19,6 @@ logs/
 **/*.egg-info
 **/*.pyc
 **/__pycache__
-notebooks
 examples
 docs
 coverage.xml
