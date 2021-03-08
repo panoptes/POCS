@@ -61,10 +61,6 @@ usage() {
 # Better select prompt.
 PS3="Select: "
 
-# run docker-compose:
-#  * copy pocs.yaml and docker-compose.yaml from container to host
-#  * set PANOPTES_CONFIG_FILE=conf_files above
-
 # TODO should be checking to matching userid=1000
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/panoptes}"
