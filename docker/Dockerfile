@@ -46,7 +46,6 @@ RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" docker/docker-compose.yaml .
 COPY --chown="${userid}:${userid}" conf_files conf_files
-COPY --chown="${userid}:${userid}" notebooks notebooks
 COPY --chown="${userid}:${userid}" resources resources
 COPY --chown="${userid}:${userid}" scripts scripts
 COPY --chown="${userid}:${userid}" tests/data tests/data
