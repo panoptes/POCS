@@ -68,7 +68,7 @@ PS3="Select: "
 # TODO should be checking to matching userid=1000
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/panoptes}"
-HOST="${HOST:-pocs-control}"
+HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
@@ -94,11 +94,11 @@ function which_version() {
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
-      HOST="pocs-control"
+      HOST="pocs-control-box"
       break
       ;;
     "Camera box")
-      HOST="pocs-camera"
+      HOST="pocs-camera-box"
       break
       ;;
     "My computer")
