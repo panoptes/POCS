@@ -9,4 +9,4 @@ dependencies:
   - pip
   - scipy
   - pip:
-      - panoptes-utils[config]
+      - panoptes-utils[config]>=0.2.32

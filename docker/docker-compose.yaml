@@ -46,7 +46,6 @@ services:
       - panlog:/POCS/logs
       - images:/POCS/images
       - json_store:/POCS/json_store
-      - notebooks:/POCS/notebooks
 volumes:
   panlog:
     driver: local
@@ -71,10 +70,4 @@ volumes:
     driver_opts:
       type: none
       device: ${PANDIR}/json_store
-      o: bind
-  notebooks:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${PANDIR}/notebooks
       o: bind
