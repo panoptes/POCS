@@ -7,7 +7,6 @@ dependencies:
   - photutils
   - pillow
   - pip
-  - readline  # POCS shell
   - scipy
   - pip:
-      - panoptes-utils[config] >= 0.2.30
+      - panoptes-utils[config]
