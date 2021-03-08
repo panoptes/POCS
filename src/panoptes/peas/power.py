@@ -5,7 +5,7 @@ from enum import IntEnum
 from pymata4 import pymata4
 import pandas as pd
 from streamz import Stream
-from streamz.dataframe import PeriodicDataFrame as DataFrame
+from streamz.dataframe import DataFrame
 from panoptes.pocs.base import PanBase
 
 
@@ -91,6 +91,7 @@ class PowerBoard(PanBase):
         self._current_stream = Stream()
         self.current_df = DataFrame(self._current_stream,
                                     example=pd.DataFrame({'channel': [], 'reading': []}))
+        self._current_stream.map(pd.concat)
 
         # Set up the PymataExpress board.
         self.logger.debug(f'Setting up Power board connection')
@@ -152,16 +153,16 @@ class PowerBoard(PanBase):
             self.board.set_pin_mode_digital_output(pin.value)
             self.set_pin_state(pin.value, PinState.LOW)
 
+        for pin in CurrentEnablePins:
+            self.logger.info(f'Setting current enable pin={pin} as digital output with state=high')
+            self.board.set_pin_mode_digital_output(pin.value)
+            self.set_pin_state(pin.value, PinState.HIGH)
+
         for pin in CurrentSensePins:
             self.logger.debug(f'Setting current sense pin={pin} as analog input')
             self.board.set_pin_mode_analog_input(pin.value,
                                                  callback=analog_callback,
                                                  differential=analog_differential)
-
-        for pin in CurrentEnablePins:
-            self.logger.info(f'Setting current enable pin={pin} as digital output with state=high')
-            self.board.set_pin_mode_digital_output(pin.value)
-            self.set_pin_state(pin.value, PinState.HIGH)
 
     def set_pin_state(self, pin_number, state):
         """Set the relay to the given state.

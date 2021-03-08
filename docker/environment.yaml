@@ -1,7 +1,7 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
-  - ipython  # Interactive
+  - jupyterlab  # Interactive
   - matplotlib-base
   - numpy
   - photutils
@@ -10,4 +10,4 @@ dependencies:
   - readline  # POCS shell
   - scipy
   - pip:
-      - panoptes-utils[config] >= 0.2.30
+      - panoptes-utils[config]
