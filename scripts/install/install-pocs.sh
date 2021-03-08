@@ -216,11 +216,6 @@ source \$ZSH/oh-my-zsh.sh
 unsetopt share_history
 
 EOT
-
-  # Enable byobu by default on the shells.
-  cat >>"${HOME}/.profile" <<EOT
-_byobu_sourced=1 . /usr/bin/byobu-launch 2>/dev/null || true
-EOT
 }
 
 function do_install() {
