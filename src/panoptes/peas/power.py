@@ -1,11 +1,14 @@
-from contextlib import suppress
+import asyncio
 import time
 from enum import IntEnum
+from dataclasses import dataclass
+from typing import Optional
+from functools import partial
+from collections import deque
 
-from pymata4 import pymata4
-import pandas as pd
+import numpy as np
+from pymata_express import pymata_express
 from streamz import Stream
-from streamz.dataframe import DataFrame
 from panoptes.pocs.base import PanBase
 
 
@@ -27,23 +30,53 @@ class RelayPins(IntEnum):
 
 
 class CurrentSensePins(IntEnum):
-    """Analog pins on which the current can be read."""
-    IS_0 = 0  # A0 - Sensing for RELAY_0 or RELAY_1
-    IS_1 = 1  # A1 - Sensing for RELAY_2 or RELAY_3
+    """Analog pins on which the current can be read.
+
+    The [] below indicates the disabled relays w.r.t current sensing.
+    See the PowerBoard docs.
+    """
+    IS_0 = 0  # A0 - Sensing for RELAY_0 [or RELAY_1]
+    IS_1 = 1  # A1 - Sensing for RELAY_2 [or RELAY_3]
     IS_2 = 2  # A2 - Sensing for RELAY_4
 
 
 class CurrentSelectPins(IntEnum):
-    """Pins for selecting current sensing channel of a PROFET."""
-    DSEL_0 = 2  # LOW for RELAY_0, HIGH for RELAY_1
-    DSEL_1 = 6  # LOW for RELAY_2, HIGH for RELAY_3
+    """Digital output pins for selecting current sensing channel of a PROFET.
+
+    The [] below indicates the disabled relays w.r.t current sensing.
+    See the PowerBoard docs.
+    """
+    DSEL_0 = 2  # LOW for RELAY_0, [HIGH for RELAY_1]
+    DSEL_1 = 6  # LOW for RELAY_2, [HIGH for RELAY_3]
 
 
 class CurrentEnablePins(IntEnum):
-    """Pins for enabling the current sensing."""
-    DEN_0 = 18  # A4 - Enable RELAY_0 and RELAY_1
-    DEN_1 = 5  # Enable RELAY_2 and RELAY_3
+    """Pins for enabling the current sensing.
+
+    The [] below indicates the disabled relays w.r.t current sensing.
+    See the PowerBoard docs.
+    """
+    DEN_0 = 18  # A4 - Enable RELAY_0 [and RELAY_1]
+    DEN_1 = 5  # Enable RELAY_2 [and RELAY_3]
     DEN_2 = 9  # Enable RELAY_4
+
+
+# This is a simple lookup because we are restricting the relays that can be sensed.
+SENSE_ENABLED_RELAY_LOOKUP = {
+    CurrentSensePins.IS_0: RelayPins.RELAY_0,
+    CurrentSensePins.IS_1: RelayPins.RELAY_2,
+    CurrentSensePins.IS_2: RelayPins.RELAY_4,
+}
+
+
+@dataclass
+class Relay:
+    """Relay data class"""
+    name: str
+    pin_number: int
+    label: Optional[str]
+    current_readings: deque
+    state: Optional[PinState] = PinState.OFF
 
 
 class PowerBoard(PanBase):
@@ -52,14 +85,37 @@ class PowerBoard(PanBase):
     This represents a "trucker" board for PANOPTES, which is a combination of an
     Arduino Uno and an Infineon 24V relay shield.
 
+    The relay shield has three PROFETs on them that are capable of sensing the
+    current through the relay. RELAY_4 has a dedicated PROFET. The other two
+    PROFETs can switch between two relays depending on the status of the appropriate
+    DSEL pin.
+
+    The arduino is currently using FirmataExpress so that the logic can be controlled
+    from the client (python; this file) side. This provides various benefits, such
+    as auto-discovery of the arduino as well as efficient IO.  However, it makes
+    it difficult (although not impossible) to implement properly on the client
+    side.  For now we simply restrict current sensing to a single relay per PROFET.
+    For simplicity these are RELAY_0, RELAY_2, and RELAY_4.
+
+        RELAY_0──DSEL_0_HIGH───IS_0  DEN_0_HIGH
+
+        RELAY_1───DSEL_0_LOW────IS_0  DEN_0_HIGH  [CURRENTLY DISABLED]
+
+        RELAY_2───DSEL_1_HIGH───IS_1  DEN_1_HIGH
+
+        RELAY_3───DSEL_1_LOW────IS_1  DEN_1_HIGH  [CURRENTLY DISABLED]
+
+        RELAY_4─────────────────IS_2  DEN_2_HIGH
+
     Pin names specified above correspond to Infineon terminology. See manual:
     https://bit.ly/2IGgWLQ.
     """
 
     def __init__(self,
                  name='Power Board',
-                 arduino_instance_id=None,
                  relays=None,
+                 arduino_instance_id=1,
+                 analog_differential=5,
                  *args, **kwargs):
         """Initialize the power board.
 
@@ -72,66 +128,128 @@ class PowerBoard(PanBase):
 
         Args:
             name (str): The user-friendly name for the power board.
+            relays (dict[Relay] or None): The relay configuration. See notes for details.
+                A default value of None will attempt to look up relays in the
+                config-server.
             arduino_instance_id (int or None): If multiple arduinos are present
                 on the system the specific board can be specified with this parameter.
                 Requires setting the instance_id in the arduino sketch before upload.
                 If None, pymata will attempt auto-discovery of the arduinos.
-            relays (dict or None): The relay configuration. See notes for details.
-                A default value of None will attempt to look up relays in the
-                config-server.
+            analog_differential (int): Analog values are only reported if they differ from the
+                previous value by this amount, default 5 of 1023.
         """
         super().__init__(*args, **kwargs)
-
         self.name = name
 
-        # Lookup config for power board.
-        self.config = self.get_config('environment.power')
-
-        arduino_instance_id = arduino_instance_id or self.config.get('arduino_instance_id', 1)
-        self._current_stream = Stream()
-        self.current_df = DataFrame(self._current_stream,
-                                    example=pd.DataFrame({'channel': [], 'reading': []}))
-        self._current_stream.map(pd.concat)
+        # Set up a processing stream to do a sliding median on the sensed current.
+        self._current_stream = self._build_stream()
 
         # Set up the PymataExpress board.
         self.logger.debug(f'Setting up Power board connection')
-        self.board = pymata4.Pymata4(arduino_instance_id=arduino_instance_id)
+        self.event_loop = asyncio.get_event_loop()
+        self.arduino_board = pymata_express.PymataExpress(arduino_instance_id=arduino_instance_id)
+
+        self.relay_labels = dict()
+        self.relays = dict()
+        self.setup_relays(relays)
 
         # Set initial pin modes.
-        self.pin_states = dict()
-        self.set_pin_modes()
+        self.event_loop.run_until_complete(self.set_pin_modes(analog_differential=analog_differential))
 
-        self.relays = dict()
-
-        # Set relays.
-        relays_config = relays or self.config.get('relays', dict())
-        self.logger.debug(f'Setting initial relay states')
-        for relay_name, relay_config in relays_config.items():
-            relay_label = relay_config.get('label') or relay_name
-
-            # Create relay object.
-            self.logger.debug(f'Creating relay_label={relay_label} for {relay_config}')
-            relay = Relay(self.board, RelayPins[relay_name].value, relay_name, **relay_config)
-
-            # Add attribute for the board.
-            setattr(self, relay_label, relay)
-
-            # Add to relays list by name, label, and pin_number, which should all be different.
-            self.relays[relay.name] = relay
-            self.relays[relay.label] = relay
-            self.relays[relay.pin_number] = relay
-
-            self.logger.info(f'{relay_label} added to board: {relay}')
+        # Set initial relay states.
+        for relay in self.relays.values():
+            self.change_relay_state(relay, relay.state)
 
         self.logger.success(f'Power board initialized')
-        self.logger.info(f'Relays: {self.relays!r}')
 
-    def set_pin_modes(self, analog_callback=None, analog_differential=0):
+    def turn_on(self, label):
+        """Turns on the relay with the given label."""
+        self.change_relay_state(self.relay_labels[label], PinState.ON)
+
+    def turn_off(self, label):
+        """Turns off the relay with the given label."""
+        self.change_relay_state(self.relay_labels[label], PinState.OFF)
+
+    def setup_relays(self, relays):
+        """Set the relays"""
+        self.logger.debug(f'Setting initial relay states')
+        for relay_name, relay_config in relays.items():
+            relay_label = relay_config.get('label') or relay_name
+            initial_state = PinState[relay_config.get('initial_state', 'off').upper()]
+
+            # Create relay object.
+            self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
+            relay = Relay(pin_number=RelayPins[relay_name].value,
+                          name=relay_name,
+                          label=relay_config.get('label', ''),
+                          current_readings=deque(maxlen=10),
+                          state=initial_state
+                          )
+
+            # Track relays by name and friendly label.
+            self.relays[relay.name] = relay
+            self.relay_labels[relay.label] = relay
+
+            self.logger.info(f'{relay.label} added to board')
+
+        self.logger.success(f'Relays: {self.relays!r}')
+
+    def change_relay_state(self, relay, new_state):
+        """Changes the relay to the new state.
+
+        Note: This waits for the async calls to finish.
+        """
+        self.event_loop.run_until_complete(self.set_pin_state(relay.pin_number, new_state.value))
+        relay.state = new_state
+
+    async def set_pin_state(self, pin_number, state):
+        """Set the relay to the given state.
+
+        Args:
+            pin_number (int): The pin number of the relay to turn on.
+            state (bool or int): True for PinState.ON, False for PinState.OFF.
+        """
+        self.logger.debug(f'Setting digital output pin={pin_number} to {state=}')
+        await self.arduino_board.digital_write(pin_number, state)
+
+    async def get_pin_state(self, pin_number):
+        """Get the digital pin state.
+
+        Args:
+            pin_number (int): The pin number read state from.
+
+        Returns:
+            int: The PinState of the pin.
+        """
+        state, timestamp = await self.arduino_board.digital_read(pin_number)
+        self.logger.info(f'{pin_number=} {state=} {timestamp=}')
+
+        return state
+
+    async def _analog_callback(self, data):
+        """Send analog values downstream for processing.
+
+        See: https://mryslab.github.io/pymata-express/
+
+        Args:
+            data (list): A list containing: [pin_type=2, pin=[0,1,2], value, timestamp]
+        """
+        sensed_pin = data[1]
+        relay = SENSE_ENABLED_RELAY_LOOKUP[CurrentSensePins(sensed_pin)]
+        sensed_value = data[2]
+        timestamp = data[3]
+
+        data = dict(relay=relay, value=sensed_value, timestamp=timestamp)
+
+        # Send downstream.
+        self._current_stream.emit(data)
+
+    async def set_pin_modes(self, analog_callback=None, analog_differential=5):
         """Set the pin modes for the Arduino Uno + Infineon Uno 24V shield.
 
         An optional callback can be specified for the analog input pins. This
         callback should accept a single parameter that will be populated with a
-        list containing: [pin, current reported value, pin_mode, timestamp]
+        list containing: [pin, current reported value, pin_mode, timestamp].
 
         Args:
             analog_differential (int): Input values are only reported if the difference
@@ -142,202 +260,78 @@ class PowerBoard(PanBase):
                 `self.analog_callback` is used.
         """
         if analog_callback is None:
-            analog_callback = self.analog_callback
+            analog_callback = self._analog_callback
 
+        # Set up relays so they can be turned on and off.
         for pin in RelayPins:
-            self.logger.info(f'Setting relay pin={pin} as digital output')
-            self.board.set_pin_mode_digital_output(pin.value)
+            self.logger.info(f'Setting relay {pin=} as digital output')
+            await self.arduino_board.set_pin_mode_digital_output(pin.value)
 
-        for pin in CurrentSelectPins:
-            self.logger.info(f'Setting current select pin={pin} as digital output with state=low')
-            self.board.set_pin_mode_digital_output(pin.value)
-            self.set_pin_state(pin.value, PinState.LOW)
-
+        # Enable current sensing on all PROFETs.
         for pin in CurrentEnablePins:
-            self.logger.info(f'Setting current enable pin={pin} as digital output with state=high')
-            self.board.set_pin_mode_digital_output(pin.value)
-            self.set_pin_state(pin.value, PinState.HIGH)
+            self.logger.info(f'Setting current enable {pin=} as digital output with state=high')
+            await self.arduino_board.set_pin_mode_digital_output(pin.value)
+            await self.set_pin_state(pin.value, PinState.HIGH)
 
+        # Set to LOW to enable RELAY_0 and RELAY_4.
+        for pin in CurrentSelectPins:
+            self.logger.info(f'Setting current select {pin=} as digital output with state=low')
+            await self.arduino_board.set_pin_mode_digital_output(pin.value)
+            await self.set_pin_state(pin.value, PinState.LOW)
+
+        # Start sensing!
         for pin in CurrentSensePins:
-            self.logger.debug(f'Setting current sense pin={pin} as analog input')
-            self.board.set_pin_mode_analog_input(pin.value,
-                                                 callback=analog_callback,
-                                                 differential=analog_differential)
+            self.logger.debug(f'Setting current sense {pin=} as analog input')
+            await self.arduino_board.set_pin_mode_analog_input(pin.value,
+                                                               callback=analog_callback,
+                                                               differential=analog_differential)
 
-    def set_pin_state(self, pin_number, state):
-        """Set the relay to the given state.
+    def shutdown(self):
+        """Powers down the board"""
+        self.event_loop.run_until_complete(self.arduino_board.shutdown())
 
-        Args:
-            pin_number (int or Enum): The pin number of the relay to turn on.
-            state (bool or PinState): A state that evaluates to True for "on" and False for "off".
+    def _build_stream(self):
+        """Build a stream for processing the analog readings.
 
-        Returns:
-            bool: True if pin state successfully set.
-        """
-        # Assume pin_number is an enum
-        with suppress(AttributeError):
-            pin_number = pin_number.value
-
-        state = PinState(bool(state)).value
-        self.logger.trace(f'Setting digital output pin={pin_number} to {state}')
-        self.board.digital_write(pin_number, state)
-        self.pin_states[pin_number] = state
-
-    def get_pin_state(self, pin_number):
-        """Get the digital pin state.
-
-        Args:
-            pin_number (int or str or Enum): The pin number or name of the relay
-                to read state from.
+        The stream will receive a dict with 'relay', 'value', and 'timestamp'.
 
         Returns:
-            bool: True if pin is HIGH, False if LOW.
+            streamz.Stream: A processing stream.
         """
-        with suppress(AttributeError):
-            pin_number = pin_number.value
-        state, timestamp = self.board.digital_read(pin_number)
-        self.logger.info(f'{pin_number} = {state} (at {timestamp})')
+        stream = Stream()
 
-        return bool(state)
+        def filter_streams(reading, relay):
+            """Split stream based on which relay was sensed."""
+            return reading['relay'] == relay
 
-    def analog_callback(self, data):
-        """Print analog values as they are read.
+        split_streams = [
+            stream.filter(partial(filter_streams, relay=relay))
+            for relay in SENSE_ENABLED_RELAY_LOOKUP.values()
+        ]
 
-        A callback function to report data changes.
-        This will print the pin number, its reported value
-        the pin type (digital, analog, etc.) and
-        the date and time when the change occurred
+        def get_sliding_value(readings):
+            # All the same relay, grab first.
+            relay = readings[0]['relay']
+            sliding_median = np.median([r['value'] for r in readings])
+            return dict(relay=relay, value=sliding_median)
 
-        Copied from: https://mryslab.github.io/pymata4/
+        # Run a sliding mean on each relay stream.
+        sliding_streams = [
+            stream.sliding_window(10, return_partial=False).map(get_sliding_value)
+            for stream in split_streams
+        ]
 
-        Args:
-            data (list): A list containing: [pin, value, pin_mode, timestamp]
-        """
-        self.logger.trace(f'Power board analog data: {data!r}')
-        sense_pin = CurrentSensePins(data[1])
-        sense_value = data[2]
-        sense_timestamp = self._format_time(data[3])
+        def update_relay(reading):
+            relay = reading['relay']
+            value = reading['value']
+            relay.current_readings.append(value)
 
-        self.logger.trace(f'Callback: {data!r} {sense_pin}')
+        Stream.union(*sliding_streams).sink(update_relay)
 
-        relay_lookup = {
-            CurrentSensePins.IS_0: (RelayPins.RELAY_0.name, RelayPins.RELAY_1.name),
-            CurrentSensePins.IS_1: (RelayPins.RELAY_2.name, RelayPins.RELAY_3.name),
-            CurrentSensePins.IS_2: (RelayPins.RELAY_4.name,),
-        }
-
-        select_pin_lookup = {
-            CurrentSensePins.IS_0: CurrentSelectPins.DSEL_0.value,
-            CurrentSensePins.IS_1: CurrentSelectPins.DSEL_1.value,
-        }
-
-        relay = None
-        # Get relay  names for the channel.
-        relay_names = relay_lookup[sense_pin]
-
-        try:
-            if sense_pin == CurrentSensePins.IS_2.value:
-                with suppress(KeyError):
-                    relay = self.relays[relay_names[0]]
-            else:
-                # See if channel is high or low.
-                select_state = self.pin_states[select_pin_lookup[sense_pin]]
-
-                # Get the relay based on which channel is selected.
-                relay = self.relays[relay_names[select_state]]
-
-            if relay is not None:
-                # Emit to dataframe stream.
-                current_df = pd.DataFrame({'channel': relay.label, 'reading': sense_value},
-                                          index=[pd.to_datetime(sense_timestamp)])
-                self._current_stream.emit(current_df)
-                self.logger.debug(f'{relay} current={sense_value}')
-        except Exception as e:
-            self.logger.error(f'{sense_pin} {sense_value} {e!r}')
+        return stream
 
     def _format_time(self, t0, str_format='%Y-%m-%d %H:%M:%S'):
         return time.strftime(str_format, time.localtime(t0))
 
     def __str__(self):
-        return f'Power Distribution Board - {self.name}'
-
-    def __del__(self):
-        self.logger.debug(f'Shutting down power board.')
-        self.board.shutdown()
-
-
-class Relay(PanBase):
-    """A relay object."""
-
-    def __init__(self, board, pin_number, name, label=None, initial_state=PinState.LOW,
-                 sensing_enabled=True,
-                 sensing_pin=None, *args, **kwargs):
-        """Initialize a relay object."""
-
-        super().__init__(*args, **kwargs)
-        self.board = board
-        self.pin_number = pin_number
-        self.name = name
-
-        self.label = None
-        self.set_label(label, save=False)
-
-        # Flexible entry types for initial state.
-        self.initial_state = initial_state
-        if self.initial_state is None:
-            self.initial_state = PinState.LOW
-        else:
-            if type(self.initial_state) == 'str':
-                # See if a pin label.
-                with suppress(KeyError):
-                    self.initial_state = PinState[self.initial_state.upper()]
-            else:
-                with suppress(ValueError):
-                    self.initial_state = PinState(self.initial_state)
-
-        self.state = None
-
-        self.sensing_enabled = sensing_enabled
-        self.sensing_pin = sensing_pin
-
-        if type(self.initial_state) == PinState:
-            self.logger.info(f'{self.name} setting initial state to {self.initial_state}')
-            self.board.digital_write(self.pin_number, self.initial_state.value)
-            self.state = self.initial_state
-
-    def turn_on(self):
-        """Sets the relay to PinState.HIGH"""
-        self.logger.info(f'Turning {self.label} on.')
-        self.board.digital_write(self.pin_number, PinState.HIGH.value)
-        self.state = PinState.HIGH
-
-    def turn_off(self):
-        """Sets the relay to PinState.LOW"""
-        self.logger.info(f'Turning {self.label} off.')
-        self.board.digital_write(self.pin_number, PinState.LOW.value)
-        self.state = PinState.LOW
-
-    def toggle(self, delay=1):
-        """Toggles the relay with a delay."""
-        original_state = self.state
-        temp_state = not original_state
-        self.logger.info(f'{self} - Toggling from {original_state} with {delay} second delay')
-        self.board.digital_write(self.pin_number, temp_state)
-        time.sleep(delay)
-        self.board.digital_write(self.pin_number, original_state)
-
-    def set_label(self, label, save=False):
-        """Sets the label for the relay and optionally save back to the config.
-
-        Args:
-            label (str): The label for the pin.
-            save (bool): Save the new label to the config, default True.
-        """
-        self.label = label
-        if save:
-            self.set_config(f'environment.power.relays.{self.name}.label', label)
-            self.logger.info(
-                f'Saved relay={self.name} label={label} to pin_number={self.pin_number}')
-
-    def __str__(self):
-        return f'{self.label:12s} [{self.name} {self.pin_number:02d}] - {self.state}'
+        return f'{self.name} - {[relay.state for relay in self.relays]}'
