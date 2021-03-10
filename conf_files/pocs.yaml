@@ -91,11 +91,27 @@ cameras:
 # Configuration for the power distribution board and other environmental sensors.
 ################################################################################
 environment:
-  auto_detect: False
+  # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
+  power:
+    auto_detect: true
+    relays:
+      RELAY_0:
+        label: weather_station
+        default_state: on
+      RELAY_1:
+        label: unused
+        default_state: off
+      RELAY_2:
+        label: fans
+        default_state: on
+      RELAY_3:
+        label: unused
+        default_state: off
+      RELAY_4:
+        label: mount
+        default_state: on
   camera_board:
     serial_port: /dev/ttyACM0
-  control_board:
-    serial_port: /dev/ttyACM1
   weather:
     url: http://localhost:5000/latest.json
 

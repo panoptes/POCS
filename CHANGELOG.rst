@@ -16,6 +16,7 @@ Generic
   * Docker image only contains limited set of files.
   * Directories inside the service image have been simplified for easier mapping onto desired targets on the host. The main top-level directory (i.e. ``$PANDIR``) is now ``/POCS`` with other folders nested underneath.
   * Removing ``peas`` scripts.
+  * New Power Board and arduino sketch for controlling power and reading currents. #1038
   * Serial Mount: clarify the ``driver``, ``brand``, and ``model`` options.  #1085
 
     * ``brand`` and ``model`` determine the directory/file to use for looking up the mount commands. ``brand`` should be a subdir of the ``directories.mounts`` config entry (which is set to ``resources/mounts`` by default) and ``model`` should be the name of the yaml file (without the extension).

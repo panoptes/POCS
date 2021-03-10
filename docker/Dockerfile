@@ -2,6 +2,9 @@ ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
 FROM ${image_url}:${image_tag} AS pocs-base
 
+# Or ARM64 for rpi
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
+
 LABEL description="PANOPTES Observatory Control System Service"
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
@@ -24,6 +27,16 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo mkdir /images && sudo chown -R "${userid}:${userid}" /images && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
+
+# Set up arduino
+RUN echo "Installing arduino-cli from ${arduino_url}" && \
+    wget -q "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/AMD64/').tar.gz" \
+        -O arduino-cli.tar.gz && \
+    tar zxvf arduino-cli.tar.gz && \
+    mkdir -p "${HOME}/bin" && \
+    mv arduino-cli "${HOME}/bin/arduino-cli"  && \
+    echo "export PATH=$HOME/bin:$PATH" >> "${HOME}/.bashrc" && \
+    rm LICENSE.txt
 
 COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
