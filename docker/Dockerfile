@@ -3,8 +3,7 @@ ARG image_tag=develop
 FROM ${image_url}:${image_tag} AS pocs-base
 
 # Or ARM64 for rpi
-ARG platform="$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/AMD64/')"
-ARG arduino_url=https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_${platform}.tar.gz
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
 
 LABEL description="PANOPTES Observatory Control System Service"
 LABEL maintainers="developers@projectpanoptes.org"
@@ -31,8 +30,10 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
 
 # Set up arduino
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
-    wget -q "${arduino_url}" -O arduino-cli.tar.gz && \
+    wget -q "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/AMD64/').tar.gz" \
+        -O arduino-cli.tar.gz && \
     tar zxvf arduino-cli.tar.gz && \
+    mkdir -p "${HOME}/bin" && \
     mv arduino-cli "${HOME}/bin/arduino-cli"  && \
     rm LICENSE.txt
 
