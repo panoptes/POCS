@@ -112,7 +112,7 @@ class PowerBoard(PanBase):
 
         # Set initial relay states.
         for relay in self.relays.values():
-            self.change_relay_state(relay, relay.state)
+            self.change_relay_state(relay, relay.default_state)
 
         self.start_reading_status()
 
