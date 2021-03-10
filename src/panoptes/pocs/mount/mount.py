@@ -1,10 +1,12 @@
 import time
 from contextlib import suppress
+from pathlib import Path
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 from panoptes.pocs.base import PanBase
+from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
 from panoptes.utils import error
 from panoptes.utils.time import CountdownTimer
@@ -781,9 +783,40 @@ class AbstractMount(PanBase):
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
-    def _setup_commands(self, commands):  # pragma: no cover
-        """ Sets the current location details for the mount. """
-        raise NotImplementedError
+    def _setup_commands(self, commands):
+        """
+        Does any setup for the commands needed for this mount. Mostly responsible for
+        setting the pre- and post-commands. We could also do some basic checking here
+        to make sure required commands are in fact available.
+        """
+        self.logger.debug('Setting up commands for mount')
+
+        if len(commands) == 0:
+            brand = self.get_config('mount.brand')
+            model = self.get_config('mount.model')
+            mount_dir = self.get_config('directories.mounts')
+
+            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
+
+            if commands_file.is_file():
+                self.logger.info(f"Loading mount commands file: {commands_file}")
+                try:
+                    with commands_file.open() as f:
+                        commands.update(from_yaml(f.read(), parse=False))
+                        self.logger.debug(f"Mount commands updated from {commands_file}")
+                except OSError as err:
+                    self.logger.warning(f'Cannot load {commands_file=} {err!r}')
+                except Exception:
+                    self.logger.warning("Problem loading mount command file")
+            else:
+                self.logger.warning(f"No such config file for mount commands: {commands_file}")
+
+        # Get the pre- and post- commands
+        self._pre_cmd = commands.setdefault('cmd_pre', ':')
+        self._post_cmd = commands.setdefault('cmd_post', '#')
+
+        self.logger.debug('Mount commands set up')
+        return commands
 
     def _set_zero_position(self):  # pragma: no cover
         """ Sets the current position as the zero (home) position. """
