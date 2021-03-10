@@ -4,8 +4,6 @@
 //conversion factor to compute Iload from sensed voltage. From Luc.
 const float MULTIPLIER = 5/1023*2360/1200;
 
-/* DECLARE PINS */
-
 // Digital Pins
 const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
 const int DHT_PIN = 10;  // DHT Temp & Humidity Pin

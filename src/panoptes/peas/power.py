@@ -44,10 +44,19 @@ class Relay:
     current_readings: deque
     relay_index: TruckerRelayIndex
     state: Optional[PinState] = PinState.OFF
+    multiplier: Optional[float] = 1.0
 
+    @property
     def current(self):
         """Gets the mean of the current entries"""
         return np.mean(self.current_readings)
+
+    @property
+    def status(self):
+        return dict(state=self.state, current=self.current)
+
+    def __str__(self):
+        return f'[{self.name}] {self.label}: {self.state.name} {self.current}'
 
 
 class PowerBoard(PanBase):
@@ -65,7 +74,7 @@ class PowerBoard(PanBase):
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, port: str, name: str = 'Power Board', relays: dict[Relay] = None, *args, **kwargs):
+    def __init__(self, port, name='Power Board', relays=None, *args, **kwargs):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -92,7 +101,7 @@ class PowerBoard(PanBase):
 
         self.relay_labels = dict()
         self.relays = dict()
-        self.setup_relays(relays)
+        self.setup_relays(relays, queue_maxsize=25)
 
         # Set initial relay states.
         for relay in self.relays.values():
@@ -135,13 +144,11 @@ class PowerBoard(PanBase):
         self.logger.success(f'Relays: {self.relays!r}')
 
     def change_relay_state(self, relay: Relay, new_state: PinState):
-        """Changes the relay to the new state.
-
-        Note: This waits for the async calls to finish.
-        """
+        """Changes the relay to the new state. """
         new_state_command = TruckerBoardCommands[new_state.name]
-        write_command = f'{relay.relay_index},{new_state_command.value}'
-        self.logger.info(write_command)
+        # Must have the newline in command.
+        write_command = f'{relay.relay_index.value},{new_state_command.value}\n'
+        self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
         self.arduino_board.write(write_command)
 
     def start_reading_status(self):
@@ -188,10 +195,13 @@ class PowerBoard(PanBase):
                     except error.InvalidDeserialization:
                         self.logger.warning(f'Cannot deserialize reading from arduino: {reading!r}')
                     else:
+                        # Record the current.
                         currents = data.get('currents', list())
                         for i, val in enumerate(currents):
-                            self.relays[TruckerRelayIndex(i).name].current_readings.append(val)
+                            relay = self.relays[TruckerRelayIndex(i).name]
+                            relay.current_readings.append(val * relay.multiplier)
 
+                        # Update the state for the relay.
                         relay_status = data.get('relays', list())
                         for i, val in enumerate(relay_status):
                             self.relays[TruckerRelayIndex(i).name].state = PinState(val)
@@ -208,4 +218,5 @@ class PowerBoard(PanBase):
         self.receiver_thread.start()
 
     def __str__(self):
-        return f'{self.name} - {[relay.state for relay in self.relays]}'
+        relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relays.values()])
+        return f'{self.name} - {relay_states}'
