@@ -30,7 +30,7 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
 
 # Set up arduino
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
-    wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/AMD64/').tar.gz" \
+    wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
         -O arduino-cli.tar.gz && \
     tar zxvf arduino-cli.tar.gz && \
     mkdir -p "${HOME}/bin" && \
