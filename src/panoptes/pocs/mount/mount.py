@@ -798,18 +798,13 @@ class AbstractMount(PanBase):
 
             commands_file = Path(mount_dir) / brand / f'{model}.yaml'
 
-            if commands_file.is_file():
+            try:
                 self.logger.info(f"Loading mount commands file: {commands_file}")
-                try:
-                    with commands_file.open() as f:
-                        commands.update(from_yaml(f.read(), parse=False))
-                        self.logger.debug(f"Mount commands updated from {commands_file}")
-                except OSError as err:
-                    self.logger.warning(f'Cannot load {commands_file=} {err!r}')
-                except Exception:
-                    self.logger.warning("Problem loading mount command file")
-            else:
-                self.logger.warning(f"No such config file for mount commands: {commands_file}")
+                with commands_file.open() as f:
+                    commands.update(from_yaml(f.read(), parse=False))
+                    self.logger.debug(f"Mount commands updated from {commands_file}")
+            except Exception as err:
+                raise FileNotFoundError(f"Error loading {commands_file=} {err!r}")
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
