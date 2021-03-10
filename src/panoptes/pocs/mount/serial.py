@@ -24,8 +24,8 @@ class AbstractSerialMount(AbstractMount):
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")
         except KeyError:
-            self.logger.critical("No serial config specified, cannot create mount "
-                                 "{self.get_config('mount')}")
+            self.logger.critical("No serial config specified, cannot create mount: "
+                                 f"{self.get_config('mount')}")
         except Exception as e:
             self.logger.critical(e)
 
