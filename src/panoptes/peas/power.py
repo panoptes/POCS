@@ -200,7 +200,7 @@ class PowerBoard(PanBase):
                 try:
                     raw_data = raw_reading.decode()
                 except UnicodeDecodeError as e:
-                    self.logger.debug(f'Received decode error: {e!r}')
+                    self.logger.warning(f'Received decode error: {e!r}')
                     continue
 
                 for reading in raw_data.split('\r\n'):

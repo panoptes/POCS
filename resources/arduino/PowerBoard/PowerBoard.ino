@@ -265,7 +265,7 @@ void read_currents(int current_readings[]) {
   current_readings[1] = Diag0_1;
   current_readings[2] = Diag1_0;
   current_readings[3] = Diag1_1;
-  current_readings[4] = int(Diag2_0 * Diag2_1);
+  current_readings[4] = int((Diag2_0 * Diag2_1) / 2);
 }
 
 
