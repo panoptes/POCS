@@ -75,8 +75,7 @@ class PowerBoard(PanBase):
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, port=None, name='Power Board', arduino_name='power_board', relays=None,
-                 *args, **kwargs):
+    def __init__(self, port=None, name='Power Board', relays=None, *args, **kwargs):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -90,7 +89,6 @@ class PowerBoard(PanBase):
             port (str, optional): The dev port for the arduino, if not provided, search for port
                 matching the vendor (2341) and product id (0043).
             name (str): The user-friendly name for the power board.
-            arduino_name (str): The name returned by the arduino board, default 'power_board'.
             relays (dict[Relay] or None): The relay configuration. See notes for details.
         """
         super().__init__(*args, **kwargs)
