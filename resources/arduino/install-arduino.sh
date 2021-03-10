@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 FQBN="${FQBN:-arduino:avr:uno}"
-SKETCH_LOCATION="${SKETCH_LOCATION:-.}"
+SKETCH_LOCATION="${SKETCH_LOCATION:-PowerBoard}"
 ARDUINO_PORT="${ARDUINO_PORT:-/dev/ttyACM0}"
 
 arduino-cli config init
