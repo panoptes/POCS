@@ -93,7 +93,7 @@ class PowerBoard(PanBase):
         """
         super().__init__(*args, **kwargs)
         if port is None:
-            port = PowerBoard.guess_port()
+            port = PowerBoard.guess_port(**kwargs)
             self.logger.info(f'Guessing that arduino is on {port=}')
 
         self.port = port
@@ -229,7 +229,7 @@ class PowerBoard(PanBase):
         return f'{self.name} - {relay_states}'
 
     @classmethod
-    def guess_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False):
+    def guess_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False, **kwags):
         """Tries to guess the port hosting the power board arduino.
 
         The default vendor_id is for official Arduino products. The default product_id
