@@ -35,6 +35,7 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     tar zxvf arduino-cli.tar.gz && \
     mkdir -p "${HOME}/bin" && \
     mv arduino-cli "${HOME}/bin/arduino-cli"  && \
+    echo "export PATH=$HOME/bin:$PATH" >> "${HOME}/.bashrc" && \
     rm LICENSE.txt
 
 COPY docker/environment.yaml .
