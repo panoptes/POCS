@@ -1,4 +1,8 @@
 #include <stdlib.h>
+#include <ArduinoJson.h>
+
+//conversion factor to compute Iload from sensed voltage. From Luc.
+const float MULTIPLIER = 5/1023*2360/1200;
 
 /* DECLARE PINS */
 
@@ -210,41 +214,36 @@ void loop() {
 }
 
 void get_readings() {
-  int voltages[5];
+  int current_readings[5];
 
-  read_voltages(voltages);
+  read_currents(current_readings);
 
-  Serial.print("{");
+  StaticJsonDocument<128> doc;
 
-  Serial.print("\"relays\":[");
-  Serial.print(is_relay_on(RELAY_0)); Serial.print(',');
-  Serial.print(is_relay_on(RELAY_1)); Serial.print(',');
-  Serial.print(is_relay_on(RELAY_2)); Serial.print(',');
-  Serial.print(is_relay_on(RELAY_3)); Serial.print(',');
-  Serial.print(is_relay_on(RELAY_4));
-  Serial.print("],");
+  JsonArray relays = doc.createNestedArray("relays");
+  relays.add(is_relay_on(RELAY_0));
+  relays.add(is_relay_on(RELAY_1));
+  relays.add(is_relay_on(RELAY_2));
+  relays.add(is_relay_on(RELAY_3));
+  relays.add(is_relay_on(RELAY_4));
 
-  Serial.print("\"currents\":[");
-  Serial.print(voltages[0]); Serial.print(',');
-  Serial.print(voltages[1]); Serial.print(',');
-  Serial.print(voltages[2]); Serial.print(',');
-  Serial.print(voltages[3]); Serial.print(',');
-  Serial.print(voltages[4]);
-  Serial.print("],");
+  JsonArray currents = doc.createNestedArray("currents");
+  currents.add(current_readings[0]);
+  currents.add(current_readings[1]);
+  currents.add(current_readings[2]);
+  currents.add(current_readings[3]);
+  currents.add(current_readings[4]);
+  doc["name"] = "power_board";
 
-  Serial.print("\"name\":\"power_board\"");
-
-  Serial.println("}");
+  serializeJson(doc, Serial);
+  Serial.println();
 }
 
-/* Read Voltages
-
+/* Read Current
 Gets the AC probe as well as the values of the current on the AC I_ pins
-
 https://www.arduino.cc/en/Reference/AnalogRead
-
- */
-void read_voltages(int currents[]) {
+*/
+void read_currents(int current_readings[]) {
 
   // Enable channels 0_0 and 1_0
   digitalWrite(DSEL_0, LOW);
@@ -266,17 +265,17 @@ void read_voltages(int currents[]) {
 
   int Diag2=analogRead(IS_2);
 
-  float Iload0 = Diag0*5/1023*2360/1200; //conversion factor to compute Iload from sensed voltage
-  float Iload1 = Diag1*5/1023*2360/1200;
-  float Iload2 = Diag2*5/1023*2360/1200;
-  float Iload3 = Diag3*5/1023*2360/1200;
-  float Iload4 = Diag4*5/1023*2360/1200;
+  float Iload0 = Diag0 * MULTIPLIER;
+  float Iload1 = Diag1 * MULTIPLIER;
+  float Iload2 = Diag2 * MULTIPLIER;
+  float Iload3 = Diag3 * MULTIPLIER;
+  float Iload4 = Diag4 * MULTIPLIER;
 
-  currents[0] = Diag0; //Iload0;
-  currents[1] = Diag3; //Iload3;
-  currents[2] = Diag1; //Iload1;
-  currents[3] = Diag4; //Iload4;
-  currents[4] = Diag2; //Iload2;
+  current_readings[0] = Diag0; //Iload0;
+  current_readings[1] = Diag3; //Iload3;
+  current_readings[2] = Diag1; //Iload1;
+  current_readings[3] = Diag4; //Iload4;
+  current_readings[4] = Diag2; //Iload2;
 }
 
 
