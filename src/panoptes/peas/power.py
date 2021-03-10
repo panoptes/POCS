@@ -1,4 +1,5 @@
 import threading
+import time
 from enum import IntEnum
 from dataclasses import dataclass
 from typing import Optional
@@ -109,9 +110,12 @@ class PowerBoard(PanBase):
         self.relay_labels = dict()
         self.relays = dict()
         self.setup_relays(relays, queue_maxsize=25)
+        time.sleep(2)
 
         # Set initial relay states.
         for relay in self.relays.values():
+            self.logger.info(
+                f'Setting initial state of {relay.label} to {relay.default_state.name}')
             self.change_relay_state(relay, relay.default_state)
 
         self.start_reading_status()
@@ -193,7 +197,12 @@ class PowerBoard(PanBase):
                         else:
                             self._read_buffer.extend(data)
 
-                raw_data = raw_reading.decode()
+                try:
+                    raw_data = raw_reading.decode()
+                except UnicodeDecodeError as e:
+                    self.logger.debug(f'Received decode error: {e!r}')
+                    continue
+
                 for reading in raw_data.split('\r\n'):
                     if reading == '':
                         continue
