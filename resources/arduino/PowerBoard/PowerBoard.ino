@@ -4,10 +4,6 @@
 //conversion factor to compute Iload from sensed voltage. From Luc.
 const float MULTIPLIER = 5/1023*2360/1200;
 
-// Digital Pins
-const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
-const int DHT_PIN = 10;  // DHT Temp & Humidity Pin
-
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
 const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
@@ -237,43 +233,39 @@ void get_readings() {
   Serial.println();
 }
 
-/* Read Current
-Gets the AC probe as well as the values of the current on the AC I_ pins
-https://www.arduino.cc/en/Reference/AnalogRead
-*/
+/* Read Current from the PROFETs */
 void read_currents(int current_readings[]) {
 
-  // Enable channels 0_0 and 1_0
+  // Enable channels 0_0 and 1_0.
   digitalWrite(DSEL_0, LOW);
   digitalWrite(DSEL_1, LOW);
-
   delay(500);
 
-  int Diag0=analogRead(IS_0);
-  int Diag1=analogRead(IS_1);
+  // Read from PROFETs.
+  int Diag0_0=analogRead(IS_0);
+  int Diag1_0=analogRead(IS_1);
+  int Diag2_0=analogRead(IS_2);
 
-  // Enabled channels 0_1 and 1_1
+  // Enabled channels 0_1 and 1_1.
   digitalWrite(DSEL_0, HIGH);
   digitalWrite(DSEL_1, HIGH);
-
   delay(500);
 
-  int Diag3=analogRead(IS_0);
-  int Diag4=analogRead(IS_1);
+  int Diag0_1=analogRead(IS_0);
+  int Diag1_1=analogRead(IS_1);
+  int Diag2_1=analogRead(IS_2);
 
-  int Diag2=analogRead(IS_2);
+//  float Iload0 = Diag0_0 * MULTIPLIER;
+//  float Iload1 = Diag0_1 * MULTIPLIER;
+//  float Iload2 = Diag1_0 * MULTIPLIER;
+//  float Iload3 = Diag1_1 * MULTIPLIER;
+//  float Iload4 = (Diag2_0 * Diag2_1) / 2 * MULTIPLIER;
 
-  float Iload0 = Diag0 * MULTIPLIER;
-  float Iload1 = Diag1 * MULTIPLIER;
-  float Iload2 = Diag2 * MULTIPLIER;
-  float Iload3 = Diag3 * MULTIPLIER;
-  float Iload4 = Diag4 * MULTIPLIER;
-
-  current_readings[0] = Diag0; //Iload0;
-  current_readings[1] = Diag3; //Iload3;
-  current_readings[2] = Diag1; //Iload1;
-  current_readings[3] = Diag4; //Iload4;
-  current_readings[4] = Diag2; //Iload2;
+  current_readings[0] = Diag0_0;
+  current_readings[1] = Diag0_1;
+  current_readings[2] = Diag1_0;
+  current_readings[3] = Diag1_1;
+  current_readings[4] = int(Diag2_0 * Diag2_1);
 }
 
 
