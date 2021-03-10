@@ -230,7 +230,14 @@ class PowerBoard(PanBase):
 
     @classmethod
     def guess_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False):
-        """Tries to guess the port hosting the power board arduino. """
+        """Tries to guess the port hosting the power board arduino.
+
+        The default vendor_id is for official Arduino products. The default product_id
+        is for an Uno Rev 3.
+
+        https://github.com/arduino/Arduino/blob/1.8.0/hardware/arduino/avr/boards.txt#L51-L58
+
+        """
         # Get all serial ports.
         arduino_ports = [p for p in get_serial_port_info() if
                          p.vid == vendor_id and p.pid == product_id]
