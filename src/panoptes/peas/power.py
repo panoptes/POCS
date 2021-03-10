@@ -1,16 +1,12 @@
-import asyncio
 import threading
-import time
 from enum import IntEnum
 from dataclasses import dataclass
 from typing import Optional
-from functools import partial
 from collections import deque
-
 import numpy as np
+
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.serializers import from_json
-from streamz import Stream
 from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 
@@ -48,6 +44,10 @@ class Relay:
     current_readings: deque
     relay_index: TruckerRelayIndex
     state: Optional[PinState] = PinState.OFF
+
+    def current(self):
+        """Gets the mean of the current entries"""
+        return np.mean(self.current_readings)
 
 
 class PowerBoard(PanBase):
@@ -91,6 +91,7 @@ class PowerBoard(PanBase):
         self.alive = False
         self._reader_thread = None
         self._reader_alive = None
+        self._read_buffer = bytearray()
 
         self.relay_labels = dict()
         self.relays = dict()
@@ -104,11 +105,6 @@ class PowerBoard(PanBase):
 
         self.logger.success(f'Power board initialized')
 
-    def start_reading_current(self):
-        """Start the read loop."""
-        self.alive = True
-        self._start_reader()
-
     def turn_on(self, label):
         """Turns on the relay with the given label."""
         self.change_relay_state(self.relay_labels[label], PinState.ON)
@@ -117,10 +113,10 @@ class PowerBoard(PanBase):
         """Turns off the relay with the given label."""
         self.change_relay_state(self.relay_labels[label], PinState.OFF)
 
-    def setup_relays(self, relays):
-        """Set the relays"""
+    def setup_relays(self, relays, queue_maxsize=10):
+        """Setup the relays."""
         for relay_name, relay_config in relays.items():
-            relay_index = TruckerRelayIndex(relay_name)
+            relay_index = TruckerRelayIndex[relay_name]
             relay_label = relay_config.get('label') or relay_name
             initial_state = PinState[relay_config.get('initial_state', 'off').upper()]
 
@@ -129,7 +125,7 @@ class PowerBoard(PanBase):
             relay = Relay(name=relay_name,
                           label=relay_config.get('label', ''),
                           relay_index=relay_index,
-                          current_readings=deque(maxlen=10),
+                          current_readings=deque(maxlen=queue_maxsize),
                           state=initial_state
                           )
 
@@ -147,22 +143,65 @@ class PowerBoard(PanBase):
         Note: This waits for the async calls to finish.
         """
         new_state_command = TruckerBoardCommands[new_state.name]
-        self.arduino_board.write(f'{relay.relay_index},{new_state_command.value}')
-        relay.state = new_state
+        write_command = f'{relay.relay_index},{new_state_command.value}'
+        self.logger.info(write_command)
+        self.arduino_board.write(write_command)
+
+    def start_reading_current(self):
+        """Start the read loop."""
+        self.logger.info('Starting current reading thread.')
+        self.alive = True
+        self._start_reader()
+
+    def stop_reader(self):
+        """Stop reader only, wait for clean exit of thread."""
+        self._reader_alive = False
+        if hasattr(self.arduino_board.ser, 'cancel_read'):
+            self.arduino_board.ser.cancel_read()
+        self.receiver_thread.join()
 
     def _read_currents(self):
-        """Continuously read the current from the arduino"""
+        """Continuously read the current from the arduino and insert into deque for relay."""
         try:
             while self.alive and self._reader_alive:
-                raw_data = self.arduino_board.ser.read(self.arduino_board.ser.in_waiting or 1)
-                if raw_data:
-                    data = from_json(raw_data.decode('ascii'))
-                    # TODO send text downstream
-                    #     # Send downstream.
-                    #     self._current_stream.emit(data)
+                # Look for a complete line and return if so.
+                i = self._read_buffer.find(b"\r\n")
+                if i >= 0:
+                    raw_reading = self._read_buffer[:i + 2]
+                    self._read_buffer = self._read_buffer[i + 2:]
+                else:
+                    # Otherwise keep reading until we get a newline.
+                    while True:
+                        i = max(1, min(2048, self.arduino_board.ser.in_waiting))
+                        data = self.arduino_board.ser.read(i)
+                        i = data.find(b"\r\n")
+                        if i >= 0:
+                            raw_reading = self._read_buffer + data[:i + 2]
+                            self._read_buffer[0:] = data[i + 2:]
+                            break
+                        else:
+                            self._read_buffer.extend(data)
+
+                raw_data = raw_reading.decode()
+                for reading in raw_data.split('\r\n'):
+                    if reading == '':
+                        continue
+                    try:
+                        data = from_json(reading)
+                    except error.InvalidDeserialization:
+                        self.logger.warning(f'Cannot deserialize reading from arduino: {reading!r}')
+                    else:
+                        currents = data.get('currents', list())
+                        for i, val in enumerate(currents):
+                            self.relays[TruckerRelayIndex(i).name].current_readings.append(val)
+
+                        relay_status = data.get('relays', list())
+                        for i, val in enumerate(relay_status):
+                            self.relays[TruckerRelayIndex(i).name].state = PinState(val)
         except error.BadSerialConnection as e:
+            self.logger.error(e)
             self.alive = False
-            raise
+            raise e
 
     def _start_reader(self):
         """Start reader thread."""
@@ -170,54 +209,6 @@ class PowerBoard(PanBase):
         self.receiver_thread = threading.Thread(target=self._read_currents, name='current_reader')
         self.receiver_thread.daemon = True
         self.receiver_thread.start()
-
-    def _stop_reader(self):
-        """Stop reader only, wait for clean exit of thread."""
-        self._reader_alive = False
-        if hasattr(self.arduino_board.ser, 'cancel_read'):
-            self.arduino_board.ser.cancel_read()
-        self.receiver_thread.join()
-
-    #
-    # def _build_stream(self):
-    #     """Build a stream for processing the analog readings.
-    #
-    #     The stream will receive a dict with 'relay', 'value', and 'timestamp'.
-    #
-    #     Returns:
-    #         streamz.Stream: A processing stream.
-    #     """
-    #     stream = Stream()
-    #
-    #     def filter_streams(reading, relay):
-    #         """Split stream based on which relay was sensed."""
-    #         return reading['relay'] == relay
-    #
-    #     split_streams = [
-    #         stream.filter(partial(filter_streams, relay=relay))
-    #         for relay in SENSE_ENABLED_RELAY_LOOKUP.values()
-    #     ]
-    #
-    #     def get_sliding_value(readings):
-    #         # All the same relay, grab first.
-    #         relay = readings[0]['relay']
-    #         sliding_median = np.median([r['value'] for r in readings])
-    #         return dict(relay=relay, value=sliding_median)
-    #
-    #     # Run a sliding mean on each relay stream.
-    #     sliding_streams = [
-    #         stream.sliding_window(10, return_partial=False).map(get_sliding_value)
-    #         for stream in split_streams
-    #     ]
-    #
-    #     def update_relay(reading):
-    #         relay = reading['relay']
-    #         value = reading['value']
-    #         relay.current_readings.append(value)
-    #
-    #     Stream.union(*sliding_streams).sink(update_relay)
-    #
-    #     return stream
 
     def __str__(self):
         return f'{self.name} - {[relay.state for relay in self.relays]}'
