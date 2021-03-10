@@ -39,6 +39,16 @@ def test_create_mount_simulator_with_config(config_host, config_port):
     reset_conf(config_host, config_port)
 
 
+def test_create_mount_with_bad_commands_file(config_host, config_port):
+    # Set the mount config to none and then don't pass anything for error.
+    set_config('simulator', hardware.get_all_names(without=['mount']))
+    set_config('mount.model', 'foobar')
+    with pytest.raises(FileNotFoundError):
+        create_mount_from_config()
+
+    reset_conf(config_host, config_port)
+
+
 def test_create_mount_without_mount_info(config_host, config_port):
     # Set the mount config to none and then don't pass anything for error.
     set_config('mount', None)
