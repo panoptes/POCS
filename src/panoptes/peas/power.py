@@ -5,7 +5,7 @@ from typing import Optional
 from collections import deque
 import numpy as np
 
-from panoptes.utils.rs232 import SerialData
+from panoptes.utils.rs232 import SerialData, get_serial_port_info
 from panoptes.utils.serializers import from_json
 from panoptes.pocs.base import PanBase
 from panoptes.utils import error
@@ -44,6 +44,7 @@ class Relay:
     current_readings: deque
     relay_index: TruckerRelayIndex
     state: Optional[PinState] = PinState.OFF
+    default_state: Optional[PinState] = PinState.OFF
     multiplier: Optional[float] = 1.0
 
     @property
@@ -74,7 +75,8 @@ class PowerBoard(PanBase):
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, port, name='Power Board', relays=None, *args, **kwargs):
+    def __init__(self, port=None, name='Power Board', arduino_name='power_board', relays=None,
+                 *args, **kwargs):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -85,15 +87,22 @@ class PowerBoard(PanBase):
                 initial_state: on
 
         Args:
-            port (str): The dev port for the arduino.
+            port (str, optional): The dev port for the arduino, if not provided, search for port
+                matching the vendor (2341) and product id (0043).
             name (str): The user-friendly name for the power board.
+            arduino_name (str): The name returned by the arduino board, default 'power_board'.
             relays (dict[Relay] or None): The relay configuration. See notes for details.
         """
         super().__init__(*args, **kwargs)
+        if port is None:
+            port = PowerBoard.guess_port()
+            self.logger.info(f'Guessing that arduino is on {port=}')
+
+        self.port = port
         self.name = name
 
-        self.logger.debug(f'Setting up Power board connection')
-        self.arduino_board = SerialData(port=port, baudrate=9600)
+        self.logger.debug(f'Setting up Power board connection for {name=} on {self.port}')
+        self.arduino_board = SerialData(port=self.port, baudrate=9600)
         self.alive = False
         self._reader_thread = None
         self._reader_alive = None
@@ -119,12 +128,12 @@ class PowerBoard(PanBase):
         """Turns off the relay with the given label."""
         self.change_relay_state(self.relay_labels[label], PinState.OFF)
 
-    def setup_relays(self, relays, queue_maxsize=10):
+    def setup_relays(self, relays, queue_maxsize=25):
         """Setup the relays."""
         for relay_name, relay_config in relays.items():
             relay_index = TruckerRelayIndex[relay_name]
             relay_label = relay_config.get('label') or relay_name
-            initial_state = PinState[relay_config.get('initial_state', 'off').upper()]
+            default_state = PinState[relay_config.get('default_state', 'off').upper()]
 
             # Create relay object.
             self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
@@ -132,7 +141,7 @@ class PowerBoard(PanBase):
                           label=relay_config.get('label', ''),
                           relay_index=relay_index,
                           current_readings=deque(maxlen=queue_maxsize),
-                          state=initial_state
+                          default_state=default_state
                           )
 
             # Track relays by name and friendly label.
@@ -220,3 +229,17 @@ class PowerBoard(PanBase):
     def __str__(self):
         relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relays.values()])
         return f'{self.name} - {relay_states}'
+
+    @classmethod
+    def guess_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False):
+        """Tries to guess the port hosting the power board arduino. """
+        # Get all serial ports.
+        arduino_ports = [p for p in get_serial_port_info() if
+                         p.vid == vendor_id and p.pid == product_id]
+
+        if len(arduino_ports) == 1:
+            return arduino_ports[0].device
+        elif return_all:
+            return arduino_ports
+        else:
+            raise error.NotFound(f'No official arduino devices found.')

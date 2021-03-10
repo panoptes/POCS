@@ -93,23 +93,23 @@ cameras:
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
-    port: /dev/ttyACM0
+    auto_detect: true
     relays:
       RELAY_0:
         label: weather_station
-        initial_state: on
+        default_state: on
       RELAY_1:
         label: unused
-        initial_state: off
+        default_state: off
       RELAY_2:
         label: fans
-        initial_state: on
+        default_state: on
       RELAY_3:
         label: unused
-        initial_state: off
+        default_state: off
       RELAY_4:
         label: mount
-        initial_state: on
+        default_state: on
   camera_board:
     serial_port: /dev/ttyACM0
   weather:
