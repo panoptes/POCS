@@ -23,7 +23,7 @@ class TruckerBoardCommands(IntEnum):
     """The Trucker Board can accept a series of commands for controlling the relays"""
     ON = 1
     OFF = 2
-    TOGGLE = 3  # Toggle current state.
+    TOGGLE = 3  # Toggle relay.
     CYCLE_DELAY = 4  # Cycle the current state with a 30 second delay.
 
 
@@ -65,7 +65,7 @@ class PowerBoard(PanBase):
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, port, name='Power Board', relays=None, *args, **kwargs):
+    def __init__(self, port: str, name: str = 'Power Board', relays: dict[Relay] = None, *args, **kwargs):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -83,9 +83,6 @@ class PowerBoard(PanBase):
         super().__init__(*args, **kwargs)
         self.name = name
 
-        # Set up a processing stream to do a sliding median on the sensed current.
-        # self._current_stream = self._build_stream()
-
         self.logger.debug(f'Setting up Power board connection')
         self.arduino_board = SerialData(port=port, baudrate=9600)
         self.alive = False
@@ -101,7 +98,7 @@ class PowerBoard(PanBase):
         for relay in self.relays.values():
             self.change_relay_state(relay, relay.state)
 
-        self.start_reading_current()
+        self.start_reading_status()
 
         self.logger.success(f'Power board initialized')
 
@@ -137,7 +134,7 @@ class PowerBoard(PanBase):
 
         self.logger.success(f'Relays: {self.relays!r}')
 
-    def change_relay_state(self, relay, new_state):
+    def change_relay_state(self, relay: Relay, new_state: PinState):
         """Changes the relay to the new state.
 
         Note: This waits for the async calls to finish.
@@ -147,9 +144,9 @@ class PowerBoard(PanBase):
         self.logger.info(write_command)
         self.arduino_board.write(write_command)
 
-    def start_reading_current(self):
+    def start_reading_status(self):
         """Start the read loop."""
-        self.logger.info('Starting current reading thread.')
+        self.logger.info('Starting status reading thread.')
         self.alive = True
         self._start_reader()
 
@@ -160,8 +157,8 @@ class PowerBoard(PanBase):
             self.arduino_board.ser.cancel_read()
         self.receiver_thread.join()
 
-    def _read_currents(self):
-        """Continuously read the current from the arduino and insert into deque for relay."""
+    def _read_status(self):
+        """Continuously read the status from the arduino and insert into deque for relay."""
         try:
             while self.alive and self._reader_alive:
                 # Look for a complete line and return if so.
@@ -204,9 +201,9 @@ class PowerBoard(PanBase):
             raise e
 
     def _start_reader(self):
-        """Start reader thread."""
+        """Start status reader thread."""
         self._reader_alive = True
-        self.receiver_thread = threading.Thread(target=self._read_currents, name='current_reader')
+        self.receiver_thread = threading.Thread(target=self._read_status, name='status_reader')
         self.receiver_thread.daemon = True
         self.receiver_thread.start()
 
