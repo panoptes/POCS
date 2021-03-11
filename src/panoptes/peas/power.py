@@ -9,6 +9,7 @@ import numpy as np
 from panoptes.utils.rs232 import SerialData, get_serial_port_info
 from panoptes.utils.serializers import from_json
 from panoptes.pocs.base import PanBase
+from panoptes.utils.rs232 import find_serial_port
 from panoptes.utils import error
 
 
@@ -94,7 +95,7 @@ class PowerBoard(PanBase):
         """
         super().__init__(*args, **kwargs)
         if port is None:
-            port = PowerBoard.guess_port(**kwargs)
+            port = PowerBoard.lookup_port(**kwargs)
             self.logger.info(f'Guessing that arduino is on {port=}')
 
         self.port = port
@@ -238,7 +239,7 @@ class PowerBoard(PanBase):
         return f'{self.name} - {relay_states}'
 
     @classmethod
-    def guess_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False, **kwags):
+    def lookup_port(cls, vendor_id=0x2341, product_id=0x0043, **kwargs):
         """Tries to guess the port hosting the power board arduino.
 
         The default vendor_id is for official Arduino products. The default product_id
@@ -247,13 +248,4 @@ class PowerBoard(PanBase):
         https://github.com/arduino/Arduino/blob/1.8.0/hardware/arduino/avr/boards.txt#L51-L58
 
         """
-        # Get all serial ports.
-        arduino_ports = [p for p in get_serial_port_info() if
-                         p.vid == vendor_id and p.pid == product_id]
-
-        if len(arduino_ports) == 1:
-            return arduino_ports[0].device
-        elif return_all:
-            return arduino_ports
-        else:
-            raise error.NotFound(f'No official arduino devices found.')
+        return find_serial_port(vendor_id, product_id)

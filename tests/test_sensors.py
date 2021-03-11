@@ -4,6 +4,7 @@ import pytest
 import responses
 
 from panoptes.peas import remote_sensors
+from panoptes.peas import power
 from panoptes.utils import error
 
 
@@ -62,3 +63,9 @@ def test_remote_sensor(remote_response, remote_response_power):
 def test_remote_sensor_no_endpoint():
     with pytest.raises(error.PanError):
         remote_sensors.RemoteMonitor(sensor_name='should_fail')
+
+
+def test_power_board_no_device():
+    """Attempt to find an arduino device, which should fail."""
+    with pytest.raises(error.NotFound):
+        power.PowerBoard()
