@@ -4,10 +4,10 @@ dependencies:
   - jupyterlab  # Interactive
   - matplotlib-base
   - numpy
+  - pandas
   - photutils
   - pillow
   - pip
   - scipy
-  - streamz
   - pip:
       - panoptes-utils[config]>=0.2.32
