@@ -1,25 +1,14 @@
 #cloud-config
 # https://cloudinit.readthedocs.io/
 
-hostname: pocs-control
-
-#####################################################################
-# You shouldn't need to change anything below.
-#####################################################################
+hostname: pocs-control-box
+# hostname: pocs-camera-box
 
 # Setting "expire: true" will force a password change on first login.
 chpasswd:
   expire: true
   list:
     - panoptes:panoptes
-
-ntp:
-  enabled: true
-  servers:
-    - time1.google.com
-    - time2.google.com
-    - time3.google.com
-    - time4.google.com
 
 ssh_pwauth: yes
 
@@ -41,15 +30,13 @@ package_update: false
 package_upgrade: false
 
 write_files:
-  # Allow panoptes user to mount via sshfs.
   - path: /etc/fuse.conf
     content: |
       user_allow_other
     append: true
 
-## Get and run the install script upon first boot.
+# Get and run the install script upon first boot.
 runcmd:
-  # Setup hardware watchdog
   - echo 'watchdog-device = /dev/watchdog' >> /etc/watchdog.conf
   - echo 'watchdog-timeout = 15' >> /etc/watchdog.conf
   - echo 'max-load-1 = 24' >> /etc/watchdog.conf

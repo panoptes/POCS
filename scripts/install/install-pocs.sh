@@ -85,7 +85,7 @@ function make_directories() {
 
 function which_version() {
   PS3='Where are you installing?: '
-  versions=("Control box" "Camera Box" "My computer")
+  versions=("Control box" "Camera Box" "My computer / Dev box")
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
