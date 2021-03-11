@@ -34,6 +34,8 @@ RUN /conda/bin/conda env update -n base -f environment.yaml
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
 RUN /conda/bin/pip install -e ".${pip_extras}" && \
+    # panoptes-utils from dev.
+    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipy && \
