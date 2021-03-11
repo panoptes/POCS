@@ -239,7 +239,7 @@ class PowerBoard(PanBase):
         return f'{self.name} - {relay_states}'
 
     @classmethod
-    def lookup_port(cls, vendor_id=0x2341, product_id=0x0043, return_all=False, **kwags):
+    def lookup_port(cls, vendor_id=0x2341, product_id=0x0043, **kwargs):
         """Tries to guess the port hosting the power board arduino.
 
         The default vendor_id is for official Arduino products. The default product_id
