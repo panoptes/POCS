@@ -804,7 +804,7 @@ class AbstractMount(PanBase):
                     commands.update(from_yaml(f.read(), parse=False))
                     self.logger.debug(f"Mount commands updated from {commands_file}")
             except Exception as err:
-                raise FileNotFoundError(f"Error loading {commands_file=} {err!r}")
+                self.logger.warning(f"Error loading {commands_file=} {err!r}")
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
