@@ -1006,7 +1006,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     # Get the value from either the metadata, the default, or use blank string.
                     fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
-                    self.logger.trace(f'Setting {fits_key=} = {fits_value=} {fits_comment=}')
+                    self.logger.trace(f'Setting {fits_key=} to {fits_value=} with {fits_comment=}')
                 except KeyError:
                     self.logger.trace(f'No mapping found for metadata {metadata_key}'
                                       f', will attempt to add as-is.')
@@ -1014,7 +1014,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     fits_comment = ''
                     fits_value = metadata_value
 
-                hdu.header.set(fits_key, fits_value, fits_comment)
+                try:
+                    hdu.header.set(fits_key, fits_value, fits_comment)
+                except ValueError as e:
+                    self.logger.debug(f'Skipping error while adding {fits_key=}: {e!r}')
 
             self.logger.debug(f"Finished FITS headers: {file_path=}")
 
