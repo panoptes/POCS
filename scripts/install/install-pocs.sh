@@ -71,6 +71,7 @@ OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
+DEFAULT_GROUPS="dialout,plugdev,docker,i2c,input,gpio"
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -137,12 +138,9 @@ function install_docker() {
   wget -q https://get.docker.com -O get-docker.sh
   bash get-docker.sh
 
-  # Add to docker group if not already.
-  sudo usermod -aG docker "${PANUSER}"
-
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 
-  rm "${HOME}/install-pocs.sh"
+  rm get-docker.sh
 }
 
 function get_or_build_images() {
@@ -236,11 +234,14 @@ function do_install() {
 
   make_directories
 
-  echo "Installing system dependencies"
+  echo "Installing system dependencies."
   system_deps
 
   if [ "$DEV_BOX" = false ]; then
     install_zsh
+
+    echo "Adding ${PANUSER} to default groups."
+    sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
   fi
 
   install_conda
