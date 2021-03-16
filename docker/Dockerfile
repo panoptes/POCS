@@ -2,6 +2,9 @@ ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
 FROM ${image_url}:${image_tag} AS pocs-base
 
+# Or ARM64 for rpi
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
+
 LABEL description="PANOPTES Observatory Control System Service"
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
@@ -25,6 +28,16 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
+# Set up arduino
+RUN echo "Installing arduino-cli from ${arduino_url}" && \
+    wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
+        -O arduino-cli.tar.gz && \
+    tar zxvf arduino-cli.tar.gz && \
+    mkdir -p "${HOME}/bin" && \
+    mkdir -p "${HOME}/.local/bin" && \
+    mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
+    rm LICENSE.txt
+
 COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
 
@@ -34,6 +47,8 @@ ARG pip_install_extras="[google]"
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
+    # panoptes-utils from dev.
+    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -fay && \

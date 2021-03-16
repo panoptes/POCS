@@ -46,8 +46,8 @@ scheduler:
   check_file: False
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: cem40   #  ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
@@ -157,6 +157,11 @@ cameras:
         move_time: 0.1
         timeout: 0.5
         dark_position: blank
+        focus_offsets:
+          one: 0
+          deux: 1
+          drei: 2
+          quattro: 3
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
