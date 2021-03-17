@@ -1,11 +1,11 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
+  - ipywidgets
   - jupyterlab  # Interactive
   - matplotlib-base
   - numpy
   - pandas
-  - nodejs
   - photutils
   - pillow
   - pip
