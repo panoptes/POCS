@@ -23,11 +23,11 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version: [ 3.8 ]
     steps:
-      - timeout-minutes: 30
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
