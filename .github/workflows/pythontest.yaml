@@ -27,6 +27,7 @@ jobs:
       matrix:
         python-version: [ 3.8 ]
     steps:
+      - timeout-minutes: 30
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build panoptes-pocs image
