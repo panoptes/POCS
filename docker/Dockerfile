@@ -32,7 +32,7 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     # Set up directories in PANUSER home.
     sudo mkdir "$image_dir" && sudo chown -R "${userid}:${userid}" "$image_dir" && \
     sudo mkdir "$log_dir" && sudo chown -R "${userid}:${userid}" "$log_dir" && \
-    sudo mkdir "${APP_DIR}" && sudo chown -R "${userid}:${userid}" "${APP_DIR}"
+    sudo chown -R "${userid}:${userid}" "${APP_DIR}"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
@@ -55,7 +55,7 @@ COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
     # Configure jupyter
-    /conda/bin/jupyter labextension install @pyviz/jupyterlab_pyviz && \
+#    /conda/bin/jupyter labextension install @pyviz/jupyterlab_pyviz && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \
