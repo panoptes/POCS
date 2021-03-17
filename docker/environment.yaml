@@ -5,6 +5,7 @@ dependencies:
   - matplotlib-base
   - numpy
   - pandas
+  - nodejs
   - photutils
   - pillow
   - pip
