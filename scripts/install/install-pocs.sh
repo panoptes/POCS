@@ -119,6 +119,8 @@ function system_deps() {
     gcc \
     htop \
     make \
+    nano \
+    neovim \
     wget \
     zsh
   sudo apt-get -y autoremove
@@ -153,14 +155,14 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /app/docker-compose.yaml /temp/docker-compose.yaml"
+      "cp /panoptes-pocs/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /app/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
+      "cp /panoptes-pocs/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/pocs.yaml"
   fi
 }
@@ -182,7 +184,7 @@ function install_conda() {
   # Install panoptes-utils (so we get panoptes-config-server)
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 
-  rm "${HOME}/install-pocs.sh"
+  rm install-miniforge.sh
 }
 
 function install_zsh() {

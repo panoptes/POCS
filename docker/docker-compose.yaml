@@ -38,7 +38,7 @@ services:
     hostname: pocs-control
     network_mode: host
     environment:
-      PANOPTES_CONFIG_HOST: localhost
+      PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
     command: [ "wait-for-it localhost:6563 -- jupyter lab --no-browser --ip 0.0.0.0 -y" ]
     volumes:
