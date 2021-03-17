@@ -3,6 +3,7 @@ channels:
 dependencies:
   - ipywidgets
   - jupyterlab  # Interactive
+  - jupyterlab_widgets
   - matplotlib-base
   - numpy
   - pandas
