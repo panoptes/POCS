@@ -17,7 +17,7 @@ users:
   - name: panoptes
     gecos: PANOPTES User
     primary_group: panoptes
-    groups: users, admin, dialout, plugdev, docker, i2c, input, gpio
+    groups: users, admin, dialout, plugdev, docker, i2c, spi, video, input, gpio
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     lock_passwd: false
     shell: /bin/bash

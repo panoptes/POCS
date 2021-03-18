@@ -54,13 +54,13 @@ ARG pip_install_extras="[google]"
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
-    # Configure jupyter
-#    /conda/bin/jupyter labextension install @pyviz/jupyterlab_pyviz && \
+    # panoptes-utils from dev.
+    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \
     sudo apt-get autoremove --purge --yes \
-        gcc pkg-config git && \
+        gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*

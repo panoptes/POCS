@@ -71,7 +71,7 @@ OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,docker,i2c,input,gpio"
+DEFAULT_GROUPS="dialout,plugdev,docker,i2c,spi,input,gpio"
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -127,6 +127,12 @@ function system_deps() {
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
+
+  # Raspberry Pi stuff
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "Installing Raspberry Pi tools"
+    sudo apt-get -y install rpi.gpio-common
+  fi
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then

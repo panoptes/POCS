@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 
 from panoptes.utils.rs232 import SerialData, get_serial_port_info
-from panoptes.utils.serializers import from_json
+from panoptes.utils.serializers import from_json, to_json
 from panoptes.pocs.base import PanBase
 from panoptes.utils.rs232 import find_serial_port
 from panoptes.utils import error
@@ -109,14 +109,13 @@ class PowerBoard(PanBase):
         self._read_buffer = bytearray()
 
         self.relay_labels = dict()
-        self.relays = dict()
+        self.relay_names = dict()
         self.setup_relays(relays, queue_maxsize=25)
         time.sleep(2)
 
         # Set initial relay states.
-        for relay in self.relays.values():
-            self.logger.info(
-                f'Setting initial state of {relay.label} to {relay.default_state.name}')
+        for relay in self.relay_names.values():
+            self.logger.info(f'Setting {relay.label} to {relay.default_state.name}')
             self.change_relay_state(relay, relay.default_state)
 
         self.start_reading_status()
@@ -148,20 +147,24 @@ class PowerBoard(PanBase):
                           )
 
             # Track relays by name and friendly label.
-            self.relays[relay.name] = relay
+            self.relay_names[relay.name] = relay
             self.relay_labels[relay.label] = relay
+
+            # Set an attribute on the board for easy access by name and label.
+            setattr(self, relay.name, relay)
+            setattr(self, relay.label, relay)
 
             self.logger.info(f'{relay.label} added to board')
 
-        self.logger.success(f'Relays: {self.relays!r}')
+        self.logger.success(f'Relays: {self.relay_names!r}')
 
     def change_relay_state(self, relay: Relay, new_state: PinState):
         """Changes the relay to the new state. """
         new_state_command = TruckerBoardCommands[new_state.name]
         # Must have the newline in command.
-        write_command = f'{relay.relay_index.value},{new_state_command.value}\n'
+        write_command = to_json(dict(relay=relay.relay_index.value, power=new_state_command.value))
         self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
-        self.arduino_board.write(write_command)
+        self.arduino_board.write(f'{write_command}\n')
 
     def start_reading_status(self):
         """Start the read loop."""
@@ -178,6 +181,7 @@ class PowerBoard(PanBase):
 
     def _read_status(self):
         """Continuously read the status from the arduino and insert into deque for relay."""
+        # TODO: This should probably be moved to rs232 serial class.
         try:
             while self.alive and self._reader_alive:
                 # Look for a complete line and return if so.
@@ -215,13 +219,13 @@ class PowerBoard(PanBase):
                         # Record the current.
                         currents = data.get('currents', list())
                         for i, val in enumerate(currents):
-                            relay = self.relays[TruckerRelayIndex(i).name]
+                            relay = self.relay_names[TruckerRelayIndex(i).name]
                             relay.current_readings.append(val * relay.multiplier)
 
                         # Update the state for the relay.
                         relay_status = data.get('relays', list())
                         for i, val in enumerate(relay_status):
-                            self.relays[TruckerRelayIndex(i).name].state = PinState(val)
+                            self.relay_names[TruckerRelayIndex(i).name].state = PinState(val)
         except error.BadSerialConnection as e:
             self.logger.error(e)
             self.alive = False
@@ -235,7 +239,7 @@ class PowerBoard(PanBase):
         self.receiver_thread.start()
 
     def __str__(self):
-        relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relays.values()])
+        relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relay_names.values()])
         return f'{self.name} - {relay_states}'
 
     @classmethod

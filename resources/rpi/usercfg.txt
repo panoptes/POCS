@@ -11,7 +11,9 @@ dtoverlay=i2c-gpio
 dtparam=audio=off
 
 dtparam=i2c=on
+dtparam=i2c_arm=on
 dtparam=spi=on
+dtparam=uart0=on
 dtparam=watchdog=on
 
 # Disable HDMI to save power

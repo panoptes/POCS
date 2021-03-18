@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/bash
 
-ENV POCS "/POCS"
+ENV POCS "/panoptes-pocs"
 
 ARG userid=1000
 ARG pip_extras="[focuser,google,testing]"
