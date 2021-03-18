@@ -28,12 +28,14 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo mkdir /logs && sudo chown -R "${userid}:${userid}" /logs && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
-COPY tests/environment.yaml .
+COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
 
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
-RUN /conda/bin/pip install --no-deps -e ".${pip_extras}" && \
+RUN /conda/bin/pip install -e ".${pip_extras}" && \
+    # panoptes-utils from dev.
+    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipy && \
