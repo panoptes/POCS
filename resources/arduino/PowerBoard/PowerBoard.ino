@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 
 //conversion factor to compute Iload from sensed voltage. From Luc.
-const float MULTIPLIER = 5/1023*2360/1200;
+const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
 
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
@@ -60,16 +60,18 @@ void setup() {
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reads PROFET 0_1
   digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reads PROFET 1_1
 
- // Turn on all relays to start
- turn_pin_on(RELAY_0);
- turn_pin_on(RELAY_1);
- turn_pin_on(RELAY_2);
- turn_pin_on(RELAY_3);
- turn_pin_on(RELAY_4);
+  // Turn on all relays to start
+  turn_pin_on(RELAY_0);
+  turn_pin_on(RELAY_1);
+  turn_pin_on(RELAY_2);
+  turn_pin_on(RELAY_3);
+  turn_pin_on(RELAY_4);
 }
 
 void loop() {
-  serial_input_handler.Handle();
+  if (Serial.available() > 0) {
+    handle_input();
+  }
   delay(250);
   get_readings();
 
@@ -79,16 +81,23 @@ void loop() {
 }
 
 void handle_input() {
-  StaticJsonDocument<16> doc;
-  DeserializationError error = deserializeJson(doc, Serial, inputLength);
+  StaticJsonDocument<28> doc;
+  DeserializationError error = deserializeJson(doc, Serial);
 
-  int pin_num = relayArray[doc["relay"]];
-  bool power_on = doc["power"]; // true=on
+  if (error) {
+    //    Serial.print(F("deserializeJson() failed: "));
+    //    Serial.println(error.f_str());
+    return;
+  }
 
-  if (power_on == true){
-      turn_pin_on(pin_num);
+  int relay_index = doc["relay"].as<int>();
+  int pin_num = relayArray[relay_index];
+  int power_on = doc["power"].as<int>();
+
+  if (power_on == true) {
+    turn_pin_on(pin_num);
   } else {
-      turn_pin_off(pin_num);
+    turn_pin_off(pin_num);
   }
 }
 
@@ -126,18 +135,18 @@ void read_currents(int current_readings[]) {
   delay(500);
 
   // Read from PROFETs.
-  int Diag0_0=analogRead(IS_0);
-  int Diag1_0=analogRead(IS_1);
-  int Diag2_0=analogRead(IS_2);
+  int Diag0_0 = analogRead(IS_0);
+  int Diag1_0 = analogRead(IS_1);
+  int Diag2_0 = analogRead(IS_2);
 
   // Enabled channels 0_1 and 1_1.
   digitalWrite(DSEL_0, HIGH);
   digitalWrite(DSEL_1, HIGH);
   delay(500);
 
-  int Diag0_1=analogRead(IS_0);
-  int Diag1_1=analogRead(IS_1);
-  int Diag2_1=analogRead(IS_2);
+  int Diag0_1 = analogRead(IS_0);
+  int Diag1_1 = analogRead(IS_1);
+  int Diag2_1 = analogRead(IS_2);
 
   current_readings[0] = Diag0_0;
   current_readings[1] = Diag0_1;
@@ -149,7 +158,7 @@ void read_currents(int current_readings[]) {
 
 
 /************************************
-* Utility Methods
+  Utility Methods
 *************************************/
 
 bool is_relay_on(int pin_num) {
