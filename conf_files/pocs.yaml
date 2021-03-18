@@ -27,10 +27,10 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
-  base: /POCS
-  images: /POCS/images
-  mounts: /POCS/resources/mounts
-  targets: /POCS/conf_files/targets
+  base: /panoptes-pocs
+  images: /panoptes-pocs/images
+  mounts: /panoptes-pocs/resources/mounts
+  targets: /panoptes-pocs/conf_files/targets
 
 db:
   name: panoptes
@@ -45,7 +45,7 @@ state_machine: panoptes
 
 scheduler:
   type: dispatch
-  fields_file: /POCS/conf_files/targets/simple.yaml
+  fields_file: /panoptes-pocs/conf_files/targets/simple.yaml
   check_file: False
 
 mount:
