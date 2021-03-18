@@ -15,5 +15,3 @@ dependencies:
   - pip
   - pyviz_comms
   - scipy
-  - pip:
-      - panoptes-utils[config]>=0.2.32
