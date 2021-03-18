@@ -1,25 +1,11 @@
 #cloud-config
 # https://cloudinit.readthedocs.io/
 
-hostname: pocs-control
-
-#####################################################################
-# You shouldn't need to change anything below.
-#####################################################################
-
 # Setting "expire: true" will force a password change on first login.
 chpasswd:
   expire: true
   list:
     - panoptes:panoptes
-
-ntp:
-  enabled: true
-  servers:
-    - time1.google.com
-    - time2.google.com
-    - time3.google.com
-    - time4.google.com
 
 ssh_pwauth: yes
 
