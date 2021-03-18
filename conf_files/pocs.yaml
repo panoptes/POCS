@@ -52,7 +52,6 @@ mount:
   # The brand and model determine the commands file to load from the resources/mounts dir.
   brand: ioptron
   model: ieq30pro   #  cem40
-  # Driver for mount should correspond to file.
   driver: panoptes.pocs.mount.ioptron.ieq30pro
   serial:
     port: /dev/ttyUSB0

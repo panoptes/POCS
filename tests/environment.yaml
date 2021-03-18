@@ -1,0 +1,10 @@
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - matplotlib-base
+  - numpy
+  - pandas
+  - photutils
+  - pillow
+  - pip
+  - scipy
