@@ -54,8 +54,6 @@ ARG pip_install_extras="[google]"
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
-    # Configure jupyter
-#    /conda/bin/jupyter labextension install @pyviz/jupyterlab_pyviz && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \

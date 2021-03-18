@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 
 from panoptes.utils.rs232 import SerialData, get_serial_port_info
-from panoptes.utils.serializers import from_json
+from panoptes.utils.serializers import from_json, to_json
 from panoptes.pocs.base import PanBase
 from panoptes.utils.rs232 import find_serial_port
 from panoptes.utils import error
@@ -162,9 +162,9 @@ class PowerBoard(PanBase):
         """Changes the relay to the new state. """
         new_state_command = TruckerBoardCommands[new_state.name]
         # Must have the newline in command.
-        write_command = f'{relay.relay_index.value},{new_state_command.value}\n'
+        write_command = to_json(dict(relay=relay.relay_index.value, power=new_state_command.value))
         self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
-        self.arduino_board.write(write_command)
+        self.arduino_board.write(f'{write_command}\n')
 
     def start_reading_status(self):
         """Start the read loop."""
