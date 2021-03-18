@@ -153,9 +153,6 @@ firmware_motor:
 firmware_radec:
     cmd: FW2
     response: YYMMDDYYMMDD
-version:
-   cmd: V
-   response: 'V1.00'
 mount_info:
    cmd: MountInfo
    response: '0040'
