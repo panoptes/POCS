@@ -128,6 +128,12 @@ function system_deps() {
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
+  # Raspberry Pi stuff
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "Installing Raspberry Pi tools"
+    sudo apt-get -y install rpi.gpio-common
+  fi
+
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
     echo "Adding ssh key"
