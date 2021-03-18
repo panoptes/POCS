@@ -71,7 +71,7 @@ OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,docker,i2c,input,gpio"
+DEFAULT_GROUPS="dialout,plugdev,docker,i2c,spi,input,gpio"
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
