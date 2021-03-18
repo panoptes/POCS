@@ -58,7 +58,7 @@ RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \
     sudo apt-get autoremove --purge --yes \
-        gcc pkg-config git && \
+        gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
