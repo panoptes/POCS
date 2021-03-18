@@ -1,6 +1,7 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
+  - astroplan
   - holoviews
   - hvplot
   - ipywidgets
