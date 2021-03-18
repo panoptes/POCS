@@ -33,7 +33,7 @@ RUN /conda/bin/conda env update -n base -f environment.yaml
 
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
-RUN /conda/bin/pip install -e ".${pip_extras}" && \
+RUN /conda/bin/pip install --no-deps -e ".${pip_extras}" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipy && \
