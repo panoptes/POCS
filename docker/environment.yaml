@@ -1,13 +1,18 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
+  - astroplan
+  - holoviews
+  - hvplot
+  - ipywidgets
   - jupyterlab  # Interactive
+  - jupyterlab_widgets
   - matplotlib-base
   - numpy
+  - pandas
+  - panel
   - photutils
   - pillow
   - pip
+  - pyviz_comms
   - scipy
-  - streamz
-  - pip:
-      - panoptes-utils[config]>=0.2.32

@@ -12,6 +12,7 @@ Generic
 
   * Python 3.8
   * Default service install does not include ``focuser`` dependencies.
+  * Default service is running a public jupyter lab.
   * Default Docker command is a ``ipython`` console with the simulators loaded.
   * Docker image only contains limited set of files.
   * Directories inside the service image have been simplified for easier mapping onto desired targets on the host. The main top-level directory (i.e. ``$PANDIR``) is now ``/POCS`` with other folders nested underneath.

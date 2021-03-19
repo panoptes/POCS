@@ -4,7 +4,7 @@ import pycodestyle
 import pytest
 
 
-@pytest.fixture(scope='module', params=['pocs', 'peas'])
+@pytest.fixture(scope='module', params=['pocs'])
 def dirs_to_check(request):
     return request.param
 

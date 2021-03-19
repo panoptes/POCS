@@ -1,9 +1,8 @@
-from pathlib import Path
+import re
 
 from panoptes.utils import error
 from panoptes.utils import rs232
 from panoptes.pocs.mount import AbstractMount
-from panoptes.utils.serializers import from_yaml
 
 
 class AbstractSerialMount(AbstractMount):
@@ -15,6 +14,9 @@ class AbstractSerialMount(AbstractMount):
         """
         super().__init__(*args, **kwargs)
 
+        # This should be overridden by derived classes.
+        self._status_format = re.compile('.*')
+
         # Setup our serial connection at the given port
         try:
             serial_config = self.get_config('mount.serial')
@@ -22,9 +24,8 @@ class AbstractSerialMount(AbstractMount):
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")
         except KeyError:
-            self.logger.critical(
-                'No serial config specified, cannot create mount {}',
-                self.get_config('mount'))
+            self.logger.critical("No serial config specified, cannot create mount: "
+                                 f"{self.get_config('mount')}")
         except Exception as e:
             self.logger.critical(e)
 
@@ -163,46 +164,8 @@ class AbstractSerialMount(AbstractMount):
 
         self.logger.debug('Mount connected via serial')
 
-    def _setup_commands(self, commands):
-        """
-        Does any setup for the commands needed for this mount. Mostly responsible for
-        setting the pre- and post-commands. We could also do some basic checking here
-        to make sure required commands are in fact available.
-        """
-        self.logger.debug('Setting up commands for mount')
-
-        if len(commands) == 0:
-            brand = self.get_config('mount.brand')
-            model = self.get_config('mount.model')
-            mount_dir = self.get_config('directories.mounts')
-
-            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
-
-            if commands_file.is_file():
-                self.logger.info(f"Loading mount commands file: {commands_file}")
-                try:
-                    with commands_file.open() as f:
-                        commands.update(from_yaml(f.read(), parse=False))
-                        self.logger.debug(f"Mount commands updated from {commands_file}")
-                except OSError as err:
-                    self.logger.warning(f'Cannot load {commands_file=} {err!r}')
-                except Exception:
-                    self.logger.warning("Problem loading mount command file")
-            else:
-                self.logger.warning(f"No such config file for mount commands: {commands_file}")
-
-        # Get the pre- and post- commands
-        self._pre_cmd = commands.setdefault('cmd_pre', ':')
-        self._post_cmd = commands.setdefault('cmd_post', '#')
-
-        self.logger.debug('Mount commands set up')
-        return commands
-
     def _get_command(self, cmd, params=None):
         """ Looks up appropriate command for telescope """
-
-        # self.logger.debug('Mount Command Lookup: {}'.format(cmd))
-
         full_command = ''
 
         # Get the actual command
@@ -210,22 +173,16 @@ class AbstractSerialMount(AbstractMount):
 
         if cmd_info is not None:
             # Check if this command needs params
-
             if 'params' in cmd_info:
                 if params is None:
-                    raise error.InvalidMountCommand(
-                        '{} expects params: {}'.format(cmd, cmd_info.get('params')))
-
-                full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                    raise error.InvalidMountCommand(f'{cmd} expects params: {cmd_info.get("params")}')
+                full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{params}{self._post_cmd}"
             else:
-                full_command = "{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+                full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{self._post_cmd}"
 
             # self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
-            self.logger.warning('No command for {}'.format(cmd))
-            # raise error.InvalidMountCommand('No command for {}'.format(cmd))
+            self.logger.warning(f'No command for {cmd}')
 
         return full_command
 

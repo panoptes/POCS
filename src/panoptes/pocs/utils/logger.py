@@ -22,7 +22,7 @@ class PanLogger:
                    "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
                    " <blue>({time:HH:mm:ss zz})</> " \
                    "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
-                   "<lvl>{message}</lvl>\n"
+                   "<lvl>{message}</lvl>"
         self.handlers = dict()
 
     def format(self, record):
@@ -38,8 +38,9 @@ LOGGER_INFO = PanLogger()
 
 def get_logger(console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
+               serialize_full_log=False,
                log_dir='logs',
-               console_log_level='DEBUG',
+               console_log_level='SUCCESS',
                stderr_log_level='INFO',
                ):
     """Creates a root logger for PANOPTES used by the PanBase object.
@@ -58,9 +59,11 @@ def get_logger(console_log_file='panoptes.log',
             and is serialized and rotated automatically. Useful for uploading to log service
             website. Defaults to `panoptes_{time:YYYYMMDD!UTC}.log.gz` with a daily rotation
             at 11:30am and a 7 day retention policy. If `None` then no file will be generated.
+        serialize_full_log (bool, optional): If the full log should be written as json for log
+            analysis, default False.
         log_dir (str|None, optional): The directory to place the log file, default local `logs`.
         stderr_log_level (str, optional): The log level to show on stderr, default INFO.
-        console_log_level (str, optional): Log level for console file output, defaults to 'DEBUG'.
+        console_log_level (str, optional): Log level for console file output, defaults to 'SUCCESS'.
             Note that it should be a string that matches standard `logging` levels and
             also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`). Also note this
             is not the stderr output, but the output to the file to be tailed.
@@ -113,7 +116,7 @@ def get_logger(console_log_file='panoptes.log',
             retention='7 days',
             compression='gz',
             enqueue=True,  # multiprocessing
-            serialize=True,
+            serialize=serialize_full_log,
             backtrace=True,
             diagnose=True,
             level='TRACE')
