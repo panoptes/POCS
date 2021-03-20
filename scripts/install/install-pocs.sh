@@ -86,7 +86,7 @@ function make_directories() {
 
 function which_version() {
   PS3='Where are you installing?: '
-  versions=("Control box" "Camera Box" "My computer / Dev box")
+  versions=("Control box" "Camera box" "My computer")
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
@@ -161,7 +161,7 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /panoptes-pocs/docker-compose.yaml /temp/docker-compose.yaml"
+      "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
@@ -187,7 +187,7 @@ function install_conda() {
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  # Install panoptes-utils (so we get panoptes-config-server)
+  # Install docker-compose.
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 
   rm install-miniforge.sh

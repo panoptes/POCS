@@ -4,13 +4,14 @@ from enum import IntEnum
 from dataclasses import dataclass
 from typing import Optional
 from collections import deque
-import numpy as np
+import pandas as pd
 
-from panoptes.utils.rs232 import SerialData, get_serial_port_info
+from panoptes.utils.rs232 import SerialData, find_serial_port
 from panoptes.utils.serializers import from_json, to_json
 from panoptes.pocs.base import PanBase
-from panoptes.utils.rs232 import find_serial_port
 from panoptes.utils import error
+from panoptes.utils.time import current_time
+from streamz.dataframe import DataFrame as StreamingDataFrame
 
 
 class PinState(IntEnum):
@@ -44,6 +45,7 @@ class Relay:
     name: str
     label: Optional[str]
     current_readings: deque
+    data: StreamingDataFrame
     relay_index: TruckerRelayIndex
     state: Optional[PinState] = PinState.OFF
     default_state: Optional[PinState] = PinState.OFF
@@ -52,7 +54,7 @@ class Relay:
     @property
     def current(self):
         """Gets the mean of the current entries"""
-        return np.mean(self.current_readings)
+        return self.current_readings[-1]
 
     @property
     def status(self):
@@ -110,7 +112,7 @@ class PowerBoard(PanBase):
 
         self.relay_labels = dict()
         self.relay_names = dict()
-        self.setup_relays(relays, queue_maxsize=25)
+        self.setup_relays(relays, queue_maxsize=25, batch_time=1)
         time.sleep(2)
 
         # Set initial relay states.
@@ -130,19 +132,24 @@ class PowerBoard(PanBase):
         """Turns off the relay with the given label."""
         self.change_relay_state(self.relay_labels[label], PinState.OFF)
 
-    def setup_relays(self, relays, queue_maxsize=25):
+    def setup_relays(self, relays, queue_maxsize=25, batch_time=2):
         """Setup the relays."""
         for relay_name, relay_config in relays.items():
             relay_index = TruckerRelayIndex[relay_name]
             relay_label = relay_config.get('label') or relay_name
             default_state = PinState[relay_config.get('default_state', 'off').upper()]
 
+            current_deque = deque(maxlen=queue_maxsize)
+            streaming_dataframe = StreamingDataFrame(
+                example=pd.DataFrame({'reading': []}, index=pd.DateTimeIndex([])))
+
             # Create relay object.
             self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
             relay = Relay(name=relay_name,
                           label=relay_config.get('label', ''),
                           relay_index=relay_index,
-                          current_readings=deque(maxlen=queue_maxsize),
+                          current_readings=current_deque,
+                          data=streaming_dataframe,
                           default_state=default_state
                           )
 
@@ -218,9 +225,13 @@ class PowerBoard(PanBase):
                     else:
                         # Record the current.
                         currents = data.get('currents', list())
+                        reading_time = current_time()
                         for i, val in enumerate(currents):
                             relay = self.relay_names[TruckerRelayIndex(i).name]
-                            relay.current_readings.append(val * relay.multiplier)
+                            new_reading = val * relay.multiplier
+
+                            relay.data.emit(pd.DataFrame({'reading': new_reading},
+                                                         index=pd.DatetimeIndex([reading_time])))
 
                         # Update the state for the relay.
                         relay_status = data.get('relays', list())
