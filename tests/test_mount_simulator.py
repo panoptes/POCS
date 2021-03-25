@@ -37,7 +37,7 @@ def test_connect(mount):
 
 def test_disconnect(mount):
     assert mount.connect() is True
-    assert mount.disconnect() is True
+    assert mount.disconnect(, is True
     assert mount.is_connected is False
 
 

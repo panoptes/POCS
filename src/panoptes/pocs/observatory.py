@@ -10,7 +10,7 @@ from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
-from panoptes.pocs.mount.mount import AbstractMount
+from panoptes.pocs.mount.base import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.utils.time import current_time

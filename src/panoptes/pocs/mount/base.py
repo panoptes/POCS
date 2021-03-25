@@ -1,4 +1,5 @@
 import time
+from glob import glob
 from abc import abstractmethod, ABC
 from contextlib import suppress
 from typing import Optional, Tuple, Dict
@@ -6,10 +7,15 @@ from typing import Optional, Tuple, Dict
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from panoptes.pocs.utils.logger import get_logger
 
+from panoptes.utils import error
+from panoptes.utils.library import load_module
+from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.time import current_time
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.mount import constants
+from panoptes.pocs.utils.location import create_location_from_config
 
 
 class AbstractMount(PanBase, ABC):
@@ -350,8 +356,8 @@ class AbstractMount(PanBase, ABC):
     def get_tracking_correction(self,
                                 offset_info: Tuple[float, float],
                                 pointing_ha: float,
-                                thresholds: Optional[Tuple[int, int]] = None) -> Dict[
-        str, Tuple[float, float, str]]:
+                                thresholds: Optional[Tuple[int, int]] = None
+                                ) -> Dict[str, Tuple[float, float, str]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -488,3 +494,93 @@ class AbstractMount(PanBase, ABC):
     @abstractmethod
     def _set_initial_rates(self):
         raise NotImplementedError
+
+    @classmethod
+    def create_mount_from_config(cls, mount_info=None, earth_location=None, *args, **kwargs):
+        """Create a mount instance based on the provided config.
+
+        Creates an instance of the AbstractMount sub-class in the module specified in the config.
+        Specifically, the class must be in a file called pocs/mount/<DRIVER_NAME>.py,
+        and the class must be called Mount.
+
+        Args:
+            mount_info: Optional param which overrides the 'mount' entry in config if provided.
+                Useful for testing.
+            earth_location: `astropy.coordinates.EarthLocation` instance, representing the
+                location of the mount on the Earth. If not specified, the config must include the
+                observatory's location (Latitude, Longitude and Altitude above mean sea level).
+                Useful for testing.
+            *args: Positional args will be passed to the concrete class specified in the config.
+            **kwargs: Keyword args will be passed to the concrete class specified in the config.
+
+        Returns:
+            An instance of the Mount class if the config (or mount_info) is complete. `None` if
+            neither mount_info nor config['mount'] is provided.
+
+        Raises:
+            error.MountNotFound: Exception raised when mount cannot be created
+                because of incorrect configuration.
+        """
+        logger = get_logger()
+
+        # If mount_info was not passed as a parameter, check config.
+        if mount_info is None:
+            logger.debug('No mount info provided, using values from config.')
+            mount_info = get_config('mount', default=None)
+
+            # If nothing in config, raise exception.
+            if mount_info is None:
+                raise error.MountNotFound('No mount information in config, cannot create.')
+
+        # If earth_location was not passed as a parameter, check config.
+        if earth_location is None:
+            logger.debug('No location provided, using values from config.')
+
+            # Get details from config.
+            site_details = create_location_from_config()
+            earth_location = site_details['earth_location']
+
+        brand = mount_info.get('brand')
+        driver = mount_info.get('driver')
+        model = mount_info.get('model', driver)
+        if not driver or not isinstance(driver, str):
+            raise error.MountNotFound('Mount info in config is missing a driver name.')
+
+        logger.debug(f'Mount: {brand=} {driver=} {model=}')
+
+        # Check if we should be using a simulator
+        use_simulator = 'mount' in get_config('simulator', default=[])
+        logger.debug(f'Mount is simulator: {use_simulator}')
+
+        # Create simulator if requested
+        if use_simulator or ('simulator' in driver):
+            logger.debug(f'Creating mount simulator')
+            return AbstractMount.create_mount_simulator(mount_info=mount_info,
+                                                        earth_location=earth_location)
+
+        # See if we have a serial connection
+        try:
+            port = mount_info['serial']['port']
+            logger.info(f'Looking for {driver} on {port}.')
+            if port is None or len(glob(port)) == 0:
+                raise error.MountNotFound(msg=f'Mount {port=} not available.')
+        except KeyError:
+            # See Issue 866
+            if model == 'bisque':
+                logger.debug('Driver specifies a bisque type mount, no serial port needed.')
+            else:
+                msg = 'Mount port not specified in config file. Use simulator=mount for simulator.'
+                raise error.MountNotFound(msg=msg)
+
+        logger.debug(f'Loading mount {driver=}')
+        try:
+            module = load_module(driver)
+        except error.NotFound as e:
+            raise error.MountNotFound(e)
+
+        # Make the mount include site information
+        mount = module.Mount(location=earth_location, *args, **kwargs)
+
+        logger.success(f'{driver} mount created')
+
+        return mount

@@ -1,16 +1,43 @@
 import time
+from contextlib import suppress
 from threading import Timer
+from typing import Tuple, Optional, Dict
 
 from astropy import units as u
+from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.library import load_module
 
 from panoptes.utils.time import current_time
 from panoptes.utils import error
-from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.mount.base import AbstractMount
 
 
 class Mount(AbstractMount):
-    """Mount class for a simulator. Use this when you don't actually have a mount attached.
+    """Mount class for a simulator.
+
+    Use this when you don't actually have a mount attached.
     """
+
+    def get_tracking_correction(self,
+                                offset_info: Tuple[float, float],
+                                pointing_ha: float,
+                                thresholds: Optional[Tuple[int, int]] = None
+                                ) -> Dict[str, Tuple[float, float, str]]:
+        pass
+
+    def correct_tracking(self, correction_info, axis_timeout=30.):
+        pass
+
+    def set_target_coordinates(self, new_coord):
+        pass
+
+    def _get_command(self, cmd, params=None):
+        pass
+
+    def _set_initial_rates(self):
+        pass
 
     def __init__(self, location, *args, **kwargs):
 
@@ -24,14 +51,6 @@ class Mount(AbstractMount):
         self._current_coordinates = self._park_coordinates
 
         self.logger.debug('Simulator mount created')
-
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
-    ##################################################################################################
-    # Public Methods
-    ##################################################################################################
 
     def initialize(self, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
@@ -66,7 +85,7 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
-    def disconnect(self):
+    def disconnect(self, **kwargs):
         self.logger.debug("Disconnecting mount simulator")
         self._is_connected = False
         return True
@@ -86,7 +105,7 @@ class Mount(AbstractMount):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
+        self.logger.debug(f'Mount simulator moving {direction} for {seconds} seconds')
         time.sleep(seconds)
 
     def get_ms_offset(self, offset, axis='ra'):
@@ -94,6 +113,7 @@ class Mount(AbstractMount):
 
         Args:
             offset (astropy.units.Angle): Offset in arcseconds
+            axis (str): The axis to get offset for, options 'ra' (default) or 'dec'.
 
         Returns:
              astropy.units.Quantity: Offset in milliseconds at current speed
@@ -143,7 +163,7 @@ class Mount(AbstractMount):
             self.logger.debug("Setting next position to {}".format(next_position))
             setattr(self, next_position, True)
 
-    def slew_to_home(self, blocking=False):
+    def slew_to_home(self, blocking=False, **kwargs):
         """ Slews the mount to the home position.
 
         Note:
@@ -160,7 +180,7 @@ class Mount(AbstractMount):
 
         self.stop_slew(next_position='is_home')
 
-    def park(self):
+    def park(self, **kwargs):
         """ Sets the mount to park for simulator """
         self.logger.debug("Setting to park")
         self._state = 'Parked'
@@ -170,38 +190,35 @@ class Mount(AbstractMount):
         self._is_parked = True
 
     def unpark(self):
-        self.logger.debug("Unparking mount")
+        self.logger.debug('Unparking mount')
         self._is_connected = True
         self._is_parked = False
         return True
 
     def query(self, cmd, params=None):
-        self.logger.debug(f"Query cmd: {cmd} params: {params!r}")
+        self.logger.debug(f'Query cmd: {cmd} params: {params!r}')
         if cmd == 'slew_to_target':
             time.sleep(self._loop_delay)
 
         return True
 
     def write(self, cmd):
-        self.logger.debug("Write: {}".format(cmd))
+        self.logger.debug(f'Write: {cmd}')
 
-    def read(self, *args):
-        self.logger.debug("Read")
+    def read(self):
+        self.logger.debug('Read')
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
-        self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
-        self.tracking = 'Custom'
+        self.logger.debug(f'Setting tracking rate delta: {direction} {delta}')
+        self.tracking_mode = 'Custom'
         self.tracking_rate = 1.0 + delta
         self.logger.debug("Custom tracking rate sent")
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.debug('Setting up mount for location')
 
@@ -219,5 +236,41 @@ class Mount(AbstractMount):
         self.logger.debug("Simulator cannot set zero position")
         return False
 
-    def _setup_commands(self, commands):
+    def _setup_commands(self, commands=None):
         return commands
+
+    @classmethod
+    def create_mount_simulator(cls, mount_info=None, earth_location=None, db_type='memory', *args,
+                               **kwargs):
+        logger = get_logger()
+
+        # Remove mount simulator
+        current_simulators = list(get_config('simulator', default=[]))
+        logger.warning(f'Current simulators: {current_simulators}')
+        with suppress(ValueError):
+            current_simulators.remove('mount')
+
+        mount_config = mount_info or {
+            'model': 'Mount Simulator',
+            'driver': 'panoptes.pocs.mount.simulator',
+            'serial': {
+                'port': '/dev/FAKE'
+            }
+        }
+
+        # Set mount device info to simulator
+        set_config('mount', mount_config)
+
+        earth_location = earth_location or create_location_from_config()['earth_location']
+
+        logger.debug(f"Loading mount driver: {mount_config['driver']}")
+        try:
+            module = load_module(f"{mount_config['driver']}")
+        except error.NotFound as e:
+            raise error.MountNotFound(f'Error loading mount module: {e!r}')
+
+        mount = module.Mount(earth_location, db_type=db_type, *args, **kwargs)
+
+        logger.success(f"{mount_config['driver'].title()} mount created")
+
+        return mount
