@@ -1,7 +1,7 @@
 import time
 from abc import ABC
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
 from panoptes.utils import error
 from panoptes.utils import rs232
@@ -470,29 +470,14 @@ class AbstractSerialMount(AbstractMount, ABC):
 
         return status
 
-    def _setup_commands(self, commands: Optional[dict] = None):
+    def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
         """Setup the mount commands.
 
         Does any setup for the commands needed for this mount. Mostly responsible for
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
-        self.logger.debug(f'Setting up commands for {self}')
-
-        if commands is not None and len(commands) == 0:
-            brand = self.get_config('mount.brand')
-            model = self.get_config('mount.model')
-            mount_dir = self.get_config('directories.mounts')
-
-            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
-
-            try:
-                self.logger.info(f'Loading mount commands file: {commands_file}')
-                with commands_file.open() as f:
-                    commands.update(from_yaml(f.read(), parse=False))
-                    self.logger.debug(f'Mount commands updated from {commands_file}')
-            except Exception as err:
-                self.logger.warning(f'Error loading {commands_file=} {err!r}')
+        commands = super(AbstractSerialMount, self)._setup_commands(commands)
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')

@@ -2,6 +2,7 @@ import time
 from glob import glob
 from abc import abstractmethod, ABCMeta
 from contextlib import suppress
+from pathlib import Path
 from typing import Optional, Tuple, Dict
 
 from astropy import units as u
@@ -12,6 +13,7 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.config.client import get_config
+from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.mount import constants
@@ -43,7 +45,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
     """
 
-    def __init__(self, location, commands=None, *args, **kwargs):
+    def __init__(self, location, commands: Optional[Dict] = None, *args, **kwargs):
         super(AbstractMount, self).__init__(*args, **kwargs)
 
         # Create an object for just the mount config items.
@@ -52,7 +54,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
         # Setup commands for mount.
         self.logger.debug('Setting up commands for mount')
-        self.commands = self._setup_commands(commands)
+        self.commands = commands or self._setup_commands(commands)
         self.logger.debug('Mount commands set up')
 
         # Set the initial location directly (but not via setter).
@@ -343,6 +345,30 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
         return (offset / (self.sidereal_rate.value * guide_rate)).to(u.ms)
 
+    def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
+        """Setup the mount commands.
+
+        If no commands are provided, lookup and load command file.
+        """
+        self.logger.debug(f'Setting up commands for {self}')
+
+        if commands is None:
+            brand = self.get_config('mount.brand')
+            model = self.get_config('mount.model')
+            mount_dir = self.get_config('directories.mounts')
+
+            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
+            self.logger.info(f'Loading mount commands file: {commands_file}')
+
+            try:
+                with commands_file.open() as f:
+                    commands = from_yaml(f.read(), parse=False)
+                    self.logger.info(f'Loaded mount commands from {commands_file}')
+            except Exception as err:
+                self.logger.warning(f'Error loading {commands_file=} {err!r}')
+
+        return commands
+
     @abstractmethod
     def connect(self):
         """Connect to the mount """
@@ -458,11 +484,6 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def set_target_coordinates(self, new_coord):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _setup_commands(self, commands: Optional[dict] = None):
-        """Setup the mount commands."""
         raise NotImplementedError
 
     @abstractmethod

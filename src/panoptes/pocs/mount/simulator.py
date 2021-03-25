@@ -207,7 +207,8 @@ class Mount(AbstractMount):
         self.logger.debug("Simulator cannot set zero position")
         return False
 
-    def _setup_commands(self, commands=None):
+    def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
+        commands = super(Mount, self)._setup_commands(commands)
         return commands
 
     def get_tracking_correction(self,
