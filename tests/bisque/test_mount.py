@@ -89,7 +89,7 @@ def test_status(mount, target):
     mount.set_target_coordinates(target)
     assert mount.has_target is True
 
-    assert mount.get_target_coordinates() == target
+    assert mount.target_coordinates == target
 
     status2 = mount.status
     assert 'mount_target_ra' in status2
@@ -117,7 +117,7 @@ def test_target_coords(mount, target):
     mount.initialize(unpark=True)
 
     assert mount.set_target_coordinates(target) is True
-    assert mount.get_target_coordinates() == target
+    assert mount.target_coordinates == target
 
 
 def test_no_slew_without_unpark(mount):

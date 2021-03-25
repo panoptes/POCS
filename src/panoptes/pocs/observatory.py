@@ -282,7 +282,7 @@ class Observatory(PanBase):
                 current_coords = self.mount.get_current_coordinates()
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
-                    target_coords = self.mount.get_target_coordinates()
+                    target_coords = self.mount.target_coordinates
                     status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now,
                                                                                          target_coords)
         except Exception as e:  # pragma: no cover

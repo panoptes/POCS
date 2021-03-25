@@ -121,7 +121,7 @@ class Mount(AbstractMount):
             timer.cancel()
             raise error.Timeout
 
-        self._current_coordinates = self.get_target_coordinates()
+        self._current_coordinates = self.target_coordinates
 
         return success
 

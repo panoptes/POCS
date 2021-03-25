@@ -50,7 +50,7 @@ def test_target_coords(mount):
 
     mount.set_target_coordinates(c)
 
-    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+    assert mount.target_coordinates.to_string() == '300.182 22.7109'
 
 
 def test_set_park_coords(mount):
@@ -76,7 +76,7 @@ def test_status(mount):
 
     mount.set_target_coordinates(c)
 
-    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+    assert mount.target_coordinates.to_string() == '300.182 22.7109'
 
     status2 = mount.status
     assert 'mount_target_ra' in status2
