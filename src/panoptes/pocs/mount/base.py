@@ -11,7 +11,7 @@ from panoptes.pocs.utils.logger import get_logger
 
 from panoptes.utils import error
 from panoptes.utils.library import load_module
-from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.config.client import get_config
 from panoptes.utils.time import current_time
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.mount import constants
@@ -496,7 +496,9 @@ class AbstractMount(PanBase, ABC):
         raise NotImplementedError
 
     @classmethod
-    def create_mount_from_config(cls, mount_info=None, earth_location=None, *args, **kwargs):
+    def create_mount_from_config(cls, mount_info=None, earth_location=None,
+                                 default_simulator='panoptes.pocs.mount.simulator', *args,
+                                 **kwargs):
         """Create a mount instance based on the provided config.
 
         Creates an instance of the AbstractMount sub-class in the module specified in the config.
@@ -510,6 +512,8 @@ class AbstractMount(PanBase, ABC):
                 location of the mount on the Earth. If not specified, the config must include the
                 observatory's location (Latitude, Longitude and Altitude above mean sea level).
                 Useful for testing.
+            default_simulator (str): The full name to mount simulator, default
+                'panoptes.pocs.mount.simulator'.
             *args: Positional args will be passed to the concrete class specified in the config.
             **kwargs: Keyword args will be passed to the concrete class specified in the config.
 
@@ -552,20 +556,21 @@ class AbstractMount(PanBase, ABC):
         use_simulator = 'mount' in get_config('simulator', default=[])
         logger.debug(f'Mount is simulator: {use_simulator}')
 
-        # Create simulator if requested
+        # Create simulator if requested.
         if use_simulator or ('simulator' in driver):
             logger.debug(f'Creating mount simulator')
-            return AbstractMount.create_mount_simulator(mount_info=mount_info,
-                                                        earth_location=earth_location)
+            simulator_class = load_module(default_simulator)
+            return simulator_class.create_mount_simulator(mount_info=mount_info,
+                                                          earth_location=earth_location)
 
-        # See if we have a serial connection
+        # See if we have a serial connection.
         try:
             port = mount_info['serial']['port']
             logger.info(f'Looking for {driver} on {port}.')
             if port is None or len(glob(port)) == 0:
                 raise error.MountNotFound(msg=f'Mount {port=} not available.')
         except KeyError:
-            # See Issue 866
+            # See Issue 866.
             if model == 'bisque':
                 logger.debug('Driver specifies a bisque type mount, no serial port needed.')
             else:
@@ -578,7 +583,7 @@ class AbstractMount(PanBase, ABC):
         except error.NotFound as e:
             raise error.MountNotFound(e)
 
-        # Make the mount include site information
+        # Make the mount include site information.
         mount = module.Mount(location=earth_location, *args, **kwargs)
 
         logger.success(f'{driver} mount created')
