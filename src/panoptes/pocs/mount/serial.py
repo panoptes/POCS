@@ -5,7 +5,8 @@ from typing import Optional
 
 from panoptes.utils import error
 from panoptes.utils import rs232
-from panoptes.pocs.mount import AbstractMount, constants
+from panoptes.pocs.mount.base import AbstractMount
+from panoptes.pocs.mount import constants
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time, CountdownTimer
 
@@ -518,10 +519,7 @@ class AbstractSerialMount(AbstractMount, ABC):
             params (str, optional): Params to pass to serial connection
 
         Returns:
-            bool: indicating success
-
-        Deleted Parameters:
-            *args: Parameters to be sent with command if required.
+            Any: The response from the command.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 

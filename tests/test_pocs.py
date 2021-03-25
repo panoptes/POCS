@@ -10,7 +10,7 @@ from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json, to_yaml
-from panoptes.pocs.mount import create_mount_simulator
+from panoptes.pocs.mount.simulator import Mount as SimulatorMount
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
@@ -33,7 +33,7 @@ def cameras():
 
 @pytest.fixture(scope='function')
 def mount():
-    return create_mount_simulator()
+    return SimulatorMount.create_mount_simulator()
 
 
 @pytest.fixture(scope='function')

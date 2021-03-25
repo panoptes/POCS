@@ -3,16 +3,16 @@ import os
 import time
 from string import Template
 from threading import Lock
+from typing import Optional, Tuple, Dict
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.pocs.utils import theskyx
 from panoptes.utils import error
-from panoptes.utils.serializers import from_yaml
 
 
-class Mount(AbstractMount):
+class Mount(AbstractSerialMount):
 
     def __init__(self, *args, **kwargs):
         """"""
@@ -88,7 +88,7 @@ class Mount(AbstractMount):
 
         return self.is_connected
 
-    def disconnect(self):
+    def disconnect(self, **kwargs):
         self.logger.debug("Disconnecting mount from TheSkyX")
         self.query('disconnect')
         self._is_connected = False
@@ -126,8 +126,8 @@ class Mount(AbstractMount):
     def query(self, *args, **kwargs):
         """ Override the query method to use the command lock.
 
-        This is required because TheSkyX cannot handle simulataneous commands. This function will
-        block until the lock is released.
+        This is required because TheSkyX cannot handle simultaneous commands.
+        This function will block until the lock is released.
         """
         with self._command_lock:
             return super().query(*args, **kwargs)
@@ -265,7 +265,7 @@ class Mount(AbstractMount):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home(blocking=blocking)
 
-    def park(self, timeout=120):
+    def park(self, timeout=120, **kwargs):
         """ Slews to the park position and parks the mount.
 
         Note:
@@ -305,8 +305,8 @@ class Mount(AbstractMount):
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west', 'left', 'right', 'up', 'down']
 
-        move_command = 'move_{}'.format(direction)
-        self.logger.debug("Move command: {}".format(move_command))
+        move_command = f'move_{direction}'
+        self.logger.debug(f'Move command: {move_command}')
 
         if rate is None:
             rate = 15.04  # (u.arcsec / u.second)
@@ -315,17 +315,17 @@ class Mount(AbstractMount):
             arcmin = (rate * seconds) / 60.
 
         try:
-            self.logger.debug("Moving {} for {} arcmins. ".format(direction, arcmin))
-            self.query(move_command, params={'direction': direction.upper()[0], 'arcmin': arcmin},
+            self.logger.debug(f'Moving {direction} for {arcmin} arcmins. ')
+            self.query(move_command,
+                       params={'direction': direction.upper()[0], 'arcmin': arcmin},
                        timeout=seconds + 10)
         except KeyboardInterrupt:
-            self.logger.warning("Keyboard interrupt, stopping movement.")
+            self.logger.warning('Keyboard interrupt, stopping movement.')
         except Exception as e:
-            self.logger.warning(
-                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(f'Problem moving command!! Make sure mount has stopped moving: {e}')
         finally:
             # Note: We do this twice. That's fine.
-            self.logger.debug("Stopping movement")
+            self.logger.debug('Stopping movement')
             self.query('stop_moving')
 
     ##########################################################################
@@ -436,8 +436,16 @@ class Mount(AbstractMount):
         ra = coords.ra.to(u.hourangle).to_string()
         dec = coords.dec.to_string()
 
-        self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
+        self.logger.debug(f'RA: {ra} \t Dec: {dec}')
 
         mount_coords = (ra, dec)
 
         return mount_coords
+
+    def get_tracking_correction(self, offset_info: Tuple[float, float], pointing_ha: float,
+                                thresholds: Optional[Tuple[int, int]] = None) -> Dict[
+        str, Tuple[float, float, str]]:
+        pass
+
+    def _set_initial_rates(self):
+        pass

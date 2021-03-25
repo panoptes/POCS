@@ -1,6 +1,6 @@
 import time
 from glob import glob
-from abc import abstractmethod, ABC
+from abc import abstractmethod, ABCMeta
 from contextlib import suppress
 from typing import Optional, Tuple, Dict
 
@@ -18,7 +18,7 @@ from panoptes.pocs.mount import constants
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-class AbstractMount(PanBase, ABC):
+class AbstractMount(PanBase, metaclass=ABCMeta):
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
@@ -55,8 +55,8 @@ class AbstractMount(PanBase, ABC):
         self.commands = self._setup_commands(commands)
         self.logger.debug('Mount commands set up')
 
-        # Set the initial location
-        self.location = location
+        # Set the initial location directly (but not via setter).
+        self._location = location
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)

@@ -8,12 +8,11 @@ from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
 from panoptes.pocs import hardware
-from panoptes.pocs.mount import AbstractMount
+from panoptes.pocs.mount.base import AbstractMount
+from panoptes.pocs.mount.simulator import Mount as SimulatorMount
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.dispatch import Scheduler
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
@@ -37,7 +36,7 @@ def cameras():
 
 @pytest.fixture(scope='function')
 def mount():
-    return create_mount_simulator()
+    return SimulatorMount.create_mount_simulator()
 
 
 @pytest.fixture
@@ -178,7 +177,7 @@ def test_set_mount():
         'driver': 'panoptes.pocs.mount.simulator',
         'model': 'panoptes.pocs.camera.simulator.dslr',
     })
-    mount = create_mount_from_config()
+    mount = AbstractMount.create_mount_from_config()
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
 

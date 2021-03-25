@@ -2,9 +2,8 @@ from contextlib import suppress
 
 import pytest
 from panoptes.pocs import hardware
-from panoptes.pocs.mount import AbstractMount
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount import create_mount_simulator
+from panoptes.pocs.mount.base import AbstractMount
+from panoptes.pocs.mount.simulator import Mount as SimulatorMount
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
@@ -24,7 +23,7 @@ def reset_conf(config_host, config_port):
 
 def test_create_mount_simulator(config_host, config_port):
     # Use the simulator create function directly.
-    mount = create_mount_simulator()
+    mount = SimulatorMount.create_mount_simulator()
     assert isinstance(mount, AbstractMount) is True
 
 
@@ -34,7 +33,7 @@ def test_create_mount_simulator_with_config(config_host, config_port):
     # But setting the driver to `simulator` should return simulator.
     set_config('mount.driver', 'panoptes.pocs.mount.simulator')
 
-    mount = create_mount_from_config()
+    mount = AbstractMount.create_mount_from_config()
     assert isinstance(mount, AbstractMount) is True
     reset_conf(config_host, config_port)
 
@@ -44,7 +43,7 @@ def test_create_mount_without_mount_info(config_host, config_port):
     set_config('mount', None)
     set_config('simulator', hardware.get_all_names(without=['mount']))
     with pytest.raises(error.MountNotFound):
-        create_mount_from_config(mount_info=None)
+        AbstractMount.create_mount_from_config(mount_info=None)
 
     reset_conf(config_host, config_port)
 
@@ -57,7 +56,8 @@ def test_create_mount_with_mount_info(config_host, config_port):
     # Remove info from config.
     set_config('mount', None)
     set_config('simulator', hardware.get_all_names(without=['mount']))
-    assert isinstance(create_mount_from_config(mount_info=mount_info), AbstractMount) is True
+    assert isinstance(AbstractMount.create_mount_from_config(mount_info=mount_info),
+                      AbstractMount) is True
 
     reset_conf(config_host, config_port)
 
@@ -68,7 +68,7 @@ def test_create_mount_with_earth_location(config_host, config_port):
     # Set config to not have a location.
     set_config('location', None)
     set_config('simulator', hardware.get_all_names())
-    assert isinstance(create_mount_from_config(earth_location=loc['earth_location']),
+    assert isinstance(AbstractMount.create_mount_from_config(earth_location=loc['earth_location']),
                       AbstractMount) is True
 
     reset_conf(config_host, config_port)
@@ -77,7 +77,7 @@ def test_create_mount_with_earth_location(config_host, config_port):
 def test_create_mount_without_earth_location(config_host, config_port):
     set_config('location', None)
     with pytest.raises(error.PanError):
-        create_mount_from_config(earth_location=None)
+        AbstractMount.create_mount_from_config(earth_location=None)
     reset_conf(config_host, config_port)
 
 
@@ -91,7 +91,7 @@ def test_bad_mount_port(config_host, config_port):
     # Set a bad port, which should cause a fail before actual mount creation.
     set_config('mount.serial.port', 'foobar')
     with pytest.raises(error.MountNotFound):
-        create_mount_from_config()
+        AbstractMount.create_mount_from_config()
     reset_conf(config_host, config_port)
 
 
@@ -105,5 +105,5 @@ def test_bad_mount_driver(config_host, config_port):
     # Set a bad port, which should cause a fail before actual mount creation.
     set_config('mount.serial.driver', 'foobar')
     with pytest.raises(error.MountNotFound):
-        create_mount_from_config()
+        AbstractMount.create_mount_from_config()
     reset_conf(config_host, config_port)

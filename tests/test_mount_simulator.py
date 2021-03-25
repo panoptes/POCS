@@ -37,7 +37,7 @@ def test_connect(mount):
 
 def test_disconnect(mount):
     assert mount.connect() is True
-    assert mount.disconnect(, is True
+    assert mount.disconnect() is True
     assert mount.is_connected is False
 
 
@@ -163,7 +163,7 @@ def test_slew_to_target(mount, target):
 
     mount.park()
     assert mount.is_parked is True
-    mount.get_current_coordinates() == parked_coords
+    assert mount.get_current_coordinates() == parked_coords
 
 
 def test_slew_to_target_timeout(mount, target):

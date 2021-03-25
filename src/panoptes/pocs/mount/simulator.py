@@ -4,6 +4,7 @@ from threading import Timer
 from typing import Tuple, Optional, Dict
 
 from astropy import units as u
+from astropy.coordinates import EarthLocation
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config
@@ -15,54 +16,24 @@ from panoptes.pocs.mount.base import AbstractMount
 
 
 class Mount(AbstractMount):
-    """Mount class for a simulator.
+    """Mount class for a simulator. Really a SerialMount simulator.
 
     Use this when you don't actually have a mount attached.
     """
 
-    def get_tracking_correction(self,
-                                offset_info: Tuple[float, float],
-                                pointing_ha: float,
-                                thresholds: Optional[Tuple[int, int]] = None
-                                ) -> Dict[str, Tuple[float, float, str]]:
-        pass
-
-    def correct_tracking(self, correction_info, axis_timeout=30.):
-        pass
-
-    def set_target_coordinates(self, new_coord):
-        pass
-
-    def _get_command(self, cmd, params=None):
-        pass
-
-    def _set_initial_rates(self):
-        pass
-
     def __init__(self, location, *args, **kwargs):
-
         super().__init__(location, *args, **kwargs)
-
-        self.logger.info('\t\tUsing simulator mount')
+        self.logger.info('Using simulator mount')
 
         self._loop_delay = self.get_config('loop_delay', default=0.01)
 
         self.set_park_coordinates()
         self._current_coordinates = self._park_coordinates
 
-        self.logger.debug('Simulator mount created')
+        self.logger.success('Simulator mount created')
 
     def initialize(self, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
-
-        iOptron mounts are initialized by sending the following two commands
-        to the mount:e
-
-        * Version
-        * MountInfo
-
-        If the mount is successfully initialized, the `_setup_location_for_mount` method
-        is also called.
 
         Returns:
             bool:   Returns the value from `self._is_initialized`.
@@ -239,10 +210,45 @@ class Mount(AbstractMount):
     def _setup_commands(self, commands=None):
         return commands
 
+    def get_tracking_correction(self,
+                                offset_info: Tuple[float, float],
+                                pointing_ha: float,
+                                thresholds: Optional[Tuple[int, int]] = None
+                                ) -> Dict[str, Tuple[float, float, str]]:
+        pass
+
+    def correct_tracking(self, correction_info, axis_timeout=30.):
+        pass
+
+    def set_target_coordinates(self, new_coord):
+        pass
+
+    def _get_command(self, cmd, params=None):
+        pass
+
+    def _set_initial_rates(self):
+        pass
+
     @classmethod
-    def create_mount_simulator(cls, mount_info=None, earth_location=None, db_type='memory', *args,
-                               **kwargs):
-        logger = get_logger()
+    def create_mount_simulator(cls,
+                               mount_info: Dict = None,
+                               earth_location: EarthLocation = None,
+                               db_type: str = 'memory',
+                               *args,
+                               **kwargs) -> AbstractMount:
+        """Create a mount simulator.
+
+        Args:
+            mount_info (Dict): The mount config.
+            earth_location (EarthLocation):
+            db_type (str):
+            *args:
+            **kwargs:
+
+        Returns:
+            Mount: An instance of the simulator mount.
+        """
+        logger = kwargs.get('logger', get_logger())
 
         # Remove mount simulator
         current_simulators = list(get_config('simulator', default=[]))
