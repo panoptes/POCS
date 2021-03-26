@@ -50,7 +50,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
         super(AbstractMount, self).__init__(*args, **kwargs)
 
         # Create an object for just the mount config items.
-        self.mount_config = self.get_config('mount')
+        self.mount_config = self.get_config('mount', {})
         self.logger.debug(f'Mount config: {self.mount_config}')
 
         # Setup commands for mount.
