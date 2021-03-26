@@ -1,27 +1,8 @@
-import os
-from contextlib import suppress
-
 import pytest
-from astropy.coordinates import EarthLocation
 from astropy import units as u
 from panoptes.pocs.images import OffsetError
 from panoptes.pocs.mount.ioptron.cem40 import Mount
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils.config.client import get_config
-
-
-@pytest.fixture
-def location():
-    loc = get_config('location')
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-
-
-@pytest.fixture(scope="function")
-def mount(location):
-    with suppress(KeyError):
-        del os.environ['POCSTIME']
-
-    return Mount(location=location)
 
 
 @pytest.mark.with_mount
@@ -42,7 +23,7 @@ class TestMount(object):
 
         # Can't supply full location, need earth_location
         with pytest.raises(AssertionError):
-            mount = Mount(location)
+            Mount(location)
 
         earth_location = location['earth_location']
 
@@ -158,7 +139,7 @@ class TestMount(object):
             correction_info = self.mount.get_tracking_correction(offset_info,
                                                                  pointing_ha,
                                                                  thresholds=(
-                                                                 min_tracking, max_tracking))
+                                                                     min_tracking, max_tracking))
 
             dec_info = correction_info['dec']
             expected_correction = correction[0]
