@@ -583,8 +583,8 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
         if use_simulator or ('simulator' in driver):
             logger.debug(f'Creating mount simulator')
             simulator_class = load_module(default_simulator)
-            return simulator_class.create_mount_simulator(mount_info=mount_info,
-                                                          earth_location=earth_location)
+            return simulator_class.Mount.create_mount_simulator(mount_info=mount_info,
+                                                                earth_location=earth_location)
 
         # See if we have a serial connection.
         try:
