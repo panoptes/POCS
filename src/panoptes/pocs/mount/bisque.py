@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Dict
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from panoptes.pocs.images import OffsetError
 from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.pocs.utils import theskyx
 from panoptes.utils import error
@@ -442,9 +443,7 @@ class Mount(AbstractSerialMount):
 
         return mount_coords
 
-    def get_tracking_correction(self, offset_info: Tuple[float, float], pointing_ha: float,
-                                thresholds: Optional[Tuple[int, int]] = None) -> Dict[
-        str, Tuple[float, float, str]]:
+    def get_tracking_correction(self, *args, **kwargs):
         pass
 
     def _set_initial_rates(self):

@@ -1,9 +1,10 @@
 import re
 import time
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Union
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from panoptes.pocs.images import OffsetError
 from panoptes.utils.time import current_time
 from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.pocs.mount import constants
@@ -45,10 +46,10 @@ class Mount(AbstractSerialMount):
         raise NotImplementedError
 
     def get_tracking_correction(self,
-                                offset_info: Tuple[float, float],
+                                offset_info: Union[Tuple[float, float], OffsetError],
                                 pointing_ha: float,
-                                thresholds: Optional[Tuple[int, int]] = None) -> Dict[
-        str, Tuple[float, float, str]]:
+                                thresholds: Optional[Tuple[int, int]] = None
+                                ) -> Dict[str, Tuple[float, float, str]]:
         raise NotImplementedError
 
     def _set_initial_rates(self):

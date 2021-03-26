@@ -3,11 +3,12 @@ from glob import glob
 from abc import abstractmethod, ABCMeta
 from contextlib import suppress
 from pathlib import Path
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Union
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from panoptes.pocs.images import OffsetError
 from panoptes.pocs.utils.logger import get_logger
 
 from panoptes.utils import error
@@ -381,7 +382,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def get_tracking_correction(self,
-                                offset_info: Tuple[float, float],
+                                offset_info: Union[Tuple[float, float], OffsetError],
                                 pointing_ha: float,
                                 thresholds: Optional[Tuple[int, int]] = None
                                 ) -> Dict[str, Tuple[float, float, str]]:

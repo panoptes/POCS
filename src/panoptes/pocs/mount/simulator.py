@@ -1,10 +1,11 @@
 import time
 from contextlib import suppress
 from threading import Timer
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Union
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from panoptes.pocs.images import OffsetError
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config
@@ -210,11 +211,7 @@ class Mount(AbstractMount):
     def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
         return commands or dict()
 
-    def get_tracking_correction(self,
-                                offset_info: Tuple[float, float],
-                                pointing_ha: float,
-                                thresholds: Optional[Tuple[int, int]] = None
-                                ) -> Dict[str, Tuple[float, float, str]]:
+    def get_tracking_correction(self, *args, **kwargs):
         pass
 
     def correct_tracking(self, correction_info, axis_timeout=30.):
