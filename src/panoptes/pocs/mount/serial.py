@@ -479,6 +479,8 @@ class AbstractSerialMount(AbstractMount, ABC):
         """
         commands = super(AbstractSerialMount, self)._setup_commands(commands)
 
+        commands = commands or dict()
+
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
