@@ -45,7 +45,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
     """
 
-    def __init__(self, location, commands: Optional[Dict] = None, *args, **kwargs):
+    def __init__(self, location: EarthLocation, commands: Optional[Dict] = None, *args, **kwargs):
         super(AbstractMount, self).__init__(*args, **kwargs)
 
         # Create an object for just the mount config items.
@@ -96,7 +96,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
         port = ''
         with suppress(KeyError):
             port = self.mount_config['serial']['port']
-        return f'{brand} {model} ({port=})'
+        return f'Mount[{brand} {model} ({port=})]'
 
     @property
     def status(self):

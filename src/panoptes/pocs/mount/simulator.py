@@ -21,8 +21,8 @@ class Mount(AbstractMount):
     Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self, location, *args, **kwargs):
-        super().__init__(location, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.logger.info('Using simulator mount')
 
         self._loop_delay = self.get_config('loop_delay', default=0.01)
@@ -208,7 +208,6 @@ class Mount(AbstractMount):
         return False
 
     def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
-        commands = super(Mount, self)._setup_commands(commands)
         return commands
 
     def get_tracking_correction(self,
@@ -232,9 +231,8 @@ class Mount(AbstractMount):
 
     @classmethod
     def create_mount_simulator(cls,
-                               mount_info: Dict = None,
-                               earth_location: EarthLocation = None,
-                               db_type: str = 'memory',
+                               mount_info: Optional[Dict] = None,
+                               earth_location: Optional[EarthLocation] = None,
                                *args,
                                **kwargs) -> AbstractMount:
         """Create a mount simulator.
@@ -251,33 +249,18 @@ class Mount(AbstractMount):
         """
         logger = kwargs.get('logger', get_logger())
 
-        # Remove mount simulator
-        current_simulators = list(get_config('simulator', default=[]))
-        logger.warning(f'Current simulators: {current_simulators}')
-        with suppress(ValueError):
-            current_simulators.remove('mount')
-
-        mount_config = mount_info or {
-            'model': 'Mount Simulator',
-            'driver': 'panoptes.pocs.mount.simulator',
-            'serial': {
-                'port': '/dev/FAKE'
-            }
-        }
-
-        # Set mount device info to simulator
-        set_config('mount', mount_config)
-
         earth_location = earth_location or create_location_from_config()['earth_location']
+        logger.debug(f'Using {earth_location=!r}')
 
-        logger.debug(f"Loading mount driver: {mount_config['driver']}")
+        mount_config = mount_info or get_config('mount', {})
+        logger.debug(f'Using {mount_config=!r}')
+        driver = mount_config.get('driver', 'panoptes.pocs.mount.simulator')
         try:
-            module = load_module(f"{mount_config['driver']}")
+            module = load_module(driver)
         except error.NotFound as e:
             raise error.MountNotFound(f'Error loading mount module: {e!r}')
 
-        mount = module.Mount(earth_location, db_type=db_type, *args, **kwargs)
-
-        logger.success(f"{mount_config['driver'].title()} mount created")
+        mount = module.Mount(earth_location, *args, **kwargs)
+        logger.success(f'{mount} created')
 
         return mount
