@@ -353,6 +353,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
         self.logger.debug(f'Setting up commands for {self}')
 
         if commands is None:
+            commands = dict()
             brand = self.get_config('mount.brand')
             model = self.get_config('mount.model')
             mount_dir = self.get_config('directories.mounts')
@@ -362,7 +363,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
             try:
                 with commands_file.open() as f:
-                    commands = from_yaml(f.read(), parse=False)
+                    commands.update(from_yaml(f.read(), parse=False))
                     self.logger.info(f'Loaded mount commands from {commands_file}')
             except Exception as err:
                 self.logger.warning(f'Error loading {commands_file=} {err!r}')
