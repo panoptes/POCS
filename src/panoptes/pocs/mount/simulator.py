@@ -208,7 +208,7 @@ class Mount(AbstractMount):
         return False
 
     def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
-        return commands
+        return commands or dict()
 
     def get_tracking_correction(self,
                                 offset_info: Tuple[float, float],
@@ -231,7 +231,7 @@ class Mount(AbstractMount):
 
     @classmethod
     def create_mount_simulator(cls,
-                               mount_info: Optional[Dict] = None,
+                               mount_info: Optional[dict] = None,
                                earth_location: Optional[EarthLocation] = None,
                                *args,
                                **kwargs) -> AbstractMount:
@@ -240,7 +240,6 @@ class Mount(AbstractMount):
         Args:
             mount_info (Dict): The mount config.
             earth_location (EarthLocation):
-            db_type (str):
             *args:
             **kwargs:
 

@@ -5,7 +5,6 @@ from typing import Tuple, Optional, Dict
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from panoptes.utils.time import current_time
-from panoptes.utils import error as error
 from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.pocs.mount import constants
 
