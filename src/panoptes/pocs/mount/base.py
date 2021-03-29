@@ -55,7 +55,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
         # Setup commands for mount.
         self.logger.debug('Setting up commands for mount')
-        self.commands = commands or self._setup_commands(commands)
+        self.commands = commands or self.setup_commands()
         self.logger.debug('Mount commands set up')
 
         # Set the initial location directly (but not via setter).
@@ -346,28 +346,42 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
         return (offset / (self.sidereal_rate.value * guide_rate)).to(u.ms)
 
-    def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
+    def setup_commands(self, commands_file: Optional[Path]) -> Dict:
         """Setup the mount commands.
 
-        If no commands are provided, lookup and load command file.
+        Args:
+            commands_file (Optional[Path]): The command file to load. If None is
+                provided, lookup file using the `mount.commands_file` key.
         """
-        self.logger.debug(f'Setting up commands for {self}')
+        # Get commands file.
+        if commands_file is None:
+            commands_dir = Path(self.get_config('directories.mounts'))
+            commands_file_name = self.mount_config.get('commands_file')
 
-        if commands is None:
-            commands = dict()
-            brand = self.get_config('mount.brand')
-            model = self.get_config('mount.model')
-            mount_dir = self.get_config('directories.mounts')
+            if commands_file_name is None:
+                self.logger.debug(f'Missing commands_file key for mount, trying brand/model')
+                brand = self.get_config('mount.brand')
+                model = self.get_config('mount.model')
+                commands_file_name = f'{brand}/{model}'
 
-            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
-            self.logger.info(f'Loading mount commands file: {commands_file}')
+            commands_file = list(commands_dir.grep(f'{commands_file_name}*'))
+            if len(commands_file) > 1:
+                raise error.PanError(f'Invalid mount commands_file: '
+                                     f'more than one file matches {commands_file_name!r}')
+            else:
+                commands_file = commands_file[0]
 
-            try:
-                with commands_file.open() as f:
-                    commands.update(from_yaml(f.read(), parse=False))
-                    self.logger.info(f'Loaded mount commands from {commands_file}')
-            except Exception as err:
-                self.logger.warning(f'Error loading {commands_file=} {err!r}')
+            self.logger.debug(f'Found {commands_file}')
+
+        # Load the commands file.
+        self.logger.debug(f'Loading commands for {self}')
+        commands = dict()
+        try:
+            with commands_file.open() as f:
+                commands.update(from_yaml(f.read(), parse=False))
+                self.logger.info(f'Loaded mount commands from {commands_file}')
+        except Exception as err:
+            self.logger.warning(f'Error loading {commands_file=} {err!r}')
 
         return commands
 

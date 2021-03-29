@@ -48,6 +48,7 @@ mount:
   brand: simulator
   model: simulator
   driver: panoptes.pocs.mount.simulator
+  commands_file: simualator  # Not actually loaded
   serial:
     port: /dev/ttyFAKE
     timeout: 0.

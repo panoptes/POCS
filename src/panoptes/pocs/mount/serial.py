@@ -1,13 +1,11 @@
 import time
 from abc import ABC
-from pathlib import Path
 from typing import Optional, Dict
 
 from panoptes.utils import error
 from panoptes.utils import rs232
 from panoptes.pocs.mount.base import AbstractMount
 from panoptes.pocs.mount import constants
-from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time, CountdownTimer
 
 
@@ -19,6 +17,9 @@ class AbstractSerialMount(AbstractMount, ABC):
         Opens a connection to the serial device, if it is valid.
         """
         super(AbstractSerialMount, self).__init__(*args, **kwargs)
+
+        self._pre_cmd = ''
+        self._post_cmd = ''
 
         # Setup our serial connection at the given port
         try:
@@ -470,16 +471,14 @@ class AbstractSerialMount(AbstractMount, ABC):
 
         return status
 
-    def _setup_commands(self, commands: Optional[dict] = None) -> Dict:
+    def setup_commands(self, commands: Optional[dict] = None) -> Dict:
         """Setup the mount commands.
 
         Does any setup for the commands needed for this mount. Mostly responsible for
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
-        commands = super(AbstractSerialMount, self)._setup_commands(commands)
-
-        commands = commands or dict()
+        commands = super(AbstractSerialMount, self).setup_commands(commands)
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')

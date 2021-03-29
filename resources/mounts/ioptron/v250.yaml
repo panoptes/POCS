@@ -1,5 +1,5 @@
 # iOptron Command Class
-# Version 1.2
+# Version 2.5
 ---
 cmd_pre: ':'
 cmd_post: '#'

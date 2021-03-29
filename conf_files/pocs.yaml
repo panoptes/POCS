@@ -53,6 +53,7 @@ mount:
   brand: ioptron
   model: ieq30pro   #  cem40
   driver: panoptes.pocs.mount.ioptron.ieq30pro
+  commands_file: ioptron/v250  # v310
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
