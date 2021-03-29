@@ -153,7 +153,7 @@ void read_currents(int current_readings[]) {
   current_readings[2] = Diag1_0;
   current_readings[3] = Diag1_1;
   // Average the PROFET that was read twice.
-  current_readings[4] = int((Diag2_0 * Diag2_1) / 2);
+  current_readings[4] = int((Diag2_0 + Diag2_1) / 2);
 }
 
 

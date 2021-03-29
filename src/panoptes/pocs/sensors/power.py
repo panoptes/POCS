@@ -1,17 +1,12 @@
-import threading
 import time
 from enum import IntEnum
 from dataclasses import dataclass
 from typing import Optional
 from collections import deque
-import pandas as pd
 
-from panoptes.utils.rs232 import SerialData, find_serial_port
-from panoptes.utils.serializers import from_json, to_json
+from panoptes.utils.serial.device import SerialDevice, find_serial_port
+from panoptes.utils.serializers import to_json
 from panoptes.pocs.base import PanBase
-from panoptes.utils import error
-from panoptes.utils.time import current_time
-from streamz.dataframe import DataFrame as StreamingDataFrame
 
 
 class PinState(IntEnum):
@@ -45,7 +40,6 @@ class Relay:
     name: str
     label: Optional[str]
     current_readings: deque
-    data: StreamingDataFrame
     relay_index: TruckerRelayIndex
     state: Optional[PinState] = PinState.OFF
     default_state: Optional[PinState] = PinState.OFF
@@ -104,23 +98,20 @@ class PowerBoard(PanBase):
         self.name = name
 
         self.logger.debug(f'Setting up Power board connection for {name=} on {self.port}')
-        self.arduino_board = SerialData(port=self.port, baudrate=9600)
+        self.arduino_board = SerialDevice(port=self.port,
+                                          serial_settings=dict(baudrate=9600)
+                                          )
         self.alive = False
-        self._reader_thread = None
-        self._reader_alive = None
-        self._read_buffer = bytearray()
 
         self.relay_labels = dict()
         self.relay_names = dict()
-        self.setup_relays(relays, queue_maxsize=25, batch_time=1)
+        self.setup_relays(relays, queue_maxsize=25)
         time.sleep(2)
 
         # Set initial relay states.
         for relay in self.relay_names.values():
             self.logger.info(f'Setting {relay.label} to {relay.default_state.name}')
             self.change_relay_state(relay, relay.default_state)
-
-        self.start_reading_status()
 
         self.logger.success(f'Power board initialized')
 
@@ -132,7 +123,7 @@ class PowerBoard(PanBase):
         """Turns off the relay with the given label."""
         self.change_relay_state(self.relay_labels[label], PinState.OFF)
 
-    def setup_relays(self, relays, queue_maxsize=25, batch_time=2):
+    def setup_relays(self, relays, queue_maxsize=25):
         """Setup the relays."""
         for relay_name, relay_config in relays.items():
             relay_index = TruckerRelayIndex[relay_name]
@@ -140,8 +131,6 @@ class PowerBoard(PanBase):
             default_state = PinState[relay_config.get('default_state', 'off').upper()]
 
             current_deque = deque(maxlen=queue_maxsize)
-            streaming_dataframe = StreamingDataFrame(
-                example=pd.DataFrame({'reading': []}, index=pd.DateTimeIndex([])))
 
             # Create relay object.
             self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
@@ -149,7 +138,6 @@ class PowerBoard(PanBase):
                           label=relay_config.get('label', ''),
                           relay_index=relay_index,
                           current_readings=current_deque,
-                          data=streaming_dataframe,
                           default_state=default_state
                           )
 
@@ -172,82 +160,6 @@ class PowerBoard(PanBase):
         write_command = to_json(dict(relay=relay.relay_index.value, power=new_state_command.value))
         self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
         self.arduino_board.write(f'{write_command}\n')
-
-    def start_reading_status(self):
-        """Start the read loop."""
-        self.logger.info('Starting status reading thread.')
-        self.alive = True
-        self._start_reader()
-
-    def stop_reader(self):
-        """Stop reader only, wait for clean exit of thread."""
-        self._reader_alive = False
-        if hasattr(self.arduino_board.ser, 'cancel_read'):
-            self.arduino_board.ser.cancel_read()
-        self.receiver_thread.join()
-
-    def _read_status(self):
-        """Continuously read the status from the arduino and insert into deque for relay."""
-        # TODO: This should probably be moved to rs232 serial class.
-        try:
-            while self.alive and self._reader_alive:
-                # Look for a complete line and return if so.
-                i = self._read_buffer.find(b"\r\n")
-                if i >= 0:
-                    raw_reading = self._read_buffer[:i + 2]
-                    self._read_buffer = self._read_buffer[i + 2:]
-                else:
-                    # Otherwise keep reading until we get a newline.
-                    while True:
-                        i = max(1, min(2048, self.arduino_board.ser.in_waiting))
-                        data = self.arduino_board.ser.read(i)
-                        i = data.find(b"\r\n")
-                        if i >= 0:
-                            raw_reading = self._read_buffer + data[:i + 2]
-                            self._read_buffer[0:] = data[i + 2:]
-                            break
-                        else:
-                            self._read_buffer.extend(data)
-
-                try:
-                    raw_data = raw_reading.decode()
-                except UnicodeDecodeError as e:
-                    self.logger.warning(f'Received decode error: {e!r}')
-                    continue
-
-                for reading in raw_data.split('\r\n'):
-                    if reading == '':
-                        continue
-                    try:
-                        data = from_json(reading)
-                    except error.InvalidDeserialization:
-                        self.logger.warning(f'Cannot deserialize reading from arduino: {reading!r}')
-                    else:
-                        # Record the current.
-                        currents = data.get('currents', list())
-                        reading_time = current_time()
-                        for i, val in enumerate(currents):
-                            relay = self.relay_names[TruckerRelayIndex(i).name]
-                            new_reading = val * relay.multiplier
-
-                            relay.data.emit(pd.DataFrame({'reading': new_reading},
-                                                         index=pd.DatetimeIndex([reading_time])))
-
-                        # Update the state for the relay.
-                        relay_status = data.get('relays', list())
-                        for i, val in enumerate(relay_status):
-                            self.relay_names[TruckerRelayIndex(i).name].state = PinState(val)
-        except error.BadSerialConnection as e:
-            self.logger.error(e)
-            self.alive = False
-            raise e
-
-    def _start_reader(self):
-        """Start status reader thread."""
-        self._reader_alive = True
-        self.receiver_thread = threading.Thread(target=self._read_status, name='status_reader')
-        self.receiver_thread.daemon = True
-        self.receiver_thread.start()
 
     def __str__(self):
         relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relay_names.values()])
