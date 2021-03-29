@@ -5,7 +5,7 @@ import threading
 import time
 
 from panoptes.pocs.dome import astrohaven
-from panoptes.utils import serial_handlers
+from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
@@ -179,7 +179,7 @@ class AstrohavenPLCSimulator:
             return Protocol.BOTH_OPEN
 
 
-class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
+class AstrohavenSerialSimulator(NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = get_logger()
