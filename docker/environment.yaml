@@ -16,4 +16,4 @@ dependencies:
   - pyviz_comms
   - scipy
   - pip:
-      - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]"
+      - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"
