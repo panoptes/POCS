@@ -159,7 +159,7 @@ class PowerBoard(PanBase):
         # Must have the newline in command.
         write_command = to_json(dict(relay=relay.relay_index.value, power=new_state_command.value))
         self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
-        self.arduino_board.write(f'{write_command}\n')
+        self.arduino_board.write(f'{write_command}')
 
     def __str__(self):
         relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relay_names.values()])
