@@ -48,7 +48,11 @@ class Relay:
     @property
     def current(self):
         """Gets the mean of the current entries"""
-        return self.current_readings[-1]
+        try:
+            latest = self.current_readings[-1]
+        except Exception:
+            latest = None
+        return latest
 
     @property
     def status(self):
