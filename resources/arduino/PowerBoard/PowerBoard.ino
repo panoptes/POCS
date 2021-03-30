@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 
 //conversion factor to compute Iload from sensed voltage. From Luc.
-const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
+//const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
 
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
