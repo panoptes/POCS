@@ -1,6 +1,15 @@
 #include <stdlib.h>
 #include <ArduinoJson.h>
 
+const char BOARD_NAME[] = "power_board";
+
+// Set initial states for each relay. Change as needed.
+const bool DEFAULT_START_0 = HIGH;
+const bool DEFAULT_START_1 = HIGH;
+const bool DEFAULT_START_2 = HIGH;
+const bool DEFAULT_START_3 = HIGH;
+const bool DEFAULT_START_4 = HIGH;
+
 //conversion factor to compute Iload from sensed voltage. From Luc.
 //const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
 
@@ -26,6 +35,8 @@ const int DEN_1 = 5;  // PROFET-1
 const int DEN_2 = 9;  // PROFET-2
 
 const int relayArray[] = {RELAY_0, RELAY_1, RELAY_2, RELAY_3, RELAY_4};
+
+const int time_period = 1000; // ms -> s
 
 int led_value = LOW;
 
@@ -60,12 +71,12 @@ void setup() {
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reads PROFET 0_1
   digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reads PROFET 1_1
 
-  // Turn on all relays to start
-  turn_pin_on(RELAY_0);
-  turn_pin_on(RELAY_1);
-  turn_pin_on(RELAY_2);
-  turn_pin_on(RELAY_3);
-  turn_pin_on(RELAY_4);
+  // Set initial relay states.
+  digitalWrite(RELAY_0, DEFAULT_START_0);
+  digitalWrite(RELAY_1, DEFAULT_START_1);
+  digitalWrite(RELAY_2, DEFAULT_START_2);
+  digitalWrite(RELAY_3, DEFAULT_START_3);
+  digitalWrite(RELAY_4, DEFAULT_START_4);
 }
 
 void loop() {
@@ -105,7 +116,9 @@ void get_readings() {
   int current_readings[5];
   read_currents(current_readings);
 
-  StaticJsonDocument<128> doc;
+  int seconds_stamp = millis() / time_period;
+
+  StaticJsonDocument<192> doc;
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));
@@ -120,7 +133,8 @@ void get_readings() {
   currents.add(current_readings[2]);
   currents.add(current_readings[3]);
   currents.add(current_readings[4]);
-  doc["name"] = "power_board";
+  doc["name"] = BOARD_NAME;
+  doc["uptime"] = seconds_stamp;
 
   serializeJson(doc, Serial);
   Serial.println();
