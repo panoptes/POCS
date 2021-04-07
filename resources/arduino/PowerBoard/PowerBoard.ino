@@ -105,6 +105,21 @@ void handle_input() {
   int pin_num = relayArray[relay_index];
   int power_on = doc["power"].as<int>();
 
+  switch(power_on){
+    case 1:
+      turn_pin_on(pin_num);
+      break;
+    case 2:
+      turn_pin_off(pin_num);
+      break;
+    case 3:
+      toggle_pin(pin_num);
+      break;
+    case 4:
+      cycle_pin_delay(pin_num, 5);
+      break;
+  }
+
   if (power_on == true) {
     turn_pin_on(pin_num);
   } else {
@@ -127,7 +142,7 @@ void get_readings() {
   relays.add(is_relay_on(RELAY_3));
   relays.add(is_relay_on(RELAY_4));
 
-  JsonArray currents = doc.createNestedArray("currents");
+  JsonArray currents = doc.createNestedArray("readings");
   currents.add(current_readings[0]);
   currents.add(current_readings[1]);
   currents.add(current_readings[2]);
@@ -191,9 +206,9 @@ void toggle_pin(int pin_num) {
   digitalWrite(pin_num, !digitalRead(pin_num));
 }
 
-void toggle_pin_delay(int pin_num) {
+void cycle_pin_delay(int pin_num, int seconds) {
   turn_pin_off(pin_num);
-  delay(1000 * 30);
+  delay(1000 * seconds);
   turn_pin_on(pin_num);
 }
 
