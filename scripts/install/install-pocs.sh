@@ -71,7 +71,7 @@ OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,docker,i2c,spi,input,gpio,sudo"
+DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -145,9 +145,7 @@ function system_deps() {
 function install_docker() {
   wget -q https://get.docker.com -O get-docker.sh
   bash get-docker.sh
-
-  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
-
+  sudo usermod -aG docker "${PANUSER}"
   rm get-docker.sh
 }
 
@@ -188,6 +186,7 @@ function install_conda() {
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
   # Install docker-compose.
+  "${PANDIR}/conda/bin/conda" install -y -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 
   rm install-miniforge.sh
