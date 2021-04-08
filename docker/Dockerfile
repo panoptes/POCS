@@ -4,7 +4,7 @@ FROM ${image_url}:${image_tag} AS pocs-base
 
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
 
-LABEL description="PANOPTES Observatory Control System Service"
+LABEL description="PANOPTES Observatory Control System (POCS) Service"
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
 
@@ -49,13 +49,11 @@ COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
 
 ARG pip_install_name="."
-ARG pip_install_extras="[google]"
+ARG pip_install_extras="[google,sensors]"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     /conda/bin/pip install "${pip_install_name}${pip_install_extras}" && \
-    # panoptes-utils from dev.
-    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \

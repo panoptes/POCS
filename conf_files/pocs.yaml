@@ -99,19 +99,17 @@ environment:
         label: weather_station
         default_state: on
       RELAY_1:
-        label: unused
+        label: unused1
         default_state: off
       RELAY_2:
         label: fans
-        default_state: on
+        default_state: off
       RELAY_3:
-        label: unused
+        label: unused3
         default_state: off
       RELAY_4:
         label: mount
         default_state: on
-  camera_board:
-    serial_port: /dev/ttyACM0
   weather:
     url: http://localhost:5000/latest.json
 
