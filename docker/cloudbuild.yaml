@@ -1,6 +1,7 @@
 options:
-  substitutionOption: "ALLOW_LOOSE"
-timeout: 18000s  # 5 hours
+  substitutionOption: ALLOW_LOOSE
+  machineType: E2_HIGHCPU_8
+timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
   _IMAGE_NAME: panoptes-pocs
