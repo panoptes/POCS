@@ -792,14 +792,20 @@ class AbstractMount(PanBase):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            brand = self.get_config('mount.brand')
-            model = self.get_config('mount.model')
             mount_dir = self.get_config('directories.mounts')
 
-            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
+            commands_file = self.get_config('mount.commands_file')
 
+            if commands_file is None:
+                self.logger.debug('No "commands_file" key found, attempting to use brand and model')
+                brand = self.get_config('mount.brand')
+                model = self.get_config('mount.model')
+                commands_file = f'{brand}/{model}.yaml'
+
+            commands_file = Path(f'{mount_dir}/{commands_file}.yaml')
+
+            self.logger.info(f"Loading mount commands file: {commands_file}")
             try:
-                self.logger.info(f"Loading mount commands file: {commands_file}")
                 with commands_file.open() as f:
                     commands.update(from_yaml(f.read(), parse=False))
                     self.logger.debug(f"Mount commands updated from {commands_file}")
