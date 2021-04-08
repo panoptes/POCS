@@ -346,7 +346,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
 
         return (offset / (self.sidereal_rate.value * guide_rate)).to(u.ms)
 
-    def setup_commands(self, commands_file: Optional[Path]) -> Dict:
+    def setup_commands(self, commands_file: Optional[Path] = None) -> Dict:
         """Setup the mount commands.
 
         Args:
@@ -364,7 +364,7 @@ class AbstractMount(PanBase, metaclass=ABCMeta):
                 model = self.get_config('mount.model')
                 commands_file_name = f'{brand}/{model}'
 
-            commands_file = list(commands_dir.grep(f'{commands_file_name}*'))
+            commands_file = list(commands_dir.glob(f'{commands_file_name}*'))
             if len(commands_file) > 1:
                 raise error.PanError(f'Invalid mount commands_file: '
                                      f'more than one file matches {commands_file_name!r}')
