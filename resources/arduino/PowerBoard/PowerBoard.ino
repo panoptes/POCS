@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ArduinoJson.h>
 
+// POCS looks for this name.
 const char BOARD_NAME[] = "power_board";
 
 // Set initial states for each relay. Change as needed.
@@ -106,16 +107,16 @@ void handle_input() {
   int power_on = doc["power"].as<int>();
 
   switch(power_on){
+    case 0:
+      turn_pin_off(pin_num);
+      break;
     case 1:
       turn_pin_on(pin_num);
       break;
     case 2:
-      turn_pin_off(pin_num);
-      break;
-    case 3:
       toggle_pin(pin_num);
       break;
-    case 4:
+    case 3:
       cycle_pin_delay(pin_num, 5);
       break;
   }

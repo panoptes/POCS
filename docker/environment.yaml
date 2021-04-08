@@ -15,5 +15,6 @@ dependencies:
   - pip
   - pyviz_comms
   - scipy
+  - streamz
   - pip:
       - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"

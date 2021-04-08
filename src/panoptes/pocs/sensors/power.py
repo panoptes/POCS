@@ -1,12 +1,17 @@
 import time
 from enum import IntEnum
 from dataclasses import dataclass
-from typing import Optional
-from collections import deque
+from typing import Optional, Dict, List, Callable
+from functools import partial
+import pandas as pd
+from panoptes.utils import error
 
-from panoptes.utils.serial.device import SerialDevice, find_serial_port
-from panoptes.utils.serializers import to_json
+from streamz.dataframe import PeriodicDataFrame
+
+from panoptes.utils.serial.device import find_serial_port, SerialDevice
+from panoptes.utils.serializers import to_json, from_json
 from panoptes.pocs.base import PanBase
+from panoptes.utils.time import current_time
 
 
 class PinState(IntEnum):
@@ -17,12 +22,18 @@ class PinState(IntEnum):
     HIGH = 1
 
 
+POWER_SYMBOLS = {
+    PinState.OFF: '⭘',
+    PinState.ON: '⏽'
+}
+
+
 class TruckerBoardCommands(IntEnum):
     """The Trucker Board can accept a series of commands for controlling the relays"""
+    OFF = 0
     ON = 1
-    OFF = 2
-    TOGGLE = 3  # Toggle relay.
-    CYCLE_DELAY = 4  # Cycle the current state with a 30 second delay.
+    TOGGLE = 2  # Toggle relay.
+    CYCLE_DELAY = 3  # Cycle the current state with a 30 second delay.
 
 
 class TruckerRelayIndex(IntEnum):
@@ -38,28 +49,13 @@ class TruckerRelayIndex(IntEnum):
 class Relay:
     """Relay data class"""
     name: str
-    label: Optional[str]
-    current_readings: deque
     relay_index: TruckerRelayIndex
+    label: Optional[str]
     state: Optional[PinState] = PinState.OFF
     default_state: Optional[PinState] = PinState.OFF
-    multiplier: Optional[float] = 1.0
-
-    @property
-    def current(self):
-        """Gets the mean of the current entries"""
-        try:
-            latest = self.current_readings[-1]
-        except Exception:
-            latest = None
-        return latest
-
-    @property
-    def status(self):
-        return dict(state=self.state, current=self.current)
 
     def __str__(self):
-        return f'[{self.name}] {self.label}: {self.state.name} {self.current}'
+        return f'[{self.name}] {self.label} {self.state.name}'
 
 
 class PowerBoard(PanBase):
@@ -73,11 +69,27 @@ class PowerBoard(PanBase):
     PROFETs can switch between two relays depending on the status of the appropriate
     DSEL pin.
 
+    This class uses `panoptes.utils.device.serial.SerialDevice` for threaded (async)
+    reading of the values from the Arduino Uno connected to the power board, which
+    are parsed by the default callback and appended to a `deque` whose size can
+    be controlled. A custom callback can be passed that should accept a single
+    string parameter and return a dictionary.
+
+    It also creates a `dataframe` attribute which is a
+    `streamz.dataframe.PeriodicDataFrame` with a default call of
+    `dataframe_period='50ms'`. If `None` then no dataframe is created.
+
     Pin names specified above correspond to Infineon terminology. See manual:
     https://bit.ly/2IGgWLQ.
     """
 
-    def __init__(self, port=None, name='Power Board', relays=None, *args, **kwargs):
+    def __init__(self,
+                 port: str = None,
+                 name: str = 'Power Board',
+                 relays: Dict[str, dict] = None,
+                 reader_callback: Callable[[dict], dict] = None,
+                 dataframe_period: str = '50ms',
+                 *args, **kwargs):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -85,7 +97,7 @@ class PowerBoard(PanBase):
 
             RELAY_0:
                 label: mount
-                initial_state: on
+                default_state: on
 
         Args:
             port (str, optional): The dev port for the arduino, if not provided, search for port
@@ -101,52 +113,77 @@ class PowerBoard(PanBase):
         self.port = port
         self.name = name
 
-        self.logger.debug(f'Setting up Power board connection for {name=} on {self.port}')
-        self.arduino_board = SerialDevice(port=self.port,
-                                          serial_settings=dict(baudrate=9600)
-                                          )
-        self.alive = False
+        reader_callback = reader_callback or self.default_reader_callback
 
-        self.relay_labels = dict()
-        self.relay_names = dict()
-        self.setup_relays(relays, queue_maxsize=25)
+        self.logger.debug(f'Setting up Power board connection for {name=} on {self.port}')
+        self._ignore_readings = 5
+        self.arduino_board = SerialDevice(port=self.port,
+                                          serial_settings=dict(baudrate=9600),
+                                          reader_callback=reader_callback,
+                                          )
+
+        self.relays: List[Relay] = list()
+        self.relay_labels: Dict[str, Relay] = dict()
+        self.setup_relays(relays)
         time.sleep(2)
 
         # Set initial relay states.
-        for relay in self.relay_names.values():
+        for relay in self.relays:
             self.logger.info(f'Setting {relay.label} to {relay.default_state.name}')
-            self.change_relay_state(relay, relay.default_state)
+            self.change_relay_state(relay, TruckerBoardCommands(relay.default_state))
 
-        self.logger.success(f'Power board initialized')
+        self.dataframe = None
+        if dataframe_period is not None:
+            self.dataframe = PeriodicDataFrame(interval=dataframe_period, datafn=self.to_dataframe)
+        self.logger.info(f'Power board initialized')
 
     def turn_on(self, label):
         """Turns on the relay with the given label."""
-        self.change_relay_state(self.relay_labels[label], PinState.ON)
+        self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.ON)
 
     def turn_off(self, label):
         """Turns off the relay with the given label."""
-        self.change_relay_state(self.relay_labels[label], PinState.OFF)
+        self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.OFF)
 
-    def setup_relays(self, relays, queue_maxsize=25):
+    def toggle_relay(self, label):
+        """Toggle relay from OFF<->ON"""
+        self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.TOGGLE)
+
+    def cycle_relay(self, label):
+        """Cycle the relay with a default 5 second delay."""
+        self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
+
+    def to_dataframe(self, **kwargs):
+        try:
+            columns = ['time'] + list(self.relay_labels.keys())
+            df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
+            df0.set_index(['time'], inplace=True)
+        except:
+            df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
+
+        return df0
+
+    def setup_relays(self, relays: Dict[str, dict]):
         """Setup the relays."""
         for relay_name, relay_config in relays.items():
             relay_index = TruckerRelayIndex[relay_name]
             relay_label = relay_config.get('label') or relay_name
             default_state = PinState[relay_config.get('default_state', 'off').upper()]
 
-            current_deque = deque(maxlen=queue_maxsize)
-
             # Create relay object.
             self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
             relay = Relay(name=relay_name,
                           label=relay_config.get('label', ''),
                           relay_index=relay_index,
-                          current_readings=current_deque,
                           default_state=default_state
                           )
 
-            # Track relays by name and friendly label.
-            self.relay_names[relay.name] = relay
+            # Add convenience methods on the relay itself.
+            relay.turn_on = partial(self.turn_on, relay.label)
+            relay.turn_off = partial(self.turn_off, relay.label)
+
+            # Track relays by list and by friendly label.
+            self.relays.append(relay)
             self.relay_labels[relay.label] = relay
 
             # Set an attribute on the board for easy access by name and label.
@@ -155,19 +192,61 @@ class PowerBoard(PanBase):
 
             self.logger.info(f'{relay.label} added to board')
 
-        self.logger.success(f'Relays: {self.relay_names!r}')
+        self.logger.info(f'Relays: {self.relays!r}')
 
-    def change_relay_state(self, relay: Relay, new_state: PinState):
-        """Changes the relay to the new state. """
-        new_state_command = TruckerBoardCommands[new_state.name]
-        # Must have the newline in command.
+    def change_relay_state(self, relay: Relay, new_state_command: TruckerBoardCommands):
+        """Changes the relay to the new state."""
         write_command = to_json(dict(relay=relay.relay_index.value, power=new_state_command.value))
         self.logger.debug(f'Sending relay state change command to board: {write_command!r}')
         self.arduino_board.write(f'{write_command}')
 
+    def default_reader_callback(self, data):
+        name_key = 'name'
+        relay_key = 'relays'
+        values_key = 'readings'
+
+        if self._ignore_readings > 0:
+            self._ignore_readings -= 1
+            return
+
+        self.logger.trace(f'Received: {data!r}')
+        try:
+            data = from_json(data)
+        except error.InvalidDeserialization as e:
+            self.logger.warning(f'Error here: {e!r}')
+            return
+
+        if data[name_key] != 'power_board':
+            self.logger.warning('Not reading the power_board. Skipping data.')
+            return
+
+        # Check we got a valid reading.
+        if len(data[relay_key]) != len(TruckerRelayIndex) \
+                and len(data[values_key]) != len(TruckerRelayIndex):
+            self.logger.debug('Did not get a full valid reading')
+            return
+
+        # Todo: make sure not receiving stale or out of order data using `uptime`.
+        # Create a list for the new data row and add common time.
+        new_data = [current_time().to_datetime()]
+        for relay_index, read_relay in enumerate(self.relays):
+            # Record the new value.
+            new_data.append(data[values_key][relay_index])
+            # Update the state of the pin.
+            read_relay.state = PinState(data[relay_key][relay_index])
+
+        return new_data
+
     def __str__(self):
-        relay_states = ' '.join([f'{r.name}: {r.state.name}' for r in self.relay_names.values()])
-        return f'{self.name} - {relay_states}'
+        relay_states = ' '.join([POWER_SYMBOLS[r.state] for r in self.relays])
+        return f'{self.name} [{relay_states}]'
+
+    def __repr__(self):
+        return to_json({
+            'name': self.name,
+            'port': self.port,
+            'relays': [dict(name=r.name, label=r.label, state=r.state.name) for r in self.relays],
+        })
 
     @classmethod
     def lookup_port(cls, vendor_id=0x2341, product_id=0x0043, **kwargs):
