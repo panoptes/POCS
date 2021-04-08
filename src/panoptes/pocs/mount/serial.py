@@ -49,7 +49,7 @@ class AbstractSerialMount(AbstractMount, ABC):
         Returns:
             bool:   Returns the value from `self.is_initialized`.
         """
-        init_commands = init_commands or ['version', 'mount_info']
+        init_commands = init_commands or ['mount_info']
 
         if not self.is_connected:
             self.logger.info(f'Connecting to mount {__name__}')

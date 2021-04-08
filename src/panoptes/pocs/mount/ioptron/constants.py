@@ -2,24 +2,26 @@ from enum import IntEnum, Enum
 from astropy import units as u
 
 
-class MountConstants(Enum):
-    SIDEREAL_RATE = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
-
-
 class SerialParams(Enum):
-    UTC_OFFSET = r'(?P<utc_offset>\d{3})'
-    UTC_TIME = r'(?P<utc_time>\d{13})'
     SIGN = r'(?P<sign>[+\-])'
-    LONGITUDE = r'(?P<longitude>[+\-]\d{8})'
-    LATITUDE = r'(?P<latitude>\d{8})'
-    SLEW_SPEED = r'(?P<slew_speed>[789])'
+    UTC_OFFSET = r'(?P<utc_offset>[+\-]\d{3})'
+    UTC_TIME = r'(?P<utc_time>\d{13})'
+    LOCAL_DATE = r'(?P<local_date>\d{6})'
+    LOCAL_TIME = r'(?P<local_time>\d{6})'
+    LONGITUDE = r'(?P<longitude>\d{6,8})'
+    LATITUDE = r'(?P<latitude>\d{6,8})'
+    SLEW_SPEED = r'(?P<slew_speed>[1-9])'
+    MAX_SLEW_SPEED = r'(?P<max_slew_speed>[789])'
     ALT_LIMIT = r'(?P<alt_limit>\d{2})'
     RA_GUIDE_RATE = r'(?P<ra_guide_rate>\d{2})'
     DEC_GUIDE_RATE = r'(?P<dec_guide_rate>\d{2})'
     MOVEMENT_MS = r'(?P<movement_ms>\d{5})'
     RA_TRACKING_RATE = r'(?P<ra_tracking_rate>\d{5})'
-    RA_ARCSEC = r'(?P<ra_arcsec>\d{9})'
-    DEC_ARCSEC = r'(?P<dec_arcsec>[+\-]\d{8})'
+    RA_ARCSEC = r'(?P<ra_arcsec>\d{8})'
+    DEC_ARCSEC = r'(?P<dec_arcsec>\d{8})'
+    ALTITUDE_ARCSEC = r'(?P<alt_arcsec>\d{8})'
+    AZIMUTH_ARCSEC = r'(?P<az_arcsec>\d{9})'
+    ALTITUDE_DEGREE = r'(?P<alt_degree>\d{2})'
     POINTING_STATE = r'(?P<pointing_state>[01])'
     DST_ON = r'(?P<dst_on>[01])'
     PIER_SIDE = r'(?P<pier_side>[0-2])'
@@ -29,8 +31,19 @@ class SerialParams(Enum):
     MOVEMENT_STATUS = r'(?P<movement_status>[0-9])'
     TIME_SOURCE = r'(?P<time_source>[1-3])'
     HEMISPHERE = r'(?P<hemisphere>[01])'
-    FULL_STATUS = LONGITUDE + LATITUDE + GPS_STATUS + SYSTEM_STATUS + \
-        TRACKING_STATUS + MOVEMENT_STATUS + TIME_SOURCE + HEMISPHERE
+    NUM_POSITIONS = r'(?P<num_positions>[012])'
+    MERIDIAN_TREATMENT = r'(?P<meridian_treatment>[01])'
+    PERIODIC_ERROR_INTEGRITY = r'(?P<periodic_error_integrity>[01])'
+    PERIODIC_ERROR_RECORDING = r'(?P<periodic_error_recording>[01])'
+    SUCCESS = r'(?P<success>[1])'
+    SUCCESS_OR_FAIL = r'(?P<success_or_fail>[01])'
+    MOUNT_VERSION = r'(?P<mount_version>\d{4})'
+    FULL_STATUS = SIGN + LONGITUDE + LATITUDE + GPS_STATUS + SYSTEM_STATUS + \
+                  TRACKING_STATUS + MOVEMENT_STATUS + TIME_SOURCE + HEMISPHERE
+
+
+class MountConstants(Enum):
+    SIDEREAL_RATE = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
 
 
 class GPS(IntEnum):
@@ -79,3 +92,23 @@ class TimeSource(IntEnum):
 class Hemisphere(IntEnum):
     SOUTHERN = 0
     NORTHERN = 1
+
+
+class DaylightSavingsEnabled(IntEnum):
+    DISABLED = 0
+    ENABLED = 1
+
+
+class MeridianTreatment(IntEnum):
+    STOP = 0
+    FLIP = 1
+
+
+class PeriodicErrorIntegrity(IntEnum):
+    INCOMPLETE = 0
+    COMPLETE = 1
+
+
+class PeriodicErrorRecording(IntEnum):
+    STOPPED = 0
+    RECORDING = 1
