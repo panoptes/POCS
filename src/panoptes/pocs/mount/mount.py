@@ -745,6 +745,7 @@ class AbstractMount(PanBase):
 
         response = self.read(**kwargs)
 
+        # TODO: should we be using this commented out code.
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):
         #     self.logger.warning("Expected: {}\tGot: {}".format(expected_response, response))
