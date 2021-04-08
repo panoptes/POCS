@@ -41,7 +41,7 @@ def get_logger(console_log_file='panoptes.log',
                serialize_full_log=False,
                log_dir='logs',
                console_log_level='SUCCESS',
-               stderr_log_level='INFO',
+               stderr_log_level='SUCCESS',
                ):
     """Creates a root logger for PANOPTES used by the PanBase object.
 

@@ -71,7 +71,7 @@ OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,docker,i2c,spi,input,gpio"
+DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -86,7 +86,7 @@ function make_directories() {
 
 function which_version() {
   PS3='Where are you installing?: '
-  versions=("Control box" "Camera Box" "My computer")
+  versions=("Control box" "Camera box" "My computer")
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
@@ -145,9 +145,7 @@ function system_deps() {
 function install_docker() {
   wget -q https://get.docker.com -O get-docker.sh
   bash get-docker.sh
-
-  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
-
+  sudo usermod -aG docker "${PANUSER}"
   rm get-docker.sh
 }
 
@@ -161,7 +159,7 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /panoptes-pocs/docker-compose.yaml /temp/docker-compose.yaml"
+      "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
@@ -187,7 +185,8 @@ function install_conda() {
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  # Install panoptes-utils (so we get panoptes-config-server)
+  # Install docker-compose via pip (but first install some annoyingly large dependencies via conda).
+  "${PANDIR}/conda/bin/conda" install -y -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent
   "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
 
   rm install-miniforge.sh
