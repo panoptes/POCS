@@ -247,16 +247,16 @@ class AbstractMount(PanBase):
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')
-        self.logger.debug("LST: {}".format(lst))
-        self.logger.debug("HA: {}".format(ha))
+        self.logger.debug(f'LST: {lst}')
+        self.logger.debug(f'HA: {ha}')
 
         ra = lst - ha
-        self.logger.debug("RA: {}".format(ra))
-        self.logger.debug("Dec: {}".format(dec))
+        self.logger.debug(f'RA: {ra}')
+        self.logger.debug(f'Dec: {dec}')
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.debug(f'Park Coordinates RA-Dec: {self._park_coordinates}')
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -637,7 +637,7 @@ class AbstractMount(PanBase):
             self.logger.warning('Problem with slew_to_park')
 
         while not self.at_mount_park:
-            self.status
+            self._update_status()
             time.sleep(2)
 
         self._is_parked = True

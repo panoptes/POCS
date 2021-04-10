@@ -159,18 +159,23 @@ class Mount(AbstractSerialMount):
         Returns:
             bool: indicating success
         """
+        # TODO: check for park coords.
 
-        if self.is_parked:
+        if self.at_mount_park:
             self.logger.success("Mount is already parked")
-            return self._is_parked
+            return self.at_mount_park
 
         self.query('park')
-        # Todo: add timeout.
-        while not self._is_parked:
+
+        # TODO: add timeout (and alert if fail?).
+        while not self.at_mount_park:
+            self._update_status()
             time.sleep(0.5)
 
+        self._is_parked = True
+
         self.logger.success('Mount successfully parked.')
-        return self._is_parked
+        return self.at_mount_park
 
     ############################################################################
     # Private Methods
