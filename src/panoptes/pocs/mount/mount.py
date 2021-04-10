@@ -117,7 +117,7 @@ class AbstractMount(PanBase):
     def status(self):
         status = {}
         try:
-            status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
+            status['tracking_rate'] = f'{self.tracking_rate:0.04f}'
             status['ra_guide_rate'] = self.ra_guide_rate
             status['dec_guide_rate'] = self.dec_guide_rate
             status['movement_speed'] = self.movement_speed
@@ -668,24 +668,23 @@ class AbstractMount(PanBase):
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
 
-        move_command = 'move_{}'.format(direction)
-        self.logger.debug("Move command: {}".format(move_command))
+        move_command = f'move_{direction}'
+        self.logger.debug(f'Move command: {move_command}')
 
         try:
             now = current_time()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.logger.debug(f'Moving {direction} for {seconds} seconds. ')
             self.query(move_command)
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
+            self.logger.debug(f'{(current_time() - now).sec} seconds passed before stop')
             self.query('stop_moving')
-            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+            self.logger.debug(f'{(current_time() - now).sec} seconds passed total')
         except KeyboardInterrupt:
-            self.logger.warning("Keyboard interrupt, stopping movement.")
+            self.logger.warning('Keyboard interrupt, stopping movement.')
         except Exception as e:
-            self.logger.warning(
-                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(f'Problem moving command! Make sure mount has stopped moving: {e}')
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -727,13 +726,15 @@ class AbstractMount(PanBase):
             params (str, optional): Params to pass to serial connection
 
         Examples:
+            >>> from panoptes.pocs.mount import create_mount_from_config
+            >>> mount = create_mount_from_config()
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
             '1'
             >>> mount.query('get_local_time')            #doctest: +SKIP
             '101503'
 
         Returns:
-            bool: indicating success
+            str: The response from the mount.
 
         Deleted Parameters:
             *args: Parameters to be sent with command if required.
@@ -745,17 +746,17 @@ class AbstractMount(PanBase):
 
         response = self.read(**kwargs)
 
-        # TODO: should we be using this commented out code.
+        # TODO: Add in better checking of expected response.
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):
-        #     self.logger.warning("Expected: {}\tGot: {}".format(expected_response, response))
+        #     self.logger.warning(f"Expected: {expected_response} Got: {response}")
 
         return response
 
     def write(self, cmd):
         raise NotImplementedError
 
-    def read(self, *args):
+    def read(self, *args, **kwargs):
         raise NotImplementedError
 
     ##################################################################################################
@@ -773,10 +774,9 @@ class AbstractMount(PanBase):
 
         if cmd_info is not None:
             response = cmd_info.get('response')
-            # self.logger.debug('Mount Command Response: {}'.format(response))
+            self.logger.trace(f'Mount Command Response: {response}')
         else:
-            raise error.InvalidMountCommand(
-                'No result for command {}'.format(cmd))
+            raise error.InvalidMountCommand(f'No result for command {cmd}')
 
         return response
 
@@ -827,10 +827,10 @@ class AbstractMount(PanBase):
     def _get_command(self, cmd, params=None):  # pragma: no cover
         raise NotImplementedError
 
-    def _mount_coord_to_skycoord(self):  # pragma: no cover
+    def _mount_coord_to_skycoord(self, coords_str):  # pragma: no cover
         raise NotImplementedError
 
-    def _skycoord_to_mount_coord(self):  # pragma: no cover
+    def _skycoord_to_mount_coord(self, coords):  # pragma: no cover
         raise NotImplementedError
 
     def _update_status(self):  # pragma: no cover

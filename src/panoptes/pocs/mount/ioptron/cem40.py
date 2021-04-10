@@ -1,11 +1,61 @@
 import re
 import time
+from enum import IntEnum
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from panoptes.utils.time import current_time
 from panoptes.utils import error as error
 from panoptes.pocs.mount.serial import AbstractSerialMount
+
+
+class MountGPS(IntEnum):
+    OFF = 0
+    ON = 1
+    EXTRACTED = 2
+
+
+class MountState(IntEnum):
+    STOPPED = 0
+    TRACKING = 1
+    SLEWING = 2
+    GUIDING = 3
+    MERIDIAN_FLIPPING = 4
+    TRACKING_PEC = 5
+    PARKED = 6
+    AT_HOME = 7
+    UNKNOWN = 8
+
+
+class MountTrackingState(IntEnum):
+    SIDEREAL = 0
+    LUNAR = 1
+    SOLAR = 2
+    KING = 3
+    CUSTOM = 4
+
+
+class MountMovementSpeed(IntEnum):
+    SIDEREAL_1 = 1
+    SIDEREAL_2 = 2
+    SIDEREAL_8 = 3
+    SIDEREAL_16 = 4
+    SIDEREAL_64 = 5
+    SIDEREAL_128 = 6
+    SIDEREAL_256 = 7
+    SIDEREAL_512 = 8
+    SIDEREAL_MAX = 9
+
+
+class MountTimeSource(IntEnum):
+    RS232 = 1
+    HAND_CONTROLLER = 2
+    GPS = 3
+
+
+class MountHemisphere(IntEnum):
+    SOUTHERN = 0
+    NORTHERN = 1
 
 
 class Mount(AbstractSerialMount):
@@ -23,8 +73,12 @@ class Mount(AbstractSerialMount):
         self._dec_format = r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
+        self._state = MountState.UNKNOWN
+
         self._raw_status = None
         self._status_format = re.compile(
+            '(?P<longitude>[+\-]\d{6})' +
+            '(?P<latitude>\d{6})' +
             '(?P<gps>[0-2]{1})' +
             '(?P<state>[0-7]{1})' +
             '(?P<tracking>[0-4]{1})' +
@@ -33,81 +87,7 @@ class Mount(AbstractSerialMount):
             '(?P<hemisphere>[01]{1})'
         )
 
-        self._status_lookup = {
-            'gps': {
-                '0': 'Off',
-                '1': 'On',
-                '2': 'Data Extracted'
-            },
-            'state': {
-                '0': 'Stopped - Not at Zero Position',
-                '1': 'Tracking (PEC disabled)',
-                '2': 'Slewing',
-                '3': 'Guiding',
-                '4': 'Meridian Flipping',
-                '5': 'Tracking (PEC enabled)',
-                '6': 'Parked',
-                '7': 'Stopped - Zero Position'
-            },
-            'tracking': {
-                '0': 'Sidereal',
-                '1': 'Lunar',
-                '2': 'Solar',
-                '3': 'King',
-                '4': 'Custom'
-            },
-            'movement_speed': {
-                '1': '1x sidereal',
-                '2': '2x sidereal',
-                '3': '8x sidereal',
-                '4': '16x sidereal',
-                '5': '64x sidereal',
-                '6': '128x sidereal',
-                '7': '256x sidereal',
-                '8': '512x sidereal',
-                '9': 'Max sidereal',
-            },
-            'time_source': {
-                '1': 'RS-232',
-                '2': 'Hand Controller',
-                '3': 'GPS'
-            },
-            'hemisphere': {
-                '0': 'Southern',
-                '1': 'Northern'
-            }
-        }
-
-        self.logger.info('Mount created')
-
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
-    @property
-    def is_home(self):
-        """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self.status.get('state', '')
-
-        return self._is_home
-
-    @property
-    def is_tracking(self):
-        """ bool: Mount tracking status. """
-        self._is_tracking = 'Tracking' in self.status.get('state', '')
-
-        return self._is_tracking
-
-    @property
-    def is_slewing(self):
-        """ bool: Mount slewing status. """
-        self._is_slewing = 'Slewing' in self.status.get('state', '')
-
-        return self._is_slewing
-
-    ##################################################################################################
-    # Public Methods
-    ##################################################################################################
+        self.logger.success('iOptron CEM40 mount created')
 
     def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
@@ -125,11 +105,11 @@ class Mount(AbstractSerialMount):
             bool:   Returns the value from `self.is_initialized`.
         """
         if not self.is_connected:
-            self.logger.info('Connecting to mount {}'.format(__name__))
+            self.logger.info(f'Connecting to mount {__name__}')
             self.connect()
 
         if self.is_connected and not self.is_initialized:
-            self.logger.info('Initializing {} mount'.format(__name__))
+            self.logger.info(f'Initializing {__name__} mount')
 
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `query` method will test
@@ -143,7 +123,7 @@ class Mount(AbstractSerialMount):
 
             # Test our init procedure for iOptron
             if actual_mount_info != expected_mount_info:
-                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
+                self.logger.debug(f'{actual_mount_info} != {expected_mount_info}')
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self._is_initialized = True
@@ -151,16 +131,11 @@ class Mount(AbstractSerialMount):
                 if set_rates:
                     self._set_initial_rates()
 
-        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+        self.logger.info(f'Mount initialized: {self.is_initialized}')
 
         return self.is_initialized
 
-    def park(self,
-             ra_direction='west',
-             ra_seconds=11.,
-             dec_direction='south',
-             dec_seconds=15.,
-             *args, **kwargs):
+    def park(self, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
         This will first move the mount to the home position, then move the RA axis
@@ -186,42 +161,32 @@ class Mount(AbstractSerialMount):
         """
 
         if self.is_parked:
-            self.logger.info("Mount is parked")
+            self.logger.success("Mount is already parked")
             return self._is_parked
 
-        if self.slew_to_home(blocking=True):
-            # The mount is currently not parking in correct position so we manually move it there.
-            self.query('set_button_moving_rate', 9)
-            self.move_direction(direction=ra_direction, seconds=ra_seconds)
-            while self.is_slewing:
-                self.logger.debug("Slewing RA axis to park position...")
-                time.sleep(3)
-            self.move_direction(direction=dec_direction, seconds=dec_seconds)
-            while self.is_slewing:
-                self.logger.debug("Slewing Dec axis to park position...")
-                time.sleep(3)
+        self.query('park')
+        # Todo: add timeout.
+        while not self._is_parked:
+            time.sleep(0.5)
 
-            self._is_parked = True
-            self.logger.debug(f'Mount parked: {self.is_parked}')
-
+        self.logger.success('Mount successfully parked.')
         return self._is_parked
 
-    ##################################################################################################
+    ############################################################################
     # Private Methods
-    ##################################################################################################
+    ############################################################################
     def _set_initial_rates(self):
         # Make sure we start at sidereal
         self.set_tracking_rate()
 
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
-        self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
+        self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
         self.query('set_guide_rate', '9090')
         guide_rate = self.query('get_guide_rate')
         self.ra_guide_rate = int(guide_rate[0:2]) / 100
         self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug("Mount guide rate: {} {}".format(
-            self.ra_guide_rate, self.dec_guide_rate))
+        self.logger.debug(f"Mount guide rate: {self.ra_guide_rate} {self.dec_guide_rate}")
 
     def _setup_location_for_mount(self):
         """
@@ -239,25 +204,26 @@ class Mount(AbstractSerialMount):
         * Current Date set_local_date
         * Current Time set_local_time
 
-
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning(
-            'Please set a location before attempting setup')
+        if not self.location:
+            self.logger.warning('Please set a location before attempting setup')
 
-        self.logger.info('Setting up mount for location')
+        if not self.is_initialized:
+            self.logger.warning('Mount has not been initialized')
+            return
+
+        self.logger.debug('Setting up CEM40 for location')
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(self.location.lat.to(u.arcsecond).value)
-        lon = '{:+07.0f}'.format(self.location.lon.to(u.arcsecond).value)
+        lat = '{:+06.0f}'.format(self.location.lat.to(u.arcsecond).value)
+        lon = '{:+06.0f}'.format(self.location.lon.to(u.arcsecond).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
 
-        # Time
-        self.query('disable_daylight_savings')
-
+        # Set time.
+        self.query('disable_daylight_savings')  # TODO param?
         gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.query('set_gmt_offset', gmt_offset)
 
@@ -281,7 +247,7 @@ class Mount(AbstractSerialMount):
 
         coords = None
 
-        # self.logger.debug("Mount coordinates: {}".format(coords_match))
+        self.logger.trace(f'Mount coordinates: {coords_match}')
 
         if coords_match is not None:
             ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
@@ -293,8 +259,7 @@ class Mount(AbstractSerialMount):
 
             coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
         else:
-            self.logger.warning(
-                "Cannot create SkyCoord from mount coordinates")
+            self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
         return coords
 
@@ -322,12 +287,12 @@ class Mount(AbstractSerialMount):
 
         # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
-        mount_ra = "{:08.0f}".format(ra_ms.value)
-        self.logger.debug("RA (ms): {}".format(ra_ms))
+        mount_ra = f'{ra_ms.value:08.0f}'
+        self.logger.debug(f'RA (ms): {ra_ms}')
 
         dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
-        self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
-        mount_dec = "{:=+08.0f}".format(dec_dms.value)
+        self.logger.debug(f'Dec (centiarcsec): {dec_dms}')
+        mount_dec = f'{dec_dms.value:=+08.0f}'
 
         mount_coords = (mount_ra, mount_dec)
 
@@ -341,3 +306,41 @@ class Mount(AbstractSerialMount):
         """
         self.logger.info("Setting zero position")
         return self.query('set_zero_position')
+
+    def _update_status(self):
+        self._raw_status = self.query('get_status')
+
+        status = dict()
+
+        status_match = self._status_format.fullmatch(self._raw_status)
+        if status_match:
+            status = status_match.groupdict()
+
+            self._state = MountState(int(status['state']))
+
+            status['longitude'] = float(status['longitude']) * u.arcsec
+            # Longitude has +90° so no negatives. Subtract for original.
+            status['latitude'] = (float(status['latitude']) - 90) * u.arcsec
+            status['gps'] = MountGPS(int(status['gps']))
+            status['state'] = self.state
+            status['parked_software'] = self.is_parked
+            status['tracking'] = MountTrackingState(int(status['tracking']))
+            status['movement_speed'] = MountMovementSpeed(int(status['movement_speed']))
+            status['time_source'] = MountTimeSource(int(status['time_source']))
+            status['hemisphere'] = MountHemisphere(int(status['hemisphere']))
+
+            self._movement_speed = status['movement_speed']
+
+            self._at_mount_park = self.state == MountState.PARKED
+            self._is_home = self.state == MountState.AT_HOME
+            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
+            self._is_slewing = self.state == MountState.SLEWING
+
+            # guide_rate = self.query('get_guide_rate')
+            # self.ra_guide_rate = int(guide_rate[0:2]) / 100
+            # self.dec_guide_rate = int(guide_rate[2:]) / 100
+
+        status['timestamp'] = self.query('get_local_time')
+        status['tracking_rate_ra'] = self.tracking_rate
+
+        return status

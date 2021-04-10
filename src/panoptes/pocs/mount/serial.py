@@ -81,21 +81,19 @@ class AbstractSerialMount(AbstractMount):
             delta = -0.01
 
         # Dumb hack work-around for beginning 0
-        delta_str_f, delta_str_b = '{:+0.04f}'.format(delta).split('.')
+        delta_str_f, delta_str_b = f'{delta:+0.04f}'.split('.')
         delta_str_f += '0'  # Add extra zero
-        delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
+        delta_str = f'{delta_str_f}.{delta_str_b}'
 
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
+        self.logger.debug(f'Setting tracking rate to sidereal {delta_str}')
         if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.query(
-                'set_custom_{}_tracking_rate'.format(direction),
-                "{}".format(delta_str))
-            self.logger.debug("Tracking response: {}".format(response))
+            response = self.query(f'set_custom_{direction}_tracking_rate', f'{delta_str}')
+            self.logger.debug(f'Tracking response: {response}')
             if response:
                 self.tracking = 'Custom'
                 self.tracking_rate = 1.0 + delta
-                self.logger.debug("Custom tracking rate sent")
+                self.logger.debug('Custom tracking rate sent')
 
     ##################################################################################################
     # Communication Methods
@@ -134,7 +132,7 @@ class AbstractSerialMount(AbstractMount):
 
         response = self.serial.read()
 
-        # self.logger.debug("Mount Read: {}".format(response))
+        self.logger.debug(f'Mount Read: {response}')
 
         # Strip the line ending (#) and return
         response = response.rstrip('#')
@@ -160,7 +158,7 @@ class AbstractSerialMount(AbstractMount):
             self.serial.connect()
         except Exception:
             raise error.BadSerialConnection(
-                'Cannot create serial connect for mount at port {}'.format(self._port))
+                f'Cannot create serial connect for mount at port {self._port}')
 
         self.logger.debug('Mount connected via serial')
 
@@ -175,12 +173,13 @@ class AbstractSerialMount(AbstractMount):
             # Check if this command needs params
             if 'params' in cmd_info:
                 if params is None:
-                    raise error.InvalidMountCommand(f'{cmd} expects params: {cmd_info.get("params")}')
+                    raise error.InvalidMountCommand(
+                        f'{cmd} expects params: {cmd_info.get("params")}')
                 full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{params}{self._post_cmd}"
             else:
                 full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{self._post_cmd}"
 
-            # self.logger.debug('Mount Full Command: {}'.format(full_command))
+            self.logger.trace(f'Mount Full Command: {full_command}')
         else:
             self.logger.warning(f'No command for {cmd}')
 
