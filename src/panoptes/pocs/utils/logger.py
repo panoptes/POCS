@@ -22,7 +22,7 @@ class PanLogger:
                    "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
                    " <blue>({time:HH:mm:ss zz})</> " \
                    "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
-                   "<lvl>{message}</lvl>"
+                   "<lvl>{message}</lvl>\n"
         self.handlers = dict()
 
     def format(self, record):
