@@ -319,31 +319,30 @@ class Mount(AbstractSerialMount):
 
         status_match = self._status_format.fullmatch(self._raw_status)
         if status_match:
-            status = status_match.groupdict()
+            status_dict = status_match.groupdict()
 
-            self._state = MountState(int(status['state']))
-
-            status['longitude'] = float(status['longitude']) * u.arcsec
-            # Longitude has +90° so no negatives. Subtract for original.
-            status['latitude'] = (float(status['latitude']) - 90) * u.arcsec
-            status['gps'] = MountGPS(int(status['gps']))
+            self._state = MountState(int(status_dict['state']))
             status['state'] = self.state
             status['parked_software'] = self.is_parked
-            status['tracking'] = MountTrackingState(int(status['tracking']))
-            status['movement_speed'] = MountMovementSpeed(int(status['movement_speed']))
-            status['time_source'] = MountTimeSource(int(status['time_source']))
-            status['hemisphere'] = MountHemisphere(int(status['hemisphere']))
 
-            self._movement_speed = status['movement_speed']
+            status['longitude'] = float(status_dict['longitude']) * u.arcsec
+            # Longitude has +90° so no negatives. Subtract for original.
+            status['latitude'] = (float(status_dict['latitude']) - 90) * u.arcsec
+
+            status['gps'] = MountGPS(int(status_dict['gps']))
+            status['tracking'] = MountTrackingState(int(status_dict['tracking']))
+
+            self._movement_speed = MountMovementSpeed(int(status_dict['movement_speed']))
+            status['movement_speed'] = self._movement_speed
+
+            status['time_source'] = MountTimeSource(int(status_dict['time_source']))
+            status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere']))
 
             self._at_mount_park = self.state == MountState.PARKED
             self._is_home = self.state == MountState.AT_HOME
-            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
+            self._is_tracking = self.state == MountState.TRACKING or \
+                                self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
-
-            # guide_rate = self.query('get_guide_rate')
-            # self.ra_guide_rate = int(guide_rate[0:2]) / 100
-            # self.dec_guide_rate = int(guide_rate[2:]) / 100
 
         status['timestamp'] = self.query('get_local_time')
         status['tracking_rate_ra'] = self.tracking_rate
