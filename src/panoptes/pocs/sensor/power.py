@@ -1,7 +1,7 @@
 import threading
 import time
-from enum import IntEnum
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import Optional, Dict, List, Callable
 from functools import partial
 import pandas as pd
@@ -57,6 +57,18 @@ class Relay:
     state: Optional[PinState] = PinState.OFF
     default_state: Optional[PinState] = PinState.OFF
 
+    def turn_on(self):
+        pass
+
+    def turn_off(self):
+        pass
+
+    def toggle_relay(self):
+        pass
+
+    def cycle_relay(self):
+        pass
+
     def __str__(self):
         return f'[{self.name}] {self.label} {self.state.name}'
 
@@ -92,7 +104,8 @@ class PowerBoard(PanBase):
                  relays: Dict[str, dict] = None,
                  reader_callback: Callable[[dict], dict] = None,
                  dataframe_period: int = 2,
-                 record_period: Optional[int] = None,
+                 mean_interval: Optional[int] = 5,
+                 record_period: Optional[bool] = False,
                  arduino_board_name: str = 'power_board',
                  *args, **kwargs):
         """Initialize the power board.
@@ -114,10 +127,10 @@ class PowerBoard(PanBase):
                 json format, which is then made into a dataframe with the `to_dataframe`.
             dataframe_period (int): The period to use for creating the
                 `PeriodicDataFrame`, default `2` (seconds).
-            record_period (int): If set to a positive integer, record the most
-                recent values in the database.  A rolling mean since the previous
-                recording will be taken. Default is None, or no recording. Values,
-                less than `5` (seconds) would create a lot of entries.
+            mean_interval (int): When taking a rolling mean, use this many seconds,
+                default 5.
+            record_period (bool): If True, record values to database every
+                mean_interval seconds, default False.
             arduino_board_name (str): The name of the arduino board to match in
                 the callback and the collection name for storing in `record.
         """
@@ -155,11 +168,29 @@ class PowerBoard(PanBase):
             self.dataframe = PeriodicDataFrame(interval=f'{dataframe_period}s',
                                                datafn=self.to_dataframe)
 
+        self._mean_interval = mean_interval
         if record_period:
-            recorder = partial(self.record, rolling_seconds=record_period)
-            threading.Timer(record_period, recorder).start()
+            threading.Timer(record_period, self.record).start()
 
         self.logger.info(f'Power board initialized')
+
+    @property
+    def status(self):
+        readings = self.readings
+        status = {
+            r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
+            for r in self.relays
+        }
+
+        return status
+
+    @property
+    def readings(self):
+        """Return the rolling mean of the readings. """
+        time_start = (current_time() - self._mean_interval * u.second).to_datetime()
+        mean_values = self.to_dataframe()[time_start:].mean().astype('int').to_dict()
+
+        return mean_values
 
     def turn_on(self, label):
         """Turns on the relay with the given label."""
@@ -195,19 +226,15 @@ class PowerBoard(PanBase):
 
         return df0
 
-    def record(self, rolling_seconds: int = 5, collection_name: str = None):
+    def record(self, collection_name: str = None):
         """Record the rolling mean of the power readings.
 
         Args:
-            rolling_seconds (int): Take the mean of the previous number of seconds,
-                default 5 seconds.
             collection_name (str): Where to store the results in the db. If None
                 (the default), then use `arduino_board_name`.
 
         """
-
-        time_start = (current_time() - rolling_seconds * u.second).to_datetime()
-        mean_values = self.to_dataframe()[time_start:].mean().astype('int').to_dict()
+        mean_values = self.readings
 
         collection_name = collection_name or self.arduino_board_name
         self.db.insert_current(collection_name, mean_values)
@@ -230,8 +257,10 @@ class PowerBoard(PanBase):
                           )
 
             # Add convenience methods on the relay itself.
-            relay.turn_on = partial(self.turn_on, relay.label)
-            relay.turn_off = partial(self.turn_off, relay.label)
+            setattr(relay, 'turn_on', partial(self.turn_on, relay.label))
+            setattr(relay, 'turn_off', partial(self.turn_off, relay.label))
+            setattr(relay, 'toggle_relay', partial(self.toggle_relay, relay.label))
+            setattr(relay, 'cycle_relay', partial(self.cycle_relay, relay.label))
 
             # Track relays by list and by friendly label.
             self.relays.append(relay)

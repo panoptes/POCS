@@ -87,12 +87,12 @@ cameras:
       primary: True
 
 ######################### Environmental Sensors ################################
-# Configuration for the power distribution board and other environmental sensors.
+# Configuration for the power distribution board and other environmental sensor.
 ################################################################################
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
-    auto_detect: true
+    port: socket://192.168.8.1:5050
     relays:
       RELAY_0:
         label: weather_station

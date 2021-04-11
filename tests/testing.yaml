@@ -213,7 +213,7 @@ panoptes_network:
 state_machine: panoptes
 
 ######################### Environmental Sensors ################################
-# Configure the environmental sensors that are attached.
+# Configure the environmental sensor that are attached.
 #
 # Use `auto_detect: True` for most options. Or use a manual configuration:
 #

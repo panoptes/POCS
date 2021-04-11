@@ -1,10 +1,10 @@
-# Test sensors.py ability to read from two sensor boards.
+# Test sensor.py ability to read from two sensor boards.
 
 import pytest
 import responses
 
-from panoptes.pocs.sensors import remote
-from panoptes.pocs.sensors import power
+from panoptes.pocs.sensor import remote
+from panoptes.pocs.sensor import power
 from panoptes.utils import error
 
 
