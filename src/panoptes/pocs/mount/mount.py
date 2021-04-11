@@ -726,8 +726,6 @@ class AbstractMount(PanBase):
             params (str, optional): Params to pass to serial connection
 
         Examples:
-            >>> from panoptes.pocs.mount import create_mount_from_config
-            >>> mount = create_mount_from_config()
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
             '1'
             >>> mount.query('get_local_time')            #doctest: +SKIP
