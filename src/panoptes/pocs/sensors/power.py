@@ -1,3 +1,4 @@
+import threading
 import time
 from enum import IntEnum
 from dataclasses import dataclass
@@ -7,6 +8,8 @@ import pandas as pd
 from panoptes.utils import error
 
 from streamz.dataframe import PeriodicDataFrame
+
+from astropy import units as u
 
 from panoptes.utils.serial.device import find_serial_port, SerialDevice
 from panoptes.utils.serializers import to_json, from_json
@@ -88,7 +91,9 @@ class PowerBoard(PanBase):
                  name: str = 'Power Board',
                  relays: Dict[str, dict] = None,
                  reader_callback: Callable[[dict], dict] = None,
-                 dataframe_period: str = '50ms',
+                 dataframe_period: int = 2,
+                 record_period: Optional[int] = None,
+                 arduino_board_name: str = 'power_board',
                  *args, **kwargs):
         """Initialize the power board.
 
@@ -104,6 +109,17 @@ class PowerBoard(PanBase):
                 matching the vendor (2341) and product id (0043).
             name (str): The user-friendly name for the power board.
             relays (dict[Relay] or None): The relay configuration. See notes for details.
+            reader_callback (Callable): A callback for the serial readings. The
+                default callback will update the pin values and record data in a
+                json format, which is then made into a dataframe with the `to_dataframe`.
+            dataframe_period (int): The period to use for creating the
+                `PeriodicDataFrame`, default `2` (seconds).
+            record_period (int): If set to a positive integer, record the most
+                recent values in the database.  A rolling mean since the previous
+                recording will be taken. Default is None, or no recording. Values,
+                less than `5` (seconds) would create a lot of entries.
+            arduino_board_name (str): The name of the arduino board to match in
+                the callback and the collection name for storing in `record.
         """
         super().__init__(*args, **kwargs)
         if port is None:
@@ -112,6 +128,7 @@ class PowerBoard(PanBase):
 
         self.port = port
         self.name = name
+        self.arduino_board_name = 'power_board'
 
         reader_callback = reader_callback or self.default_reader_callback
 
@@ -120,6 +137,7 @@ class PowerBoard(PanBase):
         self.arduino_board = SerialDevice(port=self.port,
                                           serial_settings=dict(baudrate=9600),
                                           reader_callback=reader_callback,
+                                          name=arduino_board_name
                                           )
 
         self.relays: List[Relay] = list()
@@ -134,7 +152,13 @@ class PowerBoard(PanBase):
 
         self.dataframe = None
         if dataframe_period is not None:
-            self.dataframe = PeriodicDataFrame(interval=dataframe_period, datafn=self.to_dataframe)
+            self.dataframe = PeriodicDataFrame(interval=f'{dataframe_period}s',
+                                               datafn=self.to_dataframe)
+
+        if record_period:
+            recorder = partial(self.record, rolling_seconds=record_period)
+            threading.Timer(record_period, recorder).start()
+
         self.logger.info(f'Power board initialized')
 
     def turn_on(self, label):
@@ -153,7 +177,15 @@ class PowerBoard(PanBase):
         """Cycle the relay with a default 5 second delay."""
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
-    def to_dataframe(self, **kwargs):
+    def to_dataframe(self, record=False, **kwargs):
+        """Make a dataframe from the latest readings.
+
+        This method is called by a `streamz.dataframe.PeriodicDataFrame`.
+
+        Args:
+            record (bool): If True, record the values in the db, otherwise skip.
+                Default False (skip).
+        """
         try:
             columns = ['time'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
@@ -162,6 +194,25 @@ class PowerBoard(PanBase):
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
         return df0
+
+    def record(self, rolling_seconds: int = 5, collection_name: str = None):
+        """Record the rolling mean of the power readings.
+
+        Args:
+            rolling_seconds (int): Take the mean of the previous number of seconds,
+                default 5 seconds.
+            collection_name (str): Where to store the results in the db. If None
+                (the default), then use `arduino_board_name`.
+
+        """
+
+        time_start = (current_time() - rolling_seconds * u.second).to_datetime()
+        mean_values = self.to_dataframe()[time_start:].mean().astype('int').to_dict()
+
+        collection_name = collection_name or self.arduino_board_name
+        self.db.insert_current(collection_name, mean_values)
+
+        return mean_values
 
     def setup_relays(self, relays: Dict[str, dict]):
         """Setup the relays."""
@@ -216,7 +267,7 @@ class PowerBoard(PanBase):
             self.logger.warning(f'Error here: {e!r}')
             return
 
-        if data[name_key] != 'power_board':
+        if data[name_key] != self.arduino_board_name:
             self.logger.warning('Not reading the power_board. Skipping data.')
             return
 
@@ -230,10 +281,13 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time.
         new_data = [current_time().to_datetime()]
         for relay_index, read_relay in enumerate(self.relays):
-            # Record the new value.
-            new_data.append(data[values_key][relay_index])
             # Update the state of the pin.
             read_relay.state = PinState(data[relay_key][relay_index])
+            if read_relay.state == PinState.OFF:
+                # Give a negative value for off rather than zero.
+                data[values_key][relay_index] = -1
+            # Record the new value.
+            new_data.append(data[values_key][relay_index])
 
         return new_data
 
