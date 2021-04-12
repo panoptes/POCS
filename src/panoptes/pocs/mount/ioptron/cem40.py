@@ -74,17 +74,18 @@ class Mount(AbstractSerialMount):
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self._state = MountState.UNKNOWN
+        self._mount_version = '0040'
 
         self._raw_status = None
         self._status_format = re.compile(
-            '(?P<longitude>[+\-]\d{6})' +
-            '(?P<latitude>\d{6})' +
-            '(?P<gps>[0-2]{1})' +
-            '(?P<state>[0-7]{1})' +
-            '(?P<tracking>[0-4]{1})' +
-            '(?P<movement_speed>[1-9]{1})' +
-            '(?P<time_source>[1-3]{1})' +
-            '(?P<hemisphere>[01]{1})'
+            r'(?P<longitude>[+\-]\d{6})' +
+            r'(?P<latitude>\d{6})' +
+            r'(?P<gps>[0-2])' +
+            r'(?P<state>[0-7])' +
+            r'(?P<tracking>[0-4])' +
+            r'(?P<movement_speed>[1-9])' +
+            r'(?P<time_source>[1-3])' +
+            r'(?P<hemisphere>[01])'
         )
 
         self.logger.success('iOptron CEM40 mount created')
@@ -348,3 +349,9 @@ class Mount(AbstractSerialMount):
         status['tracking_rate_ra'] = self.tracking_rate
 
         return status
+
+    def _setup_commands(self, commands):
+        super(Mount, self)._setup_commands(commands)
+
+        # Update the `MountInfo` response.
+        self.commands['mount_info']['response'] = self._mount_version
