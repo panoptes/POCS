@@ -25,7 +25,7 @@ class Scheduler(BaseScheduler):
         """
         if reread_targets_file:
             self.logger.debug("Rereading fields file")
-            self.read_field_list()
+            self.read_target_list()
 
         if time is None:
             time = current_time()
@@ -57,7 +57,8 @@ class Scheduler(BaseScheduler):
                     valid_obs[obs_name] += score
                     self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
 
-        self.logger.debug(f'Multiplying final scores by priority')
+        self.logger.debug('Multiplying final scores by priority')
+
         for obs_name, score in valid_obs.items():
             priority = self.observations[obs_name].priority
             new_score = score * priority
