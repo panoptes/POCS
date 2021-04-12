@@ -36,8 +36,8 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
     scheduler_type = scheduler_config.get('type', 'dispatch')
 
     # Read the targets from the file
-    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets'), fields_file)
+    targets_file = scheduler_config.get('targets_file', 'simple.yaml')
+    fields_path = os.path.join(get_config('directories.targets'), targets_file)
     logger.debug(f'Creating scheduler: {fields_path}')
 
     if os.path.exists(fields_path):
@@ -64,13 +64,13 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
 
             # Create the Scheduler instance
             scheduler = module.Scheduler(observer,
-                                         fields_file=fields_path,
+                                         targets_file=fields_path,
                                          constraints=constraints,
                                          *args, **kwargs)
             logger.debug("Scheduler created")
         except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
-        raise error.NotFound(msg=f"Fields file does not exist: fields_file={fields_file!r}")
+        raise error.NotFound(msg=f"Fields file does not exist: targets_file={targets_file!r}")
 
     return scheduler
