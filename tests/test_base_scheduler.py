@@ -34,42 +34,59 @@ def observer():
 def field_list():
     return from_yaml("""
     -
+      field:
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
+      observation:
         priority: 100
     -
+      field:
         name: HD 209458
         position: 22h03m10.7721s +18d53m03.543s
         priority: 100
+      observation:
+        priority: 100
     -
+      field:
         name: Tres 3
         position: 17h52m07.02s +37d32m46.2012s
+      observation:
         priority: 100
         exp_set_size: 15
         min_nexp: 240
     -
+      field:
         name: M5
         position: 15h18m33.2201s +02d04m51.7008s
+      observation:
         priority: 50
     -
+      field:
         name: KIC 8462852
         position: 20h06m15.4536s +44d27m24.75s
+      observation:
         priority: 50
         exptime: 60
         exp_set_size: 15
         min_nexp: 45
     -
+      field:
         name: Wasp 33
         position: 02h26m51.0582s +37d33m01.733s
+      observation:
         priority: 100
     -
+      field:
         name: M42
         position: 05h35m17.2992s -05d23m27.996s
+      observation:
         priority: 25
         exptime: 240
     -
+      field:
         name: M44
         position: 08h40m24s +19d40m00.12s
+      observation:
         priority: 50
     """)
 

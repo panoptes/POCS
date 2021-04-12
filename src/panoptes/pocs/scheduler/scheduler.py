@@ -217,16 +217,17 @@ class BaseScheduler(PanBase):
         target_config = target_config.copy()
         self.logger.debug(f"Adding target_config={target_config!r} to scheduler.")
 
-        field_type_name = target_config.pop("field_type", "panoptes.pocs.scheduler.field.Field")
+        field_config = target_config.get("field", {})
+        field_type_name = field_config.pop("type", "panoptes.pocs.scheduler.field.Field")
 
-        obs_config = target_config.pop("observation", {})
+        obs_config = target_config.get("observation", {})
         obs_type_name = obs_config.pop(
             "type", "panoptes.pocs.scheduler.observation.base.Observation")
 
         try:
             # Make the field
             self.logger.debug(f"Creating {field_type_name} field for {target_config!r}")
-            field = load_module(field_type_name)(**target_config)
+            field = load_module(field_type_name)(**field_config)
             self.logger.debug(f"Created field.name={field.name!r}")
 
             # Make the observation
