@@ -184,9 +184,7 @@ def test_scheduler_add_field(scheduler):
     orig_length = len(scheduler.observations)
 
     scheduler.add_observation({
-        'name': 'Degree Field',
-        'position': '12h30m01s +08d08m08s',
-    })
+        "field": dict(name="Degree Field", position='12h30m01s +08d08m08s')})
 
     assert len(scheduler.observations) == orig_length + 1
 
@@ -194,29 +192,25 @@ def test_scheduler_add_field(scheduler):
 def test_scheduler_add_bad_field(scheduler):
     orig_length = len(scheduler.observations)
     with pytest.raises(error.InvalidObservation):
+
         scheduler.add_observation({
-            'name': 'Duplicate Field',
-            'position': '12h30m01s +08d08m08s',
-            'exptime': -10
-        })
+            "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s'),
+            "observation": dict(exptime=-10)})
 
     assert orig_length == len(scheduler.observations)
 
 
 def test_scheduler_add_duplicate_field(scheduler):
+
     scheduler.add_observation({
-        'name': 'Duplicate Field',
-        'position': '12h30m01s +08d08m08s',
-        'priority': 100
-    })
+        "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s'),
+        "observation": dict(priority=100)})
 
     assert scheduler.observations['Duplicate Field'].priority == 100
 
     scheduler.add_observation({
-        'name': 'Duplicate Field',
-        'position': '12h30m01s +08d08m08s',
-        'priority': 500
-    })
+        "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s'),
+        "observation": dict(priority=500)})
 
     assert scheduler.observations['Duplicate Field'].priority == 500
 
@@ -225,14 +219,10 @@ def test_scheduler_add_duplicate_field_different_name(scheduler):
     orig_length = len(scheduler.observations)
 
     scheduler.add_observation({
-        'name': 'Duplicate Field',
-        'position': '12h30m01s +08d08m08s',
-    })
+        "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s')})
 
     scheduler.add_observation({
-        'name': 'Duplicate Field 2',
-        'position': '12h30m01s +08d08m08s',
-    })
+        "field": dict(name="Duplicate Field 2", position='12h30m01s +08d08m08s')})
 
     assert len(scheduler.observations) == orig_length + 2
 
@@ -241,10 +231,8 @@ def test_scheduler_add_with_exptime(scheduler):
     orig_length = len(scheduler.observations)
 
     scheduler.add_observation({
-        'name': 'Added Field',
-        'position': '12h30m01s +08d08m08s',
-        'exptime': '60'
-    })
+        "field": dict(name="Added Field", position='12h30m01s +08d08m08s'),
+        "observation": dict(exptime=60)})
 
     assert len(scheduler.observations) == orig_length + 1
     assert scheduler.observations['Added Field'].exptime == 60 * u.second
