@@ -245,7 +245,7 @@ def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
     observatory.scheduler.targets_file = None
-    observatory.scheduler.fields_list = [
+    observatory.scheduler.targets_list = [
         {
             'name': 'HAT-P-20',
             'priority': '100',

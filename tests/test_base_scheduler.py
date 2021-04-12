@@ -77,7 +77,7 @@ def field_list():
 @pytest.fixture
 def scheduler(field_list, observer, constraints):
     return Scheduler(observer,
-                     fields_list=field_list,
+                     targets_list=field_list,
                      constraints=constraints)
 
 
@@ -145,9 +145,9 @@ def test_new_targets_file(scheduler, simple_targets_file):
     assert scheduler.observations is not None
 
 
-def test_new_fields_list(scheduler):
+def test_new_targets_list(scheduler):
     assert len(scheduler.observations.keys()) > 2
-    scheduler.fields_list = [
+    scheduler.targets_list = [
         {'name': 'Wasp 33',
          'position': '02h26m51.0582s +37d33m01.733s',
          'priority': '100',
