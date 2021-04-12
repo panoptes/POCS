@@ -1,5 +1,6 @@
 import re
 import time
+from contextlib import suppress
 from enum import IntEnum
 
 from astropy import units as u
@@ -353,5 +354,6 @@ class Mount(AbstractSerialMount):
     def _setup_commands(self, commands):
         super(Mount, self)._setup_commands(commands)
 
-        # Update the `MountInfo` response.
-        self.commands['mount_info']['response'] = self._mount_version
+        # Update the `MountInfo` response if one has been set on the class.
+        with suppress(AttributeError):
+            self.commands['mount_info']['response'] = self._mount_version
