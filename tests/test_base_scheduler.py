@@ -165,14 +165,16 @@ def test_new_targets_file(scheduler, simple_targets_file):
 def test_new_targets_list(scheduler):
     assert len(scheduler.observations.keys()) > 2
     scheduler.targets_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
+        {"field":
+            {'name': 'Wasp 33',
+             'position': '02h26m51.0582s +37d33m01.733s'},
+         "observation":
+            {'priority': '100'},
          },
-        {'name': 'Wasp 37',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '50',
-         },
+        {"field":
+            {'name': 'Wasp 37',
+             'position': '02h26m51.0582s +37d33m01.733s'},
+         "observation": {'priority': '50'}}
     ]
     assert scheduler.observations is not None
     assert len(scheduler.observations.keys()) == 2
