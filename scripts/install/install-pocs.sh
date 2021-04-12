@@ -121,6 +121,7 @@ function system_deps() {
     make \
     nano \
     neovim \
+    sshfs \
     wget \
     zsh
   sudo apt-get -y autoremove
