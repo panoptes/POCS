@@ -141,10 +141,8 @@ def test_get_observation_reread(field_list,
     # Alter the field file - note same target but new name
     with open(temp_file, 'a') as f:
         f.write(yaml.dump([{
-            'name': 'New Name',
-            'position': '20h00m43.7135s +22d42m39.0645s',
-            'priority': 5000
-        }]))
+            "field": {'name': 'New Name', 'position': '20h00m43.7135s +22d42m39.0645s'},
+            "observation": {'priority': 5000}}]))
 
     # Get observation but reread file first
     best = scheduler.get_observation(time=time, reread_targets_file=True)
