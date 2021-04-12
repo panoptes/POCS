@@ -31,7 +31,7 @@ def observer():
 
 
 @pytest.fixture()
-def field_list():
+def targets_list():
     return from_yaml("""
     -
       field:
@@ -92,9 +92,9 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list, observer, constraints):
+def scheduler(targets_list, observer, constraints):
     return Scheduler(observer,
-                     targets_list=field_list,
+                     targets_list=targets_list,
                      constraints=constraints)
 
 
