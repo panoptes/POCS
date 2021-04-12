@@ -2,6 +2,7 @@ channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
   - astroplan
+  - fastapi
   - holoviews
   - hvplot
   - ipywidgets
@@ -16,5 +17,6 @@ dependencies:
   - pyviz_comms
   - scipy
   - streamz
+  - uvicorn[standard]
   - pip:
       - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"

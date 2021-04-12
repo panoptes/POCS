@@ -1,6 +1,8 @@
 version: '3.7'
 services:
   pocs-config-server:
+    container_name: pocs-config-server
+    hostname: pocs-config-server
     image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
     build:
       context: ../
@@ -10,8 +12,6 @@ services:
     restart: on-failure
     init: true
     tty: true
-    container_name: pocs-config-server
-    hostname: pocs-config-server
     network_mode: host
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
@@ -21,8 +21,10 @@ services:
     volumes:
       - config:/panoptes-pocs/conf_files
       - panlog:/panoptes-pocs/logs
-  pocs-control:
+  pocs-power:
     image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
+    container_name: pocs-power
+    hostname: pocs-power
     depends_on:
       - pocs-config-server
     build:
@@ -34,13 +36,35 @@ services:
     tty: true
     stdin_open: true
     privileged: true
-    container_name: pocs-control
-    hostname: pocs-control
     network_mode: host
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
-    command: [ "wait-for-it localhost:6563 -- jupyter lab --no-browser --ip 0.0.0.0 -y" ]
+    command: [ "wait-for-it localhost:6563 -- uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.service.power:app" ]
+    volumes:
+      - panlog:/panoptes-pocs/logs
+      - json_store:/panoptes-pocs/json_store
+  pocs-control:
+    image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
+    container_name: pocs-control
+    hostname: pocs-control
+    depends_on:
+      - pocs-power
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    deploy:
+      mode: global
+    init: true
+    tty: true
+    stdin_open: true
+    privileged: true
+    network_mode: host
+    environment:
+      PANOPTES_CONFIG_HOST: 0.0.0.0
+      PANOPTES_CONFIG_PORT: 6563
+#    command: [ "wait-for-it localhost:6563 -- uvicorn --host 0.0.0.0 --port 6565 panoptes.pocs.service.pocs:app" ]
+    command: [ "wait-for-it localhost:6563 -- jupyter lab --ip 0.0.0.0 --port 6565" ]
     volumes:
       - config:/panoptes-pocs/conf_files
       - panlog:/panoptes-pocs/logs
@@ -63,7 +87,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/conf_files/
+      device: ${PANDIR}/conf_files
       o: bind
   json_store:
     driver: local

@@ -1,33 +1,52 @@
-from typing import Union
+from enum import Enum, auto
+from typing import Optional, Mapping
 
 from fastapi import FastAPI
+from panoptes.utils.serializers import to_json
+from pydantic import BaseModel
 
-from panoptes.utils.config.client import get_config
-from panoptes.pocs.sensor.power import PowerBoard
+from panoptes.pocs.mount import create_mount_simulator
 
 app = FastAPI()
 
-power_board = PowerBoard(**get_config('environment.power'))
+
+class ExposedMethods(Enum):
+    status = auto()
+    unpark = auto()
+    park = auto()
+
+
+class DeviceCommand(BaseModel):
+    command: str
+    params: Optional[Mapping]
+
+
+
+device = None
+
+
+@app.get('/setup')
+def setup():
+    global device
+    device = create_mount_simulator()
+
+    return f'Created: {device.status}'
 
 
 @app.get('/')
-async def root():
-    return power_board.status
+def root():
+    return f'Needs input: {device}'
 
 
-@app.get('/readings')
-async def readings():
-    return power_board.to_dataframe().to_dict()
+@app.get('/status')
+def status():
+    return f'Status: {device.status}'
 
 
-@app.get('/relays/{relay_index}/control/{action}')
-def control_relay(relay_index: Union[int, str], action: str = 'turn_on'):
-    try:
-        relay = power_board.relay_labels[relay_index]
-    except KeyError:
-        relay = power_board.relays[relay_index]
+@app.post('/command')
+def do_command(command: DeviceCommand):
+    cmd = getattr(device, command.command)
+    params = command.params or dict()
+    result = cmd(**params)
 
-    action_func = getattr(relay, action)
-    # Perform function.
-    action_func()
-    return power_board.status
+    return result

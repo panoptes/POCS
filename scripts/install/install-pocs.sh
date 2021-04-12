@@ -118,6 +118,7 @@ function system_deps() {
     byobu \
     gcc \
     htop \
+    httpie \
     make \
     nano \
     neovim \

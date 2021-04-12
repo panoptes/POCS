@@ -92,6 +92,10 @@ cameras:
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
+    name: Trucker Power
+    arduino_board_name: power_board
+    record_period: False
+    mean_interval: 5  # seconds
     port: socket://192.168.8.1:5050
     relays:
       RELAY_0:

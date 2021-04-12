@@ -103,7 +103,7 @@ class PowerBoard(PanBase):
                  name: str = 'Power Board',
                  relays: Dict[str, dict] = None,
                  reader_callback: Callable[[dict], dict] = None,
-                 dataframe_period: int = 2,
+                 dataframe_period: int = 1,
                  mean_interval: Optional[int] = 5,
                  record_period: Optional[bool] = False,
                  arduino_board_name: str = 'power_board',
