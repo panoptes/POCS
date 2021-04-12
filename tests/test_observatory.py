@@ -246,11 +246,10 @@ def test_standard_headers(observatory):
 
     observatory.scheduler.targets_file = None
     observatory.scheduler.targets_list = [
-        {
+        {"field": {
             'name': 'HAT-P-20',
-            'priority': '100',
-            'position': '07h27m39.89s +24d20m14.7s',
-        },
+            'position': '07h27m39.89s +24d20m14.7s'},
+         "observation": {'priority': '100'}}
     ]
 
     observatory.get_observation()
