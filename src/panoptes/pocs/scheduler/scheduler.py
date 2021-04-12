@@ -16,12 +16,12 @@ from panoptes.pocs.base import PanBase
 
 class BaseScheduler(PanBase):
 
-    def __init__(self, observer, fields_list=None, targets_file=None, constraints=None, *args,
+    def __init__(self, observer, targets_list=None, targets_file=None, constraints=None, *args,
                  **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
-            `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
+            `~pocs.scheduler.field.Field` configurations passed via the `targets_list`
             will not be saved but will instead be turned into
             `~pocs.scheduler.observation.Observations`.
 
@@ -31,7 +31,7 @@ class BaseScheduler(PanBase):
         Args:
             observer (`astroplan.Observer`): The physical location the scheduling
                 will take place from.
-            fields_list (list, optional): A list of valid field configurations.
+            targets_list (list, optional): A list of valid target configurations.
             targets_file (str): YAML file containing field parameters.
             constraints (list, optional): List of `Constraints` to apply to each observation.
             *args: Arguments to be passed to `PanBase`
@@ -43,10 +43,10 @@ class BaseScheduler(PanBase):
 
         self._observations = dict()
         self._current_observation = None
-        self._fields_list = fields_list
+        self._targets_list = targets_list
 
         self.targets_file = targets_file
-        # Setting the fields_list directly will clobber anything
+        # Setting the targets_list directly will clobber anything
         # from the targets_file. It comes second so we can specifically
         # clobber if passed.
 
@@ -151,7 +151,7 @@ class BaseScheduler(PanBase):
         self.read_target_list()
 
     @property
-    def fields_list(self):
+    def targets_list(self):
         """List of field configuration items
 
         A YAML list of config items, specifying a minimum of `name` and `position`
@@ -162,16 +162,16 @@ class BaseScheduler(PanBase):
         being set.
 
         Note:
-            Setting a new `fields_list` will clear all existing fields
+            Setting a new `targets_list` will clear all existing fields
 
         """
-        return self._fields_list
+        return self._targets_list
 
-    @fields_list.setter
-    def fields_list(self, new_list):
+    @targets_list.setter
+    def targets_list(self, new_list):
         self.clear_available_observations()
 
-        self._fields_list = new_list
+        self._targets_list = new_list
         self.read_target_list()
 
     def clear_available_observations(self):
@@ -226,7 +226,7 @@ class BaseScheduler(PanBase):
         try:
             # Make the field
             self.logger.debug(f"Creating {field_type_name} field for {target_config!r}")
-            field = load_module(field_type_name)(**target_config["field"])
+            field = load_module(field_type_name)(**target_config)
             self.logger.debug(f"Created field.name={field.name!r}")
 
             # Make the observation
@@ -264,16 +264,14 @@ class BaseScheduler(PanBase):
                 raise FileNotFoundError
 
             with open(self.targets_file, 'r') as f:
-                self._fields_list = from_yaml(f.read())
+                self._targets_list = from_yaml(f.read())
 
-        if self._fields_list is not None:
-            for target_config in self._fields_list:
+        if self._targets_list is not None:
+            for target_config in self._targets_list:
                 try:
                     self.add_observation(target_config)
-                except AssertionError:
-                    self.logger.debug("Skipping duplicate field.")
                 except Exception as e:
-                    self.logger.warning(f"Error adding field: {e!r}")
+                    self.logger.warning(f"Error adding target: {e!r}")
 
     def set_common_properties(self, time):
 
