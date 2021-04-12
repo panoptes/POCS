@@ -19,7 +19,7 @@ def constraints():
 
 
 @pytest.fixture
-def simple_fields_file():
+def simple_targets_file():
     return get_config('directories.targets') + '/simulator.yaml'
 
 
@@ -86,23 +86,23 @@ def test_scheduler_load_no_params():
         Scheduler()
 
 
-def test_no_observer(simple_fields_file):
+def test_no_observer(simple_targets_file):
     with pytest.raises(TypeError):
-        Scheduler(fields_file=simple_fields_file)
+        Scheduler(targets_file=simple_targets_file)
 
 
-def test_bad_observer(simple_fields_file, constraints):
+def test_bad_observer(simple_targets_file, constraints):
     with pytest.raises(TypeError):
-        Scheduler(fields_file=simple_fields_file,
+        Scheduler(targets_file=simple_targets_file,
                   constraints=constraints)
 
 
 def test_loading_target_file_check_file(observer,
-                                        simple_fields_file,
+                                        simple_targets_file,
                                         constraints):
     set_config('scheduler.check_file', False)
     scheduler = Scheduler(observer,
-                          fields_file=simple_fields_file,
+                          targets_file=simple_targets_file,
                           constraints=constraints)
     # Check the hidden property as the public one
     # will populate if not found.
@@ -110,11 +110,11 @@ def test_loading_target_file_check_file(observer,
 
 
 def test_loading_target_file_check_file(observer,
-                                        simple_fields_file,
+                                        simple_targets_file,
                                         constraints):
     set_config('scheduler.check_file', True)
     scheduler = Scheduler(observer,
-                          fields_file=simple_fields_file,
+                          targets_file=simple_targets_file,
                           constraints=constraints,
                           )
     # Check the hidden property as the public one
@@ -122,10 +122,10 @@ def test_loading_target_file_check_file(observer,
     assert len(scheduler._observations) > 0
 
 
-def test_loading_target_file_via_property(simple_fields_file,
+def test_loading_target_file_via_property(simple_targets_file,
                                           observer,
                                           constraints):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file,
+    scheduler = Scheduler(observer, targets_file=simple_targets_file,
                           constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None
@@ -137,11 +137,11 @@ def test_with_location(scheduler):
 
 def test_loading_bad_target_file(observer):
     with pytest.raises(FileNotFoundError):
-        Scheduler(observer, fields_file='/var/path/foo.bar')
+        Scheduler(observer, targets_file='/var/path/foo.bar')
 
 
-def test_new_fields_file(scheduler, simple_fields_file):
-    scheduler.fields_file = simple_fields_file
+def test_new_targets_file(scheduler, simple_targets_file):
+    scheduler.targets_file = simple_targets_file
     assert scheduler.observations is not None
 
 

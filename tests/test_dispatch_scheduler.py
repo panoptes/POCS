@@ -31,8 +31,8 @@ def field_file():
     scheduler_config = get_config('scheduler', default={})
 
     # Read the targets from the file
-    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets'), fields_file)
+    targets_file = scheduler_config.get('targets_file', 'simple.yaml')
+    fields_path = os.path.join(get_config('directories.targets'), targets_file)
 
     return fields_path
 
@@ -91,7 +91,7 @@ def scheduler(field_list, observer, constraints):
 @pytest.fixture
 def scheduler_from_file(field_file, observer, constraints):
     return Scheduler(observer,
-                     fields_file=field_file,
+                     targets_file=field_file,
                      constraints=constraints)
 
 
@@ -115,7 +115,7 @@ def test_get_observation_reread(field_list,
         f.write(yaml.dump(field_list))
 
     scheduler = Scheduler(observer,
-                          fields_file=temp_file,
+                          targets_file=temp_file,
                           constraints=constraints)
 
     # Get observation as above
@@ -131,7 +131,7 @@ def test_get_observation_reread(field_list,
         }]))
 
     # Get observation but reread file first
-    best = scheduler.get_observation(time=time, reread_fields_file=True)
+    best = scheduler.get_observation(time=time, reread_targets_file=True)
     assert best[0] != 'HD 189733'
 
 

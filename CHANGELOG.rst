@@ -252,7 +252,7 @@ Changed
 * Camera simulator cleanup. (#974)
 * Scheduler (#974)
 
-    * The ``fields_file`` is read when scheduler is created.
+    * The ``targets_file`` is read when scheduler is created.
 
 [0.7.4] - 2020-05-31
 --------------------

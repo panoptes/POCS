@@ -42,7 +42,7 @@ db:
   type: file
 scheduler:
   type: dispatch
-  fields_file: simulator.yaml
+  targets_file: simulator.yaml
   check_file: False
 mount:
   brand: ioptron
