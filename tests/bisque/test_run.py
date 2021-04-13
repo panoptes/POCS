@@ -41,7 +41,7 @@ def pocs(target):
     pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config,
                 db='panoptes_testing')
 
-    pocs.observatory.scheduler.targets_list = [
+    pocs.observatory.scheduler.fields_list = [
         {'name': 'Testing Target',
          'position': target.to_string(style='hmsdms'),
          'priority': '100',

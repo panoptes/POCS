@@ -244,8 +244,8 @@ def test_is_dark(observatory):
 def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
-    observatory.scheduler.targets_file = None
-    observatory.scheduler.targets_list = [
+    observatory.scheduler.fields_file = None
+    observatory.scheduler.fields_list = [
         {"field": {
             'name': 'HAT-P-20',
             'position': '07h27m39.89s +24d20m14.7s'},

@@ -27,8 +27,8 @@ def test_bad_scheduler_type(config_host, config_port):
     reset_conf(config_host, config_port)
 
 
-def test_bad_scheduler_targets_file(config_host, config_port):
-    set_config('scheduler.targets_file', 'foobar')
+def test_bad_scheduler_fields_file(config_host, config_port):
+    set_config('scheduler.fields_file', 'foobar')
     site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(observer=site_details['observer'])

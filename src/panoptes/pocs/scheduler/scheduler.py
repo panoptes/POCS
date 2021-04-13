@@ -16,12 +16,12 @@ from panoptes.pocs.base import PanBase
 
 class BaseScheduler(PanBase):
 
-    def __init__(self, observer, targets_list=None, targets_file=None, constraints=None, *args,
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
                  **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
-            `~pocs.scheduler.field.Field` configurations passed via the `targets_list`
+            `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
             will not be saved but will instead be turned into
             `~pocs.scheduler.observation.Observations`.
 
@@ -31,8 +31,8 @@ class BaseScheduler(PanBase):
         Args:
             observer (`astroplan.Observer`): The physical location the scheduling
                 will take place from.
-            targets_list (list, optional): A list of valid target configurations.
-            targets_file (str): YAML file containing field parameters.
+            fields_list (list, optional): A list of valid target configurations.
+            fields_file (str): YAML file containing field parameters.
             constraints (list, optional): List of `Constraints` to apply to each observation.
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
@@ -43,11 +43,11 @@ class BaseScheduler(PanBase):
 
         self._observations = dict()
         self._current_observation = None
-        self._targets_list = targets_list
+        self._fields_list = fields_list
 
-        self.targets_file = targets_file
-        # Setting the targets_list directly will clobber anything
-        # from the targets_file. It comes second so we can specifically
+        self.fields_file = fields_file
+        # Setting the fields_list directly will clobber anything
+        # from the fields_file. It comes second so we can specifically
         # clobber if passed.
 
         self.observer = observer
@@ -127,7 +127,7 @@ class BaseScheduler(PanBase):
         self._current_observation = new_observation
 
     @property
-    def targets_file(self):
+    def fields_file(self):
         """Field configuration file
 
         A YAML list of config items, specifying a minimum of `name` and `position`
@@ -138,20 +138,20 @@ class BaseScheduler(PanBase):
         being set.
 
         Note:
-            Setting a new `targets_file` will clear all existing fields
+            Setting a new `fields_file` will clear all existing fields
 
         """
-        return self._targets_file
+        return self._fields_file
 
-    @targets_file.setter
-    def targets_file(self, new_file):
+    @fields_file.setter
+    def fields_file(self, new_file):
         self.clear_available_observations()
 
-        self._targets_file = new_file
+        self._fields_file = new_file
         self.read_target_list()
 
     @property
-    def targets_list(self):
+    def fields_list(self):
         """List of field configuration items
 
         A YAML list of config items, specifying a minimum of `name` and `position`
@@ -162,16 +162,16 @@ class BaseScheduler(PanBase):
         being set.
 
         Note:
-            Setting a new `targets_list` will clear all existing fields
+            Setting a new `fields_list` will clear all existing fields
 
         """
-        return self._targets_list
+        return self._fields_list
 
-    @targets_list.setter
-    def targets_list(self, new_list):
+    @fields_list.setter
+    def fields_list(self, new_list):
         self.clear_available_observations()
 
-        self._targets_list = new_list
+        self._fields_list = new_list
         self.read_target_list()
 
     def clear_available_observations(self):
@@ -258,17 +258,17 @@ class BaseScheduler(PanBase):
 
     def read_target_list(self):
         """Reads the field file and creates valid `Observations` """
-        self.logger.debug(f'Reading fields from file: {self.targets_file}')
-        if self._targets_file is not None:
+        self.logger.debug(f'Reading fields from file: {self.fields_file}')
+        if self._fields_file is not None:
 
-            if not os.path.exists(self.targets_file):
+            if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
 
-            with open(self.targets_file, 'r') as f:
-                self._targets_list = from_yaml(f.read())
+            with open(self.fields_file, 'r') as f:
+                self._fields_list = from_yaml(f.read())
 
-        if self._targets_list is not None:
-            for target_config in self._targets_list:
+        if self._fields_list is not None:
+            for target_config in self._fields_list:
                 try:
                     self.add_observation(target_config)
                 except Exception as e:
