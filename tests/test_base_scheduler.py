@@ -247,3 +247,33 @@ def test_remove_field(scheduler):
 
     scheduler.remove_observation('HD 189733')
     assert orig_keys != list(scheduler.observations.keys())
+
+
+def test_new_field_custom_type(scheduler):
+
+    field_type = "panoptes.pocs.scheduler.field.Field"
+    obs_type = "panoptes.pocs.scheduler.observation.base.Observation"
+
+    orig_length = len(scheduler.observations)
+
+    obs_config = {"field": {'name': 'Wasp 33',
+                            'position': '02h26m51.0582s +37d33m01.733s',
+                            'type': field_type},
+                  "observation": {'priority': '100',
+                                  'type': obs_type}}
+
+    scheduler.add_observation(obs_config)
+    assert len(scheduler.observations) == orig_length + 1
+
+
+def test_new_field_custom_type_bad(scheduler):
+
+    field_type = "panoptes.pocs.scheduler.field.FakeFieldClass"
+
+    obs_config = {"field": {'name': 'Wasp 33',
+                            'position': '02h26m51.0582s +37d33m01.733s',
+                            'type': field_type},
+                  "observation": {'priority': '100'}}
+
+    with pytest.raises(error.InvalidObservation):
+        scheduler.add_observation(obs_config)
