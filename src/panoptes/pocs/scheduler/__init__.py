@@ -37,7 +37,7 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets'), fields_file)
+    fields_path = os.path.join(get_config('directories.fields'), fields_file)
     logger.debug(f'Creating scheduler: {fields_path}')
 
     if os.path.exists(fields_path):

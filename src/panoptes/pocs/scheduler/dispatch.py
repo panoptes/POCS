@@ -57,7 +57,8 @@ class Scheduler(BaseScheduler):
                     valid_obs[obs_name] += score
                     self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
 
-        self.logger.debug(f'Multiplying final scores by priority')
+        self.logger.debug('Multiplying final scores by priority')
+
         for obs_name, score in valid_obs.items():
             priority = self.observations[obs_name].priority
             new_score = score * priority
