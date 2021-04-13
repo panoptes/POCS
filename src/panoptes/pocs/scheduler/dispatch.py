@@ -25,7 +25,7 @@ class Scheduler(BaseScheduler):
         """
         if reread_fields_file:
             self.logger.debug("Rereading fields file")
-            self.read_target_list()
+            self.read_field_list()
 
         if time is None:
             time = current_time()

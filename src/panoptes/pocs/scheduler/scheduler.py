@@ -56,7 +56,7 @@ class BaseScheduler(PanBase):
 
         if self.get_config('scheduler.check_file', default=True):
             self.logger.debug("Reading target list.")
-            self.read_target_list()
+            self.read_field_list()
 
         # Items common to each observation that shouldn't be computed each time.
         self.common_properties = None
@@ -74,10 +74,10 @@ class BaseScheduler(PanBase):
         with `~pocs.scheduler.observation.Observation.field.field_name` as the key
 
         Note:
-            `read_target_list` is called if list is None
+            `read_field_list` is called if list is None
         """
         if self.has_valid_observations is False:
-            self.read_target_list()
+            self.read_field_list()
 
         return self._observations
 
@@ -134,7 +134,7 @@ class BaseScheduler(PanBase):
         for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
         the list of fields.
 
-        A file will be read by `~pocs.scheduler.priority.read_target_list` upon
+        A file will be read by `~pocs.scheduler.priority.read_field_list` upon
         being set.
 
         Note:
@@ -148,7 +148,7 @@ class BaseScheduler(PanBase):
         self.clear_available_observations()
 
         self._fields_file = new_file
-        self.read_target_list()
+        self.read_field_list()
 
     @property
     def fields_list(self):
@@ -158,7 +158,7 @@ class BaseScheduler(PanBase):
         for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
         the list of fields.
 
-        A file will be read by `~pocs.scheduler.priority.read_target_list` upon
+        A file will be read by `~pocs.scheduler.priority.read_field_list` upon
         being set.
 
         Note:
@@ -172,7 +172,7 @@ class BaseScheduler(PanBase):
         self.clear_available_observations()
 
         self._fields_list = new_list
-        self.read_target_list()
+        self.read_field_list()
 
     def clear_available_observations(self):
         """Reset the list of available observations"""
@@ -256,7 +256,7 @@ class BaseScheduler(PanBase):
             del self._observations[field_name]
             self.logger.debug(f"Observation removed: {obs}")
 
-    def read_target_list(self):
+    def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         self.logger.debug(f'Reading fields from file: {self.fields_file}')
         if self._fields_file is not None:
