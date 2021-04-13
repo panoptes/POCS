@@ -117,18 +117,6 @@ def test_bad_observer(simple_fields_file, constraints):
 def test_loading_target_file_check_file(observer,
                                         simple_fields_file,
                                         constraints):
-    set_config('scheduler.check_file', False)
-    scheduler = Scheduler(observer,
-                          fields_file=simple_fields_file,
-                          constraints=constraints)
-    # Check the hidden property as the public one
-    # will populate if not found.
-    assert len(scheduler._observations)
-
-
-def test_loading_target_file_check_file(observer,
-                                        simple_fields_file,
-                                        constraints):
     set_config('scheduler.check_file', True)
     scheduler = Scheduler(observer,
                           fields_file=simple_fields_file,
@@ -256,7 +244,7 @@ def test_new_field_custom_type(scheduler):
 
     orig_length = len(scheduler.observations)
 
-    obs_config = {"field": {'name': 'Wasp 33',
+    obs_config = {"field": {'name': 'Custom type',
                             'position': '02h26m51.0582s +37d33m01.733s',
                             'type': field_type},
                   "observation": {'priority': '100',
@@ -270,7 +258,7 @@ def test_new_field_custom_type_bad(scheduler):
 
     field_type = "panoptes.pocs.scheduler.field.FakeFieldClass"
 
-    obs_config = {"field": {'name': 'Wasp 33',
+    obs_config = {"field": {'name': 'Bad custom type',
                             'position': '02h26m51.0582s +37d33m01.733s',
                             'type': field_type},
                   "observation": {'priority': '100'}}
