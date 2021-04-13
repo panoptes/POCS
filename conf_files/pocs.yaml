@@ -30,7 +30,7 @@ directories:
   base: /panoptes-pocs
   images: /panoptes-pocs/images
   mounts: /panoptes-pocs/resources/mounts
-  targets: /panoptes-pocs/conf_files/targets
+  fields: /panoptes-pocs/conf_files/fields
 
 db:
   name: panoptes

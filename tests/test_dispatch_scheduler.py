@@ -32,7 +32,7 @@ def field_file():
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.targets'), fields_file)
+    fields_path = os.path.join(get_config('directories.fields'), fields_file)
 
     return fields_path
 
