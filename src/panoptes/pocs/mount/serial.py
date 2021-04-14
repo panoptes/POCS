@@ -33,10 +33,6 @@ class AbstractSerialMount(AbstractMount):
     def _port(self):
         return self.serial.ser.port
 
-    ##################################################################################################
-    # Methods
-    ##################################################################################################
-
     def connect(self):
         """Connects to the mount via the serial port (`self._port`)
 
@@ -95,10 +91,6 @@ class AbstractSerialMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug('Custom tracking rate sent')
 
-    ##################################################################################################
-    # Communication Methods
-    ##################################################################################################
-
     def write(self, cmd):
         """ Sends a string command to the mount via the serial port.
 
@@ -145,10 +137,6 @@ class AbstractSerialMount(AbstractMount):
                 pass
 
         return response
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
 
     def _connect(self):
         """ Sets up serial connection """

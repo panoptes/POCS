@@ -109,10 +109,6 @@ class AbstractMount(PanBase):
     def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
     @property
     def status(self):
         status = {}
@@ -213,10 +209,6 @@ class AbstractMount(PanBase):
     def tracking_rate(self, value):
         """ Set the tracking rate """
         self._tracking_rate = value
-
-    ##################################################################################################
-    # Methods
-    ##################################################################################################
 
     def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
@@ -465,10 +457,6 @@ class AbstractMount(PanBase):
 
                 self.logger.debug("Waiting for {} tracking adjustment".format(axis))
                 time.sleep(0.5)
-
-    ##################################################################################################
-    # Movement methods
-    ##################################################################################################
 
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
         """ Slews to given coordinates.
@@ -757,10 +745,6 @@ class AbstractMount(PanBase):
     def read(self, *args, **kwargs):
         raise NotImplementedError
 
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
-
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
         # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
@@ -799,7 +783,7 @@ class AbstractMount(PanBase):
                 self.logger.debug('No "commands_file" key found, attempting to use brand and model')
                 brand = self.get_config('mount.brand')
                 model = self.get_config('mount.model')
-                commands_file = f'{brand}/{model}.yaml'
+                commands_file = f'{brand}/{model}'
 
             commands_file = Path(f'{mount_dir}/{commands_file}.yaml')
 

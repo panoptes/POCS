@@ -97,7 +97,6 @@ class Mount(AbstractSerialMount):
         iOptron mounts are initialized by sending the following two commands
         to the mount:
 
-        * Version
         * MountInfo
 
         If the mount is successfully initialized, the `_setup_location_for_mount` method
@@ -140,23 +139,8 @@ class Mount(AbstractSerialMount):
     def park(self, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
-        This will first move the mount to the home position, then move the RA axis
-        in the direction specified at 0.9x sidereal rate (the fastest) for the number
-        of seconds requested. Then move the Dec axis in a similar manner. This should
-        be adjusted for the particular parking position desired.
-
         Note:
             When mount is parked no movement commands will be accepted.
-
-        Args:
-            ra_direction (str, optional): The direction to move the RA axis from
-                the home position. Defaults to 'west' for northern hemisphere.
-            ra_seconds (float, optional): The number of seconds at fastest move
-                speed to move the RA axis from the home position.
-            dec_direction (str, optional): The direction to move the Dec axis
-                from the home position. Defaults to 'south' for northern hemisphere.
-            dec_seconds (float, optional): The number of seconds at the fastest
-                move speed to move the Dec axis from the home position.
 
         Returns:
             bool: indicating success
@@ -179,9 +163,6 @@ class Mount(AbstractSerialMount):
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 
-    ############################################################################
-    # Private Methods
-    ############################################################################
     def _set_initial_rates(self):
         # Make sure we start at sidereal
         self.set_tracking_rate()
