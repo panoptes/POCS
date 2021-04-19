@@ -53,7 +53,7 @@ ARG pip_install_extras="[google,sensors]"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
-    /conda/bin/pip install -e "${pip_install_name}${pip_install_extras}" && \
+    /conda/bin/pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
     # Cleanup
     /conda/bin/pip cache purge && \
     /conda/bin/conda clean -tipsy && \
