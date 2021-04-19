@@ -10,7 +10,6 @@ from panoptes.pocs.scheduler.field import Field
 
 class Observation(PanBase):
 
-    @u.quantity_input(exptime=u.second)
     def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
                  filter_name=None, dark=False, *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
@@ -47,10 +46,12 @@ class Observation(PanBase):
         """
         super().__init__(*args, **kwargs)
 
+        exptime = get_quantity_value(exptime, u.second) * u.second
+
         if not isinstance(field, Field):
             raise TypeError(f"field must be a valid Field instance, got {type(field)}.")
 
-        if not exptime >= 0.0:  # 0 second exposures correspond to bias frames
+        if exptime < 0 * u.second:  # 0 second exposures correspond to bias frames
             raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
         if not min_nexp % exp_set_size == 0:

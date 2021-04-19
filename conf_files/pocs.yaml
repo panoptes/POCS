@@ -28,9 +28,9 @@ location:
 
 directories:
   base: /panoptes-pocs
-  images: /panoptes-pocs/images
-  mounts: /panoptes-pocs/resources/mounts
-  targets: /panoptes-pocs/conf_files/targets
+  images: images
+  mounts: resources/mounts
+  fields: conf_files/fields
 
 db:
   name: panoptes
@@ -49,10 +49,11 @@ scheduler:
   check_file: False
 
 mount:
-  # The brand and model determine the commands file to load from the resources/mounts dir.
   brand: ioptron
-  model: ieq30pro   #  cem40
+  model: ieq30pro  #  cem40
   driver: panoptes.pocs.mount.ioptron.ieq30pro
+  # Load a specific commands file relative to "mounts" dir.
+  commands_file: ioptron/v250
   serial:
     port: /dev/ttyUSB0
     timeout: 0.

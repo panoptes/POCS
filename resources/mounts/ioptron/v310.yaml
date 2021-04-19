@@ -1,0 +1,256 @@
+# iOptron RS-232 Command Language
+# Version 3.10
+# http://www.ioptron.com/v/ASCOM/RS-232_Command_Language2014V310.pdf
+---
+command_version: 3.10
+cmd_pre: ':'
+cmd_post: '#'
+
+# Telescope Information
+get_status:
+  cmd: GLS
+  response: sTTTTTTTTTTTTTTTTnnnnnn
+get_local_time:
+  cmd: GUT
+  response: sMMMnXXXXXXXXXXXXX
+
+get_coordinates:
+  cmd: GEP
+  response: sTTTTTTTTTTTTTTTTnn
+get_coordinates_altaz:
+  cmd: GAC
+  response: sTTTTTTTTTTTTTTTTT
+get_tracking_rate:
+  cmd: GTR
+  response: nnnnn
+get_park_position:
+  cmd: GPC
+  response: TTTTTTTTTTTTTTTTT
+get_max_slew_speed:
+  cmd: GSR
+  response: n
+get_altitude_limit:
+  cmd: GAL
+  response: snn
+.get_guide_rate:
+  cmd: AG
+  response: nnnn
+get_meridian_treatment:
+  cmd: GMT
+  response: nnn
+get_periodic_error_integrity:
+  cmd: GPE
+  response: 1
+get_periodic_error_recording:
+  cmd: GPR
+  response: 1
+
+# Movement rate setters (reset on power cycle).
+set_tracking_rate:
+  cmd: RT
+  params: n
+  response: 1
+set_sidereal_tracking:
+  cmd: RT0
+  response: 1
+set_lunar_tracking:
+  cmd: RT1
+  response: 1
+set_solar_tracking:
+  cmd: RT2
+  response: 1
+set_custom_tracking:
+  cmd: RT4
+  response: 1
+set_button_moving_rate:
+  cmd: SR
+  params: n
+  response: 1
+set_slew_speed_maximum:
+  cmd: MSR
+  params: n
+  response: 1
+set_custom_ra_tracking_rate:
+  cmd: RR
+  params: nnnnn
+  response: 1
+set_guide_rate:
+  cmd: RG
+  params: nnnn
+set_altitude_limit:
+  cmd: SAL
+  params: snn
+  response: 1
+set_meridian_treatment:
+  cmd: SMT
+  params: nnn
+  response: 1
+
+periodic_error_record_start:
+  cmd: SPR1
+  response: 1
+periodic_error_record_stop:
+  cmd: SPR0
+  response: 1
+period_error_playback_start:
+  cmd: SPP0
+  response: 1
+period_error_playback_sop:
+  cmd: SPP1
+  response: 1
+
+# Time setters.
+set_gmt_offset:
+  cmd: SG
+  params: sMMM
+  response: 1
+set_utc_time:
+  cmd: SUT
+  params: XXXXXXXXXXXXX
+  response: 1
+enable_daylight_savings:
+  cmd: SDS1
+  response: 1
+disable_daylight_savings:
+  cmd: SDS0
+  response: 1
+
+# Position setters.
+set_long:
+  cmd: SLO
+  params: sTTTTTTTT
+  response: 1
+set_lat:
+  cmd: SLA
+  params: sTTTTTTTT
+  response: 1
+set_hemisphere_north:
+  cmd: SHE1
+  response: 1
+set_hemisphere_south:
+  cmd: SHE0
+  response: 1
+
+# Tracking.
+slew_to_target:
+  cmd: MS1
+  response: 1
+alternate_slew_to_target:
+  cmd: MS2
+  response: 1
+slew_to_altaz:
+  cmd: MSS
+  response: 1
+stop_slewing:
+  cmd: Q
+  response: 1
+start_tracking:
+  cmd: ST0
+  response: 1
+stop_tracking:
+  cmd: ST1
+  response: 1
+query_positions:
+  cmd: QAP
+  response: n
+
+# Telescope motion.
+move_ra_positive:
+  cmd: ZS
+  params: XXXXX
+move_ra_negative:
+  cmd: ZQ
+  params: XXXXX
+move_dec_positive:
+  cmd: ZE
+  params: XXXXX
+move_dec_negative:
+  cmd: ZC
+  params: XXXXX
+move_ms_north:
+  cmd: Mn
+  params: XXXXX
+move_ms_east:
+  cmd: Me
+  params: XXXXX
+move_ms_south:
+  cmd: Ms
+  params: XXXXX
+move_ms_west:
+  cmd: Mw
+  params: XXXXX
+move_north:
+  cmd: mn
+move_east:
+  cmd: me
+move_south:
+  cmd: ms
+move_west:
+  cmd: mw
+stop_moving:
+  cmd: q
+  response: 1
+stop_moving_horizontal:
+  cmd: qR
+  response: 1
+stop_moving_vertical:
+  cmd: qD
+  response: 1
+
+# Park.
+park:
+  cmd: MP1
+  response: 1
+unpark:
+  cmd: MP0
+  response: 1
+slew_to_home:
+  cmd: MH
+  response: 1
+search_for_home:
+  cmd: MSH
+  response: 1
+set_park_azimuth:
+  cmd: SPA
+  params: TTTTTTTTT
+set_park_altitude:
+  cmd: SPH
+  params: TTTTTTTT
+
+# Telescope Position
+calibrate_mount:
+  cmd: CM
+  response: 1
+set_ra:
+  cmd: SRA
+  params: TTTTTTTTT
+  response: 1
+set_dec:
+  cmd: Sd
+  params: sTTTTTTTT
+  response: 1
+set_altitude:
+  cmd: Sas
+  params: TTTTTTTT
+  response: 1
+set_azimuth:
+  cmd: Sz
+  params: TTTTTTTTT
+  response: 1
+set_zero_position:
+  cmd: SZP
+  response: 1
+
+# Misc
+reset_settings:
+  cmd: RAS
+  response: 1
+firmware_mainboard:
+  cmd: FW1
+  response: YYMMDDYYMMDD
+firmware_radec:
+  cmd: FW2
+  response: YYMMDDYYMMDD
+mount_info:
+  cmd: MountInfo
+  response: '0030'

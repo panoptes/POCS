@@ -109,15 +109,11 @@ class AbstractMount(PanBase):
     def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
     @property
     def status(self):
         status = {}
         try:
-            status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
+            status['tracking_rate'] = f'{self.tracking_rate:0.04f}'
             status['ra_guide_rate'] = self.ra_guide_rate
             status['dec_guide_rate'] = self.dec_guide_rate
             status['movement_speed'] = self.movement_speed
@@ -214,10 +210,6 @@ class AbstractMount(PanBase):
         """ Set the tracking rate """
         self._tracking_rate = value
 
-    ##################################################################################################
-    # Methods
-    ##################################################################################################
-
     def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
 
@@ -247,16 +239,16 @@ class AbstractMount(PanBase):
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')
-        self.logger.debug("LST: {}".format(lst))
-        self.logger.debug("HA: {}".format(ha))
+        self.logger.debug(f'LST: {lst}')
+        self.logger.debug(f'HA: {ha}')
 
         ra = lst - ha
-        self.logger.debug("RA: {}".format(ra))
-        self.logger.debug("Dec: {}".format(dec))
+        self.logger.debug(f'RA: {ra}')
+        self.logger.debug(f'Dec: {dec}')
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.debug(f'Park Coordinates RA-Dec: {self._park_coordinates}')
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -466,10 +458,6 @@ class AbstractMount(PanBase):
                 self.logger.debug("Waiting for {} tracking adjustment".format(axis))
                 time.sleep(0.5)
 
-    ##################################################################################################
-    # Movement methods
-    ##################################################################################################
-
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
         """ Slews to given coordinates.
 
@@ -637,7 +625,7 @@ class AbstractMount(PanBase):
             self.logger.warning('Problem with slew_to_park')
 
         while not self.at_mount_park:
-            self.status
+            self._update_status()
             time.sleep(2)
 
         self._is_parked = True
@@ -668,24 +656,23 @@ class AbstractMount(PanBase):
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
 
-        move_command = 'move_{}'.format(direction)
-        self.logger.debug("Move command: {}".format(move_command))
+        move_command = f'move_{direction}'
+        self.logger.debug(f'Move command: {move_command}')
 
         try:
             now = current_time()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.logger.debug(f'Moving {direction} for {seconds} seconds. ')
             self.query(move_command)
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
+            self.logger.debug(f'{(current_time() - now).sec} seconds passed before stop')
             self.query('stop_moving')
-            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+            self.logger.debug(f'{(current_time() - now).sec} seconds passed total')
         except KeyboardInterrupt:
-            self.logger.warning("Keyboard interrupt, stopping movement.")
+            self.logger.warning('Keyboard interrupt, stopping movement.')
         except Exception as e:
-            self.logger.warning(
-                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(f'Problem moving command! Make sure mount has stopped moving: {e}')
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -733,7 +720,7 @@ class AbstractMount(PanBase):
             '101503'
 
         Returns:
-            bool: indicating success
+            str: The response from the mount.
 
         Deleted Parameters:
             *args: Parameters to be sent with command if required.
@@ -745,21 +732,18 @@ class AbstractMount(PanBase):
 
         response = self.read(**kwargs)
 
+        # TODO: Add in better checking of expected response.
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):
-        #     self.logger.warning("Expected: {}\tGot: {}".format(expected_response, response))
+        #     self.logger.warning(f"Expected: {expected_response} Got: {response}")
 
         return response
 
     def write(self, cmd):
         raise NotImplementedError
 
-    def read(self, *args):
+    def read(self, *args, **kwargs):
         raise NotImplementedError
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
@@ -772,10 +756,9 @@ class AbstractMount(PanBase):
 
         if cmd_info is not None:
             response = cmd_info.get('response')
-            # self.logger.debug('Mount Command Response: {}'.format(response))
+            self.logger.trace(f'Mount Command Response: {response}')
         else:
-            raise error.InvalidMountCommand(
-                'No result for command {}'.format(cmd))
+            raise error.InvalidMountCommand(f'No result for command {cmd}')
 
         return response
 
@@ -792,14 +775,20 @@ class AbstractMount(PanBase):
         self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
-            brand = self.get_config('mount.brand')
-            model = self.get_config('mount.model')
             mount_dir = self.get_config('directories.mounts')
 
-            commands_file = Path(mount_dir) / brand / f'{model}.yaml'
+            commands_file = self.get_config('mount.commands_file')
 
+            if commands_file is None:
+                self.logger.debug('No "commands_file" key found, attempting to use brand and model')
+                brand = self.get_config('mount.brand')
+                model = self.get_config('mount.model')
+                commands_file = f'{brand}/{model}'
+
+            commands_file = Path(f'{mount_dir}/{commands_file}.yaml')
+
+            self.logger.info(f"Loading mount commands file: {commands_file}")
             try:
-                self.logger.info(f"Loading mount commands file: {commands_file}")
                 with commands_file.open() as f:
                     commands.update(from_yaml(f.read(), parse=False))
                     self.logger.debug(f"Mount commands updated from {commands_file}")
@@ -820,10 +809,10 @@ class AbstractMount(PanBase):
     def _get_command(self, cmd, params=None):  # pragma: no cover
         raise NotImplementedError
 
-    def _mount_coord_to_skycoord(self):  # pragma: no cover
+    def _mount_coord_to_skycoord(self, coords_str):  # pragma: no cover
         raise NotImplementedError
 
-    def _skycoord_to_mount_coord(self):  # pragma: no cover
+    def _skycoord_to_mount_coord(self, coords):  # pragma: no cover
         raise NotImplementedError
 
     def _update_status(self):  # pragma: no cover
