@@ -35,7 +35,7 @@ directories:
   images: images
   data: data
   resources: resources/
-  targets: conf_files/targets
+  fields: conf_files/fields
   mounts: resources/mounts
 db:
   name: panoptes_testing
