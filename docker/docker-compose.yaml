@@ -12,7 +12,8 @@ services:
     tty: true
     container_name: pocs-config-server
     hostname: pocs-config-server
-    network_mode: host
+    ports:
+      - "6563:6563"
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
@@ -46,6 +47,7 @@ services:
       - panlog:/panoptes-pocs/logs
       - images:/panoptes-pocs/images
       - json_store:/panoptes-pocs/json_store
+      - devices:/dev/bus/usb
 volumes:
   panlog:
     driver: local
@@ -70,4 +72,10 @@ volumes:
     driver_opts:
       type: none
       device: ${PANDIR}/json_store
+      o: bind
+  devices:
+    driver: local
+    driver_opts:
+      type: none
+      device: /dev/bus/usb
       o: bind

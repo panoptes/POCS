@@ -126,11 +126,11 @@ class Mount(AbstractSerialMount):
             bool:   Returns the value from `self.is_initialized`.
         """
         if not self.is_connected:
-            self.logger.info('Connecting to mount {}'.format(__name__))
+            self.logger.info(f'Connecting to mount {__name__}')
             self.connect()
 
         if self.is_connected and not self.is_initialized:
-            self.logger.info('Initializing {} mount'.format(__name__))
+            self.logger.info(f'Initializing {__name__} mount')
 
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `query` method will test
@@ -146,8 +146,8 @@ class Mount(AbstractSerialMount):
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
-                self.logger.debug('{} != {}'.format(actual_version, expected_version))
-                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
+                self.logger.debug(f'{actual_version} != {expected_version}')
+                self.logger.debug(f'{actual_mount_info} != {expected_mount_info}')
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self._is_initialized = True
@@ -155,7 +155,7 @@ class Mount(AbstractSerialMount):
                 if set_rates:
                     self._set_initial_rates()
 
-        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+        self.logger.info(f'Mount initialized: {self.is_initialized}')
 
         return self.is_initialized
 
@@ -219,13 +219,12 @@ class Mount(AbstractSerialMount):
 
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
-        self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
+        self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
         self.query('set_guide_rate', '9090')
         guide_rate = self.query('get_guide_rate')
         self.ra_guide_rate = int(guide_rate[0:2]) / 100
         self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug("Mount guide rate: {} {}".format(
-            self.ra_guide_rate, self.dec_guide_rate))
+        self.logger.debug(f"Mount guide rate: {self.ra_guide_rate} {self.dec_guide_rate}")
 
     def _setup_location_for_mount(self):
         """
