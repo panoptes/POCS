@@ -28,6 +28,11 @@ async def setup_pocs():
     print(f'POCS process started on {run_proc!r}')
 
 
+@app.on_event('shutdown')
+async def shutdown_pocs():
+    pocs.power_down()
+
+
 def get_status():
     status = pocs.status
     status['is_thread_running'] = run_proc.is_alive()
