@@ -2,6 +2,10 @@ channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
   - astroplan
+  - bokeh
+  - fastapi
+  - google-apitools
+  - gsutil
   - holoviews
   - hvplot
   - ipywidgets

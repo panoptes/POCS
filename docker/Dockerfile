@@ -44,9 +44,13 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
 
+FROM pocs-base AS pocs-dependencies
+
 # Update conda environment with dependencies.
 COPY docker/environment.yaml .
 RUN /conda/bin/conda env update -n base -f environment.yaml
+
+FROM pocs-dependencies AS pocs-service
 
 ARG pip_install_name="."
 ARG pip_install_extras="[google,sensors]"
