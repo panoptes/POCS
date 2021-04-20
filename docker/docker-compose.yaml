@@ -64,8 +64,7 @@ services:
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
-    #    command: [ "wait-for-it localhost:6563 -- uvicorn --host 0.0.0.0 --port 6565 panoptes.pocs.service.pocs:app" ]
-    command: [ "wait-for-it localhost:6563 -- jupyter lab --ip 0.0.0.0 --port 6565 --no-browser" ]
+    command: [ "wait-for-it localhost:6563 -- uvicorn --host 0.0.0.0 --port 6565 panoptes.pocs.service.pocs:app" ]
     volumes:
       - config:/panoptes-pocs/conf_files
       - panlog:/panoptes-pocs/logs
