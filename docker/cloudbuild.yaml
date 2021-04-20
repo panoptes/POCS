@@ -4,7 +4,7 @@ options:
 timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
-  _DEPS_NAME: pocs-dependencies
+  _DEPS_NAME: panoptes-pocs-dependencies
   _IMAGE_NAME: panoptes-pocs
   _PLATFORM: linux/arm64,linux/amd64
 

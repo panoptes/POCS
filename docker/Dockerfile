@@ -1,6 +1,6 @@
 ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
-FROM ${image_url}:${image_tag} AS pocs-base
+FROM ${image_url}:${image_tag} AS panoptes-pocs-base
 
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
 
@@ -24,7 +24,7 @@ WORKDIR "${APP_DIR}"
 USER "${userid}"
 
 # Dependencies and directories.
-RUN echo "Building from ${image_name}:${image_tag}" && \
+RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
         gphoto2 \
@@ -44,23 +44,25 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
 
-FROM pocs-base AS pocs-dependencies
+FROM pocs-base AS panoptes-pocs-dependencies
 
 # Update conda environment with dependencies.
 COPY docker/environment.yaml .
-RUN /conda/bin/conda env update -n base -f environment.yaml
+RUN echo "Installing environment" && \
+    conda-env update -n base -f environment.yaml && \
+    conda clean -tipy --force-pkgs-dirs
+
+FROM pocs-dependencies AS panoptes-pocs
 
 FROM pocs-dependencies AS pocs-service
 
 ARG pip_install_name="."
-ARG pip_install_extras="[google,sensors]"
+ARG pip_install_extras="[google]"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
-    /conda/bin/pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
+    pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
     # Cleanup
-    /conda/bin/pip cache purge && \
-    /conda/bin/conda clean -tipsy && \
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config && \
     sudo apt-get autoclean --yes && \
