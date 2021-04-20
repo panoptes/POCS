@@ -4,6 +4,7 @@ options:
 timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
+  _DEPS_NAME: pocs-dependencies
   _IMAGE_NAME: panoptes-pocs
   _PLATFORM: linux/arm64,linux/amd64
 
@@ -12,7 +13,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies || exit 0' ]
+    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME} || exit 0' ]
     waitFor: [ "-" ]
 
   # Set up multiarch support
@@ -50,9 +51,9 @@ steps:
       - "build"
       - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
-      - "--target=pocs-dependencies"
-      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
+      - "--target=${_DEPS_NAME}"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
       - "--push"
       - "."
     waitFor: [ "build-builder" ]
@@ -68,7 +69,7 @@ steps:
       - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
       - "--push"
       - "."
     waitFor: [ "build-images-deps" ]
