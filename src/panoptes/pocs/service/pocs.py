@@ -1,25 +1,37 @@
 import threading
-from typing import Optional, List
 
 from fastapi import FastAPI
-from panoptes.pocs.camera import create_cameras_from_config
 
 from panoptes.pocs.core import POCS
-from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
-from panoptes.utils.serializers import to_json, from_json
 
 app = FastAPI()
 
-# Long-lived pocs object
-observatory = Observatory()
-pocs: POCS = POCS(observatory=observatory)
-run_proc: threading.Thread = threading.Thread(target=pocs.run, daemon=True)
+pocs: POCS
+run_proc: threading.Thread
+
+
+@app.on_event('startup')
+async def setup_pocs():
+    # Long-lived pocs object
+    mount = create_mount_from_config()
+    scheduler = create_scheduler_from_config()
+    cameras = create_cameras_from_config()
+
+    observatory = Observatory(mount=mount, scheduler=scheduler, cameras=cameras)
+
+    pocs = POCS(observatory=observatory)
+    run_proc = threading.Thread(target=pocs.run, daemon=True)
+    print(f'POCS process started on {run_proc!r}')
 
 
 def get_status():
-    return f'Status {pocs.status}'
+    status = pocs.status
+    status['is_thread_running'] = run_proc.is_alive()
+    return f'Status {status}'
 
 
 @app.get('/')
@@ -44,24 +56,3 @@ async def stop_states():
     pocs.do_states = False
     run_proc.join(timeout=60)
     return run_proc.is_alive()
-
-
-@app.get('/setup-hardware')
-def setup_hardware():
-    cameras = create_cameras_from_config()
-    for cam_name, camera in cameras.items():
-        pocs.observatory.add_camera(cam_name, camera)
-    pocs.observatory.mount = create_mount_from_config()
-    pocs.observatory.scheduler = create_scheduler_from_config()
-
-
-@app.post('/add-simulator')
-def add_simulator(simulator_name: str):
-    simulator_lookup = {
-        'mount': create_mount_from_config
-    }
-
-    try:
-        simulator_lookup[simulator_name]()
-    except:
-        pocs.logger.warning("Can't create simulator.")
