@@ -16,7 +16,7 @@ USER "${userid}"
 
 # Set up some common directories
 WORKDIR /tmp
-RUN echo "Building from ${image_name}:${image_tag}" && \
+RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get -y full-upgrade && \
     sudo apt-get install -y --no-install-recommends \
