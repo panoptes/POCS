@@ -16,7 +16,7 @@ USER "${userid}"
 
 # Set up some common directories
 WORKDIR /tmp
-RUN echo "Building from ${image_name}:${image_tag}" && \
+RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get -y full-upgrade && \
     sudo apt-get install -y --no-install-recommends \
@@ -29,16 +29,16 @@ RUN echo "Building from ${image_name}:${image_tag}" && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
 COPY docker/environment.yaml .
-RUN /conda/bin/conda env update -n base -f environment.yaml
+RUN conda env update -n base -f environment.yaml
 
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
-RUN /conda/bin/pip install -e ".${pip_extras}" && \
+RUN pip install -e ".${pip_extras}" && \
     # panoptes-utils from dev.
-    /conda/bin/pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
+    pip install --no-cache-dir "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
-    /conda/bin/pip cache purge && \
-    /conda/bin/conda clean -tipy && \
+    pip cache purge && \
+    conda clean -tipy && \
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config git && \
     sudo apt-get autoclean --yes && \
