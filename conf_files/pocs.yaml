@@ -95,7 +95,7 @@ environment:
   power:
     name: Trucker Power
     arduino_board_name: power_board
-    record_period: False
+    record_interval: 5  # seconds
     mean_interval: 5  # seconds
     port: socket://192.168.8.1:5050
     relays:
