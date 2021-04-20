@@ -1,3 +1,4 @@
+import time
 from typing import Union
 
 from fastapi import FastAPI
@@ -30,4 +31,5 @@ def control_relay(relay_index: Union[int, str], action: str = 'turn_on'):
     action_func = getattr(relay, action)
     # Perform function.
     action_func()
+    time.sleep(1)  # Give it time to toggle before returning status
     return power_board.status
