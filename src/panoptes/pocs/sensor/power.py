@@ -1,5 +1,6 @@
 import threading
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional, Dict, List, Callable
@@ -137,6 +138,8 @@ class PowerBoard(PanBase):
         super().__init__(*args, **kwargs)
         if port is None:
             port = PowerBoard.lookup_port(**kwargs)
+            if port is None:
+                raise error.NotFound('Failed to automatically find port for PowerBoard.')
             self.logger.info(f'Guessing that arduino is on {port=}')
 
         self.port = port
@@ -341,4 +344,8 @@ class PowerBoard(PanBase):
         https://github.com/arduino/Arduino/blob/1.8.0/hardware/arduino/avr/boards.txt#L51-L58
 
         """
-        return find_serial_port(vendor_id, product_id)
+        dev_path = None
+        with suppress(error.NotFound):
+            dev_path = find_serial_port(vendor_id, product_id)
+
+        return dev_path

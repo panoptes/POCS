@@ -2,13 +2,17 @@ import time
 from typing import Union
 
 from fastapi import FastAPI
-
-from panoptes.utils.config.client import get_config
 from panoptes.pocs.sensor.power import PowerBoard
+from panoptes.utils.config.client import get_config
 
 app = FastAPI()
+power_board: PowerBoard
 
-power_board = PowerBoard(**get_config('environment.power'))
+
+@app.on_event('startup')
+async def startup():
+    global power_board
+    power_board = PowerBoard(**get_config('environment.power', {}))
 
 
 @app.get('/')
