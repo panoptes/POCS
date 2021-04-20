@@ -172,8 +172,6 @@ class PowerBoard(PanBase):
                                                datafn=self.to_dataframe)
 
         self._mean_interval = mean_interval
-        if record_interval:
-            threading.Timer(record_interval, self.record).start()
 
         self.logger.info(f'Power board initialized')
 
