@@ -35,7 +35,7 @@ WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
 RUN pip install -e ".${pip_extras}" && \
     # panoptes-utils from dev.
-    pip install "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
+    pip install --no-cache-dir "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
     # Cleanup
     pip cache purge && \
     conda clean -tipy && \
