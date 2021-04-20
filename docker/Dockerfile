@@ -1,6 +1,6 @@
 ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
-FROM ${image_url}:${image_tag} AS pocs-base
+FROM ${image_url}:${image_tag} AS panoptes-pocs-base
 
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
 
@@ -44,7 +44,7 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
 
-FROM pocs-base AS pocs-dependencies
+FROM pocs-base AS panoptes-pocs-dependencies
 
 # Update conda environment with dependencies.
 COPY docker/environment.yaml .
@@ -52,7 +52,7 @@ RUN echo "Installing environment" && \
     conda-env update -n base -f environment.yaml && \
     conda clean -tipy --force-pkgs-dirs
 
-FROM pocs-dependencies AS pocs-service
+FROM pocs-dependencies AS panoptes-pocs
 
 ARG pip_install_name="."
 ARG pip_install_extras="[google]"
