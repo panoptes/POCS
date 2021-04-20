@@ -23,6 +23,8 @@ async def setup_pocs():
 
     observatory = Observatory(mount=mount, scheduler=scheduler, cameras=cameras)
 
+    global pocs
+    global run_proc
     pocs = POCS(observatory=observatory)
     run_proc = threading.Thread(target=pocs.run, daemon=True)
     print(f'POCS process started on {run_proc!r}')
