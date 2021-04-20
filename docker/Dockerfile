@@ -50,13 +50,12 @@ FROM pocs-base AS pocs-dependencies
 COPY docker/environment.yaml .
 RUN echo "Installing environment" && \
     conda-env update -n base -f environment.yaml && \
-    conda clean -tipsy && \
-    conda clean -y --force-pkgs-dirs
+    conda clean -tipy --force-pkgs-dirs
 
 FROM pocs-dependencies AS pocs-service
 
 ARG pip_install_name="."
-ARG pip_install_extras="[google,sensors]"
+ARG pip_install_extras="[google]"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
