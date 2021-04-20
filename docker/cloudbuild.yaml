@@ -12,7 +12,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME} || exit 0' ]
+    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies || exit 0' ]
     waitFor: [ "-" ]
 
   # Set up multiarch support
@@ -40,6 +40,23 @@ steps:
       - "--driver=docker-container"
     waitFor: [ "setup-buildx" ]
 
+  # Build the image dependencies
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-images-deps"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "buildx"
+      - "build"
+      - "--platform=${_PLATFORM}"
+      - "-f=docker/Dockerfile"
+      - "--target=pocs-dependencies"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
+      - "--push"
+      - "."
+    waitFor: [ "build-builder" ]
+
   # Build the image.
   - name: "gcr.io/cloud-builders/docker"
     id: "build-images"
@@ -51,7 +68,7 @@ steps:
       - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:pocs-dependencies"
       - "--push"
       - "."
-    waitFor: [ "build-builder" ]
+    waitFor: [ "build-images-deps" ]
