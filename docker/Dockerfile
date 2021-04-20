@@ -24,7 +24,7 @@ WORKDIR "${APP_DIR}"
 USER "${userid}"
 
 # Dependencies and directories.
-RUN echo "Building from ${image_name}:${image_tag}" && \
+RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
         gphoto2 \
@@ -48,7 +48,10 @@ FROM pocs-base AS pocs-dependencies
 
 # Update conda environment with dependencies.
 COPY docker/environment.yaml .
-RUN /conda/bin/conda env update -n base -f environment.yaml
+RUN echo "Installing environment" && \
+    conda-env update -n base -f environment.yaml && \
+    conda clean -tipsy && \
+    conda clean -y --force-pkgs-dirs
 
 FROM pocs-dependencies AS pocs-service
 
@@ -57,10 +60,8 @@ ARG pip_install_extras="[google,sensors]"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
-    /conda/bin/pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
+    pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
     # Cleanup
-    /conda/bin/pip cache purge && \
-    /conda/bin/conda clean -tipsy && \
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config && \
     sudo apt-get autoclean --yes && \
