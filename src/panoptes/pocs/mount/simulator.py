@@ -208,4 +208,4 @@ class Mount(AbstractMount):
         return False
 
     def _setup_commands(self, commands):
-        return commands
+        self.commands = commands

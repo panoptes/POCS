@@ -54,8 +54,6 @@ RUN echo "Installing environment" && \
 
 FROM panoptes-pocs-dependencies AS panoptes-pocs
 
-FROM pocs-dependencies AS pocs-service
-
 ARG pip_install_name="."
 ARG pip_install_extras="[google]"
 

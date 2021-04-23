@@ -124,7 +124,7 @@ class AbstractSerialMount(AbstractMount):
 
         response = self.serial.read()
 
-        self.logger.debug(f'Mount Read: {response}')
+        self.logger.trace(f'Mount Read: {response}')
 
         # Strip the line ending (#) and return
         response = response.rstrip('#')

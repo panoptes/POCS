@@ -48,9 +48,7 @@ class AbstractMount(PanBase):
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
-        if commands is None:
-            commands = dict()
-        self.commands = self._setup_commands(commands)
+        self._setup_commands(commands)
         self.logger.debug("Mount commands set up")
 
         # Set the initial location
@@ -772,11 +770,11 @@ class AbstractMount(PanBase):
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
-        self.logger.debug('Setting up commands for mount')
+        commands = commands or dict()
+        self.logger.debug('Setting up commands for mount.')
 
         if len(commands) == 0:
             mount_dir = self.get_config('directories.mounts')
-
             commands_file = self.get_config('mount.commands_file')
 
             if commands_file is None:
@@ -798,9 +796,9 @@ class AbstractMount(PanBase):
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
+        self.commands = commands
 
         self.logger.debug('Mount commands set up')
-        return commands
 
     def _set_zero_position(self):  # pragma: no cover
         """ Sets the current position as the zero (home) position. """

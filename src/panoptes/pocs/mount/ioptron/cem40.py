@@ -66,6 +66,7 @@ class Mount(AbstractSerialMount):
     """
 
     def __init__(self, *args, **kwargs):
+        self._mount_version = '0040'
         super(Mount, self).__init__(*args, **kwargs)
         self.logger.info('Creating iOptron mount')
 
@@ -75,7 +76,6 @@ class Mount(AbstractSerialMount):
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self._state = MountState.UNKNOWN
-        self._mount_version = '0040'
 
         self._raw_status = None
         self._status_format = re.compile(
@@ -333,7 +333,7 @@ class Mount(AbstractSerialMount):
         return status
 
     def _setup_commands(self, commands):
-        super(Mount, self)._setup_commands(commands)
+        super()._setup_commands(commands)
 
         # Update the `MountInfo` response if one has been set on the class.
         with suppress(AttributeError):
