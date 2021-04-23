@@ -1,4 +1,3 @@
-import threading
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -106,7 +105,6 @@ class PowerBoard(PanBase):
                  reader_callback: Callable[[dict], dict] = None,
                  dataframe_period: int = 1,
                  mean_interval: Optional[int] = 5,
-                 record_interval: Optional[bool] = False,
                  arduino_board_name: str = 'power_board',
                  *args, **kwargs):
         """Initialize the power board.
@@ -130,8 +128,6 @@ class PowerBoard(PanBase):
                 `PeriodicDataFrame`, default `2` (seconds).
             mean_interval (int): When taking a rolling mean, use this many seconds,
                 default 5.
-            record_interval (bool): If True, record values to database every
-                mean_interval seconds, if False (the default), don't record.
             arduino_board_name (str): The name of the arduino board to match in
                 the callback and the collection name for storing in `record.
         """

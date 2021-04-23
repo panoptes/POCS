@@ -1,16 +1,21 @@
 import time
+from enum import Enum
 from typing import Union
 
 from fastapi import FastAPI
-from fastapi_utils.tasks import repeat_every
 from panoptes.pocs.sensor.power import PowerBoard
 from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
 
 
+class RelayAction(str, Enum):
+    turn_on = 'turn_on'
+    turn_off = 'turn_off'
+
+
 class RelayCommand(BaseModel):
     relay: Union[str, int]
-    command: str
+    command: RelayAction
 
 
 app = FastAPI()
@@ -24,7 +29,6 @@ async def startup():
 
 
 @app.get('/')
-@repeat_every(seconds=60)
 async def root():
     return power_board.status
 
@@ -39,7 +43,7 @@ def control_relay(relay_command: RelayCommand):
     return do_command(relay_command)
 
 
-@app.get('/relays/{relay}/control/{command}')
+@app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
     return do_command(RelayCommand(relay=relay, command=command))
 

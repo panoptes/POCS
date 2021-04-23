@@ -38,7 +38,7 @@ async def shutdown_pocs():
 def get_status():
     status = pocs.status
     status['is_thread_running'] = run_proc.is_alive()
-    return f'Status {status}'
+    return status
 
 
 @app.get('/')
