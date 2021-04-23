@@ -11,7 +11,7 @@ app.add_typer(power.app, name="power", help='Manage the power board.')
 
 
 @app.callback()
-def main(ctx: typer.Context,
+def main(context: typer.Context,
          config_host: str = 'http://localhost',
          config_port: int = 6563,
          verbose: bool = False):
@@ -21,7 +21,7 @@ def main(ctx: typer.Context,
         'verbose': verbose,
     })
     if verbose:
-        typer.echo(f'Command options: {state!r}')
+        typer.echo(f'Command options from main: {context.params!r}')
 
 
 if __name__ == "__main__":
