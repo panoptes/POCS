@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 
 class State(BaseModel):
-    host: str = 'http://localhost'
+    host: str = '127.0.0.1'
     port: int = 6564
     verbose: bool = False
 
