@@ -1,15 +1,26 @@
 from pprint import pprint
-from typing import Optional
+from typing import Optional, Dict
 
-import requests.exceptions
 from panoptes.pocs.utils.logger import get_logger
 
 import typer
 
 from panoptes.utils.config.client import get_config, set_config, server_is_running
+from pydantic import BaseModel
+
+
+class State(BaseModel):
+    host: str = 'http://localhost'
+    port: int = 6563
+    verbose: bool = False
+
+    @property
+    def url(self):
+        return f'{self.host}:{self.port}'
+
 
 app = typer.Typer()
-state = {'verbose': False, 'host': 'http://localhost', 'port': 6563}
+state: Dict[str, Optional[State]] = {'metadata': None}
 logger = get_logger(stderr_log_level='ERROR')
 
 
@@ -25,17 +36,14 @@ def server_running():
 
 
 @app.callback()
-def main(ctx: typer.Context,
-         host: str = typer.Option('http://localhost', help='Host of running config server.'),
-         port: int = typer.Option(6563, help='Port of running config server.'),
-         verbose: bool = False):
-    state.update({
-        'host': host,
-        'port': port,
-        'verbose': verbose,
-    })
+def main(context: typer.Context):
+    context.params.update(context.parent.params)
+    verbose = context.params['verbose']
+    state['metadata'] = State(host=context.params['config_host'],
+                              port=context.params['config_port'],
+                              verbose=verbose)
     if verbose:
-        typer.echo(f'Command options: {state!r}')
+        typer.echo(f'Command options from power: {context.params!r}')
 
 
 @app.command()
@@ -53,7 +61,8 @@ def get(
 ):
     """Get an item from the config"""
     if server_running():
-        item = get_config(key, parse=pretty_print)
+        metadata = state['metadata']
+        item = get_config(key, parse=pretty_print, host=metadata.host, port=metadata.port)
         if pretty_print:
             typer.echo(pprint(item))
         else:
@@ -65,12 +74,12 @@ def set(
         key: str = typer.Argument(...,
                                   help='The key, in dotted-notation, of the config item to get.'
                                        'A blank string (the default) will return the entire config.'),
-        value: str = typer.Argument(...,
-                                    help='The new value. If none (the default), this will clear the entry.')
+        value: str = typer.Argument(..., help='The new value.')
 ):
     """Get an item from the config"""
     if server_running():
-        item = set_config(key, value, **state)
+        metadata = state['metadata']
+        item = set_config(key, value, host=metadata.host, port=metadata.port)
         typer.secho(pprint(item), fg=typer.colors.MAGENTA)
 
 
