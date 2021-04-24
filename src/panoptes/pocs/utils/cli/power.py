@@ -105,7 +105,7 @@ def setup_wizard(
         typer.secho(f'Power board does not appear to be running, cannot run wizard.')
         return
 
-    typer.secho(f'Setting up the power board',
+    typer.secho(f'* Setting up the power board config *',
                 fg=typer.colors.BLACK,
                 bg=typer.colors.RED,
                 bold=True)
@@ -120,7 +120,7 @@ def setup_wizard(
                    typer.style(relay_name, fg=typer.colors.GREEN) + ' ' +
                    typer.style(f'{relay_info!r}', fg=typer.colors.BLUE)
                    )
-        if typer.prompt(f'Edit?', default='no').lower().startswith('n'):
+        if relay is None and typer.prompt(f'Edit?', default='no').lower().startswith('n'):
             continue
 
         if typer.prompt(f'Change relay state before editing?',
