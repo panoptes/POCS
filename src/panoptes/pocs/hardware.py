@@ -1,19 +1,21 @@
 """Information about hardware supported by Panoptes."""
+from enum import Enum
+
 from panoptes.utils.config.client import get_config
 
-ALL_NAMES = sorted([
-    'camera',
-    'dome',
-    'mount',
-    'night',
-    'power',
-    'sensors',
-    'theskyx',
-    'weather',
-])
+
+class HardwareName(Enum):
+    camera = 'camera'
+    dome = 'dome'
+    mount = 'mount'
+    night = 'night'
+    power = 'power'
+    sensors = 'sensors'
+    theskyx = 'theskyx'
+    weather = 'weather'
 
 
-def get_all_names(all_names=ALL_NAMES, without=None):
+def get_all_names(all_names=None, without=None):
     """Returns the names of all the categories of hardware that POCS supports.
 
     Note that this doesn't extend to the Arduinos for the telemetry and camera boards, for
@@ -40,6 +42,8 @@ def get_all_names(all_names=ALL_NAMES, without=None):
     """
     # Make sure that 'all' gets expanded.
     without = get_simulator_names(simulator=without)
+
+    all_names = all_names or [h.name for h in HardwareName]
 
     return sorted([v for v in all_names if v not in without])
 
@@ -71,7 +75,6 @@ def get_simulator_names(simulator=None, kwargs=None):
     >>> get_simulator_names('all')
     ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
 
-
     Args:
         simulator (list): An explicit list of names of hardware to be simulated
             (i.e. hardware drivers to be replaced with simulators).
@@ -92,7 +95,7 @@ def get_simulator_names(simulator=None, kwargs=None):
         if isinstance(v, str):
             v = [v]
         if 'all' in v:
-            return ALL_NAMES
+            return [h.name for h in HardwareName]
         else:
             return sorted(v)
     return []
