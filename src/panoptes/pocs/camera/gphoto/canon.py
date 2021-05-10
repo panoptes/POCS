@@ -66,11 +66,11 @@ class Camera(AbstractGPhotoCamera, ABC):
 
         owner_name = 'Project PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
-        copyright = f'{owner_name} {current_time().datetime:%Y}'
+        copy_right = f'{owner_name} {current_time().datetime:%Y}'
 
         prop2value = {
             '/main/settings/artist': artist_name,
-            '/main/settings/copyright': copyright,
+            '/main/settings/copyright': copy_right,
             '/main/settings/ownername': owner_name,
         }
 
@@ -172,7 +172,7 @@ class Camera(AbstractGPhotoCamera, ABC):
         file_path = file_path.replace('.cr2', '.fits')
         return super()._process_fits(file_path, info)
 
-    def _poll_exposure(self, readout_args):
+    def _poll_exposure(self, readout_args, *args, **kwargs):
         timer = CountdownTimer(duration=self._timeout)
         try:
             try:
@@ -188,7 +188,7 @@ class Camera(AbstractGPhotoCamera, ABC):
                     self.logger.error(f'Camera exposure errors: {errs}')
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
-            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            self.logger.error(f'Error while waiting for exposure on {self}: {err}')
             raise err
         else:
             # Camera type specific readout function
