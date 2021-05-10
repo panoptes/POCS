@@ -2,12 +2,17 @@ channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
   - astroplan
+  - bokeh
   - fastapi
+  - holoviews
+  - jupyterlab
   - matplotlib-base
   - numpy
   - pandas
+  - panel
   - photutils
   - pip
+  - pyviz_comms
   - scipy
   - streamz
   - uvicorn[standard]
