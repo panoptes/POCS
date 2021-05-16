@@ -127,6 +127,7 @@ function system_deps() {
     make \
     nano \
     neovim \
+    ntpdate \
     sshfs \
     wget \
     zsh
@@ -234,6 +235,15 @@ unsetopt share_history
 EOT
 }
 
+function fix_time() {
+  echo "Syncing time."
+  sudo timedatectl set-ntp false
+  #  sudo dpkg-reconfigure tzdata
+  sudo ntpdate -s "${NTP_SERVER}"
+  sudo timedatectl set-ntp true
+  timedatectl
+}
+
 function do_install() {
   clear
 
@@ -253,6 +263,8 @@ function do_install() {
 
   echo "Installing system dependencies."
   system_deps
+
+  fix_time
 
   if [ "$DEV_BOX" = false ]; then
     install_zsh
