@@ -30,25 +30,36 @@ async def startup():
 
 @app.get('/')
 async def root():
+    """Returns the power board status."""
     return power_board.status
 
 
 @app.get('/readings')
 async def readings():
+    """Return the current readings as a dict."""
     return power_board.to_dataframe().to_dict()
+
+
+@app.get('/record')
+def control_relay():
+    """Record the current readings in the db."""
+    return power_board.record()
 
 
 @app.post('/control')
 def control_relay(relay_command: RelayCommand):
+    """Control a relay via a post submission"""
     return do_command(relay_command)
 
 
 @app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
+    """Control a relay via a get url"""
     return do_command(RelayCommand(relay=relay, command=command))
 
 
 def do_command(relay_command: RelayCommand):
+    """Control relay"""
     relay_id = relay_command.relay
     try:
         relay = power_board.relay_labels[relay_id]

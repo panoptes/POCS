@@ -1,6 +1,5 @@
-from enum import Enum
 from pprint import pprint
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import requests
 import typer
