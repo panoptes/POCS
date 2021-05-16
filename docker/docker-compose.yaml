@@ -33,6 +33,7 @@ services:
       dockerfile: ./docker/Dockerfile
     deploy:
       mode: global
+    restart: on-failure
     init: true
     tty: true
     stdin_open: true
@@ -56,6 +57,7 @@ services:
       dockerfile: ./docker/Dockerfile
     deploy:
       mode: global
+    restart: on-failure
     init: true
     tty: true
     stdin_open: true
@@ -64,13 +66,13 @@ services:
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
-    #    command: [ "wait-for-it localhost:6563 -- uvicorn --host 0.0.0.0 --port 6565 panoptes.pocs.service.pocs:app" ]
-    command: [ 'jupyter lab --no-browser --ip 0.0.0.0 --port 6565 --notebook-dir /panoptes-pocs/' ]
+    command: [ 'ipython' ]
     volumes:
       - config:/panoptes-pocs/conf_files
       - panlog:/panoptes-pocs/logs
       - images:/panoptes-pocs/images
       - json_store:/panoptes-pocs/json_store
+      - notebooks:/panoptes-pocs/notebooks
       - devices:/dev/bus/usb
 volumes:
   panlog:
@@ -96,6 +98,12 @@ volumes:
     driver_opts:
       type: none
       device: ${PANDIR}/json_store
+      o: bind
+  notebooks:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PANDIR}/notebooks
       o: bind
   devices:
     driver: local

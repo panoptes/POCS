@@ -64,6 +64,7 @@ PS3="Select: "
 # TODO should be checking to matching userid=1000
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
+UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
@@ -84,17 +85,21 @@ function make_directories() {
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 }
 
+function name_me() {
+  read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+}
+
 function which_version() {
   PS3='Where are you installing?: '
   versions=("Control box" "Camera box" "My computer")
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
-      HOST="pocs-control-box"
+      HOST="${UNIT_NAME}-control-box"
       break
       ;;
     "Camera box")
-      HOST="pocs-camera-box"
+      HOST="${UNIT_NAME}-camera-box"
       break
       ;;
     "My computer")
@@ -156,7 +161,7 @@ function get_or_build_images() {
 
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
 
-  if [ $HOST == "pocs-control-box" ]; then
+  if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
@@ -168,8 +173,8 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /panoptes-pocs/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
-    sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/pocs.yaml"
+      "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
+    sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
 }
 
@@ -232,11 +237,14 @@ EOT
 function do_install() {
   clear
 
+  name_me
+
   which_version
 
-  echo "Installing POCS software for ${HOST}"
+  echo "Installing POCS software for ${UNIT_NAME}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
+  echo "HOST: ${HOST}"
   echo "HOST: ${HOST}"
   echo "OS: ${OS}"
   echo "Logfile: ${LOGFILE}"

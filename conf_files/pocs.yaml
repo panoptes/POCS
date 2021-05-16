@@ -45,7 +45,7 @@ state_machine: panoptes
 
 scheduler:
   type: dispatch
-  fields_file: /panoptes-pocs/conf_files/targets/simple.yaml
+  fields_file: /panoptes-pocs/conf_files/fields/simple.yaml
   check_file: False
 
 mount:
