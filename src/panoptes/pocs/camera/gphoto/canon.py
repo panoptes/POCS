@@ -1,6 +1,5 @@
 import os
 import subprocess
-from abc import ABC
 from threading import Event
 from threading import Timer
 
@@ -13,7 +12,7 @@ from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
 
-class Camera(AbstractGPhotoCamera, ABC):
+class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
@@ -30,6 +29,10 @@ class Camera(AbstractGPhotoCamera, ABC):
     @property
     def bit_depth(self):
         return 12 * u.bit
+
+    @property
+    def egain(self):
+        return 1.5
 
     def connect(self):
         """Connect to Canon DSLR

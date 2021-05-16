@@ -86,6 +86,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.name = name
         self.is_primary = primary
 
+        self.filterwheel = None
         self._filter_type = kwargs.get('filter_type', 'RGGB')
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
@@ -132,9 +133,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Camera created: {self}')
 
-    ##################################################################################################
+    ############################################################################
     # Properties
-    ##################################################################################################
+    ############################################################################
 
     @property
     def uid(self):

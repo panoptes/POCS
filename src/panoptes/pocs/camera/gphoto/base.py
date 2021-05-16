@@ -1,7 +1,6 @@
 import re
 import shutil
 import subprocess
-from abc import ABCMeta
 
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils import error
@@ -48,13 +47,49 @@ def parse_config(lines):  # pragma: no cover
     return properties
 
 
-class AbstractGPhotoCamera(AbstractCamera, metaclass=ABCMeta):  # pragma: no cover
+class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
     """ Abstract camera class that uses gphoto2 interaction
 
     Args:
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
+
+    @property
+    def egain(self):
+        return None
+
+    def connect(self):
+        raise NotImplementedError
+
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
+                        **kwargs):
+        raise NotImplementedError
+
+    def _readout(self, filename=None, **kwargs):
+        raise NotImplementedError
+
+    @property
+    def bit_depth(self):
+        return 14
+
+    @property
+    def temperature(self):
+        return None
+
+    @property
+    def target_temperature(self):
+        return None
+
+    @property
+    def cooling_power(self):
+        return None
+
+    def _set_target_temperature(self, target):
+        return None
+
+    def _set_cooling_enabled(self, enable):
+        return None
 
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
