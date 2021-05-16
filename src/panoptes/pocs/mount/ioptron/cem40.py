@@ -136,7 +136,7 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, *args, **kwargs):
+    def park(self, park_direction='north', park_seconds=5, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
         Note:
@@ -154,9 +154,14 @@ class Mount(AbstractSerialMount):
         self.query('park')
 
         # TODO: add timeout (and alert if fail?).
-        while not self.at_mount_park:
+        while True:
+            if self.status['state'] == MountState.PARKED:
+                break
             self._update_status()
             time.sleep(0.5)
+
+            self.unpark()
+            self.move_direction(direction=park_direction, seconds=park_seconds)
 
         self._is_parked = True
 
