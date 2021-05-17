@@ -182,7 +182,7 @@ class Camera(AbstractGPhotoCamera):
                 # See if the command has finished.
                 while self._exposure_proc.poll() is None:
                     # Sleep if not done yet.
-                    timer.sleep()
+                    timer.sleep(max_sleep=0.5)
             except subprocess.TimeoutExpired:
                 self.logger.warning(f'Timeout on exposure process for {self.name}')
                 self._exposure_proc.kill()
@@ -192,11 +192,11 @@ class Camera(AbstractGPhotoCamera):
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err}')
+            self._exposure_proc = None
             raise err
         else:
             # Camera type specific readout function
             self._readout(*readout_args)
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')
-            self._exposure_proc = None
             self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors

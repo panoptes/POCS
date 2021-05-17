@@ -41,10 +41,11 @@ echo "FILE = ${FILENAME}"
 gphoto2 --port="${PORT}" \
         --set-config shutterspeed=0 `#Always set to bulb` \
         --set-config capturetarget=0 `#Capture to RAM for download` \
-        --set-config eosremoterelease=Immediate \
+        --wait-event="1s" `# Needed delay according to website` \
+        --set-config-index eosremoterelease=2 \
         --wait-event="${EXPTIME}s" \
-        --set-config eosremoterelease=4 \
-        --wait-event-and-download=2s \
+        --set-config-index eosremoterelease=4 \
+        --wait-event-and-download=1s \
         --filename "${FILENAME}"
 
 echo "Done with pic"
