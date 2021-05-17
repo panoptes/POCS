@@ -255,7 +255,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def filter_type(self):
         """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
-        if self.filterwheel:
+        if self.has_filterwheel:
             return self.filterwheel.current_filter
         else:
             return self._filter_type
@@ -364,9 +364,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Return True if the camera has a filterwheel, False if not. """
         return self.filterwheel is not None
 
-    ##################################################################################################
+    ############################################################################
     # Methods
-    ##################################################################################################
+    ############################################################################
 
     @abstractmethod
     def connect(self):
