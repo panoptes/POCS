@@ -874,7 +874,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         headers = headers or None
 
         # Move the filterwheel if necessary
-        if self.filterwheel is not None:
+        if self.has_filterwheel:
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
@@ -934,10 +934,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
 
-        # Make the sequence_id
-
         # The exptime header data is set as part of observation but can
-        # be override by passed parameter so update here.
+        # be overridden by passed parameter so update here.
         exptime = kwargs.get('exptime', observation.exptime.value)
 
         # Camera metadata
