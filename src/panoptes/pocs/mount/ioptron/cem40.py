@@ -136,7 +136,7 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, park_direction='north', park_seconds=5, *args, **kwargs):
+    def park(self, park_direction='north', park_seconds=11, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
         Note:
@@ -145,41 +145,51 @@ class Mount(AbstractSerialMount):
         Returns:
             bool: indicating success
         """
-        # TODO: check for park coords.
 
         if self.at_mount_park:
             self.logger.success("Mount is already parked")
             return self.at_mount_park
 
+        self.unpark()
         self.query('park')
-
-        # TODO: add timeout (and alert if fail?).
-        while True:
-            if self.status['state'] == MountState.PARKED:
-                break
-            self._update_status()
-            time.sleep(0.5)
-
-            self.unpark()
-            self.move_direction(direction=park_direction, seconds=park_seconds)
-
-        self._is_parked = True
+        while self.status['state'] != MountState.PARKED:
+            time.sleep(1)
+        self.unpark()
+        self.query('set_button_moving_rate', 9)
+        self.move_direction(direction='north', seconds=park_seconds)
 
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 
-    def _set_initial_rates(self):
+    def set_home(self, seconds=17):
+        self.query('search_for_home')
+        while self.status['state'] != MountState.AT_HOME:
+            time.sleep(1)
+        self.unpark()
+        self.query('set_button_moving_rate', 9)
+        self.move_direction(direction='north', seconds=seconds)
+        self.query('set_button_moving_rate', 6)
+        self.move_direction(direction='north', seconds=2)
+        self.query('set_button_moving_rate', 9)
+        self.query('set_zero_position')
+        time.sleep(1)
+        self.query('set_zero_position')
+        assert self.status['state'] == MountState.AT_HOME
+
+    def _set_initial_rates(self, alt_limit='+00', meridian_treatment='100'):
         # Make sure we start at sidereal
         self.set_tracking_rate()
 
+        self.logger.debug(f'Setting altitude limit to {alt_limit}')
+        self.query('set_altitude_limit', alt_limit)
+
+        self.logger.debug(f'Setting {meridian_treatment=}')
+        self.query('set_meridian_treatment', meridian_treatment)
+
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
+
         self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
-        self.query('set_guide_rate', '9090')
-        guide_rate = self.query('get_guide_rate')
-        self.ra_guide_rate = int(guide_rate[0:2]) / 100
-        self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug(f"Mount guide rate: {self.ra_guide_rate} {self.dec_guide_rate}")
 
     def _setup_location_for_mount(self):
         """
@@ -209,8 +219,8 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+06.0f}'.format(self.location.lat.to(u.arcsecond).value)
-        lon = '{:+06.0f}'.format(self.location.lon.to(u.arcsecond).value)
+        lat = '{:+07.0f}'.format(self.location.lat.to(u.arcsecond).value)
+        lon = '{:+07.0f}'.format(self.location.lon.to(u.arcsecond).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
