@@ -73,6 +73,7 @@ CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Min
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
+NTP_SERVER=192.168.8.1
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -81,6 +82,8 @@ function make_directories() {
   sudo mkdir -p "${PANDIR}/logs"
   sudo mkdir -p "${PANDIR}/images"
   sudo mkdir -p "${PANDIR}/json_store"
+  sudo mkdir -p "${PANDIR}/keys"
+  sudo mkdir -p "${PANDIR}/notebooks"
   sudo mkdir -p "${PANDIR}/conf_files"
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 }
@@ -117,6 +120,13 @@ function which_version() {
 
 function system_deps() {
   sudo apt-get update --fix-missing
+
+  # Raspberry Pi stuff
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "Installing Raspberry Pi tools"
+    sudo apt-get -y install rpi.gpio-common linux-tools-raspi
+  fi
+
   sudo apt-get -y full-upgrade
   sudo apt-get --yes install \
     ack \
@@ -127,7 +137,6 @@ function system_deps() {
     make \
     nano \
     neovim \
-    ntpdate \
     sshfs \
     wget \
     zsh
@@ -135,12 +144,6 @@ function system_deps() {
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
-
-  # Raspberry Pi stuff
-  if [ "$(uname -m)" = "aarch64" ]; then
-    echo "Installing Raspberry Pi tools"
-    sudo apt-get -y install rpi.gpio-common
-  fi
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -237,6 +240,7 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
+  sudo apt install -y ntpdate
   sudo timedatectl set-ntp false
   #  sudo dpkg-reconfigure tzdata
   sudo ntpdate -s "${NTP_SERVER}"
@@ -261,10 +265,10 @@ function do_install() {
 
   make_directories
 
+  fix_time
+
   echo "Installing system dependencies."
   system_deps
-
-  fix_time
 
   if [ "$DEV_BOX" = false ]; then
     install_zsh
