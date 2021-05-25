@@ -32,15 +32,18 @@ fi
 PORT=$1
 EXPTIME=$2
 FILENAME=$3
+ISO=${4:-100}
 echo 'Taking picture'
 echo "PORT = ${PORT}"
 echo "TIME = ${TIME}s"
 echo "FILE = ${FILENAME}"
+echo "ISO = ${ISO}"
 
 # Open shutter
 gphoto2 --port="${PORT}" \
-        --set-config shutterspeed=0 `#Always set to bulb` \
-        --set-config capturetarget=0 `#Capture to RAM for download` \
+        --set-config-index shutterspeed=0 `#Always set to bulb` \
+        --set-config-index capturetarget=0 `#Capture to RAM for download` \
+        --set-config iso="${ISO}" `#Set ISO` \
         --wait-event="1s" `# Needed delay according to website` \
         --set-config-index eosremoterelease=2 \
         --wait-event="${EXPTIME}s" \
