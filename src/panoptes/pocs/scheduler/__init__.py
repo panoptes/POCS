@@ -33,7 +33,7 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
         site_details = create_location_from_config()
         observer = site_details['observer']
 
-    scheduler_type = scheduler_config.get('type', 'dispatch')
+    scheduler_type = scheduler_config.get('type', 'panoptes.pocs.scheduler.dispatch')
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
@@ -44,11 +44,10 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
 
         try:
             # Load the required module
-            module = load_module(f'panoptes.pocs.scheduler.{scheduler_type}')
+            module = load_module(f'{scheduler_type}')
 
             obstruction_list = get_config('location.obstructions', default=[])
-            default_horizon = get_config(
-                'location.horizon', default=30 * u.degree)
+            default_horizon = get_config('location.horizon', default=30 * u.degree)
 
             horizon_line = horizon_utils.Horizon(
                 obstructions=obstruction_list,
@@ -71,6 +70,6 @@ def create_scheduler_from_config(observer=None, *args, **kwargs):
         except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
-        raise error.NotFound(msg=f"Fields file does not exist: fields_file={fields_file!r}")
+        raise error.NotFound(msg=f"Fields file does not exist: {fields_path=!r}")
 
     return scheduler
