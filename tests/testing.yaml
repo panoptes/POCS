@@ -41,7 +41,7 @@ db:
   name: panoptes_testing
   type: file
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: simulator.yaml
   check_file: False
 mount:
