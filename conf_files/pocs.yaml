@@ -44,7 +44,7 @@ status_check_interval: 60 # periodic status check.
 state_machine: panoptes
 
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: /panoptes-pocs/conf_files/targets/simple.yaml
   check_file: False
 
