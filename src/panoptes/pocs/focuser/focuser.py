@@ -187,6 +187,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   mask_dilations=None,
                   coarse=False,
                   make_plots=None,
+                  filter_name=None,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -219,6 +220,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             make_plots (bool, optional): Whether to write focus plots to images folder. If not
                 given will fall back on value of `autofocus_make_plots` set on initialisation,
                 and if it wasn't set then will default to False.
+            filter_name (str, optional): The filter to use for focusing. If not provided, will use
+                last light position.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -293,6 +296,21 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         if make_plots is None:
             make_plots = self.autofocus_make_plots
+
+        # Move filterwheel to the correct position
+        if self.camera.has_filterwheel:
+
+            if filter_name is None:
+                # NOTE: The camera will move the FW to the last light position automatically
+                self.logger.warning(f"Filter name not provided for autofocus on {self}. Using last"
+                                    " light position.")
+            else:
+                self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on {self}.")
+                self.camera.filterwheel.move_to(filter_name, blocking=True)
+
+        elif filter_name is None:
+            self.logger.warning(f"Filter {filter_name} requiested for autofocus but {self.camera}"
+                                f" has no filterwheel.")
 
         # Set up the focus parameters
         focus_event = Event()
