@@ -580,10 +580,19 @@ def test_observation_bias(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
-    if camera.focuser is None:
+
+    if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
-    autofocus_event = camera.autofocus(coarse=True)
+
+    if camera.has_filterwheel:
+        camera.filterwheel.move_to("one", blocking=True)
+
+    autofocus_event = camera.autofocus(coarse=True, filter_name="deux")
     autofocus_event.wait()
+
+    if camera.has_filterwheel:
+        assert camera.filterwheel.current_filter == "deux"
+
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
 
