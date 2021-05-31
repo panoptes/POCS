@@ -139,6 +139,10 @@ class Mount(AbstractSerialMount):
     def park(self, park_direction='north', park_seconds=11, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
+        This still uses a custom park command because the orientation of the camera
+        box is perpendicular to what the mount expects, so we cannot use the
+        mount's built-in commands.
+
         Note:
             When mount is parked no movement commands will be accepted.
 
@@ -153,6 +157,7 @@ class Mount(AbstractSerialMount):
         self.unpark()
         self.query('park')
         while self.status['state'] != MountState.PARKED:
+            self.logger.trace(f'Moving to park')
             time.sleep(1)
         self.unpark()
         self.query('set_button_moving_rate', 9)
@@ -164,6 +169,7 @@ class Mount(AbstractSerialMount):
     def set_home(self, seconds=17):
         self.query('search_for_home')
         while self.status['state'] != MountState.AT_HOME:
+            self.logger.trace(f'Searching for home')
             time.sleep(1)
         self.unpark()
         self.query('set_button_moving_rate', 9)
