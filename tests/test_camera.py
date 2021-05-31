@@ -581,7 +581,7 @@ def test_observation_bias(camera, images_dir):
 
 def test_autofocus_coarse(camera, patterns, counter):
 
-    if camera.has_focuser:
+    if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
 
     if camera.has_filterwheel:
