@@ -79,25 +79,25 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/logs
+      device: ./logs
       o: bind
   images:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/images
+      device: ./images
       o: bind
   config:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/conf_files
+      device: ./conf_files
       o: bind
   json_store:
     driver: local
     driver_opts:
       type: none
-      device: ${PANDIR}/json_store
+      device: ./json_store
       o: bind
   notebooks:
     driver: local

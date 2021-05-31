@@ -27,7 +27,7 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
-  base: /panoptes-pocs
+  base: .
   images: images
   mounts: resources/mounts
   fields: conf_files/fields
@@ -44,7 +44,7 @@ status_check_interval: 60 # periodic status check.
 state_machine: panoptes
 
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: /panoptes-pocs/conf_files/fields/simple.yaml
   check_file: False
 
@@ -97,7 +97,7 @@ environment:
     arduino_board_name: power_board
     record_interval: 5  # seconds
     mean_interval: 5  # seconds
-    port: socket://192.168.8.1:5050
+    port: /dev/ttyACM0
     relays:
       RELAY_0:
         label: weather_station

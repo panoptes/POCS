@@ -180,17 +180,17 @@ def test_sdk_no_serial_number():
         SimSDKCamera()
 
 
-def test_sdk_camera_not_found():
-    with pytest.raises(error.InvalidConfig):
-        SimSDKCamera(serial_number='SSC404')
-
-
 def test_sdk_already_in_use():
     serial_number = get_config('cameras.devices[-1].serial_number')
     sim_camera = SimSDKCamera(serial_number=serial_number)
     assert sim_camera
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
+
+
+def test_sdk_camera_not_found():
+    with pytest.raises(error.InvalidConfig):
+        SimSDKCamera(serial_number='SSC404')
 
 
 # Hardware independent tests for SBIG camera
@@ -580,10 +580,19 @@ def test_observation_bias(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
-    if camera.focuser is None:
+
+    if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
-    autofocus_event = camera.autofocus(coarse=True)
+
+    if camera.has_filterwheel:
+        camera.filterwheel.move_to("one", blocking=True)
+
+    autofocus_event = camera.autofocus(coarse=True, filter_name="deux")
     autofocus_event.wait()
+
+    if camera.has_filterwheel:
+        assert camera.filterwheel.current_filter == "deux"
+
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
 
