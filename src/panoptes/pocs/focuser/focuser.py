@@ -298,19 +298,21 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             make_plots = self.autofocus_make_plots
 
         # Move filterwheel to the correct position
-        if self.camera.has_filterwheel:
+        if self.camera is not None:
+            if self.camera.has_filterwheel:
 
-            if filter_name is None:
-                # NOTE: The camera will move the FW to the last light position automatically
-                self.logger.warning(f"Filter name not provided for autofocus on {self}. Using last"
-                                    " light position.")
-            else:
-                self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on {self}.")
-                self.camera.filterwheel.move_to(filter_name, blocking=True)
+                if filter_name is None:
+                    # NOTE: The camera will move the FW to the last light position automatically
+                    self.logger.warning(f"Filter name not provided for autofocus on {self}. Using"
+                                        " last light position.")
+                else:
+                    self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on"
+                                     f" {self}.")
+                    self.camera.filterwheel.move_to(filter_name, blocking=True)
 
-        elif filter_name is None:
-            self.logger.warning(f"Filter {filter_name} requiested for autofocus but {self.camera}"
-                                f" has no filterwheel.")
+            elif filter_name is None:
+                self.logger.warning(f"Filter {filter_name} requiested for autofocus but"
+                                    f" {self.camera} has no filterwheel.")
 
         # Set up the focus parameters
         focus_event = Event()
