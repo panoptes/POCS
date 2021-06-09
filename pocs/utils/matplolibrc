@@ -1,2 +1,0 @@
-# Functions in utils plotting to file should use the Agg backend to ensure reliable cross platform operation
-backend      : Agg

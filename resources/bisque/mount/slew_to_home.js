@@ -1,5 +1,6 @@
 /* Java Script */
 sky6RASCOMTele.Abort();
+sky6RASCOMTele.Asynchronous = $async;
 sky6RASCOMTele.FindHome();
 while (!sky6RASCOMTele.IsSlewComplete) {
     sky6Web.Sleep(1000);
