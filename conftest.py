@@ -30,7 +30,7 @@ log_fmt = "<lvl>{level:.1s}</lvl> " \
           "| <c>{name} {function}:{line}</c> | " \
           "<lvl>{message}</lvl>"
 
-log_dir = os.getenv('PANLOG', 'logs')
+log_dir = os.getenv('PANLOG', os.getenv('PANDIR', 'logs'))
 log_file_path = os.path.join(log_dir, 'panoptes-testing.log')
 startup_message = f' STARTING NEW PYTEST RUN - LOGS: {log_file_path} '
 logger.add(log_file_path,
