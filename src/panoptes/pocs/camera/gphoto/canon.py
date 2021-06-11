@@ -3,7 +3,6 @@ import subprocess
 from abc import ABC
 from threading import Event
 from threading import Timer
-from datetime import datetime as dt
 
 from astropy import units as u
 from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
@@ -71,7 +70,8 @@ class Camera(AbstractGPhotoCamera, ABC):
             '/main/settings/artist': artist_name,
             '/main/settings/copyright': copyright,
             '/main/settings/ownername': owner_name,
-            '/main/settings/datetimeutc': f'{dt.now():%s}',  # Current UTC datetime in seconds
+            # Current UTC datetime in seconds
+            '/main/settings/datetimeutc': f'{current_time(datetime=True):%s}',
         }
 
         self.set_properties(prop2index, prop2value)
