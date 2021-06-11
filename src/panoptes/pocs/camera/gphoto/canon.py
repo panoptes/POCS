@@ -70,7 +70,7 @@ class Camera(AbstractGPhotoCamera, ABC):
             '/main/settings/artist': artist_name,
             '/main/settings/copyright': copyright,
             '/main/settings/ownername': owner_name,
-            # Current UTC datetime in seconds
+            # Current UTC datetime in seconds since epoch.U
             '/main/settings/datetimeutc': f'{current_time(datetime=True):%s}',
         }
 
