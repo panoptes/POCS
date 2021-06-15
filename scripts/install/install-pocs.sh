@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2021-01-18
+# Script Version: 2021-07-15
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system
@@ -64,6 +64,7 @@ PS3="Select: "
 # TODO should be checking to matching userid=1000
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
+UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
@@ -72,6 +73,7 @@ CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Min
 CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
+NTP_SERVER=192.168.8.1
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
@@ -80,8 +82,14 @@ function make_directories() {
   sudo mkdir -p "${PANDIR}/logs"
   sudo mkdir -p "${PANDIR}/images"
   sudo mkdir -p "${PANDIR}/json_store"
+  sudo mkdir -p "${PANDIR}/keys"
+  sudo mkdir -p "${PANDIR}/notebooks"
   sudo mkdir -p "${PANDIR}/conf_files"
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
+}
+
+function name_me() {
+  read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
 }
 
 function which_version() {
@@ -90,11 +98,11 @@ function which_version() {
   select ver in "${versions[@]}"; do
     case $ver in
     "Control box")
-      HOST="pocs-control-box"
+      HOST="${UNIT_NAME}-control-box"
       break
       ;;
     "Camera box")
-      HOST="pocs-camera-box"
+      HOST="${UNIT_NAME}-camera-box"
       break
       ;;
     "My computer")
@@ -112,12 +120,20 @@ function which_version() {
 
 function system_deps() {
   sudo apt-get update --fix-missing
+
+  # Raspberry Pi stuff
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "Installing Raspberry Pi tools"
+    sudo apt-get -y install rpi.gpio-common linux-tools-raspi
+  fi
+
   sudo apt-get -y full-upgrade
   sudo apt-get --yes install \
     ack \
     byobu \
     gcc \
     htop \
+    httpie \
     make \
     nano \
     neovim \
@@ -128,12 +144,6 @@ function system_deps() {
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
-
-  # Raspberry Pi stuff
-  if [ "$(uname -m)" = "aarch64" ]; then
-    echo "Installing Raspberry Pi tools"
-    sudo apt-get -y install rpi.gpio-common
-  fi
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -155,7 +165,7 @@ function get_or_build_images() {
 
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
 
-  if [ $HOST == "pocs-control-box" ]; then
+  if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
@@ -167,8 +177,8 @@ function get_or_build_images() {
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
       "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
-      "cp /panoptes-pocs/conf_files/pocs.yaml /temp/conf_files/pocs.yaml"
-    sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/pocs.yaml"
+      "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
+    sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
 }
 
@@ -228,19 +238,34 @@ unsetopt share_history
 EOT
 }
 
+function fix_time() {
+  echo "Syncing time."
+  sudo apt install -y ntpdate
+  sudo timedatectl set-ntp false
+  #  sudo dpkg-reconfigure tzdata
+  sudo ntpdate -s "${NTP_SERVER}"
+  sudo timedatectl set-ntp true
+  timedatectl
+}
+
 function do_install() {
   clear
 
+  name_me
+
   which_version
 
-  echo "Installing POCS software for ${HOST}"
+  echo "Installing POCS software for ${UNIT_NAME}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
+  echo "HOST: ${HOST}"
   echo "HOST: ${HOST}"
   echo "OS: ${OS}"
   echo "Logfile: ${LOGFILE}"
 
   make_directories
+
+  fix_time
 
   echo "Installing system dependencies."
   system_deps
