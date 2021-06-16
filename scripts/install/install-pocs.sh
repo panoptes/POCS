@@ -29,8 +29,8 @@ usage() {
 #
 # Docker Images:
 #
-#   ${DOCKER_BASE}/panoptes-pocs:latest
-#   ${DOCKER_BASE}/aag-weather:latest
+#   $gcr.io/panoptes-exp/panoptes-pocs:latest
+#   $gcr.io/panoptes-exp/aag-weather:latest
 #
 # The regular install is for running units.
 #
@@ -68,13 +68,15 @@ UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
-CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
-CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
-NTP_SERVER=192.168.8.1
 
-DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
+NTP_SERVER="${NTP_SERVER:-192.168.8.1}"
+
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
+CONDA_ENV_NAME=conda-pocs
+
+DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
 DOCKER_TAG=${DOCKER_TAG:-"develop"}
 
 function make_directories() {
@@ -167,20 +169,20 @@ function install_docker() {
 function get_or_build_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
-  sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}"
+  sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
 
   if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
       "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
       "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
     sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
@@ -259,13 +261,18 @@ function do_install() {
 
   which_version
 
+  which_docker
+
   echo "Installing POCS software for ${UNIT_NAME}"
+  echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
-  echo "HOST: ${HOST}"
-  echo "OS: ${OS}"
+  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
+  echo "DOCKER_TAG: ${DOCKER_TAG}"
+  echo "NTP_SERVER: ${NTP_SERVER}"
   echo "Logfile: ${LOGFILE}"
+  echo ""
 
   make_directories
 
@@ -282,8 +289,6 @@ function do_install() {
   fi
 
   install_conda
-
-  which_docker
 
   install_docker
 
