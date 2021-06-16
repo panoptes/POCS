@@ -39,7 +39,6 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
         -O arduino-cli.tar.gz && \
     tar zxvf arduino-cli.tar.gz && \
-    mkdir -p "${HOME}/bin" && \
     mkdir -p "${HOME}/.local/bin" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
@@ -60,6 +59,8 @@ ARG pip_install_extras="[google]"
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
+    # Symlink gphoto2 to our wrapper script
+    ln -s "${HOME}/.local/bin/gphoto2" /usr/bin/gphoto2
     # Cleanup
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config && \

@@ -37,9 +37,9 @@ if [[ -n "${REMOTE_GPHOTO2_SERVER}" ]]; then
   ssh "${REMOTE_GPHOTO2_SERVER}" gphoto2 "$@"
 else
   if [ $(command -v gphoto2) ]; then
-    gphoto2 "$@"
+    /usr/bin/gphoto2 "$@"
   else
-    echo "gphoto2 is not installed."
+    echo "/usr/bin/gphoto2 is not installed."
   fi
 fi
 
