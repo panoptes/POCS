@@ -260,13 +260,14 @@ def test_set_target_temperature(camera):
         camera.logger.info(f'Set target temp to {camera.is_cooled_camera}')
         assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        camera.logger.info(f'Skipping: {camera.name}')
+        pytest.skip(f"Camera {camera.name} doesn't implement temperature control")
 
 
 def test_cooling_enabled(camera):
-    print('Some test output')
+    camera.logger.info('Some test output')
     assert camera.cooling_enabled == camera.is_cooled_camera
-    print('Some other output')
+    camera.logger.info('Some other output')
 
 
 def test_enable_cooling(camera):
