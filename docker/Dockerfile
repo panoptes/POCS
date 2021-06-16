@@ -60,7 +60,7 @@ COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
     # Symlink gphoto2 to our wrapper script
-    ln -s "${HOME}/.local/bin/gphoto2" /usr/bin/gphoto2 && \
+    ln -s /usr/bin/gphoto2 "${HOME}/.local/bin/gphoto2" && \
     # Cleanup
     sudo apt-get autoremove --purge --yes \
         gcc pkg-config && \
