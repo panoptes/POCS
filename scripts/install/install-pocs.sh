@@ -66,7 +66,6 @@ PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
-TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
@@ -76,6 +75,7 @@ DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 NTP_SERVER=192.168.8.1
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
+DOCKER_TAG=${DOCKER_TAG:-"develop"}
 
 function make_directories() {
   echo "Creating directories in ${PANDIR}"
@@ -90,6 +90,10 @@ function make_directories() {
 
 function name_me() {
   read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+}
+
+function which_docker() {
+  read -p 'What docker image would you like to use (default: develop)? ' DOCKER_TAG
 }
 
 function which_version() {
@@ -163,20 +167,20 @@ function install_docker() {
 function get_or_build_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
-  sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
+  sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}"
 
   if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}" \
       "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "${DOCKER_BASE}/panoptes-pocs:${DOCKER_TAG}" \
       "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
     sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
@@ -278,6 +282,8 @@ function do_install() {
   fi
 
   install_conda
+
+  which_docker
 
   install_docker
 
