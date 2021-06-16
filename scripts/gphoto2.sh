@@ -8,7 +8,9 @@ usage() {
 # Simple wrapper to check for ${REMOTE_GPHOTO2_SERVER} env var. If present, will
 # use the value of the var as the ip address for ssh. It is assumed that ssh
 # keys have already been set between the two servers. If not present, use
-# gphoto2 from the path.
+# gphoto2 from the PATH.
+#
+# This file should be symlinked into the PATH under the name 'gphoto2'.
 #
 # Any additional arguments to the script are passed directly to gphoto2.
 ################################################################################
