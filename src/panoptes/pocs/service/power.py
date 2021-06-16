@@ -31,18 +31,21 @@ async def startup():
 @app.get('/')
 async def root():
     """Returns the power board status."""
+    global power_board
     return power_board.status
 
 
 @app.get('/readings')
 async def readings():
     """Return the current readings as a dict."""
+    global power_board
     return power_board.to_dataframe().to_dict()
 
 
 @app.get('/record')
 def control_relay():
     """Record the current readings in the db."""
+    global power_board
     return power_board.record()
 
 
@@ -60,6 +63,7 @@ def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
 
 def do_command(relay_command: RelayCommand):
     """Control relay"""
+    global power_board
     relay_id = relay_command.relay
     try:
         relay = power_board.relay_labels[relay_id]
