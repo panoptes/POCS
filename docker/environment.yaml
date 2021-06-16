@@ -4,6 +4,7 @@ dependencies:
   - astroplan
   - fastapi
   - matplotlib-base
+  - jupyterlab
   - numpy
   - pandas
   - photutils

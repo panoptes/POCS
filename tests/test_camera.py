@@ -254,8 +254,10 @@ def test_is_cooled(camera):
 
 
 def test_set_target_temperature(camera):
+    camera.logger.info(f'Is cooled camera: {camera.is_cooled_camera}')
     if camera.is_cooled_camera:
         camera.target_temperature = 10 * u.Celsius
+        camera.logger.info(f'Set target temp to {camera.is_cooled_camera}')
         assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
@@ -580,7 +582,6 @@ def test_observation_bias(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
-
     if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
 
