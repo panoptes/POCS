@@ -104,6 +104,3 @@ class Camera(AbstractCamera):
 
     def _set_target_temperature(self, target):
         self.logger.debug('DSLR simulator cannot set target temperature.')
-
-    def _set_cooling_enabled(self, enable):
-        self.logger.debug('DSLR simulator cannot set cooling enabled.')

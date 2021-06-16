@@ -760,7 +760,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             enable (bool): Enable camera cooling?
         """
-        raise NotImplementedError
+        self._cooling_enabled = enable
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
