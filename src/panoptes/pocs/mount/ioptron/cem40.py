@@ -345,5 +345,5 @@ class Mount(AbstractSerialMount):
         super()._setup_commands(commands)
 
         # Update the `MountInfo` response if one has been set on the class.
-        with suppress(AttributeError):
+        with suppress(AttributeError, KeyError):
             self.commands['mount_info']['response'] = self._mount_version
