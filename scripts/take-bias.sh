@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 
 usage() {
   echo -n "##################################################
@@ -42,8 +43,10 @@ gphoto2 --port="${PORT}" --set-config iso="${ISO}"
 
 COUNTER=0
 until [[ ${COUNTER} -eq ${NUM_FRAMES} ]]; do
-  gphoto2 --port=${PORT} --wait-event=1s --capture-image-and-download --filename=${SAVE_FILE}
+  gphoto2 --port="${PORT}" --wait-event=1s --capture-image-and-download --filename="${SAVE_FILE}"
   let COUNTER+=1
 done
 
 echo "Done with bias"
+
+exit 0
