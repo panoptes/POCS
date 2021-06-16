@@ -98,6 +98,11 @@ function which_docker() {
   read -p 'What docker image tag would you like to use (default: develop)? ' DOCKER_TAG
 }
 
+function get_time_settings() {
+  read -p "What is the IP address of your router (default: ${NTP_SERVER})? " NTP_SERVER
+  sudo dpkg-reconfigure tzdata
+}
+
 function which_version() {
   PS3='Where are you installing?: '
   versions=("Control box" "Camera box" "My computer")
@@ -248,7 +253,6 @@ function fix_time() {
   echo "Syncing time."
   sudo apt install -y ntpdate
   sudo timedatectl set-ntp false
-  #  sudo dpkg-reconfigure tzdata
   sudo ntpdate -s "${NTP_SERVER}"
   sudo timedatectl set-ntp true
   timedatectl
@@ -270,13 +274,14 @@ function do_install() {
   echo "HOST: ${HOST}"
   echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "DOCKER_TAG: ${DOCKER_TAG}"
-  echo "NTP_SERVER: ${NTP_SERVER}"
   echo "Logfile: ${LOGFILE}"
   echo ""
 
-  make_directories
+  get_time_settings
 
   fix_time
+
+  make_directories
 
   echo "Installing system dependencies."
   system_deps
