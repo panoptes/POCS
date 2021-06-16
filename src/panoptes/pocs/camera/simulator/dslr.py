@@ -101,6 +101,3 @@ class Camera(AbstractCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
-
-    def _set_target_temperature(self, target):
-        self.logger.debug('DSLR simulator cannot set target temperature.')
