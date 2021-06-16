@@ -156,31 +156,19 @@ class Mount(AbstractSerialMount):
 
         self.unpark()
         self.query('park')
-        while self.status['state'] != MountState.PARKED:
+        while self.status.get('state') != MountState.PARKED:
             self.logger.trace(f'Moving to park')
             time.sleep(1)
         self.unpark()
         self.query('set_button_moving_rate', 9)
-        self.move_direction(direction='north', seconds=park_seconds)
+        self.move_direction(direction=park_direction, seconds=park_seconds)
 
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 
-    def set_home(self, seconds=17):
+    def search_for_home(self):
+        self.logger.info('Searching for the home position.')
         self.query('search_for_home')
-        while self.status['state'] != MountState.AT_HOME:
-            self.logger.trace(f'Searching for home')
-            time.sleep(1)
-        self.unpark()
-        self.query('set_button_moving_rate', 9)
-        self.move_direction(direction='north', seconds=seconds)
-        self.query('set_button_moving_rate', 6)
-        self.move_direction(direction='north', seconds=2)
-        self.query('set_button_moving_rate', 9)
-        self.query('set_zero_position')
-        time.sleep(1)
-        self.query('set_zero_position')
-        assert self.status['state'] == MountState.AT_HOME
 
     def _set_initial_rates(self, alt_limit='+00', meridian_treatment='100'):
         # Make sure we start at sidereal
