@@ -749,7 +749,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def _set_cooling_enabled(self, enable):
         """Camera-specific function to set cooling enabled.
 
