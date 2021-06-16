@@ -93,7 +93,7 @@ function name_me() {
 }
 
 function which_docker() {
-  read -p 'What docker image would you like to use (default: develop)? ' DOCKER_TAG
+  read -p 'What docker image tag would you like to use (default: develop)? ' DOCKER_TAG
 }
 
 function which_version() {
