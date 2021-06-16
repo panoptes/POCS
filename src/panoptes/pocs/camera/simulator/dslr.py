@@ -5,13 +5,13 @@ from threading import Timer
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
-from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
+from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import get_quantity_value
 
 
-class Camera(AbstractGPhotoCamera):
+class Camera(AbstractCamera):
 
     @property
     def egain(self):
@@ -101,3 +101,6 @@ class Camera(AbstractGPhotoCamera):
 
         self.logger.debug("Headers updated for simulated image.")
         return file_path
+
+    def _set_target_temperature(self, target):
+        self.logger.debug('DSLR simulator cannot set target temperature.')
