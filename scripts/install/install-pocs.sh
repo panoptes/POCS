@@ -255,7 +255,13 @@ function fix_time() {
   sudo timedatectl set-ntp false
   sudo ntpdate -s "${NTP_SERVER}"
   sudo timedatectl set-ntp true
+
+  # Add crontab entries for reboot and every hour.
+  (sudo crontab -l; echo "@reboot ntpdate -s ${NTP_SERVER}") | sudo crontab -
+  (sudo crontab -l; echo "13 * * * * ntpdate -s ${NTP_SERVER}") | sudo crontab -
+
   timedatectl
+
 }
 
 function do_install() {
