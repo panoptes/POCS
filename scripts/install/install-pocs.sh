@@ -62,7 +62,7 @@ usage() {
 PS3="Select: "
 
 # TODO should be checking to matching userid=1000
-PANUSER="${PANUSER:-$USER}"
+PANUSER="${PANUSER:-panoptes}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
@@ -249,6 +249,14 @@ unsetopt share_history
 EOT
 }
 
+function change_username() {
+  if [ "${USER}" != "${PANUSER}" ]; then
+    echo "Changing default username to '${PANUSER}'"
+    sudo groupadd "${PANUSER}"
+    sudo usermod -d "/home/${PANUSER}" -m -g "${PANUSER}" -l "${USER}" "${PANUSER}"
+  fi
+}
+
 function fix_time() {
   echo "Syncing time."
   sudo apt install -y ntpdate
@@ -257,8 +265,14 @@ function fix_time() {
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
-  (sudo crontab -l; echo "@reboot ntpdate -s ${NTP_SERVER}") | sudo crontab -
-  (sudo crontab -l; echo "13 * * * * ntpdate -s ${NTP_SERVER}") | sudo crontab -
+  (
+    sudo crontab -l
+    echo "@reboot ntpdate -s ${NTP_SERVER}"
+  ) | sudo crontab -
+  (
+    sudo crontab -l
+    echo "13 * * * * ntpdate -s ${NTP_SERVER}"
+  ) | sudo crontab -
 
   timedatectl
 
@@ -266,6 +280,8 @@ function fix_time() {
 
 function do_install() {
   clear
+
+  change_username
 
   name_me
 
