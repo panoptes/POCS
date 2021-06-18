@@ -45,7 +45,7 @@ state_machine: panoptes
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
-  fields_file: /panoptes-pocs/conf_files/fields/simple.yaml
+  fields_file: simple.yaml
   check_file: False
 
 mount:
@@ -88,7 +88,7 @@ cameras:
       primary: True
 
 ######################### Environmental Sensors ################################
-# Configuration for the power distribution board and other environmental sensor.
+# Configuration for the power distribution board and other environmental sensors.
 ################################################################################
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
