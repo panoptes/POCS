@@ -370,7 +370,7 @@ class AbstractMount(PanBase):
         if 0 <= pointing_ha <= 12:
             pier_side = 'west'
 
-        self.logger.debug(f"Mount pier side: {pier_side} {pointing_ha:.02f}")
+        self.logger.debug(f'Mount pier side: {pier_side} {pointing_ha:.02f}')
 
         if min_tracking_threshold is None:
             min_tracking_threshold = self.min_tracking_threshold

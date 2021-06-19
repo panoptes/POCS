@@ -139,12 +139,18 @@ class Mount(AbstractSerialMount):
     def park(self, park_direction=None, park_seconds=None, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
-        This still uses a custom park command because the orientation of the camera
-        box is perpendicular to what the mount expects, so we cannot use the
-        mount's built-in commands.
+        This still uses a custom park command because the mount will not allow
+        the Declination axis to move below 0 degrees.
 
         Note:
             When mount is parked no movement commands will be accepted.
+
+        Args:
+            park_direction (str or None): The direction to move the Declination axis. If
+                not provided (the default), then look at config setting, otherwise 'north'.
+            park_seconds (str or None): The number of seconds to move the Declination axis at
+                maximum move speed. If not provided (the default), then look at config setting,
+                otherwise 11 seconds.
 
         Returns:
             bool: indicating success
