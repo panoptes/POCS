@@ -205,14 +205,11 @@ class PowerBoard(PanBase):
         """Cycle the relay with a default 5 second delay."""
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
-    def to_dataframe(self, record=False, **kwargs):
+    def to_dataframe(self, **kwargs):
         """Make a dataframe from the latest readings.
 
         This method is called by a `streamz.dataframe.PeriodicDataFrame`.
 
-        Args:
-            record (bool): If True, record the values in the db, otherwise skip.
-                Default False (skip).
         """
         try:
             columns = ['time'] + list(self.relay_labels.keys())
@@ -224,7 +221,7 @@ class PowerBoard(PanBase):
         return df0
 
     def record(self, collection_name: str = None):
-        """Record the rolling mean of the power readings.
+        """Record the rolling mean of the power readings in the database.
 
         Args:
             collection_name (str): Where to store the results in the db. If None
