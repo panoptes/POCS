@@ -1,5 +1,5 @@
+from abc import abstractmethod
 import time
-from contextlib import suppress
 from pathlib import Path
 
 from astropy import units as u
@@ -42,9 +42,9 @@ class AbstractMount(PanBase):
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
-        self.mount_config = self.get_config('mount')
+        self.mount_settings = self.get_config('mount.settings', dict())
 
-        self.logger.debug(f"Mount config: {self.mount_config}")
+        self.logger.debug(f"Mount settings: {self.mount_settings}")
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
@@ -54,9 +54,10 @@ class AbstractMount(PanBase):
         # Set the initial location
         self._location = location
 
-        # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
+        # Get mount settings from config.
+        self.non_sidereal_available = self.mount_settings.setdefault('non_sidereal_available',
+                                                                     False)
+        self.PEC_available = self.mount_settings.setdefault('PEC_available', False)
 
         # Initial states
         self._is_connected = False
@@ -74,8 +75,10 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
-        self.min_tracking_threshold = self.mount_config.get('min_tracking_threshold', 100)  # ms
-        self.max_tracking_threshold = self.mount_config.get('max_tracking_threshold', 99999)  # ms
+        self.min_tracking_threshold = self.mount_settings.setdefault('min_tracking_threshold',
+                                                                     100)  # ms
+        self.max_tracking_threshold = self.mount_settings.setdefault('max_tracking_threshold',
+                                                                     99999)  # ms
 
         self._movement_speed = ''
 
@@ -85,16 +88,24 @@ class AbstractMount(PanBase):
         self._target_coordinates = None
         self._current_coordinates = None
         self._park_coordinates = None
+        self.brand = self.get_config('mount.brand', '')
+        self.model = self.get_config('mount.model', '')
+        self.port = self.get_config('mount.serial.port')
 
     def __str__(self):
-        brand = self.mount_config.get('brand', '')
-        model = self.mount_config.get('model', '')
-        port = ''
-        with suppress(KeyError):
-            port = self.mount_config['serial']['port']
-        return f'{brand} {model} ({port})'
+        mount_str = f'{self.brand} {self.model}'
+        if self.port is not None:
+            mount_str = f'{mount_str} {self.port}'
 
-    def connect(self):  # pragma: no cover
+        return mount_str
+
+    @abstractmethod
+    def connect(self):
+        """Connect to the mount."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def initialize(self, *arg, **kwargs):
         raise NotImplementedError
 
     def disconnect(self):
@@ -103,9 +114,6 @@ class AbstractMount(PanBase):
             self.park()
 
         self._is_connected = False
-
-    def initialize(self, *arg, **kwargs):  # pragma: no cover
-        raise NotImplementedError
 
     @property
     def status(self):
@@ -359,10 +367,10 @@ class AbstractMount(PanBase):
                 }
         """
         pier_side = 'east'
-        if pointing_ha >= 0 and pointing_ha <= 12:
+        if 0 <= pointing_ha <= 12:
             pier_side = 'west'
 
-        self.logger.debug("Mount pier side: {} {:.02f}".format(pier_side, pointing_ha))
+        self.logger.debug(f"Mount pier side: {pier_side} {pointing_ha:.02f}")
 
         if min_tracking_threshold is None:
             min_tracking_threshold = self.min_tracking_threshold
@@ -377,7 +385,7 @@ class AbstractMount(PanBase):
 
         for axis in axis_corrections.keys():
             # find the number of ms and direction for Dec axis
-            offset = getattr(offset_info, 'delta_{}'.format(axis))
+            offset = getattr(offset_info, f'delta_{axis}')
             offset_ms = self.get_ms_offset(offset, axis=axis)
 
             if axis == 'dec':
@@ -411,10 +419,10 @@ class AbstractMount(PanBase):
             # Correct long offset
             if offset_ms > max_tracking_threshold:
                 self.logger.debug(f'Max tracking threshold: {max_tracking_threshold} ms')
-                self.logger.debug(f'Requested tracking higher than threshold, setting to threshold')
+                self.logger.debug('Requested tracking higher than threshold, setting to threshold')
                 offset_ms = max_tracking_threshold
 
-            self.logger.debug("{}: {} {:.02f} ms".format(axis, delta_direction, offset_ms))
+            self.logger.debug(f'{axis}: {delta_direction} {offset_ms:.02f} ms')
             axis_corrections[axis] = (offset, offset_ms, delta_direction)
 
         return axis_corrections
@@ -670,12 +678,13 @@ class AbstractMount(PanBase):
         except KeyboardInterrupt:
             self.logger.warning('Keyboard interrupt, stopping movement.')
         except Exception as e:
-            self.logger.warning(f'Problem moving command! Make sure mount has stopped moving: {e}')
+            self.logger.warning(f'Problem moving mount! Make sure mount has stopped moving: {e!r}')
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
+    @abstractmethod
     def set_tracking_rate(self, direction='ra', delta=1.0):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
@@ -685,6 +694,7 @@ class AbstractMount(PanBase):
 
         Args:
             offset (astropy.units.Angle): Offset in arcseconds
+            axis (str): The name of the axis to move, default 'ra'.
 
         Returns:
              astropy.units.Quantity: Offset in milliseconds at current speed
@@ -737,18 +747,16 @@ class AbstractMount(PanBase):
 
         return response
 
+    @abstractmethod
     def write(self, cmd):
         raise NotImplementedError
 
+    @abstractmethod
     def read(self, *args, **kwargs):
         raise NotImplementedError
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
-        # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
-
-        response = ''
-
         # Get the actual command
         cmd_info = self.commands.get(cmd)
 
@@ -760,7 +768,8 @@ class AbstractMount(PanBase):
 
         return response
 
-    def _setup_location_for_mount(self):  # pragma: no cover
+    @abstractmethod
+    def _setup_location_for_mount(self):
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
@@ -800,18 +809,23 @@ class AbstractMount(PanBase):
 
         self.logger.debug('Mount commands set up')
 
-    def _set_zero_position(self):  # pragma: no cover
+    @abstractmethod
+    def _set_zero_position(self):
         """ Sets the current position as the zero (home) position. """
         raise NotImplementedError
 
-    def _get_command(self, cmd, params=None):  # pragma: no cover
+    @abstractmethod
+    def _get_command(self, cmd, params=None):
         raise NotImplementedError
 
-    def _mount_coord_to_skycoord(self, coords_str):  # pragma: no cover
+    @abstractmethod
+    def _mount_coord_to_skycoord(self, coords_str):
         raise NotImplementedError
 
-    def _skycoord_to_mount_coord(self, coords):  # pragma: no cover
+    @abstractmethod
+    def _skycoord_to_mount_coord(self, coords):
         raise NotImplementedError
 
-    def _update_status(self):  # pragma: no cover
-        return {}
+    @abstractmethod
+    def _update_status(self):
+        raise NotImplementedError
