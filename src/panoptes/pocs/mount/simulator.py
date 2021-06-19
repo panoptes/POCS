@@ -67,7 +67,7 @@ class Mount(AbstractMount):
 
         status = dict()
 
-        status['timestamp'] = current_time()
+        status['timestamp'] = current_time().isot
         status['tracking_rate_ra'] = self.tracking_rate
         status['state'] = self.state
 
@@ -208,4 +208,4 @@ class Mount(AbstractMount):
         return False
 
     def _setup_commands(self, commands):
-        return commands
+        self.commands = commands
