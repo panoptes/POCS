@@ -151,9 +151,9 @@ def create_cameras_from_config(config=None,
                 else:
                     raise error.NotFound(f'module={module!r} does not have a Camera object')
         except error.NotFound:
-            logger.error(f'Cannot find camera module with config: {device_config}')
+            logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
-            logger.error(f'Cannot create camera type: {model} {e!r}')
+            logger.error(f"Cannot create camera type: {model} {e}")
         else:
             # Check if the config specified a primary camera and if it matches.
             if camera.uid == camera_config.get('primary'):
