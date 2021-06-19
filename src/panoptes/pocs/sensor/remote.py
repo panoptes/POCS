@@ -47,7 +47,7 @@ class RemoteMonitor(object):
             Currently this doesn't do any processing or have a callback.
 
         Returns:
-            sensor_data (dict):     Dictionary of sensor keyed by sensor name.
+            sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """
 
         self.logger.debug(f'Capturing data from remote url: {self.endpoint_url}')
