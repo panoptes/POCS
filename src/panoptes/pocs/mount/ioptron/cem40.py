@@ -66,6 +66,7 @@ class Mount(AbstractSerialMount):
     """
 
     def __init__(self, *args, **kwargs):
+        self._mount_version = '0040'
         super(Mount, self).__init__(*args, **kwargs)
         self.logger.info('Creating iOptron mount')
 
@@ -75,7 +76,6 @@ class Mount(AbstractSerialMount):
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self._state = MountState.UNKNOWN
-        self._mount_version = '0040'
 
         self._raw_status = None
         self._status_format = re.compile(
@@ -136,8 +136,12 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, *args, **kwargs):
+    def park(self, park_direction='north', park_seconds=11, *args, **kwargs):
         """Slews to the park position and parks the mount.
+
+        This still uses a custom park command because the orientation of the camera
+        box is perpendicular to what the mount expects, so we cannot use the
+        mount's built-in commands.
 
         Note:
             When mount is parked no movement commands will be accepted.
@@ -145,36 +149,41 @@ class Mount(AbstractSerialMount):
         Returns:
             bool: indicating success
         """
-        # TODO: check for park coords.
 
         if self.at_mount_park:
             self.logger.success("Mount is already parked")
             return self.at_mount_park
 
+        self.unpark()
         self.query('park')
-
-        # TODO: add timeout (and alert if fail?).
-        while not self.at_mount_park:
-            self._update_status()
-            time.sleep(0.5)
-
-        self._is_parked = True
+        while self.status.get('state') != MountState.PARKED:
+            self.logger.trace(f'Moving to park')
+            time.sleep(1)
+        self.unpark()
+        self.query('set_button_moving_rate', 9)
+        self.move_direction(direction=park_direction, seconds=park_seconds)
 
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 
-    def _set_initial_rates(self):
+    def search_for_home(self):
+        self.logger.info('Searching for the home position.')
+        self.query('search_for_home')
+
+    def _set_initial_rates(self, alt_limit='+00', meridian_treatment='100'):
         # Make sure we start at sidereal
         self.set_tracking_rate()
 
+        self.logger.debug(f'Setting altitude limit to {alt_limit}')
+        self.query('set_altitude_limit', alt_limit)
+
+        self.logger.debug(f'Setting {meridian_treatment=}')
+        self.query('set_meridian_treatment', meridian_treatment)
+
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
+
         self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
-        self.query('set_guide_rate', '9090')
-        guide_rate = self.query('get_guide_rate')
-        self.ra_guide_rate = int(guide_rate[0:2]) / 100
-        self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug(f"Mount guide rate: {self.ra_guide_rate} {self.dec_guide_rate}")
 
     def _setup_location_for_mount(self):
         """
@@ -204,8 +213,8 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+06.0f}'.format(self.location.lat.to(u.arcsecond).value)
-        lon = '{:+06.0f}'.format(self.location.lon.to(u.arcsecond).value)
+        lat = '{:+07.0f}'.format(self.location.lat.to(u.arcsecond).value)
+        lon = '{:+07.0f}'.format(self.location.lon.to(u.arcsecond).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
@@ -333,8 +342,8 @@ class Mount(AbstractSerialMount):
         return status
 
     def _setup_commands(self, commands):
-        super(Mount, self)._setup_commands(commands)
+        super()._setup_commands(commands)
 
         # Update the `MountInfo` response if one has been set on the class.
-        with suppress(AttributeError):
+        with suppress(AttributeError, KeyError):
             self.commands['mount_info']['response'] = self._mount_version
