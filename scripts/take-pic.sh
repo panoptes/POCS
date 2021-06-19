@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-set -e
+#!/bin/bash -e
 
 usage() {
   echo -n "##################################################
@@ -11,10 +10,6 @@ usage() {
 # This script has only been tested with Canon EOS100D models
 # but should be generic to any gphoto2 camera that supports
 # bulb settings.
-#
-# Fixed settings include:
-#    * shutterspeed=0       Bulb (manual) exposure time.
-#    * capturetarget=0      Capture to RAM.
 ##################################################
  $ $(basename $0) PORT EXPTIME OUTFILE
 
@@ -30,31 +25,26 @@ usage() {
 }
 
 if [ $# -eq 0 ]; then
-  usage
-  exit 1
+    usage
+    exit 1
 fi
 
 PORT=$1
 EXPTIME=$2
 FILENAME=$3
-ISO=${4:-100}
 echo 'Taking picture'
 echo "PORT = ${PORT}"
 echo "TIME = ${TIME}s"
 echo "FILE = ${FILENAME}"
-echo "ISO = ${ISO}"
 
+# Open shutter
 gphoto2 --port="${PORT}" \
-  --set-config-index shutterspeed=0 \
-  --set-config-index capturetarget=0 \
-  --set-config iso="${ISO}" \
-  --wait-event="1s" \
-  --set-config-index eosremoterelease=2 \
-  --wait-event="${EXPTIME}s" \
-  --set-config-index eosremoterelease=4 \
-  --wait-event-and-download=1s \
-  --filename "${FILENAME}"
+        --set-config shutterspeed=0 `#Always set to bulb` \
+        --set-config capturetarget=0 `#Capture to RAM for download` \
+        --set-config eosremoterelease=Immediate \
+        --wait-event="${EXPTIME}s" \
+        --set-config eosremoterelease=4 \
+        --wait-event-and-download=2s \
+        --filename "${FILENAME}"
 
 echo "Done with pic"
-
-exit 0
