@@ -136,23 +136,34 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, park_direction='north', park_seconds=11, *args, **kwargs):
+    def park(self, park_direction=None, park_seconds=None, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
-        This still uses a custom park command because the orientation of the camera
-        box is perpendicular to what the mount expects, so we cannot use the
-        mount's built-in commands.
+        This still uses a custom park command because the mount will not allow
+        the Declination axis to move below 0 degrees.
 
         Note:
             When mount is parked no movement commands will be accepted.
 
+        Args:
+            park_direction (str or None): The direction to move the Declination axis. If
+                not provided (the default), then look at config setting, otherwise 'north'.
+            park_seconds (str or None): The number of seconds to move the Declination axis at
+                maximum move speed. If not provided (the default), then look at config setting,
+                otherwise 11 seconds.
+
         Returns:
             bool: indicating success
         """
-
         if self.at_mount_park:
             self.logger.success("Mount is already parked")
             return self.at_mount_park
+
+        # Get the direction and timing
+        park_direction = park_direction or self.get_config('mount.settings.park_direction', 'north')
+        park_seconds = park_seconds or self.get_config('mount.settings.park_seconds', 11)
+
+        self.logger.debug(f'Parking mount: {park_direction=} {park_seconds=}')
 
         self.unpark()
         self.query('park')
@@ -167,6 +178,11 @@ class Mount(AbstractSerialMount):
         return self.at_mount_park
 
     def search_for_home(self):
+        """Search for the home position.
+
+        This method uses the internal homing pin on the CEM40 mount to return the
+        mount to the home (or zero) position.
+        """
         self.logger.info('Searching for the home position.')
         self.query('search_for_home')
 

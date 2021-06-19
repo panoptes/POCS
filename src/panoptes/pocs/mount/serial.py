@@ -1,11 +1,12 @@
 import re
+from abc import ABC
 
 from panoptes.utils import error
 from panoptes.utils import rs232
 from panoptes.pocs.mount import AbstractMount
 
 
-class AbstractSerialMount(AbstractMount):
+class AbstractSerialMount(AbstractMount, ABC):
 
     def __init__(self, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
