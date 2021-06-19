@@ -30,8 +30,6 @@ if [ $1 == "--help" ]; then
   exit 1
 fi
 
-echo "${REMOTE_GPHOTO2_SERVER}"
-
 if [[ -n "${REMOTE_GPHOTO2_SERVER}" ]]; then
   echo "Using ${REMOTE_GPHOTO2_SERVER}"
   ssh "${REMOTE_GPHOTO2_SERVER}" gphoto2 "$@"
