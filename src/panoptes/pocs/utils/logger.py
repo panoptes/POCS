@@ -40,8 +40,8 @@ def get_logger(console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
                serialize_full_log=False,
                log_dir='logs',
-               console_log_level='SUCCESS',
-               stderr_log_level='SUCCESS',
+               console_log_level='INFO',
+               stderr_log_level='DEBUG',
                ):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
@@ -96,14 +96,14 @@ def get_logger(console_log_file='panoptes.log',
         console_id = loguru_logger.add(
             console_log_path,
             rotation='11:30',
-            retention=1,
+            retention='7 days',
+            compression='gz',
             format=LOGGER_INFO.format,
             enqueue=True,  # multiprocessing
             colorize=True,
             backtrace=True,
             diagnose=True,
             catch=True,
-            compression='gz',
             level=console_log_level)
         LOGGER_INFO.handlers['console'] = console_id
 
@@ -115,6 +115,7 @@ def get_logger(console_log_file='panoptes.log',
             rotation='11:31',
             retention='7 days',
             compression='gz',
+            format=LOGGER_INFO.format,
             enqueue=True,  # multiprocessing
             serialize=serialize_full_log,
             backtrace=True,
