@@ -17,6 +17,7 @@ usage() {
   OUTFILE           Output filename, defaults to bias-YMD-HMS.cr2.
   SHUTTER_INDEX     The camera shutter index to use, defaults to 52 (1/4000s) on
                     EOS100D.
+  ISO               ISO value. Must be a valid ISO value for the camera, default 100.
   NUM_FRAMES        Number of exposures to take, defaults to 1.
 "
 }
@@ -27,13 +28,12 @@ if [ $# -eq 0 ]; then
 fi
 
 PORT=$1
-
 SAVE_FILE=${2:-"bias-%Y%m%d-%H%M%S.cr2"}
-echo "Taking bias frames on port ${PORT}: ${SAVE_FILE}"
-
 SHUTTER_INDEX=${3:-52} # 1/4000s on EOS 100D
 ISO=${4:-100}
 NUM_FRAMES=${5:-1}
+
+echo "Taking bias frames on port ${PORT}: ${SAVE_FILE}"
 
 # Set shutter speed.
 gphoto2 --port="${PORT}" --set-config-index shutterspeed="${SHUTTER_INDEX}"

@@ -22,7 +22,8 @@ usage() {
   PORT              USB port as reported by gphoto2 --auto-detect, e.g. usb:001,004.
   EXPTIME           Exposure time in seconds, should be greater than 1 second.
                     Can be either an integer or string.
-  OUTFILE           Output filename with approrpiate extension, e.g. .cr2 for Canon.
+  OUTFILE           Output filename with appropriate extension, e.g. .cr2 for Canon.
+  ISO               ISO value. Must be a valid ISO value for the camera, default 100.
 
  Example:
   scripts/take-pic.sh usb:001,005 5 /var/panoptes/images/temp.cr2
