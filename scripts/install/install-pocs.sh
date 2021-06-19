@@ -29,8 +29,8 @@ usage() {
 #
 # Docker Images:
 #
-#   ${DOCKER_BASE}/panoptes-pocs:latest
-#   ${DOCKER_BASE}/aag-weather:latest
+#   $gcr.io/panoptes-exp/panoptes-pocs:latest
+#   $gcr.io/panoptes-exp/aag-weather:latest
 #
 # The regular install is for running units.
 #
@@ -62,20 +62,22 @@ usage() {
 PS3="Select: "
 
 # TODO should be checking to matching userid=1000
-PANUSER="${PANUSER:-$USER}"
+PANUSER="${PANUSER:-panoptes}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
-TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
-CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
-CONDA_ENV_NAME=conda-pocs
 DEV_BOX=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
-NTP_SERVER=192.168.8.1
 
-DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
+NTP_SERVER="${NTP_SERVER:-192.168.8.1}"
+
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
+CONDA_ENV_NAME=conda-pocs
+
+DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
+DOCKER_TAG=${DOCKER_TAG:-"develop"}
 
 function make_directories() {
   echo "Creating directories in ${PANDIR}"
@@ -90,6 +92,15 @@ function make_directories() {
 
 function name_me() {
   read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+}
+
+function which_docker() {
+  read -p 'What docker image tag would you like to use (default: develop)? ' DOCKER_TAG
+}
+
+function get_time_settings() {
+  read -p "What is the IP address of your router (default: ${NTP_SERVER})? " NTP_SERVER
+  sudo dpkg-reconfigure tzdata
 }
 
 function which_version() {
@@ -163,20 +174,20 @@ function install_docker() {
 function get_or_build_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
-  sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
+  sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
 
   if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
       "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
       "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
     sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
@@ -238,34 +249,61 @@ unsetopt share_history
 EOT
 }
 
+function change_username() {
+  if [ "${USER}" != "${PANUSER}" ]; then
+    echo "Changing default username to '${PANUSER}'"
+    sudo groupadd "${PANUSER}"
+    sudo usermod -d "/home/${PANUSER}" -m -g "${PANUSER}" -l "${USER}" "${PANUSER}"
+  fi
+}
+
 function fix_time() {
   echo "Syncing time."
   sudo apt install -y ntpdate
   sudo timedatectl set-ntp false
-  #  sudo dpkg-reconfigure tzdata
   sudo ntpdate -s "${NTP_SERVER}"
   sudo timedatectl set-ntp true
+
+  # Add crontab entries for reboot and every hour.
+  (
+    sudo crontab -l
+    echo "@reboot ntpdate -s ${NTP_SERVER}"
+  ) | sudo crontab -
+  (
+    sudo crontab -l
+    echo "13 * * * * ntpdate -s ${NTP_SERVER}"
+  ) | sudo crontab -
+
   timedatectl
+
 }
 
 function do_install() {
   clear
 
+  change_username
+
   name_me
 
   which_version
 
+  which_docker
+
   echo "Installing POCS software for ${UNIT_NAME}"
+  echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
-  echo "HOST: ${HOST}"
-  echo "OS: ${OS}"
+  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
+  echo "DOCKER_TAG: ${DOCKER_TAG}"
   echo "Logfile: ${LOGFILE}"
+  echo ""
 
-  make_directories
+  get_time_settings
 
   fix_time
+
+  make_directories
 
   echo "Installing system dependencies."
   system_deps
