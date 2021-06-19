@@ -34,7 +34,7 @@ RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo mkdir "$log_dir" && sudo chown -R "${userid}:${userid}" "$log_dir" && \
     sudo chown -R "${userid}:${userid}" "${APP_DIR}" && \
     mkdir -p "${HOME}/.local/bin" && \
-    # Symlink gphoto2 to our wrapper script
+    # Symlink gphoto2 to our wrapper script.
     ln -s /usr/bin/gphoto2 "${HOME}/.local/bin/gphoto2"
 
 # Set up arduino cli tools.
@@ -58,7 +58,7 @@ FROM panoptes-pocs-dependencies AS panoptes-pocs
 ARG pip_install_name="."
 ARG pip_install_extras="[google]"
 
-COPY --chown="${USERID}:${USERID}" . .
+COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     pip install --no-cache-dir -e "${pip_install_name}${pip_install_extras}" && \
 
@@ -69,4 +69,5 @@ RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
-CMD [ "pocs" ]
+# TODO replace with pocs-cli.
+CMD [ "ipython" ]
