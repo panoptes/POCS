@@ -71,7 +71,7 @@ class PanBase(object):
 
         if key == 'simulator' and new_value == 'all':
             # Don't use hardware.get_simulator_names because it checks config.
-            new_value = hardware.ALL_NAMES
+            new_value = [h.name for h in hardware.HardwareName]
 
         try:
             self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')
