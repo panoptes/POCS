@@ -1,4 +1,4 @@
-# Test sensor.py ability to read from two sensor boards.
+# Test sensors.py ability to read from two sensor boards.
 
 import pytest
 import responses
