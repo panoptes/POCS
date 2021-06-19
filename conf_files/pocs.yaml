@@ -97,7 +97,11 @@ cameras:
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
-    auto_detect: true
+    name: Trucker Power
+    arduino_board_name: power_board
+    record_interval: 5  # seconds
+    mean_interval: 5  # seconds
+    port: /dev/ttyACM0
     relays:
       RELAY_0:
         label: weather_station
