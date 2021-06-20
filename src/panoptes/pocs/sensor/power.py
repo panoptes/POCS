@@ -1,12 +1,15 @@
 import time
-from enum import IntEnum
+from contextlib import suppress
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import Optional, Dict, List, Callable
 from functools import partial
 import pandas as pd
 from panoptes.utils import error
 
 from streamz.dataframe import PeriodicDataFrame
+
+from astropy import units as u
 
 from panoptes.utils.serial.device import find_serial_port, SerialDevice
 from panoptes.utils.serializers import to_json, from_json
@@ -54,6 +57,18 @@ class Relay:
     state: Optional[PinState] = PinState.OFF
     default_state: Optional[PinState] = PinState.OFF
 
+    def turn_on(self):
+        pass
+
+    def turn_off(self):
+        pass
+
+    def toggle_relay(self):
+        pass
+
+    def cycle_relay(self):
+        pass
+
     def __str__(self):
         return f'[{self.name}] {self.label} {self.state.name}'
 
@@ -88,7 +103,9 @@ class PowerBoard(PanBase):
                  name: str = 'Power Board',
                  relays: Dict[str, dict] = None,
                  reader_callback: Callable[[dict], dict] = None,
-                 dataframe_period: str = '50ms',
+                 dataframe_period: int = 1,
+                 mean_interval: Optional[int] = 5,
+                 arduino_board_name: str = 'power_board',
                  *args, **kwargs):
         """Initialize the power board.
 
@@ -104,14 +121,26 @@ class PowerBoard(PanBase):
                 matching the vendor (2341) and product id (0043).
             name (str): The user-friendly name for the power board.
             relays (dict[Relay] or None): The relay configuration. See notes for details.
+            reader_callback (Callable): A callback for the serial readings. The
+                default callback will update the pin values and record data in a
+                json format, which is then made into a dataframe with the `to_dataframe`.
+            dataframe_period (int): The period to use for creating the
+                `PeriodicDataFrame`, default `2` (seconds).
+            mean_interval (int): When taking a rolling mean, use this many seconds,
+                default 5.
+            arduino_board_name (str): The name of the arduino board to match in
+                the callback and the collection name for storing in `record.
         """
         super().__init__(*args, **kwargs)
         if port is None:
             port = PowerBoard.lookup_port(**kwargs)
+            if port is None:
+                raise error.NotFound('Failed to automatically find port for PowerBoard.')
             self.logger.info(f'Guessing that arduino is on {port=}')
 
         self.port = port
         self.name = name
+        self.arduino_board_name = 'power_board'
 
         reader_callback = reader_callback or self.default_reader_callback
 
@@ -120,6 +149,7 @@ class PowerBoard(PanBase):
         self.arduino_board = SerialDevice(port=self.port,
                                           serial_settings=dict(baudrate=9600),
                                           reader_callback=reader_callback,
+                                          name=arduino_board_name
                                           )
 
         self.relays: List[Relay] = list()
@@ -134,8 +164,30 @@ class PowerBoard(PanBase):
 
         self.dataframe = None
         if dataframe_period is not None:
-            self.dataframe = PeriodicDataFrame(interval=dataframe_period, datafn=self.to_dataframe)
+            self.dataframe = PeriodicDataFrame(interval=f'{dataframe_period}s',
+                                               datafn=self.to_dataframe)
+
+        self._mean_interval = mean_interval
+
         self.logger.info(f'Power board initialized')
+
+    @property
+    def status(self):
+        readings = self.readings
+        status = {
+            r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
+            for r in self.relays
+        }
+
+        return status
+
+    @property
+    def readings(self):
+        """Return the rolling mean of the readings. """
+        time_start = (current_time() - self._mean_interval * u.second).to_datetime()
+        mean_values = self.to_dataframe()[time_start:].mean().astype('int').to_dict()
+
+        return mean_values
 
     def turn_on(self, label):
         """Turns on the relay with the given label."""
@@ -154,6 +206,11 @@ class PowerBoard(PanBase):
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
     def to_dataframe(self, **kwargs):
+        """Make a dataframe from the latest readings.
+
+        This method is called by a `streamz.dataframe.PeriodicDataFrame`.
+
+        """
         try:
             columns = ['time'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
@@ -162,6 +219,21 @@ class PowerBoard(PanBase):
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
         return df0
+
+    def record(self, collection_name: str = None):
+        """Record the rolling mean of the power readings in the database.
+
+        Args:
+            collection_name (str): Where to store the results in the db. If None
+                (the default), then use `arduino_board_name`.
+
+        """
+        mean_values = self.readings
+
+        collection_name = collection_name or self.arduino_board_name
+        self.db.insert_current(collection_name, mean_values)
+
+        return mean_values
 
     def setup_relays(self, relays: Dict[str, dict]):
         """Setup the relays."""
@@ -179,8 +251,10 @@ class PowerBoard(PanBase):
                           )
 
             # Add convenience methods on the relay itself.
-            relay.turn_on = partial(self.turn_on, relay.label)
-            relay.turn_off = partial(self.turn_off, relay.label)
+            setattr(relay, 'turn_on', partial(self.turn_on, relay.label))
+            setattr(relay, 'turn_off', partial(self.turn_off, relay.label))
+            setattr(relay, 'toggle_relay', partial(self.toggle_relay, relay.label))
+            setattr(relay, 'cycle_relay', partial(self.cycle_relay, relay.label))
 
             # Track relays by list and by friendly label.
             self.relays.append(relay)
@@ -216,7 +290,7 @@ class PowerBoard(PanBase):
             self.logger.warning(f'Error here: {e!r}')
             return
 
-        if data[name_key] != 'power_board':
+        if data[name_key] != self.arduino_board_name:
             self.logger.warning('Not reading the power_board. Skipping data.')
             return
 
@@ -230,10 +304,13 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time.
         new_data = [current_time().to_datetime()]
         for relay_index, read_relay in enumerate(self.relays):
-            # Record the new value.
-            new_data.append(data[values_key][relay_index])
             # Update the state of the pin.
             read_relay.state = PinState(data[relay_key][relay_index])
+            if read_relay.state == PinState.OFF:
+                # Give a negative value for off rather than zero.
+                data[values_key][relay_index] = -1
+            # Record the new value.
+            new_data.append(data[values_key][relay_index])
 
         return new_data
 
@@ -258,4 +335,8 @@ class PowerBoard(PanBase):
         https://github.com/arduino/Arduino/blob/1.8.0/hardware/arduino/avr/boards.txt#L51-L58
 
         """
-        return find_serial_port(vendor_id, product_id)
+        dev_path = None
+        with suppress(error.NotFound):
+            dev_path = find_serial_port(vendor_id, product_id)
+
+        return dev_path

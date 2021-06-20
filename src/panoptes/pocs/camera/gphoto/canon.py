@@ -1,6 +1,5 @@
 import os
 import subprocess
-from abc import ABC
 from threading import Event
 from threading import Timer
 
@@ -13,7 +12,7 @@ from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
 
-class Camera(AbstractGPhotoCamera, ABC):
+class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
@@ -30,6 +29,10 @@ class Camera(AbstractGPhotoCamera, ABC):
     @property
     def bit_depth(self):
         return 12 * u.bit
+
+    @property
+    def egain(self):
+        return 1.5
 
     def connect(self):
         """Connect to Canon DSLR
@@ -64,11 +67,11 @@ class Camera(AbstractGPhotoCamera, ABC):
 
         owner_name = 'Project PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
-        copyright = f'{owner_name} {current_time().datetime:%Y}'
+        copy_right = f'{owner_name} {current_time().datetime:%Y}'
 
         prop2value = {
             '/main/settings/artist': artist_name,
-            '/main/settings/copyright': copyright,
+            '/main/settings/copyright': copy_right,
             '/main/settings/ownername': owner_name,
             # Current UTC datetime in seconds since epoch.U
             '/main/settings/datetimeutc': f'{current_time(datetime=True):%s}',
@@ -172,14 +175,14 @@ class Camera(AbstractGPhotoCamera, ABC):
         file_path = file_path.replace('.cr2', '.fits')
         return super()._process_fits(file_path, info)
 
-    def _poll_exposure(self, readout_args):
+    def _poll_exposure(self, readout_args, *args, **kwargs):
         timer = CountdownTimer(duration=self._timeout)
         try:
             try:
                 # See if the command has finished.
                 while self._exposure_proc.poll() is None:
                     # Sleep if not done yet.
-                    timer.sleep()
+                    timer.sleep(max_sleep=0.5)
             except subprocess.TimeoutExpired:
                 self.logger.warning(f'Timeout on exposure process for {self.name}')
                 self._exposure_proc.kill()
@@ -188,12 +191,12 @@ class Camera(AbstractGPhotoCamera, ABC):
                     self.logger.error(f'Camera exposure errors: {errs}')
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
-            self.logger.error('Error while waiting for exposure on {}: {}'.format(self, err))
+            self.logger.error(f'Error while waiting for exposure on {self}: {err}')
+            self._exposure_proc = None
             raise err
         else:
             # Camera type specific readout function
             self._readout(*readout_args)
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')
-            self._exposure_proc = None
             self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
