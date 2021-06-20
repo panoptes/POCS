@@ -4,8 +4,8 @@ from typing import Dict, Optional
 import requests
 import typer
 from pydantic import BaseModel
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config
+from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs.utils.service.power import RelayAction
 
 
@@ -39,16 +39,15 @@ def server_running():
 
 
 def get_status():
-    if server_running():
-        metadata = state['metadata']
-        res = requests.get(metadata.url)
-        if res.ok:
-            return res.json()
-        else:
-            run_status = typer.style('RUNNING', fg=typer.colors.RED, bold=True)
-            typer.secho(f'Server status: {run_status}')
-            typer.secho(f'Response: {res.content!r}')
-            return None
+    metadata = state['metadata']
+    res = requests.get(metadata.url)
+    if res.ok:
+        return res.json()
+    else:
+        run_status = typer.style('RUNNING', fg=typer.colors.RED, bold=True)
+        typer.secho(f'Server status: {run_status}')
+        typer.secho(f'Response: {res.content!r}')
+        return None
 
 
 @app.callback()
@@ -85,12 +84,11 @@ def control(
         action: RelayAction = typer.Argument(..., help='The action for the relay.'),
 ):
     """Control the relays on the power board."""
-    if server_running():
-        metadata = state['metadata']
-        url = f'{metadata.url}/relay/{relay}/control/{action}'
-        res = requests.post(url)
-        if res.ok:
-            typer.secho(pprint(res.json()))
+    metadata = state['metadata']
+    url = f'{metadata.url}/relay/{relay}/control/{action}'
+    res = requests.post(url)
+    if res.ok:
+        typer.secho(pprint(res.json()))
 
 
 @app.command()
