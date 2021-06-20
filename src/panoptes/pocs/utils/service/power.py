@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Union
 
 from fastapi import FastAPI
-from panoptes.pocs.sensor.power import PowerBoard
-from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
+from panoptes.utils.config.client import get_config
+from panoptes.pocs.sensor.power import PowerBoard
 
 
 class RelayAction(str, Enum):
@@ -43,7 +43,7 @@ async def readings():
 
 
 @app.get('/record')
-def control_relay():
+def record_readings():
     """Record the current readings in the db."""
     global power_board
     return power_board.record()
@@ -51,18 +51,22 @@ def control_relay():
 
 @app.post('/control')
 def control_relay(relay_command: RelayCommand):
-    """Control a relay via a post submission"""
+    """Control a relay via a POST request."""
     return do_command(relay_command)
 
 
 @app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
-    """Control a relay via a get url"""
+    """Control a relay via a GET request"""
     return do_command(RelayCommand(relay=relay, command=command))
 
 
 def do_command(relay_command: RelayCommand):
-    """Control relay"""
+    """Control a relay.
+
+    This function performs the actual relay control and is used by both request
+    types.
+    """
     global power_board
     relay_id = relay_command.relay
     try:
@@ -73,5 +77,4 @@ def do_command(relay_command: RelayCommand):
     command_func = getattr(relay, relay_command.command)
     # Perform function.
     command_func()
-    time.sleep(1)  # Give it time to toggle before returning status
-    return power_board.status
+    return relay_command
