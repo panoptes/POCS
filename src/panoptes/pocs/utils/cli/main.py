@@ -5,7 +5,7 @@ from panoptes.pocs.utils.cli import config
 app = typer.Typer()
 state = {'verbose': False}
 
-app.add_typer(config.app, name="config", help='Manage the config server.')
+app.add_typer(config.app, name="config", help='Interact with the config server.')
 
 
 @app.callback()
