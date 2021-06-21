@@ -72,14 +72,14 @@ def test_pocs_run(pocs, dome):
     dome.open_slit()
     assert dome.is_open is True
 
-    pocs.host_info = 'sleeping'
+    pocs.state = 'sleeping'
     pocs._do_states = True
 
     pocs.initialize()
     assert pocs.is_initialized is True
 
     pocs.run(exit_when_done=True, run_once=True)
-    assert pocs.host_info == 'sleeping'
+    assert pocs.state == 'sleeping'
 
     dome.close_slit()
     dome.disconnect()
