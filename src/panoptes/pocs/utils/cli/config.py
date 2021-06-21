@@ -8,7 +8,8 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config, server_is_running
 
 
-class State(BaseModel):
+class HostInfo(BaseModel):
+    """Metadata for the Config Server"""
     host: str = '127.0.0.1'
     port: int = 6563
     verbose: bool = False
@@ -19,7 +20,7 @@ class State(BaseModel):
 
 
 app = typer.Typer()
-state: Dict[str, Optional[State]] = {'metadata': None}
+host_info: Dict[str, Optional[HostInfo]] = {'config_server': None}
 logger = get_logger(stderr_log_level='ERROR')
 
 
@@ -38,9 +39,9 @@ def server_running():
 def main(context: typer.Context):
     context.params.update(context.parent.params)
     verbose = context.params['verbose']
-    state['metadata'] = State(host=context.params['config_host'],
-                              port=context.params['config_port'],
-                              verbose=verbose)
+    host_info['config_server'] = HostInfo(host=context.params['config_host'],
+                                          port=context.params['config_port'],
+                                          verbose=verbose)
     if verbose:
         typer.echo(f'Command options from power: {context.params!r}')
 
@@ -60,7 +61,7 @@ def get(
 ):
     """Get an item from the config"""
     if server_running():
-        metadata = state['metadata']
+        metadata = host_info['config_server']
         item = get_config(key, parse=pretty_print, host=metadata.host, port=metadata.port)
         if pretty_print:
             typer.echo(pprint(item))
@@ -77,7 +78,7 @@ def set(
 ):
     """Get an item from the config"""
     if server_running():
-        metadata = state['metadata']
+        metadata = host_info['config_server']
         item = set_config(key, value, host=metadata.host, port=metadata.port)
         typer.secho(pprint(item), fg=typer.colors.MAGENTA)
 
