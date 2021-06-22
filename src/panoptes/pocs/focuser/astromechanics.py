@@ -1,8 +1,6 @@
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
-
-from usb.core import find as finddev
-from usb.util import get_string
+from panoptes.utils.rs232 import get_serial_port_info
 
 
 
