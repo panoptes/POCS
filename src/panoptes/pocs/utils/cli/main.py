@@ -1,11 +1,13 @@
 import typer
 
 from panoptes.pocs.utils.cli import power
+from panoptes.pocs.utils.cli import config
 
 app = typer.Typer()
 state = {'verbose': False}
 
 app.add_typer(power.app, name="power", help='Manage the power board.')
+app.add_typer(config.app, name="config", help='Interact with the config server.')
 
 
 @app.callback()
