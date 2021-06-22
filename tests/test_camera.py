@@ -18,7 +18,9 @@ from panoptes.pocs.camera.zwo import Camera as ZWOCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.scheduler.observation.bias import BiasObservation
+from panoptes.pocs.scheduler.observation.dark import DarkObservation
 
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
@@ -178,17 +180,17 @@ def test_sdk_no_serial_number():
         SimSDKCamera()
 
 
-def test_sdk_camera_not_found():
-    with pytest.raises(error.InvalidConfig):
-        SimSDKCamera(serial_number='SSC404')
-
-
 def test_sdk_already_in_use():
     serial_number = get_config('cameras.devices[-1].serial_number')
     sim_camera = SimSDKCamera(serial_number=serial_number)
     assert sim_camera
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
+
+
+def test_sdk_camera_not_found():
+    with pytest.raises(error.InvalidConfig):
+        SimSDKCamera(serial_number='SSC404')
 
 
 # Hardware independent tests for SBIG camera
@@ -422,6 +424,7 @@ def test_exposure_collision(camera, tmpdir):
     # Wait for readout on file.
     while not os.path.exists(fits_path_1):
         time.sleep(0.5)
+    time.sleep(1)  # Make sure the file is fully-written
 
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
@@ -430,7 +433,6 @@ def test_exposure_collision(camera, tmpdir):
 
 def test_exposure_scaling(camera, tmpdir):
     """Regression test for incorrect pixel value scaling.
-
     Checks for zero padding of LSBs instead of MSBs, as encountered
     with ZWO ASI cameras.
     """
@@ -541,11 +543,56 @@ def test_observation_nofilter(camera, images_dir):
     assert len(glob.glob(observation_pattern)) == 1
 
 
+def test_observation_dark(camera, images_dir):
+    """
+    Tests functionality of take_observation()
+    """
+    position = '20h00m43.7135s +22d42m39.0645s'
+    observation = DarkObservation(position, exptimes=[1])
+    assert observation.dark
+
+    observation.seq_time = '19991231T235959'
+    observation_event = camera.take_observation(observation)
+    while not observation_event.is_set():
+        camera.logger.trace(f'Waiting for observation event from inside test.')
+        time.sleep(1)
+    observation_pattern = os.path.join(images_dir, 'dark',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
+
+
+def test_observation_bias(camera, images_dir):
+    """
+    Tests functionality of take_observation()
+    """
+    position = '20h00m43.7135s +22d42m39.0645s'
+    observation = BiasObservation(position)
+    assert observation.dark
+
+    observation.seq_time = '19991231T235959'
+    observation_event = camera.take_observation(observation)
+    while not observation_event.is_set():
+        camera.logger.trace(f'Waiting for observation event from inside test.')
+        time.sleep(1)
+    observation_pattern = os.path.join(images_dir, 'bias',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    assert len(glob.glob(observation_pattern)) == 1
+
+
 def test_autofocus_coarse(camera, patterns, counter):
-    if camera.focuser is None:
+
+    if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
-    autofocus_event = camera.autofocus(coarse=True)
+
+    if camera.has_filterwheel:
+        camera.filterwheel.move_to("one", blocking=True)
+
+    autofocus_event = camera.autofocus(coarse=True, filter_name="deux")
     autofocus_event.wait()
+
+    if camera.has_filterwheel:
+        assert camera.filterwheel.current_filter == "deux"
+
     counter['value'] += 1
     assert len(glob.glob(patterns['final'])) == counter['value']
 
@@ -700,3 +747,29 @@ def test_autofocus_no_focuser(camera):
         camera.autofocus()
     camera.focuser = focuser
     assert camera.focuser.position == initial_focus
+
+
+def test_move_filterwheel_focus_offset(camera):
+    if not camera.has_filterwheel:
+        pytest.skip("Camera does not have a filterwheel.")
+    if not camera.has_focuser:
+        pytest.skip("Camera does not have a focuser.")
+
+    if camera.filterwheel._focus_offsets is None:
+        offsets = {}
+    else:
+        offsets = camera.filterwheel._focus_offsets
+
+    camera.filterwheel.move_to("one", blocking=True)
+
+    for filter_name in camera.filterwheel.filter_names:
+
+        offset = offsets.get(filter_name, 0) - offsets.get(camera.filterwheel.current_filter, 0)
+        initial_position = camera.focuser.position
+        camera.filterwheel.move_to(filter_name, blocking=True)
+        new_position = camera.focuser.position
+
+        if filter_name in offsets.keys():
+            assert new_position == initial_position + offset
+        else:
+            assert new_position == initial_position

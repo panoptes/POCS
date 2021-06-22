@@ -3,7 +3,7 @@ import pytest
 from astropy import units as u
 
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 @pytest.fixture
@@ -17,18 +17,13 @@ def test_create_observation_no_field():
 
 
 def test_create_observation_bad_field():
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         Observation('20h00m43.7135s +22d42m39.0645s')
 
 
-def test_create_observation_exptime_no_units(field):
-    with pytest.raises(TypeError):
-        Observation(field, exptime=1.0)
-
-
 def test_create_observation_exptime_bad(field):
-    with pytest.raises(AssertionError):
-        Observation(field, exptime=0.0 * u.second)
+    with pytest.raises(ValueError):
+        Observation(field, exptime=-1.0 * u.second)
 
 
 def test_create_observation_exptime_minutes(field):
@@ -37,7 +32,7 @@ def test_create_observation_exptime_minutes(field):
 
 
 def test_bad_priority(field):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         Observation(field, priority=-1)
 
 
@@ -52,9 +47,9 @@ def test_priority_str(field):
 
 
 def test_bad_min_set_combo(field):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         Observation(field, exp_set_size=7)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         Observation(field, min_nexp=57)
 
 

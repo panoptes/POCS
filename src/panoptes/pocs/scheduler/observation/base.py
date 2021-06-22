@@ -1,16 +1,17 @@
 import os
 from collections import OrderedDict
-
 from astropy import units as u
+
+from panoptes.utils.utils import get_quantity_value
+
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
 
 
 class Observation(PanBase):
 
-    @u.quantity_input(exptime=u.second)
-    def __init__(self, field, exptime=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, filter_name=None, *args, **kwargs):
+    def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
+                 filter_name=None, dark=False, *args, **kwargs):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -40,25 +41,30 @@ class Observation(PanBase):
                 (default: {100})
             filter_name {str} -- Name of the filter to be used. If specified,
                 will override the default filter name (default: {None}).
-
+            dark (bool, optional): If True, exposures should be taken with the shutter closed.
+                Default: False.
         """
         super().__init__(*args, **kwargs)
 
-        assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
+        exptime = get_quantity_value(exptime, u.second) * u.second
 
-        assert exptime > 0.0, \
-            self.logger.error(f"Exposure time (exptime={exptime}) must be greater than 0")
+        if not isinstance(field, Field):
+            raise TypeError(f"field must be a valid Field instance, got {type(field)}.")
 
-        assert min_nexp % exp_set_size == 0, \
-            self.logger.error(
-                f"Minimum number of exposures (min_nexp={min_nexp}) must be " +
-                f"multiple of set size (exp_set_size={exp_set_size})")
+        if exptime < 0 * u.second:  # 0 second exposures correspond to bias frames
+            raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
-        assert float(priority) > 0.0, self.logger.error(f"Priority must be 1.0 or larger, currently {priority}")
+        if not min_nexp % exp_set_size == 0:
+            raise ValueError(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
+                             f"a multiple of set size (exp_set_size={exp_set_size}).")
+
+        if not float(priority) > 0.0:
+            raise ValueError("Priority must be larger than 0.")
 
         self.field = field
+        self.dark = dark
 
-        self.exptime = exptime
+        self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list = OrderedDict()
@@ -115,9 +121,18 @@ class Observation(PanBase):
             'ra_mnt': self.field.coord.ra.value,
             'seq_time': self.seq_time,
             'set_duration': self.set_duration.value,
+            'dark': self.dark
         }
 
         return status
+
+    @property
+    def exptime(self):
+        return self._exptime
+
+    @exptime.setter
+    def exptime(self, value):
+        self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property
     def minimum_duration(self):
@@ -207,6 +222,21 @@ class Observation(PanBase):
             return list(self.pointing_images.items())[-1]
         except IndexError:
             self.logger.warning("No pointing image available")
+
+    @property
+    def set_is_finished(self):
+        """ Check if the current observing block has finished, which is True when the minimum
+        number of exposures have been obtained and and integer number of sets have been completed.
+        Returns:
+            bool: True if finished, False if not.
+        """
+        # Check the min required number of exposures have been obtained
+        has_min_exposures = self.current_exp_num >= self.min_nexp
+
+        # Check if the current set is finished
+        this_set_finished = self.current_exp_num % self.exp_set_size == 0
+
+        return has_min_exposures and this_set_finished
 
     ##################################################################################################
     # Methods

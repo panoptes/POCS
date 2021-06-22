@@ -13,16 +13,16 @@ services:
     deploy:
       mode: global
     environment:
-      - PANDIR=/POCS
-      - POCS=/POCS
-      - PANOPTES_CONFIG_FILE=/POCS/tests/testing.yaml
+      - PANDIR=/panoptes-pocs
+      - POCS=/panoptes-pocs
+      - PANOPTES_CONFIG_FILE=/panoptes-pocs/tests/testing.yaml
       - PANOPTES_CONFIG_HOST=localhost
       - PANOPTES_CONFIG_PORT=8765
     privileged: true
     network_mode: host
     command: [ "pytest" ]
     volumes:
-      - "$PWD/logs:/POCS/logs"
-      - "$PWD/build:/POCS/build"
-      - "$PWD/src:/POCS/src"
-      - "$PWD/tests:/POCS/tests"
+      - "$PWD/logs:/panoptes-pocs/logs"
+      - "$PWD/build:/panoptes-pocs/build"
+      - "$PWD/src:/panoptes-pocs/src"
+      - "$PWD/tests:/panoptes-pocs/tests"

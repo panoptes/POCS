@@ -101,27 +101,23 @@ def pocs_with_dome(pocs, dome):
 # An observation that is valid during the day
 @pytest.fixture(scope='module')
 def valid_observation():
-    return {
-        'name': 'TEST TARGET',
-        'position': '100.00 deg +00.887 deg',
-        'priority': '100',
-        'exptime': 2,
-        'min_nexp': 2,
-        'exp_set_size': 2,
-    }
+    return {"field": {'name': 'TEST TARGET',
+                      'position': '100.00 deg +00.887 deg'},
+            "observation": {'priority': '100',
+                            'exptime': 2,
+                            'min_nexp': 2,
+                            'exp_set_size': 2}}
 
 
 # An observation that is valid at night
 @pytest.fixture(scope='module')
 def valid_observation_day():
-    return {
-        'name': 'TEST TARGET',
-        'position': '300.00 deg +70.887 deg',
-        'priority': '100',
-        'exptime': 2,
-        'min_nexp': 2,
-        'exp_set_size': 2,
-    }
+    return {"field": {'name': 'TEST TARGET',
+                      'position': '300.00 deg +70.887 deg'},
+            "observation": {'priority': '100',
+                            'exptime': 2,
+                            'min_nexp': 2,
+                            'exp_set_size': 2}}
 
 
 def test_observatory_cannot_observe(pocs):
@@ -304,21 +300,21 @@ def test_pocs_park_to_ready_with_observations(pocs):
 
 def test_pocs_park_to_ready_without_observations(pocs):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
-    pocs.logger.warning(f'Inserting safe weather reading')
+    pocs.logger.warning('Inserting safe weather reading')
     pocs.db.insert_current('weather', {'safe': True})
 
     assert pocs.is_safe() is True
     assert pocs.state == 'sleeping'
     pocs.next_state = 'ready'
     assert pocs.initialize()
-    pocs.logger.warning(f'Moving to ready')
+    pocs.logger.warning('Moving to ready')
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
-    pocs.logger.warning(f'Moving to scheduling')
+    pocs.logger.warning('Moving to scheduling')
     assert pocs.goto_next_state()
     assert pocs.observatory.current_observation is not None
     pocs.next_state = 'parking'
-    pocs.logger.warning(f'Moving to parking')
+    pocs.logger.warning('Moving to parking')
     assert pocs.goto_next_state()
     assert pocs.state == 'parking'
     assert pocs.observatory.current_observation is None
@@ -364,7 +360,7 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
 
     def start_pocs():
         # Start running, BLOCKING.
-        pocs.logger.info(f'start_pocs ENTER')
+        pocs.logger.info('start_pocs ENTER')
         pocs.run(run_once=True, exit_when_done=True)
 
         # After done running.
@@ -382,14 +378,14 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     os.environ['POCSTIME'] = pocstime_night
     assert pocs.is_dark()
 
-    pocs.logger.warning(f'Waiting to get to slewing state...')
+    pocs.logger.warning('Waiting to get to slewing state...')
     while pocs.next_state != 'slewing':
         time.sleep(1)
 
-    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    pocs.logger.warning('Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
 
-    observatory.logger.warning(f'Waiting on pocs_thread')
+    observatory.logger.warning('Waiting on pocs_thread')
     pocs_thread.join(timeout=300)
 
     assert pocs_thread.is_alive() is False
@@ -406,7 +402,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
 
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
-    observatory.logger.warning(f'Inserting safe weather reading')
+    observatory.logger.warning('Inserting safe weather reading')
     observatory.db.insert_current('weather', {'safe': True})
 
     assert pocs.connected is True
@@ -425,7 +421,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
 
     def start_pocs():
         # Start running, BLOCKING.
-        pocs.logger.info(f'start_pocs ENTER')
+        pocs.logger.info('start_pocs ENTER')
         pocs.run(run_once=True, exit_when_done=True)
 
         # After done running.
@@ -437,24 +433,24 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     pocs_thread.start()
 
     # Insert bad weather report while slewing
-    pocs.logger.info(f'Waiting to get to slewing state...')
+    pocs.logger.info('Waiting to get to slewing state...')
     while pocs.state != "slewing":
         pass
     pocs.logger.info("Inserting bad weather record.")
     observatory.db.insert_current('weather', {'safe': False})
 
     # No longer safe, so should transition to parking
-    pocs.logger.info(f'Waiting to get to parked state...')
+    pocs.logger.info('Waiting to get to parked state...')
     while True:
         if pocs.state in ['parking', 'parked']:
             break
         assert pocs.state in ["slewing", "parking", "parked"]  # Should be one of these states
         time.sleep(0.5)
 
-    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    pocs.logger.warning('Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
 
-    observatory.logger.warning(f'Waiting on pocs_thread')
+    observatory.logger.warning('Waiting on pocs_thread')
     pocs_thread.join(timeout=300)
 
     assert pocs_thread.is_alive() is False
@@ -499,10 +495,10 @@ def test_run_power_down_interrupt(observatory,
             f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
-    pocs.logger.warning(f'Stopping states via pocs.DO_STATES')
+    pocs.logger.warning('Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
 
-    observatory.logger.debug(f'Waiting on pocs_thread')
+    observatory.logger.debug('Waiting on pocs_thread')
     pocs_thread.join(timeout=300)
 
     assert pocs_thread.is_alive() is False

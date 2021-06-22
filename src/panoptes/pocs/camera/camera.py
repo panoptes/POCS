@@ -86,6 +86,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.name = name
         self.is_primary = primary
 
+        self.filterwheel = None
         self._filter_type = kwargs.get('filter_type', 'RGGB')
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
@@ -132,9 +133,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Camera created: {self}')
 
-    ##################################################################################################
+    ############################################################################
     # Properties
-    ##################################################################################################
+    ############################################################################
 
     @property
     def uid(self):
@@ -254,7 +255,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def filter_type(self):
         """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
-        if self.filterwheel:
+        if self.has_filterwheel:
             return self.filterwheel.current_filter
         else:
             return self._filter_type
@@ -353,9 +354,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Error message from the most recent exposure or None, if there was no error."""
         return self._exposure_error
 
-    ##################################################################################################
+    @property
+    def has_focuser(self):
+        """ Return True if the camera has a focuser, False if not. """
+        return self.focuser is not None
+
+    @property
+    def has_filterwheel(self):
+        """ Return True if the camera has a filterwheel, False if not. """
+        return self.filterwheel is not None
+
+    ############################################################################
     # Methods
-    ##################################################################################################
+    ############################################################################
 
     @abstractmethod
     def connect(self):
@@ -394,7 +405,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, **kwargs)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
+                           dark=observation.dark, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -676,7 +688,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Raises:
             ValueError: If invalid values are passed for any of the focus parameters.
         """
-        if self.focuser is None:
+        if not self.has_focuser:
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
@@ -737,7 +749,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def _set_cooling_enabled(self, enable):
         """Camera-specific function to set cooling enabled.
 
@@ -748,7 +759,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             enable (bool): Enable camera cooling?
         """
-        raise NotImplementedError
+        self._cooling_enabled = enable
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
@@ -862,7 +873,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         headers = headers or None
 
         # Move the filterwheel if necessary
-        if self.filterwheel is not None:
+        if self.has_filterwheel:
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
@@ -875,11 +886,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e!r}')
                     raise (e)
 
-            else:
-                self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 f' observation but {self.filterwheel} is missing that filter, '
-                                 f'using'
-                                 f' {self.filter_type}.')
+            elif not observation.dark:
+                self.logger.warning(f'Filter {observation.filter_name} requested by'
+                                    f' observation but {self.filterwheel} is missing that filter, '
+                                    f'using {self.filter_type}.')
 
         if headers is None:
             start_time = current_time(flatten=True)
@@ -923,10 +933,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
 
-        # Make the sequence_id
-
         # The exptime header data is set as part of observation but can
-        # be override by passed parameter so update here.
+        # be overridden by passed parameter so update here.
         exptime = kwargs.get('exptime', observation.exptime.value)
 
         # Camera metadata

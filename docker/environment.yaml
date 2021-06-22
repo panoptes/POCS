@@ -1,13 +1,14 @@
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
-  - ipython  # Interactive
+  - astroplan
+  - fastapi
   - matplotlib-base
   - numpy
+  - pandas
   - photutils
-  - pillow
   - pip
-  - readline  # POCS shell
   - scipy
+  - streamz
   - pip:
-      - panoptes-utils[config] >= 0.2.30
+      - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"

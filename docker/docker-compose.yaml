@@ -9,17 +9,19 @@ services:
       mode: global
     restart: on-failure
     init: true
+    tty: true
     container_name: pocs-config-server
     hostname: pocs-config-server
-    network_mode: host
+    ports:
+      - "6563:6563"
     environment:
       PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
       PANOPTES_CONFIG_FILE:
-    command: [ "panoptes-config-server --verbose run --no-save-local --no-load-local --config-file /POCS/conf_files/pocs.yaml" ]
+    command: [ "panoptes-config-server --verbose run --no-save-local --no-load-local --config-file /panoptes-pocs/conf_files/pocs.yaml" ]
     volumes:
-      - "$PWD/logs:/POCS/logs"
-      - "$PWD/conf_files:/POCS/conf_files"
+      - config:/panoptes-pocs/conf_files
+      - panlog:/panoptes-pocs/logs
   pocs-control:
     image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
     depends_on:
@@ -37,10 +39,43 @@ services:
     hostname: pocs-control
     network_mode: host
     environment:
-      PANOPTES_CONFIG_HOST: localhost
+      PANOPTES_CONFIG_HOST: 0.0.0.0
       PANOPTES_CONFIG_PORT: 6563
-    command: [ "wait-for-it localhost:6563 -- ipython -i /POCS/scripts/load-simulators.py" ]
+    command: [ "wait-for-it localhost:6563 -- ipython" ]
     volumes:
-      - "$PWD/logs:/POCS/logs"
-      - "/var/panoptes/images:/POCS/images"
-      - "/var/panoptes/json_store:/POCS/json_store"
+      - config:/panoptes-pocs/conf_files
+      - panlog:/panoptes-pocs/logs
+      - images:/panoptes-pocs/images
+      - json_store:/panoptes-pocs/json_store
+      - devices:/dev/bus/usb
+volumes:
+  panlog:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./logs
+      o: bind
+  images:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./images
+      o: bind
+  config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./conf_files/
+      o: bind
+  json_store:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./json_store
+      o: bind
+  devices:
+    driver: local
+    driver_opts:
+      type: none
+      device: /dev/bus/usb
+      o: bind

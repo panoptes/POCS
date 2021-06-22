@@ -1,28 +1,23 @@
 import os
 import time
-from contextlib import suppress
 
 import pytest
 from astropy.time import Time
-
 from panoptes.pocs import __version__
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
-
 from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.dispatch import Scheduler
-from panoptes.pocs.scheduler.observation import Observation
-
+from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
-
 import requests
 
 
@@ -180,7 +175,7 @@ def test_set_mount():
 
     set_config('mount', {
         'brand': 'Simulacrum',
-        'driver': 'simulator',
+        'driver': 'panoptes.pocs.mount.simulator',
         'model': 'panoptes.pocs.camera.simulator.dslr',
     })
     mount = create_mount_from_config()
@@ -251,11 +246,10 @@ def test_standard_headers(observatory):
 
     observatory.scheduler.fields_file = None
     observatory.scheduler.fields_list = [
-        {
+        {"field": {
             'name': 'HAT-P-20',
-            'priority': '100',
-            'position': '07h27m39.89s +24d20m14.7s',
-        },
+            'position': '07h27m39.89s +24d20m14.7s'},
+         "observation": {'priority': '100'}}
     ]
 
     observatory.get_observation()

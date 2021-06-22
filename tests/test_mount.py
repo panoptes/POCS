@@ -1,17 +1,15 @@
-import pytest
 from contextlib import suppress
 
+import pytest
 from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount import create_mount_simulator
 from panoptes.pocs.utils.location import create_location_from_config
-
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
-
 import requests
 
 
@@ -34,7 +32,7 @@ def test_create_mount_simulator_with_config(config_host, config_port):
     # Remove mount from list of simulators.
     set_config('simulator', hardware.get_all_names(without=['mount']))
     # But setting the driver to `simulator` should return simulator.
-    set_config('mount.driver', 'simulator')
+    set_config('mount.driver', 'panoptes.pocs.mount.simulator')
 
     mount = create_mount_from_config()
     assert isinstance(mount, AbstractMount) is True
@@ -54,7 +52,7 @@ def test_create_mount_without_mount_info(config_host, config_port):
 def test_create_mount_with_mount_info(config_host, config_port):
     # Pass the mount info directly with nothing in config.
     mount_info = get_config('mount', default=dict())
-    mount_info['driver'] = 'simulator'
+    mount_info['driver'] = 'panoptes.pocs.mount.simulator'
 
     # Remove info from config.
     set_config('mount', None)
@@ -70,7 +68,8 @@ def test_create_mount_with_earth_location(config_host, config_port):
     # Set config to not have a location.
     set_config('location', None)
     set_config('simulator', hardware.get_all_names())
-    assert isinstance(create_mount_from_config(earth_location=loc['earth_location']), AbstractMount) is True
+    assert isinstance(create_mount_from_config(earth_location=loc['earth_location']),
+                      AbstractMount) is True
 
     reset_conf(config_host, config_port)
 

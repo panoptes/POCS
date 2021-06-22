@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2021-01-18
+# Script Version: 2021-07-15
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system
@@ -62,33 +62,88 @@ usage() {
 PS3="Select: "
 
 # TODO should be checking to matching userid=1000
-PANUSER=${PANUSER:-$USER}
-PANDIR=${PANDIR:-/panoptes}
+PANUSER="${PANUSER:-$USER}"
+PANDIR="${PANDIR:-${HOME}/pocs}"
+UNIT_NAME="pocs"
+HOST="${HOST:-pocs-control-box}"
 TAG_NAME=${TAG_NAME:-develop}
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
+CONDA_ENV_NAME=conda-pocs
+DEV_BOX=false
+DEFAULT_GROUPS="dialout,plugdev,input,sudo"
+NTP_SERVER=192.168.8.1
 
 DOCKER_BASE=${DOCKER_BASE:-"gcr.io/panoptes-exp"}
 
 function make_directories() {
+  echo "Creating directories in ${PANDIR}"
   sudo mkdir -p "${PANDIR}/logs"
   sudo mkdir -p "${PANDIR}/images"
+  sudo mkdir -p "${PANDIR}/json_store"
+  sudo mkdir -p "${PANDIR}/keys"
+  sudo mkdir -p "${PANDIR}/notebooks"
+  sudo mkdir -p "${PANDIR}/conf_files"
   sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
 }
 
+function name_me() {
+  read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+}
+
+function which_version() {
+  PS3='Where are you installing?: '
+  versions=("Control box" "Camera box" "My computer")
+  select ver in "${versions[@]}"; do
+    case $ver in
+    "Control box")
+      HOST="${UNIT_NAME}-control-box"
+      break
+      ;;
+    "Camera box")
+      HOST="${UNIT_NAME}-camera-box"
+      break
+      ;;
+    "My computer")
+      echo "Installing on personal computer"
+      DEV_BOX=true
+      break
+      ;;
+    *) echo "invalid option $REPLY" ;;
+    esac
+  done
+
+  echo "Setting hostname to ${HOST}"
+  sudo hostnamectl set-hostname "$HOST"
+}
+
 function system_deps() {
-  sudo apt-get update | sudo tee -a "${LOGFILE}" 2>&1
+  sudo apt-get update --fix-missing
+
+  # Raspberry Pi stuff
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "Installing Raspberry Pi tools"
+    sudo apt-get -y install rpi.gpio-common linux-tools-raspi
+  fi
+
+  sudo apt-get -y full-upgrade
   sudo apt-get --yes install \
     ack \
     byobu \
-    docker-compose \
-    docker.io \
+    gcc \
     htop \
     httpie \
-    jq \
-    openssh-server \
+    make \
+    nano \
+    neovim \
+    sshfs \
     wget \
-    zsh | sudo tee -a "${LOGFILE}" 2>&1
+    zsh
+  sudo apt-get -y autoremove
+
+  # Use zsh
+  sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -96,14 +151,56 @@ function system_deps() {
     ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa"
   fi
 
-  # Add to docker group if not already.
-  sudo usermod -aG docker "${PANUSER}" | sudo tee -a "${LOGFILE}" 2>&1
+}
+
+function install_docker() {
+  wget -q https://get.docker.com -O get-docker.sh
+  bash get-docker.sh
+  sudo usermod -aG docker "${PANUSER}"
+  rm get-docker.sh
 }
 
 function get_or_build_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
   sudo docker pull "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}"
+
+  if [[ $HOST == *-control-box ]]; then
+    # Copy the docker-compose file
+    sudo docker run --rm -it \
+      -v "${PANDIR}:/temp" \
+      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
+    sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
+
+    # Copy the config file
+    sudo docker run --rm -it \
+      -v "${PANDIR}:/temp" \
+      "${DOCKER_BASE}/panoptes-pocs:${TAG_NAME}" \
+      "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
+    sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
+  fi
+}
+
+function install_conda() {
+  echo "Installing miniforge conda"
+
+  wget "${CONDA_URL}" -O install-miniforge.sh
+  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda"
+  # Initialize conda for the shells.
+  "${PANDIR}/conda/bin/conda" init bash
+  "${PANDIR}/conda/bin/conda" init zsh
+
+  "${PANDIR}/conda/bin/conda" create -y -n "${CONDA_ENV_NAME}" python=3
+
+  # Activate by default
+  echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
+
+  # Install docker-compose via pip (but first install some annoyingly large dependencies via conda).
+  "${PANDIR}/conda/bin/conda" install -y -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent
+  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
+
+  rm install-miniforge.sh
 }
 
 function install_zsh() {
@@ -126,34 +223,68 @@ function install_zsh() {
 }
 
 function write_zshrc() {
-  cat >"${HOME}/.zshrc" <<'EOT'
-export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
-export ZSH="/home/panoptes/.oh-my-zsh"
+  cat >"${HOME}/.zshrc" <<EOT
+
+export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
+export ZSH="/home/${PANUSER}/.oh-my-zsh"
+export PANDIR="${PANDIR}"
+
 ZSH_THEME="spaceship"
+
 plugins=(git sudo zsh-autosuggestions docker docker-compose python)
-source $ZSH/oh-my-zsh.sh
+source \$ZSH/oh-my-zsh.sh
 unsetopt share_history
+
 EOT
+}
+
+function fix_time() {
+  echo "Syncing time."
+  sudo apt install -y ntpdate
+  sudo timedatectl set-ntp false
+  #  sudo dpkg-reconfigure tzdata
+  sudo ntpdate -s "${NTP_SERVER}"
+  sudo timedatectl set-ntp true
+  timedatectl
 }
 
 function do_install() {
   clear
 
-  echo "Installing POCS software."
+  name_me
+
+  which_version
+
+  echo "Installing POCS software for ${UNIT_NAME}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
+  echo "HOST: ${HOST}"
+  echo "HOST: ${HOST}"
   echo "OS: ${OS}"
   echo "Logfile: ${LOGFILE}"
 
-  echo "Creating directories in ${PANDIR}"
   make_directories
 
-  echo "Installing system dependencies"
+  fix_time
+
+  echo "Installing system dependencies."
   system_deps
+
+  if [ "$DEV_BOX" = false ]; then
+    install_zsh
+
+    echo "Adding ${PANUSER} to default groups."
+    sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
+  fi
+
+  install_conda
+
+  install_docker
 
   get_or_build_images
 
-  install_zsh
+  # Enable byobu
+  byobu-enable
 
   echo "Please reboot your machine before using POCS."
 

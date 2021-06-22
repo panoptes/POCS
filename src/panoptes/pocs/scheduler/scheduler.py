@@ -5,13 +5,13 @@ from contextlib import suppress
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
-from panoptes.pocs.base import PanBase
-from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+
 from panoptes.utils import error
+from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
-from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.base import PanBase
 
 
 class BaseScheduler(PanBase):
@@ -31,7 +31,7 @@ class BaseScheduler(PanBase):
         Args:
             observer (`astroplan.Observer`): The physical location the scheduling
                 will take place from.
-            fields_list (list, optional): A list of valid field configurations.
+            fields_list (list, optional): A list of valid target configurations.
             fields_file (str): YAML file containing field parameters.
             constraints (list, optional): List of `Constraints` to apply to each observation.
             *args: Arguments to be passed to `PanBase`
@@ -55,7 +55,7 @@ class BaseScheduler(PanBase):
         self.observed_list = OrderedDict()
 
         if self.get_config('scheduler.check_file', default=True):
-            self.logger.debug("Reading initial set of fields")
+            self.logger.debug("Reading fields list.")
             self.read_field_list()
 
         # Items common to each observation that shouldn't be computed each time.
@@ -209,31 +209,49 @@ class BaseScheduler(PanBase):
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
-    def add_observation(self, field_config):
-        """Adds an `Observation` to the scheduler
-
+    def add_observation(self, observation_config,
+                        default_field_type="panoptes.pocs.scheduler.field.Field",
+                        default_observation_type="panoptes.pocs.scheduler.observation.base.Observation"):
+        """Adds an `Observation` to the scheduler.
         Args:
-            field_config (dict): Configuration items for `Observation`
+            observation_config (dict): Configuration for `Field` and `Observation`.
+            default_field_type (str, optional): The full name of the python class to be used as
+                default for the observation's Field. This can be overridden by specifying the "type"
+                item under the observation_config's "field" key.
+                Default: `panoptes.pocs.scheduler.field.Field`.
+            default_observation_type (str, optional): The full name of the python class to be used
+                as default for the observation object. This can be overridden by specifying the
+                "type" item under the observation_config's "observation" key.
+                Default: `panoptes.pocs.scheduler.observation.base.Observation`.
         """
-        with suppress(KeyError):
-            field_config['exptime'] = float(
-                get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
+        observation_config = observation_config.copy()
+        self.logger.debug(f"Adding observation_config={observation_config!r} to scheduler.")
 
-        self.logger.debug(f"Adding field_config={field_config!r} to scheduler")
-        field = Field(field_config['name'], field_config['position'])
-        self.logger.debug(f"Created field.name={field.name!r}")
+        field_config = observation_config.get("field", {})
+        field_type_name = field_config.pop("type", default_field_type)
+
+        obs_config = observation_config.get("observation", {})
+        obs_type_name = obs_config.pop("type", default_observation_type)
 
         try:
-            self.logger.debug(f"Creating observation for {field_config!r}")
-            obs = Observation(field, **field_config)
+            # Make the field
+            self.logger.debug(f"Creating {field_type_name} field for {observation_config!r}")
+            field = load_module(field_type_name)(**field_config)
+            self.logger.debug(f"Created field.name={field.name!r}")
+
+            # Make the observation
+            self.logger.debug(f"Creating {obs_type_name} observation for {observation_config!r}")
+            obs = load_module(obs_type_name)(field=field, **obs_config)
             self.logger.debug(f"Observation created for field.name={field.name!r}")
-        except Exception as e:
-            raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
-        else:
+
+            # Add observation to scheduler
             if field.name in self._observations:
                 self.logger.debug(f"Overriding existing entry for field.name={field.name!r}")
             self._observations[field.name] = obs
-            self.logger.debug(f"obs={obs!r} added")
+            self.logger.debug(f"obs={obs!r} added to {self}.")
+
+        except Exception as e:
+            raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
@@ -259,13 +277,11 @@ class BaseScheduler(PanBase):
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:
-            for field_config in self._fields_list:
+            for observation_config in self._fields_list:
                 try:
-                    self.add_observation(field_config)
-                except AssertionError:
-                    self.logger.debug("Skipping duplicate field.")
+                    self.add_observation(observation_config)
                 except Exception as e:
-                    self.logger.warning(f"Error adding field: {e!r}")
+                    self.logger.warning(f"Error adding target: {e!r}")
 
     def set_common_properties(self, time):
 
