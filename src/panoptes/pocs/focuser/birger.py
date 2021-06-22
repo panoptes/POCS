@@ -320,7 +320,7 @@ class Focuser(AbstractSerialFocuser):
     def _get_lens_info(self):
         response = self._send_command('id', response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug(f"Got lens info '{self._lens_info}' for {self.name} on {self.port}")
+        self.logger.debug(f"Got lens info {self._lens_info!r} for {self.name} on {self.port}")
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
