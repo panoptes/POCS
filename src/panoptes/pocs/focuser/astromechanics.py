@@ -150,15 +150,13 @@ class Focuser(AbstractSerialFocuser):
         self.logger.info(f'{self} initialised')
 
     def _get_serial_number(self):
-        # Get position and see if the response follows pattern of digits [0-9] and a trailing '#'.
-        response_pattern = re.compile('^[0-9]+#$')
-        if response_pattern.match(self._send_command("P#")):
-            dev = finddev(idVendor=self._vendor_id, idProduct=self._product_id)
-            self._serial_number = get_string(dev, dev.iSerialNumber)
+        matching_ports = [p for p in get_serial_port_info() if p.vid == self._vendor_id and p.pid == self._product_id]
+        if len(matching_ports) == 1:
+            self._serial_number = matching_ports[0].serial_number
             self.logger.debug(f"Got serial number {self.uid} for {self.name} on {self.port}")
             return self._serial_number
         else:
-            raise error.BadSerialConnection(f"{self.name} not found in {self.port}")
+            raise error.BadSerialConnection(f"{self.name} not found in connected ports")
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
