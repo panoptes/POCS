@@ -25,12 +25,11 @@ usage() {
 #   * Create the needed directory structure for POCS.
 #   * Install docker and tools on the host computer.
 #   * Fetch the docker images needed to run.
-#   * Source ${PANDIR}/env if it exists.
+#   * Source \${PANDIR}/env if it exists.
 #
 # Docker Images:
 #
-#   $gcr.io/panoptes-exp/panoptes-pocs:latest
-#   $gcr.io/panoptes-exp/aag-weather:latest
+#   gcr.io/panoptes-exp/panoptes-pocs:develop
 #
 # The regular install is for running units.
 #
@@ -61,8 +60,7 @@ usage() {
 # Better select prompt.
 PS3="Select: "
 
-# TODO should be checking to matching userid=1000
-PANUSER="${PANUSER:-panoptes}"
+PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
@@ -95,11 +93,13 @@ function name_me() {
 }
 
 function which_docker() {
-  read -p 'What docker image tag would you like to use (default: develop)? ' DOCKER_TAG
+  read -p "What docker image tag would you like to use (default: ${DOCKER_TAG})? " USER_DOCKER_TAG
+  DOCKER_TAG="${USER_DOCKER_TAG:-$DOCKER_TAG}"
 }
 
 function get_time_settings() {
-  read -p "What is the IP address of your router (default: ${NTP_SERVER})? " NTP_SERVER
+  read -p "What is the IP address of your router (default: ${NTP_SERVER})? " USER_NTP_SERVER
+  NTP_SERVER="${USER_NTP_SERVER:-$NTP_SERVER}"
   sudo dpkg-reconfigure tzdata
 }
 
@@ -249,45 +249,33 @@ unsetopt share_history
 EOT
 }
 
-function change_username() {
-  if [ "${USER}" != "${PANUSER}" ]; then
-    echo "Changing default username to '${PANUSER}'"
-    sudo groupadd "${PANUSER}"
-    sudo usermod -d "/home/${PANUSER}" -m -g "${PANUSER}" -l "${USER}" "${PANUSER}"
-  fi
-}
-
 function fix_time() {
   echo "Syncing time."
   sudo apt install -y ntpdate
   sudo timedatectl set-ntp false
-  sudo ntpdate -s "${NTP_SERVER}"
+  sudo ntpdate -d "${NTP_SERVER}"
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
-  (
-    sudo crontab -l
-    echo "@reboot ntpdate -s ${NTP_SERVER}"
-  ) | sudo crontab -
+  (echo "@reboot ntpdate -s ${NTP_SERVER}") | sudo crontab -
   (
     sudo crontab -l
     echo "13 * * * * ntpdate -s ${NTP_SERVER}"
   ) | sudo crontab -
 
   timedatectl
-
 }
 
 function do_install() {
   clear
-
-  change_username
 
   name_me
 
   which_version
 
   which_docker
+
+  get_time_settings
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
@@ -296,10 +284,9 @@ function do_install() {
   echo "HOST: ${HOST}"
   echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "DOCKER_TAG: ${DOCKER_TAG}"
+  echo "NTP_SERVER: ${NTP_SERVER}"
   echo "Logfile: ${LOGFILE}"
   echo ""
-
-  get_time_settings
 
   fix_time
 
