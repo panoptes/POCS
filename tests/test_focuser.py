@@ -146,4 +146,4 @@ def test_camera_association_on_init():
 
 def test_astromechs_find_fail(focuser, tolerance):
     with pytest.raises(error.NotFound):
-        AstroMechanicsFocuser(vendor_id='foo', product_id='bar')
+        AstroMechanicsFocuser(vendor_id='0xfoo', product_id='0xbar')
