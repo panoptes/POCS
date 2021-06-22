@@ -138,7 +138,7 @@ class Focuser(AbstractSerialFocuser):
         self._serial_port.reset_input_buffer()
 
         # Send command
-        self._serial_io.write(f'{command}{post_cmd}\r')
+        self._serial_io.write(f'{pre_cmd}{command}{post_cmd}\r')
 
         return self._serial_io.readline(self._serial_port.in_waiting)
 
