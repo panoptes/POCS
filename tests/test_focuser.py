@@ -1,4 +1,5 @@
 import time
+from contextlib import suppress
 
 import pytest
 from threading import Thread
@@ -19,6 +20,7 @@ ids = ['simulator', 'birger', 'focuslynx', 'astromechanics']
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
 def focuser(request):
     FocusClass = request.param[0]
+    model_name = request.param[1]
     if FocusClass == SimFocuser:
         # Simulated focuser, just create one and return it
         return FocusClass()
@@ -26,23 +28,17 @@ def focuser(request):
         # Load the local config file and look for focuser configurations of the specified type
         focuser_configs = []
         local_config = load_config('pocs_local', load_local=True)
-        camera_info = local_config.get('cameras')
-        if camera_info:
-            # Local config file has a cameras section
-            camera_configs = camera_info.get('devices')
-            if camera_configs:
-                # Local config file camera section has a devices list
-                for camera_config in camera_configs:
-                    if camera_config:
-                        focuser_config = camera_config.get('focuser', None)
-                        if focuser_config and focuser_config['model'] == request.param[1]:
-                            # Camera config has a focuser section, and it's the right type
-                            focuser_configs.append(focuser_config)
+        with suppress(KeyError):
+            device_info = local_config['cameras']['devices']
+            for camera_config in device_info:
+                focuser_config = camera_config['focuser']
+                if 'model' in focuser_config and focuser_config['model'] == model_name:
+                    focuser_configs.append(focuser_config)
 
         if not focuser_configs:
-            pytest.skip(f"Found no {request.param[1]} config, skipping tests")
+            pytest.skip(f"Found no {model_name} config, skipping tests")
 
-        # Create and return a Focuser based on the first config
+        # Create and return a Focuser based on the first matching config.
         return FocusClass(**focuser_configs[0])
 
 
@@ -120,9 +116,7 @@ def test_move_above_max_position(focuser, tolerance):
 
 
 def test_camera_association(focuser):
-    """
-    Test association of Focuser with Camera after initialisation (getter, setter)
-    """
+    """ Test association of Focuser with Camera after initialisation (getter, setter) """
     sim_camera_1 = Camera()
     sim_camera_2 = Camera()
     # Cameras in the fixture haven't been associated with a Camera yet, this should work
@@ -134,9 +128,7 @@ def test_camera_association(focuser):
 
 
 def test_camera_init():
-    """
-    Test focuser init via Camera constructor
-    """
+    """ Test focuser init via Camera constructor """
     sim_camera = Camera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
                                  'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
@@ -146,9 +138,7 @@ def test_camera_init():
 
 
 def test_camera_association_on_init():
-    """
-    Test association of Focuser with Camera during Focuser init
-    """
+    """ Test association of Focuser with Camera during Focuser init """
     sim_camera = Camera()
     focuser = SimFocuser(camera=sim_camera)
     assert focuser.camera is sim_camera
