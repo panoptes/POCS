@@ -4,6 +4,7 @@ import pytest
 from threading import Thread
 
 from panoptes.utils.config.helpers import load_config
+from panoptes.utils import error
 
 from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
@@ -17,9 +18,10 @@ ids = ['simulator', 'birger', 'focuslynx', 'astromechanics']
 
 @pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
 def focuser(request):
-    if request.param[0] == SimFocuser:
+    FocusClass = request.param[0]
+    if FocusClass == SimFocuser:
         # Simulated focuser, just create one and return it
-        return request.param[0]()
+        return FocusClass()
     else:
         # Load the local config file and look for focuser configurations of the specified type
         focuser_configs = []
@@ -38,12 +40,10 @@ def focuser(request):
                             focuser_configs.append(focuser_config)
 
         if not focuser_configs:
-            pytest.skip(
-                "Found no {} configurations in pocs_local.yaml, skipping tests".format(
-                    request.param[1]))
+            pytest.skip(f"Found no {request.param[1]} config, skipping tests")
 
         # Create and return a Focuser based on the first config
-        return request.param[0](**focuser_configs[0])
+        return FocusClass(**focuser_configs[0])
 
 
 @pytest.fixture(scope='function')
@@ -152,3 +152,8 @@ def test_camera_association_on_init():
     sim_camera = Camera()
     focuser = SimFocuser(camera=sim_camera)
     assert focuser.camera is sim_camera
+
+
+def test_astromechs_find_fail(focuser, tolerance):
+    with pytest.raises(error.NotFound):
+        AstroMechanicsFocuser(vendor_id='foo', product_id='bar')
