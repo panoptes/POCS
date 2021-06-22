@@ -4,8 +4,6 @@ services:
     image: panoptes-pocs:testing
     build:
       context: ../
-      args:
-        pip_install_extras: "[google,focuser,testing]"
       dockerfile: tests/Dockerfile
 
     init: true
