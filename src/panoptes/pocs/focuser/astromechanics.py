@@ -61,22 +61,21 @@ class Focuser(AbstractSerialFocuser):
         # Return string that makes it clear there is no serial number
         return "no_serial_number_available"
 
-    def move_to(self, new_position):
-        """
-        Moves focuser to a new position.
-
-        Args:
-            position (int): new focuser position, in encoder units
-
-        Returns:
-            int: focuser position following the move, in encoder units.
+    def move_to(self, position):
+        """ Moves focuser to a new position.
 
         Does not do any checking of the requested position but will warn if the lens reports
         hitting a stop.
+
+        Args:
+            position (int): new focuser position, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
         """
         self._is_moving = True
         try:
-            self._send_command(f'M{int(new_position):d}#')
+            self._send_command(f'M{int(position):d}#')
         finally:
             # Focuser move commands block until the move is finished, so if the command has
             # returned then the focuser is no longer moving.
@@ -86,14 +85,16 @@ class Focuser(AbstractSerialFocuser):
         return self.position
 
     def move_by(self, increment):
-        """
-        Move focuser by a given amount.
+        """ Move focuser by a given amount.
+
+        Does not do any checking of the requested increment but will warn if the lens reports
+        hitting a stop.
 
         Args:
             increment (int): distance to move the focuser, in encoder units.
 
         Returns:
-            int: distance moved, in encoder units.
+            int: focuser position following the move, in encoder units.
         """
         self._is_moving = True
         try:
@@ -105,7 +106,7 @@ class Focuser(AbstractSerialFocuser):
             self._is_moving = False
 
         self.logger.debug(f"Moved by {increment} encoder units. Current position is {new_pos}")
-        return new_pos
+        return self.position
 
     ##################################################################################################
     # Private Methods
