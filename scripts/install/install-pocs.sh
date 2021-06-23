@@ -147,6 +147,7 @@ function system_deps() {
     gcc \
     htop \
     httpie \
+    jq \
     make \
     nano \
     neovim \
