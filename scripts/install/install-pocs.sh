@@ -130,16 +130,17 @@ function which_version() {
 }
 
 function system_deps() {
-  sudo apt-get update --fix-missing
+  export DEBIAN_FRONTEND=noninteractive
+  sudo apt-get update --fix-missing -yqq
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools"
-    sudo apt-get -y install rpi.gpio-common linux-tools-raspi
+    sudo apt-get -yqq install rpi.gpio-common linux-tools-raspi
   fi
 
-  sudo apt-get -y full-upgrade
-  sudo apt-get --yes install \
+  sudo apt-get -yqq full-upgrade
+  sudo apt-get -yqq install \
     ack \
     byobu \
     gcc \
@@ -151,7 +152,7 @@ function system_deps() {
     sshfs \
     wget \
     zsh
-  sudo apt-get -y autoremove
+  sudo apt-get -yqq autoremove
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
