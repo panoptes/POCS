@@ -78,8 +78,7 @@ def test_move_to(focuser, tolerance):
 
 
 def test_move_by(focuser, tolerance):
-    focuser.move_to(100)
-    previous_position = focuser.position
+    previous_position = focuser.move_to(100)
     increment = -13
     new_position = focuser.move_by(increment)
     assert new_position == pytest.approx((previous_position + increment), abs=tolerance)
