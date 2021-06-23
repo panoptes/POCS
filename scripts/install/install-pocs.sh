@@ -77,6 +77,7 @@ CONDA_ENV_NAME=conda-pocs
 DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
 DOCKER_TAG=${DOCKER_TAG:-"develop"}
 
+
 function make_directories() {
   echo "Creating directories in ${PANDIR}"
   sudo mkdir -p "${PANDIR}/logs"
@@ -130,17 +131,17 @@ function which_version() {
 }
 
 function system_deps() {
-  export DEBIAN_FRONTEND=noninteractive
-  sudo apt-get update --fix-missing -yqq
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >/dev/null
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
-    echo "Installing Raspberry Pi tools"
-    sudo apt-get -yqq install rpi.gpio-common linux-tools-raspi
+    echo "Installing Raspberry Pi tools."
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install rpi.gpio-common linux-tools-raspi >/dev/null
   fi
 
-  sudo apt-get -yqq full-upgrade
-  sudo apt-get -yqq install \
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
     ack \
     byobu \
     gcc \
@@ -151,8 +152,8 @@ function system_deps() {
     neovim \
     sshfs \
     wget \
-    zsh
-  sudo apt-get -yqq autoremove
+    zsh >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
 
   # Use zsh
   sudo chsh --shell /usr/bin/zsh "${PANUSER}"
@@ -167,7 +168,7 @@ function system_deps() {
 
 function install_docker() {
   wget -q https://get.docker.com -O get-docker.sh
-  bash get-docker.sh
+  bash get-docker.sh >/dev/null
   sudo usermod -aG docker "${PANUSER}"
   rm get-docker.sh
 }
@@ -252,9 +253,9 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  sudo apt install -y ntpdate
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >/dev/null
   sudo timedatectl set-ntp false
-  sudo ntpdate -d "${NTP_SERVER}"
+  sudo ntpdate -s "${NTP_SERVER}"
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
@@ -308,9 +309,6 @@ function do_install() {
   install_docker
 
   get_or_build_images
-
-  # Enable byobu
-  byobu-enable
 
   echo "Please reboot your machine before using POCS."
 
