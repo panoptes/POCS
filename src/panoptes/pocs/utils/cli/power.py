@@ -52,7 +52,7 @@ def get_status():
 
 @app.callback()
 def main(context: typer.Context,
-         host: str = typer.Option('http://localhost',
+         host: str = typer.Option('http://127.0.0.1',
                                   help='Host of running power board server.'),
          port: int = typer.Option(6564,
                                   help='Port of running power board server.'),
@@ -86,7 +86,7 @@ def control(
     """Control the relays on the power board."""
     metadata = state['metadata']
     url = f'{metadata.url}/relay/{relay}/control/{action}'
-    res = requests.post(url)
+    res = requests.get(url)
     if res.ok:
         typer.secho(pprint(res.json()))
 
