@@ -11,15 +11,16 @@ const bool DEFAULT_START_2 = HIGH;
 const bool DEFAULT_START_3 = HIGH;
 const bool DEFAULT_START_4 = HIGH;
 
-//conversion factor to compute Iload from sensed voltage. From Luc.
-//const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
-
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
 const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
 const int RELAY_2 = 4;  // 0_1 PROFET-1 Channel 0
 const int RELAY_3 = 7;  // 1_1 PROFET-1 Channel 1
 const int RELAY_4 = 8;  // 0_2 PROFET-2 Channel 0
+
+// AC_ok and Battery_low pins
+const int AC_OK = 12;
+const int BAT_LOW = 11;
 
 // Current Sense
 const int IS_0 = A0; // (PROFET-0 A0 = 14)
@@ -51,6 +52,10 @@ void setup() {
   pinMode(IS_0, INPUT);
   pinMode(IS_1, INPUT);
   pinMode(IS_2, INPUT);
+
+  // Setup AC and Battery pins
+  pinMode(AC_OK, INPUT);
+  pinMode(BAT_LOW, INPUT);
 
   // Setup diagnosis enable pins
   pinMode(DEN_0, OUTPUT);
@@ -135,6 +140,9 @@ void get_readings() {
   int seconds_stamp = millis() / time_period;
 
   StaticJsonDocument<192> doc;
+
+  doc["ac_ok"] = digitalRead(AC_OK);
+  doc["battery_low"] = digitalRead(BAT_LOW);
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));
