@@ -1,21 +1,25 @@
 import threading
 import time
 from contextlib import suppress
+from usb.core import find as finddev
 
 import numpy as np
 from astropy import units as u
 from astropy.time import Time
-from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
+
 from panoptes.utils import error
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.camera.libasi import ASIDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 
 
 class Camera(AbstractSDKCamera):
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
+    _usb_vendor_id = 0x03c3  # Fixed for ZWO cameras
 
     def __init__(self,
                  name='ZWO ASI Camera',
@@ -24,7 +28,6 @@ class Camera(AbstractSDKCamera):
                  *args, **kwargs):
         """
         ZWO ASI Camera class
-
         Args:
             serial_number (str): camera serial number or user set ID (up to 8 bytes). See notes.
             gain (int, optional): gain setting, using camera's internal units. If not given
@@ -33,7 +36,6 @@ class Camera(AbstractSDKCamera):
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
             *args, **kwargs: additional arguments to be passed to the parent classes.
-
         Notes:
             ZWO ASI cameras don't have a 'port', they only have a non-deterministic integer
             camera_ID and, probably, an 8 byte serial number. Optionally they also have an
@@ -105,7 +107,6 @@ class Camera(AbstractSDKCamera):
     @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
         """ Current value of the target temperature for the camera's image sensor cooling control.
-
         Can be set by assigning an astropy.units.Quantity
         """
         return self._control_getter('TARGET_TEMP')[0]
@@ -123,7 +124,6 @@ class Camera(AbstractSDKCamera):
     @property
     def gain(self):
         """ Current value of the camera's gain setting in internal units.
-
         See `egain` for the corresponding electrons / ADU value.
         """
         return self._control_getter('GAIN')[0]
@@ -148,7 +148,6 @@ class Camera(AbstractSDKCamera):
     def connect(self):
         """
         Connect to ZWO ASI camera.
-
         Gets 'camera_ID' (needed for all driver commands), camera properties and details
         of available camera commands/parameters.
         """
@@ -168,6 +167,12 @@ class Camera(AbstractSDKCamera):
         self._info['control_info'] = self._control_info  # control info accessible via properties
         Camera._driver.disable_dark_subtract(self._handle)
         self._connected = True
+
+    def reconnect(self):
+        """ Reconnect to the camera. """
+        Camera._driver.close_camera(self._handle)
+        self._reset_usb()
+        return self.connect()
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
         if not isinstance(seconds, u.Quantity):
@@ -298,7 +303,13 @@ class Camera(AbstractSDKCamera):
                                       header=header,
                                       filename=filename)
         elif exposure_status == 'FAILED':
-            raise error.PanError("Exposure failed on {}".format(self))
+
+            # Reconnect to the camera so it can still be used
+            self.logger.warning(f"Exposure failed on {self}. Reconnecting camera.")
+            self.reconnect()
+
+            raise error.PanError(f"Exposure failed on {self}")
+
         elif exposure_status == 'IDLE':
             raise error.PanError("Exposure missing on {}".format(self))
         else:
@@ -350,3 +361,15 @@ class Camera(AbstractSDKCamera):
                 raise error.IllegalValue(f"{self.model} cannot set {control_name} to AUTO")
 
         Camera._driver.set_control_value(self._handle, control_type, value)
+
+    def _reset_usb(self):
+        """ Reset the USB device. """
+        self.logger.warning(f"Resetting USB for {self}.")
+        for product_id in Camera._driver.get_product_ids():
+            dev = finddev(idVendor=self._usb_vendor_id, idProduct=product_id)
+            if dev:
+                self.logger.debug(f"Identified USB product ID: {product_id}.")
+                break
+        if not dev:
+            raise RuntimeError(f"Unable to determine USB product ID for {self}.")
+        dev.reset()
