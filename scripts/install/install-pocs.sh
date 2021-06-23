@@ -89,16 +89,16 @@ function make_directories() {
 }
 
 function name_me() {
-  read -p 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+  read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
 }
 
 function which_docker() {
-  read -p "What docker image tag would you like to use (default: ${DOCKER_TAG})? " USER_DOCKER_TAG
+  read -rp "What docker image tag would you like to use (default: ${DOCKER_TAG})? " USER_DOCKER_TAG
   DOCKER_TAG="${USER_DOCKER_TAG:-$DOCKER_TAG}"
 }
 
 function get_time_settings() {
-  read -p "What is the IP address of your router (default: ${NTP_SERVER})? " USER_NTP_SERVER
+  read -rp "What is the IP address of your router (default: ${NTP_SERVER})? " USER_NTP_SERVER
   NTP_SERVER="${USER_NTP_SERVER:-$NTP_SERVER}"
   sudo dpkg-reconfigure tzdata
 }
