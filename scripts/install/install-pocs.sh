@@ -199,7 +199,7 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda"
+  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" /dev/null
   # Initialize conda for the shells.
   "${PANDIR}/conda/bin/conda" init bash
   "${PANDIR}/conda/bin/conda" init zsh
@@ -221,7 +221,7 @@ function install_zsh() {
 
   # Oh my zsh
   wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-  bash /tmp/install-ohmyzsh.sh --unattended
+  bash /tmp/install-ohmyzsh.sh --unattended > /dev/null
 
   export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
@@ -238,7 +238,7 @@ function install_zsh() {
 function write_zshrc() {
   cat >"${HOME}/.zshrc" <<EOT
 
-export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
+export PATH="\$HOME/.local/bin:/usr/local/bin:\$PATH"
 export ZSH="/home/${PANUSER}/.oh-my-zsh"
 export PANDIR="${PANDIR}"
 
