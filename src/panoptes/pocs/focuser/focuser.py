@@ -168,11 +168,25 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def move_to(self, position):
-        """ Move focuser to new encoder position """
+        """ Move focuser to new encoder position.
+
+        Args:
+            position (int): new focuser position, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+        """
         raise NotImplementedError
 
     def move_by(self, increment):
-        """ Move focuser by a given amount """
+        """ Move focuser by a given amount.
+
+        Args:
+            increment (int): distance to move the focuser, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+        """
         return self.move_to(self.position + increment)
 
     def autofocus(self,
