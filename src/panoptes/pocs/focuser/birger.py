@@ -99,7 +99,7 @@ class Focuser(AbstractSerialFocuser):
                     warn(message)
                     return
                 else:
-                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._adaptor_nodes))
+                    self.logger.debug(f'Connected Birger focusers: {Focuser._adaptor_nodes}')
 
             # Search in cached device node scanning results for serial number
             try:
@@ -181,14 +181,14 @@ class Focuser(AbstractSerialFocuser):
         """
         Moves focuser to a new position.
 
+        Does not do any checking of the requested position but will warn if the lens reports
+        hitting a stop.
+
         Args:
-            position (int): new focuser position, in encoder units
+            position (int): new focuser position, in encoder units.
 
         Returns:
             int: focuser position following the move, in encoder units.
-
-        Does not do any checking of the requested position but will warn if the lens reports
-        hitting a stop.
         """
         self._is_moving = True
         try:
@@ -199,21 +199,21 @@ class Focuser(AbstractSerialFocuser):
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug("Moved to encoder position {}".format(new_position))
-        return new_position
+        self.logger.debug(f"Moved to encoder position {new_position}")
+        return self.position
 
     def move_by(self, increment):
         """
         Move focuser by a given amount.
 
+        Does not do any checking of the requested increment but will warn if the lens reports
+        hitting a stop.
+
         Args:
             increment (int): distance to move the focuser, in encoder units.
 
         Returns:
-            int: distance moved, in encoder units.
-
-        Does not do any checking of the requested increment but will warn if the lens reports
-        hitting a stop.
+            int: focuser position following the move, in encoder units.
         """
         self._is_moving = True
         try:
@@ -225,7 +225,7 @@ class Focuser(AbstractSerialFocuser):
             self._is_moving = False
 
         self.logger.debug("Moved by {} encoder units".format(moved_by))
-        return moved_by
+        return self.position
 
     ##################################################################################################
     # Private Methods
