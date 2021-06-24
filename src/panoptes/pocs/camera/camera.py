@@ -967,7 +967,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         Add FITS headers from metadata the same as images.cr2_to_fits()
         """
-        # TODO (wtgee) I don't like this one bit.
+        # TODO move this mapping outside the code.
         fields = {
             'image_id': {'keyword': 'IMAGEID'},
             'sequence_id': {'keyword': 'SEQID'},
@@ -993,17 +993,33 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Updating FITS headers: {file_path} with metadata={metadata!r}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
-            for metadata_key, field_info in fields.items():
-                fits_key = field_info['keyword']
-                fits_comment = field_info.get('comment', '')
-                # Get the value from either the metadata, the default, or use blank string.
-                fits_value = metadata.get(metadata_key, field_info.get('default', ''))
+            # Try to lookup header from list above, otherwise add whatever was given.
+            for metadata_key, metadata_value in metadata.items():
+                try:
+                    # Look for key matching list above.
+                    field_info = fields[metadata_key]
+                    fits_key = field_info['keyword']
+                    fits_comment = field_info.get('comment', '')
 
-                self.logger.trace(
-                    f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
-                hdu.header.set(fits_key, fits_value, fits_comment)
+                    # Get the value from either the metadata, the default, or use blank string.
+                    fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
-            self.logger.debug(f"Finished FITS headers: {file_path}")
+                    self.logger.trace(f'Setting {fits_key=} to {fits_value=} with {fits_comment=}')
+                except KeyError:
+                    self.logger.trace(f'No mapping found for metadata {metadata_key}'
+                                      f', will attempt to add as-is.')
+                    # Add HIERARCH card without warning. See:
+                    # https://docs.astropy.org/en/stable/io/fits/usage/headers.html#hierarch-cards
+                    fits_key = f'hierarch {metadata_key}'
+                    fits_comment = ''
+                    fits_value = metadata_value
+
+                try:
+                    hdu.header.set(fits_key, fits_value, fits_comment)
+                except ValueError as e:
+                    self.logger.debug(f'Skipping error while adding {fits_key=}: {e!r}')
+
+            self.logger.debug(f"Finished FITS headers: {file_path=}")
 
         return file_path
 
