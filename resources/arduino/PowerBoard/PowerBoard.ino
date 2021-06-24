@@ -4,15 +4,20 @@
 // POCS looks for this name.
 const char BOARD_NAME[] = "power_board";
 
+// Meanwell UPS AC and Battery pins.
+const int AC_OK = 12;
+const int BAT_LOW = 11;
+
+/******************************************/
+/* Shouldn't need to change anything below.
+/******************************************/
+
 // Set initial states for each relay. Change as needed.
 const bool DEFAULT_START_0 = HIGH;
 const bool DEFAULT_START_1 = HIGH;
 const bool DEFAULT_START_2 = HIGH;
 const bool DEFAULT_START_3 = HIGH;
 const bool DEFAULT_START_4 = HIGH;
-
-//conversion factor to compute Iload from sensed voltage. From Luc.
-//const float MULTIPLIER = 5 / 1023 * 2360 / 1200;
 
 // Relays
 const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
@@ -51,6 +56,10 @@ void setup() {
   pinMode(IS_0, INPUT);
   pinMode(IS_1, INPUT);
   pinMode(IS_2, INPUT);
+
+  // Setup AC and Battery pins
+  pinMode(AC_OK, INPUT);
+  pinMode(BAT_LOW, INPUT);
 
   // Setup diagnosis enable pins
   pinMode(DEN_0, OUTPUT);
@@ -135,6 +144,9 @@ void get_readings() {
   int seconds_stamp = millis() / time_period;
 
   StaticJsonDocument<192> doc;
+
+  doc["ac_ok"] = digitalRead(AC_OK);
+  doc["battery_low"] = digitalRead(BAT_LOW);
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));
