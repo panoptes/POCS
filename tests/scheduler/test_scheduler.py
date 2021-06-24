@@ -18,6 +18,20 @@ def reset_conf(config_host, config_port):
     assert response.ok
 
 
+def test_bad_scheduler_namespace(config_host, config_port):
+    set_config('scheduler.type', 'dispatch')
+    site_details = create_location_from_config()
+    with pytest.raises(error.NotFound):
+        create_scheduler_from_config(observer=site_details['observer'])
+
+    set_config('scheduler.type', 'panoptes.pocs.scheduler.dispatch')
+    scheduler = create_scheduler_from_config(observer=site_details['observer'])
+
+    assert isinstance(scheduler, BaseScheduler)
+
+    reset_conf(config_host, config_port)
+
+
 def test_bad_scheduler_type(config_host, config_port):
     set_config('scheduler.type', 'foobar')
     site_details = create_location_from_config()

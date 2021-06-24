@@ -31,17 +31,17 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
 directories:
-  base: /POCS
+  base: /panoptes-pocs
   images: images
   data: data
   resources: resources/
-  targets: conf_files/targets
+  fields: conf_files/fields
   mounts: resources/mounts
 db:
   name: panoptes_testing
   type: file
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: simulator.yaml
   check_file: False
 mount:

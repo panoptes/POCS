@@ -86,6 +86,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.name = name
         self.is_primary = primary
 
+        self.filterwheel = None
         self._filter_type = kwargs.get('filter_type', 'RGGB')
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
@@ -132,9 +133,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Camera created: {self}')
 
-    ##################################################################################################
+    ############################################################################
     # Properties
-    ##################################################################################################
+    ############################################################################
 
     @property
     def uid(self):
@@ -254,7 +255,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def filter_type(self):
         """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
-        if self.filterwheel:
+        if self.has_filterwheel:
             return self.filterwheel.current_filter
         else:
             return self._filter_type
@@ -363,9 +364,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Return True if the camera has a filterwheel, False if not. """
         return self.filterwheel is not None
 
-    ##################################################################################################
+    ############################################################################
     # Methods
-    ##################################################################################################
+    ############################################################################
 
     @abstractmethod
     def connect(self):
@@ -748,7 +749,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def _set_cooling_enabled(self, enable):
         """Camera-specific function to set cooling enabled.
 
@@ -759,7 +759,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             enable (bool): Enable camera cooling?
         """
-        raise NotImplementedError
+        self._cooling_enabled = enable
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
@@ -873,7 +873,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         headers = headers or None
 
         # Move the filterwheel if necessary
-        if self.filterwheel is not None:
+        if self.has_filterwheel:
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
@@ -933,10 +933,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
 
-        # Make the sequence_id
-
         # The exptime header data is set as part of observation but can
-        # be override by passed parameter so update here.
+        # be overridden by passed parameter so update here.
         exptime = kwargs.get('exptime', observation.exptime.value)
 
         # Camera metadata

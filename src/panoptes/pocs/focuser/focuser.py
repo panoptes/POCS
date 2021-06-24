@@ -168,11 +168,25 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def move_to(self, position):
-        """ Move focuser to new encoder position """
+        """ Move focuser to new encoder position.
+
+        Args:
+            position (int): new focuser position, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+        """
         raise NotImplementedError
 
     def move_by(self, increment):
-        """ Move focuser by a given amount """
+        """ Move focuser by a given amount.
+
+        Args:
+            increment (int): distance to move the focuser, in encoder units.
+
+        Returns:
+            int: focuser position following the move, in encoder units.
+        """
         return self.move_to(self.position + increment)
 
     def autofocus(self,
@@ -187,6 +201,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                   mask_dilations=None,
                   coarse=False,
                   make_plots=None,
+                  filter_name=None,
                   blocking=False):
         """
         Focuses the camera using the specified merit function. Optionally performs
@@ -219,6 +234,8 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             make_plots (bool, optional): Whether to write focus plots to images folder. If not
                 given will fall back on value of `autofocus_make_plots` set on initialisation,
                 and if it wasn't set then will default to False.
+            filter_name (str, optional): The filter to use for focusing. If not provided, will use
+                last light position.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
@@ -293,6 +310,23 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         if make_plots is None:
             make_plots = self.autofocus_make_plots
+
+        # Move filterwheel to the correct position
+        if self.camera is not None:
+            if self.camera.has_filterwheel:
+
+                if filter_name is None:
+                    # NOTE: The camera will move the FW to the last light position automatically
+                    self.logger.warning(f"Filter name not provided for autofocus on {self}. Using"
+                                        " last light position.")
+                else:
+                    self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on"
+                                     f" {self}.")
+                    self.camera.filterwheel.move_to(filter_name, blocking=True)
+
+            elif filter_name is None:
+                self.logger.warning(f"Filter {filter_name} requiested for autofocus but"
+                                    f" {self.camera} has no filterwheel.")
 
         # Set up the focus parameters
         focus_event = Event()

@@ -27,10 +27,10 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
-  base: /POCS
-  images: /POCS/images
-  mounts: /POCS/resources/mounts
-  targets: /POCS/conf_files/targets
+  base: .
+  images: images
+  mounts: resources/mounts
+  fields: conf_files/fields
 
 db:
   name: panoptes
@@ -44,23 +44,27 @@ status_check_interval: 60 # periodic status check.
 state_machine: panoptes
 
 scheduler:
-  type: dispatch
-  fields_file: /POCS/conf_files/targets/simple.yaml
+  type: panoptes.pocs.scheduler.dispatch
+  fields_file: simple.yaml
   check_file: False
 
 mount:
-  # The brand and model determine the commands file to load from the resources/mounts dir.
   brand: ioptron
-  model: ieq30pro   #  cem40
-  # Driver for mount should correspond to file.
-  driver: panoptes.pocs.mount.ioptron.cem40
+  model: ieq30pro  #  cem40
+  driver: panoptes.pocs.mount.ioptron.ieq30pro
+  # Load a specific commands file relative to "mounts" dir.
+  commands_file: ioptron/v250
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
     baudrate: 9600  #  115200 for cem40
-  non_sidereal_available: True
-  min_tracking_threshold: 100 # ms
-  max_tracking_threshold: 99999 # ms
+  settings:
+    non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
+    # After moving to hardware park position, move Dec axis so cameras point down.
+    park_direction: north
+    park_seconds: 15
 
 pointing:
   max_iterations: 5  # Set to 0 to disable
@@ -93,25 +97,27 @@ cameras:
 environment:
   # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
   power:
-    auto_detect: true
+    name: Trucker Power
+    arduino_board_name: power_board
+    record_interval: 5  # seconds
+    mean_interval: 5  # seconds
+    port: /dev/ttyACM0
     relays:
       RELAY_0:
         label: weather_station
         default_state: on
       RELAY_1:
-        label: unused
+        label: unused1
         default_state: off
       RELAY_2:
         label: fans
-        default_state: on
+        default_state: off
       RELAY_3:
-        label: unused
+        label: unused3
         default_state: off
       RELAY_4:
         label: mount
         default_state: on
-  camera_board:
-    serial_port: /dev/ttyACM0
   weather:
     url: http://localhost:5000/latest.json
 
