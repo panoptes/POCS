@@ -1,6 +1,7 @@
 from panoptes.utils import error
 from panoptes.utils.serial.device import find_serial_port
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+from panoptes.pocs.utils.logger import get_logger
 
 
 class Focuser(AbstractSerialFocuser):
@@ -23,14 +24,15 @@ class Focuser(AbstractSerialFocuser):
     """
 
     def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
-                 vendor_id=None, product_id=None, *args, **kwargs):
-        # Check if have device, raise error.NotFound if unable to find.
-        try:
-            port = find_serial_port(vendor_id, product_id)
-            self._vendor_id = vendor_id
-            self._product_id = product_id
-        except error.NotFound:
-            self.logger.debug(f'Could not find device port for {vendor_id=} and {product_id=}')
+                 vendor_id=0x0403, product_id=0x6001, *args, **kwargs):
+        if vendor_id and product_id:
+            # Check if have device, raise error.NotFound if unable to find.
+            try:
+                port = find_serial_port(vendor_id, product_id)
+                self._vendor_id = vendor_id
+                self._product_id = product_id
+            except Exception as e:
+                get_logger().debug(f'Could not find device port for {vendor_id=} and {product_id=}')
 
         super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug(f'Initializing {name}')
@@ -44,8 +46,12 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command("P").rstrip("#")
-        return int(response)
+        response = ''
+        try:
+            response = int(self._send_command("P").rstrip("#"))
+        except Exception as e:
+            self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
+        return response
 
     @property
     def min_position(self):
