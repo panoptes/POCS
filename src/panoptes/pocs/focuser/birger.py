@@ -49,7 +49,7 @@ class Focuser(AbstractSerialFocuser):
         model (str, optional): default 'Canon EF-232'
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
-        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
+        port (str, optional): Unix shell pattern to use to identify device nodes that
             may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
             to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
             used at the time of writing by Huntsman.
@@ -62,7 +62,7 @@ class Focuser(AbstractSerialFocuser):
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
-                 dev_node_pattern='/dev/tty.USA49*.?',
+                 port='/dev/tty.USA49*.?',
                  max_command_retries=5,
                  *args, **kwargs):
 
@@ -80,7 +80,7 @@ class Focuser(AbstractSerialFocuser):
                 self.logger.debug('Getting serial numbers for all connected Birger focusers')
                 Focuser._adaptor_nodes = {}
                 # Find nodes matching pattern
-                device_nodes = glob.glob(dev_node_pattern)
+                device_nodes = glob.glob(port)
 
                 # Open each device node and see if a Birger focuser answers
                 for device_node in device_nodes:
@@ -125,7 +125,8 @@ class Focuser(AbstractSerialFocuser):
         Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('pf', response_length=1)
-        return int(response[0].rstrip())
+        self._position = int(response[0].rstrip())
+        return self._position
 
     @property
     def min_position(self):
@@ -166,9 +167,8 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
     ##################################################################################################
 
-    def connect(self, port):
-
-        self._connect(port, baudrate=115200)
+    def connect(self, port=None, baudrate=115200):
+        self._connect(port=port, baudrate=baudrate)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'

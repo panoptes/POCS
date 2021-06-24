@@ -144,6 +144,8 @@ def test_camera_association_on_init():
     assert focuser.camera is sim_camera
 
 
-def test_astromechs_find_fail(focuser, tolerance):
+def test_astromechs_find_fail(focuser, tolerance, caplog):
+    v_id = 0xf00
+    p_id = 0xba2
     with pytest.raises(error.NotFound):
-        AstroMechanicsFocuser(vendor_id=0xf00, product_id=0xba2)
+        AstroMechanicsFocuser(vendor_id=v_id, product_id=p_id)

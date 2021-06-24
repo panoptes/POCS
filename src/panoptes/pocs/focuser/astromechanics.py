@@ -1,6 +1,7 @@
 from panoptes.utils import error
 from panoptes.utils.serial.device import find_serial_port
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+from panoptes.pocs.utils.logger import get_logger
 
 
 class Focuser(AbstractSerialFocuser):
@@ -22,14 +23,14 @@ class Focuser(AbstractSerialFocuser):
     as they are marked with the decorator @abstractmethod, we have to override them.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', vendor_id=None,
-                 product_id=None, *args, **kwargs):
-        # Check if have device, raise error.NotFound if unable to find.
-        self._serial_number = find_serial_port(vendor_id, product_id)
-        self._vendor_id = vendor_id
-        self._product_id = product_id
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
+                 vendor_id=0x0403, product_id=0x6001, *args, **kwargs):
+        if vendor_id and product_id:
+            port = find_serial_port(vendor_id, product_id)
+            self._vendor_id = vendor_id
+            self._product_id = product_id
 
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug(f'Initializing {name}')
 
     ################################################################################################
@@ -41,8 +42,13 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command("P").rstrip("#")
-        return int(response)
+        response = ''
+        try:
+            response = int(self._send_command("P").rstrip("#"))
+            self._position = response
+        except Exception as e:
+            self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
+        return response
 
     @property
     def min_position(self):
@@ -62,8 +68,8 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
     ################################################################################################
 
-    def connect(self, port):
-        self._connect(port)
+    def connect(self, port=None, baudrate=38400):
+        self._connect(port=port, baudrate=baudrate)
 
         return self._serial_number
 
@@ -74,7 +80,7 @@ class Focuser(AbstractSerialFocuser):
         hitting a stop.
 
         Args:
-            new_position (int): new focuser position, in encoder units.
+            position (int): new focuser position, in encoder units.
 
         Returns:
             int: focuser position following the move, in encoder units.
@@ -141,7 +147,7 @@ class Focuser(AbstractSerialFocuser):
         # Send command
         self._serial_io.write(f'{pre_cmd}{command}{post_cmd}\r')
 
-        return self._serial_io.readline(self._serial_port.in_waiting)
+        return self._serial_io.readline()
 
     def _initialise(self):
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
@@ -164,7 +170,7 @@ class Focuser(AbstractSerialFocuser):
 
     def _move_zero(self):
         self.logger.debug('Setting focus encoder zero point')
-        if self.position != 0:
+        if self._position != 0:
             self._is_moving = True
             try:
                 # Set focuser to 0 position

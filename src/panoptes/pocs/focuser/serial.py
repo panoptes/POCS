@@ -7,7 +7,6 @@ from panoptes.pocs.focuser import AbstractFocuser
 
 
 class AbstractSerialFocuser(AbstractFocuser):
-
     # Class variable to cache the device node scanning results
     _adaptor_nodes = None
 
@@ -75,7 +74,8 @@ class AbstractSerialFocuser(AbstractFocuser):
     # Private Methods
     ##################################################################################################
 
-    def _connect(self, port, baudrate):
+    def _connect(self, port=None, baudrate=9600):
+        port = port or self.port
         try:
             # Configure serial port.
             self._serial_port = serial.Serial()
@@ -96,7 +96,7 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         except serial.SerialException as err:
             self._serial_port = None
-            self.logger.critical('Could not open {}!'.format(port))
+            self.logger.critical(f'Could not open {port}!')
             raise err
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
@@ -104,4 +104,4 @@ class AbstractSerialFocuser(AbstractFocuser):
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
+        self.logger.debug(f'Established serial connection to {self.name} on {port}.')

@@ -5,12 +5,12 @@
 const char BOARD_NAME[] = "power_board";
 
 // Meanwell UPS AC and Battery pins.
-const int AC_OK = 12;
-const int BAT_LOW = 11;
+const int AC_OK = 11;
+const int BAT_LOW = 12;
 
-/******************************************/
-/* Shouldn't need to change anything below.
-/******************************************/
+/*******************************************/
+/* Shouldn't need to change anything below.*/
+/*******************************************/
 
 // Set initial states for each relay. Change as needed.
 const bool DEFAULT_START_0 = HIGH;
@@ -58,8 +58,8 @@ void setup() {
   pinMode(IS_2, INPUT);
 
   // Setup AC and Battery pins
-  pinMode(AC_OK, INPUT);
-  pinMode(BAT_LOW, INPUT);
+  pinMode(AC_OK, INPUT_PULLUP);
+  pinMode(BAT_LOW, INPUT_PULLUP);
 
   // Setup diagnosis enable pins
   pinMode(DEN_0, OUTPUT);
@@ -145,8 +145,8 @@ void get_readings() {
 
   StaticJsonDocument<192> doc;
 
-  doc["ac_ok"] = digitalRead(AC_OK);
-  doc["battery_low"] = digitalRead(BAT_LOW);
+  // Because the pinup is set to pullup we read high for off.
+  doc["ac_ok"] = !digitalRead(AC_OK);
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));
@@ -199,9 +199,9 @@ void read_currents(int current_readings[]) {
 }
 
 
-/************************************
-  Utility Methods
-*************************************/
+/*************************************/
+/*  Utility Methods                  */
+/*************************************/
 
 bool is_relay_on(int pin_num) {
   return digitalRead(pin_num) != LOW;
