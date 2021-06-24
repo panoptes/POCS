@@ -125,7 +125,8 @@ class Focuser(AbstractSerialFocuser):
         Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('pf', response_length=1)
-        return int(response[0].rstrip())
+        self._position = int(response[0].rstrip())
+        return self._position
 
     @property
     def min_position(self):

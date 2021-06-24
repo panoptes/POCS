@@ -49,6 +49,7 @@ class Focuser(AbstractSerialFocuser):
         response = ''
         try:
             response = int(self._send_command("P").rstrip("#"))
+            self._position = response
         except Exception as e:
             self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
         return response
@@ -173,7 +174,7 @@ class Focuser(AbstractSerialFocuser):
 
     def _move_zero(self):
         self.logger.debug('Setting focus encoder zero point')
-        if self.position != 0:
+        if self._position != 0:
             self._is_moving = True
             try:
                 # Set focuser to 0 position
