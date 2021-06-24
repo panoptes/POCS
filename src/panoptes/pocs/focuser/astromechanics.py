@@ -151,7 +151,7 @@ class Focuser(AbstractSerialFocuser):
         # Send command
         self._serial_io.write(f'{pre_cmd}{command}{post_cmd}\r')
 
-        return self._serial_io.readline(self._serial_port.in_waiting)
+        return self._serial_io.readline()
 
     def _initialise(self):
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
