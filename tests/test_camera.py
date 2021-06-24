@@ -514,20 +514,38 @@ def test_observation(camera, images_dir):
     assert len(glob.glob(observation_pattern)) == 1
 
 
-def test_observation_headers_and_blocking(camera, images_dir):
+def test_observation_blocking(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235559'
-    camera.take_observation(observation, headers={'field_name': 'TESTVALUE'}, blocking=True)
+    camera.take_observation(observation, blocking=True)
+    observation_pattern = os.path.join(images_dir, 'TestObservation',
+                                       camera.uid, observation.seq_time, '*.fits*')
+    image_files = glob.glob(observation_pattern)
+    assert len(image_files) == 1
+
+
+def test_observation_headers(camera, images_dir):
+    """
+    Tests functionality of take_observation()
+    """
+    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    observation = Observation(field, exptime=1.5 * u.second)
+    observation.seq_time = '19991231T235559'
+
+    # Test assigned and arbitrary headers.
+    headers = {'field_name': 'TESTVALUE', 'non-conforming-header': 'says-hi'}
+    camera.take_observation(observation, headers=headers, blocking=True)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
                                        camera.uid, observation.seq_time, '*.fits*')
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
     headers = fits_utils.getheader(image_files[0])
     assert fits_utils.getval(image_files[0], 'FIELD') == 'TESTVALUE'
+    assert fits_utils.getval(image_files[0], 'non-conforming-header') == 'says-hi'
 
 
 def test_observation_nofilter(camera, images_dir):
