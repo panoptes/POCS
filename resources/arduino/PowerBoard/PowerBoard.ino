@@ -4,6 +4,14 @@
 // POCS looks for this name.
 const char BOARD_NAME[] = "power_board";
 
+// Meanwell UPS AC and Battery pins.
+const int AC_OK = 12;
+const int BAT_LOW = 11;
+
+/******************************************/
+/* Shouldn't need to change anything below.
+/******************************************/
+
 // Set initial states for each relay. Change as needed.
 const bool DEFAULT_START_0 = HIGH;
 const bool DEFAULT_START_1 = HIGH;
@@ -17,10 +25,6 @@ const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
 const int RELAY_2 = 4;  // 0_1 PROFET-1 Channel 0
 const int RELAY_3 = 7;  // 1_1 PROFET-1 Channel 1
 const int RELAY_4 = 8;  // 0_2 PROFET-2 Channel 0
-
-// AC_ok and Battery_low pins
-const int AC_OK = 12;
-const int BAT_LOW = 11;
 
 // Current Sense
 const int IS_0 = A0; // (PROFET-0 A0 = 14)
