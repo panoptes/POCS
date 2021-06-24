@@ -22,14 +22,17 @@ class Focuser(AbstractSerialFocuser):
     as they are marked with the decorator @abstractmethod, we have to override them.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', vendor_id=None,
-                 product_id=None, *args, **kwargs):
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
+                 vendor_id=None, product_id=None, *args, **kwargs):
         # Check if have device, raise error.NotFound if unable to find.
-        self._serial_number = find_serial_port(vendor_id, product_id)
-        self._vendor_id = vendor_id
-        self._product_id = product_id
+        try:
+            port = find_serial_port(vendor_id, product_id)
+            self._vendor_id = vendor_id
+            self._product_id = product_id
+        except error.NotFound:
+            self.logger.debug(f'Could not find device port for {vendor_id=} and {product_id=}')
 
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug(f'Initializing {name}')
 
     ################################################################################################
@@ -62,8 +65,8 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
     ################################################################################################
 
-    def connect(self, port):
-        self._connect(port)
+    def connect(self, port=None, baudrate=38400):
+        self._connect(port=port, baudrate=baudrate)
 
         return self._serial_number
 
