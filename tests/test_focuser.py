@@ -150,7 +150,7 @@ def test_astromechs_find_fail(focuser, tolerance, caplog):
     focuser = AstroMechanicsFocuser(vendor_id=v_id, product_id=p_id)
     found_log = False
     for record in caplog.records:
-        if record.message == f'Could not find device port for {v_id} and {p_id}':
+        if record.message == f'Could not find device port for {v_id:x} and {p_id:x}':
             found_log = True
             break
 
