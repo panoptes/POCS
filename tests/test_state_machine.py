@@ -32,6 +32,16 @@ def test_load_state_info(observatory):
     pocs._load_state('ready', state_info={'tags': ['at_twilight']})
 
 
+def test_lookup_trigger_default_park(observatory):
+    pocs = POCS(observatory)
+
+    pocs._load_state('ready', state_info={'tags': ['at_twilight']})
+    pocs.state = 'ready'
+    pocs.next_state = 'foobar'
+    next_state = pocs._lookup_trigger()
+    assert next_state == 'parking'
+
+
 def test_state_machine_absolute(temp_file):
     state_table = POCS.load_state_table()
     assert isinstance(state_table, dict)
