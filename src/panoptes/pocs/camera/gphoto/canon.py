@@ -55,16 +55,14 @@ class Camera(AbstractGPhotoCamera):
             '/main/capturesettings/continuousaf': 0,  # No auto-focus
             '/main/capturesettings/drivemode': 0,  # Single exposure
             '/main/capturesettings/focusmode': 0,  # Manual (don't try to focus)
-            '/main/capturesettings/shutterspeed': 0,  # Bulb
             '/main/imgsettings/imageformat': 9,  # RAW
             '/main/imgsettings/imageformatcf': 9,  # RAW
             '/main/imgsettings/imageformatsd': 9,  # RAW
-            '/main/imgsettings/iso': 1,  # ISO 100
             '/main/settings/autopoweroff': 0,  # Don't power off
             '/main/settings/capturetarget': 0,  # Capture to RAM, for download
-            '/main/settings/datetime': 'now',  # Current datetime
-            '/main/settings/datetimeutc': 'now',  # Current datetime
             '/main/settings/reviewtime': 0,  # Screen off after taking pictures
+            '/main/imgsettings/iso': 1,  # ISO 100
+            '/main/capturesettings/shutterspeed': 0,  # Bulb
         }
 
         owner_name = 'Project PANOPTES'
@@ -75,6 +73,8 @@ class Camera(AbstractGPhotoCamera):
             '/main/settings/artist': artist_name,
             '/main/settings/copyright': copy_right,
             '/main/settings/ownername': owner_name,
+            # Current UTC datetime in seconds since epoch.U
+            '/main/settings/datetimeutc': f'{current_time(datetime=True):%s}',
         }
 
         self.set_properties(prop2index, prop2value)
