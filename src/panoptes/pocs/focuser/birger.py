@@ -49,7 +49,7 @@ class Focuser(AbstractSerialFocuser):
         model (str, optional): default 'Canon EF-232'
         initial_position (int, optional): if given the focuser will drive to this encoder position
             following initialisation.
-        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
+        port (str, optional): Unix shell pattern to use to identify device nodes that
             may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
             to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
             used at the time of writing by Huntsman.
@@ -62,7 +62,7 @@ class Focuser(AbstractSerialFocuser):
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
-                 dev_node_pattern='/dev/tty.USA49*.?',
+                 port='/dev/tty.USA49*.?',
                  max_command_retries=5,
                  *args, **kwargs):
 
@@ -80,7 +80,7 @@ class Focuser(AbstractSerialFocuser):
                 self.logger.debug('Getting serial numbers for all connected Birger focusers')
                 Focuser._adaptor_nodes = {}
                 # Find nodes matching pattern
-                device_nodes = glob.glob(dev_node_pattern)
+                device_nodes = glob.glob(port)
 
                 # Open each device node and see if a Birger focuser answers
                 for device_node in device_nodes:
@@ -99,7 +99,7 @@ class Focuser(AbstractSerialFocuser):
                     warn(message)
                     return
                 else:
-                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._adaptor_nodes))
+                    self.logger.debug(f'Connected Birger focusers: {Focuser._adaptor_nodes}')
 
             # Search in cached device node scanning results for serial number
             try:
@@ -125,7 +125,8 @@ class Focuser(AbstractSerialFocuser):
         Returns current focus position in the lens focus encoder units.
         """
         response = self._send_command('pf', response_length=1)
-        return int(response[0].rstrip())
+        self._position = int(response[0].rstrip())
+        return self._position
 
     @property
     def min_position(self):
@@ -166,9 +167,8 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
     ##################################################################################################
 
-    def connect(self, port):
-
-        self._connect(port, baudrate=115200)
+    def connect(self, port=None, baudrate=115200):
+        self._connect(port=port, baudrate=baudrate)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
@@ -181,14 +181,14 @@ class Focuser(AbstractSerialFocuser):
         """
         Moves focuser to a new position.
 
+        Does not do any checking of the requested position but will warn if the lens reports
+        hitting a stop.
+
         Args:
-            position (int): new focuser position, in encoder units
+            position (int): new focuser position, in encoder units.
 
         Returns:
             int: focuser position following the move, in encoder units.
-
-        Does not do any checking of the requested position but will warn if the lens reports
-        hitting a stop.
         """
         self._is_moving = True
         try:
@@ -199,21 +199,21 @@ class Focuser(AbstractSerialFocuser):
             # returned then the focuser is no longer moving.
             self._is_moving = False
 
-        self.logger.debug("Moved to encoder position {}".format(new_position))
-        return new_position
+        self.logger.debug(f"Moved to encoder position {new_position}")
+        return self.position
 
     def move_by(self, increment):
         """
         Move focuser by a given amount.
 
+        Does not do any checking of the requested increment but will warn if the lens reports
+        hitting a stop.
+
         Args:
             increment (int): distance to move the focuser, in encoder units.
 
         Returns:
-            int: distance moved, in encoder units.
-
-        Does not do any checking of the requested increment but will warn if the lens reports
-        hitting a stop.
+            int: focuser position following the move, in encoder units.
         """
         self._is_moving = True
         try:
@@ -225,7 +225,7 @@ class Focuser(AbstractSerialFocuser):
             self._is_moving = False
 
         self.logger.debug("Moved by {} encoder units".format(moved_by))
-        return moved_by
+        return self.position
 
     ##################################################################################################
     # Private Methods
