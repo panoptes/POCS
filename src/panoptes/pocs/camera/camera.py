@@ -798,7 +798,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             method should at a minimum implement the described parameters.
 
         """
-        pass  # pragma: no cover
+        raise NotImplementedError
 
     def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
         """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
