@@ -191,8 +191,6 @@ class PanStateMachine(Machine):
         Returns:
             bool: If state was successfully changed.
         """
-        state_changed = False
-
         # Get the next transition method based off `state` and `next_state`
         transition_method_name = self._lookup_trigger()
         transition_method = getattr(self, transition_method_name, self.park)
@@ -337,6 +335,7 @@ class PanStateMachine(Machine):
                     return state_info['trigger']
 
         # Return parking if we don't find anything
+        self.logger.warning(f'No transition for {self.state} -> {self.next_state}, going to park')
         return 'parking'
 
     def _update_status(self, event_data):
