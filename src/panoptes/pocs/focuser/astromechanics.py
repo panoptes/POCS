@@ -44,6 +44,7 @@ class Focuser(AbstractSerialFocuser):
         """
         response = ''
         try:
+            # Subtract the calibration position to get the actual position of the focuser.
             response = int(self._send_command("P").rstrip("#")) - int(self._calibration_position)
             self._position = response
         except Exception as e:
@@ -86,7 +87,7 @@ class Focuser(AbstractSerialFocuser):
             int: focuser position following the move, in encoder units.
         """
 
-        # Add the calibration position to the position we want to move to
+        # Add the the position of the near focus stop to the position we want to move to.
         position = position + self._calibration_position
 
         self._is_moving = True
