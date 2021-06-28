@@ -68,7 +68,7 @@ class Focuser(AbstractSerialFocuser):
 
         self._max_command_retries = max_command_retries
 
-        super().__init__(name=name, model=model, *args, **kwargs)
+        super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
 
         if serial_number_pattern.match(self.port):
