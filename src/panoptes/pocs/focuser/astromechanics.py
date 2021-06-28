@@ -86,7 +86,7 @@ class Focuser(AbstractSerialFocuser):
             int: focuser position following the move, in encoder units.
         """
 
-        # Subtract the near stop value from the position we want to move to
+        # Add the calibration position to the position we want to move to
         position = position + self._calibration_position
 
         self._is_moving = True
