@@ -179,7 +179,7 @@ class Focuser(AbstractSerialFocuser):
         self._is_moving = True
         try:
             # Move to a position that is larger than the movement range of the lens.
-            self._send_command(f'M{int(self._calibration_position):d}')
+            self._send_command(f'M{int(self._zero_position):d}')
             self.logger.debug('Zero point of focuser has been calibrated at {self._zero_position}')
         finally:
             self._is_moving = False
