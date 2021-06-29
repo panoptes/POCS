@@ -174,7 +174,7 @@ class Focuser(AbstractSerialFocuser):
         finally:
             self._is_moving = False
 
-    def _calibrate_near_stop(self):
+    def _move_zero(self):
         self.logger.debug('Calibrating focus encoder near stop')
 
         self._is_moving = True
