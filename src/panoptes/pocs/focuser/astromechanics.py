@@ -1,7 +1,5 @@
-from panoptes.utils import error
 from panoptes.utils.serial.device import find_serial_port
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
-from panoptes.pocs.utils.logger import get_logger
 
 
 class Focuser(AbstractSerialFocuser):
@@ -24,11 +22,13 @@ class Focuser(AbstractSerialFocuser):
     """
 
     def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
-                 vendor_id=0x0403, product_id=0x6001, *args, **kwargs):
+                 vendor_id=0x0403, product_id=0x6001, zero_position=-25000, *args, **kwargs):
         if vendor_id and product_id:
             port = find_serial_port(vendor_id, product_id)
             self._vendor_id = vendor_id
             self._product_id = product_id
+
+        self._zero_position = zero_position
 
         super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug(f'Initializing {name}')
@@ -44,7 +44,8 @@ class Focuser(AbstractSerialFocuser):
         """
         response = ''
         try:
-            response = int(self._send_command("P").rstrip("#"))
+            # Subtract the calibration position to get the actual position of the focuser.
+            response = int(self._send_command("P").rstrip("#")) - int(self._zero_position)
             self._position = response
         except Exception as e:
             self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
@@ -85,6 +86,10 @@ class Focuser(AbstractSerialFocuser):
         Returns:
             int: focuser position following the move, in encoder units.
         """
+
+        # Add the position of the near focus stop to the position we want to move to.
+        position = position + self._zero_position
+
         self._is_moving = True
         try:
             self._send_command(f'M{int(position):d}')
@@ -153,9 +158,9 @@ class Focuser(AbstractSerialFocuser):
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
 
-        # Initalise focus. First move the focus to the close stop.
+        # Calibrate near stop of the astromechanics focuser.
         self._move_zero()
-        self._min_position = 0
+        self._min_position = self._zero_position
 
         self.logger.info(f'{self} initialised')
 
@@ -169,14 +174,12 @@ class Focuser(AbstractSerialFocuser):
             self._is_moving = False
 
     def _move_zero(self):
-        self.logger.debug('Setting focus encoder zero point')
-        if self._position != 0:
-            self._is_moving = True
-            try:
-                # Set focuser to 0 position
-                self._send_command('M0')
-                self.logger.debug('Focuser has been set to encoder position 0')
-            finally:
-                self._is_moving = False
-        else:
-            self.logger.debug('Focuser already at encoder position 0')
+        self.logger.debug('Setting focus encoder zero point at position={self._zero_position}')
+
+        self._is_moving = True
+        try:
+            # Move to a position that is larger than the movement range of the lens.
+            self._send_command(f'M{int(self._zero_position):d}')
+            self.logger.debug('Zero point of focuser has been calibrated at {self._zero_position}')
+        finally:
+            self._is_moving = False
