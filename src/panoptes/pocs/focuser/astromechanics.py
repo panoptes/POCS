@@ -159,9 +159,8 @@ class Focuser(AbstractSerialFocuser):
         self._initialise_aperture()
 
         # Calibrate near stop of the astromechanics focuser.
-        self._calibrate_near_stop()
-
-        self._min_position = self._calibration_position
+        self._move_zero()
+        self._min_position = self._zero_position
 
         self.logger.info(f'{self} initialised')
 
