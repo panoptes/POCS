@@ -88,7 +88,7 @@ class Focuser(AbstractSerialFocuser):
         """
 
         # Add the position of the near focus stop to the position we want to move to.
-        position = position + self._calibration_position
+        position = position + self._zero_position
 
         self._is_moving = True
         try:
