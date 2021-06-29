@@ -112,9 +112,6 @@ class Focuser(AbstractSerialFocuser):
             self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
             self.port = device_node
 
-        if initial_position is not None:
-            self.position = initial_position
-
     ##################################################################################################
     # Properties
     ##################################################################################################
@@ -227,21 +224,13 @@ class Focuser(AbstractSerialFocuser):
         self.logger.debug("Moved by {} encoder units".format(moved_by))
         return self.position
 
-    ##################################################################################################
     # Private Methods
-    ##################################################################################################
 
-    def _send_command(self, command, response_length=None):
+    def _send_command(self, command, *args, **kwargs):
         """
         Sends a command to the focuser adaptor and retrieves the response.
-
         Args:
             command (string): command string to send (without newline), e.g. 'fa1000', 'pf'
-            response length (integer, optional, default=None): number of lines of response expected.
-                For most commands this should be 0 or 1. If None readlines() will be called to
-                capture all responses. As this will block until the timeout expires it should only
-                be used if the number of lines expected is not known (e.g. 'ds' command).
-
         Returns:
             list: possibly empty list containing the '\r' terminated lines of the response from the
                 adaptor.
@@ -250,47 +239,31 @@ class Focuser(AbstractSerialFocuser):
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
             return
 
-        # Depending on which command was sent there may or may not be any further response.
-        response = []
-
         # Success variable to verify that the command sent is read by the focuser.
         success = False
 
         for i in range(self._max_command_retries):
             # Clear the input buffer in case there's anything left over in there.
-            self._serial_port.reset_input_buffer()
+            self._serial.reset_input_buffer()
 
             # Send the command
-            self._serial_io.write(command + '\r')
+            self._serial.write(command + '\r')
+            raw_response = self._serial.read().rstrip().split("\r")
 
             # In verbose mode adaptor will first echo the command
-            echo = self._serial_io.readline().rstrip()
-
+            echo = raw_response[0]
             if echo != command:
                 self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying command.')
                 continue
 
             # Adaptor should then send 'OK', even if there was an error.
-            ok = self._serial_io.readline().rstrip()
+            ok = raw_response[1]
             if ok != 'OK':
                 self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
                 continue
 
-            if response_length == 0:
-                # Not expecting any further response. Should check the buffer anyway in case an
-                # error message has been sent.
-                if self._serial_port.in_waiting:
-                    response.append(self._serial_io.readline())
-
-            elif response_length > 0:
-                # Expecting some number of lines of response. Attempt to read that many lines.
-                for i in range(response_length):
-                    response.append(self._serial_io.readline())
-
-            else:
-                # Don't know what to expect. Call readlines() to get whatever is there.
-                response.extend(self._serial_io.readlines())
-
+            # Depending on which command was sent there may or may not be any further response.
+            response = raw_response[2:]
             success = True
             break
 
@@ -305,11 +278,9 @@ class Focuser(AbstractSerialFocuser):
                 # Got an error message! Translate it.
                 try:
                     error_message = error_messages[int(error_match.group())]
-                    self.logger.error("{} returned error message '{}'!".format(
-                        self, error_message))
+                    self.logger.error(f"{self} returned error message '{error_message}'!")
                 except Exception:
-                    self.logger.error("Unknown error '{}' from {}!".format(
-                        error_match.group(), self))
+                    self.logger.error(f"Unknown error '{error_match.group()}' from {self}!")
 
         return response
 
