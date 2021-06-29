@@ -22,7 +22,7 @@ class Focuser(AbstractSerialFocuser):
     """
 
     def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
-                 vendor_id=0x0403, product_id=0x6001, calibration_position=-25000, *args, **kwargs):
+                 vendor_id=0x0403, product_id=0x6001, zero_position=-25000, *args, **kwargs):
         if vendor_id and product_id:
             port = find_serial_port(vendor_id, product_id)
             self._vendor_id = vendor_id
