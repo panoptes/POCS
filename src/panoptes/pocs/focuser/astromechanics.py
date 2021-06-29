@@ -180,6 +180,6 @@ class Focuser(AbstractSerialFocuser):
         try:
             # Move to a position that is larger than the movement range of the lens.
             self._send_command(f'M{int(self._calibration_position):d}')
-            self.logger.debug('Near stop of focuser has been calibrated')
+            self.logger.debug('Zero point of focuser has been calibrated at {self._zero_point}')
         finally:
             self._is_moving = False
