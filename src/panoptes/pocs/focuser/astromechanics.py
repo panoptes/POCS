@@ -45,7 +45,7 @@ class Focuser(AbstractSerialFocuser):
         response = ''
         try:
             # Subtract the calibration position to get the actual position of the focuser.
-            response = int(self._send_command("P").rstrip("#")) - int(self._calibration_position)
+            response = int(self._send_command("P").rstrip("#")) - int(self._zero_position)
             self._position = response
         except Exception as e:
             self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
