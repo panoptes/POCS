@@ -28,7 +28,7 @@ class Focuser(AbstractSerialFocuser):
             self._vendor_id = vendor_id
             self._product_id = product_id
 
-        self._calibration_position = calibration_position
+        self._zero_position = zero_position
 
         super().__init__(name=name, model=model, port=port, *args, **kwargs)
         self.logger.debug(f'Initializing {name}')
