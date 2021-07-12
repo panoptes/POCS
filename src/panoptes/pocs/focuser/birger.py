@@ -43,27 +43,21 @@ error_messages = ('No error',
 class Focuser(AbstractSerialFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
-
-    Args:
-        name (str, optional): default 'Birger Focuser'
-        model (str, optional): default 'Canon EF-232'
-        initial_position (int, optional): if given the focuser will drive to this encoder position
-            following initialisation.
-        port (str, optional): Unix shell pattern to use to identify device nodes that
-            may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
-            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
-            used at the time of writing by Huntsman.
-
-    Additional positonal and keyword arguments are passed to the base class, AbstractFocuser. See
-    that class' documentation for a complete list.
     """
 
-    def __init__(self, name='Birger Focuser', model='Canon EF-232', port='/dev/tty.USA49*.?',
-                 max_command_retries=5, baudrate=115200, *args, **kwargs):
-
+    def __init__(self, name='Birger Focuser', model='Canon EF-232', max_command_retries=5,
+                 baudrate=115200, **kwargs):
+        """
+        Args:
+            name (str, optional): default 'Birger Focuser'
+            model (str, optional): default 'Canon EF-232'
+            max_command_retries (int, optional): Max number of command retries before raising
+                an error. Default: 5.
+            baudrate (int, optional): The baudrate of the serial device. Default: 115200.
+            **kwargs: Parsed to AbstractSerialFocuser init function.
+        """
         self._max_command_retries = max_command_retries
-
-        super().__init__(name=name, model=model, port=port, baudrate=baudrate, *args, **kwargs)
+        super().__init__(name=name, model=model, baudrate=baudrate, **kwargs)
 
     # Properties
 

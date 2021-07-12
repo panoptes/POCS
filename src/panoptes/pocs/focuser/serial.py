@@ -15,8 +15,12 @@ class AbstractSerialFocuser(AbstractFocuser):
     _assigned_nodes = []
 
     def __init__(self, baudrate=None, initial_position=None, *args, **kwargs):
-        """Initialize an AbstractSerialMount for the port defined in the config.
-            Opens a connection to the serial device, if it is valid.
+        """
+        Args:
+            initial_position (int, optional): If provided, move to this position after
+                initializing.
+            baudrate (int, optional): The baudrate of the serial device. Default: None.
+            **kwargs: Parsed to AbstractFocuser init function.
         """
         super().__init__(*args, **kwargs)
 

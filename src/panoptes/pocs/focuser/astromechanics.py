@@ -7,25 +7,31 @@ class Focuser(AbstractSerialFocuser):
     Focuser class for control of a Canon DSLR lens via an Astromechanics
     Engineering Canon EF/EF-S adapter.
 
-    Args:
-        name (str, optional): default 'Astromechanics Focuser'
-        model (str, optional): default 'Canon EF/EF-S'
-        vendor_id (str, optional): idVendor of device, can be retrieved with lsusb -v from terminal.
-        product_id (str, optional): idProduct of device, can be retrieved with lsusb -v from
-            terminal.
-
-    Additional positonal and keyword arguments are passed to the base class,
-    AbstractSerialFocuser. See that base class documentation for a complete list.
-
     Min/max commands do not exist for the astromechanics controller, as well as
     other commands to get serial numbers and library/hardware versions. However,
     as they are marked with the decorator @abstractmethod, we have to override them.
+
+    Astromechanics focuser are currently very slow to respond to position queries. When they do
+    respond, they give the exact position that was requested by the last move_to command (i.e.
+    there is no reported position error). We can therefore avoid such queries by storing the
+    current position in memory.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
-                 vendor_id=0x0403, product_id=0x6001, zero_position=-25000, baudrate=38400,
-                 *args, **kwargs):
-
+    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', vendor_id=0x0403,
+                 product_id=0x6001, zero_position=-25000, baudrate=38400, *args, **kwargs):
+        """
+        Args:
+            name (str, optional): default 'Astromechanics Focuser'
+            model (str, optional): default 'Canon EF/EF-S'
+            vendor_id (str, optional): idVendor of device, can be retrieved with lsusb -v from
+                terminal.
+            product_id (str, optional): idProduct of device, can be retrieved with lsusb -v from
+                terminal.
+            zero_position (int, optional): Position to use to calibrate the zero position of the
+                focuser. This should be a negative number larger than the possible range of encoder
+                values. Default: -25000.
+            baudrate (int, optional): The baudrate of the serial device. Default: 38400.
+        """
         self._position = None
 
         if vendor_id and product_id:
@@ -35,7 +41,7 @@ class Focuser(AbstractSerialFocuser):
 
         self._zero_position = zero_position
 
-        super().__init__(name=name, model=model, port=port, baudrate=baudrate, *args, **kwargs)
+        super().__init__(name=name, model=model, baudrate=baudrate, port=port, *args, **kwargs)
 
     # Properties
 
