@@ -158,13 +158,10 @@ class Focuser(AbstractSerialFocuser):
     def move_to(self, position):
         """
         Moves focuser to a new position.
-
         Does not do any checking of the requested position but will warn if the lens reports
         hitting a stop.
-
         Args:
             position (int): new focuser position, in encoder units.
-
         Returns:
             int: focuser position following the move, in encoder units.
         """
@@ -183,13 +180,10 @@ class Focuser(AbstractSerialFocuser):
     def move_by(self, increment):
         """
         Move focuser by a given amount.
-
         Does not do any checking of the requested increment but will warn if the lens reports
         hitting a stop.
-
         Args:
             increment (int): distance to move the focuser, in encoder units.
-
         Returns:
             int: focuser position following the move, in encoder units.
         """
