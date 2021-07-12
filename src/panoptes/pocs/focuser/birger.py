@@ -1,13 +1,12 @@
 import re
 import serial
 import glob
-from warnings import warn
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
 
 # Birger adaptor serial numbers should be 5 digits
-serial_number_pattern = re.compile(r'^\d{5}$')
+SERIAL_NUMBER_PATTERN = re.compile(r'^\d{5}$')
 
 # Error codes should be 'ERR' followed by 1-2 digits
 error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
@@ -58,63 +57,14 @@ class Focuser(AbstractSerialFocuser):
     that class' documentation for a complete list.
     """
 
-    def __init__(self,
-                 name='Birger Focuser',
-                 model='Canon EF-232',
-                 initial_position=None,
-                 port='/dev/tty.USA49*.?',
-                 max_command_retries=5,
-                 *args, **kwargs):
+    def __init__(self, name='Birger Focuser', model='Canon EF-232', initial_position=None,
+                 port='/dev/tty.USA49*.?', max_command_retries=5, baudrate=115200, *args, **kwargs):
 
         self._max_command_retries = max_command_retries
 
-        super().__init__(name=name, model=model, port=port, *args, **kwargs)
-        self.logger.debug('Initialising Birger focuser')
+        super().__init__(name=name, model=model, port=port, baudrate=baudrate, *args, **kwargs)
 
-        if serial_number_pattern.match(self.port):
-            # Have been given a serial number
-            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
-
-            if Focuser._adaptor_nodes is None:
-                # No cached device nodes scanning results, need to scan.
-                self.logger.debug('Getting serial numbers for all connected Birger focusers')
-                Focuser._adaptor_nodes = {}
-                # Find nodes matching pattern
-                device_nodes = glob.glob(port)
-
-                # Open each device node and see if a Birger focuser answers
-                for device_node in device_nodes:
-                    try:
-                        serial_number = self.connect(device_node)
-                        Focuser._adaptor_nodes[serial_number] = device_node
-                    except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
-                        # No Birger focuser on this node.
-                        pass
-                    finally:
-                        self._serial_port.close()
-
-                if not Focuser._adaptor_nodes:
-                    message = 'No Birger focuser devices found!'
-                    self.logger.error(message)
-                    warn(message)
-                    return
-                else:
-                    self.logger.debug(f'Connected Birger focusers: {Focuser._adaptor_nodes}')
-
-            # Search in cached device node scanning results for serial number
-            try:
-                device_node = Focuser._adaptor_nodes[self.port]
-            except KeyError:
-                message = 'Could not find {} ({})!'.format(self.name, self.port)
-                self.logger.error(message)
-                warn(message)
-                return
-            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
-            self.port = device_node
-
-    ##################################################################################################
     # Properties
-    ##################################################################################################
 
     @AbstractSerialFocuser.position.getter
     def position(self):
@@ -160,19 +110,55 @@ class Focuser(AbstractSerialFocuser):
         """
         return self._hardware_version
 
-    ##################################################################################################
     # Public Methods
-    ##################################################################################################
 
-    def connect(self, port=None, baudrate=115200):
-        self._connect(port=port, baudrate=baudrate)
+    def connect(self, port, baudrate, **kwargs):
+
+        if SERIAL_NUMBER_PATTERN.match(port):
+
+            # Have been given a serial number
+            self.logger.debug(f"Looking for {self.name} ({port})")
+
+            if self._adaptor_nodes is None:
+
+                # No cached device nodes scanning results, need to scan.
+                self.logger.debug('Getting serial numbers for all connected Birger focusers')
+                self._adaptor_nodes = {}
+
+                # Find nodes matching pattern
+                device_nodes = glob.glob(port)
+
+                # Open each device node and see if a Birger focuser answers
+                for device_node in device_nodes:
+                    with suppress(serial.SerialException, serial.SerialTimeoutException):
+                        super().connect(port=device_node, baudrate=baudrate, **kwargs)
+                        serial_number = self._get_serial_number()
+                        self._adaptor_nodes[serial_number] = device_node
+                        self._serial.close()
+
+                if not self._adaptor_nodes:
+                    self.logger.error("No Birger focuser devices found!")
+                    return
+                else:
+                    self.logger.debug(f'Connected Birger focusers: {Focuser._adaptor_nodes}')
+
+            # Search in cached device node scanning results for serial number
+            try:
+                device_node = self._adaptor_nodes[port]
+            except KeyError:
+                self.logger.error(f"Could not find {self.name} ({port})")
+                return
+            self.logger.debug(f'Found {self.name} ({port}) on {device_node}')
+            self.port = device_node
+
+        super().connect(port=self.port, baudrate=baudrate, **kwargs)
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
         self._send_command('rm1,0', response_length=0)
 
-        # Return serial number
-        return self._send_command('sn', response_length=1)[0].rstrip()
+        # Set the serial number
+        self._serial_number = self._get_serial_number()
 
     def move_to(self, position):
         """
@@ -225,6 +211,12 @@ class Focuser(AbstractSerialFocuser):
         return self.position
 
     # Private Methods
+
+    def _initialise(self):
+        """ Initialize the Birger focuser. """
+        # Set 'verbose' and 'legacy' response modes. The response from this depends on
+        # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
+        self._send_command('rm1,0', response_length=0)
 
     def _send_command(self, command, *args, **kwargs):
         """
@@ -299,11 +291,6 @@ class Focuser(AbstractSerialFocuser):
 
         return amount
 
-    def _initialise(self):
-        # Get serial number. Note, this is the serial number of the Birger adaptor,
-        # *not* the attached lens (which would be more useful). Accessible as self.uid
-        self._get_serial_number()
-
         # Get the version string of the adaptor software libray. Accessible as self.library_version
         self._get_library_version()
 
@@ -333,12 +320,9 @@ class Focuser(AbstractSerialFocuser):
         self.logger.info('{} initialised'.format(self))
 
     def _get_serial_number(self):
+        """ Get the Birger Focuser's serial number. """
         response = self._send_command('sn', response_length=1)
-        self._serial_number = response[0].rstrip()
-        self.logger.debug("Got serial number {} for {} on {}".format(
-            self.uid,
-            self.name,
-            self.port))
+        return response[0].rstrip()
 
     def _get_library_version(self):
         response = self._send_command('lv', response_length=1)
