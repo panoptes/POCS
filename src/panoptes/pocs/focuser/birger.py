@@ -108,7 +108,12 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
 
     def connect(self, port, baudrate, **kwargs):
-
+        """ Connect to the Birger focuser.
+        Args:
+            port (int): The serial port.
+            baudrate (int): The baudrate of the serial device.
+            **kwargs: Parsed to super().connect
+        """
         if SERIAL_NUMBER_PATTERN.match(port):
 
             # Have been given a serial number
@@ -147,10 +152,6 @@ class Focuser(AbstractSerialFocuser):
             self.port = device_node
 
         super().connect(port=self.port, baudrate=baudrate, **kwargs)
-
-        # Set 'verbose' and 'legacy' response modes. The response from this depends on
-        # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
-        self._send_command('rm1,0', response_length=0)
 
         # Set the serial number
         self._serial_number = self._get_serial_number()
