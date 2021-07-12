@@ -54,7 +54,7 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns position of close limit of focus travel, in encoder units.
         """
-        return self._min_position
+        return 0
 
     @property
     def max_position(self):
@@ -106,7 +106,6 @@ class Focuser(AbstractSerialFocuser):
 
         # Calibrate near stop of the astromechanics focuser.
         self._move_zero()
-        self._min_position = self._zero_position
 
     def _send_command(self, command, pre_cmd='', post_cmd='#'):
         """
