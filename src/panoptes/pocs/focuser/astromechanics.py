@@ -23,7 +23,10 @@ class Focuser(AbstractSerialFocuser):
     """
 
     def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', port=None,
-                 vendor_id=0x0403, product_id=0x6001, zero_position=-25000, *args, **kwargs):
+                 vendor_id=0x0403, product_id=0x6001, zero_position=-25000, baudrate=38400,
+                 *args, **kwargs):
+
+        self._position = None
 
         if vendor_id and product_id:
             port = find_serial_port(vendor_id, product_id)
@@ -32,26 +35,13 @@ class Focuser(AbstractSerialFocuser):
 
         self._zero_position = zero_position
 
-        super().__init__(name=name, model=model, port=port, *args, **kwargs)
-        self.logger.debug(f'Initializing {name}')
+        super().__init__(name=name, model=model, port=port, baudrate=baudrate, *args, **kwargs)
 
-    ################################################################################################
     # Properties
-    ################################################################################################
 
     @AbstractSerialFocuser.position.getter
     def position(self):
-        """
-        Returns current focus position in the lens focus encoder units.
-        """
-        response = ''
-        try:
-            # Subtract the calibration position to get the actual position of the focuser.
-            response = int(self._send_command("P").rstrip("#")) - int(self._zero_position)
-            self._position = response
-        except Exception as e:
-            self.logger.warning(f'Astromech focuser could not get current position: {e!r}')
-        return response
+        return self._position
 
     @property
     def min_position(self):
@@ -68,10 +58,6 @@ class Focuser(AbstractSerialFocuser):
         return None
 
     # Public Methods
-
-    def connect(self, port=None, baudrate=38400):
-        self._connect(port=port, baudrate=baudrate)
-        return self._serial_number
 
     def move_to(self, position):
         """ Moves focuser to a new position.
@@ -96,34 +82,19 @@ class Focuser(AbstractSerialFocuser):
 
     def move_by(self, increment):
         """ Move focuser by a given amount.
-
         Does not do any checking of the requested increment but will warn if the lens reports
         hitting a stop.
-
         Args:
             increment (int): distance to move the focuser, in encoder units.
-
         Returns:
             int: focuser position following the move, in encoder units.
         """
-        self._is_moving = True
-        try:
-            new_pos = self.position + increment
-            self._send_command(f'M{int(new_pos):d}')
-            self._position = new_pos
-        finally:
-            # Focuser move commands block until the move is finished, so if the command has
-            # returned then the focuser is no longer moving.
-            self._is_moving = False
+        new_pos = self.position + increment
+        return self.move_to(new_pos)
 
-        self.logger.debug(f"Moved by {increment} encoder units. Position is: {self.position}")
-        return self.position
-
-    ################################################################################################
     # Private Methods
-    ################################################################################################
 
-    def _initialise(self):
+    def _initialize(self):
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
 

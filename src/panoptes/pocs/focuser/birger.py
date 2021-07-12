@@ -1,6 +1,7 @@
 import re
 import serial
 import glob
+from contextlib import suppress
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 from panoptes.utils import error
@@ -57,8 +58,8 @@ class Focuser(AbstractSerialFocuser):
     that class' documentation for a complete list.
     """
 
-    def __init__(self, name='Birger Focuser', model='Canon EF-232', initial_position=None,
-                 port='/dev/tty.USA49*.?', max_command_retries=5, baudrate=115200, *args, **kwargs):
+    def __init__(self, name='Birger Focuser', model='Canon EF-232', port='/dev/tty.USA49*.?',
+                 max_command_retries=5, baudrate=115200, *args, **kwargs):
 
         self._max_command_retries = max_command_retries
 
@@ -212,7 +213,7 @@ class Focuser(AbstractSerialFocuser):
 
     # Private Methods
 
-    def _initialise(self):
+    def _initialize(self):
         """ Initialize the Birger focuser. """
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'

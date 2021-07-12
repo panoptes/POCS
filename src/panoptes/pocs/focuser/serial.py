@@ -14,7 +14,7 @@ class AbstractSerialFocuser(AbstractFocuser):
     # known focuser devices & acts as a check against adaptors assigned to incorrect ports.
     _assigned_nodes = []
 
-    def __init__(self, baudrate=None, *args, **kwargs):
+    def __init__(self, baudrate=None, initial_position=None, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
             Opens a connection to the serial device, if it is valid.
         """
@@ -42,9 +42,8 @@ class AbstractSerialFocuser(AbstractFocuser):
 
         # Move to the initial position
         # TODO: Move this to Focuser base class?
-        initial_position = kwargs.get("initial_position", None)
         if initial_position is not None:
-            self.logger.debug(f"Initial position for {self}: {initial_position}")
+            self.logger.info(f"Initial position for {self}: {initial_position}")
             self.move_to(initial_position)
 
     def __del__(self):
