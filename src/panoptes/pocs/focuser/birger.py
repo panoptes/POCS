@@ -220,9 +220,6 @@ class Focuser(AbstractSerialFocuser):
             self.logger.critical("Attempt to send command to {} when not connected!".format(self))
             return
 
-        # Success variable to verify that the command sent is read by the focuser.
-        success = False
-
         for i in range(self._max_command_retries):
             # Clear the input buffer in case there's anything left over in there.
             self._serial.reset_input_buffer()
@@ -231,25 +228,31 @@ class Focuser(AbstractSerialFocuser):
             self._serial.write(command + '\r')
             raw_response = self._serial.read().rstrip().split("\r")
 
-            # In verbose mode adaptor will first echo the command
-            echo = raw_response[0]
-            if echo != command:
-                self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying command.')
-                continue
+            try:
+                # In verbose mode adaptor will first echo the command
+                echo = raw_response[0]
+                if echo != command:
+                    self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying.')
+                    continue
 
-            # Adaptor should then send 'OK', even if there was an error.
-            ok = raw_response[1]
-            if ok != 'OK':
-                self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
-                continue
+                # Adaptor should then send 'OK', even if there was an error.
+                ok = raw_response[1]
+                if ok != 'OK':
+                    self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
+                    continue
 
-            # Depending on which command was sent there may or may not be any further response.
-            response = raw_response[2:]
-            success = True
-            break
+                # Depending on which command was sent there may or may not be any further response.
+                response = raw_response[2:]
+                break
 
-        if not success:
-            raise error.PanError(f'Failed command {command!r} on {self}')
+            except Exception as err:
+                msg = (f"Command {command} failed on {self} on attempt {i + 1} of"
+                       f" {self._max_command_retries}: {err!r}")
+
+                if i == self._max_command_retries - 1:
+                    raise error.PanError(msg)
+                else:
+                    self.logger.warning(msg)
 
         # Check for an error message in response
         if response:
