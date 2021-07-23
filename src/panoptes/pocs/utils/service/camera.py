@@ -182,9 +182,14 @@ def take_pic(device_number: int, exposure: Exposure):
             return {'success': True, 'filename': full_path}
 
 
-@app.get('/camera/{device_number}/shutterspeeds')
+@app.get('/camera/{device_number}/settings/shutterspeed')
 def get_shutterspeeds(device_number: int):
     return shutter_index_lookup
+
+
+@app.get('/camera/{device_number}/settings/iso')
+def get_isos(device_number: int):
+    return iso_index_lookup
 
 
 def gphoto2_command(command: List[str]) -> subprocess.CompletedProcess:
