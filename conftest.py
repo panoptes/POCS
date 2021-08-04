@@ -159,9 +159,7 @@ def pytest_runtest_logfinish(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     with suppress(Exception):
-        logger.log('testing', '')
-        logger.log('testing', f'       END TEST {nodeid}')
-        logger.log('testing', '##########' * 8)
+        logger.log('testing', f'{" END TEST " + nodeid:*^80}')
 
 
 @pytest.fixture(scope='session')
