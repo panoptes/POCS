@@ -156,7 +156,7 @@ def test_sim_bad_focuser():
 
 def test_sim_worse_focuser():
     with pytest.raises(NotFound):
-        sim_camera = SimCamera(focuser='NOTAFOCUSER')
+        SimCamera(focuser='NOTAFOCUSER')
 
 
 def test_sim_string():
@@ -251,7 +251,7 @@ def test_get_temp(camera):
     try:
         temperature = camera.temperature
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement temperature info")
     else:
         assert temperature is not None
 
@@ -266,7 +266,7 @@ def test_set_target_temperature(camera):
         camera.target_temperature = 10 * u.Celsius
         assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement temperature control")
 
 
 def test_cooling_enabled(camera):
