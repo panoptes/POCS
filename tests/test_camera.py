@@ -33,7 +33,7 @@ from panoptes.utils.serializers import to_json
 from panoptes.utils.time import CountdownTimer
 
 
-@pytest.fixture(scope='module', params=[
+@pytest.fixture(scope='function', params=[
     pytest.param([SimCamera, dict()]),
     pytest.param([SimCamera, get_config('cameras.devices[0]')]),
     pytest.param([SimCamera, get_config('cameras.devices[1]')]),
