@@ -54,17 +54,21 @@ from panoptes.utils.time import CountdownTimer
 ])
 def camera(request):
     CamClass = request.param[0]
-    cam_params = request.param[1]
-
     cam = None
+    cam_model = None
+    cam_params = None
 
-    if isinstance(cam_params, dict):
+    if isinstance(request.param[1], dict):
+        cam_params = request.param[1]
+    else:
+        cam_model = request.param[1]
+
+    if cam_params is not None:
         # Simulator
         cam = CamClass(**cam_params)
     else:
-        # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
-            if cam_config['model'] == cam_params:
+            if cam_config['model'] == cam_model:
                 cam = CamClass(**cam_config)
                 break
 
