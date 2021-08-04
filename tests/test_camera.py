@@ -88,8 +88,10 @@ def camera(request):
         assert cam.is_temperature_stable and cooling_timeout.expired() is False
 
     assert cam.is_ready
-    cam.logger.log('testing', f'Yielding camera {cam}')
+    cam.logger.log('testing', f'Yielding camera {cam=!r}')
     yield cam
+    cam.logger.log('testing', f'Deleting camera {cam=!r}')
+    del cam
 
 
 @pytest.fixture(scope='module')
@@ -259,7 +261,7 @@ def test_get_temp(camera):
     try:
         temperature = camera.temperature
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement temperature info")
     else:
         assert temperature is not None
 
@@ -274,13 +276,11 @@ def test_set_target_temperature(camera):
         camera.target_temperature = 10 * u.Celsius
         assert abs(camera.target_temperature - 10 * u.Celsius) < 0.5 * u.Celsius
     else:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement temperature control")
 
 
 def test_cooling_enabled(camera):
-    print('Some test output')
     assert camera.cooling_enabled == camera.is_cooled_camera
-    print('Some other output')
 
 
 def test_enable_cooling(camera):
@@ -288,7 +288,7 @@ def test_enable_cooling(camera):
         camera.cooling_enabled = True
         assert camera.cooling_enabled
     else:
-        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement control of cooling status")
 
 
 def test_get_cooling_power(camera):
@@ -296,7 +296,7 @@ def test_get_cooling_power(camera):
         power = camera.cooling_power
         assert power is not None
     else:
-        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
+        pytest.skip(f"Camera {camera.name} doesn't implement cooling power readout")
 
 
 def test_disable_cooling(camera):
