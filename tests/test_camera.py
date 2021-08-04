@@ -32,6 +32,8 @@ from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.utils.serializers import to_json
 from panoptes.utils.time import CountdownTimer
 
+from loguru import logger
+
 
 @pytest.fixture(scope='function', params=[
     pytest.param([SimCamera, dict()]),
@@ -63,6 +65,8 @@ def camera(request):
     else:
         cam_model = request.param[1]
 
+    logger.log('testing', f'Creating camera with {CamClass=} {cam_model=} {cam_params=!r}')
+
     if cam_params is not None:
         # Simulator
         cam = CamClass(**cam_params)
@@ -73,7 +77,7 @@ def camera(request):
                 cam = CamClass(**cam_config)
                 break
 
-    cam.logger.log('testing', f'Camera created: {cam!r}')
+    logger.log('testing', f'Camera created: {cam!r}')
 
     # Wait for cooled camera
     if cam.is_cooled_camera:
