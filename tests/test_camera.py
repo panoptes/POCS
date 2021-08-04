@@ -194,6 +194,9 @@ def test_sdk_already_in_use():
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
 
+    # Explicitly delete camera to clear `_assigned_cameras`.
+    del sim_camera
+
 
 def test_sdk_camera_not_found():
     with pytest.raises(error.InvalidConfig):
