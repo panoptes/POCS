@@ -105,8 +105,7 @@ def create_cameras_from_config(config=None,
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.CameraNotFound(
-                msg="No cameras detected. For testing, use camera simulator.")
+            raise error.CameraNotFound(msg="No cameras detected. For testing, use simulator.")
         else:
             logger.debug(f"Detected ports={ports!r}")
 
