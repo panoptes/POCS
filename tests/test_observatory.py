@@ -32,7 +32,10 @@ def reset_conf(config_host, config_port):
 
 @pytest.fixture(scope='function')
 def cameras():
-    return create_cameras_from_config(recreate_existing=True)
+    cams = create_cameras_from_config(recreate_existing=True)
+    yield cams
+    for cam in cams.values():
+        del cam
 
 
 @pytest.fixture(scope='function')
@@ -52,7 +55,8 @@ def observatory(mount, cameras, images_dir):
     for cam_name, cam in cameras.items():
         obs.add_camera(cam_name, cam)
 
-    return obs
+    yield obs
+    del obs
 
 
 def test_camera_already_exists(observatory, cameras):
@@ -249,7 +253,7 @@ def test_standard_headers(observatory):
         {"field": {
             'name': 'HAT-P-20',
             'position': '07h27m39.89s +24d20m14.7s'},
-         "observation": {'priority': '100'}}
+            "observation": {'priority': '100'}}
     ]
 
     observatory.get_observation()
