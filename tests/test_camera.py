@@ -83,13 +83,10 @@ def camera(request):
         assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
     assert camera.is_ready
-    camera.logger.debug(f'Yielding camera {camera}')
+    camera.logger.log('testing', f'Yielding camera {camera}')
     yield camera
 
-    # simulator_sdk needs this explicitly removed for some reason.
-    # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
-    with suppress(AttributeError):
-        type(camera)._assigned_cameras.discard(camera.uid)
+    del camera
 
 
 @pytest.fixture(scope='module')
