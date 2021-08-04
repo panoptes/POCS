@@ -96,10 +96,19 @@ def camera(request):
 
     logger.log('testing', f'Making sure camera is ready from fixture {cam=!r}')
     assert cam.is_ready
+
     logger.log('testing', f'Yielding camera {cam=!r}')
     yield cam
+
     logger.log('testing', f'Deleting camera {cam=!r}')
     del cam
+
+    # simulator_sdk needs this explicitly removed for some reason.
+    # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
+    with suppress(AttributeError):
+        logger.log('testing', f'Exisiting cameras: {type(cam)._assigned_cameras=!r}')
+        type(cam)._assigned_cameras.discard(camera.uid)
+        logger.log('testing', f'Exisiting cameras: {type(cam)._assigned_cameras=!r}')
 
 
 @pytest.fixture(scope='module')
