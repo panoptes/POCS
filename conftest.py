@@ -147,9 +147,7 @@ def pytest_runtest_logstart(nodeid, location):
         location – a triple of (filename, linenum, testname)
     """
     with suppress(Exception):
-        logger.log('testing', '##########' * 8)
-        logger.log('testing', f'     START TEST {nodeid}')
-        logger.log('testing', '')
+        logger.log('testing', f'{" START TEST " + nodeid:*^80}')
 
 
 def pytest_runtest_logfinish(nodeid, location):
