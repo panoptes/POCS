@@ -200,6 +200,9 @@ def test_sdk_camera_not_found():
     with pytest.raises(error.InvalidConfig):
         SimSDKCamera(serial_number='SSC404')
 
+    # Explicitly clear `_assigned_cameras`.
+    SimSDKCamera._assigned_cameras = set()
+
 
 # Hardware independent tests for SBIG camera
 
