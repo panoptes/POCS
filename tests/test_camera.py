@@ -57,6 +57,7 @@ from loguru import logger
 def camera(request):
     logger.log('testing', f'Inside camera fixture: {request=!r}')
     CamClass = request.param[0]
+    logger.log('testing', f'Exisiting cameras: {CamClass._asigned_cameras=!r}')
     cam = None
     cam_model = None
     cam_params = None
@@ -70,13 +71,7 @@ def camera(request):
 
     if cam_params is not None:
         # Simulator
-        try:
-            cam = CamClass(**cam_params)
-        except error.PanError as e:
-            logger.log('testing', f'Problem creating camera fixture: {e!r}')
-            with suppress(AttributeError):
-                # Reset assigned cameras.
-                CamClass._assigned_cameras = set()
+        cam = CamClass(**cam_params)
     else:
         # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
