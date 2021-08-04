@@ -55,7 +55,7 @@ from loguru import logger
     'zwo'
 ])
 def camera(request):
-    logger.log(f'Inside camera fixture: {request=!r}')
+    logger.log('testing', f'Inside camera fixture: {request=!r}')
     CamClass = request.param[0]
     cam = None
     cam_model = None
