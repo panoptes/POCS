@@ -106,9 +106,9 @@ def camera(request):
     # simulator_sdk needs this explicitly removed for some reason.
     # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
     with suppress(AttributeError):
-        logger.log('testing', f'Exisiting cameras: {type(cam)._assigned_cameras=!r}')
-        type(cam)._assigned_cameras.discard(camera.uid)
-        logger.log('testing', f'Exisiting cameras: {type(cam)._assigned_cameras=!r}')
+        logger.log('testing', f'Exisiting cameras: {CamClass._assigned_cameras=!r}')
+        CamClass._assigned_cameras.discard(camera.uid)
+        logger.log('testing', f'Exisiting cameras: {CamClass._assigned_cameras=!r}')
 
 
 @pytest.fixture(scope='module')
