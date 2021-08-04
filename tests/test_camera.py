@@ -83,9 +83,10 @@ def camera(request):
         assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
     assert camera.is_ready
-    camera.logger.log('testing', f'Yielding camera {camera}')
+    camera.logger.log('testing', f'Yielding {camera=}')
     yield camera
 
+    camera.logger.log('testing', f'Deleting {camera=}')
     del camera
 
 
