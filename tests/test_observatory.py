@@ -40,7 +40,7 @@ def mount():
     return create_mount_simulator()
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def observatory(mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
