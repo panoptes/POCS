@@ -70,7 +70,13 @@ def camera(request):
 
     if cam_params is not None:
         # Simulator
-        cam = CamClass(**cam_params)
+        try:
+            cam = CamClass(**cam_params)
+        except error.PanError as e:
+            logger.log('testing', f'Problem creating camera fixture: {e!r}')
+            with suppress(AttributeError):
+                # Reset assigned cameras.
+                CamClass._assigned_cameras = set()
     else:
         # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
@@ -92,10 +98,11 @@ def camera(request):
             cooling_timeout.sleep(max_sleep=2)
         assert cam.is_temperature_stable and cooling_timeout.expired() is False
 
+    logger.log('testing', f'Making sure camera is ready from fixture {cam=!r}')
     assert cam.is_ready
-    cam.logger.log('testing', f'Yielding camera {cam=!r}')
+    logger.log('testing', f'Yielding camera {cam=!r}')
     yield cam
-    cam.logger.log('testing', f'Deleting camera {cam=!r}')
+    logger.log('testing', f'Deleting camera {cam=!r}')
     del cam
 
 
