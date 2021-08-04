@@ -333,7 +333,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.warning(f"Camera {self} not ready: {sub_name} not ready.")
 
         # Make sure there isn't an exposure already in progress.
-        if not current_readiness['not_exposing']:
+        if not current_readiness.get('not_exposing', True):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
@@ -622,7 +622,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             except Exception as e:  # pragma: no cover
                 self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='seconds')
+        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='second')
 
         if record_observations:
             self.logger.debug(f"Adding current observation to db: {image_id}")

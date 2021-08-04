@@ -157,10 +157,10 @@ class Camera(AbstractSDKCamera):
         return readout_args
 
     def _readout(self, filename, readout_mode, top, left, height, width, header):
-        exposure_status = Camera._driver.get_exposure_status(self._handle)
+        exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == 'CS_INTEGRATION_COMPLETE':
             try:
-                image_data = Camera._driver.readout(self._handle,
+                image_data = self._driver.readout(self._handle,
                                                     readout_mode,
                                                     top,
                                                     left,

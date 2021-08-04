@@ -30,6 +30,7 @@ from panoptes.utils.config.client import set_config
 
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.utils.serializers import to_json
+from panoptes.utils.time import CountdownTimer
 
 
 @pytest.fixture(scope='module', params=[
@@ -67,13 +68,19 @@ def camera(request):
                 camera = CamClass(**cam_config)
                 break
 
+    camera.logger.log('testing', f'Camera created: {camera!r}')
+
     # Wait for cooled camera
     if camera.is_cooled_camera:
+        camera.logger.log('testing', f'Cooled camera needs to wait for cooling.')
         assert not camera.is_temperature_stable
         # Wait for cooling
-        while not camera.is_temperature_stable:
-            time.sleep(2)
-        assert camera.is_temperature_stable
+        cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
+        while not camera.is_temperature_stable and not cooling_timeout.expired():
+            camera.logger.log('testing',
+                              f'Still waiting for cooling: {cooling_timeout.time_left()}')
+            cooling_timeout.sleep(max_sleep=2)
+        assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
     assert camera.is_ready
     camera.logger.debug(f'Yielding camera {camera}')
@@ -186,6 +193,9 @@ def test_sdk_already_in_use():
     assert sim_camera
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
+
+    # Explicitly delete camera to clear `_assigned_cameras`.
+    del sim_camera
 
 
 def test_sdk_camera_not_found():
@@ -580,7 +590,6 @@ def test_observation_bias(camera, images_dir):
 
 
 def test_autofocus_coarse(camera, patterns, counter):
-
     if not camera.has_focuser:
         pytest.skip("Camera does not have a focuser")
 
