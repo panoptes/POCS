@@ -158,21 +158,6 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
         return outs
 
-    def wait_for_command(self, timeout=10):
-        """ Wait for the given command to end
-
-        This method merely waits for a subprocess to complete but doesn't attempt to communicate
-        with the process (see `get_command_result` for that).
-        """
-        self.logger.debug(f"Waiting for proc {self._proc.pid}")
-
-        try:
-            self._proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.logger.warning(f"Timeout expired for PID {self._proc.pid}")
-
-        self._proc = None
-
     def set_property(self, prop, val):
         """ Set a property on the camera """
         set_cmd = ['--set-config', f'{prop}={val}']
