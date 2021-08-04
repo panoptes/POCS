@@ -56,38 +56,38 @@ def camera(request):
     CamClass = request.param[0]
     cam_params = request.param[1]
 
-    camera = None
+    cam = None
 
     if isinstance(cam_params, dict):
         # Simulator
-        camera = CamClass(**cam_params)
+        cam = CamClass(**cam_params)
     else:
         # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
             if cam_config['model'] == cam_params:
-                camera = CamClass(**cam_config)
+                cam = CamClass(**cam_config)
                 break
 
-    camera.logger.log('testing', f'Camera created: {camera!r}')
+    cam.logger.log('testing', f'Camera created: {cam!r}')
 
     # Wait for cooled camera
-    if camera.is_cooled_camera:
-        camera.logger.log('testing', f'Cooled camera needs to wait for cooling.')
-        assert not camera.is_temperature_stable
+    if cam.is_cooled_camera:
+        cam.logger.log('testing', f'Cooled camera needs to wait for cooling.')
+        assert not cam.is_temperature_stable
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
-        while not camera.is_temperature_stable and not cooling_timeout.expired():
-            camera.logger.log('testing',
+        while not cam.is_temperature_stable and not cooling_timeout.expired():
+            cam.logger.log('testing',
                               f'Still waiting for cooling: {cooling_timeout.time_left()}')
             cooling_timeout.sleep(max_sleep=2)
-        assert camera.is_temperature_stable and cooling_timeout.expired() is False
+        assert cam.is_temperature_stable and cooling_timeout.expired() is False
 
-    assert camera.is_ready
-    camera.logger.log('testing', f'Yielding {camera=}')
-    yield camera
+    assert cam.is_ready
+    cam.logger.log('testing', f'Yielding {cam=}')
+    yield cam
 
-    camera.logger.log('testing', f'Deleting {camera=}')
-    del camera
+    cam.logger.log('testing', f'Deleting {cam=}')
+    del cam
 
 
 @pytest.fixture(scope='module')
