@@ -57,7 +57,8 @@ from loguru import logger
 def camera(request):
     logger.log('testing', f'Inside camera fixture: {request=!r}')
     CamClass = request.param[0]
-    logger.log('testing', f'Exisiting cameras: {CamClass._asigned_cameras=!r}')
+    with suppress(AttributeError):
+        logger.log('testing', f'Exisiting cameras: {CamClass._asigned_cameras=!r}')
     cam = None
     cam_model = None
     cam_params = None
