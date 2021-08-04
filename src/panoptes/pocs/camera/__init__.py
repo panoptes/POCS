@@ -1,4 +1,3 @@
-import copy
 from collections import OrderedDict
 import re
 import shutil
@@ -6,7 +5,7 @@ import subprocess
 import random
 from contextlib import suppress
 
-from panoptes.pocs.camera.camera import AbstractCamera  # noqa
+from panoptes.pocs.camera.camera import AbstractCamera
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
@@ -105,7 +104,7 @@ def create_cameras_from_config(config=None,
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.CameraNotFound(msg="No cameras detected. For testing, use camera simulator.")
+            raise error.CameraNotFound(msg="No cameras detected. For testing, use simulator.")
         else:
             logger.debug(f"Detected ports={ports!r}")
 
@@ -113,6 +112,7 @@ def create_cameras_from_config(config=None,
 
     device_info = camera_config['devices']
     for cam_num, cfg in enumerate(device_info):
+        logger.debug(f'Creating {cam_num=} with {cfg=!r}')
         # Get a copy of the camera defaults and update with device config.
         device_config = camera_defaults.copy()
         device_config.update(cfg)
@@ -132,11 +132,11 @@ def create_cameras_from_config(config=None,
         elif model == 'simulator':
             device_config['port'] = f'usb:999,{random.randint(0, 1000):03d}'
 
-        logger.debug(f'Creating camera: {model}')
+        logger.debug(f'Creating camera: {model=} {device_config=!r}')
 
         try:
             module = load_module(model)
-            logger.debug(f'Camera module: module={module!r}')
+            logger.debug(f'Loaded camera module {module}')
 
             if recreate_existing:
                 with suppress(AttributeError):
@@ -144,10 +144,10 @@ def create_cameras_from_config(config=None,
 
             # We either got a class or a module.
             if callable(module):
-                camera = module(**device_config)
+                cam_object = module(**device_config)
             else:
                 if hasattr(module, 'Camera'):
-                    camera = module.Camera(**device_config)
+                    cam_object = module.Camera(**device_config)
                 else:
                     raise error.NotFound(f'module={module!r} does not have a Camera object')
         except error.NotFound:
@@ -156,20 +156,20 @@ def create_cameras_from_config(config=None,
             logger.error(f'Cannot create camera type: {model} {e!r}')
         else:
             # Check if the config specified a primary camera and if it matches.
-            if camera.uid == camera_config.get('primary'):
-                camera.is_primary = True
-                primary_camera = camera
+            if cam_object.uid == camera_config.get('primary'):
+                cam_object.is_primary = True
+                primary_camera = cam_object
 
-            logger.debug(f"Camera created: camera={camera!r}")
+            logger.debug(f"Camera created: camera={cam_object!r}")
 
-            cameras[cam_name] = camera
+            cameras[cam_name] = cam_object
 
     if len(cameras) == 0:
         raise error.CameraNotFound(msg="No cameras available")
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f'No primary camera given, assigning the first camera (auto_primary={auto_primary!r})')
+        logger.info(f'No primary camera given, assigning the first camera ({auto_primary=})')
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 

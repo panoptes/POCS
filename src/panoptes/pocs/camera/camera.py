@@ -116,22 +116,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.subcomponents = dict()
         for attr_name, class_path in self._SUBCOMPONENT_LIST.items():
             # Create the subcomponent as an attribute with default None.
-            self.logger.debug(f'Setting default attr_name={attr_name!r} to None')
+            self.logger.debug(f'Setting default {attr_name=!r} to None')
             setattr(self, attr_name, None)
 
             # If given subcomponent class (or dict), try to create instance.
             subcomponent = kwargs.get(attr_name)
             if subcomponent is not None:
-                self.logger.debug(f'Found subcomponent={subcomponent!r}, creating instance')
+                self.logger.debug(f'Creating {attr_name} with {subcomponent=!r}')
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(
-                    f'Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}')
+                self.logger.debug(f'Assigning {attr_name=} with {subcomponent=!r}')
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
 
-        self.logger.debug(f'Camera created: {self}')
+        self.logger.info(f'Camera created: {self}')
 
     ############################################################################
     # Properties

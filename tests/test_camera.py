@@ -33,7 +33,7 @@ from panoptes.utils.serializers import to_json
 from panoptes.utils.time import CountdownTimer
 
 
-@pytest.fixture(scope='module', params=[
+@pytest.fixture(scope='function', params=[
     pytest.param([SimCamera, dict()]),
     pytest.param([SimCamera, get_config('cameras.devices[0]')]),
     pytest.param([SimCamera, get_config('cameras.devices[1]')]),
@@ -54,42 +54,42 @@ from panoptes.utils.time import CountdownTimer
 ])
 def camera(request):
     CamClass = request.param[0]
-    cam_params = request.param[1]
+    cam = None
+    cam_model = None
+    cam_params = None
 
-    camera = None
+    if isinstance(request.param[1], dict):
+        cam_params = request.param[1]
+    else:
+        cam_model = request.param[1]
 
-    if isinstance(cam_params, dict):
+    if cam_params is not None:
         # Simulator
-        camera = CamClass(**cam_params)
+        cam = CamClass(**cam_params)
     else:
         # Lookup real hardware device name in real life config server.
         for cam_config in get_config('cameras.devices'):
-            if cam_config['model'] == cam_params:
-                camera = CamClass(**cam_config)
+            if cam_config['model'] == cam_model:
+                cam = CamClass(**cam_config)
                 break
 
-    camera.logger.log('testing', f'Camera created: {camera!r}')
+    cam.logger.log('testing', f'Camera created: {cam!r}')
 
     # Wait for cooled camera
-    if camera.is_cooled_camera:
-        camera.logger.log('testing', f'Cooled camera needs to wait for cooling.')
-        assert not camera.is_temperature_stable
+    if cam.is_cooled_camera:
+        cam.logger.log('testing', f'Cooled camera needs to wait for cooling.')
+        assert not cam.is_temperature_stable
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
-        while not camera.is_temperature_stable and not cooling_timeout.expired():
-            camera.logger.log('testing',
-                              f'Still waiting for cooling: {cooling_timeout.time_left()}')
+        while not cam.is_temperature_stable and not cooling_timeout.expired():
+            cam.logger.log('testing',
+                           f'Still waiting for cooling: {cooling_timeout.time_left()}')
             cooling_timeout.sleep(max_sleep=2)
-        assert camera.is_temperature_stable and cooling_timeout.expired() is False
+        assert cam.is_temperature_stable and cooling_timeout.expired() is False
 
-    assert camera.is_ready
-    camera.logger.debug(f'Yielding camera {camera}')
-    yield camera
-
-    # simulator_sdk needs this explicitly removed for some reason.
-    # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
-    with suppress(AttributeError):
-        type(camera)._assigned_cameras.discard(camera.uid)
+    assert cam.is_ready
+    cam.logger.log('testing', f'Yielding camera {cam}')
+    yield cam
 
 
 @pytest.fixture(scope='module')
@@ -202,6 +202,9 @@ def test_sdk_camera_not_found():
     with pytest.raises(error.InvalidConfig):
         SimSDKCamera(serial_number='SSC404')
 
+    # Explicitly clear the assigned cameras after above error.
+    # SimSDKCamera._assigned_cameras = set()
+
 
 # Hardware independent tests for SBIG camera
 
@@ -215,6 +218,9 @@ def test_sbig_driver_bad_path():
     """
     with pytest.raises(OSError):
         SBIGDriver(library_path='no_library_here')
+
+    # Explicitly clear the assigned cameras after above error.
+    # SimSDKCamera._assigned_cameras = set()
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
