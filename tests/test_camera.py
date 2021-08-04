@@ -203,7 +203,7 @@ def test_sdk_camera_not_found():
         SimSDKCamera(serial_number='SSC404')
 
     # Explicitly clear the assigned cameras after above error.
-    # SimSDKCamera._assigned_cameras = set()
+    SimSDKCamera._assigned_cameras = set()
 
 
 # Hardware independent tests for SBIG camera
@@ -220,7 +220,7 @@ def test_sbig_driver_bad_path():
         SBIGDriver(library_path='no_library_here')
 
     # Explicitly clear the assigned cameras after above error.
-    # SimSDKCamera._assigned_cameras = set()
+    SimSDKCamera._assigned_cameras = set()
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
