@@ -78,7 +78,7 @@ def camera(request):
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
         while not cam.is_temperature_stable and not cooling_timeout.expired():
             cam.logger.log('testing',
-                              f'Still waiting for cooling: {cooling_timeout.time_left()}')
+                           f'Still waiting for cooling: {cooling_timeout.time_left()}')
             cooling_timeout.sleep(max_sleep=2)
         assert cam.is_temperature_stable and cooling_timeout.expired() is False
 
@@ -192,8 +192,8 @@ def test_sdk_already_in_use():
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
 
-    # Explicitly delete camera to clear `_assigned_cameras`.
-    del sim_camera
+    # Explicitly clear `_assigned_cameras`.
+    SimSDKCamera._assigned_cameras = set()
 
 
 def test_sdk_camera_not_found():
