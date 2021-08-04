@@ -333,7 +333,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.warning(f"Camera {self} not ready: {sub_name} not ready.")
 
         # Make sure there isn't an exposure already in progress.
-        if not current_readiness['not_exposing']:
+        if not current_readiness.get('not_exposing', True):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())

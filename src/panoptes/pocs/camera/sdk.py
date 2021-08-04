@@ -142,10 +142,10 @@ class AbstractSDKCamera(AbstractCamera):
     def __del__(self):
         """ Attempt some clean up. """
         if hasattr(self, 'uid'):
-            logger.trace(f'Removing {self.uid} from {type(self)._assigned_cameras}')
+            logger.trace(f'Removing {self.uid} from: {type(self)._assigned_cameras}')
             type(self)._assigned_cameras.discard(self.uid)
 
-        logger.trace(f'Assigned cameras after removing {type(self)._assigned_cameras}')
+        logger.trace(f'Assigned cameras after removing: {type(self)._assigned_cameras}')
 
     # Properties
 
