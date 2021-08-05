@@ -58,7 +58,7 @@ def camera(request):
     logger.log('testing', f'Inside camera fixture: {request=!r}')
     CamClass = request.param[0]
     with suppress(AttributeError):
-        logger.log('testing', f'Exisiting cameras: {CamClass._assigned_cameras=!r}')
+        logger.log('testing', f'Existing cameras: {CamClass._assigned_cameras=!r}')
     cam = None
     cam_model = None
     cam_params = None
@@ -108,10 +108,10 @@ def camera(request):
     # simulator_sdk needs this explicitly removed for some reason.
     # SDK Camera class destructor *should* be doing this when the fixture goes out of scope.
     with suppress(AttributeError):
-        logger.log('testing', f'Exisiting cameras: {CamClass._assigned_cameras=!r}')
+        logger.log('testing', f'Existing cameras: {CamClass._assigned_cameras=!r}')
         logger.log('testing', f'Has cam uid: {cam_uid in CamClass._assigned_cameras}')
         CamClass._assigned_cameras.discard(cam_uid)
-        logger.log('testing', f'Exisiting cameras after removing: {CamClass._assigned_cameras=!r}')
+        logger.log('testing', f'Existing cameras after removing: {CamClass._assigned_cameras=!r}')
 
 
 @pytest.fixture(scope='module')
@@ -216,16 +216,10 @@ def test_sdk_already_in_use():
     with pytest.raises(error.PanError):
         SimSDKCamera(serial_number=serial_number)
 
-    # Explicitly delete camera to clear `_assigned_cameras`.
-    del sim_camera
-
 
 def test_sdk_camera_not_found():
     with pytest.raises(error.InvalidConfig):
         SimSDKCamera(serial_number='SSC404')
-
-    # Explicitly clear the assigned cameras after above error.
-    SimSDKCamera._assigned_cameras = set()
 
 
 # Hardware independent tests for SBIG camera
@@ -240,9 +234,6 @@ def test_sbig_driver_bad_path():
     """
     with pytest.raises(OSError):
         SBIGDriver(library_path='no_library_here')
-
-    # Explicitly clear the assigned cameras after above error.
-    SimSDKCamera._assigned_cameras = set()
 
 
 @pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
