@@ -5,6 +5,7 @@ FROM ${image_url}:${image_tag} AS pocs-base
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV SHELL /bin/bash
+ENV PYTHONUNBUFFERED 1
 
 ENV POCS "/panoptes-pocs"
 
