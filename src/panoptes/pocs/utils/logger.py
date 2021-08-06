@@ -1,6 +1,7 @@
 import os
 import sys
 from contextlib import suppress
+from pathlib import Path
 
 from loguru import logger as loguru_logger
 
@@ -39,7 +40,7 @@ LOGGER_INFO = PanLogger()
 def get_logger(console_log_file='panoptes.log',
                full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
                serialize_full_log=False,
-               log_dir='logs',
+               log_dir=None,
                console_log_level='INFO',
                stderr_log_level='DEBUG',
                ):
@@ -71,9 +72,6 @@ def get_logger(console_log_file='panoptes.log',
     Returns:
         `loguru.logger`: A configured instance of the logger.
     """
-    log_dir = os.path.normpath(log_dir)
-    os.makedirs(log_dir, exist_ok=True)
-
     if 'stderr' not in LOGGER_INFO.handlers:
         # Remove default and add in custom stderr.
         with suppress(ValueError):
@@ -91,37 +89,38 @@ def get_logger(console_log_file='panoptes.log',
         LOGGER_INFO.handlers['stderr'] = stderr_id
 
     # Log file for tailing on the console.
-    if 'console' not in LOGGER_INFO.handlers:
-        console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
-        console_id = loguru_logger.add(
-            console_log_path,
-            rotation='11:30',
-            retention='7 days',
-            compression='gz',
-            format=LOGGER_INFO.format,
-            enqueue=True,  # multiprocessing
-            colorize=True,
-            backtrace=True,
-            diagnose=True,
-            catch=True,
-            level=console_log_level)
-        LOGGER_INFO.handlers['console'] = console_id
+    if log_dir and Path(log_dir).exists():
+        if 'console' not in LOGGER_INFO.handlers:
+            console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
+            console_id = loguru_logger.add(
+                console_log_path,
+                rotation='11:30',
+                retention='7 days',
+                compression='gz',
+                format=LOGGER_INFO.format,
+                enqueue=True,  # multiprocessing
+                colorize=True,
+                backtrace=True,
+                diagnose=True,
+                catch=True,
+                level=console_log_level)
+            LOGGER_INFO.handlers['console'] = console_id
 
-    # Log file for ingesting into log file service.
-    if full_log_file and 'archive' not in LOGGER_INFO.handlers:
-        full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
-        archive_id = loguru_logger.add(
-            full_log_path,
-            rotation='11:31',
-            retention='7 days',
-            compression='gz',
-            format=LOGGER_INFO.format,
-            enqueue=True,  # multiprocessing
-            serialize=serialize_full_log,
-            backtrace=True,
-            diagnose=True,
-            level='TRACE')
-        LOGGER_INFO.handlers['archive'] = archive_id
+        # Log file for ingesting into log file service.
+        if full_log_file and 'archive' not in LOGGER_INFO.handlers:
+            full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
+            archive_id = loguru_logger.add(
+                full_log_path,
+                rotation='11:31',
+                retention='7 days',
+                compression='gz',
+                format=LOGGER_INFO.format,
+                enqueue=True,  # multiprocessing
+                serialize=serialize_full_log,
+                backtrace=True,
+                diagnose=True,
+                level='TRACE')
+            LOGGER_INFO.handlers['archive'] = archive_id
 
     # Customize colors.
     loguru_logger.level('TRACE', color='<cyan>')
