@@ -1,4 +1,3 @@
-version: '3.7'
 services:
   pocs:
     image: panoptes-pocs:testing
@@ -7,8 +6,6 @@ services:
       dockerfile: tests/Dockerfile
     init: true
     tty: true
-    deploy:
-      mode: global
     environment:
       - PANDIR=/panoptes-pocs
       - POCS=/panoptes-pocs

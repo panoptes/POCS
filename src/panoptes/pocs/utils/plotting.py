@@ -64,7 +64,7 @@ def make_autofocus_plot(output_path,
         ax1.plot(line_fit[0], line_fit[1], 'b-', label='Polynomial fit')
 
     # ax1.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
-    u_limit = 1.10 * metrics.max()
+    u_limit = max(0.90 * metrics.max(), 1.10 * metrics.max())
     l_limit = min(0.95 * metrics.min(), 1.05 * metrics.min())
     ax1.set_ylim(l_limit, u_limit)
     ax1.vlines(initial_focus, l_limit, u_limit, colors='k', linestyles=':', label='Initial focus')

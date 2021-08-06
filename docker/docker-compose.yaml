@@ -1,4 +1,3 @@
-version: '3.7'
 services:
   pocs-config-server:
     container_name: pocs-config-server
@@ -7,8 +6,6 @@ services:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile
-    deploy:
-      mode: global
     restart: on-failure
     init: true
     tty: true
@@ -31,8 +28,6 @@ services:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile
-    deploy:
-      mode: global
     restart: on-failure
     init: true
     tty: true
@@ -55,8 +50,6 @@ services:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile
-    deploy:
-      mode: global
     restart: on-failure
     init: true
     tty: true
