@@ -31,7 +31,4 @@ def gphoto(command: Command):
     print(f'Running {command=!r}')
     completed_proc = subprocess.run(full_command, capture_output=True)
 
-    # Return the full path upon success otherwise the output from command.
-    success = completed_proc.returncode >= 0
-
-    return {'success': success, 'output': completed_proc.stdout}
+    return {'success': completed_proc.returncode >= 0, 'output': completed_proc.stdout}
