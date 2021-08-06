@@ -11,7 +11,9 @@ class Command(BaseModel):
     """Accepts an arbitrary command string which is passed to gphoto2."""
     arguments: str = '--auto-detect'
     output: Optional[str] = ''
+    error: Optional[str] = ''
     success: bool = False
+    returncode: Optional[int]
 
 
 app = FastAPI()
@@ -36,6 +38,8 @@ def gphoto(command: Command):
     completed_proc = subprocess.run(full_command, capture_output=True)
 
     command.success = completed_proc.returncode >= 0
+    command.returncode = completed_proc.returncode
     command.output = completed_proc.stdout
+    command.error = completed_proc.stderr
 
     return command
