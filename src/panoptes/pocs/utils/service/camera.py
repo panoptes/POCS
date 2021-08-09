@@ -27,12 +27,12 @@ def startup_tasks():
         sys.exit(1)
 
 
-@app.post('/gphoto')
+@app.post('/')
 def gphoto(command: Command):
     """Perform arbitrary gphoto2 command."""
 
     # Build the full command.
-    full_command = [shutil.which('gphoto2'), command.arguments]
+    full_command = [shutil.which('gphoto2'), *command.arguments.split(' ')]
 
     print(f'Running {command.arguments=!r}')
     completed_proc = subprocess.run(full_command, capture_output=True)
