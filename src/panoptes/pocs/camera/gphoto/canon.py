@@ -8,8 +8,8 @@ class Camera(AbstractGPhotoCamera):
 
     def __init__(self, readout=1.0, file_extension='cr2', connect=True, *args, **kwargs):
         """Create a camera object for a Canon EOS DSLR."""
-        self.logger.debug("Creating Canon DSLR GPhoto2 camera")
         super().__init__(readout_time=readout, file_extension=file_extension, *args, **kwargs)
+        self.logger.debug("Creating Canon DSLR GPhoto2 camera")
 
         if connect:
             self.connect()
@@ -38,7 +38,6 @@ class Camera(AbstractGPhotoCamera):
 
         # Properties to be set upon init.
         prop2index = {
-            '/main/actions/viewfinder': 1,  # Screen off
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
             '/main/capturesettings/continuousaf': 0,  # No auto-focus
             '/main/capturesettings/drivemode': 0,  # Single exposure
@@ -46,7 +45,6 @@ class Camera(AbstractGPhotoCamera):
             '/main/imgsettings/imageformat': 9,  # RAW
             '/main/imgsettings/imageformatcf': 9,  # RAW
             '/main/imgsettings/imageformatsd': 9,  # RAW
-            '/main/settings/autopoweroff': 0,  # Don't power off
             '/main/settings/capturetarget': 0,  # Capture to RAM, for download
             '/main/settings/reviewtime': 0,  # Screen off after taking pictures
             '/main/imgsettings/iso': 1,  # ISO 100
@@ -61,9 +59,12 @@ class Camera(AbstractGPhotoCamera):
             '/main/settings/artist': artist_name,
             '/main/settings/copyright': copy_right,
             '/main/settings/ownername': owner_name,
-            # Current UTC datetime in seconds since epoch.U
-            '/main/settings/datetimeutc': f'{current_time(datetime=True):%s}',
+            '/main/actions/syncdatetime': "1",
         }
 
         self.set_properties(prop2index=prop2index, prop2value=prop2value)
+
+        # TODO check this works on all Canon models.
+        self.model = self.get_property('d402')
+
         self._connected = True

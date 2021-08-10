@@ -140,11 +140,11 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             self._exposure_proc.kill()
             outs, errs = self._exposure_proc.communicate()
 
-        self.logger.debug(f'gphoto2 output: {outs=!r}')
+        self.logger.trace(f'gphoto2 output: {outs=!r}')
         if errs is not None or errs == '':
             self.logger.error(f'gphoto2 error: {errs!r}')
 
-        if isinstance(str, outs):
+        if isinstance(outs, str):
             outs = outs.split('\n')
 
         self._exposure_proc = None
@@ -197,6 +197,61 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 output = match.group(1)
 
         return output
+
+    def load_properties(self) -> dict:
+        """ Load properties from the camera.
+
+        Reads all the configuration properties available via gphoto2 and returns
+        as dictionary.
+        """
+        self.logger.debug('Getting all properties for gphoto2 camera')
+        self.command(['--list-all-config'])
+        lines = self.get_command_result()
+
+        properties = {}
+        yaml_string = ''
+
+        for line in lines:
+            is_id = len(line.split('/')) > 1
+            is_label = re.match(r'^Label:\s*(.*)', line)
+            is_type = re.match(r'^Type:\s*(.*)', line)
+            is_readonly = re.match(r'^Readonly:\s*(.*)', line)
+            is_current = re.match(r'^Current:\s*(.*)', line)
+            is_choice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
+            is_printable = re.match(r'^Printable:\s*(.*)', line)
+            is_help = re.match(r'^Help:\s*(.*)', line)
+
+            if is_label or is_type or is_current or is_readonly:
+                line = f'  {line}'
+            elif is_choice:
+                if int(is_choice.group(1)) == 0:
+                    line = f'  Choices:\n    {int(is_choice.group(1)):d}: {is_choice.group(2)}'
+                else:
+                    line = f'    {int(is_choice.group(1)):d}: {is_choice.group(2)}'
+            elif is_printable:
+                line = f'  {line}'
+            elif is_help:
+                line = f'  {line}'
+            elif is_id:
+                line = f'- ID: {line}'
+            elif line == '' or line == 'END':
+                continue
+            else:
+                self.logger.debug(f'Line not parsed: {line}')
+
+            yaml_string += f'{line}\n'
+
+        self.logger.debug(yaml_string)
+        properties_list = from_yaml(yaml_string)
+
+        if isinstance(properties_list, list):
+            for prop in properties_list:
+                if prop['Label']:
+                    properties[prop['Label']] = prop
+        else:
+            properties = properties_list
+
+        return properties
 
     def _start_exposure(self, seconds=None, filename=None, dark=None, header=None, *args, **kwargs):
         """Start the exposure.
@@ -275,56 +330,3 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _set_cooling_enabled(self, enable):
         return None
-
-    def load_properties(self) -> dict:
-        """ Load properties from the camera.
-
-        Reads all the configuration properties available via gphoto2 and returns
-        as dictionary.
-        """
-        self.logger.debug('Getting all properties for gphoto2 camera')
-        self.command(['--list-all-config'])
-        lines = self.get_command_result()
-
-        properties = {}
-        yaml_string = ''
-
-        for line in lines:
-            is_id = len(line.split('/')) > 1
-            is_label = re.match(r'^Label:\s*(.*)', line)
-            is_type = re.match(r'^Type:\s*(.*)', line)
-            is_current = re.match(r'^Current:\s*(.*)', line)
-            is_choice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-            is_printable = re.match(r'^Printable:\s*(.*)', line)
-            is_help = re.match(r'^Help:\s*(.*)', line)
-
-            if is_label or is_type or is_current:
-                line = f'  {line}'
-            elif is_choice:
-                if int(is_choice.group(1)) == 0:
-                    line = f'  Choices:\n    {is_choice.group(2)}: {int(is_choice.group(1)):d}'
-                else:
-                    line = f'    {is_choice.group(2)}: {int(is_choice.group(1)):d}'
-            elif is_printable:
-                line = f'  {line}'
-            elif is_help:
-                line = f'  {line}'
-            elif is_id:
-                line = f'- ID: {line}'
-            elif line == '':
-                continue
-            else:
-                print(f'Line not parsed: {line}')
-
-            yaml_string += f'{line}\n'
-
-        properties_list = from_yaml(yaml_string)
-
-        if isinstance(properties_list, list):
-            for prop in properties_list:
-                if prop['Label']:
-                    properties[prop['Label']] = prop
-        else:
-            properties = properties_list
-
-        return properties
