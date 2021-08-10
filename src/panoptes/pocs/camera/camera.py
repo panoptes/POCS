@@ -438,7 +438,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       blocking=False,
                       timeout=None,
                       *args,
-                      **kwargs):
+                      **kwargs) -> threading.Thread:
         """Take an exposure for given number of seconds and saves to provided filename.
 
         Args:
@@ -496,14 +496,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(
-            f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
+        self.logger.debug(f'Taking {seconds=!r} exposure on {self.name}: {filename=!r}')
 
         header = self._create_fits_header(seconds, dark)
 
         if self.is_exposing:
-            err = error.PanError(
-                f"Attempt to take exposure on {self} while one already in progress.")
+            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
