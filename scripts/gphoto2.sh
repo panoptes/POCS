@@ -5,12 +5,9 @@ usage() {
   echo -n "###############################################################################
 # Take a picture via a gphoto2 using a local or remote server.
 #
-# Simple wrapper to check for \$REMOTE_GPHOTO2_SERVER env var. If present, will
-# use the value of the var as the ip address for ssh. It is assumed that ssh
-# keys have already been set between the two servers. If not present, use
-# /usr/bin/gphoto2 from the PATH.
-#
-# This file should be symlinked into the PATH under the name 'gphoto2'.
+# Simple wrapper to check for \$REMOTE_GPHOTO2_ENDPOINT env var. If present, will
+# use the value of the var as the endpoint for the camera service. If not present,
+# use /usr/bin/gphoto2 from the PATH.
 #
 # Any additional arguments to the script are passed directly to gphoto2.
 ################################################################################
@@ -20,7 +17,7 @@ usage() {
   scripts/gphoto2.sh --port usb:001,005 --capture-image-and-download
 
   # This will be run remotely and download to the remote machine.
-  REMOTE_GPHOTO2_SERVER=192.168.1.100 scripts/gphoto2.sh --port usb:001,005 --capture-image-and-download
+  REMOTE_GPHOTO2_ENDPOINT=192.168.1.100:6570/ --port usb:001,005 --capture-image-and-download
 
 "
 }
@@ -30,9 +27,9 @@ if [ $1 == "--help" ]; then
   exit 1
 fi
 
-if [[ -n "${REMOTE_GPHOTO2_SERVER}" ]]; then
-  echo "Using ${REMOTE_GPHOTO2_SERVER}"
-  ssh "${REMOTE_GPHOTO2_SERVER}" gphoto2 "$@"
+if [[ -n "${REMOTE_GPHOTO2_ENDPOINT}" ]]; then
+  echo "Using ${REMOTE_GPHOTO2_ENDPOINT}"
+  http POST "${REMOTE_GPHOTO2_ENDPOINT}" arguments="$@"
 else
   if [ "$(command -v gphoto2)" ]; then
     /usr/bin/gphoto2 "$@"
