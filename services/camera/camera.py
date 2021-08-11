@@ -10,11 +10,11 @@ from fastapi import FastAPI
 class Command(BaseModel):
     """Accepts an arbitrary command string which is passed to gphoto2."""
     arguments: str = '--auto-detect'
+    filename: str = '%Y%m%dT%H%M%S.%C'
+    base_dir: str = '/images'
     output: Optional[str] = ''
     error: Optional[str] = ''
     success: bool = False
-    filename: str = '%Y%m%dT%H%M%S.%C'
-    base_dir: str = '/images'
     returncode: Optional[int]
 
 
