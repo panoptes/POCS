@@ -13,6 +13,8 @@ class Command(BaseModel):
     output: Optional[str] = ''
     error: Optional[str] = ''
     success: bool = False
+    filename: str = '%Y%m%dT%H%M%S.%C'
+    base_dir: str = '/images'
     returncode: Optional[int]
 
 
@@ -32,7 +34,11 @@ def gphoto(command: Command):
     """Perform arbitrary gphoto2 command."""
 
     # Build the full command.
-    full_command = [shutil.which('gphoto2'), *command.arguments.split(' ')]
+    full_command = [
+        shutil.which('gphoto2'),
+        f'--filename={command.base_dir}/{command.filename}',
+        *command.arguments.split(' ')
+    ]
 
     print(f'Running {command.arguments=!r}')
     completed_proc = subprocess.run(full_command, capture_output=True)
