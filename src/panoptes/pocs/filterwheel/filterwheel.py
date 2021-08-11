@@ -42,10 +42,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if (focus_offsets is not None) and not isinstance(focus_offsets, abc.Mapping):
-            raise TypeError("focus_offsets should be a mapping (e.g. a dict),"
-                            f" got {type(focus_offsets)}.")
-        self._focus_offsets = focus_offsets
+        # Define the focus offsets
+        self.focus_offsets = {} if focus_offsets is None else focus_offsets
+        if not isinstance(self.focus_offsets, abc.Mapping):
+            raise TypeError(f"focus_offsets should be a mapping, got {type(focus_offsets)}.")
 
         self._model = model
         self._name = name
@@ -335,18 +335,18 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         Args:
             new_position (int or str): The new filter name or filter position.
         """
-        if self._focus_offsets is None:  # Nothing to do here
+        if self.focus_offsets is None:  # Nothing to do here
             self.logger.debug("Found no filter focus offsets to apply.")
             return
 
         new_filter = self.filter_name(new_position)
         try:
-            new_offset = self._focus_offsets[new_filter]
+            new_offset = self.focus_offsets[new_filter]
         except KeyError:
             self.logger.warning(f"No focus offset found for {new_filter} filter.")
             return
 
-        current_offset = self._focus_offsets.get(self.current_filter, 0)
+        current_offset = self.focus_offsets.get(self.current_filter, 0)
         focus_offset = new_offset - current_offset
 
         self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
