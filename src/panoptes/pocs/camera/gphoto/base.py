@@ -1,4 +1,3 @@
-import os
 import re
 import shutil
 import subprocess
@@ -8,7 +7,7 @@ from threading import Timer
 from typing import List, Dict, Union
 
 from panoptes.utils import error
-from panoptes.utils.utils import get_quantity_value, listify
+from panoptes.utils.utils import listify
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.time import CountdownTimer
@@ -27,7 +26,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         super().__init__(*arg, **kwargs)
 
         # Setup a holder for the exposure process.
-        self._exposure_proc = None
+        self._command_proc = None
 
         self.logger.info(f'GPhoto2 camera {self.name} created on {self.port}')
 
@@ -100,26 +99,25 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return observation_event
 
-    def command(self, cmd: Union[List[str], str]):
+    def command(self, cmd: Union[List[str], str]) -> subprocess.Popen:
         """ Run gphoto2 command """
 
         # Test to see if there is a running command already
-        if self._exposure_proc and self._exposure_proc.poll():
+        if self._command_proc and self._command_proc.poll():
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.
             run_cmd = [shutil.which('gphoto2'), '--port', self.port]
             run_cmd.extend(listify(cmd))
 
-            self.logger.debug(f"gphoto2 command: {run_cmd}")
+            self.logger.debug(f"gphoto2 command: {run_cmd!r}")
 
             try:
-                self._exposure_proc = subprocess.Popen(
+                self._command_proc = subprocess.Popen(
                     run_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
-                    shell=False
                 )
             except OSError as e:
                 raise error.InvalidCommand(f"Can't send command to gphoto2. {e} \t {run_cmd}")
@@ -128,17 +126,19 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             except Exception as e:
                 raise error.PanError(e)
 
+        self._command_proc
+
     def get_command_result(self, timeout: float = 10) -> List[str]:
         """ Get the output from the command """
 
-        self.logger.debug(f"Getting output from proc {self._exposure_proc.pid}")
+        self.logger.debug(f"Getting output from proc {self._command_proc.pid}")
 
         try:
-            outs, errs = self._exposure_proc.communicate(timeout=timeout)
+            outs, errs = self._command_proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            self.logger.debug(f"Timeout while waiting. Killing process {self._exposure_proc.pid}")
-            self._exposure_proc.kill()
-            outs, errs = self._exposure_proc.communicate()
+            self.logger.debug(f"Timeout while waiting. Killing process {self._command_proc.pid}")
+            self._command_proc.kill()
+            outs, errs = self._command_proc.communicate()
 
         self.logger.trace(f'gphoto2 output: {outs=!r}')
         if errs is not None or errs == '':
@@ -147,7 +147,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         if isinstance(outs, str):
             outs = outs.split('\n')
 
-        self._exposure_proc = None
+        self._command_proc = None
 
         return outs
 
@@ -253,57 +253,24 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return properties
 
-    def _start_exposure(self, seconds=None, filename=None, dark=None, header=None, *args, **kwargs):
-        """Start the exposure.
-
-        Note:
-            See `scripts/take-pic.sh`
-
-            Tested With:
-                * Canon EOS 100D
-
-        Args:
-            seconds (u.second, optional): Length of exposure
-            filename (str, optional): Image is saved to this filename
-        """
-        script_path = os.path.expandvars('$POCS/scripts/take-pic.sh')
-
-        # Make sure we have just the value, no units
-        seconds = get_quantity_value(seconds)
-
-        run_cmd = [script_path, self.port, str(seconds), filename]
-
-        # Take Picture
-        try:
-            self._is_exposing_event.set()
-            self._exposure_proc = subprocess.Popen(run_cmd,
-                                                   stdout=subprocess.PIPE,
-                                                   stderr=subprocess.PIPE,
-                                                   universal_newlines=True)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-        finally:
-            readout_args = (filename, header)
-            return readout_args
-
     def _poll_exposure(self, readout_args, *args, **kwargs):
         timer = CountdownTimer(duration=self._timeout)
         try:
             try:
                 # See if the command has finished.
-                while self._exposure_proc.poll() is None:
+                while self._command_proc.poll() is None:
                     # Sleep if not done yet.
                     timer.sleep(max_sleep=0.5)
             except subprocess.TimeoutExpired:
                 self.logger.warning(f'Timeout on exposure process for {self.name}')
-                self._exposure_proc.kill()
-                outs, errs = self._exposure_proc.communicate(timeout=10)
+                self._command_proc.kill()
+                outs, errs = self._command_proc.communicate(timeout=10)
                 if errs is not None and errs > '':
                     self.logger.error(f'Camera exposure errors: {errs}')
         except (RuntimeError, error.PanError) as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err}')
-            self._exposure_proc = None
+            self._command_proc = None
             raise err
         else:
             # Camera type specific readout function

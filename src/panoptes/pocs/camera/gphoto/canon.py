@@ -2,6 +2,7 @@ from astropy import units as u
 from panoptes.pocs.camera.gphoto import AbstractGPhotoCamera
 from panoptes.utils import error
 from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractGPhotoCamera):
@@ -68,3 +69,46 @@ class Camera(AbstractGPhotoCamera):
         self.model = self.get_property('d402')
 
         self._connected = True
+
+    def _start_exposure(self,
+                        seconds=None,
+                        filename=None,
+                        dark=None,
+                        header=None,
+                        iso=100,
+                        *args, **kwargs):
+        """Start the exposure.
+
+        Note:
+            See `scripts/take-pic.sh`
+
+            Tested With:
+                * Canon EOS 100D
+
+        Args:
+            seconds (u.second, optional): Length of exposure
+            filename (str, optional): Image is saved to this filename
+        """
+        # Make sure we have just the value, no units
+        seconds = get_quantity_value(seconds)
+
+        cmd_args = [
+            f'--set-config-index', 'shutterspeed=0',
+            f'--set-config', f'iso={iso}',
+            f'--wait-event="1s"',
+            f'--set-config-index', 'eosremoterelease=2',
+            f'--wait-event="{int(seconds):d}s"',
+            f'--set-config-index', 'eosremoterelease=4',
+            f'--wait-event-and-download=1s',
+            f'--filename', f'"{filename}"'
+        ]
+
+        try:
+            self.command(cmd_args)
+            output = self.get_command_result()
+            self.logger.info(f'Output from camera: {output}')
+        except error.InvalidCommand as e:
+            self.logger.warning(e)
+        else:
+            readout_args = (filename, header)
+            return readout_args
