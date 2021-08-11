@@ -79,11 +79,8 @@ class Camera(AbstractGPhotoCamera):
                         *args, **kwargs):
         """Start the exposure.
 
-        Note:
-            See `scripts/take-pic.sh`
-
-            Tested With:
-                * Canon EOS 100D
+        Tested With:
+            * Canon EOS 100D
 
         Args:
             seconds (u.second, optional): Length of exposure
@@ -95,7 +92,6 @@ class Camera(AbstractGPhotoCamera):
         cmd_args = [
             f'--set-config-index', 'shutterspeed=0',
             f'--set-config', f'iso={iso}',
-            f'--wait-event=1s',
             f'--set-config-index', 'eosremoterelease=2',
             f'--wait-event={int(seconds):d}s',
             f'--set-config-index', 'eosremoterelease=4',

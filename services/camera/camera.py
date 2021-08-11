@@ -1,6 +1,8 @@
+import re
 import shutil
 import sys
 import subprocess
+from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel
@@ -33,6 +35,18 @@ def startup_tasks():
 def gphoto(command: Command):
     """Perform arbitrary gphoto2 command."""
 
+    # Fix the filename.
+    print(command.arguments)
+    filename_match = re.search(r'--filename (.*.cr2)', command.arguments)
+    if filename_match:
+        filename_path = Path(filename_match.group(1))
+        print(f'Found matching filename {filename_path}')
+        command.filename = filename_path.name
+        # Remove from arguments
+        filename_in_args = f'--filename {str(filename_path)}'
+        print(f'Removing {filename_in_args!r} from arguments.')
+        command.arguments = command.arguments.replace(filename_in_args, '')
+
     # Build the full command.
     full_command = [
         shutil.which('gphoto2'),
@@ -40,7 +54,7 @@ def gphoto(command: Command):
         *command.arguments.split(' ')
     ]
 
-    print(f'Running {command.arguments=!r}')
+    print(f'Running {full_command=!r}')
     completed_proc = subprocess.run(full_command, capture_output=True)
 
     command.success = completed_proc.returncode >= 0
