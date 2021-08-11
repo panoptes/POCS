@@ -808,8 +808,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
-        """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
-        reached, an `error.Timeout` is raised.
+        """ Wait until camera is no longer exposing or the timeout is reached.
+
+        If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
             timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
@@ -820,8 +821,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on"
-                    f" {self} to complete"
+                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self}"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:

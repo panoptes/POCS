@@ -100,14 +100,16 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         return observation_event
 
     def command(self, cmd: Union[List[str], str]) -> subprocess.Popen:
-        """ Run gphoto2 command """
+        """ Run gphoto2 command. """
 
         # Test to see if there is a running command already
         if self._command_proc and self._command_proc.poll():
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.
-            run_cmd = [shutil.which('gphoto2'), '--port', self.port]
+            run_cmd = [shutil.which('gphoto2')]
+            if self.port is not None:
+                run_cmd.extend(['--port', self.port])
             run_cmd.extend(listify(cmd))
 
             self.logger.debug(f"gphoto2 command: {run_cmd!r}")
@@ -116,7 +118,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 self._command_proc = subprocess.Popen(
                     run_cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
+                    stderr=subprocess.PIPE,
                     universal_newlines=True,
                 )
             except OSError as e:
@@ -126,10 +128,18 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             except Exception as e:
                 raise error.PanError(e)
 
-        self._command_proc
+        return self._command_proc
 
-    def get_command_result(self, timeout: float = 10) -> List[str]:
-        """ Get the output from the command """
+    def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
+        """ Get the output from the command.
+
+        Accepts a `timeout` param for communicating with the process.
+
+        Returns a list of strings corresponding to the output from the gphoto2
+        camera or `None` if no command has been specified.
+        """
+        if self._command_proc is None:
+            return None
 
         self.logger.debug(f"Getting output from proc {self._command_proc.pid}")
 
@@ -141,7 +151,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             outs, errs = self._command_proc.communicate()
 
         self.logger.trace(f'gphoto2 output: {outs=!r}')
-        if errs is not None or errs == '':
+        if errs != '':
             self.logger.error(f'gphoto2 error: {errs!r}')
 
         if isinstance(outs, str):
@@ -260,7 +270,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 # See if the command has finished.
                 while self._command_proc.poll() is None:
                     # Sleep if not done yet.
-                    timer.sleep(max_sleep=0.5)
+                    timer.sleep(max_sleep=1, log_level='TRACE')
             except subprocess.TimeoutExpired:
                 self.logger.warning(f'Timeout on exposure process for {self.name}')
                 self._command_proc.kill()
