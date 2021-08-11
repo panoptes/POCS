@@ -131,6 +131,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
 
+        # Apply the initial focus offset
+        # This is required so that the focuser initial position corresponds to focus_offset=0
+        if self.has_focuser and self.has_filterwheel:
+            current_filter = self.filterwheel.current_filter
+            focus_offset = self.filterwheel.focus_offsets.get(current_filter, 0)
+            self.logger.debug(f"Initial focus offset for {current_filter} filter: {focus_offset}")
+            if focus_offset:
+                self.focuser.move_by(focus_offset)
+
         self.logger.debug(f'Camera created: {self}')
 
     ############################################################################
