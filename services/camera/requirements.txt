@@ -1,0 +1,4 @@
+fastapi
+loguru
+pydantic
+uvicorn[standard]

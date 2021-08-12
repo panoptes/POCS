@@ -56,8 +56,9 @@ class Camera(CanonCamera):
             self.logger.warning(f'Timeout on exposure process for {self.name}')
         else:
             response = self.response_queue.pop()
-            output = response['output'].split('\n')
-            self.logger.debug(f'Remote gphoto2 output: {output!r}')
+            if response['output'] > '':
+                output = response['output'].split('\n')
+                self.logger.debug(f'Remote gphoto2 output: {output!r}')
 
             if response['error'] > '':
                 error = response['error'].split('\n')
