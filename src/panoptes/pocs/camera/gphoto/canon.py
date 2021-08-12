@@ -7,8 +7,15 @@ from panoptes.utils.utils import get_quantity_value
 
 class Camera(AbstractGPhotoCamera):
 
-    def __init__(self, readout=1.0, file_extension='cr2', connect=True, *args, **kwargs):
-        """Create a camera object for a Canon EOS DSLR."""
+    def __init__(self, readout: float = 1.0, file_extension: str = 'cr2', connect: bool = True, *args, **kwargs):
+        """Create a camera object for a Canon EOS DSLR.
+
+        Args:
+            readout (float): The time it takes to read out the file from the
+                camera, default 1.0 second.
+            file_extension (str): The file extension to use, default `cr2`.
+            connect (bool): Connect to camera on startup, default True.
+        """
         super().__init__(readout_time=readout, file_extension=file_extension, *args, **kwargs)
         self.logger.debug("Creating Canon DSLR GPhoto2 camera")
 
@@ -73,7 +80,6 @@ class Camera(AbstractGPhotoCamera):
     def _start_exposure(self,
                         seconds=None,
                         filename=None,
-                        dark=None,
                         header=None,
                         iso=100,
                         *args, **kwargs):
@@ -83,8 +89,10 @@ class Camera(AbstractGPhotoCamera):
             * Canon EOS 100D
 
         Args:
-            seconds (u.second, optional): Length of exposure
-            filename (str, optional): Image is saved to this filename
+            seconds (u.second, optional): Length of exposure.
+            filename (str, optional): Image is saved to this filename.
+            header (dict, optional): The metadata to be added as FITS headers.
+            iso (int, optional): The ISO setting to use for the exposure, default 100.
         """
         # Make sure we have just the value, no units
         seconds = get_quantity_value(seconds)
