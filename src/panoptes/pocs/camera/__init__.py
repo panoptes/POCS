@@ -16,7 +16,7 @@ from panoptes.utils.library import load_module
 logger = get_logger()
 
 
-def list_connected_cameras():
+def list_connected_cameras(remote_url=None, **kwargs):
     """Detect connected cameras.
 
     Uses gphoto2 to try and detect which cameras are connected. Cameras should
@@ -26,12 +26,17 @@ def list_connected_cameras():
         list: A list of the ports with detected cameras.
     """
 
-    gphoto2 = shutil.which('gphoto2')
-    if not gphoto2:  # pragma: no cover
-        raise error.NotFound('The gphoto2 command is missing, please install.')
-    command = [gphoto2, '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
+    if remote_url is not None:
+        response = requests.post(remote_url, json=dict(arguments='--auto-detect'))
+        if response.ok:
+            result = response.json()['output']
+    else:
+        gphoto2 = shutil.which('gphoto2')
+        if not gphoto2:  # pragma: no cover
+            raise error.NotFound('The gphoto2 command is missing, please install.')
+        command = [gphoto2, '--auto-detect']
+        result = subprocess.check_output(command).decode('utf-8')
+    lines = result.split('\n')
 
     ports = []
 
@@ -100,7 +105,7 @@ def create_cameras_from_config(config=None,
     if auto_detect:
         logger.debug("Auto-detecting ports for cameras")
         try:
-            ports = list_connected_cameras()
+            ports = list_connected_cameras(**kwargs)
         except error.PanError as e:
             logger.warning(e)
 
