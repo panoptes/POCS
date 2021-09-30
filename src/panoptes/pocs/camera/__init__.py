@@ -1,10 +1,11 @@
-import copy
 from collections import OrderedDict
 import re
 import shutil
 import subprocess
 import random
 from contextlib import suppress
+
+import requests
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
 
@@ -16,7 +17,7 @@ from panoptes.utils.library import load_module
 logger = get_logger()
 
 
-def list_connected_cameras(remote_url=None, **kwargs):
+def list_connected_cameras(remote_url=None):
     """Detect connected cameras.
 
     Uses gphoto2 to try and detect which cameras are connected. Cameras should
@@ -33,7 +34,7 @@ def list_connected_cameras(remote_url=None, **kwargs):
     else:
         gphoto2 = shutil.which('gphoto2')
         if not gphoto2:  # pragma: no cover
-            raise error.NotFound('The gphoto2 command is missing, please install.')
+            raise error.NotFound('gphoto2 is missing, please install or use the remote_url option.')
         command = [gphoto2, '--auto-detect']
         result = subprocess.check_output(command).decode('utf-8')
     lines = result.split('\n')
@@ -105,12 +106,13 @@ def create_cameras_from_config(config=None,
     if auto_detect:
         logger.debug("Auto-detecting ports for cameras")
         try:
-            ports = list_connected_cameras(**kwargs)
+            ports = list_connected_cameras(remote_url=camera_defaults.get('remote_url', None))
         except error.PanError as e:
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.CameraNotFound(msg="No cameras detected. For testing, use camera simulator.")
+            raise error.CameraNotFound(
+                msg="No cameras detected. For testing, use camera simulator.")
         else:
             logger.debug(f"Detected ports={ports!r}")
 
@@ -174,7 +176,7 @@ def create_cameras_from_config(config=None,
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f'No primary camera given, assigning the first camera (auto_primary={auto_primary!r})')
+        logger.info(f'No primary camera given, assigning the first camera ({auto_primary!r})')
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 
