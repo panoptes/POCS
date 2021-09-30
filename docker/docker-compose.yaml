@@ -1,3 +1,4 @@
+version: "3.7"
 services:
   pocs-config-server:
     container_name: pocs-config-server
@@ -45,8 +46,6 @@ services:
     image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
     container_name: pocs-control
     hostname: pocs-control
-    depends_on:
-      - pocs-power
     build:
       context: ../
       dockerfile: ./docker/Dockerfile
@@ -65,7 +64,6 @@ services:
       - panlog:/panoptes-pocs/logs
       - images:/panoptes-pocs/images
       - json_store:/panoptes-pocs/json_store
-      - devices:/dev/bus/usb
 volumes:
   panlog:
     driver: local
@@ -90,10 +88,4 @@ volumes:
     driver_opts:
       type: none
       device: ./json_store
-      o: bind
-  devices:
-    driver: local
-    driver_opts:
-      type: none
-      device: /dev/bus/usb
       o: bind
