@@ -30,6 +30,9 @@ class Camera(CanonCamera):
         endpoint = endpoint or self.endpoint
 
         arguments = ' '.join(cmd)
+        # Add the port
+        if '--port' not in arguments:
+            arguments = f'--port {self.port} {arguments}'
         self.logger.debug(f'Running remote gphoto2 on {endpoint=} with {arguments=}')
 
         def do_command():

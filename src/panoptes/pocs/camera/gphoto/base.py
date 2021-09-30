@@ -99,7 +99,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return observation_event
 
-    def command(self, cmd: Union[List[str], str]) -> subprocess.Popen:
+    def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """
 
         # Test to see if there is a running command already
@@ -127,8 +127,6 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 raise error.InvalidCommand(f"Bad parameters to gphoto2. {e} \t {run_cmd}")
             except Exception as e:
                 raise error.PanError(e)
-
-        return self._command_proc
 
     def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
         """ Get the output from the command.

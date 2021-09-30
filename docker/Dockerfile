@@ -28,15 +28,11 @@ USER "${userid}"
 RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
-        gphoto2 \
         astrometry-data-tycho2-10-19 && \
     # Set up directories in PANUSER home.
     sudo mkdir "$image_dir" && sudo chown -R "${userid}:${userid}" "$image_dir" && \
     sudo mkdir "$log_dir" && sudo chown -R "${userid}:${userid}" "$log_dir" && \
-    sudo chown -R "${userid}:${userid}" "${APP_DIR}" && \
-    mkdir -p "${HOME}/.local/bin" && \
-    # Symlink gphoto2 to our wrapper script.
-    ln -s /usr/bin/gphoto2 "${HOME}/.local/bin/gphoto2"
+    sudo chown -R "${userid}:${userid}" "${APP_DIR}"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \

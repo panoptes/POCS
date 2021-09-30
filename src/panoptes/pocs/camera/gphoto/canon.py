@@ -7,7 +7,8 @@ from panoptes.utils.utils import get_quantity_value
 
 class Camera(AbstractGPhotoCamera):
 
-    def __init__(self, readout: float = 1.0, file_extension: str = 'cr2', connect: bool = True, *args, **kwargs):
+    def __init__(self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
+                 *args, **kwargs):
         """Create a camera object for a Canon EOS DSLR.
 
         Args:
@@ -16,7 +17,9 @@ class Camera(AbstractGPhotoCamera):
             file_extension (str): The file extension to use, default `cr2`.
             connect (bool): Connect to camera on startup, default True.
         """
-        super().__init__(readout_time=readout, file_extension=file_extension, *args, **kwargs)
+        kwargs['readout_time'] = readout_time
+        kwargs['file_extension'] = file_extension
+        super().__init__(*args, **kwargs)
         self.logger.debug("Creating Canon DSLR GPhoto2 camera")
 
         if connect:
