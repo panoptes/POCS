@@ -62,6 +62,7 @@ mount:
     non_sidereal_available: True
     min_tracking_threshold: 100 # ms
     max_tracking_threshold: 99999 # ms
+    update_tracking: False
     # After moving to hardware park position, move Dec axis so cameras point down.
     park_direction: north
     park_seconds: 15

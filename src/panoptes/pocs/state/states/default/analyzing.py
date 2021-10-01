@@ -9,9 +9,10 @@ def on_enter(event_data):
     pocs.next_state = 'tracking'
     try:
 
-        pocs.observatory.analyze_recent()
+        if pocs.get_config('mount.settings.update_tracking', False):
+            pocs.observatory.analyze_recent()
 
-        if pocs.get_config('actions.FORCE_RESCHEDULE'):
+        if pocs.get_config('actions.FORCE_RESCHEDULE', False):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
