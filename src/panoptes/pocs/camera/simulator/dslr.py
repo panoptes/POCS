@@ -54,9 +54,11 @@ class Camera(AbstractCamera):
 
     def _end_exposure(self):
         self.logger.debug('Ending exposure for simulator')
+        self._is_exposing_event.clear()
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
                         **kwargs):
+        self._is_exposing_event.set()
         exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second),
                                 function=self._end_exposure)
         exposure_thread.start()
