@@ -69,14 +69,13 @@ OS="$(uname -s)"
 DEV_BOX=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
-NTP_SERVER="${NTP_SERVER:-192.168.8.1}"
+ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
 
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 
 DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
 DOCKER_TAG=${DOCKER_TAG:-"develop"}
-
 
 function make_directories() {
   echo "Creating directories in ${PANDIR}"
@@ -99,8 +98,8 @@ function which_docker() {
 }
 
 function get_time_settings() {
-  read -rp "What is the IP address of your router (default: ${NTP_SERVER})? " USER_NTP_SERVER
-  NTP_SERVER="${USER_NTP_SERVER:-$NTP_SERVER}"
+  read -rp "What is the IP address of your router (default: ${ROUTER_IP})? " USER_NTP_SERVER
+  ROUTER_IP="${USER_NTP_SERVER:-$ROUTER_IP}"
   sudo dpkg-reconfigure tzdata
 }
 
@@ -200,7 +199,7 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" /dev/null
+  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" >/dev/null
   # Initialize conda for the shells.
   "${PANDIR}/conda/bin/conda" init bash
   "${PANDIR}/conda/bin/conda" init zsh
@@ -218,22 +217,24 @@ function install_conda() {
 }
 
 function install_zsh() {
-  echo "Setting up zsh for a better experience."
+  if [ ! -d $ZSH_CUSTOM ]; then
+    echo "Setting up zsh for a better experience."
 
-  # Oh my zsh
-  wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-  bash /tmp/install-ohmyzsh.sh --unattended > /dev/null
+    # Oh my zsh
+    wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
+    bash /tmp/install-ohmyzsh.sh --unattended >/dev/null
 
-  export ZSH_CUSTOM="$HOME/.oh-my-zsh"
+    export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
-  # Autosuggestions plugin
-  git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    # Autosuggestions plugin
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 
-  # Spaceship theme
-  git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
-  ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
+    # Spaceship theme
+    git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
+    ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
 
-  write_zshrc
+    write_zshrc
+  fi
 }
 
 function write_zshrc() {
@@ -256,17 +257,24 @@ function fix_time() {
   echo "Syncing time."
   DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >/dev/null
   sudo timedatectl set-ntp false
-  sudo ntpdate -s "${NTP_SERVER}"
+  sudo ntpdate -s "${ROUTER_IP}"
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
-  (echo "@reboot ntpdate -s ${NTP_SERVER}") | sudo crontab -
-  (
-    sudo crontab -l
-    echo "13 * * * * ntpdate -s ${NTP_SERVER}"
-  ) | sudo crontab -
+  (sudo crontab -l; echo "@reboot ntpdate -s ${ROUTER_IP}") | sudo crontab -
+  (sudo crontab -l; echo "13 * * * * ntpdate -s ${ROUTER_IP}") | sudo crontab -
 
+  # Show updated time.
   timedatectl
+}
+
+function setup_nfs_host() {
+  sudo apt-get install -y nfs-kernel-server
+  sudo mkdir -p "${PANDIR}/images"
+  echo "${PANDIR}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
+
+  sudo exportfs -a
+  sudo systemctl restart nfs-kernel-server
 }
 
 function do_install() {
@@ -287,7 +295,7 @@ function do_install() {
   echo "HOST: ${HOST}"
   echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "DOCKER_TAG: ${DOCKER_TAG}"
-  echo "NTP_SERVER: ${NTP_SERVER}"
+  echo "ROUTER_IP: ${ROUTER_IP}"
   echo "Logfile: ${LOGFILE}"
   echo ""
 
@@ -305,7 +313,7 @@ function do_install() {
     sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
   fi
 
-  install_conda
+  #  install_conda
 
   install_docker
 
