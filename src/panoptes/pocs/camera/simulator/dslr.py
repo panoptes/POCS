@@ -12,7 +12,7 @@ from astropy.io import fits
 
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import get_quantity_value
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
@@ -53,6 +53,7 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _end_exposure(self):
+        self.logger.debug(f'Ending exposure for simulator')
         self.is_exposing = False
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):

@@ -771,7 +771,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             method should at a minimum implement the described parameters.
 
         """
-        pass  # pragma: no cover
+        raise NotImplementedError
 
     def _poll_exposure(self, readout_args, timeout=None, interval=0.01):
         timer_duration = timeout or self._timeout + self._readout_time
