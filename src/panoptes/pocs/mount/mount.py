@@ -649,6 +649,7 @@ class AbstractMount(PanBase):
 
         if response:
             self._is_parked = False
+            self._at_mount_park = False
             self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')

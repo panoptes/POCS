@@ -65,10 +65,10 @@ class Mount(AbstractSerialMount):
         and providers some helper methods to convert coordinates.
     """
 
-    def __init__(self, *args, **kwargs):
-        self._mount_version = '0040'
+    def __init__(self, mount_version='0040', *args, **kwargs):
+        self._mount_version = mount_version
         super(Mount, self).__init__(*args, **kwargs)
-        self.logger.info('Creating iOptron mount')
+        self.logger.info('Creating iOptron CEM40 mount')
 
         # Regexp to match the iOptron RA/Dec format
         self._ra_format = r'(?P<ra_millisecond>\d{8})'
@@ -136,7 +136,7 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, park_direction=None, park_seconds=None, *args, **kwargs):
+    def park(self, *args, **kwargs):
         """Slews to the park position and parks the mount.
 
         This still uses a custom park command because the mount will not allow
@@ -145,13 +145,6 @@ class Mount(AbstractSerialMount):
         Note:
             When mount is parked no movement commands will be accepted.
 
-        Args:
-            park_direction (str or None): The direction to move the Declination axis. If
-                not provided (the default), then look at config setting, otherwise 'north'.
-            park_seconds (str or None): The number of seconds to move the Declination axis at
-                maximum move speed. If not provided (the default), then look at config setting,
-                otherwise 11 seconds.
-
         Returns:
             bool: indicating success
         """
@@ -159,21 +152,14 @@ class Mount(AbstractSerialMount):
             self.logger.success("Mount is already parked")
             return self.at_mount_park
 
-        # Get the direction and timing
-        park_direction = park_direction or self.get_config('mount.settings.park_direction', 'north')
-        park_seconds = park_seconds or self.get_config('mount.settings.park_seconds', 11)
+        self.logger.debug(f'Parking mount')
 
-        self.logger.debug(f'Parking mount: {park_direction=} {park_seconds=}')
-
-        self.unpark()
         self.query('park')
         while self.status.get('state') != MountState.PARKED:
             self.logger.trace(f'Moving to park')
             time.sleep(1)
-        self.unpark()
-        self.query('set_button_moving_rate', 9)
-        self.move_direction(direction=park_direction, seconds=park_seconds)
 
+        self._at_mount_park = True
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 
