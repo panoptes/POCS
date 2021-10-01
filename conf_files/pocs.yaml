@@ -78,18 +78,18 @@ cameras:
     primary: None
     auto_detect: False
     compress_fits: True
+    endpoint: http://localhost:6565
     make_pretty_images: True
     keep_jpgs: True
     readout_time: 1.0  # seconds
     timeout: 10  # seconds
     filter_type: RGGB
+    file_extension: cr2
   devices:
-    - model: panoptes.pocs.camera.simulator.dslr.Camera
-      name: dslr.sim.00
-      file_extension: cr2
-    - model: panoptes.pocs.camera.simulator.dslr.Camera
-      name: dslr.sim.01
-      file_extension: cr2
+    - model: panoptes.pocs.camera.canon.remote.Camera
+      name: Cam00
+    - model: panoptes.pocs.camera.canon.remote.Camera
+      name: Cam01
       primary: True
 
 ######################### Environmental Sensors ################################
