@@ -83,6 +83,7 @@ class Camera(AbstractGPhotoCamera):
     def _start_exposure(self,
                         seconds=None,
                         filename=None,
+                        dark=False,
                         header=None,
                         iso=100,
                         *args, **kwargs):

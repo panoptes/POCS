@@ -510,14 +510,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         header = self._create_fits_header(seconds, dark)
 
         if self.is_exposing:
-            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
+            err = error.PanError(
+                f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
         try:
             # Camera type specific exposure set up and start
             self._is_exposing_event.set()
-            readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
+            readout_args = self._start_exposure(seconds=seconds, filename=filename, dark=dark,
+                                                header=header, *args, *kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
