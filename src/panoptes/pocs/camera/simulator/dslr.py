@@ -53,7 +53,6 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _end_exposure(self):
-        self.logger.debug('Ending exposure for simulator')
         self._is_exposing_event.clear()
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
