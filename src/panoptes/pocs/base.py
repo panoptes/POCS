@@ -1,18 +1,14 @@
 import os
-from requests.exceptions import ConnectionError
-from dotenv import load_dotenv
 
 from panoptes.pocs import __version__
-from panoptes.utils.database import PanDB
-from panoptes.utils.config import client
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs import hardware
+from panoptes.pocs.utils.logger import get_logger
+from panoptes.utils.config import client
+from panoptes.utils.database import PanDB
+from requests.exceptions import ConnectionError
 
 # Global database.
 PAN_DB_OBJ = None
-
-# look for environment files.
-load_dotenv()
 
 
 class PanBase(object):
@@ -75,15 +71,15 @@ class PanBase(object):
 
         if key == 'simulator' and new_value == 'all':
             # Don't use hardware.get_simulator_names because it checks config.
-            new_value = hardware.ALL_NAMES
+            new_value = [h.name for h in hardware.HardwareName]
 
         try:
-            self.logger.trace(f'Setting config {key=} {new_value=}')
+            self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')
             config_value = client.set_config(key, new_value,
                                              host=self._config_host,
                                              port=self._config_port,
                                              *args, **kwargs)
-            self.logger.trace(f'Config set {config_value=}')
+            self.logger.trace(f'Config set config_value={config_value!r}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 

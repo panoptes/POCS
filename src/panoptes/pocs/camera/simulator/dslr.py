@@ -1,21 +1,21 @@
 import os
 import random
-import time
-from abc import ABC
-
 from threading import Timer
 
 import numpy as np
-
 from astropy import units as u
 from astropy.io import fits
-
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import get_quantity_value
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractCamera):
+
+    @property
+    def egain(self):
+        return 1
 
     @property
     def bit_depth(self):
@@ -53,10 +53,10 @@ class Camera(AbstractCamera):
                                         **kwargs)
 
     def _end_exposure(self):
-        self.is_exposing = False
+        self.logger.debug('Ending exposure for simulator')
 
-    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
-        self.is_exposing = True
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
+                        **kwargs):
         exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second),
                                 function=self._end_exposure)
         exposure_thread.start()
@@ -64,13 +64,10 @@ class Camera(AbstractCamera):
         return readout_args
 
     def _readout(self, filename=None, header=None):
-        self.logger.trace(f'Calling _readout for {self}')
+        self.logger.debug(f'Calling _readout for {self}')
+        timer = CountdownTimer(duration=self.readout_time)
         # Get example FITS file from test data directory
-        file_path = os.path.join(
-            os.environ['POCS'],
-            'tests', 'data',
-            'unsolved.fits'
-        )
+        file_path = os.path.join(os.environ['POCS'], 'tests', 'data', 'unsolved.fits')
         fake_data = fits.getdata(file_path)
 
         if header.get('IMAGETYP') == 'Dark Frame':
@@ -78,12 +75,14 @@ class Camera(AbstractCamera):
             fake_data = np.random.randint(low=975, high=1026,
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
-        time.sleep(self.readout_time)
-        self.logger.debug(f'Writing {filename=} for {self}')
+        self.logger.debug(f'Writing filename={filename!r} for {self}')
         fits_utils.write_fits(fake_data, header, filename)
 
-    def _process_fits(self, file_path, info):
-        file_path = super()._process_fits(file_path, info)
+        # Sleep for the remainder of the readout time.
+        timer.sleep()
+
+    def _process_fits(self, file_path, metadata):
+        file_path = super()._process_fits(file_path, metadata)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         # TODO get the path as package data or something better.
         solved_path = os.path.join(

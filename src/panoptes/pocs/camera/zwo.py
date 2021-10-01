@@ -1,20 +1,18 @@
-import time
 import threading
+import time
 from contextlib import suppress
 
 import numpy as np
 from astropy import units as u
 from astropy.time import Time
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.utils import error
-from panoptes.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
-
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
@@ -296,10 +294,9 @@ class Camera(AbstractSDKCamera):
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
-                fits_utils.write_fits(image_data,
-                                      header,
-                                      filename,
-                                      self.logger)
+                fits_utils.write_fits(data=image_data,
+                                      header=header,
+                                      filename=filename)
         elif exposure_status == 'FAILED':
             raise error.PanError("Exposure failed on {}".format(self))
         elif exposure_status == 'IDLE':
@@ -337,20 +334,19 @@ class Camera(AbstractSDKCamera):
             # Check limits.
             max_value = self._control_info[control_type]['max_value']
             if value > max_value:
-                msg = "Cannot set {} to {}, clipping to max value {}".format(
-                    control_name, value, max_value)
+                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to max value:"
+                                    f" {max_value}.")
                 Camera._driver.set_control_value(self._handle, control_type, max_value)
-                raise error.IllegalValue(msg)
+                return
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
-                msg = "Cannot set {} to {}, clipping to min value {}".format(
-                    control_name, value, min_value)
+                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to min value:"
+                                    f" {min_value}.")
                 Camera._driver.set_control_value(self._handle, control_type, min_value)
-                raise error.IllegalValue(msg)
+                return
         else:
             if not self._control_info[control_type]['is_auto_supported']:
-                msg = "{} cannot set {} to AUTO".format(self.model, control_name)
-                raise error.IllegalValue(msg)
+                raise error.IllegalValue(f"{self.model} cannot set {control_name} to AUTO")
 
         Camera._driver.set_control_value(self._handle, control_type, value)

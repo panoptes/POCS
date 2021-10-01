@@ -10,7 +10,7 @@
 #         Leave the pan_id at `PAN000` for testing until you have been assigned
 #         an official id. Update pocs_local.yaml with official name once received.
 ################################################################################
-name: Generic PANOPTES Unit
+name: Testing PANOPTES Unit
 pan_id: PAN000
 
 pocs:
@@ -31,23 +31,23 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
 directories:
-  base: /var/panoptes
+  base: /panoptes-pocs
   images: images
   data: data
-  resources: POCS/resources/
-  targets: POCS/resources/targets
-  mounts: POCS/resources/mounts
+  resources: resources/
+  fields: conf_files/fields
+  mounts: resources/mounts
 db:
   name: panoptes_testing
   type: file
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: simulator.yaml
   check_file: False
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: cem40   #  ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
@@ -57,11 +57,18 @@ pointing:
   auto_correct: True
   threshold: 500 # arcseconds ~ 50 pixels
   exptime: 30 # seconds
-  max_iterations: 3
+  max_iterations: 1
 cameras:
-  auto_detect: False
   defaults:
-    readout_time: 0.5
+    primary: None
+    auto_detect: False
+    file_extension: fits
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: False
+    readout_time: 0.5  # seconds
+    timeout: 10  # seconds
+    filter_type: RGGB
     cooling:
       enabled: True
       temperature:
@@ -72,8 +79,8 @@ cameras:
       timeout: 300  # seconds
     focuser:
       enabled: True
-      autofocus_seconds: 0.1
-      autofocus_size: 500
+      autofocus_seconds: 0.1  # seconds
+      autofocus_size: 500  # seconds
       autofocus_keep_files: False
   devices:
     - model: panoptes.pocs.camera.simulator.dslr.Camera
@@ -95,8 +102,8 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
-        autofocus_range: [40, 80]
-        autofocus_step: [10, 20]
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
         autofocus_size: 500
         autofocus_keep_files: False
@@ -134,8 +141,8 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
-        autofocus_range: [40, 80]
-        autofocus_step: [10, 20]
+        autofocus_range: [ 40, 80 ]
+        autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
         autofocus_size: 500
         autofocus_keep_files: False
@@ -150,6 +157,11 @@ cameras:
         move_time: 0.1
         timeout: 0.5
         dark_position: blank
+        focus_offsets:
+          one: 0
+          deux: 1
+          drei: 2
+          quattro: 3
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
@@ -168,7 +180,7 @@ cameras:
 ################################################################################
 observations:
   make_timelapse: True
-  keep_jpgs: True
+  record_observations: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -198,7 +210,7 @@ panoptes_network:
 #         webhook_url: [your_webhook_url]
 #         output_timestamp: False
 
-state_machine: simple_state_table
+state_machine: panoptes
 
 ######################### Environmental Sensors ################################
 # Configure the environmental sensors that are attached.

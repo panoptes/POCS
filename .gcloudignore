@@ -3,7 +3,7 @@
 venv
 
 # See note in .dockerignore about the git folder.
-.git
+!.git
 .github
 
 *.md
@@ -16,10 +16,12 @@ logs/
 **/*.pdf
 **/*.log
 **/*.egg-info
-**/*.pyc
 **/__pycache__
 notebooks
 examples
 docs
-build
-coverage.xml
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*

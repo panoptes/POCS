@@ -1,17 +1,14 @@
 import os
-import sys
-import warnings
 from threading import Thread
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.state.machine import PanStateMachine
-from panoptes.utils import current_time
-from panoptes.utils import get_free_space
-from panoptes.utils import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_free_space
+from panoptes.utils.time import CountdownTimer
 
 
 class POCS(PanStateMachine, PanBase):
@@ -30,7 +27,7 @@ class POCS(PanStateMachine, PanBase):
         observatory(Observatory): An instance of a `pocs.observatory.Observatory`
             class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
-            'simple_state_table'.
+            'panoptes'.
         simulators(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
@@ -51,7 +48,7 @@ class POCS(PanStateMachine, PanBase):
         PanBase.__init__(self, *args, **kwargs)
 
         if simulators:
-            self.logger.warning(f'Using {simulators=}')
+            self.logger.warning(f'Using simulators={simulators!r}')
             self.set_config('simulator', simulators)
 
         assert isinstance(observatory, Observatory)
@@ -61,7 +58,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.info(f'Initializing PANOPTES unit - {self.name} - {location}')
 
         if state_machine_file is None:
-            state_machine_file = self.get_config('state_machine', default='simple_state_table')
+            state_machine_file = self.get_config('state_machine', default='panoptes')
 
         self.logger.info(f'Making a POCS state machine from {state_machine_file}')
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
@@ -278,26 +275,34 @@ class POCS(PanStateMachine, PanBase):
     # Safety Methods
     ##################################################################################################
 
-    def is_safe(self, no_warning=False, horizon='observe'):
+    def is_safe(self, no_warning=False, horizon='observe', ignore=None, park_if_not_safe=True):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
 
         Note:
-            This condition is called by the state machine during each transition
+            This condition is called by the state machine during each transition.
 
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
             horizon (str, optional): For night time check use given horizon,
                 default 'observe'.
+            ignore (abc.Iterable, optional): A list of safety checks to ignore when deciding
+                whether it is safe or not. Valid list entries are: 'ac_power', 'is_dark',
+                'good_weather', 'free_space_root' and 'free_space_images'. Useful e.g. when
+                the state machine needs to wait for dark to enter the next state.
+            park_if_not_safe (bool, optional): If True (default), will go to park if safety check
+                fails. Set to False if you want to check the safety without sending the state
+                machine to parking.
         Returns:
             bool: Latest safety flag.
-
         """
         if not self.connected:
             return False
+        if ignore is None:
+            ignore = list()
 
         is_safe_values = dict()
 
@@ -321,7 +326,13 @@ class POCS(PanStateMachine, PanBase):
         images_dir = self.get_config('directories.images')
         is_safe_values['free_space_images'] = self.has_free_space(images_dir)
 
-        safe = all(is_safe_values.values())
+        # Check overall safety, ignoring some checks if necessary
+        missing_keys = [k for k in ignore if k not in is_safe_values.keys()]
+        if missing_keys:
+            self.logger.warning("Found the following invalid checks to ignore in "
+                                f"is_safe: {missing_keys}. Valid keys are: "
+                                f"{list(is_safe_values.keys())}.")
+        safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
         self.db.insert_current('safety', is_safe_values)
@@ -331,14 +342,8 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning(f'Unsafe conditions: {is_safe_values}')
 
             # These states are already "parked" so don't send to parking.
-            safe_states = [
-                'parked',
-                'parking',
-                'sleeping',
-                'housekeeping',
-                'ready'
-            ]
-            if self.state not in safe_states:
+            state_always_safe = self.get_state(self.state).is_always_safe
+            if not state_always_safe and park_if_not_safe:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
 
@@ -418,7 +423,8 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte,
+                       low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:
@@ -443,9 +449,11 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.error(f'No disk space for directory={directory!r}: '
+                              f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
         elif space_is_low:  # pragma: no cover
-            self.logger.warning(f'Low disk space for {directory=}: Free {self._free_space:.02f}\t {req_space=:.02f}')
+            self.logger.warning(f'Low disk space for directory={directory!r}: '
+                                f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
 
         return has_space
 

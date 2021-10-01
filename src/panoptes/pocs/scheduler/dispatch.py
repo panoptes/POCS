@@ -1,6 +1,6 @@
-from panoptes.utils import current_time
-from panoptes.utils import listify
 from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import listify
 
 
 class Scheduler(BaseScheduler):
@@ -57,7 +57,8 @@ class Scheduler(BaseScheduler):
                     valid_obs[obs_name] += score
                     self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
 
-        self.logger.debug(f'Multiplying final scores by priority')
+        self.logger.debug('Multiplying final scores by priority')
+
         for obs_name, score in valid_obs.items():
             priority = self.observations[obs_name].priority
             new_score = score * priority

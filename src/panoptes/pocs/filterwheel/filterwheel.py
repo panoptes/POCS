@@ -1,12 +1,13 @@
 import threading
-from abc import ABCMeta, abstractmethod
+from collections import abc
+from abc import ABCMeta
+from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
-from panoptes.utils import listify
 from panoptes.utils import error
+from panoptes.utils.utils import listify
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -25,6 +26,8 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         dark_position (int or str, optional): used to specify either a filter wheel position or
             a filter name that should be used when taking dark exposures with a camera that is
             not able to take internal darks.
+        focus_offsets (abc.Mapping, optional): Dictionary of filter_name: focus offset pairs to
+            apply when moving between filters. If None (default), no offsets are applied.
     """
 
     def __init__(self,
@@ -35,8 +38,14 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                  timeout=None,
                  serial_number='XXXXXX',
                  dark_position=None,
+                 focus_offsets=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if (focus_offsets is not None) and not isinstance(focus_offsets, abc.Mapping):
+            raise TypeError("focus_offsets should be a mapping (e.g. a dict),"
+                            f" got {type(focus_offsets)}.")
+        self._focus_offsets = focus_offsets
 
         self._model = model
         self._name = name
@@ -207,29 +216,37 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
 
-        if self.camera and self.camera.is_exposing:
-            msg = f'Attempt to move filter wheel {self} while camera is exposing, ignoring.'
-            self.logger.error(msg)
-            raise error.PanError(msg)
-
         if self.is_moving:
             msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
             self.logger.error(msg)
             raise error.PanError(msg)
+
+        if self.camera is not None:
+
+            if self.camera.is_exposing:
+                raise error.PanError(f'Attempt to move filter wheel {self} while camera is'
+                                     ' exposing, ignoring.')
+
+            if self.camera.has_focuser:
+                try:
+                    self._apply_filter_focus_offset(new_position)
+                except Exception as err:
+                    self.logger.error(f"Unable to apply focus position offset on {self}: {err!r}")
 
         # Will raise a ValueError at this point if new_position is not a valid position
         new_position = self._parse_position(new_position)
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
-            self.logger.debug(f"{self} already at position {new_position}" + \
+            self.logger.debug(f"{self} already at position {new_position}"
                               f" ({self.filter_name(new_position)})")
             return self._move_event
 
+        # Store current position so we can revert back with move_to_light_position()
         if new_position == self._dark_position:
-            # Moving from light into darkness... Store current position so we can revert
-            # back to it if requested with move_to_light_position()
             self._last_light_position = self.position
+        else:
+            self._last_light_position = new_position
 
         self.logger.info("Moving {} to position {} ({})".format(
             self, new_position, self.filter_name(new_position)))
@@ -313,6 +330,29 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         header.set('FW-POS', self.position, 'Filter wheel position')
         return header
 
+    def _apply_filter_focus_offset(self, new_position):
+        """ Apply the filter-specific focus offset.
+        Args:
+            new_position (int or str): The new filter name or filter position.
+        """
+        if self._focus_offsets is None:  # Nothing to do here
+            self.logger.debug("Found no filter focus offsets to apply.")
+            return
+
+        new_filter = self.filter_name(new_position)
+        try:
+            new_offset = self._focus_offsets[new_filter]
+        except KeyError:
+            self.logger.warning(f"No focus offset found for {new_filter} filter.")
+            return
+
+        current_offset = self._focus_offsets.get(self.current_filter, 0)
+        focus_offset = new_offset - current_offset
+
+        self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
+                          f"{self.current_filter} to {new_filter}.")
+        self.camera.focuser.move_by(focus_offset)
+
     def __str__(self):
         s = f'{self.name} ({self.uid})'
 
@@ -320,7 +360,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             with suppress(AttributeError):
                 s += f' [Camera: {self.camera.name}]'
         except Exception as e:  # noqa
-            self.logger.warning(f'Unable to stringify filterwheel: {e=}')
+            self.logger.warning(f'Unable to stringify filterwheel: e={e!r}')
             s = str(self.__class__)
 
         return s
