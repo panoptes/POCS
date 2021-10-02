@@ -100,6 +100,7 @@ environment:
   power:
     name: Trucker Power
     arduino_board_name: power_board
+    record_interval: 60  # seconds
     mean_interval: 5  # seconds
     port: /dev/ttyACM0
     relays:

@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Union
 
 from fastapi import FastAPI
+from fastapi_utils.tasks import repeat_every
 from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
 
@@ -20,6 +21,7 @@ class RelayCommand(BaseModel):
 
 app = FastAPI()
 power_board: PowerBoard
+read_interval = get_config('environment.power.read_interval', default=60)
 
 
 @app.on_event('startup')
@@ -42,6 +44,7 @@ async def readings():
     return power_board.to_dataframe().to_dict()
 
 
+@repeat_every(seconds=60)
 @app.get('/record')
 def record_readings():
     """Record the current readings in the db."""
