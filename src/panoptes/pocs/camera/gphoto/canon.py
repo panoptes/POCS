@@ -62,9 +62,9 @@ class Camera(AbstractGPhotoCamera):
             '/main/capturesettings/shutterspeed': 0,  # Bulb
         }
 
-        owner_name = 'Project PANOPTES'
+        owner_name = 'PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
-        copy_right = f'{owner_name} {current_time().datetime:%Y}'
+        copy_right = f'{owner_name}_{current_time().datetime:%Y}'
 
         prop2value = {
             '/main/settings/artist': artist_name,
