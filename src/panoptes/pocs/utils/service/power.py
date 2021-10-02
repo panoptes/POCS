@@ -1,7 +1,8 @@
-from enum import Enum
+from enum import auto
 from typing import Union
 
 from fastapi import FastAPI
+from fastapi_utils.enums import StrEnum
 from fastapi_utils.tasks import repeat_every
 from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
@@ -9,9 +10,9 @@ from pydantic import BaseModel
 from panoptes.pocs.sensor.power import PowerBoard
 
 
-class RelayAction(str, Enum):
-    turn_on = 'turn_on'
-    turn_off = 'turn_off'
+class RelayAction(StrEnum):
+    turn_on = auto()
+    turn_off = auto()
 
 
 class RelayCommand(BaseModel):
@@ -30,6 +31,14 @@ async def startup():
     power_board = PowerBoard(**get_config('environment.power', {}))
 
 
+@app.on_event('startup')
+@repeat_every(seconds=60, wait_first=True)
+def record_readings():
+    """Record the current readings in the db."""
+    global power_board
+    return power_board.record()
+
+
 @app.get('/')
 async def root():
     """Returns the power board status."""
@@ -42,14 +51,6 @@ async def readings():
     """Return the current readings as a dict."""
     global power_board
     return power_board.to_dataframe().to_dict()
-
-
-@repeat_every(seconds=60)
-@app.get('/record')
-def record_readings():
-    """Record the current readings in the db."""
-    global power_board
-    return power_board.record()
 
 
 @app.post('/control')
