@@ -1,10 +1,10 @@
-import time
 from enum import Enum
 from typing import Union
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 from panoptes.utils.config.client import get_config
+from pydantic import BaseModel
+
 from panoptes.pocs.sensor.power import PowerBoard
 
 

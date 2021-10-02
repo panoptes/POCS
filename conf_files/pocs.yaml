@@ -120,7 +120,7 @@ environment:
         label: mount
         default_state: on
   weather:
-    url: http://localhost:5000/latest.json
+    url: http://localhost:6566/current
 
 
 ########################## Observations ########################################

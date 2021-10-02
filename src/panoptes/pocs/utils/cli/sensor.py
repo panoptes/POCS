@@ -1,5 +1,6 @@
 import time
 from pprint import pprint
+from typing import Optional
 
 import typer
 
@@ -20,22 +21,24 @@ def main(context: typer.Context):
 
 @app.command()
 def monitor(
-        name: str,
-        endpoint: str = 'http://127.0.0.1:6564',
-        store_result: bool = True,
-        read_frequency: int = 60,
+        sensor_name: str,
+        endpoint: Optional[str] = typer.Option(None, help='The remote endpoint to read. '
+                                                          'If not provided, use the config key '
+                                                          '"environment.<sensor_name>.url".'),
+        store: bool = typer.Option(True, help='If result should be stored in file database.'),
+        read_frequency: int = typer.Option(60, help='Read frequency in seconds.'),
         verbose: bool = False,
 ):
     """Continuously read remote sensor, optionally storing results."""
-    remote_monitor = RemoteMonitor(endpoint_url=endpoint, sensor_name=name)
+    remote_monitor = RemoteMonitor(endpoint_url=endpoint, sensor_name=sensor_name)
     try:
         while True:
-            result = remote_monitor.capture(store_result=store_result)
+            result = remote_monitor.capture(store_result=store)
             if verbose:
                 pprint(result)
             time.sleep(read_frequency)
     except KeyboardInterrupt:
-        typer.echo(f'Shutting down monitor script for {name}')
+        typer.echo(f'Shutting down monitor script for {sensor_name}')
 
 
 if __name__ == "__main__":
