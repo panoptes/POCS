@@ -100,7 +100,6 @@ environment:
   power:
     name: Trucker Power
     arduino_board_name: power_board
-    record_interval: 5  # seconds
     mean_interval: 5  # seconds
     port: /dev/ttyACM0
     relays:
@@ -112,7 +111,7 @@ environment:
         default_state: off
       RELAY_2:
         label: fans
-        default_state: off
+        default_state: on
       RELAY_3:
         label: unused3
         default_state: off
