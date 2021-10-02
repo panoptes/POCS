@@ -161,7 +161,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def set_property(self, prop: str, val: Union[str, int]):
         """ Set a property on the camera """
-        set_cmd = ['--set-config', f'{prop}={val}']
+        set_cmd = ['--set-config', f'{prop}="{val}"']
 
         self.command(set_cmd)
 
@@ -184,7 +184,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         if prop2value:
             for prop, val in prop2value.items():
-                set_cmd.extend(['--set-config-value', f'{prop}={val}'])
+                set_cmd.extend(['--set-config-value', f'{prop}="{val}"'])
 
         self.command(set_cmd)
 
