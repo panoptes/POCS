@@ -47,8 +47,7 @@ FROM panoptes-pocs-base AS panoptes-pocs-dependencies
 
 # Update conda environment with dependencies.
 COPY docker/environment.yaml .
-RUN echo "Installing environment" && \
-    conda install mamba && \
+RUN echo "Updating conda environment" && \
     mamba env update -n base -f environment.yaml && \
     mamba clean -tipy --force-pkgs-dirs
 
