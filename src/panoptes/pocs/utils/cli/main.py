@@ -1,11 +1,13 @@
 import typer
 
 from panoptes.pocs.utils.cli import config
+from panoptes.pocs.utils.cli import sensor
 
 app = typer.Typer()
 state = {'verbose': False}
 
 app.add_typer(config.app, name="config", help='Interact with the config server.')
+app.add_typer(sensor.app, name="sensor", help='Interact with system sensors.')
 
 
 @app.callback()
