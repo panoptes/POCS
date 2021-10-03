@@ -4,8 +4,9 @@ from threading import Thread
 import requests
 from collections import deque
 
-from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
+from astropy import units as u
 from pydantic import AnyHttpUrl
+from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
 
 
 class Camera(CanonCamera):
@@ -69,12 +70,18 @@ class Camera(CanonCamera):
 
         return output
 
-    def _poll_exposure(self, readout_args, *args, **kwargs):
-        """Check if remote command has completed."""
-        # Camera type specific readout function
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """ Wait until camera is no longer exposing or the timeout is reached.
+
+        If the timeout is reached, an `error.Timeout` is raised.
+        """
+        timer_duration = timeout
+        if timer_duration is None:
+            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
 
         try:
-            self._command_proc.join(timeout=self._timeout)
+            self._command_proc.join(timeout=timer_duration)
             # Thread should not be alive after join unless we timed out.
             if self._command_proc.is_alive():
                 raise TimeoutError

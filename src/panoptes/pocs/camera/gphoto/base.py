@@ -6,6 +6,7 @@ from threading import Event
 from threading import Timer
 from typing import List, Dict, Union
 
+from astropy import units as u
 from panoptes.utils import error
 from panoptes.utils.utils import listify
 from panoptes.utils.serializers import from_yaml
@@ -261,8 +262,17 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return properties
 
-    def _poll_exposure(self, readout_args, *args, **kwargs):
-        timer = CountdownTimer(duration=self._timeout)
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """ Wait until camera is no longer exposing or the timeout is reached.
+
+        If the timeout is reached, an `error.Timeout` is raised.
+        """
+        if timeout is None:
+            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+        else:
+            timer_duration = timeout
+        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
+        timer = CountdownTimer(duration=timer_duration)
         try:
             try:
                 # See if the command has finished.
