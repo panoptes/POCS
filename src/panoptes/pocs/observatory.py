@@ -386,7 +386,7 @@ class Observatory(PanBase):
             return
 
         for seq_time, observation in self.scheduler.observed_list.items():
-            self.logger.debug("Housekeeping for {}".format(observation))
+            self.logger.debug(f"Housekeeping for {observation}")
 
             observation_dir = os.path.join(
                 self._image_dir,
@@ -425,7 +425,7 @@ class Observatory(PanBase):
                                               stdout=subprocess.PIPE,
                                               stderr=subprocess.PIPE
                                               )
-                self.logger.info('Cleaning directory pid={}'.format(clean_proc.pid))
+                self.logger.info(f'Cleaning directory pid={clean_proc.pid}')
 
                 # Block and wait for directory to finish
                 try:

@@ -31,8 +31,6 @@ def upload_observation_to_bucket(pan_id,
         This requires that the command line utility `gsutil` be installed
         and that authentication has properly been set up.
 
-    TODO(wtgee): This could be merged into the PanStorage class.
-
     Args:
         pan_id (str): A string representing the unit id, e.g. PAN001.
         dir_name (str): Full path to directory.
@@ -46,10 +44,10 @@ def upload_observation_to_bucket(pan_id,
         str: A string path used to search for files.
     """
     if os.path.exists(dir_name) is False:
-        raise OSError("Directory does not exist, cannot upload: {}".format(dir_name))
+        raise OSError(f"Directory does not exist, cannot upload: {dir_name}")
 
     if re.match(r'PAN\d\d\d$', pan_id) is None:
-        raise Exception("Invalid PANID. Must be of the form 'PANnnn'. Got: {!r}".format(pan_id))
+        raise Exception(f"Invalid PANID. Must be of the form 'PANnnn'. Got: {pan_id!r}")
 
     gsutil = shutil.which('gsutil')
     if gsutil is None:  # pragma: no cover
@@ -75,7 +73,7 @@ def upload_observation_to_bucket(pan_id,
         if pan_id == 'PAN000':
             run_cmd = [gsutil, 'PAN000 upload should fail']
 
-        logger.debug("Running: {}".format(run_cmd))
+        logger.debug(f"Running: {run_cmd}")
 
         try:
             completed_process = subprocess.run(
@@ -87,7 +85,7 @@ def upload_observation_to_bucket(pan_id,
             if completed_process.returncode != 0:
                 raise Exception(completed_process.stderr)
         except Exception as e:
-            raise error.GoogleCloudError("Problem with upload: {}".format(e))
+            raise error.GoogleCloudError(f"Problem with upload: {e}")
 
     return file_search_path
 
@@ -116,7 +114,7 @@ def clean_observation_dir(dir_name,
     def _glob(s):
         return glob(os.path.join(dir_name, s))
 
-    logger.info("Cleaning dir: {}".format(dir_name))
+    logger.info(f"Cleaning dir: {dir_name}")
 
     # Pack the fits files
     logger.debug("Packing FITS files")
@@ -124,7 +122,7 @@ def clean_observation_dir(dir_name,
         try:
             fits_utils.fpack(f)
         except Exception as e:  # pragma: no cover
-            logger.warning('Could not compress fits file: {!r}'.format(e))
+            logger.warning(f'Could not compress fits file: {e!r}')
 
     # Remove .solved files
     logger.debug('Removing .solved files')
@@ -140,11 +138,11 @@ def clean_observation_dir(dir_name,
             # Create timelapse
             if include_timelapse:
                 try:
-                    logger.debug('Creating timelapse for {}'.format(dir_name))
+                    logger.debug(f'Creating timelapse for {dir_name}')
                     video_file = make_timelapse(dir_name, overwrite=timelapse_overwrite)
-                    logger.debug('Timelapse created: {}'.format(video_file))
+                    logger.debug(f'Timelapse created: {video_file}')
                 except Exception as e:
-                    logger.debug("Problem creating timelapse: {}".format(e))
+                    logger.debug(f"Problem creating timelapse: {e}")
 
             # Remove jpgs
             if remove_jpgs:
@@ -153,7 +151,7 @@ def clean_observation_dir(dir_name,
                     with suppress(OSError):
                         os.remove(f)
     except Exception as e:
-        logger.warning('Problem with cleanup creating timelapse: {!r}'.format(e))
+        logger.warning(f'Problem with cleanup creating timelapse: {e!r}')
 
 
 def main(directory,

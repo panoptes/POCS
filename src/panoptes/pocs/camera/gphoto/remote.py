@@ -77,7 +77,7 @@ class Camera(CanonCamera):
         """
         timer_duration = timeout
         if timer_duration is None:
-            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+            timer_duration = self._timeout + self.readout_time + exposure_time.to_value(u.second)
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
 
         try:

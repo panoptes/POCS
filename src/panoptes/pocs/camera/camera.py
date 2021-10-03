@@ -815,7 +815,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
-            timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
+            timer_duration = self._timeout + self.readout_time + exposure_time.to_value(u.second)
         else:
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
