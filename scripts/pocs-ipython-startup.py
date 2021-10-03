@@ -10,5 +10,5 @@ cameras = create_cameras_from_config()
 
 observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
 
-# Add simulators if necessary.
-# pocs = POCS(observatory, simulators=[])
+# Add simulators if necessary before running.
+pocs = POCS(observatory, simulators=[])
