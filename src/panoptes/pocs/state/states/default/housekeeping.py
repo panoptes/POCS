@@ -8,7 +8,6 @@ def on_enter(event_data):
     # Cleanup existing observations
     try:
         pocs.observatory.cleanup_observations()
+        pocs.say("Ok, I'm done cleaning up all the recorded data.")
     except Exception as e:  # pragma: no cover
         pocs.logger.warning(f'Problem with cleanup: {e!r}')
-
-    pocs.say("Ok, I'm done cleaning up all the recorded data.")
