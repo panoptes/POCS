@@ -191,7 +191,7 @@ class PowerBoard(PanBase):
 
         # Add the most recent ac_ok check.
         try:
-            values['ac_ok'] = df.iloc[-1]['ac_ok']
+            values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
         except KeyError:
             values['ac_ok'] = None
 

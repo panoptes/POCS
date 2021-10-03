@@ -64,6 +64,18 @@ services:
       - panlog:/panoptes-pocs/logs
       - images:/panoptes-pocs/images
       - json_store:/panoptes-pocs/json_store
+#  weather-reader:
+#    image: "${IMAGE_NAME:-gcr.io/panoptes-exp/panoptes-pocs}:${TAG_NAME:-develop}"
+#    container_name: weather-reader
+#    hostname: weather-reader
+#    restart: on-failure
+#    init: true
+#    tty: true
+#    network_mode: host
+#    command: [ "pocs sensor monitor weather --read-frequency 90" ]
+#    volumes:
+#      - panlog:/panoptes-pocs/logs
+#      - json_store:/panoptes-pocs/json_store
 volumes:
   panlog:
     driver: local
