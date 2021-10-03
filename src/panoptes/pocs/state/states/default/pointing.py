@@ -34,9 +34,7 @@ def on_enter(event_data):
 
         observation = pocs.observatory.current_observation
 
-        fits_headers = pocs.observatory.get_standard_headers(
-            observation=observation
-        )
+        fits_headers = pocs.observatory.get_standard_headers(observation=observation)
         fits_headers['POINTING'] = 'True'
         pocs.logger.debug(f"Pointing headers: {fits_headers!r}")
 
@@ -44,8 +42,7 @@ def on_enter(event_data):
 
         # Loop over maximum number of pointing iterations
         for img_num in range(max_attempts):
-            pocs.logger.info(
-                f"Taking pointing image {img_num + 1}/{max_attempts} on: {primary_camera}")
+            pocs.logger.info(f"Pointing image {img_num + 1}/{max_attempts} on: {primary_camera}")
 
             # Start the exposure
             camera_event = primary_camera.take_observation(
