@@ -261,7 +261,7 @@ class POCS(PanStateMachine, PanBase):
 
             self.connected = False
 
-            self._status_thread.join(1)
+            # self._status_thread.join(1)
 
             # Clear all the config items.
             self.logger.success("Power down complete")
