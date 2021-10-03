@@ -16,8 +16,9 @@ def on_enter(event_data):
 
     # Get pointing parameters
     pointing_config = pocs.get_config('pointing')
-    num_pointing_images = int(pointing_config.get('max_iterations', 3))
-    if num_pointing_images == 0:
+    max_attempts = int(pointing_config.get('max_attempts', 3))
+    if max_attempts == 0:
+        pocs.logger.info(f'Skipping pointing state, {max_attempts=}')
         pocs.next_state = 'tracking'
         return
 
@@ -42,9 +43,9 @@ def on_enter(event_data):
         primary_camera = pocs.observatory.primary_camera
 
         # Loop over maximum number of pointing iterations
-        for img_num in range(num_pointing_images):
+        for img_num in range(max_attempts):
             pocs.logger.info(
-                f"Taking pointing image {img_num + 1}/{num_pointing_images} on: {primary_camera}")
+                f"Taking pointing image {img_num + 1}/{max_attempts} on: {primary_camera}")
 
             # Start the exposure
             camera_event = primary_camera.take_observation(
@@ -58,7 +59,7 @@ def on_enter(event_data):
             maximum_duration = exptime + MAX_EXTRA_TIME
 
             def waiting_cb():
-                pocs.logger.info(f'Waiting for pointing image {img_num + 1}/{num_pointing_images}')
+                pocs.logger.info(f'Waiting for pointing image {img_num + 1}/{max_attempts}')
                 return pocs.is_safe()
 
             wait_for_events(camera_event, timeout=maximum_duration, callback=waiting_cb,
@@ -110,7 +111,7 @@ def on_enter(event_data):
                             pocs.observatory.mount.set_target_coordinates(observation.field)
                             pocs.observatory.mount.slew_to_target(blocking=True)
 
-                    if img_num == (num_pointing_images - 1):
+                    if img_num == (max_attempts - 1):
                         pocs.logger.info(f'Separation outside threshold but at max corrections. ' +
                                          'Will proceed to observations.')
                 else:

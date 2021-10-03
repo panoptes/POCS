@@ -68,7 +68,7 @@ mount:
     park_seconds: 15
 
 pointing:
-  max_iterations: 5  # Set to 0 to disable
+  max_attempts: 5  # Set to 0 to disable
   auto_correct: True
   threshold: 100 # arcseconds ~ 10 pixels
   exptime: 30 # seconds
