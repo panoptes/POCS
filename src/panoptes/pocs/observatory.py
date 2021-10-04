@@ -477,13 +477,13 @@ class Observatory(PanBase):
 
         if blocking:
             cam = self.primary_camera
+            exptime = self.current_observation.exptime.value
             readout_time = cam.readout_time
-            timeout = self.current_observation.exptime.value + readout_time + cam.timeout
-            sleep_duration = timeout / 25
+            timeout = exptime + readout_time + cam.timeout
 
             timer = CountdownTimer(timeout)
-            # Sleep for most of the exposure time.
-            timer.sleep(max_sleep=timeout - sleep_duration)
+            # Sleep for the exposure time.
+            timer.sleep(max_sleep=exptime)
             # Then start checking for complete exposures.
             while True:
                 done_exposing = {cam_name: False for cam_name in self.cameras.keys()}
@@ -516,7 +516,7 @@ class Observatory(PanBase):
                     self.logger.info('Finished observing for all cameras')
                     break
 
-                timer.sleep(max_sleep=sleep_duration)
+                timer.sleep(max_sleep=readout_time)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
