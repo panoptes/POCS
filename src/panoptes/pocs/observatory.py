@@ -568,7 +568,8 @@ class Observatory(PanBase):
         image_id, image_path = self.current_observation.last_exposure
 
         # Remove the local images directory for the upload name.
-        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'), '')
+        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
+                                                         self.get_config('pan_id'))
         bucket_name = self.get_config('panoptes_network.buckets.upload')
 
         # Create a separate process for the upload.
