@@ -19,7 +19,7 @@ from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.utils.cli.image import upload as upload_image
+from panoptes.pocs.utils.cli.image import upload_image
 from panoptes.pocs.utils.location import create_location_from_config
 
 

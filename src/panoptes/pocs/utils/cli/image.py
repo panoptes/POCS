@@ -1,14 +1,18 @@
 from pathlib import Path
+from typing import List
 
 import typer
 
 from google.cloud import storage
 
 app = typer.Typer()
+upload_app = typer.Typer()
+app.add_typer(upload_app, name='upload')
 
 
-@app.command()
-def upload(file_path: Path, bucket_path: str, bucket_name: str = 'panoptes-images-incoming'):
+@upload_app.command()
+def upload_image(file_path: Path, bucket_path: str,
+                 bucket_name: str = 'panoptes-images-incoming') -> str:
     """Uploads an image to google storage bucket."""
     bucket: storage.Bucket = storage.Client().bucket(bucket_name)
     if not bucket.exists():
@@ -21,3 +25,39 @@ def upload(file_path: Path, bucket_path: str, bucket_name: str = 'panoptes-image
     typer.secho(f'File successfully uploaded to {blob.public_url}')
 
     return blob.public_url
+
+
+@upload_app.command()
+def upload_directory(directory_path: Path,
+                     exclude: str,
+                     prefix: str,
+                     bucket_name: str = 'panoptes-images-incoming',
+                     continue_on_error: bool = False
+                     ) -> List[str]:
+    """Uploads all the contents of a directory.
+
+    This removes the directory path itself from the absolute path and appends the
+    optional `prefix`. Any file that matches the string `exclude` will be excluded.
+    Regexp support not currently provided.
+
+    Note: It would be more efficient to use the `gsutil`. This function is offered
+    merely as a convenience.
+    """
+    assert directory_path.is_dir() and directory_path.exists(), typer.secho(
+        'Need a directory that exists')
+
+    public_urls = list()
+    for file_path in directory_path.iterdir():
+        if exclude in str(file_path):
+            continue
+
+        bucket_path = str(Path(prefix) / file_path)
+        try:
+            public_url = upload_image(file_path, bucket_path, bucket_name=bucket_name)
+            public_urls.append(public_url)
+        except Exception as e:
+            typer.secho(f'Upload error on {file_path}. {continue_on_error=}')
+            if continue_on_error:
+                continue
+
+    return public_urls
