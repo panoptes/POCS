@@ -8,6 +8,7 @@ dependencies:
   - pandas
   - photutils
   - pip
+  - rich[jupyter]
   - scipy
   - streamz
   - uvicorn[standard]
