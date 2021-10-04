@@ -261,7 +261,7 @@ class Observation(PanBase):
         """Resets the exposure information for the observation """
         self.logger.debug(f"Resetting observation {self}")
 
-        self.exposure_list: Dict[str, Path] = OrderedDict()
+        self.exposure_list.clear()
         self.merit = 0.0
         self.seq_time = None
 
