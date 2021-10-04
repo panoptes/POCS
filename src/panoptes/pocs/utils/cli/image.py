@@ -10,7 +10,7 @@ upload_app = typer.Typer()
 app.add_typer(upload_app, name='upload')
 
 
-@upload_app.command()
+@upload_app.command('image')
 def upload_image(file_path: Path, bucket_path: str,
                  bucket_name: str = 'panoptes-images-incoming',
                  storage_client=None) -> str:
@@ -29,7 +29,7 @@ def upload_image(file_path: Path, bucket_path: str,
     return blob.public_url
 
 
-@upload_app.command()
+@upload_app.command('directory')
 def upload_directory(directory_path: Path,
                      exclude: str,
                      prefix: str,
