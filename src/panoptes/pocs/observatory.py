@@ -504,7 +504,7 @@ class Observatory(PanBase):
                         self.logger.warning(f'Timeout {maximum_duration}s reached for {cam_name}')
                         self.remove_camera(cam_name)
 
-                if all(done_exposing):
+                if all(done_exposing.values()):
                     self.logger.debug('Finished observing for all cameras')
                     break
 
