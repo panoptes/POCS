@@ -574,6 +574,9 @@ class Observatory(PanBase):
             if compressed_image_path.exists():
                 image_path = compressed_image_path
 
+        if not image_path.exists():
+            raise FileNotFoundError(f'File does not exist: {str(image_path)}')
+
         # Remove the local images directory for the upload name.
         bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
                                                          self.get_config('pan_id'))
