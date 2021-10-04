@@ -36,7 +36,7 @@ async def startup():
 def record_readings():
     """Record the current readings in the db."""
     global power_board
-    return power_board.record()
+    return power_board.record(collection_name='power')
 
 
 @app.get('/')

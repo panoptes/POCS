@@ -310,8 +310,11 @@ class PowerBoard(PanBase):
             return
 
         # Todo: make sure not receiving stale or out of order data using `uptime`.
-        # Create a list for the new data row and add common time.
-        new_data = [current_time().to_datetime(), data.get(ac_key, 0)]
+        # Create a list for the new data row and add common time and AC reading.
+        new_data = [
+            current_time().to_datetime(),
+            data.get(ac_key, 0)
+        ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.
             read_relay.state = PinState(data[relay_key][relay_index])
