@@ -502,6 +502,7 @@ class Observatory(PanBase):
                         # Mark as finished.
                         self.logger.info(f'{cam_name} finished exposing')
                         done_exposing[cam_name] = True
+
                     elif cam.is_exposing and not timer_expired:
                         # Still exposing.
                         self.logger.trace(f'{cam_name} still exposing')
@@ -514,6 +515,7 @@ class Observatory(PanBase):
 
                 if all(done_exposing.values()):
                     self.logger.info('Finished observing for all cameras')
+
                     break
 
                 timer.sleep(max_sleep=readout_time)
@@ -566,6 +568,11 @@ class Observatory(PanBase):
     def upload_recent(self):
         """Uploads the most recent image from the current observation."""
         image_id, image_path = self.current_observation.last_exposure
+
+        if not image_path.exists():
+            compressed_image_path = image_path.with_suffix(image_path.suffix + '.fz')
+            if compressed_image_path.exists():
+                image_path = compressed_image_path
 
         # Remove the local images directory for the upload name.
         bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
