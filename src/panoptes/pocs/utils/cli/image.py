@@ -12,9 +12,11 @@ app.add_typer(upload_app, name='upload')
 
 @upload_app.command()
 def upload_image(file_path: Path, bucket_path: str,
-                 bucket_name: str = 'panoptes-images-incoming') -> str:
+                 bucket_name: str = 'panoptes-images-incoming',
+                 storage_client=None) -> str:
     """Uploads an image to google storage bucket."""
-    bucket: storage.Bucket = storage.Client().bucket(bucket_name)
+    storage_client: storage.Client = storage_client or storage.Client()
+    bucket: storage.Bucket = storage_client.bucket(bucket_name)
     if not bucket.exists():
         typer.secho(f'Bucket does not exist: {bucket_name}', fg='red')
         return
@@ -32,7 +34,8 @@ def upload_directory(directory_path: Path,
                      exclude: str,
                      prefix: str,
                      bucket_name: str = 'panoptes-images-incoming',
-                     continue_on_error: bool = False
+                     continue_on_error: bool = False,
+                     storage_client=None
                      ) -> List[str]:
     """Uploads all the contents of a directory.
 
@@ -46,6 +49,8 @@ def upload_directory(directory_path: Path,
     assert directory_path.is_dir() and directory_path.exists(), typer.secho(
         'Need a directory that exists')
 
+    storage_client = storage_client or storage.Client()
+
     public_urls = list()
     for file_path in directory_path.iterdir():
         if exclude in str(file_path):
@@ -53,7 +58,8 @@ def upload_directory(directory_path: Path,
 
         bucket_path = str(Path(prefix) / file_path)
         try:
-            public_url = upload_image(file_path, bucket_path, bucket_name=bucket_name)
+            public_url = upload_image(file_path, bucket_path, bucket_name=bucket_name,
+                                      storage_client=storage_client)
             public_urls.append(public_url)
         except Exception as e:
             typer.secho(f'Upload error on {file_path}. {continue_on_error=}')
