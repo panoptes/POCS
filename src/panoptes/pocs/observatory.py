@@ -2,6 +2,7 @@ import os
 import subprocess
 from collections import OrderedDict
 from datetime import datetime
+from multiprocessing import Process
 from typing import Dict, Optional
 
 from astropy import units as u
@@ -17,6 +18,8 @@ from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.utils.cli.image import upload as upload_image
 from panoptes.pocs.utils.location import create_location_from_config
 
 
@@ -134,14 +137,14 @@ class Observatory(PanBase):
         self._primary_camera = cam
 
     @property
-    def current_observation(self):
+    def current_observation(self) -> Observation:
         if self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot get current observation.')
             return None
         return self.scheduler.current_observation
 
     @current_observation.setter
-    def current_observation(self, new_observation):
+    def current_observation(self, new_observation: Observation):
         if self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot set current observation.')
         else:
@@ -549,6 +552,21 @@ class Observatory(PanBase):
             self.logger.warning(f"Problem in analyzing: {e!r}")
 
         return self.current_offset_info
+
+    def upload_recent(self):
+        """Uploads the most recent image from the current observation."""
+        image_id, image_path = self.current_observation.last_exposure
+
+        # Remove the local images directory for the upload name.
+        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'), '')
+        bucket_name = self.get_config('panoptes_network.buckets.upload')
+
+        # Create a separate process for the upload.
+        upload_process = Process(target=upload_image,
+                                 kwargs=dict(bucket_path=bucket_path, bucket_name=bucket_name))
+
+        self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
+        upload_process.start()
 
     def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.

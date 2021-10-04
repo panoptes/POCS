@@ -10,7 +10,12 @@ def on_enter(event_data):
     try:
 
         if pocs.get_config('mount.settings.update_tracking', False):
+            pocs.logger.debug('Analyzing recent image from analyzing state')
             pocs.observatory.analyze_recent()
+
+        if pocs.get_config('observations.upload_image_immediately', False):
+            pocs.say('Uploading the image!')
+            pocs.observatory.upload_recent()
 
         if pocs.get_config('actions.FORCE_RESCHEDULE', False):
             pocs.say("Forcing a move to the scheduler")

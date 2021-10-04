@@ -423,9 +423,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Add most recent exposure to list
         if self.is_primary:
             if 'POINTING' in metadata:
-                observation.pointing_images[image_id] = file_path
+                observation.pointing_images[image_id] = Path(file_path)
             else:
-                observation.exposure_list[image_id] = file_path
+                observation.exposure_list[image_id] = Path(file_path)
 
         # Process the exposure once readout is complete
         # To be used for marking when exposure is complete (see `process_exposure`)

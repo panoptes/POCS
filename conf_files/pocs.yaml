@@ -144,6 +144,7 @@ observations:
   record_observations: True
   make_pretty_images: True
   keep_jpgs: True
+  upload_image_immediately: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -160,7 +161,7 @@ panoptes_network:
   service_account_key: # Location of JSON account key
   project_id: panoptes-exp
   buckets:
-    images: panoptes-exp
+    upload: panoptes-images-incoming
 
 ############################### pocs ##################################
 # POCS status flags. The values below represent initial values but

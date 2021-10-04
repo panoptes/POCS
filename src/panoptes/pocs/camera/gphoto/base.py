@@ -2,6 +2,7 @@ import re
 import shutil
 import subprocess
 from abc import ABC
+from pathlib import Path
 from typing import List, Dict, Union
 
 from astropy import units as u
@@ -82,9 +83,9 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         # Add most recent exposure to list.
         if self.is_primary:
             if 'POINTING' in headers:
-                observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
+                observation.pointing_images[image_id] = Path(file_path.replace('.cr2', '.fits'))
             else:
-                observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+                observation.exposure_list[image_id] = Path(file_path.replace('.cr2', '.fits'))
 
         # Take the actual exposure.
         self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking)

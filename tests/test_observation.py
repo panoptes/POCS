@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from astropy import units as u
@@ -106,7 +108,7 @@ def test_last_exposure_and_reset(field):
     obs.merit = 112.5
 
     for i in range(5):
-        obs.exposure_list[f'image_{i}'] = f'full_image_path_{i}'
+        obs.exposure_list[f'image_{i}'] = Path(f'full_image_path_{i}')
 
     last = obs.last_exposure
     assert isinstance(last, tuple)

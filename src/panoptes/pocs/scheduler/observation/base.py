@@ -1,5 +1,8 @@
 import os
 from collections import OrderedDict
+from pathlib import Path
+from typing import Tuple, Dict
+
 from astropy import units as u
 
 from panoptes.utils.utils import get_quantity_value
@@ -67,8 +70,8 @@ class Observation(PanBase):
         self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exposure_list = OrderedDict()
-        self.pointing_images = OrderedDict()
+        self.exposure_list: Dict[str, Path] = OrderedDict()
+        self.pointing_images: Dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
 
@@ -172,7 +175,8 @@ class Observation(PanBase):
             str: Full path to base directory.
         """
         if self._directory is None:
-            self.logger.warning(f'Setting observation directory to {self._image_dir}/{self.field.field_name}')
+            self.logger.warning(
+                f'Setting observation directory to {self._image_dir}/{self.field.field_name}')
             self._directory = os.path.join(self._image_dir, self.field.field_name)
 
         return self._directory
@@ -187,7 +191,7 @@ class Observation(PanBase):
         return len(self.exposure_list)
 
     @property
-    def first_exposure(self):
+    def first_exposure(self) -> Dict[str, Path]:
         """ Return the latest exposure information
 
         Returns:
@@ -199,7 +203,7 @@ class Observation(PanBase):
             self.logger.warning("No exposure available")
 
     @property
-    def last_exposure(self):
+    def last_exposure(self) -> Tuple[str, Path]:
         """ Return the latest exposure information
 
         Returns:
@@ -246,7 +250,7 @@ class Observation(PanBase):
         """Resets the exposure information for the observation """
         self.logger.debug("Resetting observation {}".format(self))
 
-        self.exposure_list = OrderedDict()
+        self.exposure_list: Dict[str, Path] = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
 
