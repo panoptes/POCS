@@ -476,13 +476,14 @@ class Observatory(PanBase):
             camera.take_observation(self.current_observation, headers)
 
         if blocking:
-            readout_time = self.primary_camera.readout_time
-            maximum_duration = self.current_observation.exptime.value + readout_time
-            sleep_duration = maximum_duration / 25
+            cam = self.primary_camera
+            readout_time = cam.readout_time
+            timeout = self.current_observation.exptime.value + readout_time + cam.timeout
+            sleep_duration = timeout / 25
 
-            timer = CountdownTimer(maximum_duration)
+            timer = CountdownTimer(timeout)
             # Sleep for most of the exposure time.
-            timer.sleep(max_sleep=maximum_duration - sleep_duration)
+            timer.sleep(max_sleep=timeout - sleep_duration)
             # Then start checking for complete exposures.
             while True:
                 done_exposing = {cam_name: False for cam_name in self.cameras.keys()}
@@ -508,7 +509,7 @@ class Observatory(PanBase):
                     elif cam.is_exposing and timer_expired:
                         # Timed out, remove the camera.
                         # TODO flag camera to try and recover itself?
-                        self.logger.warning(f'Timeout {maximum_duration}s reached for {cam_name}')
+                        self.logger.warning(f'Timeout {timeout}s reached for {cam_name}')
                         self.remove_camera(cam_name)
 
                 if all(done_exposing.values()):

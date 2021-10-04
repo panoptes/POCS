@@ -181,7 +181,7 @@ class Camera(AbstractSDKCamera):
         height = int(get_quantity_value(roi_format['height'], unit=u.pixel))
         image_type = roi_format['image_type']
 
-        timeout = 2 * seconds + self._timeout * u.second
+        timeout = 2 * seconds + self.timeout * u.second
 
         video_args = (width,
                       height,

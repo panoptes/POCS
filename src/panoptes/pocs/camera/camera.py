@@ -94,7 +94,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
         self._file_extension = kwargs.get('file_extension', 'fits')
-        self._timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
+        self.timeout = get_quantity_value(kwargs.get('timeout', 10), unit=u.second)
 
         # Default is uncooled camera. Should be set to True if appropriate in camera connect()
         # method, based on info received from camera.
@@ -819,7 +819,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
-            timer_duration = self._timeout + self.readout_time + exposure_time.to_value(u.second)
+            timer_duration = self.timeout + self.readout_time + exposure_time.to_value(u.second)
         else:
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
