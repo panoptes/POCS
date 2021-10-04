@@ -478,25 +478,32 @@ class Observatory(PanBase):
         if blocking:
             readout_time = self.primary_camera.readout_time
             maximum_duration = self.current_observation.exptime.value + readout_time
+            sleep_duration = maximum_duration / 25
 
             timer = CountdownTimer(maximum_duration)
-
+            # Sleep for most of the exposure time.
+            timer.sleep(max_sleep=maximum_duration - sleep_duration)
+            # Then start checking for complete exposures.
             while True:
                 done_exposing = {cam_name: False for cam_name in self.cameras.keys()}
                 if not len(done_exposing):
                     raise error.CameraNotFound(f'No cameras available while waiting on observe')
 
                 for cam_name, cam in self.cameras.items():
+                    # Skip check if already finished.
+                    if done_exposing[cam_name]:
+                        continue
+
                     # Check if still exposing after timer has expired and if so, remove camera.
                     timer_expired = timer.expired()
 
                     if not cam.is_exposing:
                         # Mark as finished.
-                        self.logger.debug(f'{cam_name} finished exposing')
+                        self.logger.info(f'{cam_name} finished exposing')
                         done_exposing[cam_name] = True
                     elif cam.is_exposing and not timer_expired:
                         # Still exposing.
-                        self.logger.debug(f'{cam_name} still exposing')
+                        self.logger.trace(f'{cam_name} still exposing')
                         done_exposing[cam_name] = False
                     elif cam.is_exposing and timer_expired:
                         # Timed out, remove the camera.
@@ -505,8 +512,10 @@ class Observatory(PanBase):
                         self.remove_camera(cam_name)
 
                 if all(done_exposing.values()):
-                    self.logger.debug('Finished observing for all cameras')
+                    self.logger.info('Finished observing for all cameras')
                     break
+
+                timer.sleep(max_sleep=sleep_duration)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
