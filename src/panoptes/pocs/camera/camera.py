@@ -5,6 +5,8 @@ import time
 from abc import ABCMeta
 from abc import abstractmethod
 from contextlib import suppress
+from multiprocessing import Process
+from pathlib import Path
 
 import astropy.units as u
 from astropy.io import fits
@@ -508,13 +510,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Taking {seconds=!r} exposure on {self.name}: {filename=!r}')
 
-        header = self._create_fits_header(seconds, dark)
-
         if self.is_exposing:
             err = error.PanError(
                 f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
+
+        header = self._create_fits_header(seconds, dark)
 
         try:
             # Camera type specific exposure set up and start
@@ -615,7 +617,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         file_path = self._process_fits(file_path, metadata)
         self.logger.debug(f'Finished FITS processing for {file_path}')
 
-        # TODO make this async and take it out of camera.
         if make_pretty_images:
             try:
                 image_title = f'{field_name} [{exptime}s] {seq_id}'
@@ -624,11 +625,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 link_path = None
                 if metadata['is_primary']:
                     # This should be in the config somewhere.
-                    link_path = os.path.expandvars('$PANDIR/images/latest.jpg')
+                    link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
-                img_utils.make_pretty_image(file_path,
-                                            title=image_title,
-                                            link_path=link_path)
+                pretty_process = Process(target=img_utils.make_pretty_image,
+                                         kwargs=dict(title=image_title, link_path=str(link_path)))
+                pretty_process.start()
             except Exception as e:  # pragma: no cover
                 self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
@@ -844,7 +845,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             # Make sure this gets set regardless of any errors
             self._is_exposing_event.clear()
 
-    def _create_fits_header(self, seconds, dark=None):
+    def _create_fits_header(self, seconds, dark=None) -> fits.Header:
         header = fits.Header()
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
