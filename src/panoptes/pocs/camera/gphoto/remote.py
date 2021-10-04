@@ -88,7 +88,7 @@ class Camera(CanonCamera):
         except TimeoutError:
             self.logger.warning(f'Timeout on exposure process for {self.name}')
         else:
-            # Camera type specific readout function
+            # Camera type specific readout function: converts CR2 to FITS.
             self._readout(*readout_args)
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')

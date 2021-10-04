@@ -2,16 +2,15 @@ import re
 import shutil
 import subprocess
 from abc import ABC
-from threading import Event
-from threading import Timer
 from typing import List, Dict, Union
 
 from astropy import units as u
 from panoptes.utils import error
-from panoptes.utils.utils import listify
-from panoptes.utils.serializers import from_yaml
 from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import CountdownTimer
+from panoptes.utils.utils import listify
+
 from panoptes.pocs.camera import AbstractCamera
 
 
@@ -51,7 +50,8 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def connect(self):
         raise NotImplementedError
 
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, blocking=False, *args,
+                         **kwargs):
         """Take an observation.
 
         Gathers various header information, sets the file path, and calls
@@ -74,31 +74,20 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
-        observation_event = Event()
-
         exptime, file_path, image_id, metadata = self._setup_observation(observation,
                                                                          headers,
                                                                          filename,
                                                                          **kwargs)
 
-        self.take_exposure(seconds=exptime, filename=file_path)
-
-        # Add most recent exposure to list
+        # Add most recent exposure to list.
         if self.is_primary:
             if 'POINTING' in headers:
                 observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
             else:
                 observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
-        # Process the image after a set amount of time
-        wait_time = exptime + self.readout_time
-
-        t = Timer(wait_time, self.process_exposure, (metadata, observation_event))
-        t.name = f'{self.name}Thread'
-        t.start()
-
-        return observation_event
+        # Take the actual exposure.
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking)
 
     def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """

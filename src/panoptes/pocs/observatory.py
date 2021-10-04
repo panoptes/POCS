@@ -2,10 +2,15 @@ import os
 import subprocess
 from collections import OrderedDict
 from datetime import datetime
+from typing import Dict, Optional
 
 from astropy import units as u
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
+from panoptes.utils import error
+from panoptes.utils.time import current_time, CountdownTimer
+
+import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
@@ -13,8 +18,6 @@ from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils.time import current_time
-from panoptes.utils import error
 
 
 class Observatory(PanBase):
@@ -48,9 +51,9 @@ class Observatory(PanBase):
 
         # Set up some of the hardware.
         self.set_mount(mount)
-        self.cameras = OrderedDict()
+        self.cameras: Dict[str, AbstractCamera] = OrderedDict()
+        self._primary_camera: Optional[AbstractCamera] = None
 
-        self._primary_camera = None
         if cameras:
             self.logger.info(f'Adding cameras to the observatory: {cameras}')
             for cam_name, camera in cameras.items():
@@ -110,7 +113,7 @@ class Observatory(PanBase):
         return len(self.cameras) > 0
 
     @property
-    def primary_camera(self):
+    def primary_camera(self) -> panoptes.pocs.camera.camera.AbstractCamera:
         """Return primary camera.
 
         Note:
@@ -211,7 +214,7 @@ class Observatory(PanBase):
         Args:
             cam_name (str): Name of camera to remove.
         """
-        self.logger.debug('Removing {}'.format(cam_name))
+        self.logger.debug(f'Removing {cam_name}')
         del self.cameras[cam_name]
 
     def set_scheduler(self, scheduler):
@@ -447,11 +450,15 @@ class Observatory(PanBase):
 
         self.scheduler.reset_observed_list()
 
-    def observe(self):
-        """Take individual images for the current observation
+    def observe(self, blocking: bool = True):
+        """Take individual images for the current observation.
 
         This method gets the current observation and takes the next
         corresponding exposure.
+
+        Args:
+            blocking (bool): If True (the default), wait for cameras to finish
+                exposing before returning, otherwise return immediately.
 
         """
         # Get observatory metadata
@@ -460,24 +467,43 @@ class Observatory(PanBase):
         # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
-        # List of camera events to wait for to signal exposure is done
-        # processing
-        observing_events = dict()
-
-        # Take exposure with each camera
+        # Take exposure with each camera.
         for cam_name, camera in self.cameras.items():
             self.logger.debug(f"Exposing for camera: {cam_name}")
+            camera.take_observation(self.current_observation, headers)
 
-            try:
-                # Start the exposures
-                camera_observe_event = camera.take_observation(self.current_observation, headers)
+        if blocking:
+            readout_time = self.primary_camera.readout_time
+            maximum_duration = self.current_observation.exptime.value + readout_time
 
-                observing_events[cam_name] = camera_observe_event
+            timer = CountdownTimer(maximum_duration)
 
-            except Exception as e:
-                self.logger.error(f"Problem waiting for images: {e!r}")
+            while True:
+                done_exposing = {cam_name: False for cam_name in self.cameras.keys()}
+                if not len(done_exposing):
+                    raise error.CameraNotFound(f'No cameras available while waiting on observe')
 
-        return observing_events
+                for cam_name, cam in self.cameras.items():
+                    # Check if still exposing after timer has expired and if so, remove camera.
+                    timer_expired = timer.expired()
+
+                    if not cam.is_exposing:
+                        # Mark as finished.
+                        self.logger.debug(f'{cam_name} finished exposing')
+                        done_exposing[cam_name] = True
+                    elif cam.is_exposing and not timer_expired:
+                        # Still exposing.
+                        self.logger.debug(f'{cam_name} still exposing')
+                        done_exposing[cam_name] = False
+                    elif cam.is_exposing and timer_expired:
+                        # Timed out, remove the camera.
+                        # TODO flag camera to try and recover itself?
+                        self.logger.warning(f'Timeout {maximum_duration}s reached for {cam_name}')
+                        self.remove_camera(cam_name)
+
+                if all(done_exposing):
+                    self.logger.debug('Finished observing for all cameras')
+                    break
 
     def analyze_recent(self):
         """Analyze the most recent exposure

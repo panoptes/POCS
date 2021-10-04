@@ -9,7 +9,6 @@ from contextlib import suppress
 import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
-from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
@@ -17,6 +16,8 @@ from panoptes.utils.library import load_module
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.base import PanBase
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):

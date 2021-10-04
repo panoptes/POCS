@@ -286,7 +286,7 @@ class Camera(AbstractSDKCamera):
                                                               height,
                                                               self.image_type)
             except RuntimeError as err:
-                raise error.PanError('Error getting image data from {}: {}'.format(self, err))
+                raise error.PanError(f'Error getting image data from {self}: {err}')
             else:
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
@@ -298,12 +298,11 @@ class Camera(AbstractSDKCamera):
                                       header=header,
                                       filename=filename)
         elif exposure_status == 'FAILED':
-            raise error.PanError("Exposure failed on {}".format(self))
+            raise error.PanError(f"Exposure failed on {self}")
         elif exposure_status == 'IDLE':
-            raise error.PanError("Exposure missing on {}".format(self))
+            raise error.PanError(f"Exposure missing on {self}")
         else:
-            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                self, exposure_status))
+            raise error.PanError(f"Unexpected exposure status on {self}: '{exposure_status}'")
 
     def _create_fits_header(self, seconds, dark):
         header = super()._create_fits_header(seconds, dark)
