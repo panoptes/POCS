@@ -189,7 +189,10 @@ class Observation(PanBase):
         Returns:
             int: The size of `self.exposure_list`.
         """
-        return max([len(exposures) for exposures in self.exposure_list.values()])
+        try:
+            return max([len(exposures) for exposures in self.exposure_list.values()])
+        except ValueError:
+            return 0
 
     @property
     def first_exposure(self) -> Dict[str, Path]:
