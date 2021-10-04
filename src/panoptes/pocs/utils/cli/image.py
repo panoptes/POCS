@@ -6,13 +6,11 @@ from google.cloud import storage
 
 app = typer.Typer()
 
-storage_client: storage.Client = storage.Client()
-
 
 @app.command()
 def upload(file_path: Path, bucket_path: str, bucket_name: str = 'panoptes-images-incoming'):
     """Uploads an image to google storage bucket."""
-    bucket: storage.Bucket = storage_client.bucket(bucket_name)
+    bucket: storage.Bucket = storage.Client().bucket(bucket_name)
     if not bucket.exists():
         typer.secho(f'Bucket does not exist: {bucket_name}', fg='red')
         return
