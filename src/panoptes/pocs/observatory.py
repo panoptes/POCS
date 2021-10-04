@@ -563,7 +563,9 @@ class Observatory(PanBase):
 
         # Create a separate process for the upload.
         upload_process = Process(target=upload_image,
-                                 kwargs=dict(bucket_path=bucket_path, bucket_name=bucket_name))
+                                 kwargs=dict(file_path=image_path,
+                                             bucket_path=bucket_path,
+                                             bucket_name=bucket_name))
 
         self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
         upload_process.start()

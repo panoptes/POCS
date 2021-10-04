@@ -1,10 +1,9 @@
 import os
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from astropy import units as u
-
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
@@ -70,7 +69,9 @@ class Observation(PanBase):
         self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exposure_list: Dict[str, Path] = OrderedDict()
+        self.exposure_list: Dict[str, List[Tuple[str, Path]]] = defaultdict(list)
+        self._first_exposure = None
+        self._last_exposure = None
         self.pointing_images: Dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
@@ -90,9 +91,9 @@ class Observation(PanBase):
 
         self.logger.debug(f"Observation created: {self}")
 
-    ##################################################################################################
+    ################################################################################################
     # Properties
-    ##################################################################################################
+    ################################################################################################
 
     @property
     def status(self):
@@ -188,7 +189,7 @@ class Observation(PanBase):
         Returns:
             int: The size of `self.exposure_list`.
         """
-        return len(self.exposure_list)
+        return max([len(exposures) for exposures in self.exposure_list.values()])
 
     @property
     def first_exposure(self) -> Dict[str, Path]:
@@ -197,10 +198,7 @@ class Observation(PanBase):
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
-        try:
-            return list(self.exposure_list.items())[0]
-        except IndexError:
-            self.logger.warning("No exposure available")
+        return self._first_exposure
 
     @property
     def last_exposure(self) -> Tuple[str, Path]:
@@ -209,10 +207,7 @@ class Observation(PanBase):
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
-        try:
-            return list(self.exposure_list.items())[-1]
-        except IndexError:
-            self.logger.warning("No exposure available")
+        return self._last_exposure
 
     @property
     def pointing_image(self):
@@ -242,22 +237,37 @@ class Observation(PanBase):
 
         return has_min_exposures and this_set_finished
 
-    ##################################################################################################
+    ################################################################################################
     # Methods
-    ##################################################################################################
+    ################################################################################################
+
+    def add_to_exposure_list(self, cam_name: str, image_id: str, path: Path,
+                             is_primary: bool = False):
+        """Add the exposure to the list and mark as most recent"""
+        # Add to exposure list.
+        self.exposure_list[cam_name].append((image_id, path))
+
+        if is_primary:
+            # Mark as first exposure if appropriate.
+            if len(self.exposure_list[cam_name]) == 1:
+                self._first_exposure = (image_id, path)
+            # Mark as last exposure.
+            self._last_exposure = (image_id, path)
 
     def reset(self):
         """Resets the exposure information for the observation """
-        self.logger.debug("Resetting observation {}".format(self))
+        self.logger.debug(f"Resetting observation {self}")
 
         self.exposure_list: Dict[str, Path] = OrderedDict()
         self.merit = 0.0
         self.seq_time = None
 
-    ##################################################################################################
+    ################################################################################################
     # Private Methods
-    ##################################################################################################
+    ################################################################################################
 
     def __str__(self):
-        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exptime, self.exp_set_size, self.min_nexp, self.priority)
+        return f"{self.field}: {self.exptime} exposures " \
+               f"in blocks of {self.exp_set_size}, " \
+               f"minimum {self.min_nexp}, " \
+               f"priority {self.priority:.0f}"
