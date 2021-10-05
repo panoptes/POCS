@@ -1,7 +1,9 @@
 import re
 import shutil
 import subprocess
+import threading
 from abc import ABC
+from multiprocessing import Process
 from pathlib import Path
 from typing import List, Dict, Union
 
@@ -283,8 +285,10 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             self._command_proc = None
             raise err
         else:
-            # Camera type specific readout function
-            self._readout(*readout_args)
+            # Camera type specific readout function.
+            readout_process = Process(target=self._readout, args=readout_args)
+            self.logger.info(f'Starting image readout and processing in separate process')
+            readout_process.start()
         finally:
             self.logger.debug(f'Setting exposure event for {self.name}')
             self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
@@ -293,6 +297,14 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         """Reads out the image as a CR2 and converts to FITS"""
         self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
         fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
+        processing_event = threading.Event()
+        self.logger.debug(f'Processing {cr2_path}')
+        self.process_exposure(info, processing_event)
+        try:
+            processing_event.wait(timeout=self.readout_time + self.timeout)
+        except TimeoutError:
+            self.logger.error(f'Error reading image for {cr2_path}')
+
         return fits_path
 
     def _process_fits(self, file_path, info):
