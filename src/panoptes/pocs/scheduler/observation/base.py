@@ -247,7 +247,6 @@ class Observation(PanBase):
     def add_to_exposure_list(self, cam_name: str, image_id: str, path: Path,
                              is_primary: bool = False):
         """Add the exposure to the list and mark as most recent"""
-        # Add to exposure list.
         self.exposure_list[cam_name].append((image_id, path))
 
         if is_primary:

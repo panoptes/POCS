@@ -565,31 +565,37 @@ class Observatory(PanBase):
 
         return self.current_offset_info
 
-    def upload_recent(self):
+    def upload_recent(self, bucket_name=None):
         """Uploads the most recent image from the current observation."""
-        image_id, image_path = self.current_observation.last_exposure
+        bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
 
-        if not image_path.exists():
-            compressed_image_path = image_path.with_suffix(image_path.suffix + '.fz')
-            if compressed_image_path.exists():
-                image_path = compressed_image_path
+        for cam_name, exposure_info in self.current_observation.exposure_list.items():
+            # Get the most recent exposure for the camera.
+            image_id, image_path = exposure_info[-1]
 
-        if not image_path.exists():
-            raise FileNotFoundError(f'File does not exist: {str(image_path)}')
+            # If file doesn't exist, see if a compressed version does.
+            if not image_path.exists():
+                compressed_image_path = image_path.with_suffix(image_path.suffix + '.fz')
+                if compressed_image_path.exists():
+                    self.logger.debug(
+                        f'Uploading compressed version of file {compressed_image_path}')
+                    image_path = compressed_image_path
 
-        # Remove the local images directory for the upload name.
-        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
-                                                         self.get_config('pan_id'))
-        bucket_name = self.get_config('panoptes_network.buckets.upload')
+            if not image_path.exists():
+                raise FileNotFoundError(f'File does not exist: {str(image_path)}')
 
-        # Create a separate process for the upload.
-        upload_process = Process(target=upload_image,
-                                 kwargs=dict(file_path=image_path,
-                                             bucket_path=bucket_path,
-                                             bucket_name=bucket_name))
+            # Remove the local images directory for the upload name and replace with PAN_ID.
+            bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
+                                                             self.get_config('pan_id'))
 
-        self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
-        upload_process.start()
+            # Create a separate process for the upload.
+            upload_process = Process(target=upload_image,
+                                     kwargs=dict(file_path=image_path,
+                                                 bucket_path=bucket_path,
+                                                 bucket_name=bucket_name))
+
+            self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
+            upload_process.start()
 
     def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.
