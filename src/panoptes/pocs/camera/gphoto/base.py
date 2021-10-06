@@ -273,6 +273,8 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 while self._command_proc.poll() is None:
                     # Sleep if not done yet.
                     timer.sleep(max_sleep=1, log_level='TRACE')
+
+                del timer
             except subprocess.TimeoutExpired:
                 self.logger.warning(f'Timeout on exposure process for {self.name}')
                 self._command_proc.kill()
@@ -295,17 +297,20 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _readout(self, cr2_path=None, info=None):
         """Reads out the image as a CR2 and converts to FITS"""
-        self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
-        fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
-        processing_event = threading.Event()
-        self.logger.debug(f'Processing {cr2_path}')
-        self.process_exposure(info, processing_event)
+        self.logger.debug(f'Finished with exposure. Marking complete and reading out raw image.')
+        self._is_exposing_event.clear()
+
         try:
+            self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
+            fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
+
+            processing_event = threading.Event()
+            self.logger.debug(f'Processing {cr2_path}')
+            self.process_exposure(info, processing_event)
             processing_event.wait(timeout=self.readout_time + self.timeout)
+            return fits_path
         except TimeoutError:
             self.logger.error(f'Error reading image for {cr2_path}')
-
-        return fits_path
 
     def _process_fits(self, file_path, info):
         """

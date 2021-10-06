@@ -1,3 +1,4 @@
+from multiprocessing import Process
 from typing import List, Union
 from threading import Thread
 
@@ -89,7 +90,8 @@ class Camera(CanonCamera):
             self.logger.warning(f'Timeout on exposure process for {self.name}')
         else:
             # Camera type specific readout function: converts CR2 to FITS.
-            self._readout(*readout_args)
+            readout_process = Process(target=self._readout, args=readout_args)
+            self.logger.info(f'Starting image readout and processing in separate process')
+            readout_process.start()
         finally:
-            self.logger.debug(f'Setting exposure event for {self.name}')
             self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
