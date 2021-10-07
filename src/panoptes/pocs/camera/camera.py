@@ -596,21 +596,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         while self.is_exposing:
             time.sleep(1)
 
-        self.logger.debug(f'Starting exposure processing for {observation_event}')
+        self.logger.debug(f'Starting exposure processing for {observation_event} with {metadata!r}')
 
-        if compress_fits is None:
-            compress_fits = self.get_config('observations.compress_fits', default=False)
+        try:
+            image_id = metadata['image_id']
+            seq_id = metadata['sequence_id']
+            file_path = metadata['file_path']
+            exptime = metadata['exptime']
+            field_name = metadata['field_name']
+        except KeyError:
+            observation_event.set()
+            raise error.PanError('No information in image metadata, unable to process')
 
-        if make_pretty_images is None:
-            make_pretty_images = self.get_config('observations.make_pretty_images', default=False)
-
-        self.logger.debug(f'Processing exposure {metadata=!r}')
-
-        image_id = metadata['image_id']
-        seq_id = metadata['sequence_id']
-        file_path = metadata['file_path']
-        exptime = metadata['exptime']
-        field_name = metadata['field_name']
+        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='second')
 
         # Make sure image exists.
         if not os.path.exists(file_path):
@@ -619,11 +617,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 f"Expected image at {file_path=!r} does not exist or " +
                 "cannot be accessed, cannot process.")
 
+        # Do the camera specific processing.
         self.logger.debug(f'Starting FITS processing for {file_path}')
         file_path = self._process_fits(file_path, metadata)
         self.logger.debug(f'Finished FITS processing for {file_path}')
 
-        if make_pretty_images:
+        if make_pretty_images or self.get_config('observations.make_pretty_images', default=False):
             try:
                 image_title = f'{field_name} [{exptime}s] {seq_id}'
 
@@ -640,18 +639,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             except Exception as e:  # pragma: no cover
                 self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='second')
-
-        if record_observations:
-            self.logger.debug(f"Adding current observation to db: {image_id}")
-            self.db.insert_current('observations', metadata)
-
-        if compress_fits:
+        if compress_fits or self.get_config('observations.compress_fits', default=False):
             self.logger.debug(f'Compressing file_path={file_path!r}')
             compressed_file_path = fits_utils.fpack(file_path)
+            metadata['file_path'] = compressed_file_path
             self.logger.debug(f'Compressed {compressed_file_path}')
 
-        # Mark the event as done
+        if record_observations or self.get_config('observations.record_observations',
+                                                  default=False):
+            self.logger.debug(f"Adding current observation to db: {image_id}")
+            metadata['status'] = 'complete'
+            self.db.insert_current('observations', metadata)
+
+        # Mark the event as done.
         observation_event.set()
 
     def autofocus(self,
@@ -1022,8 +1022,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Get the value from either the metadata, the default, or use blank string.
                 fits_value = metadata.get(metadata_key, field_info.get('default', ''))
 
-                self.logger.trace(
-                    f'Setting fits_key={fits_key!r} = fits_value={fits_value!r} fits_comment={fits_comment!r}')
+                self.logger.trace(f'Setting {fits_key=!r} = {fits_value=!r} {fits_comment=!r}')
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
             self.logger.debug(f"Finished FITS headers: {file_path}")

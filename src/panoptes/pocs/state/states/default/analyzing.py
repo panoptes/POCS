@@ -13,13 +13,6 @@ def on_enter(event_data):
             pocs.logger.debug('Analyzing recent image from analyzing state')
             pocs.observatory.analyze_recent()
 
-        if pocs.get_config('observations.upload_image_immediately', False):
-            pocs.say('Uploading the image!')
-            try:
-                pocs.observatory.upload_recent()
-            except FileNotFoundError:
-                pocs.observatory.warning(f'Most recent upload failed')
-
         if pocs.get_config('actions.FORCE_RESCHEDULE', False):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
