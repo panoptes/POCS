@@ -15,7 +15,10 @@ def on_enter(event_data):
 
         if pocs.get_config('observations.upload_image_immediately', False):
             pocs.say('Uploading the image!')
-            pocs.observatory.upload_recent()
+            try:
+                pocs.observatory.upload_recent()
+            except FileNotFoundError:
+                pocs.observatory.warning(f'Most recent upload failed')
 
         if pocs.get_config('actions.FORCE_RESCHEDULE', False):
             pocs.say("Forcing a move to the scheduler")
