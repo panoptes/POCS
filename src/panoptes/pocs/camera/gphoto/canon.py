@@ -50,11 +50,9 @@ class Camera(AbstractGPhotoCamera):
         # Properties to be set upon init.
         prop2index = {
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
-            '/main/capturesettings/continuousaf': 0,  # No auto-focus
             '/main/capturesettings/drivemode': 0,  # Single exposure
             '/main/capturesettings/focusmode': 0,  # Manual (don't try to focus)
             '/main/imgsettings/imageformat': 9,  # RAW
-            '/main/imgsettings/imageformatcf': 9,  # RAW
             '/main/imgsettings/imageformatsd': 9,  # RAW
             '/main/settings/capturetarget': 0,  # Capture to RAM, for download
             '/main/settings/reviewtime': 0,  # Screen off after taking pictures
