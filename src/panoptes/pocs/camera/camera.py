@@ -418,7 +418,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # start the exposure
         self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
-                           dark=observation.dark, **kwargs)
+                           metadata=metadata, dark=observation.dark, **kwargs)
 
         # Add most recent exposure to list
         observation.add_to_exposure_list(cam_name=self.name,
@@ -448,6 +448,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     def take_exposure(self,
                       seconds=1.0 * u.second,
                       filename=None,
+                      metadata=None,
                       dark=False,
                       blocking=False,
                       timeout=None,
@@ -458,6 +459,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             seconds (u.second, optional): Length of exposure.
             filename (str, optional): Image is saved to this filename.
+            metadata (dict, optional): Add key/value as FITS header. Does not support nested dicts.
             dark (bool, optional): Exposure is a dark frame, default False. On cameras that support
                 taking dark frames internally (by not opening a mechanical shutter) this will be
                 done, for other cameras the light must be blocked by some other means. In either
@@ -518,7 +520,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._exposure_error = repr(err)
             raise err
 
-        header = self._create_fits_header(seconds, dark)
+        header = self._create_fits_header(seconds, dark, metadata=metadata)
 
         try:
             # Camera type specific exposure set up and start
@@ -601,6 +603,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         if make_pretty_images is None:
             make_pretty_images = self.get_config('observations.make_pretty_images', default=False)
+
+        self.logger.debug(f'Processing exposure {metadata=!r}')
 
         image_id = metadata['image_id']
         seq_id = metadata['sequence_id']
@@ -847,7 +851,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             # Make sure this gets set regardless of any errors
             self._is_exposing_event.clear()
 
-    def _create_fits_header(self, seconds, dark=None) -> fits.Header:
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
+        metadata = metadata or dict()
+
         header = fits.Header()
         header.set('INSTRUME', self.uid, 'Camera serial number')
         now = Time.now()
@@ -879,6 +885,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         for sub_name, subcomponent in self.subcomponents.items():
             header = subcomponent._add_fits_keywords(header)
+
+        for k, v in metadata.items():
+            header.set(k, v)
 
         return header
 

@@ -96,6 +96,6 @@ class Camera(CanonCamera):
         finally:
             self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
 
-    def _create_fits_header(self, seconds, dark=None) -> dict:
-        fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark)
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
+        fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
         return dict(fits_header)

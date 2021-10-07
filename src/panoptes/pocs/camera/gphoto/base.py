@@ -92,7 +92,8 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             observation.pointing_images[image_id] = Path(file_path.replace('.cr2', '.fits'))
 
         # Take the actual exposure.
-        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
+                           metadata=metadata)
 
     def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """
