@@ -98,4 +98,4 @@ class Camera(CanonCamera):
 
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
         fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
-        return dict(fits_header)
+        return {k.lower(): v for k, v in dict(fits_header).items()}
