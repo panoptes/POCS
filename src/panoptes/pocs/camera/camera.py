@@ -634,6 +634,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
                 pretty_process = Process(target=img_utils.make_pretty_image,
+                                         args=(file_path,),
                                          kwargs=dict(title=image_title, link_path=str(link_path)))
                 pretty_process.start()
             except Exception as e:  # pragma: no cover
