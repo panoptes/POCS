@@ -1,3 +1,5 @@
+from multiprocessing import Process
+
 from panoptes.utils import error
 
 
@@ -7,12 +9,19 @@ def on_enter(event_data):
     This state is responsible for taking the actual observation image.
      """
     pocs = event_data.model
-    pocs.say(f"🔭🔭 I'm observing {pocs.observatory.current_observation.field.field_name}! 🔭🔭")
+    current_observation = pocs.observatory.current_observation
+    pocs.say(f"🔭🔭 I'm observing {current_observation.field.field_name}! 🔭🔭")
     pocs.next_state = 'parking'
 
     try:
         # Do the observing.
         pocs.observatory.observe(blocking=True)
+        pocs.say(f"Finished observing! I'll start processing that in the background.")
+
+        # Do processing in background.
+        process_proc = Process(target=pocs.observatory.process_observation)
+        process_proc.start()
+        pocs.logger.debug(f'Processing for {current_observation} started on {process_proc.pid=}')
     except (error.Timeout, error.CameraNotFound):
         pocs.logger.warning("Timeout waiting for images. Something wrong with cameras, parking.")
     except Exception as e:

@@ -82,8 +82,8 @@ class Camera(AbstractCamera):
         # Sleep for the remainder of the readout time.
         timer.sleep()
 
-    def _process_fits(self, file_path, metadata):
-        file_path = super()._process_fits(file_path, metadata)
+    def _do_process_exposure(self, file_path, metadata):
+        file_path = super()._do_process_exposure(file_path, metadata)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         # TODO get the path as package data or something better.
         solved_path = os.path.join(

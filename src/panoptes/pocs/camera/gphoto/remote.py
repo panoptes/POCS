@@ -23,6 +23,10 @@ class Camera(CanonCamera):
 
         super().__init__(*args, **kwargs)
 
+    @property
+    def is_exposing(self):
+        return self._command_proc and self._command_proc.is_alive()
+
     def command(self, cmd, endpoint: AnyHttpUrl = None):
         """Run the gphoto2 command remotely.
 
@@ -70,31 +74,6 @@ class Camera(CanonCamera):
                 self.logger.debug(f'Remote gphoto2 error: {error!r}')
 
         return output
-
-    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
-        """ Wait until camera is no longer exposing or the timeout is reached.
-
-        If the timeout is reached, an `error.Timeout` is raised.
-        """
-        timer_duration = timeout
-        if timer_duration is None:
-            timer_duration = self.timeout + self.readout_time + exposure_time.to_value(u.second)
-        self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
-
-        try:
-            self._command_proc.join(timeout=timer_duration)
-            # Thread should not be alive after join unless we timed out.
-            if self._command_proc.is_alive():
-                raise TimeoutError
-        except TimeoutError:
-            self.logger.warning(f'Timeout on exposure process for {self.name}')
-        else:
-            # Camera type specific readout function: converts CR2 to FITS.
-            readout_process = Process(target=self._readout, args=readout_args)
-            self.logger.info(f'Starting image readout and processing in separate process')
-            readout_process.start()
-        finally:
-            self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
 
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
         fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)

@@ -3,6 +3,7 @@ import subprocess
 from collections import OrderedDict
 from datetime import datetime
 from multiprocessing import Process
+from pathlib import Path
 from typing import Dict, Optional
 
 from astropy import units as u
@@ -19,6 +20,8 @@ from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.utils import images as img_utils
+from panoptes.utils.images import fits as fits_utils
 from panoptes.pocs.utils.cli.image import upload_image
 from panoptes.pocs.utils.location import create_location_from_config
 
@@ -482,43 +485,84 @@ class Observatory(PanBase):
             timeout = exptime + readout_time + cam.timeout
 
             timer = CountdownTimer(timeout)
-            # Sleep for the exposure time.
+            # Sleep for the exposure time to start.
             timer.sleep(max_sleep=exptime)
             # Then start checking for complete exposures.
-            while True:
-                done_exposing = {cam_name: False for cam_name in self.cameras.keys()}
-                if not len(done_exposing):
-                    raise error.CameraNotFound(f'No cameras available while waiting on observe')
-
-                for cam_name, cam in self.cameras.items():
-                    # Skip check if already finished.
-                    if done_exposing[cam_name]:
-                        continue
-
-                    # Check if still exposing after timer has expired and if so, remove camera.
-                    timer_expired = timer.expired()
-
-                    if not cam.is_exposing:
-                        # Mark as finished.
-                        self.logger.info(f'{cam_name} finished exposing')
-                        done_exposing[cam_name] = True
-
-                    elif cam.is_exposing and not timer_expired:
-                        # Still exposing.
-                        self.logger.trace(f'{cam_name} still exposing')
-                        done_exposing[cam_name] = False
-                    elif cam.is_exposing and timer_expired:
-                        # Timed out, remove the camera.
-                        # TODO flag camera to try and recover itself?
-                        self.logger.warning(f'Timeout {timeout}s reached for {cam_name}')
-                        self.remove_camera(cam_name)
-
-                if all(done_exposing.values()):
+            while timer.expired() is False:
+                done_observing = [cam.is_observing for cam in self.cameras.values()]
+                if all(done_observing):
                     self.logger.info('Finished observing for all cameras')
-
                     break
 
                 timer.sleep(max_sleep=readout_time)
+
+            if timer.expired():
+                raise TimeoutError(f'Timer expired waiting for cameras to finish observing')
+
+    def process_observation(self,
+                            compress_fits: Optional[bool] = None,
+                            record_observations: Optional[bool] = None,
+                            make_pretty_images: Optional[bool] = None,
+                            upload_image_immediately: Optional[bool] = None,
+                            ):
+        """Process an individual observation.
+
+        Args:
+            metadata (dict): The metadata for the obervation.
+            compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
+                If None (default), checks the `observations.compress_fits` config-server key.
+            record_observations (bool or None): If observation metadata should be saved.
+                If None (default), checks the `observations.record_observations`
+                config-server key.
+            make_pretty_images (bool or None): If should make a jpg from raw image.
+                If None (default), checks the `observations.make_pretty_images`
+                config-server key.
+            upload_image_immediately (bool or None): If images should be uploaded (in a separate
+                process).
+        """
+        try:
+            image_id = metadata['image_id']
+            seq_id = metadata['sequence_id']
+            file_path = metadata['file_path']
+            exptime = metadata['exptime']
+            field_name = metadata['field_name']
+        except KeyError:
+            raise error.PanError('No information in image metadata, unable to process')
+
+        if make_pretty_images or self.get_config('observations.make_pretty_images', default=False):
+            try:
+                image_title = f'{field_name} [{exptime}s] {seq_id}'
+
+                self.logger.debug(f"Making pretty image for file_path={file_path!r}")
+                link_path = None
+                if metadata['is_primary']:
+                    # This should be in the config somewhere.
+                    link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
+
+                pretty_process = Process(target=img_utils.make_pretty_image,
+                                         args=(file_path,),
+                                         kwargs=dict(title=image_title, link_path=str(link_path)))
+                pretty_process.start()
+            except Exception as e:  # pragma: no cover
+                self.logger.warning(f'Problem with extracting pretty image: {e!r}')
+
+        if compress_fits or self.get_config('observations.compress_fits', default=False):
+            self.logger.debug(f'Compressing file_path={file_path!r}')
+            compressed_file_path = fits_utils.fpack(file_path)
+            metadata['file_path'] = compressed_file_path
+            self.logger.debug(f'Compressed {compressed_file_path}')
+
+        if record_observations or self.get_config('observations.record_observations',
+                                                  default=False):
+            self.logger.debug(f"Adding current observation to db: {image_id}")
+            metadata['status'] = 'complete'
+            self.db.insert_current('observations', metadata)
+
+        if upload_image_immediately or self.get_config('observations.upload_image_immediately',
+                                                       default=False):
+            self.logger.debug(f"Uploading current observation: {image_id}")
+            metadata['status'] = 'upload'
+            self.upload_recent()
 
     def analyze_recent(self):
         """Analyze the most recent exposure

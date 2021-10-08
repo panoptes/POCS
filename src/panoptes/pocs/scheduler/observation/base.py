@@ -2,12 +2,21 @@ import os
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 from typing import Tuple, Dict, List
+from pydantic.dataclasses import dataclass
 
 from astropy import units as u
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
+
+
+@dataclass
+class Exposure:
+    image_id: str
+    path: Path
+    metadata: dict
+    is_primary: bool = False
 
 
 class Observation(PanBase):
@@ -69,7 +78,7 @@ class Observation(PanBase):
         self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exposure_list: Dict[str, List[Tuple[str, Path]]] = defaultdict(list)
+        self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
         self._first_exposure = None
         self._last_exposure = None
         self.pointing_images: Dict[str, Path] = OrderedDict()
@@ -244,17 +253,9 @@ class Observation(PanBase):
     # Methods
     ################################################################################################
 
-    def add_to_exposure_list(self, cam_name: str, image_id: str, path: Path,
-                             is_primary: bool = False):
+    def add_to_exposure_list(self, cam_name: str, exposure: Exposure):
         """Add the exposure to the list and mark as most recent"""
-        self.exposure_list[cam_name].append((image_id, path))
-
-        if is_primary:
-            # Mark as first exposure if appropriate.
-            if len(self.exposure_list[cam_name]) == 1:
-                self._first_exposure = (image_id, path)
-            # Mark as last exposure.
-            self._last_exposure = (image_id, path)
+        self.exposure_list[cam_name].append(exposure)
 
     def reset(self):
         """Resets the exposure information for the observation """
