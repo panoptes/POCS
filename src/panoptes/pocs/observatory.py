@@ -508,7 +508,6 @@ class Observatory(PanBase):
         """Process an individual observation.
 
         Args:
-            metadata (dict): The metadata for the obervation.
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
                 If None (default), checks the `observations.compress_fits` config-server key.
             record_observations (bool or None): If observation metadata should be saved.
@@ -520,49 +519,53 @@ class Observatory(PanBase):
             upload_image_immediately (bool or None): If images should be uploaded (in a separate
                 process).
         """
-        try:
-            image_id = metadata['image_id']
-            seq_id = metadata['sequence_id']
-            file_path = metadata['file_path']
-            exptime = metadata['exptime']
-            field_name = metadata['field_name']
-        except KeyError:
-            raise error.PanError('No information in image metadata, unable to process')
-
-        if make_pretty_images or self.get_config('observations.make_pretty_images', default=False):
+        for cam_name, exposure in self.current_observation.exposure_list:
+            metadata = exposure.metadata
             try:
-                image_title = f'{field_name} [{exptime}s] {seq_id}'
+                image_id = metadata['image_id']
+                seq_id = metadata['sequence_id']
+                file_path = metadata['file_path']
+                exptime = metadata['exptime']
+                field_name = metadata['field_name']
+            except KeyError:
+                raise error.PanError('No information in image metadata, unable to process')
 
-                self.logger.debug(f"Making pretty image for file_path={file_path!r}")
-                link_path = None
-                if metadata['is_primary']:
-                    # This should be in the config somewhere.
-                    link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
+            if make_pretty_images or self.get_config('observations.make_pretty_images',
+                                                     default=False):
+                try:
+                    image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                pretty_process = Process(target=img_utils.make_pretty_image,
-                                         args=(file_path,),
-                                         kwargs=dict(title=image_title, link_path=str(link_path)))
-                pretty_process.start()
-            except Exception as e:  # pragma: no cover
-                self.logger.warning(f'Problem with extracting pretty image: {e!r}')
+                    self.logger.debug(f"Making pretty image for file_path={file_path!r}")
+                    link_path = None
+                    if metadata['is_primary']:
+                        # This should be in the config somewhere.
+                        link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
-        if compress_fits or self.get_config('observations.compress_fits', default=False):
-            self.logger.debug(f'Compressing file_path={file_path!r}')
-            compressed_file_path = fits_utils.fpack(file_path)
-            metadata['file_path'] = compressed_file_path
-            self.logger.debug(f'Compressed {compressed_file_path}')
+                    pretty_process = Process(target=img_utils.make_pretty_image,
+                                             args=(file_path,),
+                                             kwargs=dict(title=image_title,
+                                                         link_path=str(link_path)))
+                    pretty_process.start()
+                except Exception as e:  # pragma: no cover
+                    self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-        if record_observations or self.get_config('observations.record_observations',
-                                                  default=False):
-            self.logger.debug(f"Adding current observation to db: {image_id}")
-            metadata['status'] = 'complete'
-            self.db.insert_current('observations', metadata)
+            if compress_fits or self.get_config('observations.compress_fits', default=False):
+                self.logger.debug(f'Compressing file_path={file_path!r}')
+                compressed_file_path = fits_utils.fpack(file_path)
+                metadata['file_path'] = compressed_file_path
+                self.logger.debug(f'Compressed {compressed_file_path}')
 
-        if upload_image_immediately or self.get_config('observations.upload_image_immediately',
-                                                       default=False):
-            self.logger.debug(f"Uploading current observation: {image_id}")
-            metadata['status'] = 'upload'
-            self.upload_recent()
+            if record_observations or self.get_config('observations.record_observations',
+                                                      default=False):
+                self.logger.debug(f"Adding current observation to db: {image_id}")
+                metadata['status'] = 'complete'
+                self.db.insert_current('observations', metadata)
+
+            if upload_image_immediately or self.get_config('observations.upload_image_immediately',
+                                                           default=False):
+                self.logger.debug(f"Uploading current observation: {image_id}")
+                metadata['status'] = 'upload'
+                self.upload_recent()
 
     def analyze_recent(self):
         """Analyze the most recent exposure

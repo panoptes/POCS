@@ -79,8 +79,6 @@ class Observation(PanBase):
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
         self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
-        self._first_exposure = None
-        self._last_exposure = None
         self.pointing_images: Dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
@@ -204,22 +202,30 @@ class Observation(PanBase):
             return 0
 
     @property
-    def first_exposure(self) -> Dict[str, Path]:
+    def first_exposure(self) -> List[Dict[str, Exposure]]:
         """ Return the latest exposure information
 
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
-        return self._first_exposure
+        return self.get_exposure(number=0)
 
     @property
-    def last_exposure(self) -> Tuple[str, Path]:
+    def last_exposure(self) -> List[Dict[str, Exposure]]:
         """ Return the latest exposure information
 
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
-        return self._last_exposure
+        return self.get_exposure(number=-1)
+
+    def get_exposure(self, number: int = 0) -> List[Dict[str, Exposure]]:
+        """Returns the given epxosure number."""
+        try:
+            return [{cam_name: exposure[number]} for cam_name, exposure in
+                    self.exposure_list.items()]
+        except Exception:
+            return list()
 
     @property
     def pointing_image(self):
