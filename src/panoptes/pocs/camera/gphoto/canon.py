@@ -108,7 +108,7 @@ class Camera(AbstractGPhotoCamera):
 
         if shutterspeed_idx == 0:
             # Bulb setting.
-            cmd_args.append([
+            cmd_args.extend([
                 f'--set-config-index', 'eosremoterelease=2',
                 f'--wait-event={int(seconds):d}s',
                 f'--set-config-index', 'eosremoterelease=4',
@@ -116,7 +116,7 @@ class Camera(AbstractGPhotoCamera):
             ])
         else:
             # Known shutterspeed value.
-            cmd_args.append([
+            cmd_args.extend([
                 f'--capture-image-and-download',
             ])
 
