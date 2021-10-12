@@ -98,7 +98,7 @@ class Camera(AbstractGPhotoCamera):
         # Make sure we have just the value, no units
         seconds = get_quantity_value(seconds)
 
-        shutterspeed_idx = self.get_shutterspeed(seconds=seconds)
+        shutterspeed_idx = self.get_shutterspeed_index(seconds=seconds, return_minimum=True)
 
         cmd_args = [
             f'--set-config', f'iso={iso}',
@@ -129,13 +129,13 @@ class Camera(AbstractGPhotoCamera):
             return readout_args
 
     @classmethod
-    def get_shutterspeed(cls, seconds: float):
+    def get_shutterspeed_index(cls, seconds: float, return_minimum: bool = False):
         """Looks up the appropriate shutterspeed setting for the given seconds.
 
         If the given seconds does not match a set shutterspeed, the 'bulb' setting
         is returned.
         """
-        # TODO derived these from `load_properties`.
+        # TODO derive these from `load_properties`.
         # The index corresponds to what gphoto2 expects.
         shutter_speeds = {
             "bulb": "bulb",
@@ -192,12 +192,17 @@ class Camera(AbstractGPhotoCamera):
             "1/3200": 1 / 3200,
             "1/4000": 1 / 4000,
         }
+
         try:
             # First check by key.
             return list(shutter_speeds.keys()).index(seconds)
         except ValueError:
             # Then check by value.
             try:
-                return list(shutter_speeds.values()).index(seconds)
+                # Check minimum of everything after 'bulb'.
+                if return_minimum and seconds < min(list(shutter_speeds.values())[1:]):
+                    return len(shutter_speeds) - 1
+                else:
+                    return list(shutter_speeds.values()).index(seconds)
             except ValueError:
                 return 0
