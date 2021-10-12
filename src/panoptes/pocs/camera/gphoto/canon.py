@@ -98,15 +98,27 @@ class Camera(AbstractGPhotoCamera):
         # Make sure we have just the value, no units
         seconds = get_quantity_value(seconds)
 
+        shutterspeed_idx = self.get_shutterspeed(seconds=seconds)
+
         cmd_args = [
-            f'--set-config-index', 'shutterspeed=0',
             f'--set-config', f'iso={iso}',
-            f'--set-config-index', 'eosremoterelease=2',
-            f'--wait-event={int(seconds):d}s',
-            f'--set-config-index', 'eosremoterelease=4',
-            f'--wait-event-and-download=1s',
-            f'--filename', f'{filename}'
+            f'--filename', f'{filename}',
+            f'--set-config-index', f'shutterspeed={shutterspeed_idx}',
         ]
+
+        if shutterspeed_idx == 0:
+            # Bulb setting.
+            cmd_args.append([
+                f'--set-config-index', 'eosremoterelease=2',
+                f'--wait-event={int(seconds):d}s',
+                f'--set-config-index', 'eosremoterelease=4',
+                f'--wait-event-and-download=1s',
+            ])
+        else:
+            # Known shutterspeed value.
+            cmd_args.append([
+                f'--capture-image-and-download',
+            ])
 
         try:
             self.command(cmd_args)
@@ -115,3 +127,77 @@ class Camera(AbstractGPhotoCamera):
         else:
             readout_args = (filename, header)
             return readout_args
+
+    @classmethod
+    def get_shutterspeed(cls, seconds: float):
+        """Looks up the appropriate shutterspeed setting for the given seconds.
+
+        If the given seconds does not match a set shutterspeed, the 'bulb' setting
+        is returned.
+        """
+        # TODO derived these from `load_properties`.
+        # The index corresponds to what gphoto2 expects.
+        shutter_speeds = {
+            "bulb": "bulb",
+            "30": 30,
+            "25": 25,
+            "20": 20,
+            "15": 15,
+            "13": 13,
+            "10.3": 10.3,
+            "8": 8,
+            "6.3": 6.3,
+            "5": 5,
+            "4": 4,
+            "3.2": 3.2,
+            "2.5": 2.5,
+            "2": 2,
+            "1.6": 1.6,
+            "1.3": 1.3,
+            "1": 1,
+            "0.8": 0.8,
+            "0.6": 0.6,
+            "0.5": 0.5,
+            "0.4": 0.4,
+            "0.3": 0.3,
+            "1/4": 1 / 4,
+            "1/5": 1 / 5,
+            "1/6": 1 / 6,
+            "1/8": 1 / 8,
+            "1/10": 1 / 10,
+            "1/13": 1 / 13,
+            "1/15": 1 / 15,
+            "1/20": 1 / 20,
+            "1/25": 1 / 25,
+            "1/30": 1 / 30,
+            "1/40": 1 / 40,
+            "1/50": 1 / 50,
+            "1/60": 1 / 60,
+            "1/80": 1 / 80,
+            "1/100": 1 / 100,
+            "1/125": 1 / 125,
+            "1/160": 1 / 160,
+            "1/200": 1 / 200,
+            "1/250": 1 / 250,
+            "1/320": 1 / 320,
+            "1/400": 1 / 400,
+            "1/500": 1 / 500,
+            "1/640": 1 / 640,
+            "1/800": 1 / 800,
+            "1/1000": 1 / 1000,
+            "1/1250": 1 / 1250,
+            "1/1600": 1 / 1600,
+            "1/2000": 1 / 2000,
+            "1/2500": 1 / 2500,
+            "1/3200": 1 / 3200,
+            "1/4000": 1 / 4000,
+        }
+        try:
+            # First check by key.
+            return list(shutter_speeds.keys()).index(seconds)
+        except ValueError:
+            # Then check by value.
+            try:
+                return list(shutter_speeds.values()).index(seconds)
+            except ValueError:
+                return 0
