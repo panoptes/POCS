@@ -489,7 +489,7 @@ class Observatory(PanBase):
             timer.sleep(max_sleep=exptime)
             # Then start checking for complete exposures.
             while timer.expired() is False:
-                done_observing = [cam.is_observing for cam in self.cameras.values()]
+                done_observing = [cam.is_observing is False for cam in self.cameras.values()]
                 if all(done_observing):
                     self.logger.info('Finished observing for all cameras')
                     break
@@ -519,7 +519,7 @@ class Observatory(PanBase):
             upload_image_immediately (bool or None): If images should be uploaded (in a separate
                 process).
         """
-        for cam_name, exposure in self.current_observation.exposure_list:
+        for cam_name, exposure in self.current_observation.exposure_list.items():
             metadata = exposure.metadata
             try:
                 image_id = metadata['image_id']
