@@ -986,7 +986,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.trace(f'Setting {fits_key=!r} = {fits_value=!r} {fits_comment=!r}')
                 hdu.header.set(fits_key, fits_value, fits_comment)
 
-            self.logger.debug(f"Finished FITS headers: {file_path}")
+        self.logger.debug(f"Finished FITS headers: {file_path}")
 
         return file_path
 
