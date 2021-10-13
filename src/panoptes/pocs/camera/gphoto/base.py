@@ -1,17 +1,12 @@
 import re
 import shutil
 import subprocess
-import threading
 from abc import ABC
-from multiprocessing import Process
-from pathlib import Path
 from typing import List, Dict, Union
 
-from astropy import units as u
 from panoptes.utils import error
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.serializers import from_yaml
-from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import listify
 
 from panoptes.pocs.camera import AbstractCamera
@@ -52,6 +47,13 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def connect(self):
         raise NotImplementedError
+
+    @property
+    def is_exposing(self):
+        if self._command_proc is not None and self._command_proc.poll() is not None:
+            self._is_exposing_event.clear()
+
+        return self._is_exposing_event.is_set()
 
     def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """
@@ -218,16 +220,12 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def _readout(self, cr2_path=None, info=None):
         """Reads out the image as a CR2 and converts to FITS"""
         self.logger.debug(f'Finished exposure on {self}. Reading out raw image.')
-
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
             fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
             return fits_path
         except TimeoutError:
             self.logger.error(f'Error reading image for {cr2_path}')
-        finally:
-            self.logger.debug(f'Clearing the exposing event for {self}')
-            self._is_exposing_event.clear()
 
     def _do_process_exposure(self, file_path, info):
         """

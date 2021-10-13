@@ -73,17 +73,6 @@ class POCS(PanStateMachine, PanBase):
         self.connected = True
         self.interrupted = False
 
-        # We want to call and record the status on a periodic interval.
-        # def get_periodic_status():
-        #     while self.connected:
-        #         status = self.status
-        #         self.logger.trace(f'Periodic status call: {status!r}')
-        #         self.db.insert_current('status', status)
-        #         CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
-        #
-        # self._status_thread = Thread(target=get_periodic_status, daemon=True)
-        # self._status_thread.start()
-
         self.say("Hi there!")
 
     @property

@@ -394,7 +394,7 @@ class Observatory(PanBase):
 
             timer = CountdownTimer(timeout)
             # Sleep for the exposure time to start.
-            timer.sleep(max_sleep=exptime)
+            timer.sleep(max_sleep=exptime + readout_time)
             # Then start checking for complete exposures.
             while timer.expired() is False:
                 done_observing = [cam.is_observing is False for cam in self.cameras.values()]

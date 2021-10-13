@@ -795,14 +795,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 if timer.expired():
                     msg = f"Timeout ({timer.duration=}) waiting for exposure on {self}"
                     raise error.Timeout(msg)
-                time.sleep(interval)
+                timer.sleep(max_sleep=interval)
         except Exception as err:
             # Error returned by driver at some point while polling
             self.logger.error(f'Error while waiting for exposure on {self}: {err!r}')
             self._exposure_error = repr(err)
             raise err
         else:
-            # Camera type specific readout function
+            # Camera type specific readout function.
             try:
                 self._readout(*readout_args)
             except Exception as err:

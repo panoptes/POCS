@@ -1,12 +1,10 @@
-from multiprocessing import Process
-from typing import List, Union
+from collections import deque
 from threading import Thread
+from typing import List, Union
 
 import requests
-from collections import deque
-
-from astropy import units as u
 from pydantic import AnyHttpUrl
+
 from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
 
 
@@ -22,6 +20,13 @@ class Camera(CanonCamera):
         self.response_queue: deque = deque(maxlen=1)
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def is_exposing(self):
+        if self._command_proc is not None and self._command_proc.is_alive() is False:
+            self._is_exposing_event.clear()
+
+        return self._is_exposing_event.is_set()
 
     def command(self, cmd, endpoint: AnyHttpUrl = None):
         """Run the gphoto2 command remotely.
@@ -44,6 +49,7 @@ class Camera(CanonCamera):
                 output = response.json()
                 self.logger.debug(f'Response {output=!r}')
                 self.response_queue.append(output)
+                self._is_exposing_event.clear()
             else:
                 self.logger.error(f'Error in remote camera service: {response.content}')
 
