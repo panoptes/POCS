@@ -432,6 +432,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if 'POINTING' in metadata:
             observation.pointing_images[image_id] = Path(file_path)
 
+        self.logger.debug(f'Changing {self.name} path from {metadata["file_path"]} to {file_path}')
+        metadata['file_path'] = file_path
+
         # Add most recent exposure to list
         exposure = Exposure(
             image_id=str(image_id),
