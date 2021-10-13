@@ -313,12 +313,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False. """
-        return self._is_exposing_event.is_set() is False
+        return self._is_exposing_event.is_set()
 
     @property
     def is_observing(self):
         """ True if an observation is currently under, otherwise False. """
-        return self._is_observing_event.is_set() is False
+        return self._is_observing_event.is_set()
 
     @property
     def readiness(self):
