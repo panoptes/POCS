@@ -392,7 +392,7 @@ class Observatory(PanBase):
             readout_time = cam.readout_time
             timeout = exptime + readout_time + cam.timeout
 
-            timer = CountdownTimer(timeout)
+            timer = CountdownTimer(timeout, name='Observe')
             # Sleep for the exposure time to start.
             timer.sleep(max_sleep=exptime + readout_time)
             # Then start checking for complete exposures.

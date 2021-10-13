@@ -553,7 +553,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
                                           args=(readout_args, seconds),
-                                          kwargs=dict(timeout=timeout))
+                                          kwargs=dict(timeout=timeout, interval=self.readout_time))
         readout_thread.start()
 
         if blocking:
@@ -789,7 +789,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         else:
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
-        timer = CountdownTimer(duration=timer_duration)
+        timer = CountdownTimer(duration=timer_duration, name=f'{self.name}PollExposure')
         try:
             while self.is_exposing:
                 if timer.expired():
@@ -972,7 +972,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'tracking_rate_ra': {'keyword': 'RA-RATE', 'comment': 'RA Tracking Rate'},
         }
 
-        self.logger.debug(f"Updating FITS headers: {file_path} with metadata={metadata!r}")
+        self.logger.debug(f"Updating FITS headers {file_path} with {metadata=!r}")
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
             for metadata_key, field_info in fields.items():

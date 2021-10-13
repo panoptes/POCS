@@ -66,7 +66,7 @@ class Camera(AbstractCamera):
 
     def _readout(self, filename=None, header=None):
         self.logger.debug(f'Calling _readout for {self}')
-        timer = CountdownTimer(duration=self.readout_time)
+        timer = CountdownTimer(duration=self.readout_time, name='ReadoutDSLR')
         # Get example FITS file from test data directory
         file_path = os.path.join(os.environ['POCS'], 'tests', 'data', 'unsolved.fits')
         fake_data = fits.getdata(file_path)

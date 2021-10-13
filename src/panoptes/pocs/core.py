@@ -514,7 +514,7 @@ class POCS(PanStateMachine, PanBase):
         if delay is None:  # pragma: no cover
             delay = self.get_config('wait_delay', default=2.5)
 
-        sleep_timer = CountdownTimer(delay)
+        sleep_timer = CountdownTimer(delay, name='POCSWait')
         self.logger.info(f'Starting a wait timer of {delay} seconds')
         while not sleep_timer.expired() and not self.interrupted:
             self.logger.debug(f'Wait timer: {sleep_timer.time_left():.02f} / {delay:.02f}')
