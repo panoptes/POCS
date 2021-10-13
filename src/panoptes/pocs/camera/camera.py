@@ -313,12 +313,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False. """
-        return NotImplementedError
+        return self._is_exposing_event.is_set() is False
 
     @property
     def is_observing(self):
         """ True if an observation is currently under, otherwise False. """
-        return self._is_observing_event.is_set()
+        return self._is_observing_event.is_set() is False
 
     @property
     def readiness(self):
@@ -403,7 +403,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             observation (~panoptes.pocs.scheduler.observation.Observation): Object
                 describing the observation
-            headers (dict, optional): Header data to be saved along with the file.
+            headers (dict or Header, optional): Header data to be saved along with the file.
             filename (str, optional): pass a filename for the output FITS file to
                 override the default file naming system.
             blocking (bool): If method should wait for observation event to be complete
@@ -413,6 +413,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Returns:
             dict: The metadata from the event.
         """
+        # Set the camera is_observing.
         self._is_observing_event.set()
 
         # Setup the observation
@@ -435,15 +436,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exposure = Exposure(
             image_id=str(image_id),
             path=Path(file_path),
-            is_primary=bool(self.is_primary),
             metadata=metadata,
+            is_primary=bool(self.is_primary),
         )
         observation.add_to_exposure_list(cam_name=self.name, exposure=exposure)
 
         # Process the exposure once readout is complete
         # To be used for marking when exposure is complete (see `process_exposure`)
         t = threading.Thread(
-            name=f'Thread-{image_id}',
+            name=f'Thread-process_exposure-{image_id}',
             target=self.process_exposure,
             args=(metadata,),
             daemon=True)
@@ -596,16 +597,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='second')
 
+        # Make sure image exists.
         try:
             file_path = metadata['file_path']
-            # Make sure image exists.
-        except KeyError:
-            self._is_observing_event.set()
-            raise FileNotFoundError('No file_path given in metadata.')
-
-        if not os.path.exists(file_path):
-            self._is_observing_event.set()
-            raise FileNotFoundError(f"Image {file_path=!r} not found, cannot process.")
+            if not os.path.exists(file_path):
+                self._is_observing_event.clear()
+                raise FileNotFoundError(f"Image {file_path=!r} not found, cannot process.")
+        except (KeyError, FileNotFoundError) as e:
+            self._is_observing_event.clear()
+            raise e
 
         # Do the camera specific processing.
         self.logger.debug(f'Starting FITS processing for {file_path}')
@@ -613,7 +613,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f'Finished FITS processing for {file_path}')
 
         # Mark the event as done.
-        self._is_observing_event.set()
+        self._is_observing_event.clear()
 
     def autofocus(self,
                   seconds=None,
@@ -756,7 +756,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             seconds (float): The number of seconds to expose for.
             filename (str): Filename location for saved image.
             dark (bool): If image is a dark frame.
-            header (dict): Optional headers to save with the image.
+            header (dict or Header): Optional headers to save with the image.
 
         Returns:
             tuple|list: Any arguments required by the camera-specific `_readout`
@@ -941,9 +941,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
 
-        self.logger.debug(
-            f'Observation setup: exptime={exptime!r} file_path={file_path!r} image_id={image_id!r} metadata='
-            f'{metadata!r}')
+        self.logger.debug(f'Observation: {exptime=!r} {file_path=!r} {image_id=!r} {metadata=!r}')
 
         return exptime, file_path, image_id, metadata
 

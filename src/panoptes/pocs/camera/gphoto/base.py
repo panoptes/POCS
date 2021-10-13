@@ -53,10 +53,6 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def connect(self):
         raise NotImplementedError
 
-    @property
-    def is_exposing(self):
-        return self._command_proc and self._command_proc.poll()
-
     def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """
 
@@ -221,8 +217,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _readout(self, cr2_path=None, info=None):
         """Reads out the image as a CR2 and converts to FITS"""
-        self.logger.debug(f'Finished with exposure. Marking complete and reading out raw image.')
-        self._is_exposing_event.clear()
+        self.logger.debug(f'Finished exposure on {self}. Reading out raw image.')
 
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
@@ -230,6 +225,9 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             return fits_path
         except TimeoutError:
             self.logger.error(f'Error reading image for {cr2_path}')
+        finally:
+            self.logger.debug(f'Clearing the exposing event for {self}')
+            self._is_exposing_event.clear()
 
     def _do_process_exposure(self, file_path, info):
         """

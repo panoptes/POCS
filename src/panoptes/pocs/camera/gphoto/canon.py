@@ -92,7 +92,7 @@ class Camera(AbstractGPhotoCamera):
         Args:
             seconds (u.second, optional): Length of exposure.
             filename (str, optional): Image is saved to this filename.
-            header (dict, optional): The metadata to be added as FITS headers.
+            header (dict or Header, optional): The metadata to be added as FITS headers.
             iso (int, optional): The ISO setting to use for the exposure, default 100.
         """
         # Make sure we have just the value, no units

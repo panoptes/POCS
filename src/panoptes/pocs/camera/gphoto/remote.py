@@ -23,10 +23,6 @@ class Camera(CanonCamera):
 
         super().__init__(*args, **kwargs)
 
-    @property
-    def is_exposing(self):
-        return self._command_proc and self._command_proc.is_alive()
-
     def command(self, cmd, endpoint: AnyHttpUrl = None):
         """Run the gphoto2 command remotely.
 
