@@ -5,7 +5,6 @@ from contextlib import suppress
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
-
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
@@ -180,19 +179,25 @@ class BaseScheduler(PanBase):
         self.current_observation = None
         self._observations = dict()
 
-    def get_observation(self, time=None, show_all=False):
-        """Get a valid observation
+    def get_observation(self, time=None, constraints=None, show_all=False,
+                        reread_fields_file=False):
+        """Get a valid observation.
 
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
-                defaults to time called
+                defaults to time called (e.g. `now`).
+            constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
+                constraints to check. If `None` (the default), use the `scheduler.constraints`.
             show_all (bool, optional): Return all valid observations along with
-                merit value, defaults to False to only get top value
-
+                merit value, defaults to False to only get top value.
+            reread_fields_file (bool, optional): If the fields file should be reread
+                before scheduling occurs, defaults to False.
         Returns:
-            tuple or list: A tuple (or list of tuples) with name and score of ranked observations
+            tuple or list: A tuple (or list of tuples) with name and score of ranked observations.
         """
-        raise NotImplementedError
+        if reread_fields_file:
+            self.logger.debug("Rereading fields file")
+            self.read_field_list()
 
     def reset_observed_list(self):
         """Reset the observed list """

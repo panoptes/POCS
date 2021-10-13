@@ -355,7 +355,7 @@ class Observatory(PanBase):
                 self.get_config('scheduler.check_file', default=False)
         )
 
-        # This will set the `current_observation`
+        # This will set the `current_observation`.
         self.scheduler.get_observation(reread_fields_file=reread_fields_file, *args, **kwargs)
 
         if self.current_observation is None:
