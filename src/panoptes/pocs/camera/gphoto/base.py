@@ -1,6 +1,8 @@
+import os.path
 import re
 import shutil
 import subprocess
+import time
 from abc import ABC
 from typing import List, Dict, Union
 
@@ -54,6 +56,21 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             self._is_exposing_event.clear()
 
         return self._is_exposing_event.is_set()
+
+    def process_exposure(self, metadata, **kwargs):
+        """Converts the CR2 to FITS then processes image."""
+        # Wait for exposure to complete. Timeout handled by exposure thread.
+        while self.is_exposing:
+            time.sleep(1)
+
+        file_path = metadata['file_path']
+        try:
+            self.logger.debug(f"Converting CR2 -> FITS: {file_path}")
+            fits_path = cr2_utils.cr2_to_fits(file_path, headers=metadata, remove_cr2=False)
+            metadata['file_path'] = fits_path
+            super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
+        except TimeoutError:
+            self.logger.error(f'Error processing exposure for {file_path} on {self}')
 
     def command(self, cmd: Union[List[str], str]):
         """ Run gphoto2 command. """
@@ -219,13 +236,10 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _readout(self, cr2_path=None, info=None):
         """Reads out the image as a CR2 and converts to FITS"""
-        self.logger.debug(f'Finished exposure on {self}. Reading out raw image.')
-        try:
-            self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
-            fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
-            return fits_path
-        except TimeoutError:
-            self.logger.error(f'Error reading image for {cr2_path}')
+        if os.path.exists(cr2_path):
+            self.logger.debug(f'{self} image has been readout.')
+        else:
+            raise FileNotFoundError(f'{cr2_path} does not exist at readout of {self}')
 
     def _do_process_exposure(self, file_path, info):
         """
