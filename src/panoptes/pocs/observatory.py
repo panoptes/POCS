@@ -439,10 +439,23 @@ class Observatory(PanBase):
                 raise error.PanError(f'No information in image metadata, unable to process:  {e!r}')
 
             field_name = metadata.get('field_name', '')
-            status = metadata.get('status', 'processing')
 
-            if status == 'complete':
+            if metadata.get('status') == 'complete':
                 self.logger.debug(f'{image_id} has already been processed, skipping')
+                return
+
+            if compress_fits or self.get_config('observations.compress_fits', default=False):
+                self.logger.debug(f'Compressing {file_path=!r}')
+                compressed_file_path = fits_utils.fpack(file_path)
+                exposure.path = Path(compressed_file_path)
+                metadata['file_path'] = compressed_file_path
+                self.logger.debug(f'Compressed {compressed_file_path}')
+
+            if record_observations or self.get_config('observations.record_observations',
+                                                      default=False):
+                self.logger.debug(f"Adding current observation to db: {image_id}")
+                metadata['status'] = 'complete'
+                self.db.insert_current('observations', metadata)
 
             if make_pretty_images or self.get_config('observations.make_pretty_images',
                                                      default=False):
@@ -464,24 +477,10 @@ class Observatory(PanBase):
                 except Exception as e:  # pragma: no cover
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-            if compress_fits or self.get_config('observations.compress_fits', default=False):
-                self.logger.debug(f'Compressing {file_path=!r}')
-                compressed_file_path = fits_utils.fpack(file_path)
-                exposure.path = Path(compressed_file_path)
-                metadata['file_path'] = compressed_file_path
-                self.logger.debug(f'Compressed {compressed_file_path}')
-
             if upload_image_immediately or self.get_config('observations.upload_image_immediately',
                                                            default=False):
                 self.logger.debug(f"Uploading current observation: {image_id}")
-                metadata['status'] = 'upload'
                 self.upload_exposure(exposure_info=exposure)
-
-            if record_observations or self.get_config('observations.record_observations',
-                                                      default=False):
-                self.logger.debug(f"Adding current observation to db: {image_id}")
-                metadata['status'] = 'complete'
-                self.db.insert_current('observations', metadata)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
