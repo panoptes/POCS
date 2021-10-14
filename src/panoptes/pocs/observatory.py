@@ -435,10 +435,11 @@ class Observatory(PanBase):
                 seq_id = metadata['sequence_id']
                 file_path = metadata['file_path']
                 exptime = metadata['exptime']
-                field_name = metadata['field_name']
-                status = metadata['status']
-            except KeyError:
-                raise error.PanError('No information in image metadata, unable to process')
+            except KeyError as e:
+                raise error.PanError(f'No information in image metadata, unable to process:  {e!r}')
+
+            field_name = metadata.get('field_name', '')
+            status = metadata.get('status', 'processing')
 
             if status == 'complete':
                 self.logger.debug(f'{image_id} has already been processed, skipping')
