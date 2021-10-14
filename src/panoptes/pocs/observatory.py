@@ -1,5 +1,4 @@
 import os
-import subprocess
 from collections import OrderedDict
 from datetime import datetime
 from multiprocessing import Process
@@ -140,7 +139,7 @@ class Observatory(PanBase):
         self._primary_camera = cam
 
     @property
-    def current_observation(self) -> Observation:
+    def current_observation(self) -> Optional[Observation]:
         if self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot get current observation.')
             return None
@@ -292,8 +291,8 @@ class Observatory(PanBase):
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
-                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now,
-                                                                                         target_coords)
+                    target_ha = self.observer.target_hour_angle(now, target_coords)
+                    status['mount']['mount_target_ha'] = target_ha
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -306,8 +305,8 @@ class Observatory(PanBase):
         try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status
-                status['observation']['field_ha'] = self.observer.target_hour_angle(now,
-                                                                                    self.current_observation.field)
+                field = self.current_observation.field
+                status['observation']['field_ha'] = self.observer.target_hour_angle(now, field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
 
@@ -643,7 +642,7 @@ class Observatory(PanBase):
         # Explicitly convert EQUINOX to float
         try:
             equinox = float(headers['equinox'].replace('J', ''))
-        except BaseException:
+        except Exception:
             equinox = 2000.  # We assume J2000
 
         headers['equinox'] = equinox

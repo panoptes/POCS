@@ -5,7 +5,6 @@ import time
 from abc import ABCMeta
 from abc import abstractmethod
 from contextlib import suppress
-from multiprocessing import Process
 from pathlib import Path
 
 import astropy.units as u
@@ -433,12 +432,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.pointing_images[image_id] = Path(file_path)
 
         # Add most recent exposure to list
-        exposure = Exposure(
-            image_id=str(image_id),
-            path=Path(file_path),
-            metadata=metadata,
-            is_primary=bool(self.is_primary),
-        )
+        exposure = Exposure(image_id=str(image_id),
+                            path=Path(file_path),
+                            metadata=metadata,
+                            is_primary=bool(self.is_primary))
         observation.add_to_exposure_list(cam_name=self.name, exposure=exposure)
 
         # Process the exposure once readout is complete
@@ -765,7 +762,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def _readout(self, filename=None, **kwargs):
+    def _readout(self, *args, **kwargs):
         """Performs the camera-specific readout after exposure.
 
         This method is called from the `_poll_exposure` private method and is responsible
@@ -868,7 +865,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 except Exception as e:
                     self.logger.error(f'Error moving filterwheel on {self} to'
                                       f' {observation.filter_name}: {e!r}')
-                    raise (e)
+                    raise e
 
             elif not observation.dark:
                 self.logger.warning(f'Filter {observation.filter_name} requested by'
@@ -1033,9 +1030,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     f"subcomponent={subcomponent!r} is a dict but has model={model!r} keyword, "
                     f"trying to create a base_class={base_class!r} instance")
                 base_class = load_module(model)
-            except (KeyError, error.NotFound) as err:
-                raise error.NotFound(
-                    f"Can't create a class_path={class_path!r} from subcomponent={subcomponent!r}")
+            except (KeyError, error.NotFound) as e:
+                raise error.NotFound(f"Can't create a {class_path=!r} from {subcomponent=!r} {e!r}")
 
             self.logger.debug(f'Creating the base_class_name={base_class_name!r} object from dict')
 
