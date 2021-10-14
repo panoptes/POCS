@@ -449,13 +449,14 @@ class Observatory(PanBase):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                    self.logger.debug(f"Making pretty image for file_path={file_path!r}")
+                    self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
                     if metadata['is_primary']:
                         # TODO This should be in the config somewhere.
                         link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
-                    pretty_process = Process(target=img_utils.make_pretty_image,
+                    pretty_process = Process(name=f'PrettyImageProcess-{image_id}',
+                                             target=img_utils.make_pretty_image,
                                              args=(file_path,),
                                              kwargs=dict(title=image_title,
                                                          link_path=str(link_path)))
@@ -464,7 +465,7 @@ class Observatory(PanBase):
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
             if compress_fits or self.get_config('observations.compress_fits', default=False):
-                self.logger.debug(f'Compressing file_path={file_path!r}')
+                self.logger.debug(f'Compressing {file_path=!r}')
                 compressed_file_path = fits_utils.fpack(file_path)
                 exposure.path = Path(compressed_file_path)
                 metadata['file_path'] = compressed_file_path
@@ -542,7 +543,8 @@ class Observatory(PanBase):
                                                          self.get_config('pan_id'))
 
         # Create a separate process for the upload.
-        upload_process = Process(target=upload_image,
+        upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
+                                 target=upload_image,
                                  kwargs=dict(file_path=image_path,
                                              bucket_path=bucket_path,
                                              bucket_name=bucket_name))
