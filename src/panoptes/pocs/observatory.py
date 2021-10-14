@@ -524,16 +524,17 @@ class Observatory(PanBase):
         """Uploads the most recent image from the current observation."""
         bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
 
-        for cam_name, exposure_info in self.current_observation.exposure_list.items():
+        for cam_name in self.cameras.keys():
             # Get the most recent exposure for the camera.
-            image_id, image_path = exposure_info[-1]
+            exposure_info = self.current_observation.exposure_list[cam_name][-1]
+            image_path = exposure_info.path
+            self.logger.debug(f'Preparing {image_path} for upload')
 
             # If file doesn't exist, see if a compressed version does.
             if not image_path.exists():
                 compressed_image_path = image_path.with_suffix(image_path.suffix + '.fz')
                 if compressed_image_path.exists():
-                    self.logger.debug(
-                        f'Uploading compressed version of file {compressed_image_path}')
+                    self.logger.debug(f'Uploading compressed file {compressed_image_path}')
                     image_path = compressed_image_path
 
             if not image_path.exists():
