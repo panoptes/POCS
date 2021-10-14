@@ -427,7 +427,9 @@ class Observatory(PanBase):
             upload_image_immediately (bool or None): If images should be uploaded (in a separate
                 process).
         """
-        for cam_name, exposure in self.current_observation.exposure_list.items():
+        for cam_name in self.cameras.keys():
+            exposure = self.current_observation.exposure_list[cam_name][-1]
+            self.logger.debug(f'Processing observation with {exposure=!r}')
             metadata = exposure.metadata
             try:
                 image_id = metadata['image_id']
@@ -463,17 +465,17 @@ class Observatory(PanBase):
                 metadata['file_path'] = compressed_file_path
                 self.logger.debug(f'Compressed {compressed_file_path}')
 
-            if record_observations or self.get_config('observations.record_observations',
-                                                      default=False):
-                self.logger.debug(f"Adding current observation to db: {image_id}")
-                metadata['status'] = 'complete'
-                self.db.insert_current('observations', metadata)
-
             if upload_image_immediately or self.get_config('observations.upload_image_immediately',
                                                            default=False):
                 self.logger.debug(f"Uploading current observation: {image_id}")
                 metadata['status'] = 'upload'
                 self.upload_recent()
+
+            if record_observations or self.get_config('observations.record_observations',
+                                                      default=False):
+                self.logger.debug(f"Adding current observation to db: {image_id}")
+                metadata['status'] = 'complete'
+                self.db.insert_current('observations', metadata)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
