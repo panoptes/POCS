@@ -63,6 +63,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         while self.is_exposing:
             time.sleep(1)
 
+        self.logger.debug(f'Processing Canon DSLR exposure with {metadata=!r}')
         file_path = metadata['file_path']
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {file_path}")
@@ -233,20 +234,6 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             properties = properties_list
 
         return properties
-
-    def _readout(self, cr2_path=None, info=None):
-        """Reads out the image as a CR2 and converts to FITS"""
-        if os.path.exists(cr2_path):
-            self.logger.debug(f'{self} image has been readout.')
-        else:
-            raise FileNotFoundError(f'{cr2_path} does not exist at readout of {self}')
-
-    def _do_process_exposure(self, file_path, info):
-        """
-        Add FITS headers from info the same as images.cr2_to_fits()
-        """
-        file_path = file_path.replace('.cr2', '.fits')
-        return super()._do_process_exposure(file_path, info)
 
     def _set_target_temperature(self, target):
         return None
