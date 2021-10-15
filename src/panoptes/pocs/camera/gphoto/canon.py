@@ -135,6 +135,7 @@ class Camera(AbstractGPhotoCamera):
         If the given seconds does not match a set shutterspeed, the 'bulb' setting
         is returned.
         """
+        seconds = get_quantity_value(seconds, unit='second')
         # TODO derive these from `load_properties`.
         # The index corresponds to what gphoto2 expects.
         shutter_speeds = {
