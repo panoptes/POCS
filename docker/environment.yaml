@@ -3,6 +3,7 @@ channels:
 dependencies:
   - astroplan
   - fastapi
+  - google-cloud-firestore
   - matplotlib-base
   - numpy
   - pandas
