@@ -27,6 +27,7 @@ class PocsDB(PanFileDB):
             doc_ref = self.firestore_db.document(fs_key)
             doc_ref.set(metadata, merge=True)
 
+        if store_permanently:
             obj_id = self.insert(collection, obj)
 
         return obj_id
@@ -40,7 +41,6 @@ class PocsDB(PanFileDB):
             fs_key = f'units/{self.unit_id}/metadata/{collection}/records'
             metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
 
-            col_ref = self.firestore_db.collection(fs_key)
-            doc_ts, obj_id = col_ref.add(metadata)
+            doc_ts, obj_id = self.firestore_db.collection(fs_key).add(metadata)
 
         return obj_id
