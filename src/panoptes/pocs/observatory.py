@@ -480,7 +480,10 @@ class Observatory(PanBase):
             if upload_image_immediately or self.get_config('observations.upload_image_immediately',
                                                            default=False):
                 self.logger.debug(f"Uploading current observation: {image_id}")
-                self.upload_exposure(exposure_info=exposure)
+                try:
+                    self.upload_exposure(exposure_info=exposure)
+                except Exception as e:
+                    self.logger.warning(f'Problem uploading exposure: {e!r}')
 
     def analyze_recent(self):
         """Analyze the most recent exposure

@@ -2,6 +2,8 @@ from google.cloud import firestore
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database.file import PanFileDB
 
+from loguru import logger
+
 
 class PocsDB(PanFileDB):
     """PanFileDB wrapper that also writes to Firestore."""
@@ -24,8 +26,11 @@ class PocsDB(PanFileDB):
             fs_key = f'units/{self.unit_id}/metadata/{collection}'
             metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
 
-            doc_ref = self.firestore_db.document(fs_key)
-            doc_ref.set(metadata, merge=True)
+            try:
+                doc_ref = self.firestore_db.document(fs_key)
+                doc_ref.set(metadata, merge=True)
+            except Exception as e:
+                logger.warning(f'Problem inserting firestore record: {e!r}')
 
         if store_permanently:
             obj_id = self.insert(collection, obj)
@@ -38,9 +43,13 @@ class PocsDB(PanFileDB):
 
         if get_config('panoptes_network.use_firestore'):
             # Add a document.
-            fs_key = f'units/{self.unit_id}/metadata/{collection}/records'
-            metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
+            try:
+                fs_key = f'units/{self.unit_id}/metadata/{collection}/records'
+                metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP,
+                                **obj)
 
-            doc_ts, obj_id = self.firestore_db.collection(fs_key).add(metadata)
+                doc_ts, obj_id = self.firestore_db.collection(fs_key).add(metadata)
+            except Exception as e:
+                logger.warning(f'Problem inserting firestore record: {e!r}')
 
         return obj_id
