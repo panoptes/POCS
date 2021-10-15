@@ -171,6 +171,7 @@ observations:
 ################################################################################
 panoptes_network:
   image_storage: False
+  use_firestore: False
   service_account_key: # Location of JSON account key
   project_id: panoptes-exp
   buckets:
@@ -181,8 +182,8 @@ panoptes_network:
 # they can be switched at run-time if needed.
 #######################################################################
 pocs:
-  INITIALIZED: false
-  INTERRUPTED: false
-  KEEP_RUNNING: true
-  DO_STATES: true
-  RUN_ONCE: false
+  INITIALIZED: False
+  INTERRUPTED: False
+  KEEP_RUNNING: True
+  DO_STATES: True
+  RUN_ONCE: False

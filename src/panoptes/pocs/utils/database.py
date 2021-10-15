@@ -17,25 +17,29 @@ class PocsDB(PanFileDB):
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Inserts into the current collection locally and on firestore db."""
-        super().insert_current(collection, obj, store_permanently=store_permanently)
+        obj_id = super().insert_current(collection, obj, store_permanently=store_permanently)
 
-        obj['received_time'] = firestore.SERVER_TIMESTAMP
+        if get_config('panoptes_network.use_firestore'):
+            obj['received_time'] = firestore.SERVER_TIMESTAMP
 
-        # Update the "current" collection.
-        current_doc = self.firestore_db.document(f'/units/{self.unit_id}/current/{collection}')
-        current_doc.set(obj)
+            # Update the "current" collection.
+            current_doc = self.firestore_db.document(f'/units/{self.unit_id}/current/{collection}')
+            current_doc.set(obj)
 
-        return self.insert(collection, obj)
+            obj_id = self.insert(collection, obj)
+
+        return obj_id
 
     def insert(self, collection, obj):
         """Insert document into local file and firestore db."""
-        super().insert(collection, obj)
+        obj_id = super().insert(collection, obj)
 
-        if 'received_time' not in obj:
-            obj['received_time'] = firestore.SERVER_TIMESTAMP
+        if get_config('panoptes_network.use_firestore'):
+            if 'received_time' not in obj:
+                obj['received_time'] = firestore.SERVER_TIMESTAMP
 
-        # Add a document.
-        col = self.firestore_db.collection(f'/units/{self.unit_id}/{collection}')
-        doc_ts, doc_id = col.add(obj)
+            # Add a document.
+            col = self.firestore_db.collection(f'/units/{self.unit_id}/{collection}')
+            doc_ts, obj_id = col.add(obj)
 
-        return doc_id
+        return obj_id
