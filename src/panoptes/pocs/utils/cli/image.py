@@ -17,9 +17,6 @@ def upload_image(file_path: Path, bucket_path: str,
     """Uploads an image to google storage bucket."""
     storage_client: storage.Client = storage_client or storage.Client()
     bucket: storage.Bucket = storage_client.bucket(bucket_name)
-    if not bucket.exists():
-        typer.secho(f'Bucket does not exist: {bucket_name}', fg='red')
-        return
 
     blob = bucket.blob(bucket_path)
     typer.secho(f'Uploading {file_path} to {bucket_name}/{bucket_path}')
