@@ -23,7 +23,7 @@ class PocsDB(PanFileDB):
             obj['received_time'] = firestore.SERVER_TIMESTAMP
 
             # Update the "current" collection.
-            current_doc = self.firestore_db.document(f'/units/{self.unit_id}/current/{collection}')
+            current_doc = self.firestore_db.document(f'units/{self.unit_id}/current/{collection}')
             current_doc.set(obj)
 
             obj_id = self.insert(collection, obj)
@@ -39,7 +39,7 @@ class PocsDB(PanFileDB):
                 obj['received_time'] = firestore.SERVER_TIMESTAMP
 
             # Add a document.
-            col = self.firestore_db.collection(f'/units/{self.unit_id}/metadata/')
+            col = self.firestore_db.collection(f'units/{self.unit_id}/metadata')
             doc_ts, obj_id = col.add(obj, document_id=collection)
 
         return obj_id
