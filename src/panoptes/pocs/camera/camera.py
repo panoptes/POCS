@@ -787,6 +787,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
         timer = CountdownTimer(duration=timer_duration, name=f'{self.name}PollExposure')
+        timer.sleep(max_sleep=exposure_time)
         try:
             while self.is_exposing:
                 if timer.expired():
