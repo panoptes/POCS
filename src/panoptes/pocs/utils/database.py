@@ -21,9 +21,11 @@ class PocsDB(PanFileDB):
 
         if get_config('panoptes_network.use_firestore'):
             # Update the "current" collection.
-            current_doc = self.firestore_db.document(f'units/{self.unit_id}/current/{collection}')
+            fs_key = f'units/{self.unit_id}/metadata/{collection}'
             metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
-            current_doc.set(metadata)
+
+            doc_ref = self.firestore_db.document(fs_key)
+            doc_ref.set(metadata, merge=True)
 
             obj_id = self.insert(collection, obj)
 
@@ -35,8 +37,10 @@ class PocsDB(PanFileDB):
 
         if get_config('panoptes_network.use_firestore'):
             # Add a document.
-            col = self.firestore_db.collection(f'units/{self.unit_id}/metadata')
+            fs_key = f'units/{self.unit_id}/metadata/{collection}/records'
             metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
-            doc_ts, obj_id = col.add(metadata)
+
+            col_ref = self.firestore_db.collection(fs_key)
+            doc_ts, obj_id = col_ref.add(metadata)
 
         return obj_id
