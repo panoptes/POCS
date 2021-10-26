@@ -104,6 +104,7 @@ class Camera(AbstractGPhotoCamera):
             f'--set-config', f'iso={iso}',
             f'--filename', f'{filename}',
             f'--set-config-index', f'shutterspeed={shutterspeed_idx}',
+            f'--wait-event=1s',
         ]
 
         if shutterspeed_idx == 0:
@@ -112,7 +113,7 @@ class Camera(AbstractGPhotoCamera):
                 f'--set-config-index', 'eosremoterelease=2',
                 f'--wait-event={int(seconds):d}s',
                 f'--set-config-index', 'eosremoterelease=4',
-                f'--wait-event-and-download=1s',
+                f'--wait-event-and-download=2s',
             ])
         else:
             # Known shutterspeed value.
