@@ -1,6 +1,7 @@
 import os
 
 from astropy import units as u
+from astropy.utils.iers import Conf as iers_conf
 
 from panoptes.pocs.scheduler.constraint import Altitude
 from panoptes.pocs.scheduler.constraint import Duration
@@ -16,10 +17,15 @@ from panoptes.utils.config.client import get_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def create_scheduler_from_config(observer=None, *args, **kwargs):
+def create_scheduler_from_config(observer=None, iers_url=None, *args, **kwargs):
     """ Sets up the scheduler that will be used by the observatory """
 
     logger = get_logger()
+
+    iers_url = iers_url or get_config('scheduler.iers_url')
+    if iers_url is not None:
+        logger.debug(f'Getting IERS data at {iers_url=}')
+        iers_conf.iers_auto_url.set(iers_url)
 
     scheduler_config = get_config('scheduler', default=None)
     logger.info(f'scheduler_config: {scheduler_config!r}')
