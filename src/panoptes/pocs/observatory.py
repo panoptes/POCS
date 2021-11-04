@@ -450,7 +450,7 @@ class Observatory(PanBase):
                 self.logger.debug(f'Plate solving {file_path=}')
                 try:
                     metadata = fits_utils.get_solve_field(file_path)
-                    file_path = metadata['file_path']
+                    file_path = metadata['solved_fits_file']
                     self.logger.debug(f'Solved {file_path}, replacing metadata.')
                 except Exception as e:
                     self.logger.warning(f'Problem solving {file_path=}: {e!r}')
