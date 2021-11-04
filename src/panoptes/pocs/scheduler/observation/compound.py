@@ -14,7 +14,7 @@ class Observation(BaseObservation):
         self._exptimes = listify(kwargs['exptime'])
 
         # Use the first exposure time to set up observation.
-        kwargs.setdefault('exptime', self._exptimes[0])
+        kwargs['exptime'] = self._exptimes[0]
         super(Observation, self).__init__(*args, **kwargs)
 
         self._min_duration = np.sum([self._exptimes[i] for i in range(self.min_nexp)])
