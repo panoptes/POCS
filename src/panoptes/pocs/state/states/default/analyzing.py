@@ -10,6 +10,7 @@ def on_enter(event_data):
     try:
 
         if pocs.get_config('mount.settings.update_tracking', False):
+            pocs.logger.debug('Analyzing recent image from analyzing state')
             pocs.observatory.analyze_recent()
 
         if pocs.get_config('actions.FORCE_RESCHEDULE', False):

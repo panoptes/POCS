@@ -115,21 +115,21 @@ class PanStateMachine(Machine):
             # Before moving to next state, wait for required horizon if necessary
             while True:
                 # If not safe, go to park
-                self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
+                is_safe = self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
 
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe
                 # So we need to check if the new state is always safe
-                if self.get_state(self.next_state).is_always_safe:
+                if is_safe and self.get_state(self.next_state).is_always_safe:
                     break
 
                 # Check the horizon here because next state may have changed in loop
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-                if self.is_dark(horizon=required_horizon):
+                if is_safe and self.is_dark(horizon=required_horizon):
                     break
-                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")
 
                 # Sleep before checking again
+                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")                
                 self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
@@ -170,6 +170,7 @@ class PanStateMachine(Machine):
 
             # We started in the sleeping state, so if we are back here we have done a full loop.
             if self.state == 'sleeping':
+                self.logger.debug('Complete loop through state machine, decrementing retry attemps')
                 self._obs_run_retries -= 1
                 if run_once:
                     self.stop_states()
@@ -196,10 +197,10 @@ class PanStateMachine(Machine):
         transition_method = getattr(self, transition_method_name, self.park)
         self.logger.debug(f'{transition_method_name}: {self.state} → {self.next_state}')
 
-        # Do transition.
+        # Do transition logic.
         state_changed = transition_method()
         if state_changed:
-            self.logger.success(f'Successful transition to {self.state}')
+            self.logger.success(f'Finished with {self.state}')
             self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
