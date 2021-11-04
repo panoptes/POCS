@@ -13,6 +13,7 @@ from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BaseScheduler(PanBase):
@@ -198,45 +199,20 @@ class BaseScheduler(PanBase):
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
-    def add_observation(self, observation_config,
-                        field_class="panoptes.pocs.scheduler.field.Field",
-                        observation_class="panoptes.pocs.scheduler.observation.base.Observation"):
+    def add_observation(self, observation_config, **kwargs):
         """Adds an `Observation` to the scheduler.
+
         Args:
-            observation_config (dict): Configuration for `Field` and `Observation`.
-            field_class (str, optional): The full name of the python class to be used as
-                default for the observation's Field. This can be overridden by specifying the "type"
-                item under the observation_config's "field" key.
-                Default: `panoptes.pocs.scheduler.field.Field`.
-            observation_class (str, optional): The full name of the python class to be used
-                as default for the observation object. This can be overridden by specifying the
-                "type" item under the observation_config's "observation" key.
-                Default: `panoptes.pocs.scheduler.observation.base.Observation`.
+            observation_config (dict): Configuration dict for `Field` and `Observation`.
         """
-        observation_config = observation_config.copy()
-        self.logger.debug(f"Adding {observation_config=!r} to scheduler.")
-
-        field_config = observation_config.get("field", {})
-        field_type_name = field_config.pop("type", field_class)
-
-        obs_config = observation_config.get("observation", {})
-        obs_type_name = obs_config.pop("type", observation_class)
-
         try:
-            # Make the field
-            self.logger.debug(f"Creating {field_type_name} field for {observation_config!r}")
-            field = load_module(field_type_name)(**field_config)
-            self.logger.debug(f"Created {field.name=!r}")
-
-            # Make the observation
-            self.logger.debug(f"Creating {obs_type_name} observation for {observation_config!r}")
-            obs = load_module(obs_type_name)(field=field, **obs_config)
-            self.logger.debug(f"Observation created for {field.name=!r}")
+            obs = Observation.from_dict(observation_config, **kwargs)
+            self.logger.debug(f"Observation created: {obs!r}")
 
             # Add observation to scheduler.
-            if field.name in self._observations:
-                self.logger.debug(f"Overriding existing entry for {field.name=!r}")
-            self._observations[field.name] = obs
+            if obs.name in self._observations:
+                self.logger.debug(f"Overriding existing entry for {obs.name=!r}")
+            self._observations[obs.name] = obs
             self.logger.debug(f"{obs!r} added to {self}.")
 
         except Exception as e:
