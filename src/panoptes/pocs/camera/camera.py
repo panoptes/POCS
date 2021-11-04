@@ -18,7 +18,7 @@ from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
-from panoptes.pocs.scheduler.observation.base import Exposure
+from panoptes.pocs.scheduler.observation.base import Exposure, Observation
 
 
 class AbstractCamera(PanBase, metaclass=ABCMeta):
@@ -416,13 +416,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._is_observing_event.set()
 
         # Setup the observation
-        exptime, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                         headers,
-                                                                         filename,
-                                                                         **kwargs)
-
-        # pop exptime from kwarg as its now in exptime
-        exptime = kwargs.pop('exptime', observation.exptime.value)
+        metadata = self._setup_observation(observation, headers, filename, **kwargs)
+        exptime = metadata['exptime']
+        file_path = metadata['file_path']
+        image_id = metadata['image_id']
 
         # start the exposure
         self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
@@ -852,7 +849,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return header
 
-    def _setup_observation(self, observation, headers, filename, **kwargs):
+    def _setup_observation(self, observation: Observation, headers, filename, **kwargs):
         headers = headers or None
 
         # Move the filterwheel if necessary
@@ -884,13 +881,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        self.logger.debug(
-            f'Setting image_dir={observation.directory}/{self.uid}/{observation.seq_time}')
-        image_dir = os.path.join(
-            observation.directory,
-            self.uid,
-            observation.seq_time
-        )
+        image_dir = os.path.join(observation.directory, self.uid, observation.seq_time)
+        self.logger.debug(f'Setting image_dir={image_dir}')
 
         # Get full file path
         if filename is None:
@@ -914,7 +906,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         sequence_id = f'{unit_id}_{self.uid}_{observation.seq_time}'
         image_id = f'{unit_id}_{self.uid}_{start_time}'
 
-        self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
+        self.logger.debug(f"{sequence_id=} {image_id=}")
 
         # The exptime header data is set as part of observation but can
         # be overridden by passed parameter so update here.
@@ -931,7 +923,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'is_primary': self.is_primary,
             'sequence_id': sequence_id,
             'start_time': start_time,
-            'exptime': exptime
+            'exptime': exptime,
+            'current_exp_num': observation.current_exp_num
         }
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
@@ -942,7 +935,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f'Observation: {exptime=!r} {file_path=!r} {image_id=!r} {metadata=!r}')
 
-        return exptime, file_path, image_id, metadata
+        return metadata
 
     def _do_process_exposure(self, file_path, metadata):
         """

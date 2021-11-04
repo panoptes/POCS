@@ -20,12 +20,18 @@ class Observation(BaseObservation):
         self._min_duration = np.sum([self._exptimes[i] for i in range(self.min_nexp)])
         self._set_duration = np.sum([self._exptimes[i] for i in range(self.exp_set_size)])
 
+        self.is_compound = True
+
     @property
     def exptime(self):
         """ Return current exposure time as a u.Quantity. """
         current_exptime_index = self.current_exp_num % len(self._exptimes)
-        exptime = self._exptimes[self.current_exp_num]
+        exptime = self._exptimes[current_exptime_index]
         return get_quantity_value(exptime, u.second) * u.second
+
+    @property
+    def exptimes(self):
+        return self._exptimes
 
     def __str__(self):
         return f"{self.field}: {self.exptime} [{self._exptimes!r}]" \

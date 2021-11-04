@@ -146,6 +146,11 @@ class Observation(PanBase):
         self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property
+    def exptimes(self):
+        """Exposure time as a list."""
+        return [self.exptime]
+
+    @property
     def minimum_duration(self):
         """ Minimum amount of time to complete the observation """
         return self._min_duration
