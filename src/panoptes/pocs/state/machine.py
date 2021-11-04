@@ -129,7 +129,7 @@ class PanStateMachine(Machine):
                     break
 
                 # Sleep before checking again
-                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")                
+                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")
                 self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
@@ -170,7 +170,7 @@ class PanStateMachine(Machine):
 
             # We started in the sleeping state, so if we are back here we have done a full loop.
             if self.state == 'sleeping':
-                self.logger.debug('Complete loop through state machine, decrementing retry attemps')
+                self.logger.debug('State machine loop complete, decrementing retry attempts')
                 self._obs_run_retries -= 1
                 if run_once:
                     self.stop_states()
