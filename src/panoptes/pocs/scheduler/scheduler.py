@@ -19,7 +19,7 @@ class BaseScheduler(PanBase):
 
     def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
                  **kwargs):
-        """Loads `~pocs.scheduler.field.Field`s from a field
+        """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
             `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
@@ -233,7 +233,7 @@ class BaseScheduler(PanBase):
             obs = load_module(obs_type_name)(field=field, **obs_config)
             self.logger.debug(f"Observation created for {field.name=!r}")
 
-            # Add observation to scheduler
+            # Add observation to scheduler.
             if field.name in self._observations:
                 self.logger.debug(f"Overriding existing entry for {field.name=!r}")
             self._observations[field.name] = obs
