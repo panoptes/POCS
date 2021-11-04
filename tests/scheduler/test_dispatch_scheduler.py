@@ -145,7 +145,7 @@ def test_get_observation_reread(field_list,
             "observation": {'priority': 5000}}]))
 
     # Get observation but reread file first
-    best = scheduler.get_observation(time=time, reread_fields_file=True)
+    best = scheduler.get_observation(time=time, read_file=True)
     assert best[0] != 'HD 189733'
 
 
