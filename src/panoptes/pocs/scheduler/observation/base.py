@@ -183,9 +183,8 @@ class Observation(PanBase):
             str: Full path to base directory.
         """
         if self._directory is None:
-            self.logger.warning(
-                f'Setting observation directory to {self._image_dir}/{self.field.field_name}')
             self._directory = os.path.join(self._image_dir, self.field.field_name)
+            self.logger.warning(f'Observation directory set to {self._directory}')
 
         return self._directory
 
