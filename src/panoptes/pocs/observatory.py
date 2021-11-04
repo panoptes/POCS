@@ -449,6 +449,7 @@ class Observatory(PanBase):
             if plate_solve or self.get_config('observations.plate_solve', default=False):
                 self.logger.debug(f'Plate solving {file_path=}')
                 metadata = fits_utils.get_solve_field(file_path)
+                file_path = metadata['file_path']
                 self.logger.debug(f'Solved {file_path}, replacing metadata.')
 
             if compress_fits or self.get_config('observations.compress_fits', default=False):
