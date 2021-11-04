@@ -67,4 +67,4 @@ RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
     sudo rm -rf /var/lib/apt/lists/*
 
 # TODO replace with pocs-cli.
-CMD [ "ipython" ]
+CMD [ "ipython -i scripts/pocs-ipython-startup.py" ]

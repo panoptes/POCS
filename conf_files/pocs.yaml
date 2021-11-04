@@ -158,6 +158,7 @@ observations:
   record_observations: True
   make_pretty_images: True
   keep_jpgs: True
+  plate_solve: True
   upload_image_immediately: True
 
 ######################## Google Network ########################################

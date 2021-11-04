@@ -410,6 +410,7 @@ class Observatory(PanBase):
                             compress_fits: Optional[bool] = None,
                             record_observations: Optional[bool] = None,
                             make_pretty_images: Optional[bool] = None,
+                            plate_solve: Optional[bool] = None,
                             upload_image_immediately: Optional[bool] = None,
                             ):
         """Process an individual observation.
@@ -423,6 +424,7 @@ class Observatory(PanBase):
             make_pretty_images (bool or None): If should make a jpg from raw image.
                 If None (default), checks the `observations.make_pretty_images`
                 config-server key.
+            plate_solve (bool or None): If images should be plate solved, default None for config.
             upload_image_immediately (bool or None): If images should be uploaded (in a separate
                 process).
         """
@@ -443,6 +445,11 @@ class Observatory(PanBase):
             if metadata.get('status') == 'complete':
                 self.logger.debug(f'{image_id} has already been processed, skipping')
                 return
+
+            if plate_solve or self.get_config('observations.plate_solve', default=False):
+                self.logger.debug(f'Plate solving {file_path=}')
+                metadata = fits_utils.get_solve_field(file_path)
+                self.logger.debug(f'Solved {file_path}, replacing metadata.')
 
             if compress_fits or self.get_config('observations.compress_fits', default=False):
                 self.logger.debug(f'Compressing {file_path=!r}')
