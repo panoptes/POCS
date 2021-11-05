@@ -30,18 +30,17 @@ RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo mkdir "${POCS}" && sudo chown -R "${userid}:${userid}" "${POCS}"
 
 COPY docker/environment.yaml .
-RUN conda env update -n base -f environment.yaml
+RUN mamba env update -n base -f environment.yaml && \
+    mamba clean -tipy --force-pkgs-dirs
 
 WORKDIR "${POCS}"
 COPY --chown="${userid}:${userid}" . .
-RUN pip install -e ".${pip_extras}" && \
-    # panoptes-utils from dev.
-    pip install --no-cache-dir "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config]" && \
+
+RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
+    pip install --no-cache-dir -e ".${pip_extras}" && \
     # Cleanup
-    pip cache purge && \
-    conda clean -tipy && \
     sudo apt-get autoremove --purge --yes \
-        gcc pkg-config git && \
+        gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
