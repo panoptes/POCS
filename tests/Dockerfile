@@ -10,15 +10,13 @@ ENV PYTHONUNBUFFERED 1
 ENV POCS "/panoptes-pocs"
 
 ARG userid=1000
-ARG pip_extras="[focuser,google,testing]"
+ARG pip_extras="[google,testing]"
 
 USER "${userid}"
 
 # Set up some common directories
 WORKDIR /tmp
-RUN echo "Building from ${image_url}:${image_tag}" && \
-    sudo apt-get update && \
-    sudo apt-get -y full-upgrade && \
+RUN sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends gphoto2
 
 WORKDIR "${POCS}"
