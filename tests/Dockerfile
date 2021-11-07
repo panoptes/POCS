@@ -8,25 +8,20 @@ ENV SHELL /bin/bash
 ENV PYTHONUNBUFFERED 1
 
 ENV POCS "/panoptes-pocs"
+ARG app_dir=/panoptes-pocs
+ENV APP_DIR $app_dir
 
 ARG userid=1000
 ARG pip_extras="[google,testing]"
 
+WORKDIR "${APP_DIR}"
 USER "${userid}"
 
-# Set up some common directories
-WORKDIR /tmp
+# Set up some common directories.
 RUN sudo apt-get update && \
-    sudo apt-get install -y --no-install-recommends gphoto2
-
-WORKDIR "${POCS}"
-COPY --chown="${userid}:${userid}" . .
-
-RUN echo "Installing module with ${pip_extras}" && \
-    pip install -e ".${pip_extras}" && \
+    sudo apt-get install -y --no-install-recommends gphoto2 && \
     # Cleanup
-    sudo apt-get autoremove --purge --yes \
-        gcc pkg-config && \
+    sudo apt-get autoremove --purge --yes gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
