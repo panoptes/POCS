@@ -19,7 +19,8 @@ USER "${userid}"
 
 # Set up some common directories.
 RUN sudo apt-get update && \
-    sudo apt-get install -y --no-install-recommends gphoto2
+    sudo apt-get install -y --no-install-recommends gphoto2 && \
+    sudo chown -R "${userid}:${userid}" "${APP_DIR}"
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing module with ${pip_extras}" && \
