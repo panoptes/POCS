@@ -1,4 +1,4 @@
-ARG image_url=gcr.io/panoptes-exp/panoptes-pocs
+ARG image_url=gcr.io/panoptes-exp/panoptes-utils
 ARG image_tag=develop
 FROM ${image_url}:${image_tag} AS pocs-base
 
@@ -19,9 +19,14 @@ USER "${userid}"
 
 # Set up some common directories.
 RUN sudo apt-get update && \
-    sudo apt-get install -y --no-install-recommends gphoto2 && \
+    sudo apt-get install -y --no-install-recommends gphoto2
+
+COPY --chown="${userid}:${userid}" . .
+RUN echo "Installing module with ${pip_extras}" && \
+    pip install -e ".${pip_extras}" && \
     # Cleanup
-    sudo apt-get autoremove --purge --yes gcc pkg-config && \
+    sudo apt-get autoremove --purge --yes \
+        gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
