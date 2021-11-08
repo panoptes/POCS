@@ -24,6 +24,6 @@ RUN sudo apt-get update && \
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing module with ${pip_extras}" && \
-    pip install -e ".${pip_extras}"
+    pip install --no-cache-dir ".${pip_extras}"
 
 CMD [ "pytest" ]
