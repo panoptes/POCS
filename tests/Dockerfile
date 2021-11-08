@@ -24,12 +24,6 @@ RUN sudo apt-get update && \
 
 COPY --chown="${userid}:${userid}" . .
 RUN echo "Installing module with ${pip_extras}" && \
-    pip install -e ".${pip_extras}" && \
-    # Cleanup
-    sudo apt-get autoremove --purge --yes \
-        gcc pkg-config && \
-    sudo apt-get autoclean --yes && \
-    sudo apt-get --yes clean && \
-    sudo rm -rf /var/lib/apt/lists/*
+    pip install -e ".${pip_extras}"
 
 CMD [ "pytest" ]
