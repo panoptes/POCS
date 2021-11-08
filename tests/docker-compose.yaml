@@ -19,4 +19,5 @@ services:
     network_mode: host
     command: [ "pytest" ]
     volumes:
-      - "$PWD:/panoptes-pocs/"
+      - "$PWD/logs:/panoptes-pocs/logs"
+      - "$PWD/build:/panoptes-pocs/build"
