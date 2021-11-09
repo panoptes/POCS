@@ -1,7 +1,7 @@
 import os
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from astropy import units as u
 from panoptes.utils.library import load_module
@@ -211,7 +211,7 @@ class Observation(PanBase):
             return 0
 
     @property
-    def first_exposure(self) -> List[Dict[str, Exposure]]:
+    def first_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
         """ Return the first exposure information.
 
         Returns:
@@ -220,7 +220,7 @@ class Observation(PanBase):
         return self.get_exposure(0)
 
     @property
-    def last_exposure(self) -> List[Dict[str, Exposure]]:
+    def last_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
         """ Return the latest exposure information.
 
         Returns:
@@ -228,14 +228,14 @@ class Observation(PanBase):
         """
         return self.get_exposure(number=-1)
 
-    def get_exposure(self, number: int = 0) -> List[Dict[str, Exposure]]:
+    def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
         """Returns the given exposure number."""
         try:
             return [{cam_name: exposure[number]}
                     for cam_name, exposure in
                     self.exposure_list.items()]
         except Exception:
-            return list()
+            return None
 
     @property
     def pointing_image(self):
