@@ -231,11 +231,16 @@ class Observation(PanBase):
     def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
         """Returns the given exposure number."""
         try:
-            return [{cam_name: exposure[number]}
-                    for cam_name, exposure in
-                    self.exposure_list.items()]
+            exposure = [{cam_name: exposure[number]}
+                        for cam_name, exposure in
+                        self.exposure_list.items()]
+            if len(exposure) == 0:
+                exposure = None
+
         except Exception:
-            return None
+            self.logger.debug(f'No exposures available.')
+        finally:
+            return exposure
 
     @property
     def pointing_image(self):
