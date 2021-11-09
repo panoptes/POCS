@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict, defaultdict
+from contextlib import suppress
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -230,12 +231,12 @@ class Observation(PanBase):
 
     def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
         """Returns the given exposure number."""
-        exposure = None
+        exposure = list()
         try:
             if len(self.exposure_list) > 0:
-                exposure = [{cam_name: exposure[number]}
-                            for cam_name, exposure in
-                            self.exposure_list.items()]
+                for cam_name, exposure_list in self.exposure_list.items():
+                    with suppress(IndexError):
+                        exposure.append({cam_name: exposure_list[number]})
         except Exception:
             self.logger.debug(f'No exposures available.')
         finally:
