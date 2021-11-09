@@ -8,12 +8,12 @@ from panoptes.pocs.mount import AbstractMount
 
 class AbstractSerialMount(AbstractMount, ABC):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, location, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
 
         Opens a connection to the serial device, if it is valid.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(location, *args, **kwargs)
 
         # This should be overridden by derived classes.
         self._status_format = re.compile('.*')

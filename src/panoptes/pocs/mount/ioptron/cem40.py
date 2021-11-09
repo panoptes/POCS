@@ -65,9 +65,9 @@ class Mount(AbstractSerialMount):
         and providers some helper methods to convert coordinates.
     """
 
-    def __init__(self, mount_version='0040', *args, **kwargs):
+    def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
-        super(Mount, self).__init__(*args, **kwargs)
+        super(Mount, self).__init__(location, *args, **kwargs)
         self.logger.info('Creating iOptron CEM40 mount')
 
         # Regexp to match the iOptron RA/Dec format
