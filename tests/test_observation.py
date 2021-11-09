@@ -91,8 +91,8 @@ def test_seq_time(field):
 def test_no_exposures(field):
     obs = Observation(field, exptime=17.5 * u.second, min_nexp=27,
                       exp_set_size=9)
-    assert obs.first_exposure is None
-    assert obs.last_exposure is None
+    assert obs.first_exposure is list()
+    assert obs.last_exposure is list()
     assert obs.pointing_image is None
 
 
