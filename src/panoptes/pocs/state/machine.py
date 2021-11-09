@@ -116,6 +116,8 @@ class PanStateMachine(Machine):
             while True:
                 # If not safe, go to park
                 is_safe = self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
+                if self.next_state == 'parking':
+                    break
 
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe
