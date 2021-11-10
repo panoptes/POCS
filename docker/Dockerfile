@@ -13,7 +13,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONUNBUFFERED 1
 
 ARG userid=1000
-ENV USERID $userid
+ENV USERID $USERID
 
 ARG app_dir=/panoptes-pocs
 ENV APP_DIR $app_dir
