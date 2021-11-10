@@ -112,7 +112,7 @@ class PanStateMachine(Machine):
             # BEFORE TRANSITION TO STATE
             self.logger.info(f'Run loop: {self.state!r} -> {self.next_state!r}')
 
-            # Before moving to next state, wait for required horizon if necessary
+            # Before moving to next state, wait for required horizon if necessary.
             while True:
                 # If not safe, go to park
                 is_safe = self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
@@ -120,16 +120,16 @@ class PanStateMachine(Machine):
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe
                 # So we need to check if the new state is always safe
-                if is_safe and self.get_state(self.next_state).is_always_safe:
+                if self.get_state(self.next_state).is_always_safe:
                     break
 
-                # Check the horizon here because next state may have changed in loop
+                # Check the horizon here because next state may have changed in loop.
                 required_horizon = self._horizon_lookup.get(self.next_state, 'observe')
-                if is_safe and self.is_dark(horizon=required_horizon):
+                if self.is_dark(horizon=required_horizon):
                     break
 
-                # Sleep before checking again
-                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")                
+                # Sleep before checking again.
+                self.logger.info(f"Waiting for {required_horizon=!r} for {self.next_state=!r}")
                 self.wait(delay=check_delay)
 
             # TRANSITION TO STATE
@@ -170,7 +170,7 @@ class PanStateMachine(Machine):
 
             # We started in the sleeping state, so if we are back here we have done a full loop.
             if self.state == 'sleeping':
-                self.logger.debug('Complete loop through state machine, decrementing retry attemps')
+                self.logger.debug('State machine loop complete, decrementing retry attempts')
                 self._obs_run_retries -= 1
                 if run_once:
                     self.stop_states()
