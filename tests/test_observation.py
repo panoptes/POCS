@@ -111,12 +111,12 @@ def test_last_exposure_and_reset(field):
                                                    metadata=dict()))
 
     last = obs.last_exposure
-    assert isinstance(last, dict)
+    assert isinstance(last, list)
     assert isinstance(last[0], Exposure)
     assert obs.merit > 0.0
     assert obs.current_exp_num == 5
 
-    assert isinstance(obs.first_exposure, dict)
+    assert isinstance(obs.first_exposure, list)
     assert obs.first_exposure['Cam00'][0]['image_id'] == 'image_0'
     assert obs.first_exposure['Cam00'][0]['path'] == 'full_image_path_0'
 
