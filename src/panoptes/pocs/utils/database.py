@@ -13,7 +13,10 @@ class PocsDB(PanFileDB):
         if self.unit_id is None:
             raise ValueError(f'PocsDB requires a `pan_id` item in the config')
 
-        self.firestore_db = firestore.Client()
+        if get_config('panoptes_network.use_firestore'):
+            self.firestore_db = firestore.Client()
+        else:
+            self.firestore_db = None
 
         super(PocsDB, self).__init__(*args, **kwargs)
 
