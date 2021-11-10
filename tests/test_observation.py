@@ -3,7 +3,7 @@ import pytest
 from astropy import units as u
 
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.scheduler.observation.base import Observation, Exposure
 
 
 @pytest.fixture
@@ -106,25 +106,25 @@ def test_last_exposure_and_reset(field):
     obs.merit = 112.5
 
     for i in range(5):
-        obs.exposure_list[f'image_{i}'] = f'full_image_path_{i}'
+        obs.add_to_exposure_list('Cam00', Exposure(image_id=f'image_{i}',
+                                                   path=f'full_image_path_{i}',
+                                                   metadata=dict()))
 
     last = obs.last_exposure
-    assert isinstance(last, tuple)
+    assert isinstance(last, dict)
+    assert isinstance(last[0], Exposure)
     assert obs.merit > 0.0
     assert obs.current_exp_num == 5
 
-    assert last[0] == 'image_4'
-    assert last[1] == 'full_image_path_4'
-
-    assert isinstance(obs.first_exposure, tuple)
-    assert obs.first_exposure[0] == 'image_0'
-    assert obs.first_exposure[1] == 'full_image_path_0'
+    assert isinstance(obs.first_exposure, dict)
+    assert obs.first_exposure['Cam00'][0]['image_id'] == 'image_0'
+    assert obs.first_exposure['Cam00'][0]['path'] == 'full_image_path_0'
 
     obs.reset()
     status2 = obs.status
 
     assert status2['current_exp'] == 0
     assert status2['merit'] == 0.0
-    assert obs.first_exposure is None
-    assert obs.last_exposure is None
+    assert obs.first_exposure == list()
+    assert obs.last_exposure == list()
     assert obs.seq_time is None
