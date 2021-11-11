@@ -112,7 +112,7 @@ def test_last_exposure_and_reset(field):
 
     last = obs.last_exposure
     assert isinstance(last, list)
-    assert isinstance(last[0], Exposure)
+    assert isinstance(last[0]['Cam00'], Exposure)
     assert obs.merit > 0.0
     assert obs.current_exp_num == 5
 
