@@ -28,7 +28,7 @@ USER "${USERID}"
 RUN echo "Building from ${image_url}:${image_tag}" && \
     sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
-        astrometry-data-tycho2-10-19 && \
+        inotify-tools astrometry-data-tycho2-10-19 && \
     # Set up directories in PANUSER home.
     sudo mkdir "$image_dir" && sudo chown -R "${USERID}:${USERID}" "$image_dir" && \
     sudo mkdir "$log_dir" && sudo chown -R "${USERID}:${USERID}" "$log_dir" && \
