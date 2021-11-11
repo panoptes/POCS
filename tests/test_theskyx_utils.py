@@ -6,9 +6,9 @@ from panoptes.utils import error
 
 @pytest.fixture(scope="function")
 def skyx(data_dir, request):
-    """Create TheSkyX class but don't connect.t
+    """Create TheSkyX class but don't connect.
 
-    If running with a real connection TheSkyX then the Mokcet will
+    If running with a real connection TheSkyX then the Mocket will
     be disabled here.
     """
 

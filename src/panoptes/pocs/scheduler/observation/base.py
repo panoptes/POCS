@@ -1,12 +1,15 @@
 import os
 from collections import OrderedDict, defaultdict
+from contextlib import suppress
 from pathlib import Path
-from typing import Tuple, Dict, List
-from pydantic.dataclasses import dataclass
+from typing import Dict, List, Optional
 
 from astropy import units as u
-from panoptes.utils.utils import get_quantity_value
+from panoptes.utils.library import load_module
+from pydantic.dataclasses import dataclass
 
+from panoptes.utils.utils import get_quantity_value, listify
+from panoptes.utils import error
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
 
@@ -78,6 +81,7 @@ class Observation(PanBase):
         self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
+
         self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
         self.pointing_images: Dict[str, Path] = OrderedDict()
 
@@ -103,11 +107,11 @@ class Observation(PanBase):
     ################################################################################################
 
     @property
-    def status(self):
-        """ Observation status
+    def status(self) -> Dict:
+        """ Observation status.
 
         Returns:
-            dict: Dictionary containing current status of observation
+            dict: Dictionary containing current status of observation.
         """
 
         equinox = 'J2000'
@@ -148,7 +152,7 @@ class Observation(PanBase):
     @property
     def exptimes(self):
         """Exposure time as a list."""
-        return [self.exptime]
+        return listify(self.exptime)
 
     @property
     def minimum_duration(self):
@@ -157,19 +161,19 @@ class Observation(PanBase):
 
     @property
     def set_duration(self):
-        """ Amount of time per set of exposures """
+        """ Amount of time per set of exposures."""
         return self._set_duration
 
     @property
     def name(self):
-        """ Name of the `~pocs.scheduler.field.Field` associated with the observation """
+        """ Name of the `~pocs.scheduler.field.Field` associated with the observation."""
         return self.field.name
 
     @property
     def seq_time(self):
-        """ The time at which the observation was selected by the scheduler
+        """ The time at which the observation was selected by the scheduler.
 
-        This is used for path name construction
+        This is used for path name construction.
         """
         return self._seq_time
 
@@ -178,7 +182,7 @@ class Observation(PanBase):
         self._seq_time = time
 
     @property
-    def directory(self):
+    def directory(self) -> Path:
         """Return the directory for this Observation.
 
         This return the base directory for the Observation. This does *not* include
@@ -194,8 +198,10 @@ class Observation(PanBase):
         return self._directory
 
     @property
-    def current_exp_num(self):
+    def current_exp_num(self) -> int:
         """ Return the current number of exposures.
+
+        Returns the maximum size of the exposure list from each camera.
 
         Returns:
             int: The size of `self.exposure_list`.
@@ -206,30 +212,35 @@ class Observation(PanBase):
             return 0
 
     @property
-    def first_exposure(self) -> List[Dict[str, Exposure]]:
-        """ Return the latest exposure information
+    def first_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+        """ Return the first exposure information.
 
         Returns:
-            tuple: `image_id` and full path of most recent exposure from the primary camera
+            tuple: `image_id` and full path of the first exposure from the primary camera.
         """
-        return self.get_exposure(number=0)
+        return self.get_exposure(0)
 
     @property
-    def last_exposure(self) -> List[Dict[str, Exposure]]:
-        """ Return the latest exposure information
+    def last_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+        """ Return the latest exposure information.
 
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
         return self.get_exposure(number=-1)
 
-    def get_exposure(self, number: int = 0) -> List[Dict[str, Exposure]]:
-        """Returns the given epxosure number."""
+    def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
+        """Returns the given exposure number."""
+        exposure = list()
         try:
-            return [{cam_name: exposure[number]} for cam_name, exposure in
-                    self.exposure_list.items()]
+            if len(self.exposure_list) > 0:
+                for cam_name, exposure_list in self.exposure_list.items():
+                    with suppress(IndexError):
+                        exposure.append({cam_name: exposure_list[number]})
         except Exception:
-            return list()
+            self.logger.debug(f'No exposures available.')
+        finally:
+            return exposure
 
     @property
     def pointing_image(self):
@@ -284,3 +295,44 @@ class Observation(PanBase):
                f"in blocks of {self.exp_set_size}, " \
                f"minimum {self.min_nexp}, " \
                f"priority {self.priority:.0f}"
+
+    ################################################################################################
+    # Class Methods
+    ################################################################################################
+
+    @classmethod
+    def from_dict(cls,
+                  observation_config: Dict,
+                  field_class='panoptes.pocs.scheduler.field.Field',
+                  observation_class='panoptes.pocs.scheduler.observation.base.Observation'):
+        """Creates an `Observation` object from config dict.
+
+        Args:
+            observation_config (dict): Configuration for `Field` and `Observation`.
+            field_class (str, optional): The full name of the python class to be used as
+                default for the observation's Field. This can be overridden by specifying the "type"
+                item under the observation_config's "field" key.
+                Default: `panoptes.pocs.scheduler.field.Field`.
+            observation_class (str, optional): The full name of the python class to be used
+                as default for the observation object. This can be overridden by specifying the
+                "type" item under the observation_config's "observation" key.
+                Default: `panoptes.pocs.scheduler.observation.base.Observation`.
+        """
+        observation_config = observation_config.copy()
+
+        field_config = observation_config.get("field", {})
+        field_type_name = field_config.pop("type", field_class)
+
+        obs_config = observation_config.get("observation", {})
+        obs_type_name = obs_config.pop("type", observation_class)
+
+        try:
+            # Make the field
+            field = load_module(field_type_name)(**field_config)
+
+            # Make the observation
+            obs = load_module(obs_type_name)(field=field, **obs_config)
+        except Exception as e:
+            raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")
+        else:
+            return obs

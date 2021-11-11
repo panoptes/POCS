@@ -9,9 +9,8 @@ class Scheduler(BaseScheduler):
         """ Inherit from the `BaseScheduler` """
         BaseScheduler.__init__(self, *args, **kwargs)
 
-    def get_observation(self, time=None, constraints=None, show_all=False,
-                        reread_fields_file=False):
-        """Get a valid observation
+    def get_observation(self, time=None, show_all=False, constraints=None, read_file=False):
+        """Get a valid observation.
 
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
@@ -20,14 +19,18 @@ class Scheduler(BaseScheduler):
                 constraints to check. If `None` (the default), use the `scheduler.constraints`.
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
-            reread_fields_file (bool, optional): If the fields file should be reread
+            constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
+                constraints to check. If `None` (the default), use the `scheduler.constraints`
+            read_file (bool, optional): If the fields file should be reread
                 before scheduling occurs, defaults to False.
 
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
-        super(Scheduler, self).get_observation(time=time, show_all=show_all,
-                                               reread_fields_file=reread_fields_file)
+        if read_file:
+            self.logger.debug("Rereading fields file")
+            self.read_field_list()
+
         if time is None:
             time = current_time()
 
@@ -61,7 +64,7 @@ class Scheduler(BaseScheduler):
                     self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
 
         if len(valid_obs) > 0:
-            self.logger.debug('Multiplying final scores by priority')
+            self.logger.debug(f'Multiplying final scores by priority')
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority

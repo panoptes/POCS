@@ -17,8 +17,9 @@ class Observation(BaseObservation):
         kwargs['exptime'] = self._exptimes[0]
         super(Observation, self).__init__(*args, **kwargs)
 
-        self._min_duration = np.sum([self._exptimes[i] for i in range(self.min_nexp)])
-        self._set_duration = np.sum([self._exptimes[i] for i in range(self.exp_set_size)])
+        self._min_duration = np.sum(self._exptimes)
+        self._set_duration = np.sum(
+            [self._exptimes[i % len(self._exptimes)] for i in range(self.exp_set_size)])
 
         self.is_compound = True
 
@@ -34,7 +35,8 @@ class Observation(BaseObservation):
         return self._exptimes
 
     def __str__(self):
-        return f"{self.field}: {self.exptime} [{self._exptimes!r}]" \
+        return f"{self.field}: exptime={self.exptime} " \
+               f"exptime_set={self._exptimes!r} " \
                f"in blocks of {self.exp_set_size}, " \
                f"minimum {self.min_nexp}, " \
                f"priority {self.priority:.0f}"
