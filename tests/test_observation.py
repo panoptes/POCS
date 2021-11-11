@@ -117,8 +117,8 @@ def test_last_exposure_and_reset(field):
     assert obs.current_exp_num == 5
 
     assert isinstance(obs.first_exposure, list)
-    assert obs.first_exposure['Cam00'][0]['image_id'] == 'image_0'
-    assert obs.first_exposure['Cam00'][0]['path'] == 'full_image_path_0'
+    assert obs.first_exposure[0]['Cam00'].image_id == 'image_0'
+    assert obs.first_exposure[0]['Cam00'].path == 'full_image_path_0'
 
     obs.reset()
     status2 = obs.status
