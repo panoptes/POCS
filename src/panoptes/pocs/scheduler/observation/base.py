@@ -1,11 +1,25 @@
 import os
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from contextlib import suppress
+from pathlib import Path
+from typing import Dict, List, Optional
+
 from astropy import units as u
+from panoptes.utils.library import load_module
+from pydantic.dataclasses import dataclass
 
-from panoptes.utils.utils import get_quantity_value
-
+from panoptes.utils.utils import get_quantity_value, listify
+from panoptes.utils import error
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.field import Field
+
+
+@dataclass
+class Exposure:
+    image_id: str
+    path: Path
+    metadata: dict
+    is_primary: bool = False
 
 
 class Observation(PanBase):
@@ -67,8 +81,9 @@ class Observation(PanBase):
         self._exptime = exptime
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exposure_list = OrderedDict()
-        self.pointing_images = OrderedDict()
+
+        self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
+        self.pointing_images: Dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
 
@@ -87,16 +102,16 @@ class Observation(PanBase):
 
         self.logger.debug(f"Observation created: {self}")
 
-    ##################################################################################################
+    ################################################################################################
     # Properties
-    ##################################################################################################
+    ################################################################################################
 
     @property
-    def status(self):
-        """ Observation status
+    def status(self) -> Dict:
+        """ Observation status.
 
         Returns:
-            dict: Dictionary containing current status of observation
+            dict: Dictionary containing current status of observation.
         """
 
         equinox = 'J2000'
@@ -135,25 +150,30 @@ class Observation(PanBase):
         self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property
+    def exptimes(self):
+        """Exposure time as a list."""
+        return listify(self.exptime)
+
+    @property
     def minimum_duration(self):
         """ Minimum amount of time to complete the observation """
         return self._min_duration
 
     @property
     def set_duration(self):
-        """ Amount of time per set of exposures """
+        """ Amount of time per set of exposures."""
         return self._set_duration
 
     @property
     def name(self):
-        """ Name of the `~pocs.scheduler.field.Field` associated with the observation """
+        """ Name of the `~pocs.scheduler.field.Field` associated with the observation."""
         return self.field.name
 
     @property
     def seq_time(self):
-        """ The time at which the observation was selected by the scheduler
+        """ The time at which the observation was selected by the scheduler.
 
-        This is used for path name construction
+        This is used for path name construction.
         """
         return self._seq_time
 
@@ -162,7 +182,7 @@ class Observation(PanBase):
         self._seq_time = time
 
     @property
-    def directory(self):
+    def directory(self) -> Path:
         """Return the directory for this Observation.
 
         This return the base directory for the Observation. This does *not* include
@@ -172,43 +192,55 @@ class Observation(PanBase):
             str: Full path to base directory.
         """
         if self._directory is None:
-            self.logger.warning(f'Setting observation directory to {self._image_dir}/{self.field.field_name}')
             self._directory = os.path.join(self._image_dir, self.field.field_name)
+            self.logger.warning(f'Observation directory set to {self._directory}')
 
         return self._directory
 
     @property
-    def current_exp_num(self):
+    def current_exp_num(self) -> int:
         """ Return the current number of exposures.
+
+        Returns the maximum size of the exposure list from each camera.
 
         Returns:
             int: The size of `self.exposure_list`.
         """
-        return len(self.exposure_list)
+        try:
+            return max([len(exposures) for exposures in self.exposure_list.values()])
+        except ValueError:
+            return 0
 
     @property
-    def first_exposure(self):
-        """ Return the latest exposure information
+    def first_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+        """ Return the first exposure information.
+
+        Returns:
+            tuple: `image_id` and full path of the first exposure from the primary camera.
+        """
+        return self.get_exposure(0)
+
+    @property
+    def last_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+        """ Return the latest exposure information.
 
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
-        try:
-            return list(self.exposure_list.items())[0]
-        except IndexError:
-            self.logger.warning("No exposure available")
+        return self.get_exposure(number=-1)
 
-    @property
-    def last_exposure(self):
-        """ Return the latest exposure information
-
-        Returns:
-            tuple: `image_id` and full path of most recent exposure from the primary camera
-        """
+    def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
+        """Returns the given exposure number."""
+        exposure = list()
         try:
-            return list(self.exposure_list.items())[-1]
-        except IndexError:
-            self.logger.warning("No exposure available")
+            if len(self.exposure_list) > 0:
+                for cam_name, exposure_list in self.exposure_list.items():
+                    with suppress(IndexError):
+                        exposure.append({cam_name: exposure_list[number]})
+        except Exception:
+            self.logger.debug(f'No exposures available.')
+        finally:
+            return exposure
 
     @property
     def pointing_image(self):
@@ -238,22 +270,69 @@ class Observation(PanBase):
 
         return has_min_exposures and this_set_finished
 
-    ##################################################################################################
+    ################################################################################################
     # Methods
-    ##################################################################################################
+    ################################################################################################
+
+    def add_to_exposure_list(self, cam_name: str, exposure: Exposure):
+        """Add the exposure to the list and mark as most recent"""
+        self.exposure_list[cam_name].append(exposure)
 
     def reset(self):
         """Resets the exposure information for the observation """
-        self.logger.debug("Resetting observation {}".format(self))
+        self.logger.debug(f"Resetting observation {self}")
 
-        self.exposure_list = OrderedDict()
+        self.exposure_list.clear()
         self.merit = 0.0
         self.seq_time = None
 
-    ##################################################################################################
+    ################################################################################################
     # Private Methods
-    ##################################################################################################
+    ################################################################################################
 
     def __str__(self):
-        return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exptime, self.exp_set_size, self.min_nexp, self.priority)
+        return f"{self.field}: {self.exptime} exposures " \
+               f"in blocks of {self.exp_set_size}, " \
+               f"minimum {self.min_nexp}, " \
+               f"priority {self.priority:.0f}"
+
+    ################################################################################################
+    # Class Methods
+    ################################################################################################
+
+    @classmethod
+    def from_dict(cls,
+                  observation_config: Dict,
+                  field_class='panoptes.pocs.scheduler.field.Field',
+                  observation_class='panoptes.pocs.scheduler.observation.base.Observation'):
+        """Creates an `Observation` object from config dict.
+
+        Args:
+            observation_config (dict): Configuration for `Field` and `Observation`.
+            field_class (str, optional): The full name of the python class to be used as
+                default for the observation's Field. This can be overridden by specifying the "type"
+                item under the observation_config's "field" key.
+                Default: `panoptes.pocs.scheduler.field.Field`.
+            observation_class (str, optional): The full name of the python class to be used
+                as default for the observation object. This can be overridden by specifying the
+                "type" item under the observation_config's "observation" key.
+                Default: `panoptes.pocs.scheduler.observation.base.Observation`.
+        """
+        observation_config = observation_config.copy()
+
+        field_config = observation_config.get("field", {})
+        field_type_name = field_config.pop("type", field_class)
+
+        obs_config = observation_config.get("observation", {})
+        obs_type_name = obs_config.pop("type", observation_class)
+
+        try:
+            # Make the field
+            field = load_module(field_type_name)(**field_config)
+
+            # Make the observation
+            obs = load_module(obs_type_name)(field=field, **obs_config)
+        except Exception as e:
+            raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")
+        else:
+            return obs
