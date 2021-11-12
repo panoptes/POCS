@@ -46,10 +46,10 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
 FROM panoptes-pocs-base AS panoptes-pocs-dependencies
 
 # Update conda environment with dependencies.
-COPY docker/environment.yaml .
+COPY docker/environment.yaml /tmp/environment.yaml
 RUN echo "Updating conda environment" && \
-    mamba env update -n base -f environment.yaml && \
-    mamba clean -tipy --force-pkgs-dirs
+    micromamba install -y -n base -f /tmp/environment.yaml && \
+    micromamba clean --all --yes
 
 FROM panoptes-pocs-dependencies AS panoptes-pocs
 
