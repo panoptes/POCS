@@ -532,7 +532,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             # Camera type specific exposure set up and start
             self._is_exposing_event.set()
             readout_args = self._start_exposure(seconds=seconds, filename=filename, dark=dark,
-                                                header=header, *args, *kwargs)
+                                                header=header, *args, **kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
