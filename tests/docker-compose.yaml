@@ -1,12 +1,12 @@
 version: "3.7"
 services:
   pocs:
-    image: panoptes-pocs:testing
+    image: panoptes-pocs:latest
     build:
       context: ../
       dockerfile: docker/Dockerfile
       args:
-        pip_install_extras: '[google,focuser,testing]'
+        pip_install_extras: '[google,focuser,sensors,testing]'
     init: true
     tty: true
     environment:
