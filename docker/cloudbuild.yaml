@@ -6,8 +6,8 @@ options:
 timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
-  _DEPS_NAME: panoptes-pocs-dependencies
   _IMAGE_NAME: panoptes-pocs
+  _TAG_NAME: latest
   _DOCKER_BUILDX_PLATFORMS: 'linux/amd64,linux/arm64'
 
 steps:
