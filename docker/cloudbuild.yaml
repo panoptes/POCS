@@ -1,26 +1,18 @@
 options:
   substitutionOption: ALLOW_LOOSE
   machineType: E2_HIGHCPU_32
+  env:
+    - "DOCKER_CLI_EXPERIMENTAL=enabled"
 timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
-  _DEPS_NAME: panoptes-pocs-dependencies
   _IMAGE_NAME: panoptes-pocs
   _PLATFORM: linux/arm64,linux/amd64
 
 steps:
-  # Pull the cached image.
-  - name: 'gcr.io/cloud-builders/docker'
-    id: "pull-cached-image"
-    entrypoint: 'bash'
-    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME} || exit 0' ]
-    waitFor: [ "-" ]
-
   # Set up multiarch support
   - name: "gcr.io/cloud-builders/docker"
     id: "setup-buildx"
-    env:
-      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
       - "run"
       - "--privileged"
@@ -31,8 +23,6 @@ steps:
   # Build builder
   - name: "gcr.io/cloud-builders/docker"
     id: "build-builder"
-    env:
-      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
       - "buildx"
       - "create"
@@ -41,35 +31,15 @@ steps:
       - "--driver=docker-container"
     waitFor: [ "setup-buildx" ]
 
-  # Build the image dependencies
-  - name: "gcr.io/cloud-builders/docker"
-    id: "build-images-deps"
-    env:
-      - "DOCKER_CLI_EXPERIMENTAL=enabled"
-    args:
-      - "buildx"
-      - "build"
-      - "--platform=${_PLATFORM}"
-      - "-f=docker/Dockerfile"
-      - "--target=${_DEPS_NAME}"
-      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
-      - "--push"
-      - "."
-    waitFor: [ "build-builder" ]
-
   # Build the image.
   - name: "gcr.io/cloud-builders/docker"
     id: "build-images"
-    env:
-      - "DOCKER_CLI_EXPERIMENTAL=enabled"
     args:
       - "buildx"
       - "build"
       - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
       - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
       - "--push"
       - "."
-    waitFor: [ "build-images-deps" ]
+    waitFor: [ "build-builder" ]
