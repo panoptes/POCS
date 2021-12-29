@@ -49,20 +49,13 @@ RUN useradd -u ${USERID} -o -c "Argus Panoptes" \
      rm -rf /var/lib/apt/lists/*
 
 # Set up arduino cli tools.
-# RUN echo "Installing arduino-cli from ${arduino_url}" && \
-#     wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
-#         -O arduino-cli.tar.gz && \
-#     tar zxvf arduino-cli.tar.gz && \
-#     mkdir -p "${HOME}/.local/bin" && \
-#     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
-#     rm LICENSE.txt && rm arduino-cli.tar.gz
-
-# Update conda environment with dependencies.
-# USER "${username}"
-# COPY docker/environment.yaml /tmp/environment.yaml
-# RUN echo "Updating python environment." && \
-#     micromamba install -y -n base -f /tmp/environment.yaml && \
-#     micromamba clean --all --yes
+RUN echo "Installing arduino-cli from ${arduino_url}" && \
+    wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
+        -O arduino-cli.tar.gz && \
+    tar zxvf arduino-cli.tar.gz && \
+    mkdir -p "${HOME}/.local/bin" && \
+    mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
+    rm LICENSE.txt && rm arduino-cli.tar.gz
 
 COPY --chown="${USERID}:${USERID}" . .
 USER "${USERID}"
