@@ -1,6 +1,6 @@
 options:
   substitutionOption: ALLOW_LOOSE
-  machineType: E2_HIGHCPU_8
+  machineType: E2_HIGHCPU_32
   env:
     - 'DOCKER_CLI_EXPERIMENTAL=enabled'
 timeout: 18000s  # 5 hours; arm is slow
