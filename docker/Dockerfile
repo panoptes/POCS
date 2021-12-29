@@ -59,7 +59,8 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
 
 COPY --chown="${USERID}:${USERID}" . .
 USER "${USERID}"
-RUN pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
 
 # TODO replace with pocs-cli.
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
