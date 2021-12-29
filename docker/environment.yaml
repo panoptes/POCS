@@ -3,13 +3,13 @@ channels:
 dependencies:
   - astroplan
   - fastapi
+  - google-cloud-storage
+  - gsutil
+  - jupyter_console
   - matplotlib-base
   - numpy
   - pandas
   - photutils
-  - pip
   - scipy
   - streamz
   - uvicorn[standard]
-  - pip:
-      - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"
