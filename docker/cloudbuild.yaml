@@ -24,5 +24,5 @@ steps:
     args: [ 'buildx', 'inspect', '--bootstrap' ]
     id: 'show-target-build-platforms'
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'buildx', 'build', '--platform', '${_DOCKER_BUILDX_PLATFORMS}', '-t', 'gcr.io/$PROJECT_ID/${_IMAGE_NAME}:${_TAG_NAME}', '--push', '.' ]
+    args: [ 'buildx', 'build', '--platform', '${_DOCKER_BUILDX_PLATFORMS}', '-f', 'docker/Dockerfile', '-t', 'gcr.io/$PROJECT_ID/${_IMAGE_NAME}:${_TAG_NAME}', '--push', '.' ]
     id: 'build-multi-architecture-container-image'
