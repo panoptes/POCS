@@ -29,8 +29,8 @@ WORKDIR "${APP_DIR}"
 
 # Set up user and directories.
 USER root
-RUN usermod -l ${panuser} micromamba && \
-    usermod -aG plugdev,dialout,users,sudo,video,audio ${panuser} && \
+RUN usermod -l ${username} micromamba && \
+    usermod -aG plugdev,dialout,users,sudo,video,audio ${username} && \
     # Allow sudo without password.
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Setup SSH so localhost works without password.
