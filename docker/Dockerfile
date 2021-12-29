@@ -1,5 +1,5 @@
-ARG image_url=python
-ARG image_tag=3.10-slim-buster
+ARG image_url=mambaforge/micromamba
+ARG image_tag=latest
 FROM ${image_url}:${image_tag}
 
 ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
@@ -28,8 +28,9 @@ ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
 WORKDIR "${APP_DIR}"
 
 # Set up user and directories.
-RUN useradd -u ${USERID} -o -c "Argus Panoptes" \
-        -p panoptes -m -G plugdev,dialout,users,sudo,video,audio ${PANUSER} && \
+USER root
+RUN usermod -l ${panuser} micromamba && \
+    usermod -aG plugdev,dialout,users,sudo,video,audio ${panuser} && \
     # Allow sudo without password.
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Setup SSH so localhost works without password.
@@ -57,10 +58,15 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
 
+USER "${panuser}"
+COPY docker/environment.yaml /tmp/environment.yaml
+RUN echo "Updating python environment." && \
+    micromamba install -y -n base -f /tmp/environment.yaml && \
+    micromamba clean --all --yes
+
 COPY --chown="${USERID}:${USERID}" . .
 USER "${USERID}"
-RUN pip install --upgrade pip && pip install pep517 \
-    pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
+RUN pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
 
 # TODO replace with pocs-cli.
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]

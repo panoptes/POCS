@@ -1,0 +1,18 @@
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - astroplan
+  - fastapi
+  - google-cloud-storage
+  - gsutil
+  - jupyter_console
+  - matplotlib-base
+  - numpy
+  - pandas
+  - photutils
+  - pip
+  - scipy
+  - streamz
+  - uvicorn[standard]
+  - pip:
+      - "panoptes-utils[config,images,social]"
