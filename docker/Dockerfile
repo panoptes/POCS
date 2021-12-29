@@ -46,7 +46,11 @@ RUN echo "Building from ${image_url}:${image_tag}" && \
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Setup SSH so localhost works without password.
     mkdir -p "/home/${username}/.ssh" && \
-    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${username}/.ssh/config"
+    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${username}/.ssh/config" && \
+    # Set up directories in PANUSER home.
+    mkdir "$image_dir" && chown -R "${USERID}:${USERID}" "$image_dir" && \
+    mkdir "$log_dir" && chown -R "${USERID}:${USERID}" "$log_dir" && \
+    chown -R "${USERID}:${USERID}" "${APP_DIR}"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
