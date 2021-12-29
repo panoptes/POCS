@@ -40,13 +40,13 @@ RUN echo "Building from ${image_url}:${image_tag}" && \
     apt-get --yes clean && \
     rm -rf /var/lib/apt/lists/* && \
     # Change username.
-    usermod -l ${panuser} micromamba && \
-    usermod -aG plugdev,dialout,users,sudo ${panuser} && \
+    usermod -l ${username} micromamba && \
+    usermod -aG plugdev,dialout,users,sudo ${username} && \
     # Allow sudo without password.
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Setup SSH so localhost works without password.
-    mkdir -p "/home/${panuser}/.ssh" && \
-    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${panuser}/.ssh/config"
+    mkdir -p "/home/${username}/.ssh" && \
+    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${username}/.ssh/config"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
