@@ -71,4 +71,4 @@ RUN /opt/conda/bin/pip install --no-cache-dir "${pip_install_name}${pip_install_
 
 # TODO replace with pocs-cli.
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
-CMD [ "ipython -i scripts/pocs-ipython-startup.py" ]
+CMD [ "ipython -i scripts/pocs-startup.py" ]
