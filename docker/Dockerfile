@@ -66,7 +66,7 @@ RUN echo "Updating python environment." && \
 
 COPY --chown="${USERID}:${USERID}" . .
 USER "${USERID}"
-RUN pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
+RUN /opt/conda/bin/pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
 
 # TODO replace with pocs-cli.
 ENTRYPOINT [ "/usr/bin/env", "bash", "-ic" ]
