@@ -25,29 +25,28 @@ ENV PANUSER $username
 ENV USERID $userid
 ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
 
-WORKDIR "${APP_DIR}"
-
-# Set up user and directories.
+# Install system dependencies as root user.
 USER root
-RUN usermod -l ${username} micromamba && \
-    usermod -aG plugdev,dialout,users,sudo,video,audio ${username} && \
+RUN echo "Building from ${image_url}:${image_tag}" && \
+    apt-get update && apt-get install --no-install-recommends --yes \
+        bzip2 ca-certificates \
+        wget gcc pkg-config sudo less udev wait-for-it \
+        dcraw exiftool git \
+        astrometry.net \
+        libcfitsio-dev libcfitsio-bin \
+        libfreetype6-dev libpng-dev libjpeg-dev libffi-dev && \
+    apt-get autoremove --purge --yes && \
+    apt-get autoclean --yes && \
+    apt-get --yes clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Change username.
+    usermod -l ${panuser} micromamba && \
+    usermod -aG plugdev,dialout,users,sudo ${panuser} && \
     # Allow sudo without password.
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Setup SSH so localhost works without password.
-    mkdir -p "/home/${username}/.ssh" && \
-    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${username}/.ssh/config" && \
-    # Set up directories in PANUSER home.
-    mkdir "$image_dir" && chown -R "${USERID}:${USERID}" "$image_dir" && \
-    mkdir "$log_dir" && chown -R "${USERID}:${USERID}" "$log_dir" && \
-    chown -R "${USERID}:${USERID}" "${APP_DIR}"
-
- RUN apt-get update && apt-get install -y --no-install-recommends \
-         bzip2 ca-certificates wget udev wait-for-it gcc git pkg-config && \
-     # Clean up
-     apt-get autoremove --purge --yes && \
-     apt-get autoclean --yes && \
-     apt-get --yes clean && \
-     rm -rf /var/lib/apt/lists/*
+    mkdir -p "/home/${panuser}/.ssh" && \
+    echo "Host localhost\n\tStrictHostKeyChecking no\n" >> "/home/${panuser}/.ssh/config"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
@@ -58,14 +57,14 @@ RUN echo "Installing arduino-cli from ${arduino_url}" && \
     mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
     rm LICENSE.txt && rm arduino-cli.tar.gz
 
-USER "${panuser}"
+USER "${username}"
 COPY docker/environment.yaml /tmp/environment.yaml
 RUN echo "Updating python environment." && \
     micromamba install -y -n base -f /tmp/environment.yaml && \
     micromamba clean --all --yes
 
-COPY --chown="${USERID}:${USERID}" . .
-USER "${USERID}"
+WORKDIR "${APP_DIR}"
+COPY --chown="${userid}:${userid}" . .
 RUN /opt/conda/bin/pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
 
 # TODO replace with pocs-cli.
