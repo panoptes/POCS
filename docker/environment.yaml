@@ -4,6 +4,9 @@ dependencies:
   - astroplan
   - fastapi
   - google-cloud-firestore
+  - google-cloud-storage
+  - gsutil
+  - jupyter_console
   - matplotlib-base
   - numpy
   - pandas
@@ -13,5 +16,3 @@ dependencies:
   - scipy
   - streamz
   - uvicorn[standard]
-  - pip:
-      - "git+https://github.com/panoptes/panoptes-utils@develop#egg=panoptes-utils[config,images,social]"
