@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Setup file for pocs.
+    Setup file for utils.
     Use setup.cfg to configure your project.
 
     This file was generated with PyScaffold 3.2.3.
@@ -10,7 +10,7 @@
 import sys
 
 from pkg_resources import VersionConflict, require
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
 
 try:
     require('setuptools>=38.3')
@@ -18,6 +18,5 @@ except VersionConflict:
     print("Error: version of setuptools is too old (<38.3)!")
     sys.exit(1)
 
-
 if __name__ == "__main__":
-    setup(use_pyscaffold=True)
+    setup(use_pyscaffold=True, packages=find_namespace_packages(where='src'))

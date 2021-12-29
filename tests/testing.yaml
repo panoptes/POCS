@@ -31,7 +31,7 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
 directories:
-  base: /panoptes-pocs
+  base: .
   images: images
   data: data
   resources: resources/
