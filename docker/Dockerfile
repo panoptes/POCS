@@ -1,4 +1,4 @@
-ARG image_url=mambaforge/micromamba
+ARG image_url=mambaorg/micromamba
 ARG image_tag=latest
 FROM ${image_url}:${image_tag}
 
