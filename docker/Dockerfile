@@ -25,6 +25,8 @@ ENV PANUSER $username
 ENV USERID $userid
 ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
 
+WORKDIR "${APP_DIR}"
+
 # Install system dependencies as root user.
 USER root
 RUN echo "Building from ${image_url}:${image_tag}" && \
@@ -67,7 +69,6 @@ RUN echo "Updating python environment." && \
     micromamba install -y -n base -f /tmp/environment.yaml && \
     micromamba clean --all --yes
 
-WORKDIR "${APP_DIR}"
 COPY --chown="${userid}:${userid}" . .
 RUN /opt/conda/bin/pip install --no-cache-dir "${pip_install_name}${pip_install_extras}"
 
