@@ -33,8 +33,7 @@ RUN echo "Building from ${image_url}:${image_tag}" && \
     apt-get update && apt-get install --no-install-recommends --yes \
         bzip2 ca-certificates \
         wget gcc pkg-config sudo less udev wait-for-it \
-        dcraw exiftool git \
-        astrometry.net \
+        git \
         libcfitsio-dev libcfitsio-bin \
         libfreetype6-dev libpng-dev libjpeg-dev libffi-dev && \
     apt-get autoremove --purge --yes && \
