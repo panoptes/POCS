@@ -45,6 +45,7 @@ def test_solve_timeout(tiny_fits_file):
             im0.solve_field(verbose=True, replace=False, radius=4, timeout=0)
 
 
+@pytest.mark.plate_solve
 def test_fail_solve(tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
@@ -54,6 +55,7 @@ def test_fail_solve(tiny_fits_file):
             im0.solve_field(verbose=True, replace=False, radius=4)
 
 
+@pytest.mark.plate_solve
 def test_solve_field_unsolved(unsolved_fits_file,
                               solved_fits_file):
     # We place the input images into a temp directory so that output images
@@ -111,6 +113,7 @@ def test_pointing_error_passed_wcs(unsolved_fits_file,
     assert isinstance(im0.pointing_error, OffsetError)
 
 
+@pytest.mark.plate_solve
 def test_pointing_error(solved_fits_file):
     im0 = Image(solved_fits_file)
 
