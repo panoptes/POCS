@@ -174,6 +174,8 @@ function system_deps() {
 }
 
 function get_or_build_docker_images() {
+  which_docker
+
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
   sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
@@ -295,7 +297,6 @@ function do_install() {
 
   which_version
 
-  which_docker
 
   get_time_settings
 
