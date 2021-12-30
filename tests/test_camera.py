@@ -516,7 +516,7 @@ def test_observation(camera, images_dir):
     observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
     observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
+    while observation_event.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
