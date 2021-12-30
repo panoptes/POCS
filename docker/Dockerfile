@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install --no-install-recommends --yes \
     # Add user.
     useradd -u ${userid} -o -c "Argus Panoptes" -p panoptes -m -G plugdev,dialout,users,sudo,video,audio ${username} && \
     # Fix directory permissions for user. \
-    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}"
+    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}" && \
     # Allow sudo without password.
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     # Upgrade pip
