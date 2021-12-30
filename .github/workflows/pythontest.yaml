@@ -30,12 +30,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build panoptes-pocs image
-        run: |
-          mkdir -p logs && chmod -R 777 logs
-          mkdir -p build && chmod -R 777 build
-          pip install ".[google,focuser,sensors,testing]"
-          pytest
+      - name: Install
+        run: pip install ".[google,focuser,sensors,testing]"
+      - name: Test
+        run: pytest
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v1
         if: success()
