@@ -15,6 +15,7 @@ ARG pip_install_extras="[google,sensors,focuser]"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONUNBUFFERED 1
+ENV PATH "/home/${username}/.local/bin:$PATH"
 
 RUN apt-get update && apt-get install --no-install-recommends --yes \
         bzip2 ca-certificates wget gcc pkg-config sudo git && \
