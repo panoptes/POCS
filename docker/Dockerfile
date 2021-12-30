@@ -21,8 +21,12 @@ RUN apt-get update && apt-get install --no-install-recommends --yes \
         bzip2 ca-certificates wget gcc pkg-config sudo git && \
     # Add user.
     useradd -u ${userid} -o -c "Argus Panoptes" -p panoptes -m -G plugdev,dialout,users,sudo,video,audio ${username} && \
+    # Fix directory permissions for user. \
+    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}"
     # Allow sudo without password.
-    echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+    echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    # Upgrade pip
+    pip install --upgrade pip
 
 USER "${username}"
 WORKDIR "${app_dir}"
