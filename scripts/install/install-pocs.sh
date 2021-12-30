@@ -67,7 +67,7 @@ HOST="${HOST:-pocs-control-box}"
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,input,sudo"
+DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
 ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
 
@@ -125,24 +125,28 @@ function which_version() {
     esac
   done
 
-  echo "Setting hostname to ${HOST}"
-  sudo hostnamectl set-hostname "$HOST"
+  if [ "${DEV_BOX}" != true ]; then
+    echo "Setting hostname to ${HOST}"
+    sudo hostnamectl set-hostname "$HOST"
+  fi
 }
 
 function system_deps() {
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install rpi.gpio-common linux-tools-raspi linux-modules-extras-raspi >/dev/null
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
+      rpi.gpio-common linux-tools-raspi linux-modules-extras-raspi >/dev/null
   fi
 
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
     ack \
     byobu \
+    docker.io \
     gcc \
     htop \
     httpie \
@@ -151,12 +155,15 @@ function system_deps() {
     nano \
     neovim \
     sshfs \
-    wget \
-    zsh >/dev/null
+    wget >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
 
-  # Use zsh
-  sudo chsh --shell /usr/bin/zsh "${PANUSER}"
+  sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
+
+  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    install_zsh
+  fi
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -166,14 +173,7 @@ function system_deps() {
 
 }
 
-function install_docker() {
-  wget -q https://get.docker.com -O get-docker.sh
-  bash get-docker.sh >/dev/null
-  sudo usermod -aG docker "${PANUSER}"
-  rm get-docker.sh
-}
-
-function get_or_build_images() {
+function get_or_build_docker_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
   sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
@@ -204,6 +204,7 @@ function install_conda() {
   "${PANDIR}/conda/bin/conda" init bash
   "${PANDIR}/conda/bin/conda" init zsh
 
+  echo "Creating POCS conda environment"
   "${PANDIR}/conda/bin/conda" create -y -n "${CONDA_ENV_NAME}" python=3
 
   # Activate by default
@@ -217,8 +218,12 @@ function install_conda() {
 }
 
 function install_zsh() {
-  if [ ! -d $ZSH_CUSTOM ]; then
-    echo "Setting up zsh for a better experience."
+  if [ ! -d "$ZSH_CUSTOM" ]; then
+    echo "Using zsh for a better shell experience."
+
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install zsh
+
+    sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
@@ -227,7 +232,7 @@ function install_zsh() {
     export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
     # Autosuggestions plugin
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
 
     # Spaceship theme
     git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
@@ -261,8 +266,14 @@ function fix_time() {
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
-  (sudo crontab -l; echo "@reboot ntpdate -s ${ROUTER_IP}") | sudo crontab -
-  (sudo crontab -l; echo "13 * * * * ntpdate -s ${ROUTER_IP}") | sudo crontab -
+  (
+    sudo crontab -l
+    echo "@reboot ntpdate -s ${ROUTER_IP}"
+  ) | sudo crontab -
+  (
+    sudo crontab -l
+    echo "13 * * * * ntpdate -s ${ROUTER_IP}"
+  ) | sudo crontab -
 
   # Show updated time.
   timedatectl
@@ -299,25 +310,19 @@ function do_install() {
   echo "Logfile: ${LOGFILE}"
   echo ""
 
-  fix_time
+  # Make sure the time setting is correct on RPi.
+  if [ "$(uname -m)" = "aarch64" ]; then
+    fix_time
+  fi
 
   make_directories
 
   echo "Installing system dependencies."
   system_deps
 
-  if [ "$DEV_BOX" = false ]; then
-    install_zsh
+  install_conda
 
-    echo "Adding ${PANUSER} to default groups."
-    sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
-  fi
-
-  # install_conda
-
-  install_docker
-
-  # get_or_build_images
+  # get_or_build_docker_images
 
   echo "Please reboot your machine before using POCS."
 
