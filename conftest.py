@@ -194,8 +194,8 @@ def images_dir(tmpdir_factory):
 
 
 @pytest.fixture(scope='session')
-def data_dir():
-    return os.path.expandvars('${POCS}/tests/data')
+def data_dir(request):
+    return os.path.expandvars('./tests/data')
 
 
 @pytest.fixture(scope='function')

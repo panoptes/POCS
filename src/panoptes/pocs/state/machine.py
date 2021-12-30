@@ -307,7 +307,7 @@ class PanStateMachine(Machine):
 
         if not state_table_name.startswith('/'):
             state_table_file = os.path.join(
-                os.getenv('POCS', default='/panoptes-pocs'),
+                os.getenv('POCS', default='/pocs'),
                 'conf_files',
                 'state_table',
                 f'{state_table_name}.yaml'

@@ -27,7 +27,7 @@ def test_fits_exists(unsolved_fits_file):
 
 def test_fits_extension():
     with pytest.raises(AssertionError):
-        Image(os.path.join(os.environ['POCS'], 'pocs', 'images.py'))
+        Image(os.path.join('.', 'pocs', 'images.py'))
 
 
 def test_fits_noheader(noheader_fits_file):
