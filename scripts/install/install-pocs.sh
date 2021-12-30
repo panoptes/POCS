@@ -75,7 +75,7 @@ CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Min
 CONDA_ENV_NAME=conda-pocs
 
 DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
-DOCKER_TAG=${DOCKER_TAG:-"develop"}
+CODE_BRANCH=${CODE_BRANCH:-"develop"}
 
 function make_directories() {
   echo "Creating directories in ${PANDIR}"
@@ -92,9 +92,9 @@ function name_me() {
   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
 }
 
-function which_docker() {
-  read -rp "What docker image tag would you like to use (default: ${DOCKER_TAG})? " USER_DOCKER_TAG
-  DOCKER_TAG="${USER_DOCKER_TAG:-$DOCKER_TAG}"
+function which_branch() {
+  read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
+  CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 }
 
 function get_time_settings() {
@@ -174,24 +174,22 @@ function system_deps() {
 }
 
 function get_or_build_docker_images() {
-  which_docker
-
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
-  sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
+  sudo docker pull "${DOCKER_IMAGE}:${CODE_BRANCH}"
 
   if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
       "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
       "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
     sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
@@ -209,13 +207,38 @@ function install_conda() {
   "${PANDIR}/conda/bin/conda" init zsh >/dev/null
 
   echo "Creating POCS conda environment"
-  "${PANDIR}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3
+  "${PANDIR}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  # Install docker-compose via pip (but first install some annoyingly large dependencies via conda).
-  "${PANDIR}/conda/bin/mamba" install -y -q -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent mamba docker-compose
+  cat <<EOF >environment.yaml
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - astroplan
+  - docker-compose
+  - docopt
+  - fastapi
+  - google-cloud-storage
+  - google-cloud-firestore
+  - gsutil
+  - jupyter_console
+  - matplotlib-base
+  - numpy
+  - pandas
+  - photutils
+  - pip
+  - pynacl
+  - pyrsistent
+  - scipy
+  - streamz
+  - uvicorn[standard]
+  - pip:
+      - "git+https://github.com/panoptes/panoptes-utils@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
+EOF
+
+  "${PANDIR}/conda/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
 }
 
 function install_zsh() {
@@ -296,6 +319,7 @@ function do_install() {
 
   which_version
 
+  which_branch
 
   get_time_settings
 
@@ -305,7 +329,7 @@ function do_install() {
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
   echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
-  echo "DOCKER_TAG: ${DOCKER_TAG}"
+  echo "CODE_BRANCH: ${CODE_BRANCH}"
   echo "ROUTER_IP: ${ROUTER_IP}"
   echo "Logfile: ${LOGFILE}"
   echo ""
