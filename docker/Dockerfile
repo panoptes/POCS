@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install --no-install-recommends --yes \
     # Set up directories.
     mkdir "$image_dir" && chown -R "${userid}:${userid}" "$image_dir" && \
     mkdir "$log_dir" && chown -R "${userid}:${userid}" "$log_dir" && \
-    chown -R "${userid}:${userid}" "${APP_DIR}" && \
+    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}" && \
     # Install microconda, initialize, and install mamba.
     wget "${conda_url_base}/Miniforge3-Linux-$(uname -m).sh" && \
     bash "Miniforge3-Linux-$(uname -m).sh" -b -p /opt/conda && \
