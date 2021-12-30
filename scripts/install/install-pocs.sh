@@ -140,7 +140,7 @@ function system_deps() {
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
-      rpi.gpio-common linux-tools-raspi linux-modules-extras-raspi >/dev/null
+      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi >/dev/null
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
