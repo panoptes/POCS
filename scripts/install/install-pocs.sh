@@ -136,7 +136,7 @@ function system_deps() {
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install rpi.gpio-common linux-tools-raspi >/dev/null
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install rpi.gpio-common linux-tools-raspi linux-modules-extras-raspi >/dev/null
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
@@ -313,11 +313,11 @@ function do_install() {
     sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
   fi
 
-  #  install_conda
+  # install_conda
 
   install_docker
 
-  get_or_build_images
+  # get_or_build_images
 
   echo "Please reboot your machine before using POCS."
 
