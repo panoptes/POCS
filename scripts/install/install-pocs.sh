@@ -200,23 +200,22 @@ function get_or_build_docker_images() {
 function install_conda() {
   echo "Installing miniforge conda"
 
-  wget "${CONDA_URL}" -O install-miniforge.sh
+  wget -q "${CONDA_URL}" -O install-miniforge.sh
   /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" >/dev/null
+  rm install-miniforge.sh
+
   # Initialize conda for the shells.
-  "${PANDIR}/conda/bin/conda" init bash
-  "${PANDIR}/conda/bin/conda" init zsh
+  "${PANDIR}/conda/bin/conda" init bash >/dev/null
+  "${PANDIR}/conda/bin/conda" init zsh >/dev/null
 
   echo "Creating POCS conda environment"
-  "${PANDIR}/conda/bin/conda" create -y -n "${CONDA_ENV_NAME}" python=3
+  "${PANDIR}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
   # Install docker-compose via pip (but first install some annoyingly large dependencies via conda).
-  "${PANDIR}/conda/bin/conda" install -y -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent
-  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
-
-  rm install-miniforge.sh
+  "${PANDIR}/conda/bin/mamba" install -y -q -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent mamba docker-compose
 }
 
 function install_zsh() {
