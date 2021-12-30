@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install --no-install-recommends --yes \
     # Set up directories.
     mkdir "$image_dir" && chown -R "${userid}:${userid}" "$image_dir" && \
     mkdir "$log_dir" && chown -R "${userid}:${userid}" "$log_dir" && \
-    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}" \
+    mkdir -p "${app_dir}" && chown -R "${userid}:${userid}" "${app_dir}"
 
 # Set up arduino cli tools.
 RUN echo "Installing arduino-cli from ${arduino_url}" && \
