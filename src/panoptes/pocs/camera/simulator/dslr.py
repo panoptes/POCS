@@ -77,7 +77,8 @@ class Camera(AbstractCamera):
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
         self.logger.debug(f'Writing filename={filename!r} for {self}')
-        fits_utils.write_fits(fake_data, header, filename)
+        self.write_fits(fake_data, header, filename)
+        self.logger.debug(f'Finished writing {filename=}')
 
         # Sleep for the remainder of the readout time.
         timer.sleep()

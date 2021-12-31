@@ -15,6 +15,7 @@ from panoptes.pocs.camera.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.fli import Camera as FLICamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
+from panoptes.pocs.camera import AbstractCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
@@ -52,7 +53,7 @@ from panoptes.utils.time import CountdownTimer
     'fli',
     'zwo'
 ])
-def camera(request):
+def camera(request) -> AbstractCamera:
     CamClass = request.param[0]
     cam_params = request.param[1]
 
@@ -536,8 +537,10 @@ def test_observation_headers_and_blocking(camera, images_dir):
                                        camera.uid, observation.seq_time, '*.fits*')
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
+    camera.logger.debug(f'{image_files=}')
     headers = fits_utils.getheader(image_files[0])
-    assert fits_utils.getval(image_files[0], 'FIELD') == 'TESTVALUE'
+    camera.logger.debug(f'{headers=!r}')
+    assert headers['FIELD'] == 'TESTVALUE'
 
 
 def test_observation_nofilter(camera, images_dir):
@@ -562,9 +565,9 @@ def test_observation_dark(camera, images_dir):
     assert observation.dark
 
     observation.seq_time = '19991231T235959'
-    observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
-        camera.logger.trace(f'Waiting for observation event from inside test.')
+    camera.take_observation(observation, blocking=True)
+    while camera.is_observing:
+        camera.logger.trace(f'Waiting for observation event from inside test. {camera.is_observing}')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'dark',
                                        camera.uid, observation.seq_time, '*.fits*')
@@ -580,8 +583,8 @@ def test_observation_bias(camera, images_dir):
     assert observation.dark
 
     observation.seq_time = '19991231T235959'
-    observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
+    camera.take_observation(observation)
+    while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'bias',

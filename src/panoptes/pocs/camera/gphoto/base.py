@@ -64,11 +64,11 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             time.sleep(1)
 
         self.logger.debug(f'Processing Canon DSLR exposure with {metadata=!r}')
-        file_path = metadata['file_path']
+        file_path = metadata['filepath']
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {file_path}")
             fits_path = cr2_utils.cr2_to_fits(file_path, headers=metadata, remove_cr2=False)
-            metadata['file_path'] = fits_path
+            metadata['filepath'] = fits_path
             super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
         except TimeoutError:
             self.logger.error(f'Error processing exposure for {file_path} on {self}')

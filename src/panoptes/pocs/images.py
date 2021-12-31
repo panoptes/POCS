@@ -25,6 +25,8 @@ class Image(PanBase):
             wcs_file (str, optional): Name of FITS file to use for WCS
         """
         super().__init__(*args, **kwargs)
+        # Make sure we have a Path instance
+        fits_file = Path(fits_file)
         assert fits_file.exists(), self.logger.warning('File does not exist: {fits_file}')
 
         assert fits_file.suffix in ['.fits', '.fz'], self.logger.warning('File must end with .fits')
@@ -96,7 +98,7 @@ class Image(PanBase):
     def wcs_file(self, filename):
         if filename is not None:
             with suppress(AssertionError):
-                w = fits_utils.getwcs(filename)
+                w = fits_utils.getwcs(str(filename))
                 assert w.is_celestial
 
                 self.wcs = w
@@ -185,7 +187,7 @@ class Image(PanBase):
             radius (scalar): The radius (in degrees) to search near RA-Dec. Defaults to 15°.
             **kwargs: Options to be passed to `get_solve_field`.
         """
-        solve_info = fits_utils.get_solve_field(self.fits_file,
+        solve_info = fits_utils.get_solve_field(str(self.fits_file),
                                                 ra=self.header_pointing.ra.value,
                                                 dec=self.header_pointing.dec.value,
                                                 radius=radius,

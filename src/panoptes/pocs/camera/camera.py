@@ -16,6 +16,7 @@ from panoptes.utils.library import load_module
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
+from panoptes.utils.images import fits as fits_utils
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.observation.base import Exposure, Observation
@@ -110,6 +111,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._current_observation = None
         self._is_exposing_event = threading.Event()
         self._is_observing_event = threading.Event()
+        self._readout_complete = False
         self._exposure_error = None
 
         # By default assume camera isn't capable of internal darks.
@@ -320,6 +322,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         return self._is_observing_event.is_set()
 
     @property
+    def waiting_for_readout(self):
+        """True if the most recent readout has not finished. Should be set in `write_fits`"""
+        return self._readout_complete is False
+
+    @property
     def readiness(self):
         """ Dictionary detailing the readiness of the camera system to take an exposure. """
         current_readiness = {}
@@ -418,7 +425,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Setup the observation
         metadata = self._setup_observation(observation, headers, filename, **kwargs)
         exptime = metadata['exptime']
-        file_path = metadata['file_path']
+        file_path = metadata['filepath']
         image_id = metadata['image_id']
 
         # start the exposure
@@ -445,7 +452,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         t.start()
 
         if blocking:
-            while not self.is_observing:
+            while self.is_observing:
                 self.logger.trace(f'Waiting for observation event')
                 time.sleep(0.5)
 
@@ -480,6 +487,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             threading.Thread: The readout thread, which joins when readout has finished.
         """
         self._exposure_error = None
+        # Reset the readout
+        self._readout_complete = False
 
         if not self.is_connected:
             err = AssertionError("Camera must be connected for take_exposure!")
@@ -526,7 +535,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self._exposure_error = repr(err)
             raise err
 
-        header = self._create_fits_header(seconds, dark, metadata=metadata)
+        header = self._create_fits_header(seconds, dark=dark, metadata=metadata)
 
         try:
             # Camera type specific exposure set up and start
@@ -585,8 +594,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             FileNotFoundError: If the FITS file isn't at the specified location.
         """
         # Wait for exposure to complete. Timeout handled by exposure thread.
-        while self.is_exposing:
-            time.sleep(1)
+        while self.is_exposing or self.waiting_for_readout:
+            time.sleep(0.1)
 
         self.logger.debug(f'Starting exposure processing with {metadata!r}')
 
@@ -594,7 +603,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Make sure image exists.
         try:
-            file_path = metadata['file_path']
+            file_path = metadata['filepath']
             if not os.path.exists(file_path):
                 self._is_observing_event.clear()
                 raise FileNotFoundError(f"Image {file_path=!r} not found, cannot process.")
@@ -609,6 +618,18 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Mark the event as done.
         self._is_observing_event.clear()
+        self.logger.debug(f'Camera observing marked complete: {self.is_observing=}')
+
+    def write_fits(self, data, header, filename):
+        """Write the FITS file.
+
+        This is a thin-wrapper around the `fits_utils.write_fits` method that marks
+        the readout as complete.
+        """
+        self.logger.debug(f'Writing {filename=}')
+        fits_utils.write_fits(data, header, filename)
+        self.logger.debug(f'Finished writing {filename=}')
+        self._readout_complete = True
 
     def autofocus(self,
                   seconds=None,
@@ -845,7 +866,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             header = subcomponent._add_fits_keywords(header)
 
         for k, v in metadata.items():
-            header.set(k, v)
+            try:
+                header.set(k, v)
+            except ValueError as e:
+                self.logger.warning(f'Problem setting FITS header for {k}={v} with {e=!r}')
 
         return header
 
@@ -898,7 +922,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
             file_path = filename
 
-        self.logger.debug(f'Setting file_path={file_path}')
+        self.logger.debug(f'Setting {file_path=}')
 
         unit_id = self.get_config('pan_id')
 
@@ -917,7 +941,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'camera_name': self.name,
             'camera_uid': self.uid,
             'field_name': observation.field.field_name,
-            'file_path': file_path,
+            'filepath': file_path,
             'filter': self.filter_type,
             'image_id': image_id,
             'is_primary': self.is_primary,

@@ -3,11 +3,11 @@ from contextlib import suppress
 import numpy as np
 
 from astropy import units as u
+from astropy.io import fits
 
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.pocs.camera.libfli import FLIDriver
 from panoptes.pocs.camera import libfliconstants as c
-from panoptes.utils.images import fits as fits_utils
 from panoptes.utils import error
 
 
@@ -31,7 +31,7 @@ class Camera(AbstractSDKCamera):
             self.logger.debug('Closed FLI camera handle {}'.format(handle.value))
         super().__del__()
 
-# Properties
+    # Properties
 
     @property
     def temperature(self):
@@ -77,7 +77,7 @@ class Camera(AbstractSDKCamera):
         """ True if an exposure is currently under way, otherwise False """
         return bool(self._driver.FLIGetExposureStatus(self._handle).value)
 
-# Methods
+    # Methods
 
     def connect(self):
         """
@@ -96,7 +96,7 @@ class Camera(AbstractSDKCamera):
         self._is_cooled_camera = True
         self._connected = True
 
-# Private Methods
+    # Private Methods
 
     def _set_target_temperature(self, target):
         self._driver.FLISetTemperature(self._handle, target)
@@ -153,11 +153,11 @@ class Camera(AbstractSDKCamera):
                 self, image_data.shape[0], rows_got, err)
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(data=image_data,
-                                  header=header,
-                                  filename=filename)
+            self.write_fits(data=image_data,
+                            header=header,
+                            filename=filename)
 
-    def _create_fits_header(self, seconds, dark):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
 
         header.set('CAM-HW', self.properties['hardware version'], 'Camera hardware version')
