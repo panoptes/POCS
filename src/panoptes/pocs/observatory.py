@@ -435,7 +435,7 @@ class Observatory(PanBase):
             try:
                 image_id = metadata['image_id']
                 seq_id = metadata['sequence_id']
-                file_path = metadata['file_path']
+                file_path = metadata['filepath']
                 exptime = metadata['exptime']
             except KeyError as e:
                 raise error.PanError(f'No information in image metadata, unable to process:  {e!r}')
@@ -459,7 +459,7 @@ class Observatory(PanBase):
                 self.logger.debug(f'Compressing {file_path=!r}')
                 compressed_file_path = fits_utils.fpack(file_path)
                 exposure.path = Path(compressed_file_path)
-                metadata['file_path'] = compressed_file_path
+                metadata['filepath'] = compressed_file_path
                 self.logger.debug(f'Compressed {compressed_file_path}')
 
             if record_observations or self.get_config('observations.record_observations',
