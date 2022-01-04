@@ -155,6 +155,7 @@ function system_deps() {
     nano \
     neovim \
     sshfs \
+    usbmount \
     wget >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
 
@@ -217,7 +218,6 @@ channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
   - astroplan
-  - docker-compose
   - docopt
   - fastapi
   - google-cloud-storage
@@ -236,9 +236,10 @@ dependencies:
   - uvicorn[standard]
   - pip:
       - "git+https://github.com/panoptes/panoptes-utils@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
+      - docker-compose
 EOF
 
-  "${PANDIR}/conda/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
+  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
 }
 
 function install_zsh() {
