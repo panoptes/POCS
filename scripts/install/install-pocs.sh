@@ -154,6 +154,7 @@ function system_deps() {
     make \
     nano \
     neovim \
+    python3-lgpio \
     sshfs \
     usbmount \
     wget >/dev/null
@@ -235,7 +236,7 @@ dependencies:
   - streamz
   - uvicorn[standard]
   - pip:
-      - "git+https://github.com/panoptes/panoptes-utils@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
+      - "git+https://github.com/panoptes/POCS@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
       - docker-compose
 EOF
 
