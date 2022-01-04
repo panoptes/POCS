@@ -243,6 +243,15 @@ EOF
   "~/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
 }
 
+function install_pocs() {
+  echo "Cloning POCS repo and installing."
+
+  git clone https://github.com/panoptes/POCS "${PANDIR}"
+  cd "${PANDIR}"
+  git checkout "$CODE_BRANCH"
+  pip install ".[google,focuser,sensors]"
+}
+
 function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then
     echo "Using zsh for a better shell experience."
@@ -341,12 +350,14 @@ function do_install() {
     fix_time
   fi
 
-  make_directories
+  # make_directories
 
   echo "Installing system dependencies."
   system_deps
 
   install_conda
+
+  install_pocs
 
   # get_or_build_docker_images
 
