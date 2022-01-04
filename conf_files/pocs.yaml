@@ -68,19 +68,6 @@ mount:
     park_direction: north
     park_seconds: 15
 
-calibs:
-  bias:
-    min_nexp: 5
-    exp_set_size: 1
-  flat:
-    autoflats:
-      evening_initial_flat_exptime: 0.01
-      morning_initial_flat_exptime: 1
-      min_exptime: 0.00025 s
-      max_exptime: 15 s
-      required_exposures: 5  # Per filter per camera
-      max_exposures: 10  # Per filter per camera
-
 pointing:
   max_attempts: 5  # Set to 0 to disable
   auto_correct: True

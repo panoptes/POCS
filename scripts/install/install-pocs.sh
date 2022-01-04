@@ -201,15 +201,15 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget -q "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" >/dev/null
+  /bin/sh install-miniforge.sh -b -f -p "~/conda" >/dev/null
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "${PANDIR}/conda/bin/conda" init bash >/dev/null
-  "${PANDIR}/conda/bin/conda" init zsh >/dev/null
+  "~/conda/bin/conda" init bash >/dev/null
+  "~/conda/bin/conda" init zsh >/dev/null
 
   echo "Creating POCS conda environment"
-  "${PANDIR}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
+  "~/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
@@ -240,7 +240,7 @@ dependencies:
       - docker-compose
 EOF
 
-  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
+  "~/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
 }
 
 function install_zsh() {
