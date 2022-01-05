@@ -67,6 +67,7 @@ HOST="${HOST:-pocs-control-box}"
 LOGFILE="${PANDIR}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
+USE_ZSH=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
 ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
@@ -74,7 +75,7 @@ ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 
-DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
+#DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
 
 function make_directories() {
@@ -129,9 +130,16 @@ function which_version() {
     echo "Setting hostname to ${HOST}"
     sudo hostnamectl set-hostname "$HOST"
   fi
+
+  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    USE_ZSH=true
+  fi
 }
 
 function system_deps() {
+  echo "Installing system dependencies."
+
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
@@ -161,11 +169,6 @@ function system_deps() {
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
 
   sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
-
-  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    install_zsh
-  fi
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -201,15 +204,15 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget -q "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "~/conda" >/dev/null
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >/dev/null
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "~/conda/bin/conda" init bash >/dev/null
-  "~/conda/bin/conda" init zsh >/dev/null
+  "${HOME}/conda/bin/conda" init bash >/dev/null
+  "${HOME}/conda/bin/conda" init zsh >/dev/null
 
   echo "Creating POCS conda environment"
-  "~/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
+  "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
@@ -240,7 +243,7 @@ dependencies:
       - docker-compose
 EOF
 
-  "~/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
+  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
 }
 
 function install_pocs() {
@@ -316,8 +319,8 @@ function fix_time() {
 
 function setup_nfs_host() {
   sudo apt-get install -y nfs-kernel-server
-  sudo mkdir -p "${PANDIR}/images"
-  echo "${PANDIR}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
+  sudo mkdir -p "${HOME}/images"
+  echo "${HOME}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
 
   sudo exportfs -a
   sudo systemctl restart nfs-kernel-server
@@ -339,7 +342,7 @@ function do_install() {
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
-  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
+  #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
   echo "ROUTER_IP: ${ROUTER_IP}"
   echo "Logfile: ${LOGFILE}"
@@ -352,8 +355,11 @@ function do_install() {
 
   # make_directories
 
-  echo "Installing system dependencies."
   system_deps
+
+  if [[ "${USE_ZSH}" == true ]]; then
+    install_zsh
+  fi
 
   install_conda
 
