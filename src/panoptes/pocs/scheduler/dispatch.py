@@ -9,21 +9,23 @@ class Scheduler(BaseScheduler):
         """ Inherit from the `BaseScheduler` """
         BaseScheduler.__init__(self, *args, **kwargs)
 
-    def get_observation(self, time=None, show_all=False, reread_fields_file=False):
-        """Get a valid observation
+    def get_observation(self, time=None, show_all=False, constraints=None, read_file=False):
+        """Get a valid observation.
 
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
                 defaults to time called
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
-            reread_fields_file (bool, optional): If the fields file should be reread
+            constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
+                constraints to check. If `None` (the default), use the `scheduler.constraints`
+            read_file (bool, optional): If the fields file should be reread
                 before scheduling occurs, defaults to False.
 
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
-        if reread_fields_file:
+        if read_file:
             self.logger.debug("Rereading fields file")
             self.read_field_list()
 
@@ -35,8 +37,9 @@ class Scheduler(BaseScheduler):
 
         self.set_common_properties(time)
 
-        for constraint in listify(self.constraints):
-            self.logger.info("Checking Constraint: {}".format(constraint))
+        constraints = constraints or self.constraints
+        for constraint in listify(constraints):
+            self.logger.info(f"Checking Constraint: {constraint}")
             for obs_name, observation in self.observations.items():
                 if obs_name in valid_obs:
                     current_score = valid_obs[obs_name]
@@ -57,14 +60,15 @@ class Scheduler(BaseScheduler):
                     valid_obs[obs_name] += score
                     self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
 
-        self.logger.debug(f'Multiplying final scores by priority')
-        for obs_name, score in valid_obs.items():
-            priority = self.observations[obs_name].priority
-            new_score = score * priority
-            self.logger.debug(f'{obs_name}: {priority:7.2f} *{score:7.2f} = {new_score:7.2f}')
-            valid_obs[obs_name] = new_score
-
         if len(valid_obs) > 0:
+            self.logger.debug(f'Multiplying final scores by priority')
+
+            for obs_name, score in valid_obs.items():
+                priority = self.observations[obs_name].priority
+                new_score = score * priority
+                self.logger.debug(f'{obs_name}: {priority:7.2f} *{score:7.2f} = {new_score:7.2f}')
+                valid_obs[obs_name] = new_score
+
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
 
@@ -94,7 +98,7 @@ class Scheduler(BaseScheduler):
                 if end_of_next_set < self.common_properties['end_of_night'] and \
                         self.observation_available(self.current_observation, end_of_next_set):
 
-                    self.logger.debug("Reusing {}".format(self.current_observation))
+                    self.logger.debug(f"Reusing {self.current_observation}")
                     best_obs = [(self.current_observation.name, self.current_observation.merit)]
                 else:
                     self.logger.warning("No valid observations found")

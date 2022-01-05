@@ -14,6 +14,10 @@ from panoptes.utils.utils import get_quantity_value
 class Camera(AbstractCamera):
 
     @property
+    def egain(self):
+        return 1
+
+    @property
     def bit_depth(self):
         return 12 * u.bit
 

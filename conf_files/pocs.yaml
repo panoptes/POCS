@@ -27,17 +27,15 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
-  base: /var/panoptes
+  base: .
   images: images
-  data: data
-  resources: POCS/resources/
-  targets: POCS/resources/targets
-  mounts: POCS/resources/mounts
+  mounts: resources/mounts
+  fields: conf_files/fields
 
 db:
   name: panoptes
   type: file
-  folder: metadata
+  folder: json_store
 
 wait_delay: 180 # time in seconds before checking safety/etc while waiting.
 max_transition_attempts: 5  # number of transitions attempts.
@@ -46,75 +44,82 @@ status_check_interval: 60 # periodic status check.
 state_machine: panoptes
 
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: simple.yaml
   check_file: False
+  iers_url: "https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
 
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: ieq30pro  #  cem40
+  driver: panoptes.pocs.mount.ioptron.ieq30pro
+  # Load a specific commands file relative to "mounts" dir.
+  commands_file: ioptron/v250
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
-    baudrate: 9600
-  non_sidereal_available: True
-  min_tracking_threshold: 100 # ms
-  max_tracking_threshold: 99999 # ms
+    baudrate: 9600  #  115200 for cem40
+  settings:
+    non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
+    update_tracking: False
+    # After moving to hardware park position, move Dec axis so cameras point down.
+    park_direction: north
+    park_seconds: 15
 
 pointing:
+  max_iterations: 5  # Set to 0 to disable
   auto_correct: True
   threshold: 100 # arcseconds ~ 10 pixels
   exptime: 30 # seconds
-  max_iterations: 5
 
 cameras:
   defaults:
     primary: None
     auto_detect: False
-    file_extension: fits
-    compress_fits: False
-    make_pretty_images: False
-    keep_jpgs: False
-    readout_time: 0.5  # seconds
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: True
+    readout_time: 1.0  # seconds
     timeout: 10  # seconds
     filter_type: RGGB
-    cooling:
-      enabled: False
-      temperature:
-        target: 0  # celsius
-        tolerance: 0.1  # celsius
-      stable_time: 60  # seconds
-      check_interval: 5  # seconds
-      timeout: 300  # seconds
-    filterwheel:
-      model: panoptes.pocs.filterwheel.simulator.FilterWheel
-      filter_names: [ ]
-      move_time: 0.1  # seconds
-      timeout: 0.5  # seconds
-    focuser:
-      enabled: False
-      autofocus_seconds: 0.1  # seconds
-      autofocus_size: 500  # seconds
-      autofocus_keep_files: False
-      autofocus_make_plots: False
   devices:
-    - model: panoptes.pocs.camera.gphoto.canon.Camera
-      name: dslr.00
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.sim.00
       file_extension: cr2
-    - model: panoptes.pocs.camera.gphoto.canon.Camera
-      name: dslr.01
+    - model: panoptes.pocs.camera.simulator.dslr.Camera
+      name: dslr.sim.01
       file_extension: cr2
+      primary: True
 
 ######################### Environmental Sensors ################################
 # Configuration for the power distribution board and other environmental sensors.
 ################################################################################
 environment:
-  auto_detect: False
-  camera_board:
-    serial_port: /dev/ttyACM0
-  control_board:
-    serial_port: /dev/ttyACM1
+  # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
+  power:
+    name: Trucker Power
+    arduino_board_name: power_board
+    record_interval: 5  # seconds
+    mean_interval: 5  # seconds
+    port: /dev/ttyACM0
+    relays:
+      RELAY_0:
+        label: weather_station
+        default_state: on
+      RELAY_1:
+        label: unused1
+        default_state: off
+      RELAY_2:
+        label: fans
+        default_state: off
+      RELAY_3:
+        label: unused3
+        default_state: off
+      RELAY_4:
+        label: mount
+        default_state: on
   weather:
     url: http://localhost:5000/latest.json
 
@@ -154,9 +159,9 @@ observations:
 panoptes_network:
   image_storage: False
   service_account_key: # Location of JSON account key
-  project_id: panoptes-survey
+  project_id: panoptes-exp
   buckets:
-    images: panoptes-survey
+    images: panoptes-exp
 
 ############################### pocs ##################################
 # POCS status flags. The values below represent initial values but

@@ -1,11 +1,11 @@
 import datetime
 import queue
-from serial import serialutil
 import threading
 import time
+from serial import serialutil
 
 from panoptes.pocs.dome import astrohaven
-from panoptes.utils import serial_handlers
+from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
@@ -39,24 +39,24 @@ class Shutter(object):
     def handle_input(self, input_char):
         if input_char in self.open_commands:
             if self.is_open:
-                return (False, self.is_open_char)
+                return False, self.is_open_char
             self.logger.debug(f'Opening side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_OPEN_INCREMENT)
             if self.is_open:
                 self.logger.debug(f'Opened side {self.side}')
-                return (True, self.is_open_char)
-            return (True, input_char)
+                return True, self.is_open_char
+            return True, input_char
         elif input_char in self.close_commands:
             if self.is_closed:
-                return (False, self.is_closed_char)
+                return False, self.is_closed_char
             self.logger.debug(f'Closing side {self.side}, starting position {self.position}')
             self.adjust_position(NUDGE_CLOSED_INCREMENT)
             if self.is_closed:
                 self.logger.debug(f'Closed side {self.side}')
-                return (True, self.is_closed_char)
-            return (True, input_char)
+                return True, self.is_closed_char
+            return True, input_char
         else:
-            return (False, None)
+            return False, None
 
     def adjust_position(self, nudge_by):
         new_position = self.position + nudge_by
@@ -179,7 +179,7 @@ class AstrohavenPLCSimulator:
             return Protocol.BOTH_OPEN
 
 
-class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
+class AstrohavenSerialSimulator(NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = get_logger()
@@ -216,7 +216,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def in_waiting(self):
         """The number of input bytes available to read immediately."""
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         return self.status_queue.qsize()
 
     def reset_input_buffer(self):
@@ -237,7 +237,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             Bytes read from the port, of type 'bytes'.
         """
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
 
         # Not checking if the config is OK, so will try to read from a possibly
         # empty queue if using the wrong baudrate, etc. This is deliberate.
@@ -263,7 +263,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def out_waiting(self):
         """The number of bytes in the output buffer."""
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         return self.command_queue.qsize()
 
     def reset_output_buffer(self):
@@ -272,7 +272,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         Aborts the current output, discarding all that is in the output buffer.
         """
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         _drain_queue(self.command_queue)
 
     def flush(self):
@@ -282,7 +282,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         commands from the queue.
         """
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         while not self.command_queue.empty():
             time.sleep(0.01)
 
@@ -319,7 +319,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
 
     def _read1(self, timeout_obj):
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         try:
             c = self.status_queue.get(block=True, timeout=timeout_obj.time_left())
             assert isinstance(c, str)
@@ -332,12 +332,12 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
 
     def _write1(self, b, timeout_obj):
         if not self.is_open:
-            raise serialutil.portNotOpenError
+            raise serialutil.PortNotOpenError
         try:
             self.command_queue.put(chr(b), block=True, timeout=timeout_obj.time_left())
         except queue.Full:
             # This exception is "lossy" in that the caller can't tell how much was written.
-            raise serialutil.writeTimeoutError
+            raise serialutil.Timeout
 
     # --------------------------------------------------------------------------
     # There are a number of methods called by SerialBase that need to be

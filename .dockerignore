@@ -17,12 +17,9 @@ logs/
 **/*.pdf
 **/*.log
 **/*.egg-info
-**/*.pyc
 **/__pycache__
-notebooks
 examples
 docs
-build
 coverage.xml
 
 # Build and docs folder/files

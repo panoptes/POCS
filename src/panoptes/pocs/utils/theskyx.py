@@ -1,7 +1,7 @@
 import socket
 
 from panoptes.utils import error
-from panoptes.utils.logging import logger
+from panoptes.pocs.utils.logger import get_logger
 
 
 class TheSkyX(object):
@@ -11,7 +11,7 @@ class TheSkyX(object):
     """
 
     def __init__(self, host='localhost', port=3040, connect=True, *args, **kwargs):
-        self.logger = logger
+        self.logger = get_logger()
 
         self._host = host
         self._port = port

@@ -1,27 +1,6 @@
 #cloud-config
 # https://cloudinit.readthedocs.io/
 
-hostname: pocs-control
-
-# If you have set up ssh on github you can pull down your
-# key automatically so that you can log into the unit without
-# a password.
-ssh_import_id:
-  #  - gh:your_github_id
-  - gh:panoptes
-
-#####################################################################
-# You shouldn't need to change anything below.
-#####################################################################
-
-ntp:
-  enabled: true
-  servers:
-    - time1.google.com
-    - time2.google.com
-    - time3.google.com
-    - time4.google.com
-
 # Setting "expire: true" will force a password change on first login.
 chpasswd:
   expire: true
@@ -39,53 +18,26 @@ users:
   - name: panoptes
     gecos: PANOPTES User
     primary_group: panoptes
-    groups: users, admin, dialout, plugdev, docker, i2c, input, gpio, panoptes
+    groups: users, admin, dialout, plugdev, docker, i2c, spi, video, input, gpio
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     lock_passwd: false
-    shell: /bin/zsh
+    shell: /bin/bash
 
 ## Update apt database and upgrade packages on first boot
-package_update: true
-package_upgrade: true
-
-byobu: enable
-
-## Install additional packages on first boot.
-packages:
-  - apt-transport-https
-  - byobu
-  - ca-certificates
-  - git
-  - htop
-  - httpie
-  - jq
-  - neovim
-  - software-properties-common
-  - speedometer
-  - vim-nox
-  - watchdog
-  - zsh
+package_update: false
+package_upgrade: false
 
 write_files:
-  # Allow panoptes user to mount via sshfs.
-  - content: |
+  - path: /etc/fuse.conf
+    content: |
       user_allow_other
-    path: /etc/fuse.conf
     append: true
 
-## Get and run the install script upon first boot.
+# Get and run the install script upon first boot.
 runcmd:
-  # Setup hardware watchdog
-#  - echo 'interface = eth0' >> /etc/watchdog.conf
-#  - echo 'interface = wlan0' >> /etc/watchdog.conf
   - echo 'watchdog-device = /dev/watchdog' >> /etc/watchdog.conf
   - echo 'watchdog-timeout = 15' >> /etc/watchdog.conf
   - echo 'max-load-1 = 24' >> /etc/watchdog.conf
-  # Get the install file.
-  - mkdir -p /var/panoptes/scripts
-  - chown -R panoptes:panoptes /var/panoptes
-  - wget https://install.projectpanoptes.org -O /var/panoptes/scripts/install-pocs.sh
-  - bash /var/panoptes/scripts/install-pocs.sh
 
 power_state:
   mode: reboot

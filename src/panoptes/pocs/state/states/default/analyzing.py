@@ -9,17 +9,18 @@ def on_enter(event_data):
     pocs.next_state = 'tracking'
     try:
 
-        pocs.observatory.analyze_recent()
+        if pocs.get_config('mount.settings.update_tracking', False):
+            pocs.logger.debug('Analyzing recent image from analyzing state')
+            pocs.observatory.analyze_recent()
 
-        if pocs.get_config('actions.FORCE_RESCHEDULE'):
+        if pocs.get_config('actions.FORCE_RESCHEDULE', False):
             pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
-        # Check for minimum number of exposures
-        if observation.current_exp_num >= observation.min_nexp:
-            # Check if we have completed an exposure block
-            if observation.current_exp_num % observation.exp_set_size == 0:
-                pocs.next_state = 'scheduling'
+        # Check if observation set is finished
+        if observation.set_is_finished:
+            pocs.next_state = 'scheduling'
+
     except Exception as e:
         pocs.logger.error(f"Problem in analyzing: {e!r}")
         pocs.next_state = 'parking'

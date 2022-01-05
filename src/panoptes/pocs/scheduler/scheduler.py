@@ -1,24 +1,26 @@
 import os
+from abc import abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
-from panoptes.pocs.base import PanBase
-from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation import Observation
+
 from panoptes.utils import error
+from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
-from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BaseScheduler(PanBase):
 
     def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
                  **kwargs):
-        """Loads `~pocs.scheduler.field.Field`s from a field
+        """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
             `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
@@ -31,7 +33,7 @@ class BaseScheduler(PanBase):
         Args:
             observer (`astroplan.Observer`): The physical location the scheduling
                 will take place from.
-            fields_list (list, optional): A list of valid field configurations.
+            fields_list (list, optional): A list of valid target configurations.
             fields_file (str): YAML file containing field parameters.
             constraints (list, optional): List of `Constraints` to apply to each observation.
             *args: Arguments to be passed to `PanBase`
@@ -44,18 +46,15 @@ class BaseScheduler(PanBase):
         self._observations = dict()
         self._current_observation = None
         self._fields_list = fields_list
-
+        # Use the setter, which will force a file read.
         self.fields_file = fields_file
-        # Setting the fields_list directly will clobber anything
-        # from the fields_file. It comes second so we can specifically
-        # clobber if passed.
 
         self.observer = observer
         self.constraints = constraints or list()
         self.observed_list = OrderedDict()
 
         if self.get_config('scheduler.check_file', default=True):
-            self.logger.debug("Reading initial set of fields")
+            self.logger.debug("Reading fields list.")
             self.read_field_list()
 
         # Items common to each observation that shouldn't be computed each time.
@@ -174,25 +173,16 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
+    @abstractmethod
+    def get_observation(self, *args, **kwargs):
+        """Get a valid observation."""
+        raise NotImplementedError
+
     def clear_available_observations(self):
         """Reset the list of available observations"""
         # Clear out existing list and observations
         self.current_observation = None
         self._observations = dict()
-
-    def get_observation(self, time=None, show_all=False):
-        """Get a valid observation
-
-        Args:
-            time (astropy.time.Time, optional): Time at which scheduler applies,
-                defaults to time called
-            show_all (bool, optional): Return all valid observations along with
-                merit value, defaults to False to only get top value
-
-        Returns:
-            tuple or list: A tuple (or list of tuples) with name and score of ranked observations
-        """
-        raise NotImplementedError
 
     def reset_observed_list(self):
         """Reset the observed list """
@@ -209,31 +199,24 @@ class BaseScheduler(PanBase):
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
-    def add_observation(self, field_config):
-        """Adds an `Observation` to the scheduler
+    def add_observation(self, observation_config, **kwargs):
+        """Adds an `Observation` to the scheduler.
 
         Args:
-            field_config (dict): Configuration items for `Observation`
+            observation_config (dict): Configuration dict for `Field` and `Observation`.
         """
-        with suppress(KeyError):
-            field_config['exptime'] = float(
-                get_quantity_value(field_config['exptime'], unit=u.second)) * u.second
-
-        self.logger.debug(f"Adding field_config={field_config!r} to scheduler")
-        field = Field(field_config['name'], field_config['position'])
-        self.logger.debug(f"Created field.name={field.name!r}")
-
         try:
-            self.logger.debug(f"Creating observation for {field_config!r}")
-            obs = Observation(field, **field_config)
-            self.logger.debug(f"Observation created for field.name={field.name!r}")
+            obs = Observation.from_dict(observation_config, **kwargs)
+            self.logger.debug(f"Observation created: {obs!r}")
+
+            # Add observation to scheduler.
+            if obs.name in self._observations:
+                self.logger.debug(f"Overriding existing entry for {obs.name=!r}")
+            self._observations[obs.name] = obs
+            self.logger.debug(f"{obs!r} added to {self}.")
+
         except Exception as e:
-            raise error.InvalidObservation(f"Skipping invalid field: {field_config!r} {e!r}")
-        else:
-            if field.name in self._observations:
-                self.logger.debug(f"Overriding existing entry for field.name={field.name!r}")
-            self._observations[field.name] = obs
-            self.logger.debug(f"obs={obs!r} added")
+            raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
@@ -248,7 +231,7 @@ class BaseScheduler(PanBase):
             self.logger.debug(f"Observation removed: {obs}")
 
     def read_field_list(self):
-        """Reads the field file and creates valid `Observations` """
+        """Reads the field file and creates valid `Observations`."""
         self.logger.debug(f'Reading fields from file: {self.fields_file}')
         if self._fields_file is not None:
 
@@ -259,16 +242,14 @@ class BaseScheduler(PanBase):
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:
-            for field_config in self._fields_list:
+            for observation_config in self._fields_list:
                 try:
-                    self.add_observation(field_config)
-                except AssertionError:
-                    self.logger.debug("Skipping duplicate field.")
+                    self.add_observation(observation_config)
                 except Exception as e:
-                    self.logger.warning(f"Error adding field: {e!r}")
+                    self.logger.warning(f"Error adding observation: {e!r}")
 
     def set_common_properties(self, time):
-
+        """Sets some properties common to all observations, such as end of night, moon, etc."""
         horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
         self.common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],

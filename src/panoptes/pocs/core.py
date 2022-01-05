@@ -1,11 +1,7 @@
 import os
-import sys
-import warnings
-from threading import Thread
 from contextlib import suppress
 
 from astropy import units as u
-
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.state.machine import PanStateMachine
@@ -76,17 +72,6 @@ class POCS(PanStateMachine, PanBase):
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
         self.connected = True
         self.interrupted = False
-
-        # We want to call and record the status on a periodic interval.
-        def get_periodic_status():
-            while self.connected:
-                status = self.status
-                self.logger.trace(f'Periodic status call: {status!r}')
-                self.db.insert_current('status', status)
-                CountdownTimer(self.get_config('status_check_interval', default=60)).sleep()
-
-        self._status_thread = Thread(target=get_periodic_status, daemon=True)
-        self._status_thread.start()
 
         self.say("Hi there!")
 
@@ -180,9 +165,9 @@ class POCS(PanStateMachine, PanBase):
 
         return status
 
-    ##################################################################################################
+    ################################################################################################
     # Methods
-    ##################################################################################################
+    ################################################################################################
 
     def initialize(self):
         """Initialize POCS.
@@ -264,8 +249,6 @@ class POCS(PanStateMachine, PanBase):
 
             self.connected = False
 
-            self._status_thread.join(1)
-
             # Clear all the config items.
             self.logger.success("Power down complete")
 
@@ -274,9 +257,9 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
-    ##################################################################################################
+    ################################################################################################
     # Safety Methods
-    ##################################################################################################
+    ################################################################################################
 
     def is_safe(self, no_warning=False, horizon='observe', ignore=None, park_if_not_safe=True):
         """Checks the safety flag of the system to determine if safe.
@@ -347,8 +330,8 @@ class POCS(PanStateMachine, PanBase):
             # These states are already "parked" so don't send to parking.
             state_always_safe = self.get_state(self.state).is_always_safe
             if not state_always_safe and park_if_not_safe:
-                self.logger.warning('Safety failed so sending to park')
-                self.park()
+                self.logger.warning(f'Safety failed, setting {self.next_state=} to "parking"')
+                self.next_state = 'parking'
 
         return safe
 
@@ -426,7 +409,8 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte,
+                       low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:
@@ -512,9 +496,9 @@ class POCS(PanStateMachine, PanBase):
 
         return has_power
 
-    ##################################################################################################
+    ################################################################################################
     # Convenience Methods
-    ##################################################################################################
+    ################################################################################################
 
     def wait(self, delay=None):
         """ Send POCS to wait.
@@ -529,7 +513,7 @@ class POCS(PanStateMachine, PanBase):
         if delay is None:  # pragma: no cover
             delay = self.get_config('wait_delay', default=2.5)
 
-        sleep_timer = CountdownTimer(delay)
+        sleep_timer = CountdownTimer(delay, name='POCSWait')
         self.logger.info(f'Starting a wait timer of {delay} seconds')
         while not sleep_timer.expired() and not self.interrupted:
             self.logger.debug(f'Wait timer: {sleep_timer.time_left():.02f} / {delay:.02f}')

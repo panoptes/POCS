@@ -20,7 +20,7 @@ _all_databases = ['file', 'memory']
 TESTING_LOG_LEVEL = 'TRACE'
 LOGGER_INFO = PanLogger()
 
-logger = get_logger(console_log_file=TESTING_LOG_LEVEL)
+logger = get_logger(console_log_level=TESTING_LOG_LEVEL)
 logger.enable('panoptes')
 # Add a level above TRACE and below DEBUG
 logger.level("testing", no=15, icon="🤖", color="<LIGHT-BLUE><white>")
@@ -30,7 +30,8 @@ log_fmt = "<lvl>{level:.1s}</lvl> " \
           "| <c>{name} {function}:{line}</c> | " \
           "<lvl>{message}</lvl>"
 
-log_file_path = os.path.expandvars('${PANLOG}/panoptes-testing.log')
+log_dir = os.getenv('PANLOG', 'logs')
+log_file_path = os.path.join(log_dir, 'panoptes-testing.log')
 startup_message = f' STARTING NEW PYTEST RUN - LOGS: {log_file_path} '
 logger.add(log_file_path,
            enqueue=True,  # multiprocessing

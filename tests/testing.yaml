@@ -31,23 +31,23 @@ location:
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
 directories:
-  base: /var/panoptes
+  base: .
   images: images
   data: data
-  resources: POCS/resources/
-  targets: POCS/conf_files/targets
-  mounts: POCS/resources/mounts
+  resources: resources/
+  fields: conf_files/fields
+  mounts: resources/mounts
 db:
   name: panoptes_testing
   type: file
 scheduler:
-  type: dispatch
+  type: panoptes.pocs.scheduler.dispatch
   fields_file: simulator.yaml
   check_file: False
 mount:
   brand: ioptron
-  model: 30
-  driver: ioptron
+  model: cem40   #  ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
@@ -57,7 +57,7 @@ pointing:
   auto_correct: True
   threshold: 500 # arcseconds ~ 50 pixels
   exptime: 30 # seconds
-  max_iterations: 3
+  max_iterations: 1
 cameras:
   defaults:
     primary: None
@@ -157,6 +157,11 @@ cameras:
         move_time: 0.1
         timeout: 0.5
         dark_position: blank
+        focus_offsets:
+          one: 0
+          deux: 1
+          drei: 2
+          quattro: 3
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field

@@ -24,31 +24,31 @@ tags
 
 # Package files
 *.egg
-*.eggs/
+*.eggs
 .installed.cfg
 *.egg-info
 
 # Unittest and coverage
-htmlcov/*
-.coverage
+htmlcov
 .tox
 junit.xml
 coverage.xml
-.coverage.*
-.pytest_cache/
+.coverage*
+.pytest_cache
+cover
 
 # Build and docs folder/files
-build/*
-dist/*
-sdist/*
-docs/api/*
-docs/_rst/*
-docs/_build/*
-cover/*
+build
+dist
+sdist
+docs/api
+docs/_rst
+docs/_build
 MANIFEST
 
 # Per-project virtualenvs
-.venv*/
-**/.ipynb_checkpoints/**
+.venv*
+.ipynb_checkpoints
 
 logs
+conf_files/*_local.yaml

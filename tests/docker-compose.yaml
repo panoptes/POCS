@@ -1,51 +1,23 @@
-version: '3.7'
+version: "3.7"
 services:
-  config-server:
-    image: panoptes-pocs:latest
+  pocs:
+    image: panoptes-pocs:testing
     build:
       context: ../
       dockerfile: docker/Dockerfile
+      args:
+        pip_install_extras: '[google,focuser,testing]'
     init: true
     tty: true
-    network_mode: host
     environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANLOG:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
-    command: [ "panoptes-config-server --verbose run" ]
-  pocs:
-    image: panoptes-pocs:latest
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
-    init: true
+      - PANDIR=/panoptes-pocs
+      - POCS=/panoptes-pocs
+      - PANOPTES_CONFIG_FILE=/panoptes-pocs/tests/testing.yaml
+      - PANOPTES_CONFIG_HOST=localhost
+      - PANOPTES_CONFIG_PORT=8765
     privileged: true
     network_mode: host
-    environment:
-      # These need to be defined in the shell on the host.
-      PANDIR:
-      PANLOG:
-      PANOPTES_CONFIG_HOST:
-      PANOPTES_CONFIG_PORT:
-      PANOPTES_CONFIG_FILE:
-    # No-op to keep machine running, use $POCS/bin/pocs-shell to access
-    command: [ "wait-for-it ${PANOPTES_CONFIG_PORT}:${PANOPTES_CONFIG_PORT} -- pytest" ]
+    command: [ "pytest" ]
     volumes:
-      - logdir:/var/panoptes/logs
-      - builddir:/var/panoptes/POCS/build
-volumes:
-  logdir:
-    driver: local
-    driver_opts:
-      type: none
-      device: logs
-      o: bind
-  builddir:
-    driver: local
-    driver_opts:
-      type: none
-      device: build
-      o: bind
+      - "$PWD/logs:/panoptes-pocs/logs"
+      - "$PWD/build:/panoptes-pocs/build"

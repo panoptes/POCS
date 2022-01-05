@@ -1,68 +1,70 @@
-FROM ubuntu:latest
+ARG image_url=gcr.io/panoptes-exp/panoptes-utils
+ARG image_tag=develop
+FROM ${image_url}:${image_tag} AS panoptes-pocs-base
 
-LABEL description="Installs the panoptes-pocs module from GitHub."
+ARG arduino_url="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest"
+
+LABEL description="PANOPTES Observatory Control System (POCS) Service"
 LABEL maintainers="developers@projectpanoptes.org"
 LABEL repo="github.com/panoptes/POCS"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV PYTHONUNBUFFERED 1
 
-ARG panuser=pocs-user
 ARG userid=1000
-ARG pan_dir=/var/panoptes
+ENV USERID $USERID
 
-ENV PANUSER $panuser
-ENV USERID $userid
-ENV PANDIR $pan_dir
+ARG app_dir=/panoptes-pocs
+ENV APP_DIR $app_dir
 
-# Install system dependencies.
-RUN apt-get update && apt-get install --no-install-recommends --yes \
-        bzip2 ca-certificates \
-        wget gcc git pkg-config sudo gosu less udev \
-        astrometry.net astrometry-data-tycho2-10-19 dcraw exiftool \
-        libcfitsio-dev libcfitsio-bin \
-        libfreetype6-dev libpng-dev libjpeg-dev libffi-dev \
-        gphoto2 && \
-    useradd -u ${USERID} -o -c "PANOPTES POCS" \
-        -p panoptes -m -G plugdev,dialout,users,sudo ${PANUSER} && \
-    # Allow sudo without password.
-    echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+ARG image_dir=/images
+ARG log_dir=/logs
 
-# Miniconda
-WORKDIR /tmp
-RUN wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" \
-        -O install-miniforge.sh && \
-    /bin/sh /tmp/install-miniforge.sh -b -f -p /conda && \
-    # Initialize conda for the shells.
-    /conda/bin/conda init bash
+WORKDIR "${APP_DIR}"
+USER "${USERID}"
 
-COPY environment.yaml .
-RUN /conda/bin/conda env update -n base -f environment.yaml && \
-    # Create PANOPTES directories.
-    mkdir -p ${PANDIR} && \
-    mkdir -p ${PANDIR}/logs && \
-    mkdir -p ${PANDIR}/images
+# Dependencies and directories.
+RUN echo "Building from ${image_url}:${image_tag}" && \
+    sudo apt-get update && \
+    sudo apt-get install -y --no-install-recommends \
+        astrometry-data-tycho2-10-19 && \
+    # Set up directories in PANUSER home.
+    sudo mkdir "$image_dir" && sudo chown -R "${USERID}:${USERID}" "$image_dir" && \
+    sudo mkdir "$log_dir" && sudo chown -R "${USERID}:${USERID}" "$log_dir" && \
+    sudo chown -R "${USERID}:${USERID}" "${APP_DIR}"
 
-ARG pocs_dir="${PANDIR}/POCS"
-ENV POCS $pocs_dir
-ENV PATH "/home/${PANUSER}/.local/bin:$PATH"
+# Set up arduino cli tools.
+RUN echo "Installing arduino-cli from ${arduino_url}" && \
+    wget "${arduino_url}_Linux_$(uname -m | sed 's/x86_64/64bit/' | sed 's/aarch64/ARM64/').tar.gz" \
+        -O arduino-cli.tar.gz && \
+    tar zxvf arduino-cli.tar.gz && \
+    mkdir -p "${HOME}/.local/bin" && \
+    mv arduino-cli "${HOME}/.local/bin/arduino-cli"  && \
+    rm LICENSE.txt && rm arduino-cli.tar.gz
 
-ARG pip_extras="[google,testing]"
+FROM panoptes-pocs-base AS panoptes-pocs-dependencies
 
-USER "${userid}"
-WORKDIR "${POCS}"
-COPY --chown="${userid}:${userid}" . .
-RUN echo "Installing editable module with ${pip_extras}" && \
-    sudo chown -R ${PANUSER}:${PANUSER} ${PANDIR} && \
-    /conda/bin/pip install -e ".${pip_extras}" && \
-    # Remove git folder
-    rm -rf "${POCS}/.git" && \
+# Update conda environment with dependencies.
+COPY docker/environment.yaml .
+RUN echo "Updating conda environment" && \
+    mamba env update -n base -f environment.yaml && \
+    mamba clean -tipy --force-pkgs-dirs
+
+FROM panoptes-pocs-dependencies AS panoptes-pocs
+
+ARG pip_install_name="."
+ARG pip_install_extras="[google]"
+
+COPY --chown="${USERID}:${USERID}" . .
+RUN echo "Installing ${pip_install_name} module with ${pip_install_extras}" && \
+    pip install --no-cache-dir "${pip_install_name}${pip_install_extras}" && \
     # Cleanup
-    sudo apt-get autoremove --purge --yes && \
+    sudo apt-get autoremove --purge --yes \
+        gcc pkg-config && \
     sudo apt-get autoclean --yes && \
     sudo apt-get --yes clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
-USER root
-ENTRYPOINT ["/bin/sh", "/var/panoptes/POCS/scripts/entrypoint.sh"]
-CMD [ "/bin/bash" ]
+# TODO replace with pocs-cli.
+CMD [ "ipython" ]

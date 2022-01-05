@@ -356,41 +356,6 @@ class Mount(AbstractMount):
     # Private Methods
     ##########################################################################
 
-    def _setup_commands(self, commands):
-        """
-        Does any setup for the commands needed for this mount. Mostly responsible for
-        setting the pre- and post-commands. We could also do some basic checking here
-        to make sure required commands are in fact available.
-        """
-        self.logger.debug('Setting up commands for mount')
-
-        if len(commands) == 0:
-            model = self.get_config('mount.brand')
-            if model is not None:
-                mount_dir = self.get_config('directories.mounts')
-                conf_file = f"{mount_dir}/{model}.yaml"
-
-                if os.path.isfile(conf_file):
-                    self.logger.debug(f"Loading mount commands file: {conf_file}")
-                    try:
-                        with open(conf_file, 'r') as f:
-                            commands.update(from_yaml(f.read()))
-                            self.logger.debug(f"Mount commands updated from {conf_file}")
-                    except OSError as err:
-                        self.logger.warning(
-                            f'Cannot load commands config file: {conf_file} \n {err}')
-                    except Exception:
-                        self.logger.warning("Problem loading mount command file")
-                else:
-                    self.logger.warning(f"No such config file for mount commands: {conf_file}")
-
-        # Get the pre- and post- commands
-        self._pre_cmd = commands.setdefault('cmd_pre', ':')
-        self._post_cmd = commands.setdefault('cmd_post', '#')
-
-        self.logger.debug('Mount commands set up')
-        return commands
-
     def _get_command(self, cmd, params=None):
         """ Looks up appropriate command for telescope """
 

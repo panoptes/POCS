@@ -14,5 +14,5 @@ def on_enter(event_data):
             pocs.logger.critical('Unable to close dome!')
             pocs.say('Unable to close dome!')
 
-    pocs.say("I'm takin' it on home and then parking.")
-    pocs.observatory.mount.home_and_park()
+    pocs.say("I'm parking.")
+    pocs.observatory.mount.park()

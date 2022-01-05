@@ -70,7 +70,7 @@ class Camera(AbstractSDKCamera):
         """ Attempt some clean up """
         with suppress(AttributeError):
             camera_ID = self._handle
-            Camera._driver.close_camera(camera_ID)
+            self._driver.close_camera(camera_ID)
             self.logger.debug("Closed ZWO camera {}".format(camera_ID))
         super().__del__()
 
@@ -79,7 +79,7 @@ class Camera(AbstractSDKCamera):
     @property
     def image_type(self):
         """ Current camera image type, one of 'RAW8', 'RAW16', 'Y8', 'RGB24' """
-        roi_format = Camera._driver.get_roi_format(self._handle)
+        roi_format = self._driver.get_roi_format(self._handle)
         return roi_format['image_type']
 
     @image_type.setter
@@ -90,7 +90,7 @@ class Camera(AbstractSDKCamera):
             raise ValueError(msg)
         roi_format = self._driver.get_roi_format(self._handle)
         roi_format['image_type'] = new_image_type
-        Camera._driver.set_roi_format(self._handle, **roi_format)
+        self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
     def bit_depth(self):
@@ -141,7 +141,7 @@ class Camera(AbstractSDKCamera):
     @property
     def is_exposing(self):
         """ True if an exposure is currently under way, otherwise False """
-        return Camera._driver.get_exposure_status(self._handle) == "WORKING"
+        return self._driver.get_exposure_status(self._handle) == "WORKING"
 
     # Methods
 
@@ -162,11 +162,11 @@ class Camera(AbstractSDKCamera):
             self._filter_type = self.properties['bayer_pattern']
         else:
             self._filter_type = 'M'  # Monochrome
-        Camera._driver.open_camera(self._handle)
-        Camera._driver.init_camera(self._handle)
-        self._control_info = Camera._driver.get_control_caps(self._handle)
+        self._driver.open_camera(self._handle)
+        self._driver.init_camera(self._handle)
+        self._control_info = self._driver.get_control_caps(self._handle)
         self._info['control_info'] = self._control_info  # control info accessible via properties
-        Camera._driver.disable_dark_subtract(self._handle)
+        self._driver.disable_dark_subtract(self._handle)
         self._connected = True
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
@@ -176,7 +176,7 @@ class Camera(AbstractSDKCamera):
         if image_type:
             self.image_type = image_type
 
-        roi_format = Camera._driver.get_roi_format(self._handle)
+        roi_format = self._driver.get_roi_format(self._handle)
         width = int(get_quantity_value(roi_format['width'], unit=u.pixel))
         height = int(get_quantity_value(roi_format['height'], unit=u.pixel))
         image_type = roi_format['image_type']
@@ -195,14 +195,14 @@ class Camera(AbstractSDKCamera):
                                         args=video_args,
                                         daemon=True)
 
-        Camera._driver.start_video_capture(self._handle)
+        self._driver.start_video_capture(self._handle)
         self._video_event.clear()
         video_thread.start()
         self.logger.debug("Video capture started on {}".format(self))
 
     def stop_video(self):
         self._video_event.set()
-        Camera._driver.stop_video_capture(self._handle)
+        self._driver.stop_video_capture(self._handle)
         self.logger.debug("Video capture stopped on {}".format(self))
 
     # Private methods
@@ -238,7 +238,7 @@ class Camera(AbstractSDKCamera):
             if self._video_event.is_set():
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
-            video_data = Camera._driver.get_video_data(self._handle,
+            video_data = self._driver.get_video_data(self._handle,
                                                        width,
                                                        height,
                                                        image_type,
@@ -269,8 +269,8 @@ class Camera(AbstractSDKCamera):
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
         self._control_setter('EXPOSURE', seconds)
-        roi_format = Camera._driver.get_roi_format(self._handle)
-        Camera._driver.start_exposure(self._handle)
+        roi_format = self._driver.get_roi_format(self._handle)
+        self._driver.start_exposure(self._handle)
         readout_args = (filename,
                         roi_format['width'],
                         roi_format['height'],
@@ -278,10 +278,10 @@ class Camera(AbstractSDKCamera):
         return readout_args
 
     def _readout(self, filename, width, height, header):
-        exposure_status = Camera._driver.get_exposure_status(self._handle)
+        exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == 'SUCCESS':
             try:
-                image_data = Camera._driver.get_exposure_data(self._handle,
+                image_data = self._driver.get_exposure_data(self._handle,
                                                               width,
                                                               height,
                                                               self.image_type)
@@ -313,11 +313,11 @@ class Camera(AbstractSDKCamera):
         return header
 
     def _refresh_info(self):
-        self._info = Camera._driver.get_camera_property(self._address)
+        self._info = self._driver.get_camera_property(self._address)
 
     def _control_getter(self, control_type):
         if control_type in self._control_info:
-            return Camera._driver.get_control_value(self._handle, control_type)
+            return self._driver.get_control_value(self._handle, control_type)
         else:
             raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
 
@@ -334,20 +334,19 @@ class Camera(AbstractSDKCamera):
             # Check limits.
             max_value = self._control_info[control_type]['max_value']
             if value > max_value:
-                msg = "Cannot set {} to {}, clipping to max value {}".format(
-                    control_name, value, max_value)
-                Camera._driver.set_control_value(self._handle, control_type, max_value)
-                raise error.IllegalValue(msg)
+                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to max value:"
+                                    f" {max_value}.")
+                self._driver.set_control_value(self._handle, control_type, max_value)
+                return
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
-                msg = "Cannot set {} to {}, clipping to min value {}".format(
-                    control_name, value, min_value)
-                Camera._driver.set_control_value(self._handle, control_type, min_value)
-                raise error.IllegalValue(msg)
+                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to min value:"
+                                    f" {min_value}.")
+                self._driver.set_control_value(self._handle, control_type, min_value)
+                return
         else:
             if not self._control_info[control_type]['is_auto_supported']:
-                msg = "{} cannot set {} to AUTO".format(self.model, control_name)
-                raise error.IllegalValue(msg)
+                raise error.IllegalValue(f"{self.model} cannot set {control_name} to AUTO")
 
-        Camera._driver.set_control_value(self._handle, control_type, value)
+        self._driver.set_control_value(self._handle, control_type, value)

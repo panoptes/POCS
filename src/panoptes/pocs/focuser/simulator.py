@@ -65,7 +65,7 @@ class Focuser(AbstractFocuser):
 
     def move_by(self, increment):
         """ Move focuser by a given amount """
-        self.logger.debug('Moving focuser {} by {}'.format(self.uid, increment))
+        self.logger.debug(f'Moving focuser {self.uid} by {increment}')
         self._is_moving = True
         time.sleep(1)
         previous_position = self._position
@@ -74,4 +74,4 @@ class Focuser(AbstractFocuser):
         position = max(position, self.min_position)
         self._position = position
         self._is_moving = False
-        return position - previous_position
+        return self.position

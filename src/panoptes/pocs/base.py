@@ -23,7 +23,7 @@ class PanBase(object):
         self._config_host = config_host or os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
         self._config_port = config_port or os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
-        self.logger = get_logger()
+        self.logger = get_logger(log_dir=kwargs.get('log_dir', 'logs'))
 
         global PAN_DB_OBJ
         if PAN_DB_OBJ is None:
@@ -71,7 +71,7 @@ class PanBase(object):
 
         if key == 'simulator' and new_value == 'all':
             # Don't use hardware.get_simulator_names because it checks config.
-            new_value = hardware.ALL_NAMES
+            new_value = [h.name for h in hardware.HardwareName]
 
         try:
             self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')

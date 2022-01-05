@@ -1,26 +1,19 @@
 options:
-  machineType: "N1_HIGHCPU_8"
-  substitutionOption: "ALLOW_LOOSE"
-timeout: 18000s  # 5 hours
+  substitutionOption: ALLOW_LOOSE
+  machineType: E2_HIGHCPU_8
+timeout: 18000s  # 5 hours; arm is slow
 
 substitutions:
-  _PLATFORMS: linux/amd64,linux/arm64
+  _DEPS_NAME: panoptes-pocs-dependencies
   _IMAGE_NAME: panoptes-pocs
-  _REPO_URL: https://github.com/panoptes/POCS
-  _TAG: latest
+  _PLATFORM: linux/arm64,linux/amd64
 
 steps:
-  # Fetch the repo from github
-  - name: gcr.io/cloud-builders/git
-    id: "clone-repo"
-    args: [ "clone", "${_REPO_URL}" ]
-    waitFor: [ "-" ]
-
   # Pull the cached image.
   - name: 'gcr.io/cloud-builders/docker'
     id: "pull-cached-image"
     entrypoint: 'bash'
-    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG} || exit 0' ]
+    args: [ '-c', 'docker pull gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME} || exit 0' ]
     waitFor: [ "-" ]
 
   # Set up multiarch support
@@ -43,11 +36,29 @@ steps:
     args:
       - "buildx"
       - "create"
+      - "--name=build"
       - "--use"
       - "--driver=docker-container"
     waitFor: [ "setup-buildx" ]
 
-  # Build with cloned panoptes-utils as source directory.
+  # Build the image dependencies
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-images-deps"
+    env:
+      - "DOCKER_CLI_EXPERIMENTAL=enabled"
+    args:
+      - "buildx"
+      - "build"
+      - "--platform=${_PLATFORM}"
+      - "-f=docker/Dockerfile"
+      - "--target=${_DEPS_NAME}"
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
+      - "--push"
+      - "."
+    waitFor: [ "build-builder" ]
+
+  # Build the image.
   - name: "gcr.io/cloud-builders/docker"
     id: "build-images"
     env:
@@ -55,10 +66,10 @@ steps:
     args:
       - "buildx"
       - "build"
-      - "--push"
-      - "--platform=${_PLATFORMS}"
+      - "--platform=${_PLATFORM}"
       - "-f=docker/Dockerfile"
-      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
-      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_TAG}"
-      - "POCS"
-    waitFor: [ "build-builder", "clone-repo" ]
+      - "--tag=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${TAG_NAME}"
+      - "--cache-from=gcr.io/${PROJECT_ID}/${_IMAGE_NAME}:${_DEPS_NAME}"
+      - "--push"
+      - "."
+    waitFor: [ "build-images-deps" ]

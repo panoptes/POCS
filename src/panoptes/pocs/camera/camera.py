@@ -86,6 +86,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.name = name
         self.is_primary = primary
 
+        self.filterwheel = None
         self._filter_type = kwargs.get('filter_type', 'RGGB')
         self._serial_number = kwargs.get('serial_number', 'XXXXXX')
         self._readout_time = get_quantity_value(kwargs.get('readout_time', 5.0), unit=u.second)
@@ -130,11 +131,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
 
+        # Apply the initial focus offset
+        # This is required so that the focuser initial position corresponds to focus_offset=0
+        if self.has_focuser and self.has_filterwheel:
+            current_filter = self.filterwheel.current_filter
+            focus_offset = self.filterwheel.focus_offsets.get(current_filter, 0)
+            self.logger.debug(f"Initial focus offset for {current_filter} filter: {focus_offset}")
+            if focus_offset:
+                self.focuser.move_by(focus_offset)
+
         self.logger.debug(f'Camera created: {self}')
 
-    ##################################################################################################
+    ############################################################################
     # Properties
-    ##################################################################################################
+    ############################################################################
 
     @property
     def uid(self):
@@ -254,7 +264,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     @property
     def filter_type(self):
         """ Image sensor filter type (e.g. 'RGGB') or name of the current filter (e.g. 'g2_3') """
-        if self.filterwheel:
+        if self.has_filterwheel:
             return self.filterwheel.current_filter
         else:
             return self._filter_type
@@ -332,7 +342,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.warning(f"Camera {self} not ready: {sub_name} not ready.")
 
         # Make sure there isn't an exposure already in progress.
-        if not current_readiness['not_exposing']:
+        if not current_readiness.get('not_exposing', True):
             self.logger.warning(f"Camera {self} not ready: exposure already in progress.")
 
         return all(current_readiness.values())
@@ -353,9 +363,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ Error message from the most recent exposure or None, if there was no error."""
         return self._exposure_error
 
-    ##################################################################################################
+    @property
+    def has_focuser(self):
+        """ Return True if the camera has a focuser, False if not. """
+        return self.focuser is not None
+
+    @property
+    def has_filterwheel(self):
+        """ Return True if the camera has a filterwheel, False if not. """
+        return self.filterwheel is not None
+
+    ############################################################################
     # Methods
-    ##################################################################################################
+    ############################################################################
 
     @abstractmethod
     def connect(self):
@@ -394,7 +414,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         exptime = kwargs.pop('exptime', observation.exptime.value)
 
         # start the exposure
-        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking, **kwargs)
+        self.take_exposure(seconds=exptime, filename=file_path, blocking=blocking,
+                           dark=observation.dark, **kwargs)
 
         # Add most recent exposure to list
         if self.is_primary:
@@ -426,7 +447,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       blocking=False,
                       timeout=None,
                       *args,
-                      **kwargs):
+                      **kwargs) -> threading.Thread:
         """Take an exposure for given number of seconds and saves to provided filename.
 
         Args:
@@ -484,8 +505,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        self.logger.debug(
-            f'Taking seconds={seconds!r} exposure on {self.name}: filename={filename!r}')
+        self.logger.debug(f'Taking {seconds=!r} exposure on {self.name}: {filename=!r}')
 
         header = self._create_fits_header(seconds, dark)
 
@@ -498,12 +518,18 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             # Camera type specific exposure set up and start
             self._is_exposing_event.set()
-            readout_args = self._start_exposure(seconds, filename, dark, header, *args, *kwargs)
+            readout_args = self._start_exposure(seconds=seconds, filename=filename, dark=dark,
+                                                header=header, *args, **kwargs)
         except Exception as err:
             err = error.PanError(f"Error starting exposure on {self}: {err!r}")
             self._exposure_error = repr(err)
             self._is_exposing_event.clear()
             raise err
+
+        def log_thread_error(exc_info):
+            self.logger.error(f'{exc_info!r}')
+
+        threading.excepthook = log_thread_error
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(target=self._poll_exposure,
@@ -581,7 +607,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if not os.path.exists(file_path):
             observation_event.set()
             raise FileNotFoundError(
-                f"Expected image at file_path={file_path!r} does not exist or " +
+                f"Expected image at {file_path=!r} does not exist or " +
                 "cannot be accessed, cannot process.")
 
         self.logger.debug(f'Starting FITS processing for {file_path}')
@@ -605,7 +631,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             except Exception as e:  # pragma: no cover
                 self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='seconds')
+        metadata['exptime'] = get_quantity_value(metadata['exptime'], unit='second')
 
         if record_observations:
             self.logger.debug(f"Adding current observation to db: {image_id}")
@@ -671,7 +697,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Raises:
             ValueError: If invalid values are passed for any of the focus parameters.
         """
-        if self.focuser is None:
+        if not self.has_focuser:
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
@@ -732,7 +758,6 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def _set_cooling_enabled(self, enable):
         """Camera-specific function to set cooling enabled.
 
@@ -743,7 +768,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         Args:
             enable (bool): Enable camera cooling?
         """
-        raise NotImplementedError
+        self._cooling_enabled = enable
 
     @abstractmethod
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
@@ -785,8 +810,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
-        """ Wait until camera is no longer exposing or the timeout is reached. If the timeout is
-        reached, an `error.Timeout` is raised.
+        """ Wait until camera is no longer exposing or the timeout is reached.
+
+        If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
             timer_duration = self._timeout + self._readout_time + exposure_time.to_value(u.second)
@@ -797,8 +823,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         try:
             while self.is_exposing:
                 if timer.expired():
-                    msg = f"Timeout (timer.duration={timer.duration!r}) waiting for exposure on"
-                    f" {self} to complete"
+                    msg = f"Timeout ({timer.duration=}) waiting for exposure on {self}"
                     raise error.Timeout(msg)
                 time.sleep(interval)
         except Exception as err:
@@ -857,7 +882,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         headers = headers or None
 
         # Move the filterwheel if necessary
-        if self.filterwheel is not None:
+        if self.has_filterwheel:
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
@@ -870,11 +895,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                                       f' {observation.filter_name}: {e!r}')
                     raise (e)
 
-            else:
-                self.logger.info(f'Filter {observation.filter_name} requested by'
-                                 f' observation but {self.filterwheel} is missing that filter, '
-                                 f'using'
-                                 f' {self.filter_type}.')
+            elif not observation.dark:
+                self.logger.warning(f'Filter {observation.filter_name} requested by'
+                                    f' observation but {self.filterwheel} is missing that filter, '
+                                    f'using {self.filter_type}.')
 
         if headers is None:
             start_time = current_time(flatten=True)
@@ -918,10 +942,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         self.logger.debug(f"sequence_id={sequence_id} image_id={image_id}")
 
-        # Make the sequence_id
-
         # The exptime header data is set as part of observation but can
-        # be override by passed parameter so update here.
+        # be overridden by passed parameter so update here.
         exptime = kwargs.get('exptime', observation.exptime.value)
 
         # Camera metadata

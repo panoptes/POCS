@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from collections import namedtuple
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -7,10 +8,8 @@ from astropy.coordinates import FK5
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
-from collections import namedtuple
-
-from .base import PanBase
 from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.base import PanBase
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 
@@ -179,15 +178,17 @@ class Image(PanBase):
             # Precess to the current equinox otherwise the RA - LST method will be off.
             self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
-    def solve_field(self, **kwargs):
+    def solve_field(self, radius=15, **kwargs):
         """ Solve field and populate WCS information.
 
         Args:
+            radius (scalar): The radius (in degrees) to search near RA-Dec. Defaults to 15°.
             **kwargs: Options to be passed to `get_solve_field`.
         """
         solve_info = fits_utils.get_solve_field(self.fits_file,
                                                 ra=self.header_pointing.ra.value,
                                                 dec=self.header_pointing.dec.value,
+                                                radius=radius,
                                                 **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']
@@ -201,7 +202,8 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
+        assert isinstance(ref_image, Image), self.logger.warning(
+            "Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

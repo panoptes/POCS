@@ -2,21 +2,20 @@ import time
 from threading import Timer
 
 from astropy import units as u
-
-from panoptes.utils.time import current_time
-from panoptes.utils import error
 from panoptes.pocs.mount import AbstractMount
+from panoptes.utils import error
+from panoptes.utils.time import current_time
 
 
 class Mount(AbstractMount):
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self, location, commands=dict(), *args, **kwargs):
+    def __init__(self, location, *args, **kwargs):
 
         super().__init__(location, *args, **kwargs)
 
-        self.logger.info('\t\tUsing simulator mount')
+        self.logger.info('Using simulator mount')
 
         self._loop_delay = self.get_config('loop_delay', default=0.01)
 
@@ -24,14 +23,6 @@ class Mount(AbstractMount):
         self._current_coordinates = self._park_coordinates
 
         self.logger.debug('Simulator mount created')
-
-    ##################################################################################################
-    # Properties
-    ##################################################################################################
-
-    ##################################################################################################
-    # Public Methods
-    ##################################################################################################
 
     def initialize(self, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
@@ -48,7 +39,7 @@ class Mount(AbstractMount):
         Returns:
             bool:   Returns the value from `self._is_initialized`.
         """
-        self.logger.debug("Initializing simulator mount")
+        self.logger.debug('Initializing simulator mount')
 
         if not self.is_connected:
             self.connect()
@@ -76,7 +67,7 @@ class Mount(AbstractMount):
 
         status = dict()
 
-        status['timestamp'] = current_time()
+        status['timestamp'] = current_time().isot
         status['tracking_rate_ra'] = self.tracking_rate
         status['state'] = self.state
 
@@ -86,7 +77,7 @@ class Mount(AbstractMount):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
+        self.logger.debug(f'Mount simulator moving {direction} for {seconds} seconds')
         time.sleep(seconds)
 
     def get_ms_offset(self, offset, axis='ra'):
@@ -140,10 +131,10 @@ class Mount(AbstractMount):
         next_position = "_" + next_position
 
         if hasattr(self, next_position):
-            self.logger.debug("Setting next position to {}".format(next_position))
+            self.logger.debug(f'Setting next position to {next_position}')
             setattr(self, next_position, True)
 
-    def slew_to_home(self, blocking=False):
+    def slew_to_home(self, blocking=False, timeout=1):
         """ Slews the mount to the home position.
 
         Note:
@@ -152,7 +143,7 @@ class Mount(AbstractMount):
         Returns:
             bool: indicating success
         """
-        self.logger.debug("Slewing to home")
+        self.logger.debug('Slewing to home')
         self._is_slewing = True
         self._is_tracking = False
         self._is_home = False
@@ -162,7 +153,7 @@ class Mount(AbstractMount):
 
     def park(self):
         """ Sets the mount to park for simulator """
-        self.logger.debug("Setting to park")
+        self.logger.debug('Setting to park')
         self._state = 'Parked'
         self._is_slewing = False
         self._is_tracking = False
@@ -175,33 +166,30 @@ class Mount(AbstractMount):
         self._is_parked = False
         return True
 
-    def query(self, cmd, params=None):
-        self.logger.debug(f"Query cmd: {cmd} params: {params!r}")
+    def query(self, cmd, params=None, **kwargs):
+        self.logger.debug(f'Query cmd: {cmd} params: {params!r}')
         if cmd == 'slew_to_target':
             time.sleep(self._loop_delay)
 
         return True
 
     def write(self, cmd):
-        self.logger.debug("Write: {}".format(cmd))
+        self.logger.debug(f'Write: {cmd}')
 
     def read(self, *args):
-        self.logger.debug("Read")
+        self.logger.debug('Read')
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
-        self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
+        self.logger.debug(f'Setting tracking rate delta: {direction} {delta}')
         self.tracking = 'Custom'
         self.tracking_rate = 1.0 + delta
-        self.logger.debug("Custom tracking rate sent")
-
-    ##################################################################################################
-    # Private Methods
-    ##################################################################################################
+        self.logger.debug('Custom tracking rate sent')
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.debug('Setting up mount for location')
 
@@ -220,4 +208,4 @@ class Mount(AbstractMount):
         return False
 
     def _setup_commands(self, commands):
-        return commands
+        self.commands = commands
