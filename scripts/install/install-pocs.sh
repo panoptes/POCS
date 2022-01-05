@@ -222,6 +222,7 @@ channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
   - astroplan
+  - astropy
   - docopt
   - fastapi
   - google-cloud-storage
@@ -252,7 +253,7 @@ function install_pocs() {
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "$CODE_BRANCH"
-  pip install ".[google,focuser,sensors]"
+  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install ".[google,focuser,sensors]"
 }
 
 function install_zsh() {
