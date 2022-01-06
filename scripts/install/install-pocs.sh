@@ -64,7 +64,7 @@ PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
-LOGFILE="${PANDIR}/logs/install-pocs.log"
+LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
@@ -75,19 +75,7 @@ ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 
-#DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
-
-function make_directories() {
-  echo "Creating directories in ${PANDIR}"
-  sudo mkdir -p "${PANDIR}/logs"
-  sudo mkdir -p "${PANDIR}/images"
-  sudo mkdir -p "${PANDIR}/json_store"
-  sudo mkdir -p "${PANDIR}/keys"
-  sudo mkdir -p "${PANDIR}/notebooks"
-  sudo mkdir -p "${PANDIR}/conf_files"
-  sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
-}
 
 function name_me() {
   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
@@ -140,15 +128,15 @@ function which_version() {
 function system_deps() {
   echo "Installing system dependencies."
 
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >/dev/null
-  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >/dev/null
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >"${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >"${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >"${LOGFILE}"
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
-      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi >/dev/null
+      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi >"${LOGFILE}"
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
@@ -165,8 +153,8 @@ function system_deps() {
     python3-lgpio \
     sshfs \
     usbmount \
-    wget >/dev/null
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
+    wget >"${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >"${LOGFILE}"
 
   sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
 
@@ -204,12 +192,12 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget -q "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >/dev/null
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >"${LOGFILE}"
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "${HOME}/conda/bin/conda" init bash >/dev/null
-  "${HOME}/conda/bin/conda" init zsh >/dev/null
+  "${HOME}/conda/bin/conda" init bash >"${LOGFILE}"
+  "${HOME}/conda/bin/conda" init zsh >"${LOGFILE}"
 
   echo "Creating POCS conda environment"
   "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
@@ -244,16 +232,71 @@ dependencies:
       - docker-compose
 EOF
 
-  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -q -n "${CONDA_ENV_NAME}" -f environment.yaml
+  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
 
-function install_pocs() {
-  echo "Cloning POCS repo and installing."
+function get_pocs_repo() {
+  echo "Cloning POCS repo."
 
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "$CODE_BRANCH"
-  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install ".[google,focuser,sensors]"
+}
+
+function make_directories() {
+  echo "Creating directories."
+  mkdir -p "${HOME}/logs"
+  mkdir -p "${HOME}/images"
+  mkdir -p "${HOME}/json_store"
+  mkdir -p "${HOME}/keys"
+  mkdir -p "${HOME}/notebooks"
+
+  # Link the needed POCS folders.
+  ln -s "${PANDIR}/conf_files" "${HOME}"
+  ln -s "${PANDIR}/resources" "${HOME}"
+}
+
+function install_services() {
+  echo "Creating panoptes-config-server service."
+
+  sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
+[Unit]
+Description=PANOPTES Config Server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+ExecStart=cd ${HOME} && ${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  echo "Creating panoptes power service."
+
+  sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
+[Unit]
+Description=PANOPTES Power Monitor
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+ExecStart=cd ${HOME} && ${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  sudo systemctl enable panoptes-config-server
+  sudo systemctl enable panoptes-power-server
 }
 
 function install_zsh() {
@@ -266,7 +309,7 @@ function install_zsh() {
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-    bash /tmp/install-ohmyzsh.sh --unattended >/dev/null
+    bash /tmp/install-ohmyzsh.sh --unattended >"${LOGFILE}"
 
     export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
@@ -299,7 +342,7 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >"${LOGFILE}"
   sudo timedatectl set-ntp false
   sudo ntpdate -s "${ROUTER_IP}"
   sudo timedatectl set-ntp true
@@ -336,25 +379,24 @@ function do_install() {
 
   which_branch
 
-  get_time_settings
+  if [ "$(uname -m)" = "aarch64" ]; then
+    get_time_settings
+  fi
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
+  echo "Logfile: ${LOGFILE}"
   #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
-  echo "ROUTER_IP: ${ROUTER_IP}"
-  echo "Logfile: ${LOGFILE}"
-  echo ""
 
   # Make sure the time setting is correct on RPi.
   if [ "$(uname -m)" = "aarch64" ]; then
+    echo "ROUTER_IP: ${ROUTER_IP}"
     fix_time
   fi
-
-  # make_directories
 
   system_deps
 
@@ -364,7 +406,11 @@ function do_install() {
 
   install_conda
 
-  install_pocs
+  get_pocs_repo
+
+  make_directories
+
+  install_services
 
   # get_or_build_docker_images
 
