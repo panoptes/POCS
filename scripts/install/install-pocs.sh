@@ -296,6 +296,7 @@ Restart=always
 RestartSec=1
 User=ubuntu
 WorkingDirectory=~
+ExecStartPre=/bin/sleep 10
 ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
 
 [Install]
