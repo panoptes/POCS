@@ -30,12 +30,12 @@ For more information, see the full documentation at: https://pocs.readthedocs.io
 
 ### POCS Environment
 
-If you are running a PANOPTES unit then you will most likely want an  entire PANOPTES environment, which includes things like plate-solvers (to tell you what stars you are looking at) and other necessary tools for operation.
+If you are running a PANOPTES unit then you will most likely want an  entire PANOPTES environment, which includes the necessary tools for operation of a complete unit.
 
 There is a bash shell script that will install an entire working POCS system on your computer.  Some
 folks even report that it works on a Mac.
 
-To install POCS via the script, open a terminal and enter (you will be prompted for your `sudo` password):
+To install POCS via the script, open a terminal and enter (you may be prompted for your `sudo` password):
 
 ```bash
 curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
@@ -48,6 +48,9 @@ Or using `wget`:
 wget -qO- https://install.projectpanoptes.org > install-pocs.sh
 bash install-pocs.sh
 ```
+
+The install script will ask a few questions at the beginning of the process. If you are unsure of 
+the answer the default is probably okay.
 
 
 ### POCS Module
@@ -69,9 +72,8 @@ pip install "panoptes-pocs[google,focuser,testing]"
 
 #### Running POCS
 
-`POCS` requires three things to properly run:
+`POCS` requires a few things to properly run:
 
-1. Environment variables that tell `POCS` the location of the main PANOPTES directory (`$PANDIR`).
 1. A [`panoptes-utils`](https://github.com/panoptes/panoptes-utils.git) `config-server` running to provide dynamic configuration.
 2. An `Observatory` instance that has details about the location of a POCS unit (real or simulated), which hardware is available, etc.
 
@@ -124,20 +126,12 @@ See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTE
 
 #### [Testing]
 
-To test the software, you can build a local [Docker](https://docs.docker.com/) image using [docker-compose](https://docs.docker.com/compose/install/).
-
-First clone the repository, then run the following from the project's root directory:
-
-```bash
-docker-compose -f tests/docker-compose.yaml build
-
-docker-compose -f tests/docker-compose.yaml up
-```
-
-By default that will build and run all tests. If you want to run one specific test, run the `pytests test_file.py` on the `pocs` service:
+To test the software, you can use the standard `pytest` tool from the root of the directory.
+ 
+By default all tests will be run. If you want to run one specific test, give the specific filename as an argument to `pytest`:
 
 ```bash
-docker-compose -f tests/docker-compose.yaml run pocs "pytest tests/test_mount.py"
+pytest tests/test_mount.py
 ```
 
 Links
