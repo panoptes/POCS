@@ -52,6 +52,9 @@ bash install-pocs.sh
 The install script will ask a few questions at the beginning of the process. If you are unsure of 
 the answer the default is probably okay.
 
+In addition to installing `POCS`, the install script will create the Config Server
+and Power Monitor services, which will automatically  be restarted upon reboot of the computer.
+
 
 ### POCS Module
 
