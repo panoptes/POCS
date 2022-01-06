@@ -287,7 +287,7 @@ EOF
   sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
 [Unit]
 Description=PANOPTES Power Monitor
-After=network.target
+After=panoptes-config-server.service
 StartLimitIntervalSec=0
 
 [Service]
