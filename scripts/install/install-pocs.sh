@@ -128,15 +128,15 @@ function which_version() {
 function system_deps() {
   echo "Installing system dependencies."
 
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >"${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >"${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >"${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade | sudo tee -a "${LOGFILE}"
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
-      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi >"${LOGFILE}"
+      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi python3-lgpio | sudo tee -a "${LOGFILE}"
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
@@ -150,11 +150,10 @@ function system_deps() {
     make \
     nano \
     neovim \
-    python3-lgpio \
     sshfs \
     usbmount \
-    wget >"${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >"${LOGFILE}"
+    wget | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove | sudo tee -a "${LOGFILE}"
 
   sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
 
@@ -192,12 +191,12 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget -q "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >"${LOGFILE}"
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >>"${LOGFILE}"
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "${HOME}/conda/bin/conda" init bash >"${LOGFILE}"
-  "${HOME}/conda/bin/conda" init zsh >"${LOGFILE}"
+  "${HOME}/conda/bin/conda" init bash >>"${LOGFILE}"
+  "${HOME}/conda/bin/conda" init zsh >>"${LOGFILE}"
 
   echo "Creating POCS conda environment"
   "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
@@ -309,7 +308,7 @@ function install_zsh() {
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-    bash /tmp/install-ohmyzsh.sh --unattended >"${LOGFILE}"
+    bash /tmp/install-ohmyzsh.sh --unattended >>"${LOGFILE}"
 
     export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
@@ -342,7 +341,7 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >"${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate | sudo tee -a "${LOGFILE}"
   sudo timedatectl set-ntp false
   sudo ntpdate -s "${ROUTER_IP}"
   sudo timedatectl set-ntp true
