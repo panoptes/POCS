@@ -373,6 +373,9 @@ function setup_nfs_host() {
 function do_install() {
   clear
 
+  # Set up directory for log file.
+  mkdir -p "${HOME}/logs"
+
   name_me
 
   which_version
