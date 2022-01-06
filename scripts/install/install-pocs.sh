@@ -68,6 +68,7 @@ LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
+INSTALL_SERVICES=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
 ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
@@ -122,6 +123,11 @@ function which_version() {
   read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     USE_ZSH=true
+  fi
+
+  read -p "Would you like to install the Config Server and Power Monitor services? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    INSTALL_SERVICES=true
   fi
 }
 
@@ -269,7 +275,8 @@ Type=simple
 Restart=always
 RestartSec=1
 User=ubuntu
-ExecStart=cd ${HOME} && ${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+WorkingDirectory=~
+ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
 
 [Install]
 WantedBy=multi-user.target
@@ -288,7 +295,8 @@ Type=simple
 Restart=always
 RestartSec=1
 User=ubuntu
-ExecStart=cd ${HOME} && ${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+WorkingDirectory=~
+ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
 
 [Install]
 WantedBy=multi-user.target
@@ -412,7 +420,9 @@ function do_install() {
 
   make_directories
 
-  install_services
+  if [[ "${INSTALL_SERVICES}" == true ]]; then
+    install_services
+  fi
 
   # get_or_build_docker_images
 
