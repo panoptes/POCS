@@ -383,6 +383,7 @@ function do_install() {
 
   # Set up directory for log file.
   mkdir -p "${HOME}/logs"
+  echo "Starting POCS install at $(date)" >>"${LOGFILE}"  
 
   name_me
 
