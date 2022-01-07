@@ -15,6 +15,7 @@ from panoptes.pocs.camera.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.fli import Camera as FLICamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
+from panoptes.pocs.camera import AbstractCamera
 
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
@@ -52,7 +53,7 @@ from panoptes.utils.time import CountdownTimer
     'fli',
     'zwo'
 ])
-def camera(request):
+def camera(request) -> AbstractCamera:
     CamClass = request.param[0]
     cam_params = request.param[1]
 
@@ -371,21 +372,21 @@ def test_long_exposure_blocking(camera, tmpdir):
     Tests basic take_exposure functionality
     """
     fits_path = str(tmpdir.join('test_long_exposure_blocking.fits'))
-    original_timeout = camera._timeout
+    original_timeout = camera.timeout
     original_readout = camera._readout_time
     try:
-        camera._timeout = 1
+        camera.timeout = 1
         camera._readout_time = 0.5
         assert not camera.is_exposing
         assert camera.is_ready
-        seconds = 2 * (camera._timeout + camera._readout_time)
+        seconds = 2 * (camera.timeout + camera._readout_time)
         camera.take_exposure(filename=fits_path, seconds=seconds, blocking=True)
         # Output file should exist, Event should be set and camera should say it's not exposing.
         assert os.path.exists(fits_path)
         assert not camera.is_exposing
         assert camera.is_ready
     finally:
-        camera._timeout = original_timeout
+        camera.timeout = original_timeout
         camera._readout_time = original_readout
 
 
@@ -515,8 +516,8 @@ def test_observation(camera, images_dir):
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235959'
-    observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
+    camera.take_observation(observation)
+    while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'TestObservation',
@@ -536,8 +537,10 @@ def test_observation_headers_and_blocking(camera, images_dir):
                                        camera.uid, observation.seq_time, '*.fits*')
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
+    camera.logger.debug(f'{image_files=}')
     headers = fits_utils.getheader(image_files[0])
-    assert fits_utils.getval(image_files[0], 'FIELD') == 'TESTVALUE'
+    camera.logger.debug(f'{headers=!r}')
+    assert headers['FIELD'] == 'TESTVALUE'
 
 
 def test_observation_nofilter(camera, images_dir):
@@ -562,9 +565,9 @@ def test_observation_dark(camera, images_dir):
     assert observation.dark
 
     observation.seq_time = '19991231T235959'
-    observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
-        camera.logger.trace(f'Waiting for observation event from inside test.')
+    camera.take_observation(observation, blocking=True)
+    while camera.is_observing:
+        camera.logger.trace(f'Waiting for observation event from inside test. {camera.is_observing}')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'dark',
                                        camera.uid, observation.seq_time, '*.fits*')
@@ -580,8 +583,8 @@ def test_observation_bias(camera, images_dir):
     assert observation.dark
 
     observation.seq_time = '19991231T235959'
-    observation_event = camera.take_observation(observation)
-    while not observation_event.is_set():
+    camera.take_observation(observation)
+    while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
     observation_pattern = os.path.join(images_dir, 'bias',

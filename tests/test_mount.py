@@ -87,6 +87,8 @@ def test_bad_mount_port(config_host, config_port):
     with suppress(KeyError, AttributeError):
         simulators.pop('mount')
     set_config('simulator', simulators)
+    # Use real mount driver.
+    set_config('mount.driver', 'panoptes.pocs.mount.ioptron.cem40')
 
     # Set a bad port, which should cause a fail before actual mount creation.
     set_config('mount.serial.port', 'foobar')
@@ -102,8 +104,8 @@ def test_bad_mount_driver(config_host, config_port):
         simulators.pop('mount')
     set_config('simulator', simulators)
 
-    # Set a bad port, which should cause a fail before actual mount creation.
-    set_config('mount.serial.driver', 'foobar')
+    # Set a bad driver, which should cause a fail before actual mount creation.
+    set_config('mount.driver', 'not.a.real.mount')
     with pytest.raises(error.MountNotFound):
         create_mount_from_config()
     reset_conf(config_host, config_port)

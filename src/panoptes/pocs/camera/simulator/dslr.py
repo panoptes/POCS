@@ -66,9 +66,9 @@ class Camera(AbstractCamera):
 
     def _readout(self, filename=None, header=None):
         self.logger.debug(f'Calling _readout for {self}')
-        timer = CountdownTimer(duration=self.readout_time)
+        timer = CountdownTimer(duration=self.readout_time, name='ReadoutDSLR')
         # Get example FITS file from test data directory
-        file_path = os.path.join(os.environ['POCS'], 'tests', 'data', 'unsolved.fits')
+        file_path = os.path.join('.', 'tests', 'data', 'unsolved.fits')
         fake_data = fits.getdata(file_path)
 
         if header.get('IMAGETYP') == 'Dark Frame':
@@ -77,21 +77,17 @@ class Camera(AbstractCamera):
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
         self.logger.debug(f'Writing filename={filename!r} for {self}')
-        fits_utils.write_fits(fake_data, header, filename)
+        self.write_fits(fake_data, header, filename)
+        self.logger.debug(f'Finished writing {filename=}')
 
         # Sleep for the remainder of the readout time.
         timer.sleep()
 
-    def _process_fits(self, file_path, metadata):
-        file_path = super()._process_fits(file_path, metadata)
+    def _do_process_exposure(self, file_path, metadata):
+        file_path = super()._do_process_exposure(file_path, metadata)
         self.logger.debug('Overriding mount coordinates for camera simulator')
         # TODO get the path as package data or something better.
-        solved_path = os.path.join(
-            os.environ['POCS'],
-            'tests',
-            'data',
-            'solved.fits.fz'
-        )
+        solved_path = os.path.join('.', 'tests', 'data', 'solved.fits.fz')
         solved_header = fits_utils.getheader(solved_path)
         with fits.open(file_path, 'update') as f:
             hdu = f[0]
