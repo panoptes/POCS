@@ -1,11 +1,11 @@
-from typing import List, Union
+from collections import deque
 from threading import Thread
+from typing import List, Union
 
 import requests
-from collections import deque
+from pydantic import AnyHttpUrl
 
 from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
-from pydantic import AnyHttpUrl
 
 
 class Camera(CanonCamera):
@@ -20,6 +20,13 @@ class Camera(CanonCamera):
         self.response_queue: deque = deque(maxlen=1)
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def is_exposing(self):
+        if self._command_proc is not None and self._command_proc.is_alive() is False:
+            self._is_exposing_event.clear()
+
+        return self._is_exposing_event.is_set()
 
     def command(self, cmd, endpoint: AnyHttpUrl = None):
         """Run the gphoto2 command remotely.
@@ -42,6 +49,7 @@ class Camera(CanonCamera):
                 output = response.json()
                 self.logger.debug(f'Response {output=!r}')
                 self.response_queue.append(output)
+                self._is_exposing_event.clear()
             else:
                 self.logger.error(f'Error in remote camera service: {response.content}')
 
@@ -52,7 +60,7 @@ class Camera(CanonCamera):
         """Get the output from the remote camera service."""
         output = None
         try:
-            self._command_proc.join(timeout=self._timeout)
+            self._command_proc.join(timeout=self.timeout)
             if self._command_proc.is_alive():
                 raise TimeoutError
         except TimeoutError:
@@ -69,20 +77,6 @@ class Camera(CanonCamera):
 
         return output
 
-    def _poll_exposure(self, readout_args, *args, **kwargs):
-        """Check if remote command has completed."""
-        # Camera type specific readout function
-
-        try:
-            self._command_proc.join(timeout=self._timeout)
-            # Thread should not be alive after join unless we timed out.
-            if self._command_proc.is_alive():
-                raise TimeoutError
-        except TimeoutError:
-            self.logger.warning(f'Timeout on exposure process for {self.name}')
-        else:
-            # Camera type specific readout function
-            self._readout(*readout_args)
-        finally:
-            self.logger.debug(f'Setting exposure event for {self.name}')
-            self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
+        fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
+        return {k.lower(): v for k, v in dict(fits_header).items()}

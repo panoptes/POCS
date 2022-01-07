@@ -4,6 +4,7 @@ from contextlib import suppress
 
 import numpy as np
 from astropy import units as u
+from astropy.io import fits
 from astropy.time import Time
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
@@ -181,7 +182,7 @@ class Camera(AbstractSDKCamera):
         height = int(get_quantity_value(roi_format['height'], unit=u.pixel))
         image_type = roi_format['image_type']
 
-        timeout = 2 * seconds + self._timeout * u.second
+        timeout = 2 * seconds + self.timeout * u.second
 
         video_args = (width,
                       height,
@@ -239,10 +240,10 @@ class Camera(AbstractSDKCamera):
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
             video_data = self._driver.get_video_data(self._handle,
-                                                       width,
-                                                       height,
-                                                       image_type,
-                                                       timeout)
+                                                     width,
+                                                     height,
+                                                     image_type,
+                                                     timeout)
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
@@ -250,7 +251,7 @@ class Camera(AbstractSDKCamera):
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
                 video_data = np.right_shift(video_data, pad_bits)
-                fits_utils.write_fits(video_data, header, filename)
+                self.write_fits(video_data, header, filename)
                 good_frames += 1
             else:
                 bad_frames += 1
@@ -267,7 +268,8 @@ class Camera(AbstractSDKCamera):
             get_quantity_value(good_frames / elapsed_time),
             bad_frames))
 
-    def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
+                        **kwargs):
         self._control_setter('EXPOSURE', seconds)
         roi_format = self._driver.get_roi_format(self._handle)
         self._driver.start_exposure(self._handle)
@@ -282,11 +284,11 @@ class Camera(AbstractSDKCamera):
         if exposure_status == 'SUCCESS':
             try:
                 image_data = self._driver.get_exposure_data(self._handle,
-                                                              width,
-                                                              height,
-                                                              self.image_type)
+                                                            width,
+                                                            height,
+                                                            self.image_type)
             except RuntimeError as err:
-                raise error.PanError('Error getting image data from {}: {}'.format(self, err))
+                raise error.PanError(f'Error getting image data from {self}: {err}')
             else:
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
@@ -294,18 +296,17 @@ class Camera(AbstractSDKCamera):
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
-                fits_utils.write_fits(data=image_data,
-                                      header=header,
-                                      filename=filename)
+                self.write_fits(data=image_data,
+                                header=header,
+                                filename=filename)
         elif exposure_status == 'FAILED':
-            raise error.PanError("Exposure failed on {}".format(self))
+            raise error.PanError(f"Exposure failed on {self}")
         elif exposure_status == 'IDLE':
-            raise error.PanError("Exposure missing on {}".format(self))
+            raise error.PanError(f"Exposure missing on {self}")
         else:
-            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                self, exposure_status))
+            raise error.PanError(f"Unexpected exposure status on {self}: '{exposure_status}'")
 
-    def _create_fits_header(self, seconds, dark):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
         header.set('CAM-GAIN', self.gain, 'Internal units')
         header.set('XPIXSZ', get_quantity_value(self.properties['pixel_size'], u.um), 'Microns')

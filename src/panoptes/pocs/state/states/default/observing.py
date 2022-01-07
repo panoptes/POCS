@@ -1,7 +1,6 @@
-from panoptes.utils import error
-from panoptes.utils.time import wait_for_events
+from multiprocessing import Process
 
-MAX_EXTRA_TIME = 60  # seconds
+from panoptes.utils import error
 
 
 def on_enter(event_data):
@@ -10,24 +9,22 @@ def on_enter(event_data):
     This state is responsible for taking the actual observation image.
      """
     pocs = event_data.model
-    pocs.say(f"🔭🔭🔭 I'm observing {pocs.observatory.current_observation.field.field_name}! 🔭🔭🔭")
+    current_obs = pocs.observatory.current_observation
+    pocs.say(f"🔭🔭 I'm observing {current_obs.field.field_name}! 🔭🔭")
     pocs.next_state = 'parking'
 
     try:
-        maximum_duration = pocs.observatory.current_observation.exptime.value + MAX_EXTRA_TIME
+        # Do the observing, once per exptime (usually only one unless a compound observation).
+        for _ in current_obs.exptimes:
+            pocs.observatory.observe(blocking=True)
+            pocs.say(f"Finished observing! I'll start processing that in the background.")
 
-        # Start the observing.
-        observing_events = pocs.observatory.observe()
-        camera_events = list(observing_events.values())
-
-        def waiting_cb():
-            # TODO Check for dead camera here and potential remove from list?
-            pocs.logger.info(f'Waiting on an observation.')
-
-        wait_for_events(camera_events, timeout=maximum_duration, callback=waiting_cb, sleep_delay=11)
-
-    except error.Timeout:
-        pocs.logger.warning("Timeout waiting for images. Something wrong with camera, parking.")
+            # Do processing in background.
+            process_proc = Process(target=pocs.observatory.process_observation)
+            process_proc.start()
+            pocs.logger.debug(f'Processing for {current_obs} started on {process_proc.pid=}')
+    except (error.Timeout, error.CameraNotFound):
+        pocs.logger.warning("Timeout waiting for images. Something wrong with cameras, parking.")
     except Exception as e:
         pocs.logger.warning(f"Problem with imaging: {e!r}")
         pocs.say("Hmm, I'm not sure what happened with that exposure.")

@@ -9,7 +9,7 @@
     position: "02h28m37.22s -07d03m38.45s"
   observation:
     priority: 100
-- field:
+-  field:
     name: M42
     position: "05h35m17.2992s -05d23m27.996s"
   observation:

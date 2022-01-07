@@ -1,20 +1,28 @@
 import os
-import subprocess
 from collections import OrderedDict
 from datetime import datetime
+from multiprocessing import Process
+from pathlib import Path
+from typing import Dict, Optional
 
 from astropy import units as u
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
+from panoptes.utils import error
+from panoptes.utils.time import current_time, CountdownTimer
+
+import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.utils import images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.pocs.utils.cli.image import upload_image
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils.time import current_time
-from panoptes.utils import error
 
 
 class Observatory(PanBase):
@@ -48,9 +56,9 @@ class Observatory(PanBase):
 
         # Set up some of the hardware.
         self.set_mount(mount)
-        self.cameras = OrderedDict()
+        self.cameras: Dict[str, AbstractCamera] = OrderedDict()
+        self._primary_camera: Optional[AbstractCamera] = None
 
-        self._primary_camera = None
         if cameras:
             self.logger.info(f'Adding cameras to the observatory: {cameras}')
             for cam_name, camera in cameras.items():
@@ -110,7 +118,7 @@ class Observatory(PanBase):
         return len(self.cameras) > 0
 
     @property
-    def primary_camera(self):
+    def primary_camera(self) -> panoptes.pocs.camera.camera.AbstractCamera:
         """Return primary camera.
 
         Note:
@@ -131,14 +139,14 @@ class Observatory(PanBase):
         self._primary_camera = cam
 
     @property
-    def current_observation(self):
+    def current_observation(self) -> Optional[Observation]:
         if self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot get current observation.')
             return None
         return self.scheduler.current_observation
 
     @current_observation.setter
-    def current_observation(self, new_observation):
+    def current_observation(self, new_observation: Observation):
         if self.scheduler is None:
             self.logger.info(f'Scheduler not present, cannot set current observation.')
         else:
@@ -211,7 +219,7 @@ class Observatory(PanBase):
         Args:
             cam_name (str): Name of camera to remove.
         """
-        self.logger.debug('Removing {}'.format(cam_name))
+        self.logger.debug(f'Removing {cam_name}')
         del self.cameras[cam_name]
 
     def set_scheduler(self, scheduler):
@@ -283,8 +291,8 @@ class Observatory(PanBase):
                 status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
-                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(now,
-                                                                                         target_coords)
+                    target_ha = self.observer.target_hour_angle(now, target_coords)
+                    status['mount']['mount_target_ha'] = target_ha
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -297,8 +305,8 @@ class Observatory(PanBase):
         try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status
-                status['observation']['field_ha'] = self.observer.target_hour_angle(now,
-                                                                                    self.current_observation.field)
+                field = self.current_observation.field
+                status['observation']['field_ha'] = self.observer.target_hour_angle(now, field)
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get observation status: {e!r}")
 
@@ -346,7 +354,7 @@ class Observatory(PanBase):
                 self.get_config('scheduler.check_file', default=False)
         )
 
-        # This will set the `current_observation`
+        # This will set the `current_observation`.
         self.scheduler.get_observation(read_file=reread_file, *args, **kwargs)
 
         if self.current_observation is None:
@@ -355,103 +363,15 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def cleanup_observations(self, upload_images=None, make_timelapse=None, keep_jpgs=None):
-        """Cleanup observation list
-
-        Loops through the `observed_list` performing cleanup tasks. Resets
-        `observed_list` when done.
-
-        Args:
-            upload_images (None or bool, optional): If images should be uploaded to a Google
-                Storage bucket, default to config item `panoptes_network.image_storage` then False.
-            make_timelapse (None or bool, optional): If a timelapse should be created
-                (requires ffmpeg), default to config item `observations.make_timelapse` then True.
-            keep_jpgs (None or bool, optional): If JPG copies of observation images should be kept
-                on local hard drive, default to config item `observations.keep_jpgs` then True.
-        """
-        if upload_images is None:
-            upload_images = self.get_config('panoptes_network.image_storage', default=False)
-
-        if make_timelapse is None:
-            make_timelapse = self.get_config('observations.make_timelapse', default=True)
-
-        if keep_jpgs is None:
-            keep_jpgs = self.get_config('observations.keep_jpgs', default=True)
-
-        process_script = 'upload-image-dir.py'
-        process_script_path = os.path.join(os.environ['POCS'], 'scripts', process_script)
-
-        if self.scheduler is None:
-            self.logger.info(f'Scheduler not present, cannot finish cleanup.')
-            return
-
-        for seq_time, observation in self.scheduler.observed_list.items():
-            self.logger.debug("Housekeeping for {}".format(observation))
-
-            observation_dir = os.path.join(
-                self._image_dir,
-                'fields',
-                observation.field.field_name
-            )
-            self.logger.debug(f'Searching directory: {observation_dir}')
-
-            for cam_name, camera in self.cameras.items():
-                self.logger.debug(f'Cleanup for camera {cam_name} [{camera.uid}]')
-
-                seq_dir = os.path.join(
-                    observation_dir,
-                    camera.uid,
-                    seq_time
-                )
-                self.logger.info(f'Cleaning directory {seq_dir}')
-
-                process_cmd = [
-                    process_script_path,
-                    '--directory', seq_dir,
-                ]
-
-                if upload_images:
-                    process_cmd.append('--upload')
-
-                if make_timelapse:
-                    process_cmd.append('--make-timelapse')
-
-                if keep_jpgs is False:
-                    process_cmd.append('--remove-jpgs')
-
-                # Start the subprocess in background and collect proc object.
-                clean_proc = subprocess.Popen(process_cmd,
-                                              universal_newlines=True,
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE
-                                              )
-                self.logger.info('Cleaning directory pid={}'.format(clean_proc.pid))
-
-                # Block and wait for directory to finish
-                try:
-                    outs, errs = clean_proc.communicate(timeout=3600)  # one hour
-                    if outs and outs > '':
-                        self.logger.info(f'Output from clean: {outs}')
-                    if errs and errs > '':
-                        self.logger.info(f'Errors from clean: {errs}')
-                except Exception as e:  # pragma: no cover
-                    self.logger.error(f'Error during cleanup_observations: {e!r}')
-                    clean_proc.kill()
-                    outs, errs = clean_proc.communicate(timeout=10)
-                    if outs and outs > '':
-                        self.logger.info(f'Output from clean: {outs}')
-                    if errs and errs > '':
-                        self.logger.info(f'Errors from clean: {errs}')
-
-            self.logger.debug('Cleanup finished')
-
-        self.scheduler.reset_observed_list()
-
-    def observe(self):
-        """Take individual images for the current observation
+    def observe(self, blocking: bool = True):
+        """Take individual images for the current observation.
 
         This method gets the current observation and takes the next
         corresponding exposure.
+
+        Args:
+            blocking (bool): If True (the default), wait for cameras to finish
+                exposing before returning, otherwise return immediately.
 
         """
         # Get observatory metadata
@@ -460,24 +380,121 @@ class Observatory(PanBase):
         # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
-        # List of camera events to wait for to signal exposure is done
-        # processing
-        observing_events = dict()
-
-        # Take exposure with each camera
+        # Take exposure with each camera.
         for cam_name, camera in self.cameras.items():
             self.logger.debug(f"Exposing for camera: {cam_name}")
+            camera.take_observation(self.current_observation, headers=headers)
 
+        if blocking:
+            cam = self.primary_camera
+            exptime = self.current_observation.exptime.value
+            readout_time = cam.readout_time
+            timeout = exptime + readout_time + cam.timeout
+
+            timer = CountdownTimer(timeout, name='Observe')
+            # Sleep for the exposure time to start.
+            timer.sleep(max_sleep=exptime + readout_time)
+            # Then start checking for complete exposures.
+            while timer.expired() is False:
+                done_observing = [cam.is_observing is False for cam in self.cameras.values()]
+                if all(done_observing):
+                    self.logger.info('Finished observing for all cameras')
+                    break
+
+                timer.sleep(max_sleep=readout_time)
+
+            if timer.expired():
+                raise TimeoutError(f'Timer expired waiting for cameras to finish observing')
+
+    def process_observation(self,
+                            compress_fits: Optional[bool] = None,
+                            record_observations: Optional[bool] = None,
+                            make_pretty_images: Optional[bool] = None,
+                            plate_solve: Optional[bool] = None,
+                            upload_image_immediately: Optional[bool] = None,
+                            ):
+        """Process an individual observation.
+
+        Args:
+            compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
+                If None (default), checks the `observations.compress_fits` config-server key.
+            record_observations (bool or None): If observation metadata should be saved.
+                If None (default), checks the `observations.record_observations`
+                config-server key.
+            make_pretty_images (bool or None): If should make a jpg from raw image.
+                If None (default), checks the `observations.make_pretty_images`
+                config-server key.
+            plate_solve (bool or None): If images should be plate solved, default None for config.
+            upload_image_immediately (bool or None): If images should be uploaded (in a separate
+                process).
+        """
+        for cam_name in self.cameras.keys():
+            exposure = self.current_observation.exposure_list[cam_name][-1]
+            self.logger.debug(f'Processing observation with {exposure=!r}')
+            metadata = exposure.metadata
             try:
-                # Start the exposures
-                camera_observe_event = camera.take_observation(self.current_observation, headers)
+                image_id = metadata['image_id']
+                seq_id = metadata['sequence_id']
+                file_path = metadata['filepath']
+                exptime = metadata['exptime']
+            except KeyError as e:
+                raise error.PanError(f'No information in image metadata, unable to process:  {e!r}')
 
-                observing_events[cam_name] = camera_observe_event
+            field_name = metadata.get('field_name', '')
 
-            except Exception as e:
-                self.logger.error(f"Problem waiting for images: {e!r}")
+            if metadata.get('status') == 'complete':
+                self.logger.debug(f'{image_id} has already been processed, skipping')
+                return
 
-        return observing_events
+            if plate_solve or self.get_config('observations.plate_solve', default=False):
+                self.logger.debug(f'Plate solving {file_path=}')
+                try:
+                    metadata = fits_utils.get_solve_field(file_path)
+                    file_path = metadata['solved_fits_file']
+                    self.logger.debug(f'Solved {file_path}, replacing metadata.')
+                except Exception as e:
+                    self.logger.warning(f'Problem solving {file_path=}: {e!r}')
+
+            if compress_fits or self.get_config('observations.compress_fits', default=False):
+                self.logger.debug(f'Compressing {file_path=!r}')
+                compressed_file_path = fits_utils.fpack(file_path)
+                exposure.path = Path(compressed_file_path)
+                metadata['filepath'] = compressed_file_path
+                self.logger.debug(f'Compressed {compressed_file_path}')
+
+            if record_observations or self.get_config('observations.record_observations',
+                                                      default=False):
+                self.logger.debug(f"Adding current observation to db: {image_id}")
+                metadata['status'] = 'complete'
+                self.db.insert_current('observations', metadata)
+
+            if make_pretty_images or self.get_config('observations.make_pretty_images',
+                                                     default=False):
+                try:
+                    image_title = f'{field_name} [{exptime}s] {seq_id}'
+
+                    self.logger.debug(f"Making pretty image for {file_path=!r}")
+                    link_path = None
+                    if metadata['is_primary']:
+                        # TODO This should be in the config somewhere.
+                        link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
+
+                    pretty_process = Process(name=f'PrettyImageProcess-{image_id}',
+                                             target=img_utils.make_pretty_image,
+                                             args=(file_path,),
+                                             kwargs=dict(title=image_title,
+                                                         link_path=str(link_path)))
+                    pretty_process.start()
+                except Exception as e:  # pragma: no cover
+                    self.logger.warning(f'Problem with extracting pretty image: {e!r}')
+
+            if upload_image_immediately or self.get_config('observations.upload_image_immediately',
+                                                           default=False):
+                self.logger.debug(f"Uploading current observation: {image_id}")
+                try:
+                    self.upload_exposure(exposure_info=exposure)
+                except Exception as e:
+                    self.logger.warning(f'Problem uploading exposure: {e!r}')
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -523,6 +540,30 @@ class Observatory(PanBase):
             self.logger.warning(f"Problem in analyzing: {e!r}")
 
         return self.current_offset_info
+
+    def upload_exposure(self, exposure_info, bucket_name=None):
+        """Uploads the most recent image from the current observation."""
+        bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
+
+        image_path = exposure_info.path
+        if not image_path.exists():
+            raise FileNotFoundError(f'File does not exist: {str(image_path)}')
+
+        self.logger.debug(f'Preparing {image_path} for upload')
+
+        # Remove the local images directory for the upload name and replace with PAN_ID.
+        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
+                                                         self.get_config('pan_id'))
+
+        # Create a separate process for the upload.
+        upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
+                                 target=upload_image,
+                                 kwargs=dict(file_path=image_path,
+                                             bucket_path=bucket_path,
+                                             bucket_name=bucket_name))
+
+        self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
+        upload_process.start()
 
     def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.
@@ -617,7 +658,7 @@ class Observatory(PanBase):
         # Explicitly convert EQUINOX to float
         try:
             equinox = float(headers['equinox'].replace('J', ''))
-        except BaseException:
+        except Exception:
             equinox = 2000.  # We assume J2000
 
         headers['equinox'] = equinox

@@ -88,6 +88,11 @@ def pytest_addoption(parser):
              f"travis-ci will test all of "
              f"them by default.")
     group.addoption(
+        "--test-solve",
+        action="store_true",
+        default=False,
+        help="If tests that require solving should be run")
+    group.addoption(
         "--theskyx",
         action='store_true',
         default=False,
@@ -107,6 +112,11 @@ def pytest_collection_modifyitems(config, items):
     as follows:
     `@pytest.mark.without_camera`
     """
+    if not config.getoption('--test-solve'):
+        skip_solve = pytest.mark.skip(reason='No plate solving requested')
+        for item in items:
+            if 'plate_solve' in item.keywords:
+                item.add_marker(skip_solve)
 
     # without_hardware is a list of hardware names whose tests we don't want to run.
     without_hardware = hardware.get_simulator_names(
@@ -194,8 +204,8 @@ def images_dir(tmpdir_factory):
 
 
 @pytest.fixture(scope='session')
-def data_dir():
-    return os.path.expandvars('${POCS}/tests/data')
+def data_dir(request):
+    return os.path.expandvars('./tests/data')
 
 
 @pytest.fixture(scope='function')

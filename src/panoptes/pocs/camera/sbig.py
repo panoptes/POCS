@@ -1,6 +1,7 @@
 from contextlib import suppress
 
 from astropy import units as u
+from astropy.io import fits
 
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
@@ -26,7 +27,7 @@ class Camera(AbstractSDKCamera):
             self.logger.debug("Closed SBIG camera device & driver")
         super().__del__()
 
-# Properties
+    # Properties
 
     @property
     def egain(self):
@@ -75,7 +76,7 @@ class Camera(AbstractSDKCamera):
         """ True if an exposure is currently under way, otherwise False """
         return self._driver.get_exposure_status(self._handle) == 'CS_INTEGRATING'
 
-# Methods
+    # Methods
 
     def connect(self):
         """
@@ -121,7 +122,7 @@ class Camera(AbstractSDKCamera):
             # so do it here.
             self.filterwheel.connect()
 
-# Private methods
+    # Private methods
 
     def _set_target_temperature(self, target):
         self._driver.set_temp_regulation(self._handle, target, self.cooling_enabled)
@@ -161,25 +162,24 @@ class Camera(AbstractSDKCamera):
         if exposure_status == 'CS_INTEGRATION_COMPLETE':
             try:
                 image_data = self._driver.readout(self._handle,
-                                                    readout_mode,
-                                                    top,
-                                                    left,
-                                                    height,
-                                                    width)
+                                                  readout_mode,
+                                                  top,
+                                                  left,
+                                                  height,
+                                                  width)
             except RuntimeError as err:
-                raise error.PanError('Readout error on {}, {}'.format(self, err))
+                raise error.PanError(f'Readout error on {self}, {err}')
             else:
-                fits_utils.write_fits(data=image_data,
-                                      header=header,
-                                      filename=filename)
+                self.write_fits(data=image_data,
+                                header=header,
+                                filename=filename)
 
         elif exposure_status == 'CS_IDLE':
-            raise error.PanError("Exposure missing on {}".format(self))
+            raise error.PanError(f"Exposure missing on {self}")
         else:
-            raise error.PanError("Unexpected exposure status on {}: '{}'".format(
-                self, exposure_status))
+            raise error.PanError(f"Unexpected exposure status on {self}: '{exposure_status}'")
 
-    def _create_fits_header(self, seconds, dark):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
 
         # Unbinned. Need to chance if binning gets implemented.

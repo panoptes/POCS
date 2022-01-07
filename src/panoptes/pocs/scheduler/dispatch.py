@@ -15,6 +15,8 @@ class Scheduler(BaseScheduler):
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
                 defaults to time called
+            constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
+                constraints to check. If `None` (the default), use the `scheduler.constraints`.
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
             constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
@@ -38,6 +40,7 @@ class Scheduler(BaseScheduler):
         self.set_common_properties(time)
 
         constraints = constraints or self.constraints
+
         for constraint in listify(constraints):
             self.logger.info(f"Checking Constraint: {constraint}")
             for obs_name, observation in self.observations.items():
@@ -62,7 +65,6 @@ class Scheduler(BaseScheduler):
 
         if len(valid_obs) > 0:
             self.logger.debug(f'Multiplying final scores by priority')
-
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority

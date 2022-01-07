@@ -178,6 +178,7 @@ class PowerBoard(PanBase):
             r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
             for r in self.relays
         }
+        status['ac_ok'] = readings['ac_ok']
 
         return status
 
@@ -185,9 +186,16 @@ class PowerBoard(PanBase):
     def readings(self):
         """Return the rolling mean of the readings. """
         time_start = (current_time() - self._mean_interval * u.second).to_datetime()
-        mean_values = self.to_dataframe()[time_start:].mean().astype('int').to_dict()
+        df = self.to_dataframe()[time_start:]
+        values = df.mean().astype('int').to_dict()
 
-        return mean_values
+        # Add the most recent ac_ok check.
+        try:
+            values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
+        except KeyError:
+            values['ac_ok'] = None
+
+        return values
 
     def turn_on(self, label):
         """Turns on the relay with the given label."""
@@ -212,7 +220,7 @@ class PowerBoard(PanBase):
 
         """
         try:
-            columns = ['time'] + list(self.relay_labels.keys())
+            columns = ['time', 'ac_ok'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
         except:
@@ -228,12 +236,12 @@ class PowerBoard(PanBase):
                 (the default), then use `arduino_board_name`.
 
         """
-        mean_values = self.readings
+        recent_values = self.readings
 
         collection_name = collection_name or self.arduino_board_name
-        self.db.insert_current(collection_name, mean_values)
+        self.db.insert_current(collection_name, recent_values)
 
-        return mean_values
+        return recent_values
 
     def setup_relays(self, relays: Dict[str, dict]):
         """Setup the relays."""
@@ -278,6 +286,7 @@ class PowerBoard(PanBase):
         name_key = 'name'
         relay_key = 'relays'
         values_key = 'readings'
+        ac_key = 'ac_ok'
 
         if self._ignore_readings > 0:
             self._ignore_readings -= 1
@@ -291,7 +300,7 @@ class PowerBoard(PanBase):
             return
 
         if data[name_key] != self.arduino_board_name:
-            self.logger.warning('Not reading the power_board. Skipping data.')
+            self.logger.warning(f'Not reading the power_board. Skipping data.')
             return
 
         # Check we got a valid reading.
@@ -301,8 +310,11 @@ class PowerBoard(PanBase):
             return
 
         # Todo: make sure not receiving stale or out of order data using `uptime`.
-        # Create a list for the new data row and add common time.
-        new_data = [current_time().to_datetime()]
+        # Create a list for the new data row and add common time and AC reading.
+        new_data = [
+            current_time().to_datetime(),
+            data.get(ac_key, 0)
+        ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.
             read_relay.state = PinState(data[relay_key][relay_index])

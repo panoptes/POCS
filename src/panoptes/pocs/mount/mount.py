@@ -115,6 +115,10 @@ class AbstractMount(PanBase):
 
         self._is_connected = False
 
+    def update_status(self):
+        """Thin-wrapper to call the status property."""
+        self.logger.trace(f'Updating status: {self.status}')
+
     @property
     def status(self):
         status = {}
@@ -542,7 +546,7 @@ class AbstractMount(PanBase):
             self.logger.debug('Slewing to target')
             success = self.query('slew_to_target')
 
-            self.logger.debug("Mount response: {}".format(success))
+            self.logger.debug(f"Mount response: {success}")
             if success:
                 if blocking:
                     # Set up the timeout timer
@@ -557,6 +561,8 @@ class AbstractMount(PanBase):
 
                         self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
                         timeout_timer.sleep(max_sleep=block_time)
+                        # Check the status, which updates the tracking status.
+                        self.update_status()
 
                     self.logger.debug(f'Done with slew_to_target block')
             else:
@@ -601,6 +607,7 @@ class AbstractMount(PanBase):
                         break
                     self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
                     timeout_timer.sleep(max_sleep=block_time)
+                    self.update_status()
         else:
             self.logger.info('Mount is parked')
 

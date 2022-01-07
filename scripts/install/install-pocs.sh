@@ -64,43 +64,32 @@ PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
-LOGFILE="${PANDIR}/logs/install-pocs.log"
+LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
-DEFAULT_GROUPS="dialout,plugdev,input,sudo"
+USE_ZSH=false
+INSTALL_SERVICES=false
+DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
-NTP_SERVER="${NTP_SERVER:-192.168.8.1}"
+ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
 
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 
-DOCKER_IMAGE=${DOCKER_IMAGE:-"gcr.io/panoptes-exp/panoptes-pocs"}
-DOCKER_TAG=${DOCKER_TAG:-"develop"}
-
-
-function make_directories() {
-  echo "Creating directories in ${PANDIR}"
-  sudo mkdir -p "${PANDIR}/logs"
-  sudo mkdir -p "${PANDIR}/images"
-  sudo mkdir -p "${PANDIR}/json_store"
-  sudo mkdir -p "${PANDIR}/keys"
-  sudo mkdir -p "${PANDIR}/notebooks"
-  sudo mkdir -p "${PANDIR}/conf_files"
-  sudo chown -R "${PANUSER}":"${PANUSER}" "${PANDIR}"
-}
+CODE_BRANCH=${CODE_BRANCH:-"develop"}
 
 function name_me() {
   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
 }
 
-function which_docker() {
-  read -rp "What docker image tag would you like to use (default: ${DOCKER_TAG})? " USER_DOCKER_TAG
-  DOCKER_TAG="${USER_DOCKER_TAG:-$DOCKER_TAG}"
+function which_branch() {
+  read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
+  CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 }
 
 function get_time_settings() {
-  read -rp "What is the IP address of your router (default: ${NTP_SERVER})? " USER_NTP_SERVER
-  NTP_SERVER="${USER_NTP_SERVER:-$NTP_SERVER}"
+  read -rp "What is the IP address of your router (default: ${ROUTER_IP})? " USER_NTP_SERVER
+  ROUTER_IP="${USER_NTP_SERVER:-$ROUTER_IP}"
   sudo dpkg-reconfigure tzdata
 }
 
@@ -126,24 +115,40 @@ function which_version() {
     esac
   done
 
-  echo "Setting hostname to ${HOST}"
-  sudo hostnamectl set-hostname "$HOST"
+  if [ "${DEV_BOX}" != true ]; then
+    echo "Setting hostname to ${HOST}"
+    sudo hostnamectl set-hostname "$HOST"
+  fi
+
+  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    USE_ZSH=true
+  fi
+
+  read -p "Would you like to install the Config Server and Power Monitor services? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    INSTALL_SERVICES=true
+  fi
 }
 
 function system_deps() {
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart >/dev/null
-  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq >/dev/null
+  echo "Installing system dependencies."
+
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade | sudo tee -a "${LOGFILE}"
 
   # Raspberry Pi stuff
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install rpi.gpio-common linux-tools-raspi >/dev/null
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
+      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi python3-lgpio | sudo tee -a "${LOGFILE}"
   fi
 
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade >/dev/null
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
     ack \
     byobu \
+    docker.io \
     gcc \
     htop \
     httpie \
@@ -152,12 +157,11 @@ function system_deps() {
     nano \
     neovim \
     sshfs \
-    wget \
-    zsh >/dev/null
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove >/dev/null
+    usbmount \
+    wget | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove | sudo tee -a "${LOGFILE}"
 
-  # Use zsh
-  sudo chsh --shell /usr/bin/zsh "${PANUSER}"
+  sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
 
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then
@@ -167,30 +171,23 @@ function system_deps() {
 
 }
 
-function install_docker() {
-  wget -q https://get.docker.com -O get-docker.sh
-  bash get-docker.sh >/dev/null
-  sudo usermod -aG docker "${PANUSER}"
-  rm get-docker.sh
-}
-
-function get_or_build_images() {
+function get_or_build_docker_images() {
   echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
 
-  sudo docker pull "${DOCKER_IMAGE}:${DOCKER_TAG}"
+  sudo docker pull "${DOCKER_IMAGE}:${CODE_BRANCH}"
 
   if [[ $HOST == *-control-box ]]; then
     # Copy the docker-compose file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
       "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
     sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
 
     # Copy the config file
     sudo docker run --rm -it \
       -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${DOCKER_TAG}" \
+      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
       "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
     sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
   fi
@@ -199,41 +196,140 @@ function get_or_build_images() {
 function install_conda() {
   echo "Installing miniforge conda"
 
-  wget "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${PANDIR}/conda" /dev/null
-  # Initialize conda for the shells.
-  "${PANDIR}/conda/bin/conda" init bash
-  "${PANDIR}/conda/bin/conda" init zsh
+  wget -q "${CONDA_URL}" -O install-miniforge.sh
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >>"${LOGFILE}"
+  rm install-miniforge.sh
 
-  "${PANDIR}/conda/bin/conda" create -y -n "${CONDA_ENV_NAME}" python=3
+  # Initialize conda for the shells.
+  "${HOME}/conda/bin/conda" init bash >>"${LOGFILE}"
+  "${HOME}/conda/bin/conda" init zsh >>"${LOGFILE}"
+
+  echo "Creating POCS conda environment"
+  "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  # Install docker-compose via pip (but first install some annoyingly large dependencies via conda).
-  "${PANDIR}/conda/bin/conda" install -y -c conda-forge -n "${CONDA_ENV_NAME}" pynacl docopt pyrsistent
-  "${PANDIR}/conda/envs/${CONDA_ENV_NAME}/bin/pip" install docker-compose
+  cat <<EOF >environment.yaml
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - astroplan
+  - astropy
+  - docopt
+  - fastapi
+  - google-cloud-storage
+  - google-cloud-firestore
+  - gsutil
+  - jupyter_console
+  - matplotlib-base
+  - numpy
+  - pandas
+  - photutils
+  - pip
+  - pynacl
+  - pyrsistent
+  - scipy
+  - streamz
+  - uvicorn[standard]
+  - pip:
+      - "git+https://github.com/panoptes/POCS@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
+      - docker-compose
+EOF
 
-  rm install-miniforge.sh
+  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
+}
+
+function get_pocs_repo() {
+  echo "Cloning POCS repo."
+
+  git clone https://github.com/panoptes/POCS "${PANDIR}"
+  cd "${PANDIR}"
+  git checkout "$CODE_BRANCH"
+}
+
+function make_directories() {
+  echo "Creating directories."
+  mkdir -p "${HOME}/logs"
+  mkdir -p "${HOME}/images"
+  mkdir -p "${HOME}/json_store"
+  mkdir -p "${HOME}/keys"
+  mkdir -p "${HOME}/notebooks"
+
+  # Link the needed POCS folders.
+  ln -s "${PANDIR}/conf_files" "${HOME}"
+  ln -s "${PANDIR}/resources" "${HOME}"
+}
+
+function install_services() {
+  echo "Creating panoptes-config-server service."
+
+  sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
+[Unit]
+Description=PANOPTES Config Server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+WorkingDirectory=~
+ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  echo "Creating panoptes power service."
+
+  sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
+[Unit]
+Description=PANOPTES Power Monitor
+After=panoptes-config-server.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+WorkingDirectory=~
+ExecStartPre=/bin/sleep 10
+ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  sudo systemctl enable panoptes-config-server
+  sudo systemctl enable panoptes-power-server
 }
 
 function install_zsh() {
-  echo "Setting up zsh for a better experience."
+  if [ ! -d "$ZSH_CUSTOM" ]; then
+    echo "Using zsh for a better shell experience."
 
-  # Oh my zsh
-  wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-  bash /tmp/install-ohmyzsh.sh --unattended > /dev/null
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install zsh
 
-  export ZSH_CUSTOM="$HOME/.oh-my-zsh"
+    sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
-  # Autosuggestions plugin
-  git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    # Oh my zsh
+    wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
+    bash /tmp/install-ohmyzsh.sh --unattended >>"${LOGFILE}"
 
-  # Spaceship theme
-  git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
-  ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
+    export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
-  write_zshrc
+    # Autosuggestions plugin
+    git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
+
+    # Spaceship theme
+    git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
+    ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
+
+    write_zshrc
+  fi
 }
 
 function write_zshrc() {
@@ -254,62 +350,82 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate >/dev/null
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate | sudo tee -a "${LOGFILE}"
   sudo timedatectl set-ntp false
-  sudo ntpdate -s "${NTP_SERVER}"
+  sudo ntpdate -s "${ROUTER_IP}"
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
-  (echo "@reboot ntpdate -s ${NTP_SERVER}") | sudo crontab -
   (
     sudo crontab -l
-    echo "13 * * * * ntpdate -s ${NTP_SERVER}"
+    echo "@reboot ntpdate -s ${ROUTER_IP}"
+  ) | sudo crontab -
+  (
+    sudo crontab -l
+    echo "13 * * * * ntpdate -s ${ROUTER_IP}"
   ) | sudo crontab -
 
+  # Show updated time.
   timedatectl
+}
+
+function setup_nfs_host() {
+  sudo apt-get install -y nfs-kernel-server
+  sudo mkdir -p "${HOME}/images"
+  echo "${HOME}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
+
+  sudo exportfs -a
+  sudo systemctl restart nfs-kernel-server
 }
 
 function do_install() {
   clear
 
+  # Set up directory for log file.
+  mkdir -p "${HOME}/logs"
+
   name_me
 
   which_version
 
-  which_docker
+  which_branch
 
-  get_time_settings
+  if [ "$(uname -m)" = "aarch64" ]; then
+    get_time_settings
+  fi
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
-  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
-  echo "DOCKER_TAG: ${DOCKER_TAG}"
-  echo "NTP_SERVER: ${NTP_SERVER}"
   echo "Logfile: ${LOGFILE}"
-  echo ""
+  #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
+  echo "CODE_BRANCH: ${CODE_BRANCH}"
 
-  fix_time
+  # Make sure the time setting is correct on RPi.
+  if [ "$(uname -m)" = "aarch64" ]; then
+    echo "ROUTER_IP: ${ROUTER_IP}"
+    fix_time
+  fi
 
-  make_directories
-
-  echo "Installing system dependencies."
   system_deps
 
-  if [ "$DEV_BOX" = false ]; then
+  if [[ "${USE_ZSH}" == true ]]; then
     install_zsh
-
-    echo "Adding ${PANUSER} to default groups."
-    sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
   fi
 
   install_conda
 
-  install_docker
+  get_pocs_repo
 
-  get_or_build_images
+  make_directories
+
+  if [[ "${INSTALL_SERVICES}" == true ]]; then
+    install_services
+  fi
+
+  # get_or_build_docker_images
 
   echo "Please reboot your machine before using POCS."
 

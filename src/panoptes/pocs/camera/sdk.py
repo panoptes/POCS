@@ -2,6 +2,8 @@ import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
+from astropy.io import fits
+
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.utils import error
@@ -100,10 +102,11 @@ class AbstractSDKCamera(AbstractCamera):
         logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with UID serial_number={serial_number!r} at {my_class._cameras[serial_number]}.")
+            logger.debug(f"Found {name} with {serial_number=!r} "
+                         f"at {my_class._cameras[serial_number]}.")
         else:
             raise error.InvalidConfig(f"No config information found for "
-                                      f"name={name!r} with serial_number={serial_number!r} in {my_class._cameras}")
+                                      f"{name=!r} with {serial_number=!r} in {my_class._cameras}")
 
         if serial_number in my_class._assigned_cameras:
             raise error.PanError(f"{name} with UID serial_number={serial_number!r} already in use.")
@@ -142,10 +145,10 @@ class AbstractSDKCamera(AbstractCamera):
     def __del__(self):
         """ Attempt some clean up. """
         if hasattr(self, 'uid'):
-            logger.trace(f'Removing {self.uid} from: {type(self)._assigned_cameras}')
+            logger.debug(f'Removing {self.uid} from: {type(self)._assigned_cameras}')
             type(self)._assigned_cameras.discard(self.uid)
 
-        logger.trace(f'Assigned cameras after removing: {type(self)._assigned_cameras}')
+        logger.debug(f'Assigned cameras after removing: {type(self)._assigned_cameras}')
 
     # Properties
 
@@ -156,7 +159,7 @@ class AbstractSDKCamera(AbstractCamera):
 
     # Methods
 
-    def _create_fits_header(self, seconds, dark=None):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark=dark)
         header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
         return header

@@ -172,6 +172,7 @@ class PanStateMachine(Machine):
             if self.state == 'sleeping':
                 self.logger.debug('State machine loop complete, decrementing retry attempts')
                 self._obs_run_retries -= 1
+
                 if run_once:
                     self.stop_states()
 
@@ -306,7 +307,7 @@ class PanStateMachine(Machine):
 
         if not state_table_name.startswith('/'):
             state_table_file = os.path.join(
-                os.getenv('POCS', default='/panoptes-pocs'),
+                os.getenv('POCS', default='.'),
                 'conf_files',
                 'state_table',
                 f'{state_table_name}.yaml'

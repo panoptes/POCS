@@ -471,16 +471,15 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 self.logger.warning(f'No mains "power" reading found in database.')
 
-            has_power = False  # Assume not
-            for power_key in ['main', 'mains']:  # Legacy control boards have `main`.
+            has_power = False  # Assume not.
+            for power_key in ['main', 'mains', 'ac_ok']:  # Legacy support.
                 with suppress(KeyError):
                     has_power = bool(record['data'][power_key])
 
-            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
-            age = (current_time().datetime - timestamp).total_seconds()
+            date = record['date'].replace(tzinfo=None)  # current_time is timezone naive
+            age = (current_time().datetime - date).total_seconds()
 
-            self.logger.debug(
-                f"Power Safety: {has_power} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
+            self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
             self.logger.warning(f"No record found in DB: {e!r}")

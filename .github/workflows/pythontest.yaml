@@ -26,18 +26,14 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        python-version: [ '3.9', '3.10' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build panoptes-pocs image
-        run: |
-          docker-compose -f tests/docker-compose.yaml build
-          mkdir -p logs && chmod -R 777 logs
-          mkdir -p build && chmod -R 777 build
-      - name: Test with pytest in panoptes-pocs container
-        run: |
-          docker-compose -f tests/docker-compose.yaml run pocs
+      - name: Install
+        run: pip install ".[google,focuser,sensors,testing]"
+      - name: Test
+        run: pytest
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v1
         if: success()

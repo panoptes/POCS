@@ -4,8 +4,10 @@ import shutil
 import subprocess
 import random
 from contextlib import suppress
+from typing import Optional
 
 import requests
+from pydantic import AnyHttpUrl
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
 
@@ -17,7 +19,7 @@ from panoptes.utils.library import load_module
 logger = get_logger()
 
 
-def list_connected_cameras(remote_url=None):
+def list_connected_cameras(endpoint: Optional[AnyHttpUrl] = None):
     """Detect connected cameras.
 
     Uses gphoto2 to try and detect which cameras are connected. Cameras should
@@ -27,14 +29,15 @@ def list_connected_cameras(remote_url=None):
         list: A list of the ports with detected cameras.
     """
 
-    if remote_url is not None:
-        response = requests.post(remote_url, json=dict(arguments='--auto-detect'))
+    result = ''
+    if endpoint is not None:
+        response = requests.post(endpoint, json=dict(arguments='--auto-detect'))
         if response.ok:
             result = response.json()['output']
     else:
         gphoto2 = shutil.which('gphoto2')
         if not gphoto2:  # pragma: no cover
-            raise error.NotFound('gphoto2 is missing, please install or use the remote_url option.')
+            raise error.NotFound('gphoto2 is missing, please install or use the endpoint option.')
         command = [gphoto2, '--auto-detect']
         result = subprocess.check_output(command).decode('utf-8')
     lines = result.split('\n')
@@ -42,7 +45,7 @@ def list_connected_cameras(remote_url=None):
     ports = []
 
     for line in lines:
-        camera_match = re.match(r'([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
+        camera_match = re.match(r'([\w\d\s_.]{30})\s(usb:\d{3},\d{3})', line)
         if camera_match:
             # camera_name = camera_match.group(1).strip()
             port = camera_match.group(2).strip()
@@ -101,18 +104,18 @@ def create_cameras_from_config(config=None,
     ports = list()
 
     auto_detect = camera_defaults.get('auto_detect', False)
+    endpoint = camera_defaults.get('endpoint', None)
 
     # Lookup the connected ports
     if auto_detect:
         logger.debug("Auto-detecting ports for cameras")
         try:
-            ports = list_connected_cameras(remote_url=camera_defaults.get('remote_url', None))
+            ports = list_connected_cameras(endpoint=endpoint)
         except error.PanError as e:
             logger.warning(e)
 
         if len(ports) == 0:
-            raise error.CameraNotFound(
-                msg="No cameras detected. For testing, use camera simulator.")
+            raise error.CameraNotFound(msg="No cameras detected. For testing, use simulator.")
         else:
             logger.debug(f"Detected ports={ports!r}")
 
@@ -151,10 +154,10 @@ def create_cameras_from_config(config=None,
 
             # We either got a class or a module.
             if callable(module):
-                camera = module(**device_config)
+                camera_obj = module(**device_config)
             else:
                 if hasattr(module, 'Camera'):
-                    camera = module.Camera(**device_config)
+                    camera_obj = module.Camera(**device_config)
                 else:
                     raise error.NotFound(f'module={module!r} does not have a Camera object')
         except error.NotFound:
@@ -163,20 +166,20 @@ def create_cameras_from_config(config=None,
             logger.error(f'Cannot create camera type: {model} {e!r}')
         else:
             # Check if the config specified a primary camera and if it matches.
-            if camera.uid == camera_config.get('primary'):
-                camera.is_primary = True
-                primary_camera = camera
+            if camera_obj.uid == camera_config.get('primary'):
+                camera_obj.is_primary = True
+                primary_camera = camera_obj
 
-            logger.debug(f"Camera created: camera={camera!r}")
+            logger.debug(f"Camera created: camera={camera_obj!r}")
 
-            cameras[cam_name] = camera
+            cameras[cam_name] = camera_obj
 
     if len(cameras) == 0:
         raise error.CameraNotFound(msg="No cameras available")
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f'No primary camera given, assigning the first camera ({auto_primary!r})')
+        logger.info(f'No primary camera given, assigning the first camera')
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 

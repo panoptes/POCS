@@ -249,7 +249,7 @@ def test_standard_headers(observatory):
         {"field": {
             'name': 'HAT-P-20',
             'position': '07h27m39.89s +24d20m14.7s'},
-         "observation": {'priority': '100'}}
+            "observation": {'priority': '100'}}
     ]
 
     observatory.get_observation()
@@ -301,11 +301,6 @@ def test_get_observation_no_scheduler(observatory):
     assert observatory.get_observation() is None
 
 
-def test_cleanup_observations_no_scheduler(observatory):
-    observatory.scheduler = None
-    assert observatory.cleanup_observations() is None
-
-
 @pytest.mark.with_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
@@ -321,9 +316,6 @@ def test_observe(observatory):
     assert observatory.current_observation.current_exp_num == 0
     observatory.observe()
     assert observatory.current_observation.current_exp_num == 1
-
-    observatory.cleanup_observations()
-    assert len(observatory.scheduler.observed_list) == 0
 
 
 def test_autofocus_disconnected(observatory):

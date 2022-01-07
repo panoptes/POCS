@@ -6,7 +6,6 @@ from contextlib import suppress
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_moon
-
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml

@@ -189,7 +189,7 @@ class Mount(AbstractSerialMount):
 
     def _set_initial_rates(self, alt_limit='+00', meridian_treatment='100'):
         # Make sure we start at sidereal
-        self.set_tracking_rate()
+        self.query('set_sidereal_tracking')
 
         self.logger.debug(f'Setting altitude limit to {alt_limit}')
         self.query('set_altitude_limit', alt_limit)
