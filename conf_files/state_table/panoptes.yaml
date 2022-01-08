@@ -13,7 +13,6 @@ states:
     ready:
         tags: always_safe
     scheduling:
-        tags: always_safe
         horizon: observe
     slewing:
     pointing:
