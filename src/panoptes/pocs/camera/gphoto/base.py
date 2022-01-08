@@ -238,6 +238,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def _readout(self, filename, *args, **kwargs):
         if os.path.exists(filename):
             self.logger.debug(f'Readout complete for {filename}')
+            self._readout_complete = True
 
     def _set_target_temperature(self, target):
         return None
