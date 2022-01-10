@@ -244,6 +244,13 @@ function make_directories() {
 function install_services() {
   echo "Creating panoptes-config-server service."
 
+  cat > "${HOME}/start-config-server.sh" <<EOF
+#!/bin/bash
+
+${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+EOF
+  chmod +x "${HOME}/start-config-server.sh"
+
   sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
 [Unit]
 Description=PANOPTES Config Server
@@ -256,13 +263,20 @@ Restart=always
 RestartSec=1
 User=ubuntu
 WorkingDirectory=~
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+ExecStart=${HOME}/start-config-server.sh
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
   echo "Creating panoptes power service."
+
+  cat > "${HOME}/start-power-monitor.sh" <<EOF
+#!/bin/bash
+
+${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+EOF
+  chmod +x "${HOME}/start-config-server.sh"
 
   sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
 [Unit]
@@ -277,7 +291,7 @@ RestartSec=1
 User=ubuntu
 WorkingDirectory=~
 ExecStartPre=/bin/sleep 10
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+ExecStart=${HOME}/start-power-monitor.sh
 
 [Install]
 WantedBy=multi-user.target
