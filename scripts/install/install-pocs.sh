@@ -247,7 +247,8 @@ function install_services() {
   cat > "${HOME}/start-config-server.sh" <<EOF
 #!/bin/bash
 
-${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
+tmux new-session -s config-server -d
+tmux send-keys -t config-server "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml" C-m
 EOF
   chmod +x "${HOME}/start-config-server.sh"
 
@@ -274,7 +275,8 @@ EOF
   cat > "${HOME}/start-power-monitor.sh" <<EOF
 #!/bin/bash
 
-${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+tmux new-session -s power-monitor -d
+tmux send-keys -t power-monitor "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app" C-m
 EOF
   chmod +x "${HOME}/start-config-server.sh"
 
