@@ -66,7 +66,7 @@ UNIT_NAME="pocs"
 HOST="${HOST:-pocs-control-box}"
 LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
-DEV_BOX=false
+INSTALL_BOX=control
 USE_ZSH=false
 INSTALL_SERVICES=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
@@ -100,22 +100,24 @@ function which_version() {
     case $ver in
     "Control box")
       HOST="${UNIT_NAME}-control-box"
+      INSTALL_BOX="control"
       break
       ;;
     "Camera box")
       HOST="${UNIT_NAME}-camera-box"
+      INSTALL_BOX="camera"
       break
       ;;
     "My computer")
       echo "Installing on personal computer"
-      DEV_BOX=true
+      INSTALL_BOX="dev"
       break
       ;;
     *) echo "invalid option $REPLY" ;;
     esac
   done
 
-  if [ "${DEV_BOX}" != true ]; then
+  if [ "${INSTALL_BOX}" != "dev" ]; then
     echo "Setting hostname to ${HOST}"
     sudo hostnamectl set-hostname "$HOST"
   fi
@@ -169,28 +171,6 @@ function system_deps() {
     ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa"
   fi
 
-}
-
-function get_or_build_docker_images() {
-  echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
-
-  sudo docker pull "${DOCKER_IMAGE}:${CODE_BRANCH}"
-
-  if [[ $HOST == *-control-box ]]; then
-    # Copy the docker-compose file
-    sudo docker run --rm -it \
-      -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
-      "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
-    sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
-
-    # Copy the config file
-    sudo docker run --rm -it \
-      -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
-      "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
-    sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
-  fi
 }
 
 function install_conda() {
@@ -378,12 +358,18 @@ function setup_nfs_host() {
   sudo systemctl restart nfs-kernel-server
 }
 
+function setup_nfs_client() {
+  sudo apt-get install -y nfs-common
+  mkdir -p "${HOME}/images"
+  echo "${UNIT_NAME}-control-box:${HOME}/images ${HOME/images} nfs defaults 0 0" | sudo tee -a /etc/fstab
+}
+
 function do_install() {
   clear
 
   # Set up directory for log file.
   mkdir -p "${HOME}/logs"
-  echo "Starting POCS install at $(date)" >>"${LOGFILE}"  
+  echo "Starting POCS install at $(date)" >>"${LOGFILE}"
 
   name_me
 
@@ -401,7 +387,6 @@ function do_install() {
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
   echo "Logfile: ${LOGFILE}"
-  #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   # Make sure the time setting is correct on RPi.
@@ -414,6 +399,14 @@ function do_install() {
 
   if [[ "${USE_ZSH}" == true ]]; then
     install_zsh
+  fi
+
+  if [ "$(uname -m)" = "aarch64" ]; then
+    if [ "${INSTALL_BOX}" = "control" ]; then
+      setup_nfs_host
+    elif [ "${INSTALL_BOX}" = "camera" ]; then
+      setup_nfs_client
+    fi
   fi
 
   install_conda
