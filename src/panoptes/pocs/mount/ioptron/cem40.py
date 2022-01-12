@@ -155,7 +155,7 @@ class Mount(AbstractSerialMount):
         Returns:
             bool: indicating success
         """
-        if self.at_mount_park:
+        if self.at_mount_park or self.is_parked:
             self.logger.success("Mount is already parked")
             return self.at_mount_park
 
@@ -175,6 +175,7 @@ class Mount(AbstractSerialMount):
         self.move_direction(direction=park_direction, seconds=park_seconds)
 
         self._at_mount_park = True
+        self._is_parked = True
         self.logger.success('Mount successfully parked.')
         return self.at_mount_park
 

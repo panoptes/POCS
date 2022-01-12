@@ -191,6 +191,7 @@ class AbstractSerialMount(AbstractMount, ABC):
             self._movement_speed = status['movement_speed']
 
             self._at_mount_park = 'Park' in self.state
+            self._is_parked = self._at_mount_park
             self._is_home = 'Stopped - Zero Position' in self.state
             self._is_tracking = 'Tracking' in self.state
             self._is_slewing = 'Slewing' in self.state
