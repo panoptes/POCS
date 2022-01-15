@@ -109,7 +109,7 @@ def test_altitude_subclass():
 
 def test_altitude_no_minimum():
     constraint0 = Altitude()
-    assert constraint0.horizon_line == horizon_line
+    assert (constraint0.horizon_line == horizon_line).all()
 
 
 def test_basic_altitude(observer, field_list, horizon_line):
