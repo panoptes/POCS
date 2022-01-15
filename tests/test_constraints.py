@@ -107,7 +107,7 @@ def test_altitude_subclass():
     assert issubclass(Altitude, BaseConstraint)
 
 
-def test_altitude_no_minimum():
+def test_altitude_no_minimum(horizon_line):
     constraint0 = Altitude()
     assert (constraint0.horizon_line == horizon_line).all()
 
