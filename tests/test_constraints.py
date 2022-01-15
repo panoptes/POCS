@@ -93,11 +93,6 @@ def observation(field):
     return Observation(field)
 
 
-def test_bad_str_weight():
-    with pytest.raises(AssertionError):
-        BaseConstraint("1.0")
-
-
 def test_negative_weight():
     with pytest.raises(AssertionError):
         BaseConstraint(-1.0)
@@ -123,7 +118,6 @@ def test_altitude_bad_param():
 
 
 def test_basic_altitude(observer, field_list, horizon_line):
-
     # Target is at ~34 degrees altitude and 79 degrees azimuth
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
