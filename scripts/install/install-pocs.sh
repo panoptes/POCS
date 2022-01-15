@@ -68,7 +68,6 @@ LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 INSTALL_BOX=control
 USE_ZSH=false
-INSTALL_SERVICES=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
 ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
@@ -127,10 +126,6 @@ function which_version() {
     USE_ZSH=true
   fi
 
-  read -p "Would you like to install the Config Server and Power Monitor services? [Y/n]: " -r
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    INSTALL_SERVICES=true
-  fi
 }
 
 function system_deps() {
@@ -241,67 +236,25 @@ function make_directories() {
   ln -s "${PANDIR}/resources" "${HOME}"
 }
 
-function install_services() {
-  echo "Creating panoptes-config-server service."
-
+function create_startup_scripts() {
   cat > "${HOME}/start-config-server.sh" <<EOF
 #!/bin/bash
 
 tmux new-session -s config-server -d
-tmux send-keys -t config-server "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml" C-m
+tmux send-keys -t config-server "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml" Enter
 EOF
   chmod +x "${HOME}/start-config-server.sh"
-
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
-[Unit]
-Description=PANOPTES Config Server
-After=network.target
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStart=${HOME}/start-config-server.sh
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  echo "Creating panoptes power service."
-
   cat > "${HOME}/start-power-monitor.sh" <<EOF
 #!/bin/bash
 
 tmux new-session -s power-monitor -d
-tmux send-keys -t power-monitor "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app" C-m
+tmux send-keys -t power-monitor "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app" Enter
 EOF
-  chmod +x "${HOME}/start-config-server.sh"
-
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
-[Unit]
-Description=PANOPTES Power Monitor
-After=panoptes-config-server.service
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStartPre=/bin/sleep 10
-ExecStart=${HOME}/start-power-monitor.sh
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  sudo systemctl enable panoptes-config-server
-  sudo systemctl enable panoptes-power-server
+  chmod +x "${HOME}/start-power-monitor.sh"
 }
+
+
+
 
 function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then
@@ -431,9 +384,7 @@ function do_install() {
 
   make_directories
 
-  if [[ "${INSTALL_SERVICES}" == true ]]; then
-    install_services
-  fi
+  create_startup_scripts
 
   # get_or_build_docker_images
 
