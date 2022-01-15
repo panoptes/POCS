@@ -108,13 +108,8 @@ def test_altitude_subclass():
 
 
 def test_altitude_no_minimum():
-    with pytest.raises(AssertionError):
-        Altitude()
-
-
-def test_altitude_bad_param():
-    with pytest.raises(AssertionError):
-        Altitude(30)
+    constraint0 = Altitude()
+    assert constraint0.horizon_line == horizon_line
 
 
 def test_basic_altitude(observer, field_list, horizon_line):
