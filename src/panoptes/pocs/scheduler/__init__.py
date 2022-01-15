@@ -1,6 +1,5 @@
 import os
 
-from astropy import units as u
 from astropy.utils.iers import Conf as iers_conf
 
 from panoptes.pocs.scheduler.constraint import Altitude
@@ -17,25 +16,25 @@ from panoptes.utils.config.client import get_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def create_scheduler_from_config(observer=None, iers_url=None, *args, **kwargs):
+def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args, **kwargs):
     """ Sets up the scheduler that will be used by the observatory """
 
     logger = get_logger()
 
-    iers_url = iers_url or get_config('scheduler.iers_url')
-    if iers_url is not None:
-        logger.debug(f'Getting IERS data at {iers_url=}')
-        iers_conf.iers_auto_url.set(iers_url)
-
-    scheduler_config = get_config('scheduler', default=None)
+    scheduler_config = config or get_config('scheduler', default=None)
     logger.info(f'scheduler_config: {scheduler_config!r}')
 
     if scheduler_config is None or len(scheduler_config) == 0:
         logger.info("No scheduler in config")
         return None
 
+    iers_url = iers_url or scheduler_config.get('iers_url')
+    if iers_url is not None:
+        logger.debug(f'Getting IERS data at {iers_url=}')
+        iers_conf.iers_auto_url.set(iers_url)
+
     if not observer:
-        logger.debug(f'No Observer provided, creating from config.')
+        logger.debug(f'No Observer provided, creating location from config.')
         site_details = create_location_from_config()
         observer = site_details['observer']
 
@@ -54,7 +53,7 @@ def create_scheduler_from_config(observer=None, iers_url=None, *args, **kwargs):
             module = load_module(f'{scheduler_type}')
 
             constraints = list()
-            constraint_list = get_config('scheduler.constraints')
+            constraint_list = get_config('scheduler.constraints', default=list())
             for constraint_config in constraint_list:
                 name = constraint_config['name']
                 try:
