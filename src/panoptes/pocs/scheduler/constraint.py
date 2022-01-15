@@ -23,6 +23,7 @@ class BaseConstraint(PanBase):
         """
         super().__init__(*args, **kwargs)
 
+        weight = float(weight)
         assert isinstance(weight, float), \
             self.logger.error("Constraint weight must be a float greater than 0.0")
         assert weight >= 0.0, \
@@ -31,18 +32,27 @@ class BaseConstraint(PanBase):
         self.weight = weight
         self._score = default_score
 
-    def get_score(self, time, observer, target):
+    def get_score(self, time, observer, target, **kwargs):
         raise NotImplementedError
 
 
 class Altitude(BaseConstraint):
     """ Implements altitude constraints for a horizon """
 
-    def __init__(self, horizon=None, *args, **kwargs):
+    @u.quantity_input(horizon=u.degree)
+    def __init__(self, horizon=None, obstructions=None, *args, **kwargs):
         """Create an Altitude constraint from a valid `Horizon`. """
         super().__init__(*args, **kwargs)
-        assert isinstance(horizon, horizon_utils.Horizon)
-        self.horizon_line = horizon.horizon_line
+
+        obstruction_list = obstructions or self.get_config('location.obstructions', default=[])
+        default_horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
+
+        horizon_obj = horizon_utils.Horizon(
+            obstructions=obstruction_list,
+            default_horizon=default_horizon.value
+        )
+
+        self.horizon_line = horizon_obj.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
         veto = False
@@ -61,7 +71,8 @@ class Altitude(BaseConstraint):
         with suppress(AttributeError):
             min_alt = min_alt.to_value('degree')
 
-        self.logger.debug(f'Minimum altitude for az = {target_az:.02f} alt = {target_alt:.02f} < {min_alt:.02f}')
+        self.logger.debug(
+            f'Minimum altitude for az = {target_az:.02f} alt = {target_alt:.02f} < {min_alt:.02f}')
         if target_alt < min_alt:
             self.logger.debug(f"Below minimum altitude: {target_alt:.02f} < {min_alt:.02f}")
             veto = True
@@ -76,17 +87,18 @@ class Altitude(BaseConstraint):
 class Duration(BaseConstraint):
 
     @u.quantity_input(horizon=u.degree)
-    def __init__(self, horizon, *args, **kwargs):
+    def __init__(self, horizon=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.horizon = horizon
+        self.horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
 
     def get_score(self, time, observer, observation, **kwargs):
         score = self._score
         target = observation.field
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        horizon = self.get_config('location.observe_horizon', default=-18 * u.degree)
-        end_of_night = kwargs.get('end_of_night', observer.tonight(time=time, horizon=horizon)[1])
+        end_of_night = observer.tonight(time=time,
+                                        horizon=self.get_config('location.observe_horizon',
+                                                                default=-18 * u.degree))[1]
 
         if not veto:
             # Get the next meridian flip
@@ -131,8 +143,11 @@ class Duration(BaseConstraint):
 
 class MoonAvoidance(BaseConstraint):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, separation=15 * u.degree, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not isinstance(separation, u.Unit):
+            separation *= u.degree
+        self.separation = separation
 
     def get_score(self, time, observer, observation, **kwargs):
         veto = False
@@ -146,9 +161,8 @@ class MoonAvoidance(BaseConstraint):
         moon_sep = moon.separation(observation.field.coord).value
 
         # Check we are a certain number of degrees from moon.
-        min_moon_sep = kwargs.get('min_moon_sep', 45)
-        if moon_sep < min_moon_sep:
-            self.logger.debug(f"\t\tMoon separation: {moon_sep:.02f} < {min_moon_sep:.02f}")
+        if moon_sep < self.separation:
+            self.logger.debug(f'Moon separation: {moon_sep:.02f} < {self.separation:.02f}')
             veto = True
         else:
             score = (moon_sep / 180)
@@ -156,7 +170,7 @@ class MoonAvoidance(BaseConstraint):
         return veto, score * self.weight
 
     def __str__(self):
-        return "Moon Avoidance"
+        return f'Moon Avoidance ({self.separation})'
 
 
 class AlreadyVisited(BaseConstraint):

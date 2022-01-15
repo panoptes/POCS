@@ -53,20 +53,17 @@ def create_scheduler_from_config(observer=None, iers_url=None, *args, **kwargs):
             # Load the required module
             module = load_module(f'{scheduler_type}')
 
-            obstruction_list = get_config('location.obstructions', default=[])
-            default_horizon = get_config('location.horizon', default=30 * u.degree)
-
-            horizon_line = horizon_utils.Horizon(
-                obstructions=obstruction_list,
-                default_horizon=default_horizon.value
-            )
-
-            # Simple constraint for now
-            constraints = [
-                Altitude(horizon=horizon_line),
-                MoonAvoidance(),
-                Duration(default_horizon, weight=5.)
-            ]
+            constraints = list()
+            constraint_list = get_config('scheduler.constraints')
+            for constraint_config in constraint_list:
+                name = constraint_config['name']
+                try:
+                    constraint_module = load_module(name)
+                except error.NotFound:
+                    logger.warning(f'Invalid constraint config given: {constraint_config=}')
+                else:
+                    options = constraint_config.get('options', dict())
+                    constraints.append(constraint_module(**options))
 
             # Create the Scheduler instance
             scheduler = module.Scheduler(observer,
