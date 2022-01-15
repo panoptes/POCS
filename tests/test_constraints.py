@@ -30,7 +30,7 @@ def observer():
 
 
 @pytest.fixture(scope='function')
-def horizon_line():
+def horizon_line() -> horizon_utils.Horizon:
     obstruction_list = get_config('location.obstructions', default=list())
     default_horizon = get_config('location.horizon')
 
@@ -109,7 +109,7 @@ def test_altitude_subclass():
 
 def test_altitude_no_minimum(horizon_line):
     constraint0 = Altitude()
-    assert (constraint0.horizon_line.horizon_line == horizon_line).all()
+    assert constraint0.horizon_line == horizon_line.horizon_line
 
 
 def test_basic_altitude(observer, field_list, horizon_line):

@@ -52,7 +52,7 @@ class Altitude(BaseConstraint):
             default_horizon=default_horizon.value
         )
 
-        self.horizon_line: horizon_utils.Horizon = horizon_obj.horizon_line
+        self.horizon_line = horizon_obj.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
         veto = False
