@@ -53,7 +53,7 @@ class Altitude(BaseConstraint):
 
             horizon_obj = horizon_utils.Horizon(
                 obstructions=obstruction_list,
-                default_horizon=default_horizon.value
+                default_horizon=get_quantity_value(default_horizon)
             )
 
             self.horizon_line = horizon_obj.horizon_line
