@@ -46,14 +46,13 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
 
     if os.path.exists(fields_path):
         scheduler_type = scheduler_config.get('type', 'panoptes.pocs.scheduler.dispatch')
-        constraint_list = scheduler_config.get('constraints', default=list())
 
         try:
             # Load the required module
             module = load_module(f'{scheduler_type}')
 
             constraints = list()
-            for constraint_config in constraint_list:
+            for constraint_config in scheduler_config.get('constraints', default=list()):
                 name = constraint_config['name']
                 try:
                     constraint_module = load_module(name)
