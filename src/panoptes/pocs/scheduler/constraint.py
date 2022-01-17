@@ -75,8 +75,7 @@ class Altitude(BaseConstraint):
         with suppress(AttributeError):
             min_alt = min_alt.to_value('degree')
 
-        self.logger.debug(
-            f'Minimum altitude for az = {target_az:.02f} alt = {target_alt:.02f} < {min_alt:.02f}')
+        self.logger.debug(f'Target coords: {target_az=:.02f} {target_alt=:.02f}')
         if target_alt < min_alt:
             self.logger.debug(f"Below minimum altitude: {target_alt:.02f} < {min_alt:.02f}")
             veto = True
