@@ -8,18 +8,17 @@ from panoptes.pocs.scheduler.constraint import MoonAvoidance
 
 from panoptes.pocs.scheduler.scheduler import BaseScheduler  # noqa; needed for import
 from panoptes.utils import error
-from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.library import load_module
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.utils.location import create_location_from_config
 
+logger = get_logger()
+
 
 def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args, **kwargs):
     """ Sets up the scheduler that will be used by the observatory """
-
-    logger = get_logger()
 
     scheduler_config = config or get_config('scheduler', default=None)
     logger.info(f'scheduler_config: {scheduler_config!r}')
@@ -51,16 +50,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
             # Load the required module
             module = load_module(f'{scheduler_type}')
 
-            constraints = list()
-            for constraint_config in scheduler_config.get('constraints', list()):
-                name = constraint_config['name']
-                try:
-                    constraint_module = load_module(name)
-                except error.NotFound:
-                    logger.warning(f'Invalid constraint config given: {constraint_config=}')
-                else:
-                    options = constraint_config.get('options', dict())
-                    constraints.append(constraint_module(**options))
+            constraints = create_constraints_from_config(config=scheduler_config)
 
             # Create the Scheduler instance
             scheduler = module.Scheduler(observer,
@@ -74,3 +64,19 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
         raise error.NotFound(msg=f"Fields file does not exist: {fields_path=!r}")
 
     return scheduler
+
+
+def create_constraints_from_config(config=None):
+    scheduler_config = config or get_config('scheduler', default=dict())
+    constraints = list()
+    for constraint_config in scheduler_config.get('constraints', list()):
+        name = constraint_config['name']
+        try:
+            constraint_module = load_module(name)
+        except error.NotFound:
+            logger.warning(f'Invalid constraint config given: {constraint_config=}')
+        else:
+            options = constraint_config.get('options', dict())
+            constraints.append(constraint_module(**options))
+
+    return constraints
