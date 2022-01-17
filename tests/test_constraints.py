@@ -124,6 +124,13 @@ def test_basic_altitude(observer, field_list, horizon_line):
 
     assert veto is False
 
+    # Then check with nothing
+    ac = Altitude()
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
     # Then check with just a number
     ac = Altitude(horizon=30)
     observation = Observation(Field(**m44), **m44)
