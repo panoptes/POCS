@@ -46,26 +46,23 @@ def main(context: typer.Context):
                                           port=context.params['config_port'],
                                           verbose=verbose)
     if verbose:
-        typer.echo(f'Command options from power: {context.params!r}')
+        typer.echo(f'Command options: {context.params!r}')
 
 
 @app.command()
-def start(
-        config_file: Path = typer.Argument(None,
-                                           help='The YAML config file to use as the config.'),
-        host: Optional[str] = typer.Option('localhost',
-                                           help='The IP address for the config server. Can be '
-                                                '"localhost" for private (the default) or '
-                                                '"0.0.0.0" for public.'),
-        port: Optional[int] = typer.Option(6563,
-                                           help='The port for the Config Server, default 6563'),
-        session_name: Optional[str] = typer.Option('config-server',
-                                                   help='The name of the tmux session that '
-                                                        'contains the running config server.')
-):
+def start(config_file: Path = typer.Argument(None,
+                                             help='The YAML config file to use as the config.'),
+          session_name: Optional[str] = typer.Option('config-server',
+                                                     help='The name of the tmux session that '
+                                                          'contains the running config server.')
+          ):
     """Starts the config server."""
     # Start tmux session
     server = libtmux.Server()
+
+    host = host_info['config_server'].host
+    port = host_info['config_server'].port
+
     try:
         session = server.new_session(session_name=session_name)
         pane0 = session.attached_pane
