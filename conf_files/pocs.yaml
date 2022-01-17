@@ -54,8 +54,6 @@ scheduler:
       options:
         separation: 15
     - name: panoptes.pocs.scheduler.constraint.Duration
-      options:
-        weight: 5
 
 mount:
   brand: ioptron
