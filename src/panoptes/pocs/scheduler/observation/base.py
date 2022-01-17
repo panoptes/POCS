@@ -116,7 +116,7 @@ class Observation(PanBase):
         status = {
             'current_exp': self.current_exp_num,
             'dec_mnt': self.field.coord.dec.value,
-            'equinox': get_quantity_value(self.field.coord.equinox),
+            'equinox': get_quantity_value(self.field.coord.equinox, unit='jyear_str'),
             'exp_set_size': self.exp_set_size,
             'exptime': self.exptime.value,
             'field_dec': self.field.coord.dec.value,
