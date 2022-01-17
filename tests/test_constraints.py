@@ -8,6 +8,7 @@ from astropy.time import Time
 
 from collections import OrderedDict
 
+from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 
@@ -91,6 +92,18 @@ def field():
 @pytest.fixture(scope='module')
 def observation(field):
     return Observation(field)
+
+
+def test_config_creator():
+    constraints = create_constraints_from_config()
+    for c in constraints:
+        assert isinstance(c, BaseConstraint)
+
+
+def test_config_creator_bad():
+    constraints = create_constraints_from_config(config=dict(constraints=list({'name': 'FooBar'})))
+    for c in constraints:
+        assert isinstance(c, BaseConstraint)
 
 
 def test_negative_weight():
