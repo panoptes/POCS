@@ -951,11 +951,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
 
+        metadata.update(observation.status)
+
         if headers is not None:
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
             metadata.update(headers)
-
-        metadata.update(observation.status)
 
         self.logger.debug(f'Observation: {exptime=!r} {file_path=!r} {image_id=!r} {metadata=!r}')
 
