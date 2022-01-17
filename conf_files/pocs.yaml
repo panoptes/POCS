@@ -52,7 +52,7 @@ scheduler:
     - name: panoptes.pocs.scheduler.constraint.Altitude
     - name: panoptes.pocs.scheduler.constraint.MoonAvoidance
       options:
-        separation: 30
+        separation: 15
     - name: panoptes.pocs.scheduler.constraint.Duration
       options:
         weight: 5
