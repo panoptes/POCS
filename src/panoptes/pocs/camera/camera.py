@@ -881,13 +881,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if observation.filter_name is not None:
                 try:
                     # Move the filterwheel
-                    self.logger.debug(
-                        f'Moving filterwheel={self.filterwheel} to filter_name='
-                        f'{observation.filter_name}')
+                    self.logger.debug(f'Moving {self.filterwheel=} to {observation.filter_name=}')
                     self.filterwheel.move_to(observation.filter_name, blocking=True)
                 except Exception as e:
-                    self.logger.error(f'Error moving filterwheel on {self} to'
-                                      f' {observation.filter_name}: {e!r}')
+                    self.logger.error(
+                        f'Error moving {self} filterwheel to {observation.filter_name}: {e!r}')
                     raise e
 
             elif not observation.dark:
@@ -901,12 +899,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             start_time = headers.get('start_time', current_time(flatten=True))
 
         if not observation.seq_time:
-            self.logger.debug(f'Setting observation seq_time={start_time}')
+            self.logger.debug(f'Setting observation {start_time=}')
             observation.seq_time = start_time
 
         # Get the filename
         image_dir = os.path.join(observation.directory, self.uid, observation.seq_time)
-        self.logger.debug(f'Setting image_dir={image_dir}')
+        self.logger.debug(f'Setting {image_dir=}')
 
         # Get full file path
         if filename is None:
@@ -934,7 +932,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # The exptime header data is set as part of observation but can
         # be overridden by passed parameter so update here.
-        exptime = kwargs.get('exptime', observation.exptime.value)
+        exptime = kwargs.get('exptime', get_quantity_value(observation.exptime, unit=u.second))
 
         # Camera metadata
         metadata = {
@@ -952,6 +950,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         }
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
+
+        metadata.update(observation.status)
 
         if headers is not None:
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
