@@ -52,7 +52,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
             module = load_module(f'{scheduler_type}')
 
             constraints = list()
-            for constraint_config in scheduler_config.get('constraints', default=list()):
+            for constraint_config in scheduler_config.get('constraints', list()):
                 name = constraint_config['name']
                 try:
                     constraint_module = load_module(name)
