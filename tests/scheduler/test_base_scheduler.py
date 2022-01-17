@@ -7,18 +7,16 @@ from astroplan import Observer
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
-from panoptes.pocs.scheduler import BaseScheduler as Scheduler
-from panoptes.pocs.scheduler.constraint import Duration
-from panoptes.pocs.scheduler.constraint import MoonAvoidance
+from panoptes.pocs.scheduler import BaseScheduler as Scheduler, create_constraints_from_config
 from panoptes.utils.serializers import from_yaml
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def constraints():
-    return [MoonAvoidance(), Duration(30 * u.deg)]
+    return create_constraints_from_config()
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def simple_fields_file():
     return get_config('directories.fields') + '/simulator.yaml'
 
@@ -30,7 +28,7 @@ def observer():
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def fields_list():
     return from_yaml("""
     -
@@ -154,14 +152,14 @@ def test_new_fields_list(scheduler):
     assert len(scheduler.observations.keys()) > 2
     scheduler.fields_list = [
         {"field":
-            {'name': 'Wasp 33',
-             'position': '02h26m51.0582s +37d33m01.733s'},
+             {'name': 'Wasp 33',
+              'position': '02h26m51.0582s +37d33m01.733s'},
          "observation":
-            {'priority': '100'},
+             {'priority': '100'},
          },
         {"field":
-            {'name': 'Wasp 37',
-             'position': '02h26m51.0582s +37d33m01.733s'},
+             {'name': 'Wasp 37',
+              'position': '02h26m51.0582s +37d33m01.733s'},
          "observation": {'priority': '50'}}
     ]
     assert scheduler.observations is not None
@@ -180,7 +178,6 @@ def test_scheduler_add_field(scheduler):
 def test_scheduler_add_bad_field(scheduler):
     orig_length = len(scheduler.observations)
     with pytest.raises(error.InvalidObservation):
-
         scheduler.add_observation({
             "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s'),
             "observation": dict(exptime=-10)})
@@ -189,7 +186,6 @@ def test_scheduler_add_bad_field(scheduler):
 
 
 def test_scheduler_add_duplicate_field(scheduler):
-
     scheduler.add_observation({
         "field": dict(name="Duplicate Field", position='12h30m01s +08d08m08s'),
         "observation": dict(priority=100)})
@@ -238,7 +234,6 @@ def test_remove_field(scheduler):
 
 
 def test_new_field_custom_type(scheduler):
-
     field_type = "panoptes.pocs.scheduler.field.Field"
     obs_type = "panoptes.pocs.scheduler.observation.base.Observation"
 
@@ -255,7 +250,6 @@ def test_new_field_custom_type(scheduler):
 
 
 def test_new_field_custom_type_bad(scheduler):
-
     field_type = "panoptes.pocs.scheduler.field.FakeFieldClass"
 
     obs_config = {"field": {'name': 'Bad custom type',
