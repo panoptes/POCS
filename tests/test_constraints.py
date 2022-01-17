@@ -118,14 +118,28 @@ def test_basic_altitude(observer, field_list, horizon_line):
     m44 = field_list[-1]
 
     # First check out with default horizon
-    ac = Altitude(horizon_line)
+    ac = Altitude(horizon=horizon_line)
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
+    # Then check with just a number
+    ac = Altitude(horizon=35)
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
+    # Then check with a degree
+    ac = Altitude(horizon=32 * u.degree)
     observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is False
 
 
-def test_custom_altitude(observer, field_list, horizon_line):
+def test_custom_altitude(observer, field_list):
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
 

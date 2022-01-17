@@ -4,6 +4,8 @@ from astropy import units as u
 
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
+from panoptes.utils.utils import get_quantity_value
+
 from panoptes.pocs.base import PanBase
 
 
@@ -39,20 +41,22 @@ class BaseConstraint(PanBase):
 class Altitude(BaseConstraint):
     """ Implements altitude constraints for a horizon """
 
-    @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon=None, obstructions=None, *args, **kwargs):
         """Create an Altitude constraint from a valid `Horizon`. """
         super().__init__(*args, **kwargs)
 
-        obstruction_list = obstructions or self.get_config('location.obstructions', default=[])
-        default_horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
+        if isinstance(horizon, horizon_utils.Horizon):
+            self.horizon_line = horizon.horizon_line
+        elif isinstance(horizon, (float, u.Unit, None)):
+            obstruction_list = obstructions or self.get_config('location.obstructions', default=[])
+            default_horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
 
-        horizon_obj = horizon_utils.Horizon(
-            obstructions=obstruction_list,
-            default_horizon=default_horizon.value
-        )
+            horizon_obj = horizon_utils.Horizon(
+                obstructions=obstruction_list,
+                default_horizon=default_horizon.value
+            )
 
-        self.horizon_line = horizon_obj.horizon_line
+            self.horizon_line = horizon_obj.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
         veto = False
@@ -102,9 +106,7 @@ class Duration(BaseConstraint):
 
         if not veto:
             # Get the next meridian flip
-            target_meridian = observer.target_meridian_transit_time(
-                time, target,
-                which='next')
+            target_meridian = observer.target_meridian_transit_time(time, target, which='next')
 
             # If it flips before end_of_night it hasn't flipped yet so
             # use the meridian time as the end time
@@ -129,7 +131,7 @@ class Duration(BaseConstraint):
 
             # Total seconds is score
             score = (target_end_time - time).sec
-            if score < observation.minimum_duration.value:
+            if score < get_quantity_value(observation.minimum_duration, u.second):
                 veto = True
 
             # Normalize the score based on total possible number of seconds
