@@ -101,7 +101,7 @@ def test_config_creator():
 
 
 def test_config_creator_bad():
-    constraints = create_constraints_from_config(config=dict(constraints=list({'name': 'FooBar'})))
+    constraints = create_constraints_from_config(config=dict(constraints=[{'name': 'FooBar'}]))
     for c in constraints:
         assert isinstance(c, BaseConstraint)
 
