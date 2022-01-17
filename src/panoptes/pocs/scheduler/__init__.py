@@ -38,8 +38,6 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
         site_details = create_location_from_config()
         observer = site_details['observer']
 
-    scheduler_type = scheduler_config.get('type', 'panoptes.pocs.scheduler.dispatch')
-
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
     fields_dir = get_config('directories.fields', './conf_files/fields')
@@ -47,13 +45,14 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     logger.debug(f'Creating scheduler: {fields_path}')
 
     if os.path.exists(fields_path):
+        scheduler_type = scheduler_config.get('type', 'panoptes.pocs.scheduler.dispatch')
+        constraint_list = scheduler_config.get('constraints', default=list())
 
         try:
             # Load the required module
             module = load_module(f'{scheduler_type}')
 
             constraints = list()
-            constraint_list = get_config('scheduler.constraints', default=list())
             for constraint_config in constraint_list:
                 name = constraint_config['name']
                 try:
