@@ -57,7 +57,6 @@ def start(config_file: Path = typer.Argument(None,
                                                           'contains the running config server.')
           ):
     """Starts the config server."""
-    # Start tmux session
     server = libtmux.Server()
 
     host = host_info['config_server'].host
