@@ -102,6 +102,6 @@ def readings(
     if res.ok:
         power_status = res.json()
         if relay in power_status:
-            return power_status['relay']
+            return power_status[relay]
         else:
             return power_status
