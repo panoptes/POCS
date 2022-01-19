@@ -90,14 +90,14 @@ def readings(
         console = Console()
         data = res.json()
 
-        status_table = Table()
-        status_table.add_column('Service')
-        status_table.add_column('Power', justify='right')
+        power_table = Table()
+        power_table.add_column('Service')
+        power_table.add_column('Power', justify='right')
 
         for name, rows in data.items():
-            status_table.add_row(name, list(rows.values())[0])
+            last_value = list(rows.values())[-1]
+            if last_value == -1:
+                last_value = 'Off'
+            power_table.add_row(name, last_value)
 
-        status_table.add_row('', '')
-        status_table.add_row('POCS', 'N/A')
-
-        console.print(status_table)
+        console.print(power_table)
