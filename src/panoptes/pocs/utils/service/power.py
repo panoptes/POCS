@@ -40,7 +40,7 @@ def record_readings():
 
 
 @app.get('/')
-async def root():
+async def status():
     """Returns the power board status."""
     global power_board
     return power_board.status
@@ -59,13 +59,15 @@ async def readings(relay: str):
 @app.post('/control')
 def control_relay(relay_command: RelayCommand):
     """Control a relay via a POST request."""
-    return do_command(relay_command)
+    do_command(relay_command)
+    return status()
 
 
 @app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
     """Control a relay via a GET request"""
-    return do_command(RelayCommand(relay=relay, command=command))
+    do_command(RelayCommand(relay=relay, command=command))
+    return status()
 
 
 def do_command(relay_command: RelayCommand):
