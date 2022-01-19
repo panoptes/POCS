@@ -4,8 +4,9 @@ from typing import Optional
 import requests
 import typer
 from libtmux.exc import TmuxSessionExists
+from rich import print_json
 
-from panoptes.pocs.utils.cli.helpers import start_tmux_session, stop_tmux_session, server_running
+from panoptes.pocs.utils.cli.helpers import start_tmux_session, stop_tmux_session
 
 app = typer.Typer()
 
@@ -72,7 +73,7 @@ def status(
     """Turns on a relay."""
     res = requests.get(url=url)
     if res.ok:
-        return res.json()
+        print_json(res.json())
 
 
 @app.command()
@@ -86,4 +87,4 @@ def readings(
     """Get the power readings."""
     res = requests.post(url=url, data=dict(relay=relay))
     if res.ok:
-        return res.json()
+        print_json(res.json())
