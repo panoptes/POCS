@@ -73,7 +73,7 @@ def status(
     """Turns on a relay."""
     res = requests.get(url=url)
     if res.ok:
-        print_json(res.json())
+        print_json(res.content.decode('utf-8'))
 
 
 @app.command()
@@ -87,4 +87,4 @@ def readings(
     """Get the power readings."""
     res = requests.post(url=url, data=dict(relay=relay))
     if res.ok:
-        print_json(res.json())
+        print_json(res.content.decode('utf-8'))
