@@ -98,6 +98,6 @@ def readings(
             last_value = list(rows.values())[-1]
             if last_value == -1:
                 last_value = 'Off'
-            power_table.add_row(name, last_value)
+            power_table.add_row(name, str(last_value))
 
         console.print(power_table)
