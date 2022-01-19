@@ -95,7 +95,7 @@ def readings(
         status_table.add_column('Power', justify='right')
 
         for name, rows in data.items():
-            status_table.add_row(name, rows.mean())
+            status_table.add_row(name, ' '.join(rows.values()))
 
         status_table.add_row('', '')
         status_table.add_row('POCS', 'N/A')
