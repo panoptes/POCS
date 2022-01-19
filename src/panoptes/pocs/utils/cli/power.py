@@ -80,7 +80,7 @@ def status(
         url: str = typer.Option('https://localhost:6564', help='The url for the power monitor.')
 ):
     """Turns on a relay."""
-    res = requests.post(url=url)
+    res = requests.get(url=url)
     if res.ok:
         power_status = res.json()
         if relay in power_status:

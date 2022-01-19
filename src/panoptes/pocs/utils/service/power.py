@@ -1,5 +1,5 @@
 from enum import auto
-from typing import Union
+from typing import Union, Optional
 
 from fastapi import FastAPI
 from fastapi_utils.enums import StrEnum
@@ -46,8 +46,8 @@ async def status():
     return power_board.status
 
 
-@app.get('/readings')
-async def readings(relay: str):
+@app.post('/readings')
+async def readings(relay: Optional[str] = None):
     """Return the current readings as a dict."""
     global power_board
     readings_df = power_board.to_dataframe()
