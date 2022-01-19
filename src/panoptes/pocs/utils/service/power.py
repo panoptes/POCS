@@ -40,7 +40,7 @@ def record_readings():
 
 
 @app.get('/')
-async def status():
+async def root():
     """Returns the power board status."""
     global power_board
     return power_board.status
@@ -54,21 +54,25 @@ async def readings(relay: Optional[str] = None):
     print(f'Checking for {relay=}')
     if relay in readings_df:
         readings_df = readings_df[relay].as_frame()
-    return readings_df.to_dict()
+    results = readings_df.to_dict()
+    print(f'Returning {results=!r}')
+    return results
 
 
 @app.post('/control')
 def control_relay(relay_command: RelayCommand):
     """Control a relay via a POST request."""
     do_command(relay_command)
-    return status()
+    global power_board
+    return power_board.status
 
 
 @app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
     """Control a relay via a GET request"""
     do_command(RelayCommand(relay=relay, command=command))
-    return status()
+    global power_board
+    return power_board.status
 
 
 def do_command(relay_command: RelayCommand):
