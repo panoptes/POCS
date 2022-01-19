@@ -5,6 +5,9 @@ import requests
 import typer
 from libtmux.exc import TmuxSessionExists
 from rich import print_json
+from rich.console import Console
+from rich.table import Table
+from sparklines import sparklines
 
 from panoptes.pocs.utils.cli.helpers import start_tmux_session, stop_tmux_session
 
@@ -84,4 +87,17 @@ def readings(
     """Get the power readings."""
     res = requests.post(url=url)
     if res.ok:
-        print_json(res.content.decode('utf-8'))
+        console = Console()
+        data = res.json()
+
+        status_table = Table()
+        status_table.add_column('Service')
+        status_table.add_column('Power', justify='right')
+
+        for name, rows in data.items():
+            status_table.add_row(name, rows.mean())
+
+        status_table.add_row('', '')
+        status_table.add_row('POCS', 'N/A')
+
+        console.print(status_table)
