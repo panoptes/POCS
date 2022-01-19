@@ -50,12 +50,9 @@ async def root():
 async def readings(relay: Optional[str] = None):
     """Return the current readings as a dict."""
     global power_board
-    readings_df = power_board.to_dataframe()
-    print(f'Checking for {relay=}')
-    if relay in readings_df:
-        readings_df = readings_df[relay].as_frame()
-    results = readings_df.to_dict()
-    print(f'Returning {results=!r}')
+    results = power_board.to_dataframe().to_dict()
+    if relay in results:
+        results = results[relay]
     return results
 
 
