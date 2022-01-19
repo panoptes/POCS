@@ -80,7 +80,7 @@ def status(
 
 
 @app.command(name='get')
-def get_config(
+def get_config_item(
         key: Optional[str] = typer.Argument(None,
                                             help='The key of the config item to get. '
                                                  'Can be specified in dotted-key notation '
@@ -88,27 +88,25 @@ def get_config(
         pretty_print: bool = typer.Option(True, help='Pretty print the display.'),
 ):
     """Get an item from the config server."""
-    if server_running():
-        metadata = host_info['config_server']
-        item = get_config(key, parse=pretty_print, host=metadata.host, port=metadata.port)
-        if pretty_print:
-            typer.echo(pprint(item))
-        else:
-            typer.echo(item)
+    metadata = host_info['config_server']
+    item = get_config(key, parse=pretty_print, host=metadata.host, port=metadata.port)
+    if pretty_print:
+        typer.echo(pprint(item))
+    else:
+        typer.echo(item)
 
 
 @app.command(name='set')
-def set_config(
+def set_config_item(
         key: str = typer.Argument(...,
                                   help='The key, in dotted-notation, of the config item to get.'
                                        'A blank string (the default) will return the entire config.'),
         value: str = typer.Argument(..., help='The new value.')
 ):
     """Get an item from the config server."""
-    if server_running():
-        metadata = host_info['config_server']
-        item = set_config(key, value, host=metadata.host, port=metadata.port)
-        typer.secho(pprint(item), fg=typer.colors.MAGENTA)
+    metadata = host_info['config_server']
+    item = set_config(key, value, host=metadata.host, port=metadata.port)
+    typer.secho(pprint(item), fg=typer.colors.MAGENTA)
 
 
 if __name__ == "__main__":
