@@ -39,16 +39,6 @@ def stop(
 
 
 @app.command()
-def status(
-        host: Optional[str] = typer.Option('localhost', help='Host for the power monitor service.'),
-        port: Optional[int] = typer.Option(6564, help='Port for the power monitor service.'),
-        session_name: Optional[str] = typer.Option('power-monitor',
-                                                   help='Session name for the service.')
-):
-    return server_running(host, port, name=session_name)
-
-
-@app.command()
 def turn_on(
         relay: str = typer.Option(..., help='The name of the relay to turn on.'),
         url: str = typer.Option('https://localhost:6564/control',

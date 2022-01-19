@@ -26,7 +26,6 @@ def start_tmux_session(session_name: str, cmd: str):
         pane0 = session.attached_pane
 
         pane0.send_keys(cmd)
-        typer.secho(f'{session_name} started.')
     except TmuxSessionExists:
         typer.secho(f'{session_name} already exists')
 
