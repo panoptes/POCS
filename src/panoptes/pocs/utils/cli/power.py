@@ -1,8 +1,11 @@
+from contextlib import suppress
 from typing import Optional
 
-import libtmux
+import requests
 import typer
-from libtmux.exc import TmuxSessionExists, LibTmuxException
+from libtmux.exc import TmuxSessionExists
+
+from panoptes.pocs.utils.cli.helpers import start_tmux_session, stop_tmux_session, server_running
 
 app = typer.Typer()
 
@@ -10,24 +13,19 @@ app = typer.Typer()
 @app.command()
 def start(
         host: Optional[str] = typer.Option('localhost', help='Host for the power monitor service.'),
-        port: Optional[str] = typer.Option(6564, help='Port for the power monitor service.'),
+        port: Optional[int] = typer.Option(6564, help='Port for the power monitor service.'),
         session_name: Optional[str] = typer.Option('power-monitor',
                                                    help='Session name for the service.')
 ):
     """Starts the power monitor service."""
-    server = libtmux.Server()
 
-    try:
-        session = server.new_session(session_name=session_name)
-        pane0 = session.attached_pane
+    cmd = 'uvicorn'
+    options = f'--host {host} --port {port}'
+    app_name = 'panoptes.pocs.utils.service.power:app'
 
-        cmd = 'uvicorn'
-        options = f'--host {host} --port {port} panoptes.pocs.utils.service.power:app'
-
-        pane0.send_keys(f'{cmd} {options}')
+    with suppress(TmuxSessionExists):
+        start_tmux_session(session_name, f'{cmd} {options} {app_name}')
         typer.secho(f'Power Monitor session started on {host}:{port}')
-    except TmuxSessionExists:
-        typer.secho('Session exists for Power Monitor')
 
 
 @app.command()
@@ -37,8 +35,73 @@ def stop(
                                                           'contains the running power monitor.')
 ):
     """Kills a running power monitor."""
-    server = libtmux.Server()
-    try:
-        server.kill_session(session_name)
-    except LibTmuxException:
-        typer.secho(f'No running Power Monitor')
+    stop_tmux_session(session_name)
+
+
+@app.command()
+def status(
+        host: Optional[str] = typer.Option('localhost', help='Host for the power monitor service.'),
+        port: Optional[int] = typer.Option(6564, help='Port for the power monitor service.'),
+        session_name: Optional[str] = typer.Option('power-monitor',
+                                                   help='Session name for the service.')
+):
+    return server_running(host, port, name=session_name)
+
+
+@app.command()
+def turn_on(
+        relay: str = typer.Option(..., help='The name of the relay to turn on.'),
+        url: str = typer.Option('https://localhost:6564/control',
+                                help='The url for the power monitor.')
+):
+    """Turns on a relay."""
+    res = requests.post(url=url, data=dict(relay=relay, command='turn_on'))
+    if res.ok:
+        typer.secho(f'{relay} turned on.')
+
+
+@app.command()
+def turn_off(
+        relay: str = typer.Option(..., help='The name of the relay to turn off.'),
+        url: str = typer.Option('https://localhost:6564/control',
+                                help='The url for the power monitor.')
+):
+    """Turns off a relay."""
+    res = requests.post(url=url, data=dict(relay=relay, command='turn_off'))
+    if res.ok:
+        typer.secho(f'{relay} turned off.')
+
+
+@app.command()
+def status(
+        relay: str = typer.Option(None,
+                                  help='If None (the default), return the status for all relays, '
+                                       'otherwise just the given.'),
+        url: str = typer.Option('https://localhost:6564', help='The url for the power monitor.')
+):
+    """Turns on a relay."""
+    res = requests.post(url=url)
+    if res.ok:
+        power_status = res.json()
+        if relay in power_status:
+            return power_status['relay']
+        else:
+            return power_status
+
+
+@app.command()
+def readings(
+        relay: str = typer.Option(None,
+                                  help='If None (the default), return the status for all relays, '
+                                       'otherwise just the given.'),
+        url: str = typer.Option('https://localhost:6564/readings',
+                                help='The url for the power monitor.')
+):
+    """Get the power readings."""
+    res = requests.post(url=url, data=dict(relay=relay))
+    if res.ok:
+        power_status = res.json()
+        if relay in power_status:
+            return power_status['relay']
+        else:
+            return power_status

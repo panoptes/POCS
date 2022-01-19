@@ -47,10 +47,13 @@ async def root():
 
 
 @app.get('/readings')
-async def readings():
+async def readings(relay: str):
     """Return the current readings as a dict."""
     global power_board
-    return power_board.to_dataframe().to_dict()
+    readings_df = power_board.to_dataframe()
+    if relay in readings_df:
+        readings_df = readings_df[relay].as_frame()
+    return readings_df.to_dict()
 
 
 @app.post('/control')

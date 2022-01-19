@@ -20,7 +20,7 @@ def upload_image(file_path: Path, bucket_path: str,
 
     blob = bucket.blob(bucket_path)
     typer.secho(f'Uploading {file_path} to {bucket_name}/{bucket_path}')
-    blob.upload_from_filename(file_path)
+    blob.upload_from_filename(str(file_path))
     typer.secho(f'File successfully uploaded to {blob.public_url}')
 
     return blob.public_url
