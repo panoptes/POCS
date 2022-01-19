@@ -41,7 +41,7 @@ def stop(
 @app.command()
 def turn_on(
         relay: str = typer.Option(..., help='The name of the relay to turn on.'),
-        url: str = typer.Option('https://localhost:6564/control',
+        url: str = typer.Option('http://localhost:6564/control',
                                 help='The url for the power monitor.')
 ):
     """Turns on a relay."""
@@ -53,7 +53,7 @@ def turn_on(
 @app.command()
 def turn_off(
         relay: str = typer.Option(..., help='The name of the relay to turn off.'),
-        url: str = typer.Option('https://localhost:6564/control',
+        url: str = typer.Option('http://localhost:6564/control',
                                 help='The url for the power monitor.')
 ):
     """Turns off a relay."""
@@ -67,7 +67,7 @@ def status(
         relay: str = typer.Option(None,
                                   help='If None (the default), return the status for all relays, '
                                        'otherwise just the given.'),
-        url: str = typer.Option('https://localhost:6564', help='The url for the power monitor.')
+        url: str = typer.Option('http://localhost:6564', help='The url for the power monitor.')
 ):
     """Turns on a relay."""
     res = requests.post(url=url, data=dict(relay=relay))
@@ -80,7 +80,7 @@ def readings(
         relay: str = typer.Option(None,
                                   help='If None (the default), return the status for all relays, '
                                        'otherwise just the given.'),
-        url: str = typer.Option('https://localhost:6564/readings',
+        url: str = typer.Option('http://localhost:6564/readings',
                                 help='The url for the power monitor.')
 ):
     """Get the power readings."""
