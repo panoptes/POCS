@@ -78,13 +78,10 @@ def status(
 
 @app.command()
 def readings(
-        relay: str = typer.Option(None,
-                                  help='If None (the default), return the status for all relays, '
-                                       'otherwise just the given.'),
         url: str = typer.Option('http://localhost:6564/readings',
                                 help='The url for the power monitor.')
 ):
     """Get the power readings."""
-    res = requests.post(url=url, data=dict(relay=relay))
+    res = requests.post(url=url)
     if res.ok:
         print_json(res.content.decode('utf-8'))
