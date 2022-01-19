@@ -75,11 +75,12 @@ def status(
         session_name: Optional[str] = typer.Option('config-server',
                                                    help='Session name for the service.')
 ):
+    """Checks if config server is running."""
     return server_running(host, port, name=session_name, endpoint='/heartbeat')
 
 
-@app.command()
-def get(
+@app.command(name='get')
+def get_config(
         key: Optional[str] = typer.Argument(None,
                                             help='The key of the config item to get. '
                                                  'Can be specified in dotted-key notation '
@@ -96,8 +97,8 @@ def get(
             typer.echo(item)
 
 
-@app.command()
-def set(
+@app.command(name='set')
+def set_config(
         key: str = typer.Argument(...,
                                   help='The key, in dotted-notation, of the config item to get.'
                                        'A blank string (the default) will return the entire config.'),
