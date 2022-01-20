@@ -6,7 +6,6 @@ from astropy.time import Time
 from panoptes.pocs import __version__
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config, get_config
-from panoptes.utils.serializers import to_json
 from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.observatory import Observatory
