@@ -131,7 +131,7 @@ See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTE
 
 To test the software, you can use the standard `pytest` tool from the root of the directory.
 
-To install the dependencies for testing, you can run `pip install .[google,testing,sensors,focuser]` from the root
+To install the dependencies for testing, you can run `pip install ".[google,testing,sensors,focuser]"` from the root
 of your repository. It is recommended that you setup these dependencies and run python on your development machine in a 
 virtualenv to avoid issues with existing pip packages in your system.
  
