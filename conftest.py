@@ -3,6 +3,14 @@ import os
 import shutil
 import stat
 import tempfile
+from sys import platform
+
+# Windows and OSX use spawn instead of fork by default
+# which causes the config server to fail to start
+if platform == "darwin" or platform == "win32":
+    import multiprocessing
+    multiprocessing.set_start_method("fork")
+
 from contextlib import suppress
 
 import pytest
@@ -12,6 +20,8 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
+
+
 
 # TODO download IERS files.
 
