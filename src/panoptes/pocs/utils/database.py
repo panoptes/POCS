@@ -35,9 +35,6 @@ class PocsDB(PanFileDB):
             except Exception as e:
                 logger.warning(f'Problem inserting firestore record: {e!r}')
 
-        if store_permanently:
-            obj_id = self.insert(collection, obj)
-
         return obj_id
 
     def insert(self, collection, obj):

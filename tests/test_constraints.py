@@ -8,6 +8,7 @@ from astropy.time import Time
 
 from collections import OrderedDict
 
+from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 
@@ -30,7 +31,7 @@ def observer():
 
 
 @pytest.fixture(scope='function')
-def horizon_line():
+def horizon_line() -> horizon_utils.Horizon:
     obstruction_list = get_config('location.obstructions', default=list())
     default_horizon = get_config('location.horizon')
 
@@ -93,9 +94,16 @@ def observation(field):
     return Observation(field)
 
 
-def test_bad_str_weight():
-    with pytest.raises(AssertionError):
-        BaseConstraint("1.0")
+def test_config_creator():
+    constraints = create_constraints_from_config()
+    for c in constraints:
+        assert isinstance(c, BaseConstraint)
+
+
+def test_config_creator_bad():
+    constraints = create_constraints_from_config(config=dict(constraints=[{'name': 'FooBar'}]))
+    for c in constraints:
+        assert isinstance(c, BaseConstraint)
 
 
 def test_negative_weight():
@@ -112,31 +120,46 @@ def test_altitude_subclass():
     assert issubclass(Altitude, BaseConstraint)
 
 
-def test_altitude_no_minimum():
-    with pytest.raises(AssertionError):
-        Altitude()
-
-
-def test_altitude_bad_param():
-    with pytest.raises(AssertionError):
-        Altitude(30)
+def test_altitude_no_minimum(horizon_line):
+    constraint0 = Altitude()
+    assert (constraint0.horizon_line == horizon_line.horizon_line).all()
 
 
 def test_basic_altitude(observer, field_list, horizon_line):
-
     # Target is at ~34 degrees altitude and 79 degrees azimuth
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
 
     # First check out with default horizon
-    ac = Altitude(horizon_line)
+    ac = Altitude(horizon=horizon_line)
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
+    # Then check with nothing
+    ac = Altitude()
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
+    # Then check with just a number
+    ac = Altitude(horizon=30)
+    observation = Observation(Field(**m44), **m44)
+    veto, score = ac.get_score(time, observer, observation)
+
+    assert veto is False
+
+    # Then check with a degree
+    ac = Altitude(horizon=30 * u.degree)
     observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is False
 
 
-def test_custom_altitude(observer, field_list, horizon_line):
+def test_custom_altitude(observer, field_list):
     time = Time('2018-01-19 07:10:00')
     m44 = field_list[-1]
 
