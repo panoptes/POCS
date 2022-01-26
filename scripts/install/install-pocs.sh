@@ -223,13 +223,20 @@ function get_pocs_repo() {
   git checkout "$CODE_BRANCH"
 }
 
+function get_pocs_camera_repo() {
+  echo "Cloning pocs-camera repo."
+
+  git clone https://github.com/panoptes/pocs-camera
+  cd pocs-camera
+}
+
 function make_directories() {
   echo "Creating directories."
   mkdir -p "${HOME}/logs"
   mkdir -p "${HOME}/images"
   mkdir -p "${HOME}/json_store"
   mkdir -p "${HOME}/keys"
-  mkdir -p "${HOME}/notebooks"
+  #  mkdir -p "${HOME}/notebooks"
 
   # Link the needed POCS folders.
   ln -s "${PANDIR}/conf_files" "${HOME}"
@@ -237,14 +244,14 @@ function make_directories() {
 }
 
 function create_startup_scripts() {
-  cat > "${HOME}/start-config-server.sh" <<EOF
+  cat >"${HOME}/start-config-server.sh" <<EOF
 #!/bin/bash
 
 tmux new-session -s config-server -d
 tmux send-keys -t config-server "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml" Enter
 EOF
   chmod +x "${HOME}/start-config-server.sh"
-  cat > "${HOME}/start-power-monitor.sh" <<EOF
+  cat >"${HOME}/start-power-monitor.sh" <<EOF
 #!/bin/bash
 
 tmux new-session -s power-monitor -d
@@ -252,9 +259,6 @@ tmux send-keys -t power-monitor "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicor
 EOF
   chmod +x "${HOME}/start-power-monitor.sh"
 }
-
-
-
 
 function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then
@@ -330,7 +334,7 @@ function setup_nfs_host() {
 function setup_nfs_client() {
   sudo apt-get install -y nfs-common
   mkdir -p "${HOME}/images"
-  echo "${UNIT_NAME}-control-box:${HOME}/images ${HOME/images} nfs defaults 0 0" | sudo tee -a /etc/fstab
+  echo "${UNIT_NAME}-control-box:${HOME}/images ${HOME/images/} nfs defaults 0 0" | sudo tee -a /etc/fstab
 }
 
 function do_install() {
@@ -373,20 +377,15 @@ function do_install() {
   if [ "$(uname -m)" = "aarch64" ]; then
     if [ "${INSTALL_BOX}" = "control" ]; then
       setup_nfs_host
+      install_conda
+      get_pocs_repo
+      make_directories
+      create_startup_scripts
     elif [ "${INSTALL_BOX}" = "camera" ]; then
       setup_nfs_client
+      get_pocs_camera_repo
     fi
   fi
-
-  install_conda
-
-  get_pocs_repo
-
-  make_directories
-
-  create_startup_scripts
-
-  # get_or_build_docker_images
 
   echo "Please reboot your machine before using POCS."
 
