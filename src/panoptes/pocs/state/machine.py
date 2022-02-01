@@ -115,7 +115,11 @@ class PanStateMachine(Machine):
             # Before moving to next state, wait for required horizon if necessary.
             while True:
                 # If not safe, go to park
-                is_safe = self.is_safe(park_if_not_safe=True, ignore=['is_dark'])
+                ignore_safety_items = []
+                # We ignore the dark safety reading if mount has not yet moved.
+                if self.state not in ['observing', 'analyzing']:
+                    ignore_safety_items.append('is_dark')
+                is_safe = self.is_safe(park_if_not_safe=True, ignore=ignore_safety_items)
 
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe
