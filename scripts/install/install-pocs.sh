@@ -139,7 +139,8 @@ function system_deps() {
   if [ "$(uname -m)" = "aarch64" ]; then
     echo "Installing Raspberry Pi tools."
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
-      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi python3-lgpio | sudo tee -a "${LOGFILE}"
+      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi \
+      python3-lgpio python3-pip python3-astropy | sudo tee -a "${LOGFILE}"
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
@@ -228,6 +229,7 @@ function get_pocs_camera_repo() {
 
   git clone https://github.com/panoptes/pocs-camera
   cd pocs-camera
+  pip3 install -r requirements.txt
 }
 
 function make_directories() {
@@ -337,6 +339,26 @@ function setup_nfs_client() {
   echo "${UNIT_NAME}-control-box:${HOME}/images ${HOME/images/} nfs defaults 0 0" | sudo tee -a /etc/fstab
 }
 
+function get_pigpio() {
+  cd
+  wget https://github.com/joan2937/pigpio/archive/master.tar.gz
+  tar zxof master.tar.gz
+  rm master.tar.gz
+  mv pigpio-master pigpio
+  cd pigpio
+  make
+  sudo make install
+}
+
+function get_gphoto2() {
+  mkdir gphoto2-updater
+  cd gphoto2-updater
+  wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh
+  wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/.env
+  chmod +x gphoto2-updater.sh
+  sudo ./gphoto2-updater.sh --stable
+}
+
 function do_install() {
   clear
 
@@ -383,6 +405,8 @@ function do_install() {
       create_startup_scripts
     elif [ "${INSTALL_BOX}" = "camera" ]; then
       setup_nfs_client
+      get_pigpio
+      get_gphoto2
       get_pocs_camera_repo
     fi
   fi
