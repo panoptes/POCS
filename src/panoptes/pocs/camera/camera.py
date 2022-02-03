@@ -6,6 +6,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from contextlib import suppress
 from pathlib import Path
+import warnings
 
 import astropy.units as u
 from astropy.io import fits
@@ -865,9 +866,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         for sub_name, subcomponent in self.subcomponents.items():
             header = subcomponent._add_fits_keywords(header)
 
+        # Add each metadata items to FITS header.
         for k, v in metadata.items():
             try:
-                header.set(k, v)
+                # Add long keyword headers and suppress warning.
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    header.set(k, v)
             except ValueError as e:
                 self.logger.warning(f'Problem setting FITS header for {k}={v} with {e=!r}')
 
