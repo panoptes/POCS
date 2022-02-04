@@ -51,7 +51,11 @@ class RemoteMonitor(object):
         """
 
         self.logger.debug(f'Capturing data from remote url: {self.endpoint_url}')
-        sensor_data = requests.get(self.endpoint_url).json()
+        try:
+            sensor_data = requests.get(self.endpoint_url).json()
+        except requests.exceptions.ConnectionError:
+            self.logger.warning(f'No connection at {self.endpoint_url}')
+            return {}        
         if isinstance(sensor_data, list):
             sensor_data = sensor_data[0]
 
