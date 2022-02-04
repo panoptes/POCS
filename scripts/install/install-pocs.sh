@@ -334,9 +334,15 @@ function setup_nfs_host() {
 }
 
 function setup_nfs_client() {
-  sudo apt-get install -y nfs-common
-  mkdir -p "${HOME}/images"
-  echo "${UNIT_NAME}-control-box:${HOME}/images ${HOME/images/} nfs defaults 0 0" | sudo tee -a /etc/fstab
+  sudo apt-get install -y nfs-common autofs
+  sudo mkdir -p /media/nfs_mounts/
+  sudo chmod 777 /media/nfs_mounts/
+
+  echo "/media/nfs_mounts	/etc/auto.images	--timeout=180" | sudo tee -a /etc/auto.master.d/images.autofs
+  echo "images	-fstype=nfs4,rw,user,soft,intr	${UNIT_NAME:0:6}-control-box:/home/panoptes/images" | sudo tee -a /etc/auto.images
+
+  sudo /etc/init.d/autofs reload
+  ln -s /media/nfs_mounts/images/ "${HOME}/"
 }
 
 function get_pigpio() {
