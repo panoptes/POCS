@@ -245,23 +245,6 @@ function make_directories() {
   ln -s "${PANDIR}/resources" "${HOME}"
 }
 
-function create_startup_scripts() {
-  cat >"${HOME}/start-config-server.sh" <<EOF
-#!/bin/bash
-
-tmux new-session -s config-server -d
-tmux send-keys -t config-server "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml" Enter
-EOF
-  chmod +x "${HOME}/start-config-server.sh"
-  cat >"${HOME}/start-power-monitor.sh" <<EOF
-#!/bin/bash
-
-tmux new-session -s power-monitor -d
-tmux send-keys -t power-monitor "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app" Enter
-EOF
-  chmod +x "${HOME}/start-power-monitor.sh"
-}
-
 function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then
     echo "Using zsh for a better shell experience."
@@ -365,6 +348,23 @@ function get_gphoto2() {
   sudo ./gphoto2-updater.sh --stable
 }
 
+function install_supervisord() {
+  sudo apt-get install supervisor
+  sudo service supervisor start
+
+  cat >"${HOME}/conf_files/pocs-supervisord.conf" <<EOF
+[program:config-server]
+command=/usr/bin/node /srv/http.js
+directory=${HOME}
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=${HOME}/logs/config-server.err.log
+stdout_logfile=${HOME}/logs/config-server.out.log
+user=${USER}
+EOF
+}
+
 function do_install() {
   clear
 
@@ -408,7 +408,6 @@ function do_install() {
       install_conda
       get_pocs_repo
       make_directories
-      create_startup_scripts
     elif [ "${INSTALL_BOX}" = "camera" ]; then
       setup_nfs_client
       get_pigpio
