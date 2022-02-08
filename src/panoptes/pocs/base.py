@@ -4,7 +4,7 @@ from panoptes.pocs import __version__
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config import client
-from panoptes.utils.database import PanDB
+from panoptes.utils.database import PocsDB
 from requests.exceptions import ConnectionError
 
 # Global database.
@@ -31,7 +31,7 @@ class PanBase(object):
             db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
             db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
 
-            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder)
+            PAN_DB_OBJ = PocsDB(db_name=db_name, storage_dir=db_folder)
 
         self.db = PAN_DB_OBJ
 
