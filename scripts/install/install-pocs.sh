@@ -350,18 +350,58 @@ function get_gphoto2() {
 
 function install_supervisord() {
   sudo apt-get install supervisor
+  sudo ln -s "${HOME}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/pocs.conf
   sudo service supervisor start
+  sudo supervisorctl reread
+  sudo supervisorctl update
+  sudo supervisorctl status
+}
 
+function install_supervisor_files_control() {
   cat >"${HOME}/conf_files/pocs-supervisord.conf" <<EOF
-[program:config-server]
-command=/usr/bin/node /srv/http.js
+[program:pocs-config-server]
+command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${HOME}/conf_files/pocs.yaml
 directory=${HOME}
 autostart=true
 autorestart=true
 startretries=3
 stderr_logfile=${HOME}/logs/config-server.err.log
 stdout_logfile=${HOME}/logs/config-server.out.log
-user=${USER}
+user=${PANUSER}
+
+[program:pocs-power-monitor]
+command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
+directory=${HOME}
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=${HOME}/logs/power-monitor.err.log
+stdout_logfile=${HOME}/logs/power-monitor.out.log
+user=${PANUSER}
+
+[program:pocs-weather-reader]
+command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/pocs sensor monitor weather --read-frequency 90
+directory=${HOME}
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=${HOME}/logs/weather-reader.err.log
+stdout_logfile=${HOME}/logs/weather-reader.out.log
+user=${PANUSER}
+EOF
+}
+
+function install_supervisor_files_camera() {
+  cat >"${HOME}/conf_files/pocs-supervisord.conf" <<EOF
+[program:pocs-camera-server]
+command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 main:app
+directory=${HOME}/pocs-camera
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=${HOME}/logs/camera-server.err.log
+stdout_logfile=${HOME}/logs/camera-server.out.log
+user=${PANUSER}
 EOF
 }
 
@@ -408,11 +448,15 @@ function do_install() {
       install_conda
       get_pocs_repo
       make_directories
+      install_supervisor_files_control
+      install_supervisord
     elif [ "${INSTALL_BOX}" = "camera" ]; then
       setup_nfs_client
       get_pigpio
       get_gphoto2
       get_pocs_camera_repo
+      install_supervisor_files_camera
+      install_supervisord
     fi
   fi
 
