@@ -140,7 +140,7 @@ function system_deps() {
     echo "Installing Raspberry Pi tools."
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
       rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi \
-      python3-lgpio python3-pip python3-astropy | sudo tee -a "${LOGFILE}"
+      python3-lgpio python3-pip | sudo tee -a "${LOGFILE}"
   fi
 
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
@@ -337,15 +337,18 @@ function get_pigpio() {
   cd pigpio
   make
   sudo make install
+  cd
 }
 
 function get_gphoto2() {
+  cd
   mkdir gphoto2-updater
   cd gphoto2-updater
   wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh
   wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/.env
   chmod +x gphoto2-updater.sh
   sudo ./gphoto2-updater.sh --stable
+  cd
 }
 
 function install_supervisord() {
