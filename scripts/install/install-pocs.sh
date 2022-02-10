@@ -394,7 +394,7 @@ EOF
 function install_supervisor_files_camera() {
   cat >"${HOME}/conf_files/pocs-supervisord.conf" <<EOF
 [program:pocs-camera-server]
-command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 main:app
+command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/celery -A main worker --loglevel=INFO
 directory=${HOME}/pocs-camera
 autostart=true
 autorestart=true
