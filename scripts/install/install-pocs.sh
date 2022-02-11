@@ -155,6 +155,7 @@ function system_deps() {
     nano \
     neovim \
     sshfs \
+    supervisor \
     usbmount \
     wget | sudo tee -a "${LOGFILE}"
   DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove | sudo tee -a "${LOGFILE}"
@@ -229,7 +230,7 @@ function get_pocs_camera_repo() {
 
   git clone https://github.com/panoptes/pocs-camera
   cd pocs-camera
-  pip3 install -r requirements.txt
+  pip3 install -Ur requirements.txt
 }
 
 function make_directories() {
@@ -352,7 +353,6 @@ function get_gphoto2() {
 }
 
 function install_supervisord() {
-  sudo apt-get install supervisor
   sudo ln -s "${HOME}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/pocs.conf
   sudo service supervisor start
   sudo supervisorctl reread
@@ -395,6 +395,7 @@ EOF
 }
 
 function install_supervisor_files_camera() {
+  mkdir -p "${HOME}/conf_files"
   cat >"${HOME}/conf_files/pocs-supervisord.conf" <<EOF
 [program:pocs-camera-server]
 command=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/celery -A main worker --loglevel=INFO
