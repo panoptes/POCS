@@ -32,6 +32,24 @@ directories:
   mounts: resources/mounts
   fields: conf_files/fields
 
+# Celery task manager for distributed tasks.
+celery:
+  messaging:
+    # Rabbitmq messaging broker and redis result backend.
+    service: rabbitmq
+    name: pocs-tasks-messaging
+    ports:
+      5672: 5672
+    broker_url: amqp://guest:guest@localhost:5672
+  results:
+    service: redis
+    name: pocs-tasks-results
+    ports:
+      6379: 6379
+    result_backend: redis://localhost:6379
+  # Start/stop above services via docker.
+  auto: true
+
 db:
   name: panoptes
   type: file
