@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Install
-        run: pip install ".[google,focuser,sensors,testing]"
+        run: pip install ".[google,focuser,sensors,tasks,testing]"
       - name: Test
         run: pytest
       - name: Upload coverage report to codecov.io
