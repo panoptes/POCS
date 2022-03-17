@@ -551,7 +551,7 @@ class AbstractMount(PanBase):
                 if blocking:
                     # Set up the timeout timer
                     self.logger.debug(f'Setting slew timeout timer for {timeout} sec')
-                    timeout_timer = CountdownTimer(timeout)
+                    timeout_timer = CountdownTimer(timeout, name='SlewToTarget')
                     block_time = 3  # seconds
 
                     while self.is_tracking is False:

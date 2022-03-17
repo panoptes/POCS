@@ -13,6 +13,7 @@ app.add_typer(upload_app, name='upload')
 @upload_app.command('image')
 def upload_image(file_path: Path, bucket_path: str,
                  bucket_name: str = 'panoptes-images-incoming',
+                 timeout: float = 180.,
                  storage_client=None) -> str:
     """Uploads an image to google storage bucket."""
     storage_client: storage.Client = storage_client or storage.Client()
@@ -20,7 +21,7 @@ def upload_image(file_path: Path, bucket_path: str,
 
     blob = bucket.blob(bucket_path)
     typer.secho(f'Uploading {file_path} to {bucket_name}/{bucket_path}')
-    blob.upload_from_filename(file_path)
+    blob.upload_from_filename(str(file_path), timeout=timeout)
     typer.secho(f'File successfully uploaded to {blob.public_url}')
 
     return blob.public_url
