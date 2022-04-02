@@ -3,27 +3,99 @@ import docker.errors
 import celery
 from loguru import logger
 from panoptes.utils.config.client import get_config
+from pydantic import BaseModel, BaseSettings, AmqpDsn, RedisDsn
+
+
+class MessagingConfig(BaseModel):
+    container: str = 'rabbitmq'
+    broker_url: AmqpDsn = 'amqp://guest:guest@localhost:5672'
+    port: int = 5672
+
+
+class ResultsConfig(BaseModel):
+    container: str = 'redis'
+    results_backend: RedisDsn = 'redis://localhost:6379'
+    port: int = 6379
+
+
+class CeleryConfig(BaseSettings):
+    messaging: MessagingConfig = MessagingConfig()
+    results: ResultsConfig = ResultsConfig()
 
 
 class TaskManager:
     """Simple celery task manager."""
 
-    def __init__(self,
-                 broker_url='amqp://localhost',
-                 result_backend='rpc://',
-                 *args,
-                 **kwargs):
-        """A celery task manager.
+    @classmethod
+    def celery_from_config(cls, config=None, config_key='celery'):
+        """Create an instance of the class from the config.
 
-        Manages the connection and provides convenience methods.
+        If `config` is `None` (the default) then attempt a lookup in the config
+        server using the `config_key`.
         """
-        super(TaskManager, self).__init__(*args, **kwargs)
+        config = config or get_config(config_key)
+        if config:
+            logger.info(f'Creating Celery app with {config=!r}')
+            celery_app = celery.Celery().config_from_object(dict(
+                broker_url=config['messaging']['broker_url'],
+                result_backend=config['results']['result_backend']
+            ))
 
-        # Add the celery app to this object.
-        self.celery_app = celery.Celery().config_from_object(dict(
-            broker_url=broker_url,
-            result_backend=result_backend
-        ))
+            return celery_app
+
+    @classmethod
+    def start_celery_backends(cls, celery_config: dict):
+        """Use the python docker binders to control required celery backends."""
+        docker_client = docker.from_env()
+
+        # Start the messaging and result backends.
+        for container_type in ['messaging', 'results']:
+            container_config = celery_config.get(container_type)
+            container_name = f'pocs-{container_type}'
+
+            print(f'Starting {container_name} container')
+            try:
+                # Try to start existing container first.
+                container = docker_client.containers.get(container_name)
+                container.start()
+            except docker.errors.NotFound:
+                print(f'Creating new container for {container_name}')
+                # Or create a new one.
+                docker_client.containers.run(
+                    container_config['service'],
+                    ports=container_config['ports'],
+                    name=container_name,
+                    detach=True,
+                )
+                print(f'{container_name} started')
+            except docker.errors.APIError as e:
+                print(f'{container_type} already running: {e!r}')
+
+    @classmethod
+    def stop_celery_backends(cls, celery_config: dict, remove: bool = False):
+        """Stop the docker containers running the celery backends."""
+        docker_client = docker.from_env()
+
+        # Stop the messaging and result backends.
+        for container_type in ['messaging', 'results']:
+            try:
+                container_config = celery_config.get(container_type)
+                container_name = f'pocs-{container_type}'
+                container = docker_client.containers.get(container_name)
+
+                logger.info(f'Stopping {container_name} container')
+                container.stop()
+
+                if remove:
+                    logger.info(f'Removing {container_name} container')
+                    container.remove()
+            except docker.errors.APIError:
+                logger.info(f'{container_name} already running')
+
+
+class RunTaskMixin:
+    """A mixin class for running celery tasks and getting results."""
+    celery_app: celery.Celery
 
     def call_task(self, name: str = '', **kwargs) -> celery.Task:
         """Call a celery task.
@@ -47,64 +119,3 @@ class TaskManager:
     def get_task(self, task_id: str) -> celery.Task:
         """Get the task via its ID number."""
         return self.celery_app.AsyncResult(task_id)
-
-    @classmethod
-    def from_config(cls, config=None, config_key='celery'):
-        """Create an instance of the class from the config.
-
-        If `config` is `None` (the default) then attempt a lookup in the config
-        server using the `config_key`.
-        """
-        config = config or get_config(config_key)
-        if config:
-            logger.info(f'Creating instance of TaskManager with {config=!r}')
-            task_manager = TaskManager(
-                broker_url=config['messaging']['broker_url'],
-                result_backend=config['results']['result_backend']
-            )
-
-            return task_manager
-
-    @classmethod
-    def start_celery_backends(cls, celery_config):
-        """Use the python docker binders to control required celery backends."""
-        docker_client = docker.from_env()
-
-        # Start the messaging and result backends.
-        for container_type in ['messaging', 'results']:
-            container_config = celery_config.get(container_type)
-            logger.info(f'Started {container_type} container')
-            try:
-                # Try to start existing container first.
-                container = docker_client.containers.get(container_config['name'])
-                container.start()
-            except docker.errors.NotFound:
-                # Otherwise create a new one.
-                docker_client.containers.run(
-                    container_config['service'],
-                    ports=container_config['ports'],
-                    detach=True,
-                    name=container_config['name']
-                )
-            except docker.errors.APIError as e:
-                logger.info(f'{container_type} already running: {e!r}')
-
-    @classmethod
-    def stop_celery_backends(cls, celery_config, remove=False):
-        """Stop the docker containers running the celery backends."""
-        docker_client = docker.from_env()
-
-        # Stop the messaging and result backends.
-        for container_type in ['messaging', 'results']:
-            try:
-                container_config = celery_config.get(container_type)
-                container = docker_client.containers.get(container_config['name'])
-
-                logger.info(f'Stopping {container_type} container')
-                container.stop()
-
-                if remove:
-                    logger.info(f'Removing {container_type} container')
-                    container.remove()
-            except docker.errors.APIError:
-                logger.info(f'{container_type} already running')

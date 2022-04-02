@@ -13,6 +13,7 @@ def start_backends(
 ):
     """Start the celery backends specified by the config."""
     celery_config = get_config(config_key)
+    typer.echo('Starting celery backends.')
     TaskManager.start_celery_backends(celery_config)
 
 
@@ -26,6 +27,7 @@ def stop_backends(
 ):
     """Stop the running celery backends specified by the config."""
     celery_config = get_config(config_key)
+    typer.echo('Stopping celery backends.')
     TaskManager.stop_celery_backends(celery_config, remove=remove)
 
 
