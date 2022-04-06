@@ -115,16 +115,16 @@ class Observation(PanBase):
         """
         status = {
             'current_exp': self.current_exp_num,
-            'dec_mnt': self.field.coord.dec.value,
+            'dec_mnt': self.field.coord.dec.to_value(),
             'equinox': get_quantity_value(self.field.coord.equinox, unit='jyear_str'),
             'exp_set_size': self.exp_set_size,
-            'exptime': self.exptime.value,
+            'exptime': self.exptime.to_value(),
             'field_name': self.name,
             'merit': self.merit,
             'min_nexp': self.min_nexp,
-            'minimum_duration': self.minimum_duration.value,
+            'minimum_duration': self.minimum_duration.to_value(),
             'priority': self.priority,
-            'ra_mnt': self.field.coord.ra.value,
+            'ra_mnt': self.field.coord.ra.to_value(),
             'seq_time': self.seq_time,
             'set_duration': self.set_duration.value,
             'dark': self.dark
@@ -276,6 +276,18 @@ class Observation(PanBase):
         self.exposure_list.clear()
         self.merit = 0.0
         self.seq_time = None
+
+    def to_dict(self):
+        """Serialize the object to a dict."""
+        return dict(
+            field=self.field.to_dict(),
+            exptime=self.exptime.to_value(),
+            min_nexp=self.min_nexp,
+            exp_set_size=self.exp_set_size,
+            priority=self.priority,
+            filter_name=self.filter_name,
+            dark=self.dark
+        )
 
     ################################################################################################
     # Private Methods
