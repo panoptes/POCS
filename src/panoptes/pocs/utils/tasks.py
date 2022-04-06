@@ -3,31 +3,13 @@ import docker.errors
 import celery
 from loguru import logger
 from panoptes.utils.config.client import get_config
-from pydantic import BaseModel, BaseSettings, AmqpDsn, RedisDsn
-
-
-class MessagingConfig(BaseModel):
-    container: str = 'rabbitmq'
-    broker_url: AmqpDsn = 'amqp://guest:guest@localhost:5672'
-    port: int = 5672
-
-
-class ResultsConfig(BaseModel):
-    container: str = 'redis'
-    results_backend: RedisDsn = 'redis://localhost:6379'
-    port: int = 6379
-
-
-class CeleryConfig(BaseSettings):
-    messaging: MessagingConfig = MessagingConfig()
-    results: ResultsConfig = ResultsConfig()
 
 
 class TaskManager:
     """Simple celery task manager."""
 
     @classmethod
-    def celery_from_config(cls, config=None, config_key='celery'):
+    def create_celery_app_from_config(cls, config=None, config_key='celery'):
         """Create an instance of the class from the config.
 
         If `config` is `None` (the default) then attempt a lookup in the config
@@ -36,10 +18,12 @@ class TaskManager:
         config = config or get_config(config_key)
         if config:
             logger.info(f'Creating Celery app with {config=!r}')
-            celery_app = celery.Celery().config_from_object(dict(
+            celery.Celery()
+            celery_app = celery.Celery(
                 broker_url=config['messaging']['broker_url'],
                 result_backend=config['results']['result_backend']
-            ))
+            )
+            print(f'Created {celery_app}')
 
             return celery_app
 
@@ -48,28 +32,28 @@ class TaskManager:
         """Use the python docker binders to control required celery backends."""
         docker_client = docker.from_env()
 
-        # Start the messaging and result backends.
-        for container_type in ['messaging', 'results']:
-            container_config = celery_config.get(container_type)
-            container_name = f'pocs-{container_type}'
+        # Start the messaging and result backend services.
+        for service_config in celery_config['service']:
+            service_name = service_config['name']
+            service_image = service_config['image']
 
-            print(f'Starting {container_name} container')
+            print(f'Starting {service_name} container using {service_image=}')
             try:
                 # Try to start existing container first.
-                container = docker_client.containers.get(container_name)
+                container = docker_client.containers.get(service_name)
                 container.start()
             except docker.errors.NotFound:
-                print(f'Creating new container for {container_name}')
+                print(f'Creating new container for {service_name}')
                 # Or create a new one.
                 docker_client.containers.run(
-                    container_config['service'],
-                    ports=container_config['ports'],
-                    name=container_name,
+                    service_image,
+                    ports=service_config.get('ports'),
+                    name=service_name,
                     detach=True,
                 )
-                print(f'{container_name} started')
+                print(f'{service_name} started')
             except docker.errors.APIError as e:
-                print(f'{container_type} already running: {e!r}')
+                print(f'{service_name} already running: {e!r}')
 
     @classmethod
     def stop_celery_backends(cls, celery_config: dict, remove: bool = False):
@@ -77,20 +61,20 @@ class TaskManager:
         docker_client = docker.from_env()
 
         # Stop the messaging and result backends.
-        for container_type in ['messaging', 'results']:
-            try:
-                container_config = celery_config.get(container_type)
-                container_name = f'pocs-{container_type}'
-                container = docker_client.containers.get(container_name)
+        # Start the messaging and result backend services.
+        for service_config in celery_config['service']:
+            service_name = service_config['name']
+            logger.info(f'Stopping {service_name} container')
 
-                logger.info(f'Stopping {container_name} container')
+            try:
+                container = docker_client.containers.get(service_name)
                 container.stop()
 
                 if remove:
-                    logger.info(f'Removing {container_name} container')
+                    logger.info(f'Removing {service_name} container')
                     container.remove()
             except docker.errors.APIError:
-                logger.info(f'{container_name} already running')
+                logger.info(f'{service_name} not running')
 
 
 class RunTaskMixin:
