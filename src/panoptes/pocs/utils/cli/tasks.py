@@ -39,19 +39,24 @@ def start_worker(
         worker: str = typer.Option(..., help='The name of the worker to start.'
                                              'Can be an absolute namespace or the name of a module'
                                              'in `panoptes.pocs.utils.service`.'),
+        queue: str = typer.Option(None,
+                                  help='The name of the queue to use for the worker,'
+                                       'defaults to class name'),
         loglevel: str = typer.Option('INFO', help='The name of a valid log level.'),
 ):
     """Starts a worker thread for the given piece of hardware."""
+    queue = queue or str(worker)
+
     # TODO this could be a better check for module name, perhaps with load_module.
     if '.' not in worker:
         worker = f'panoptes.pocs.utils.service.{worker}'
 
-    typer.echo(f'Starting celery {worker=}')
+    typer.echo(f'Starting celery {worker=} with {queue=}')
 
     subprocess.run([
         shutil.which('celery'),
         '-A', worker, 'worker',
-        '-Q', worker,
+        '-Q', queue,
         '--loglevel', loglevel
     ])
 
