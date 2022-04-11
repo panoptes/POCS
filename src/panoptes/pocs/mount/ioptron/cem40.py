@@ -331,7 +331,7 @@ class Mount(AbstractSerialMount):
         if status_match:
             status_dict = status_match.groupdict()
 
-            self._state = MountState(int(status_dict['state']))
+            self._state = MountState(int(status_dict['state'])).name
             status['state'] = self.state
             status['parked_software'] = self.is_parked
 
@@ -339,19 +339,18 @@ class Mount(AbstractSerialMount):
             # Longitude has +90° so no negatives. Subtract for original.
             status['latitude'] = (float(status_dict['latitude']) - 90) * u.arcsec
 
-            status['gps'] = MountGPS(int(status_dict['gps']))
-            status['tracking'] = MountTrackingState(int(status_dict['tracking']))
+            status['gps'] = MountGPS(int(status_dict['gps'])).name
+            status['tracking'] = MountTrackingState(int(status_dict['tracking'])).name
 
-            self._movement_speed = MountMovementSpeed(int(status_dict['movement_speed']))
+            self._movement_speed = MountMovementSpeed(int(status_dict['movement_speed'])).name
             status['movement_speed'] = self._movement_speed
 
-            status['time_source'] = MountTimeSource(int(status_dict['time_source']))
-            status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere']))
+            status['time_source'] = MountTimeSource(int(status_dict['time_source'])).name
+            status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere'])).name
 
             self._at_mount_park = self.state == MountState.PARKED
             self._is_home = self.state == MountState.AT_HOME
-            self._is_tracking = self.state == MountState.TRACKING or \
-                                self.state == MountState.TRACKING_PEC
+            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
         status['timestamp'] = self.query('get_local_time')
