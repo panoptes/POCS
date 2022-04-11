@@ -9,7 +9,7 @@ from panoptes.utils.utils import get_quantity_value
 class Camera(RemoteCamera, RunTaskMixin):
     """A remote gphoto2 camera class that can call local or remote celery tasks."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, queue: str | None = None, *args, **kwargs):
         """Control a remote gphoto2 camera via a celery task.
 
         Interact with a camera via `panoptes.pocs.utils.service.camera`.
@@ -19,8 +19,9 @@ class Camera(RemoteCamera, RunTaskMixin):
         self.celery_app = TaskManager.create_celery_app_from_config()
 
         self.task = None
-        self.logger.debug("Canon DSLR GPhoto2 camera celery task manager")
+        self.queue = queue or self.name
         self.connect()
+        self.logger.debug(f'Canon DSLR GPhoto2 camera celery task manager with queue={self.queue}')
 
     @property
     def is_exposing(self):
@@ -36,7 +37,7 @@ class Camera(RemoteCamera, RunTaskMixin):
         if self.is_exposing:
             raise error.CameraBusy()
 
-        queue = queue or self.name
+        queue = queue or self.queue
 
         arguments = ' '.join(cmd)
 
@@ -66,6 +67,6 @@ class Camera(RemoteCamera, RunTaskMixin):
         # Make sure we have just the value, no units
         seconds = get_quantity_value(seconds)
 
-        self.task = self.call_task('camera.release_shutter', args=[seconds])
+        self.task = self.call_task('camera.release_shutter', args=[seconds], queue=self.queue)
 
         return filename, header
