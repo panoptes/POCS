@@ -18,11 +18,8 @@ class TaskManager:
         config = config or get_config(config_key)
         if config:
             logger.info(f'Creating Celery app with {config=!r}')
-            celery.Celery()
-            celery_app = celery.Celery(
-                broker_url=config['messaging']['broker_url'],
-                result_backend=config['results']['result_backend']
-            )
+            celery_app = celery.Celery()
+            celery_app.config_from_object(config)
             print(f'Created {celery_app}')
 
             return celery_app
