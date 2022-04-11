@@ -14,12 +14,13 @@ class Camera(RemoteCamera, RunTaskMixin):
 
         Interact with a camera via `panoptes.pocs.utils.service.camera`.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(connect=False, *args, **kwargs)
 
         self.celery_app = TaskManager.create_celery_app_from_config()
 
         self.task = None
-        self.logger.debug("Creating Canon DSLR GPhoto2 camera celery task manager")
+        self.logger.debug("Canon DSLR GPhoto2 camera celery task manager")
+        self.connect()
 
     @property
     def is_exposing(self):
