@@ -303,7 +303,7 @@ class POCS(PanStateMachine, PanBase):
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
-            horizon (str, optional): For night time check use given horizon,
+            horizon (str, optional): For nighttime check use given horizon,
                 default 'observe'.
             ignore (abc.Iterable, optional): A list of safety checks to ignore when deciding
                 whether it is safe or not. Valid list entries are: 'ac_power', 'is_dark',
@@ -329,7 +329,7 @@ class POCS(PanStateMachine, PanBase):
 
         is_safe_values['ac_power'] = has_power
 
-        # Check if night time
+        # Check if nighttime
         is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather

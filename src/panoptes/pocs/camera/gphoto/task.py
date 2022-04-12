@@ -45,7 +45,7 @@ class Camera(RemoteCamera, RunTaskMixin):
         self.logger.debug(f'Running remote gphoto2 task with {arguments=} to {queue=}')
         self.task = self.call_task('camera.command', args=[arguments], queue=queue)
 
-    def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
+    def get_command_result(self, timeout: float = 2) -> Union[List[str], None]:
         """Get the output from the remote camera task, blocking up to timeout."""
         cmd_result = self.task.get(timeout=timeout)
 
