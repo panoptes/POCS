@@ -31,7 +31,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     if iers_url is not None:
         logger.info(f'Getting IERS data at {iers_url=}')
         iers_conf.iers_auto_url.set(iers_url)
-        iers_conf.auto_download.set(False)
+        iers_conf.auto_download.set(scheduler_config.get('iers_auto', False))
 
     if not observer:
         logger.debug(f'No Observer provided, creating location from config.')

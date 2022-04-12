@@ -58,6 +58,7 @@ scheduler:
   fields_file: simple.yaml
   check_file: False
   iers_url: "https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
+  iers_auto: False
   constraints:
     - name: panoptes.pocs.scheduler.constraint.Altitude
     - name: panoptes.pocs.scheduler.constraint.MoonAvoidance
