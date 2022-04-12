@@ -619,7 +619,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Mark the event as done.
         self._is_observing_event.clear()
-        self.logger.debug(f'Camera observing marked complete: {self.is_observing=}')
+        self.logger.debug(f'Camera observing for {self} complete: {self.is_observing=}')
 
     def write_fits(self, data, header, filename):
         """Write the FITS file.
@@ -878,7 +878,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return header
 
-    def _setup_observation(self, observation: Observation, headers, filename, **kwargs):
+    def _setup_observation(self, observation: Observation, headers, filename, **kwargs) -> dict:
         headers = headers or None
 
         # Move the filterwheel if necessary
@@ -943,20 +943,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         metadata = {
             'camera_name': self.name,
             'camera_uid': self.uid,
+            'current_exp_num': observation.current_exp_num,
+            'exptime': exptime,
+            'field_dec': observation.field.dec.value,
             'field_name': observation.field.field_name,
+            'field_ra': observation.field.ra.value,
             'filepath': file_path,
             'filter': self.filter_type,
             'image_id': image_id,
             'is_primary': self.is_primary,
             'sequence_id': sequence_id,
             'start_time': start_time,
-            'exptime': exptime,
-            'current_exp_num': observation.current_exp_num
         }
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
-
-        metadata.update(observation.status)
 
         if headers is not None:
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
