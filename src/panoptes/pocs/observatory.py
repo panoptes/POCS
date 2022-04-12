@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict
+from contextlib import suppress
 from datetime import datetime
 from multiprocessing import Process
 from pathlib import Path
@@ -363,17 +364,17 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def observe(self, blocking: bool = True):
+    def take_observation(self, blocking: bool = True):
         """Take individual images for the current observation.
-
         This method gets the current observation and takes the next
         corresponding exposure.
-
         Args:
             blocking (bool): If True (the default), wait for cameras to finish
                 exposing before returning, otherwise return immediately.
-
         """
+        if len(self.cameras) == 0:
+            raise error.CameraNotFound(f'No cameras available, unable to observe')
+
         # Get observatory metadata
         headers = self.get_standard_headers()
 
@@ -404,7 +405,12 @@ class Observatory(PanBase):
                 timer.sleep(max_sleep=readout_time)
 
             if timer.expired():
-                raise TimeoutError(f'Timer expired waiting for cameras to finish observing')
+                self.logger.warning(f'Timer expired waiting for cameras to finish observing')
+                not_done = [cam_id for cam_id, cam in self.cameras.items() if cam.is_observing]
+                for cam_id in not_done:
+                    self.logger.warning(f'Removing {cam_id} from observatory')
+                    with suppress(KeyError):
+                        del self.cameras[cam_id]
 
     def process_observation(self,
                             compress_fits: Optional[bool] = None,
@@ -414,7 +420,6 @@ class Observatory(PanBase):
                             upload_image_immediately: Optional[bool] = None,
                             ):
         """Process an individual observation.
-
         Args:
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
                 If None (default), checks the `observations.compress_fits` config-server key.
@@ -429,16 +434,22 @@ class Observatory(PanBase):
                 process).
         """
         for cam_name in self.cameras.keys():
-            exposure = self.current_observation.exposure_list[cam_name][-1]
-            self.logger.debug(f'Processing observation with {exposure=!r}')
-            metadata = exposure.metadata
             try:
+                exposure = self.current_observation.exposure_list[cam_name][-1]
+            except IndexError:
+                self.logger.warning(f'Unable to get exposure for {cam_name}')
+                continue
+
+            try:
+                self.logger.debug(f'Processing observation with {exposure=!r}')
+                metadata = exposure.metadata
                 image_id = metadata['image_id']
                 seq_id = metadata['sequence_id']
                 file_path = metadata['filepath']
                 exptime = metadata['exptime']
             except KeyError as e:
-                raise error.PanError(f'No information in image metadata, unable to process:  {e!r}')
+                self.logger.warning(f'No information in image metadata, unable to process:  {e!r}')
+                continue
 
             field_name = metadata.get('field_name', '')
 

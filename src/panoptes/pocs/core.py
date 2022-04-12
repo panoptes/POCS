@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from multiprocessing import Process
 
 from astropy import units as u
 from panoptes.pocs.base import PanBase
@@ -256,6 +257,35 @@ class POCS(PanStateMachine, PanBase):
         """Reset an observing run loop. """
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
+
+    def observe(self, park_if_unsafe: bool = True):
+        """Observe something! 🔭🌠
+        Note: This is a long-running blocking method.
+        This is a high-level method to call the various `observation` methods that
+        allow for observing.
+        """
+        current_observation = self.observatory.current_observation
+
+        for pic_num in range(current_observation.min_nexp):
+            if self.is_safe() is False:
+                self.say(f'Safety warning! Stopping {current_observation}.')
+                if park_if_unsafe:
+                    self.say('Parking the mount!')
+                    self.observatory.mount.park()
+                break
+
+            # Do the observing, once per exptime (usually only one unless a compound observation).
+            for exptime in current_observation.exptimes:
+                self.logger.debug(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
+                                  f'with {exptime=}')
+                self.observatory.take_observation(blocking=True)
+
+                # Do processing in background.
+                process_proc = Process(target=self.observatory.process_observation)
+                process_proc.start()
+                self.logger.debug(f'{current_observation} on {process_proc.pid=}')
+
+            pic_num += 1
 
     ################################################################################################
     # Safety Methods
