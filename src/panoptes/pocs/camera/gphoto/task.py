@@ -4,6 +4,7 @@ from panoptes.pocs.camera.gphoto.remote import Camera as RemoteCamera
 from panoptes.pocs.utils import error
 from panoptes.pocs.utils.tasks import TaskManager, RunTaskMixin
 from panoptes.utils.utils import get_quantity_value
+from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class Camera(RemoteCamera, RunTaskMixin):
@@ -56,17 +57,6 @@ class Camera(RemoteCamera, RunTaskMixin):
         # Return just the actual output. TODO error checking?
         return cmd_result['output']
 
-    def _start_exposure(self,
-                        seconds=None,
-                        filename=None,
-                        dark=False,
-                        header=None,
-                        iso=100,
-                        *args, **kwargs):
-        """Start the exposure using a Celery Task. """
-        # Make sure we have just the value, no units
-        seconds = get_quantity_value(seconds)
-
-        self.task = self.call_task('camera.release_shutter', args=[seconds], queue=self.queue)
-
-        return filename, header
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
+        fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
+        return {k.lower(): v for k, v in dict(fits_header).items()}
