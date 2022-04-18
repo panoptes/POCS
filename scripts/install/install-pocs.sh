@@ -242,6 +242,12 @@ function make_directories() {
 function install_services() {
   echo "Installing supervisor services."
 
+  # Link the pocs-supervisord.conf file.
+  sudo ln -s "${PANDIR}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/
+
+  # Reread the supervisord conf and restart.
+  sudo supervisorctl reread
+  sudo supervisorctl update
 }
 
 function install_zsh() {
