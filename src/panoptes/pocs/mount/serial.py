@@ -32,7 +32,7 @@ class AbstractSerialMount(AbstractMount, ABC):
 
     @property
     def _port(self):
-        return self.serial.ser.port
+        return self.serial.port
 
     def connect(self):
         """Connects to the mount via the serial port (`self._port`)
@@ -108,9 +108,6 @@ class AbstractSerialMount(AbstractMount, ABC):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        # self.serial.reset_input_buffer()
-
-        # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
     def read(self, *args):
