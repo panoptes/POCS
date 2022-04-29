@@ -188,7 +188,7 @@ class Mount(AbstractSerialMount):
         self.logger.info('Searching for the home position.')
         self.query('search_for_home')
 
-    def _set_initial_rates(self, alt_limit='+00', meridian_treatment='100'):
+    def _set_initial_rates(self, alt_limit='+30', meridian_treatment='015'):
         # Make sure we start at sidereal
         self.query('set_sidereal_tracking')
 
