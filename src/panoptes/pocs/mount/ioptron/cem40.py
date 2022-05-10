@@ -5,6 +5,7 @@ from enum import IntEnum
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from dateutil.parser import parse as parse_date
 from panoptes.utils.time import current_time
 from panoptes.utils import error as error
 from panoptes.pocs.mount.serial import AbstractSerialMount
@@ -353,7 +354,11 @@ class Mount(AbstractSerialMount):
             self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
-        status['timestamp'] = self.query('get_local_time')
+        # Get offset in hours (as int) then parse rearranged time string.
+        ts = self.query('get_local_time')
+        offset = int(float(ts[:4]) / 60)
+        status['timestamp'] = parse_date(f'{ts[5:11]}T{ts[11:]}{offset}', yearfirst=True)
+
         status['tracking_rate_ra'] = self.tracking_rate
 
         return status
