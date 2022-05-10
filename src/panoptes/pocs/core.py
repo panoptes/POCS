@@ -276,8 +276,8 @@ class POCS(PanStateMachine, PanBase):
 
             # Do the observing, once per exptime (usually only one unless a compound observation).
             for exptime in current_observation.exptimes:
-                self.logger.debug(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
-                                  f'with {exptime=}')
+                self.logger.info(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
+                                 f'with {exptime=}')
                 self.observatory.take_observation(blocking=True)
 
                 # Do processing in background.
