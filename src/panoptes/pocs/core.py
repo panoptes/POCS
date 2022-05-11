@@ -9,6 +9,7 @@ from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_free_space
 from panoptes.utils.time import CountdownTimer
+from panoptes.pocs.utils import error
 
 
 class POCS(PanStateMachine, PanBase):
@@ -282,7 +283,11 @@ class POCS(PanStateMachine, PanBase):
             for exptime in current_observation.exptimes:
                 self.logger.info(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
                                  f'with {exptime=}')
-                self.observatory.take_observation(blocking=True)
+                try:
+                    self.observatory.take_observation(blocking=True)
+                except error.CameraNotFound:
+                    self.logger.error('No cameras available, stopping observation')
+                    break
 
                 # Do processing in background.
                 process_proc = Process(target=self.observatory.process_observation)
