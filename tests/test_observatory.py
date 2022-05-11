@@ -314,7 +314,7 @@ def test_observe(observatory):
     assert len(observatory.scheduler.observed_list) == 1
 
     assert observatory.current_observation.current_exp_num == 0
-    observatory.observe()
+    observatory.observe_target()
     assert observatory.current_observation.current_exp_num == 1
 
 

@@ -258,7 +258,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
-    def observe(self, park_if_unsafe: bool = True):
+    def observe_target(self, park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
         Note: This is a long-running blocking method.
         This is a high-level method to call the various `observation` methods that
@@ -272,6 +272,10 @@ class POCS(PanStateMachine, PanBase):
                 if park_if_unsafe:
                     self.say('Parking the mount!')
                     self.observatory.mount.park()
+                break
+
+            if not self.observatory.mount.is_tracking:
+                self.logger.info(f'Mount is not tracking, stopping observations.')
                 break
 
             # Do the observing, once per exptime (usually only one unless a compound observation).
