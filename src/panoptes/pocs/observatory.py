@@ -20,7 +20,9 @@ from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.scheduler.observation.compound import Observation as CompoundObservation
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
 from panoptes.pocs.utils.cli.image import upload_image

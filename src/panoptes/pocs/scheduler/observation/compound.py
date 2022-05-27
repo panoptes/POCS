@@ -40,3 +40,9 @@ class Observation(BaseObservation):
                f"in blocks of {self.exp_set_size}, " \
                f"minimum {self.min_nexp}, " \
                f"priority {self.priority:.0f}"
+
+    @classmethod
+    def from_dict(cls, *args, **kwargs):
+        """Creates an `Observation` object from config dict. """
+        class_name = cls.__mro__[0]
+        return super().from_dict(observation_class=cls.__base__, *args, **kwargs)
