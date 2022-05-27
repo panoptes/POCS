@@ -436,8 +436,7 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(f"Weather Safety: {is_safe=} "
-                              f"[{age=:.0f}sec - {timestamp:%Y-%m-%d %H:%M:%S}]")
+            self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}sec [{timestamp:%x %X}]")
 
         except Exception as e:  # pragma: no cover
             self.logger.error(f"No weather record in database: {e!r}")
