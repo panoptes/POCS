@@ -126,7 +126,7 @@ class Observation(PanBase):
             'priority': self.priority,
             'ra_mnt': get_quantity_value(self.field.coord.ra),
             'seq_time': self.seq_time,
-            'set_duration': self.set_duration.value,
+            'set_duration': get_quantity_value(self.set_duration),
             'dark': self.dark
         }
 
