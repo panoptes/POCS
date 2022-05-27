@@ -992,7 +992,7 @@ class Observatory(PanBase):
         self.logger.debug(f'Flat-field coords: {alt=:.02f} {az=:.02f}')
 
         field = Field.from_altaz(field_name, alt, az, self.earth_location, time=flat_time)
-        flat_obs = CompoundObservation(field, exptime=initial_exptime * u.second)
+        flat_obs = CompoundObservation(field, exptime=initial_exptime)
 
         # Note different 'flat' concepts.
         flat_obs.seq_time = flatten_time(flat_time)
