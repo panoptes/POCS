@@ -861,7 +861,7 @@ class Observatory(PanBase):
             camera_filename = dict()
             for cam_name in camera_list:
                 # Get latest exposure time.
-                exptime = min(exptimes[cam_name][-1].value, min_exptime)
+                exptime = max(exptimes[cam_name][-1].value, min_exptime)
                 fits_headers['exptime'] = exptime
 
                 # Take picture and get filename.
