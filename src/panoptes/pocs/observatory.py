@@ -764,7 +764,7 @@ class Observatory(PanBase):
                          target_adu_percentage=0.5,
                          initial_exptime=3.,
                          min_exptime=0.,
-                         max_exptime=120.,
+                         max_exptime=60.,
                          readout=5.,
                          camera_list=None,
                          bias=2048,

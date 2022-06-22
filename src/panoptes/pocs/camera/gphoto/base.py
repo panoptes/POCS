@@ -13,6 +13,8 @@ from panoptes.utils.utils import listify
 
 from panoptes.pocs.camera import AbstractCamera
 
+file_save_re = re.compile(r'Saving file as (.*)')
+
 
 class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
@@ -245,3 +247,56 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _set_cooling_enabled(self, enable):
         return None
+
+    @classmethod
+    def start_tether(cls, port, filename_pattern: str = '%Y%m%dT%H%M%S.%C'):
+        """Start a tether for gphoto2 auto-download on given port using filename pattern."""
+        print(f'Starting gphoto2 tether for {port=} using {filename_pattern=}')
+
+        full_command = [shutil.which('gphoto2'),
+                        '--port', port,
+                        '--filename', filename_pattern,
+                        '--capture-tethered']
+
+        # Start tether process.
+        process = subprocess.Popen(full_command,
+                                   stderr=subprocess.STDOUT,
+                                   stdout=subprocess.PIPE)
+        print(f'gphoto2 tether started on {port=} on {process.pid=}')
+
+        try:
+            process.wait()
+        except KeyboardInterrupt:
+            print(f'Stopping tether on {port=}')
+
+    @classmethod
+    def gphoto_file_download(cls,
+                             port: str,
+                             filename_pattern: str,
+                             only_new: bool = True
+                             ):
+        """Downloads (newer) files from the camera on the given port using the filename pattern."""
+        print(f'Starting gphoto2 download for {port=} using {filename_pattern=}')
+        command = [shutil.which('gphoto2'),
+                   '--port', port,
+                   '--filename', filename_pattern,
+                   '--get-all-files',
+                   '--recurse']
+        if only_new:
+            command.append('--new')
+
+        completed_proc = subprocess.run(command, capture_output=True)
+        success = completed_proc.returncode >= 0
+
+        filenames = list()
+        if success:
+            output = completed_proc.stdout.decode('utf-8').split('\n')
+
+            for line in output:
+                file_match = file_save_re.match(line)
+                if file_match is not None:
+                    fn = file_match.group(1).strip()
+                    print(f'Found match {fn}')
+                    filenames.append(fn)
+
+        return filenames

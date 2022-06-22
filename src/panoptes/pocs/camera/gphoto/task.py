@@ -3,8 +3,6 @@ from typing import List, Union
 from panoptes.pocs.camera.gphoto.remote import Camera as RemoteCamera
 from panoptes.pocs.utils import error
 from panoptes.pocs.utils.tasks import TaskManager, RunTaskMixin
-from panoptes.utils.utils import get_quantity_value
-from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class Camera(RemoteCamera, RunTaskMixin):
