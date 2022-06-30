@@ -1,6 +1,4 @@
-============
-Contributors
-============
+# Contributors
 
 * Wilfred Tyler Gee <wtylergee@gmail.com>
 * Josh Walawender <joshwalawender@users.noreply.github.com>
