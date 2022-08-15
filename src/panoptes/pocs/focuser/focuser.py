@@ -11,7 +11,7 @@ from astropy.modeling import fitting
 from panoptes.pocs.base import PanBase
 from panoptes.utils.time import current_time
 from panoptes.utils.images import focus as focus_utils
-from panoptes.utils.images import mask_saturated
+from panoptes.utils.images.misc import mask_saturated
 from panoptes.pocs.utils.plotting import make_autofocus_plot
 
 

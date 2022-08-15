@@ -12,7 +12,7 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
 from panoptes.utils import error
-from panoptes.utils import images as img_utils
+from panoptes.utils.images.misc import crop_data
 from panoptes.utils.library import load_module
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.time import current_time
@@ -730,7 +730,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         if actual_size != cutout_size:  # noqa
             self.logger.warning(f'Requested cutout size is larger than image, using {actual_size}')
 
-        return img_utils.crop_data(image, box_width=cutout_size)
+        return crop_data(image, box_width=cutout_size)
 
     @abstractmethod
     def _set_target_temperature(self, target):
