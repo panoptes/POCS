@@ -33,8 +33,8 @@ def observer():
 
 @pytest.fixture(scope='function')
 def horizon_line() -> horizon_utils.Horizon:
-    obstruction_list = get_config('location.obstructions', default=list())
-    default_horizon = get_config('location.horizon')
+    obstruction_list = get_config('location.obstructions', default=list(), parse=False)
+    default_horizon = get_config('location.horizon', parse=False)
 
     horizon_line = horizon_utils.Horizon(
         obstructions=obstruction_list,
