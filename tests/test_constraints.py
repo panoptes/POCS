@@ -26,7 +26,6 @@ from panoptes.utils.serializers import from_yaml
 @pytest.fixture(scope='function')
 def observer():
     loc = get_config('location')
-    print(f'{loc=!r}')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
