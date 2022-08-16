@@ -1,5 +1,7 @@
 from astroplan import FixedTarget
 from astropy.coordinates import SkyCoord
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import altaz_to_radec
 
 from panoptes.pocs.base import PanBase
 
@@ -39,3 +41,12 @@ class Field(FixedTarget, PanBase):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def from_altaz(cls, name, alt, az, location, time=None, *args, **kwargs):
+        """Create a Field form AltAz coords, a location, and optional time."""
+        time = time or current_time()
+        # Construct RA/Dec coords from the Alt Az.
+        flat_coords = altaz_to_radec(alt=alt, az=az, location=location, obstime=time)
+
+        return cls(name, flat_coords)

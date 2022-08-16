@@ -108,9 +108,6 @@ class AbstractSerialMount(AbstractMount, ABC):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        # self.serial.reset_input_buffer()
-
-        # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
     def read(self, *args):
