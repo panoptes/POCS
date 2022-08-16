@@ -25,7 +25,8 @@ from panoptes.utils.serializers import from_yaml
 
 @pytest.fixture(scope='function')
 def observer():
-    loc = get_config('location')
+    loc = get_config('location', parse=False)
+    print(f'{loc=!r}')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
@@ -33,7 +34,7 @@ def observer():
 @pytest.fixture(scope='function')
 def horizon_line() -> horizon_utils.Horizon:
     obstruction_list = get_config('location.obstructions', default=list())
-    default_horizon = get_config('location.horizon', default=30)
+    default_horizon = get_config('location.horizon')
 
     horizon_line = horizon_utils.Horizon(
         obstructions=obstruction_list,
