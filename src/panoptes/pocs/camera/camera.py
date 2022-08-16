@@ -802,7 +802,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
-            timer_duration = self.timeout + self.readout_time + exposure_time.to_value(u.second)
+            timer_duration = self.timeout + self.readout_time + get_quantity_value(exposure_time,
+                                                                                   u.second)
         else:
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
@@ -878,7 +879,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         return header
 
-    def _setup_observation(self, observation: Observation, headers, filename, **kwargs):
+    def _setup_observation(self, observation: Observation, headers, filename, **kwargs) -> dict:
         headers = headers or None
 
         # Move the filterwheel if necessary
@@ -943,20 +944,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         metadata = {
             'camera_name': self.name,
             'camera_uid': self.uid,
+            'current_exp_num': observation.current_exp_num,
+            'exptime': exptime,
             'field_name': observation.field.field_name,
+            'field_dec': observation.field.dec.value,
+            'field_ra': observation.field.ra.value,
             'filepath': file_path,
             'filter': self.filter_type,
             'image_id': image_id,
             'is_primary': self.is_primary,
             'sequence_id': sequence_id,
             'start_time': start_time,
-            'exptime': exptime,
-            'current_exp_num': observation.current_exp_num
         }
         if observation.filter_name is not None:
             metadata['filter_request'] = observation.filter_name
-
-        metadata.update(observation.status)
 
         if headers is not None:
             self.logger.trace(f'Updating {file_path} metadata with provided headers')
