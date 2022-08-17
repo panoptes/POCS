@@ -30,8 +30,9 @@ class PanBase(object):
             # If the user requests a db_type then update runtime config.
             db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
             db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
+            db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
 
-            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder)
+            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
 
         self.db = PAN_DB_OBJ
 

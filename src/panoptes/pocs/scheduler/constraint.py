@@ -73,7 +73,7 @@ class Altitude(BaseConstraint):
         min_alt = self.horizon_line[int(target_az)]
 
         with suppress(AttributeError):
-            min_alt = min_alt.to_value('degree')
+            min_alt = get_quantity_value(min_alt, u.degree)
 
         self.logger.debug(f'Target coords: {target_az=:.02f} {target_alt=:.02f}')
         if target_alt < min_alt:

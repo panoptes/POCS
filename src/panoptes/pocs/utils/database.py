@@ -4,7 +4,7 @@ from panoptes.utils.database.file import PanFileDB
 
 try:
     from google.cloud import firestore
-except ImportError:
+except (ImportError, ValueError):
     warnings.warn('google-cloud-firestore module is missing, full DB features unavailable')
     firestore = None
 

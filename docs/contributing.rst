@@ -1,2 +1,2 @@
-.. _contribute:
+.. _contributing:
 .. include:: ../CONTRIBUTING.rst
