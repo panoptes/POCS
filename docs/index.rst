@@ -2,7 +2,9 @@
 POCS
 ====
 
-.. include:: ./README.rst
+.. include:: ../README.md
+    :parser: myst_parser.sphinx_
+
 
 Contents
 ========
@@ -10,8 +12,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   Docker Guider <docker>
-   Contributing Guide <contribute>
+   Contributing Guide <contributing>
    Changelog <changelog>
    Module Reference <api/modules>
    Authors <authors>

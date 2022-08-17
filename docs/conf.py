@@ -62,6 +62,7 @@ except Exception as e:
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'matplotlib.sphinxext.plot_directive',
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
@@ -72,31 +73,11 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "myst_parser"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
-
-
-# Configure AutoStructify
-# https://recommonmark.readthedocs.io/en/latest/auto_structify.html
-def setup(app):
-    from recommonmark.transform import AutoStructify
-
-    params = {
-        "enable_auto_toc_tree": True,
-        "auto_toc_tree_section": "Contents",
-        "auto_toc_maxdepth": 2,
-        "enable_eval_rst": True,
-        "enable_math": True,
-        "enable_inline_math": True,
-    }
-    app.add_config_value("recommonmark_config", params, True)
-    app.add_transform(AutoStructify)
-
-
-# Enable markdown
-extensions.append("recommonmark")
 
 # The suffix of source filenames.
 source_suffix = [".rst", ".md"]
@@ -158,7 +139,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+pygments_style = "friendly"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -169,20 +150,19 @@ pygments_style = "sphinx"
 # If this is True, todo emits a warning for each TODO entries. The default is False.
 todo_emit_warnings = True
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "alabaster"
+html_theme = "piccolo_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px",
-    "page_width": "1200px"
-}
+# html_theme_options = {
+#     "sidebar_width": "300px",
+#     "page_width": "1200px"
+# }
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -252,7 +232,6 @@ html_static_path = ["_static"]
 # Output file base name for HTML help builder.
 htmlhelp_basename = "panoptes-pocs-doc"
 
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
@@ -302,6 +281,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "setuptools": ("https://setuptools.pypa.io/en/stable/", None),
     "pyscaffold": ("https://pyscaffold.org/en/stable", None),
+    "panoptes-utils": ("https://panoptes-utils.readthedocs.io/en/latest/", None),
 }
 
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
