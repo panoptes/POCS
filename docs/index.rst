@@ -10,10 +10,8 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   Contributing Guide <contributing>
-   Changelog <changelog>
    Module Reference <api/modules>
    Authors <authors>
    License <license>
@@ -22,7 +20,8 @@ Contents
 Indices and tables
 ==================
 
-* :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 * :ref:`contributing`
+* :ref:`changelog`
+* :ref:`genindex`
