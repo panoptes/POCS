@@ -89,7 +89,7 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
-project = "panoptes-pocs"
+project = "POCS"
 copyright = "2022, Project PANOPTES"
 
 # The version info for the project you're documenting, acts as replacement for

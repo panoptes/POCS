@@ -1,7 +1,7 @@
 docutils>=0.17
-# jinja2==3.0.0
+jinja2
 mkdocs==1.2.3
 myst-parser
 piccolo-theme
 pytest_mpl
-# sphinx==4.2.0
+sphinx
