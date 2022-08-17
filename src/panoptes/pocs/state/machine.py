@@ -212,7 +212,7 @@ class PanStateMachine(Machine):
         # Do transition logic.
         state_changed = transition_method()
         if state_changed:
-            self.logger.success(f'Finished with {self.state} state')
+            self.logger.success(f'Finished with state={self.state} state')
             self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed

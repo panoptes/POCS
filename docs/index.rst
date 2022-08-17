@@ -2,17 +2,16 @@
 POCS
 ====
 
-.. include:: ./README.rst
+.. include:: ../README.md
+    :parser: myst_parser.sphinx_
+
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   Docker Guider <docker>
-   Contributing Guide <contribute>
-   Changelog <changelog>
    Module Reference <api/modules>
    Authors <authors>
    License <license>
@@ -21,7 +20,8 @@ Contents
 Indices and tables
 ==================
 
-* :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-* :ref:`contribute`
+* :ref:`contributing`
+* :ref:`changelog`
+* :ref:`genindex`
