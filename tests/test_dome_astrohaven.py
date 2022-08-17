@@ -21,7 +21,7 @@ def dome():
     set_config('dome', {
         'brand': 'Astrohaven',
         'driver': 'astrohaven',
-        'port': 'astrohaven_simulator://',
+        'port': 'loop://',
     })
     the_dome = create_dome_simulator()
 
@@ -60,6 +60,7 @@ def test_disconnect(dome):
     assert dome.is_connected is False
 
 
+@pytest.mark.skip(reason='No astrohaven_simulator protocol anymore')
 def test_open_and_close_slit(dome):
     dome.connect()
 
