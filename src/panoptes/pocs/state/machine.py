@@ -93,7 +93,7 @@ class PanStateMachine(Machine):
             park_when_done (bool, optional): If True (the default), park the mount when loop
                 completes (i.e. when `keep_running` is False).
             run_once (bool, optional): If the machine loop should only run one time, if False
-                (the default) loop continuously.                
+                (the default) loop continuously.
             initial_next_state (str, optional): The first state the machine should move to from
                 the `sleeping` state, default `ready`.
         """
