@@ -42,9 +42,9 @@ class Observatory(PanBase):
         # Setup information about site location
         self.logger.info('Setting up location')
         site_details = create_location_from_config()
-        self.location = site_details['location']
-        self.earth_location = site_details['earth_location']
-        self.observer = site_details['observer']
+        self.location = site_details.location
+        self.earth_location = site_details.earth_location
+        self.observer = site_details.observer
 
         # Do some one-time calculations
         now = current_time()

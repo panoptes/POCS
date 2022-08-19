@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -9,7 +10,14 @@ from panoptes.utils.config.client import get_config
 logger = get_logger()
 
 
-def create_location_from_config():
+@dataclass
+class SiteDetails:
+    observer: Observer
+    earth_location: EarthLocation
+    location: dict
+
+
+def create_location_from_config() -> SiteDetails:
     """
     Sets up the site and location details.
 
@@ -63,11 +71,11 @@ def create_location_from_config():
         earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
         observer = Observer(location=earth_location, name=name, timezone=timezone)
 
-        site_details = {
-            "location": location,
-            "earth_location": earth_location,
-            "observer": observer
-        }
+        site_details = SiteDetails(
+            location=location,
+            earth_location=earth_location,
+            observer=observer
+        )
 
         return site_details
 

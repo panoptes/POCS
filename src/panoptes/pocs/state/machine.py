@@ -80,7 +80,8 @@ class PanStateMachine(Machine):
     # Methods
     ################################################################################################
 
-    def run(self, exit_when_done=False, run_once=False, park_when_done=True, initial_next_state='ready'):
+    def run(self, exit_when_done=False, run_once=False, park_when_done=True,
+            initial_next_state='ready'):
         """Runs the state machine loop.
 
         This runs the state machine in a loop. Setting the machine property
@@ -188,7 +189,7 @@ class PanStateMachine(Machine):
         else:
             if park_when_done:
                 self.logger.info(f'Run loop ended, parking mount')
-                self.observatory.mount.park()                    
+                self.observatory.mount.park()
 
     def goto_next_state(self):
         """Make a transition to the next state.
