@@ -68,7 +68,7 @@ def test_create_mount_with_earth_location(config_host, config_port):
     # Set config to not have a location.
     set_config('location', None)
     set_config('simulator', hardware.get_all_names())
-    assert isinstance(create_mount_from_config(earth_location=loc['earth_location']),
+    assert isinstance(create_mount_from_config(earth_location=loc.earth_location),
                       AbstractMount) is True
 
     reset_conf(config_host, config_port)

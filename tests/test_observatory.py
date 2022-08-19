@@ -45,7 +45,7 @@ def observatory(mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
     site_details = create_location_from_config()
-    scheduler = create_scheduler_from_config(observer=site_details['observer'])
+    scheduler = create_scheduler_from_config(observer=site_details.observer)
 
     obs = Observatory(scheduler=scheduler)
     obs.set_mount(mount)
@@ -83,7 +83,7 @@ def test_cannot_observe(caplog):
     time.sleep(0.5)  # log sink time
     log_record = caplog.records[-1]
     assert log_record.message.endswith("not present") and log_record.levelname == "WARNING"
-    obs.scheduler = create_scheduler_from_config(observer=site_details['observer'])
+    obs.scheduler = create_scheduler_from_config(observer=site_details.observer)
 
     assert obs.can_observe is False
     time.sleep(0.5)  # log sink time
@@ -126,7 +126,7 @@ def test_primary_camera_no_primary_camera(observatory):
 
 def test_set_scheduler(observatory, caplog):
     site_details = create_location_from_config()
-    scheduler = create_scheduler_from_config(observer=site_details['observer'])
+    scheduler = create_scheduler_from_config(observer=site_details.observer)
 
     assert observatory.current_observation is None
 
