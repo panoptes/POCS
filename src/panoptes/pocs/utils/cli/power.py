@@ -41,7 +41,8 @@ def status(context: typer.Context):
             relays = res.json()
             for relay_index, relay_info in relays.items():
                 with suppress(KeyError, TypeError):
-                    relay_label = typer.style(f'{relay_info["label"]:.<20s}', fg=typer.colors.BRIGHT_CYAN)
+                    relay_label = typer.style(f'{relay_info["label"]:.<20s}',
+                                              fg=typer.colors.BRIGHT_CYAN)
                     if relay_info['state'] == 'ON':
                         status_color = typer.colors.BRIGHT_GREEN
                     else:
