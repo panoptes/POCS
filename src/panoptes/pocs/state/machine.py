@@ -80,7 +80,7 @@ class PanStateMachine(Machine):
     # Methods
     ################################################################################################
 
-    def run(self, exit_when_done=False, park_when_done=True, run_once=False,
+    def run(self, exit_when_done=False, run_once=False, park_when_done=True,
             initial_next_state='ready'):
         """Runs the state machine loop.
 

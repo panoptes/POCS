@@ -351,7 +351,8 @@ class Mount(AbstractSerialMount):
 
             self._at_mount_park = self.state == MountState.PARKED
             self._is_home = self.state == MountState.AT_HOME
-            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
+            self._is_tracking = self.state == MountState.TRACKING or \
+                                self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
         # Get offset in hours (as int) then parse rearranged time string.
