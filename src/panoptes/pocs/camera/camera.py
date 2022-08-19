@@ -947,7 +947,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'current_exp_num': observation.current_exp_num,
             'exptime': exptime,
             'field_dec': observation.field.dec.value,
-            'field_name': observation.field.field_name,            
+            'field_name': observation.field.field_name,
             'field_ra': observation.field.ra.value,
             'filepath': file_path,
             'filter': self.filter_type,
