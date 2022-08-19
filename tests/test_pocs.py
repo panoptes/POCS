@@ -53,7 +53,7 @@ def site_details():
 
 @pytest.fixture(scope='function')
 def scheduler(site_details):
-    return create_scheduler_from_config(observer=site_details['observer'])
+    return create_scheduler_from_config(observer=site_details.observer)
 
 
 @pytest.fixture(scope='function')

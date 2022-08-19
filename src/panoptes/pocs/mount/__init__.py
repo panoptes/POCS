@@ -54,7 +54,7 @@ def create_mount_from_config(mount_info=None,
 
         # Get details from config.
         site_details = create_location_from_config()
-        earth_location = site_details['earth_location']
+        earth_location = site_details.earth_location
 
     brand = mount_info.get('brand')
     driver = mount_info.get('driver')
@@ -122,7 +122,7 @@ def create_mount_simulator(mount_info=None,
     # Set mount device info to simulator
     set_config('mount', mount_config)
 
-    earth_location = earth_location or create_location_from_config()['earth_location']
+    earth_location = earth_location or create_location_from_config().earth_location
 
     logger.debug(f"Loading mount driver: {mount_config['driver']}")
     try:
