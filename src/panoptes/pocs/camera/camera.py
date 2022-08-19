@@ -619,7 +619,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         # Mark the event as done.
         self._is_observing_event.clear()
-        self.logger.debug(f'Camera observing marked complete: {self.is_observing=}')
+        self.logger.debug(f'Camera observing for {self} complete: {self.is_observing=}')
 
     def write_fits(self, data, header, filename):
         """Write the FITS file.
@@ -946,8 +946,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             'camera_uid': self.uid,
             'current_exp_num': observation.current_exp_num,
             'exptime': exptime,
-            'field_name': observation.field.field_name,
             'field_dec': observation.field.dec.value,
+            'field_name': observation.field.field_name,            
             'field_ra': observation.field.ra.value,
             'filepath': file_path,
             'filter': self.filter_type,

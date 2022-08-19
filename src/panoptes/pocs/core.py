@@ -273,7 +273,7 @@ class POCS(PanStateMachine, PanBase):
         Args:
             no_warning (bool, optional): If a warning message should show in logs,
                 defaults to False.
-            horizon (str, optional): For night time check use given horizon,
+            horizon (str, optional): For nighttime check use given horizon,
                 default 'observe'.
             ignore (abc.Iterable, optional): A list of safety checks to ignore when deciding
                 whether it is safe or not. Valid list entries are: 'ac_power', 'is_dark',
@@ -299,7 +299,7 @@ class POCS(PanStateMachine, PanBase):
 
         is_safe_values['ac_power'] = has_power
 
-        # Check if night time
+        # Check if nighttime
         is_safe_values['is_dark'] = self.is_dark(horizon=horizon)
 
         # Check weather
@@ -392,13 +392,12 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 return False
 
-            is_safe = record['data'].get('safe', False)
+            is_safe = bool(record['data'].get('safe', False))
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(
-                f"Weather Safety: {is_safe} [{age:.0f} sec old - {timestamp:%Y-%m-%d %H:%M:%S}]")
+            self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp:%c}]")
 
         except Exception as e:  # pragma: no cover
             self.logger.error(f"No weather record in database: {e!r}")
