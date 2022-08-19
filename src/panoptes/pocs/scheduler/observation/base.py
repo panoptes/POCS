@@ -277,6 +277,18 @@ class Observation(PanBase):
         self.merit = 0.0
         self.seq_time = None
 
+    def to_dict(self):
+        """Serialize the object to a dict."""
+        return dict(
+            field=self.field.to_dict(),
+            exptime=get_quantity_value(self.exptime),
+            min_nexp=self.min_nexp,
+            exp_set_size=self.exp_set_size,
+            priority=self.priority,
+            filter_name=self.filter_name,
+            dark=self.dark
+        )
+
     ################################################################################################
     # Private Methods
     ################################################################################################
