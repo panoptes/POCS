@@ -27,7 +27,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
 
-        # Setup a holder for the exposure process.
+        # Set up a holder for the exposure process.
         self._command_proc = None
 
         self.logger.info(f'GPhoto2 camera {self.name} created on {self.port}')
