@@ -32,7 +32,7 @@ class AbstractSerialMount(AbstractMount, ABC):
 
     @property
     def _port(self):
-        return self.serial.ser.port
+        return self.serial.port
 
     def connect(self):
         """Connects to the mount via the serial port (`self._port`)
