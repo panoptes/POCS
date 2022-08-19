@@ -80,7 +80,7 @@ class PanStateMachine(Machine):
     # Methods
     ################################################################################################
 
-    def run(self, exit_when_done=False, run_once=False, initial_next_state='ready'):
+    def run(self, exit_when_done=False, run_once=False, park_when_done=True, initial_next_state='ready'):
         """Runs the state machine loop.
 
         This runs the state machine in a loop. Setting the machine property
@@ -89,8 +89,10 @@ class PanStateMachine(Machine):
         Args:
             exit_when_done (bool, optional): If True, the loop will exit when `do_states`
                 has become False, otherwise will wait (default)
-            run_once (bool, optional): If the machine loop should only run one time, defaults
-                to False to loop continuously.
+            park_when_done (bool, optional): If True (the default), park the mount when loop
+                completes (i.e. when `keep_running` is False).
+            run_once (bool, optional): If the machine loop should only run one time, if False
+                (the default) loop continuously.                
             initial_next_state (str, optional): The first state the machine should move to from
                 the `sleeping` state, default `ready`.
         """
@@ -183,6 +185,10 @@ class PanStateMachine(Machine):
                 if exit_when_done:
                     self.logger.info(f'Leaving run loop {exit_when_done=!r}')
                     break
+        else:
+            if park_when_done:
+                self.logger.info(f'Run loop ended, parking mount')
+                self.observatory.mount.park()                    
 
     def goto_next_state(self):
         """Make a transition to the next state.
@@ -205,7 +211,7 @@ class PanStateMachine(Machine):
         # Do transition logic.
         state_changed = transition_method()
         if state_changed:
-            self.logger.success(f'Finished with state={self.state}')
+            self.logger.success(f'Finished with {self.state} state')
             self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
