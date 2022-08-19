@@ -35,7 +35,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     if not observer:
         logger.debug(f'No Observer provided, creating location from config.')
         site_details = create_location_from_config()
-        observer = site_details['observer']
+        observer = site_details.observer
 
     # Read the targets from the file
     fields_file = scheduler_config.get('fields_file', 'simple.yaml')
