@@ -81,7 +81,7 @@ class PanStateMachine(Machine):
     ################################################################################################
 
     def run(self, exit_when_done=False, park_when_done=True, run_once=False,
-            initial_next_state='ready'):
+           park_when_done=True, initial_next_state='ready'):
         """Runs the state machine loop.
 
         This runs the state machine in a loop. Setting the machine property
@@ -212,7 +212,7 @@ class PanStateMachine(Machine):
         # Do transition logic.
         state_changed = transition_method()
         if state_changed:
-            self.logger.success(f'Finished with state={self.state} state')
+            self.logger.success(f'Finished with {self.state} state')
             self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
