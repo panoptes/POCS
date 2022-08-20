@@ -1,6 +1,7 @@
 import os
 from contextlib import suppress
 from multiprocessing import Process
+from typing import Optional
 
 from astropy import units as u
 from panoptes.pocs.base import PanBase
@@ -260,7 +261,9 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
-    def observe_target(self, observation: Observation | None, park_if_unsafe: bool = True):
+    def observe_target(self,
+                       observation: Optional[Observation] = None,
+                       park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
 
         Note: This is a long-running blocking method.
