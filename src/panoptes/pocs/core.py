@@ -1,13 +1,16 @@
 import os
 from contextlib import suppress
+from multiprocessing import Process
 
 from astropy import units as u
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_free_space
 from panoptes.utils.time import CountdownTimer
+from panoptes.pocs.utils import error
 
 
 class POCS(PanStateMachine, PanBase):
@@ -256,6 +259,47 @@ class POCS(PanStateMachine, PanBase):
         """Reset an observing run loop. """
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
+
+    def observe_target(self, observation: Observation | None, park_if_unsafe: bool = True):
+        """Observe something! 🔭🌠
+
+        Note: This is a long-running blocking method.
+
+        This is a high-level method to call the various `observation` methods that
+        allow for observing.
+        """
+        current_observation = observation or self.observatory.current_observation
+        self.say(f"Observing {current_observation}")
+
+        for pic_num in range(current_observation.min_nexp):
+            self.logger.debug(f"Starting observation {pic_num} of {current_observation.min_nexp}")
+            if self.is_safe() is False:
+                self.say(f'Safety warning! Stopping {current_observation}.')
+                if park_if_unsafe:
+                    self.say('Parking the mount!')
+                    self.observatory.mount.park()
+                break
+
+            if not self.observatory.mount.is_tracking:
+                self.say(f'Mount is not tracking, stopping observations.')
+                break
+
+            # Do the observing, once per exptime (usually only one unless a compound observation).
+            for exptime in current_observation.exptimes:
+                self.logger.info(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
+                                 f'with {exptime=}')
+                try:
+                    self.observatory.take_observation(blocking=True)
+                except error.CameraNotFound:
+                    self.logger.error('No cameras available, stopping observation')
+                    break
+
+                # Do processing in background.
+                process_proc = Process(target=self.observatory.process_observation)
+                process_proc.start()
+                self.logger.debug(f'Processing {current_observation} on {process_proc.pid=}')
+
+            pic_num += 1
 
     ################################################################################################
     # Safety Methods
