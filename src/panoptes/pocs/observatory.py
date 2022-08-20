@@ -376,7 +376,7 @@ class Observatory(PanBase):
                 exposing before returning, otherwise return immediately.
         """
         if len(self.cameras) == 0:
-            raise error.CameraNotFound(f'No cameras available, unable to observe')
+            raise error.CameraNotFound("No cameras available, unable to take observation")
 
         # Get observatory metadata
         headers = self.get_standard_headers()
@@ -407,6 +407,7 @@ class Observatory(PanBase):
 
                 timer.sleep(max_sleep=readout_time)
 
+            # If timer expired check cameras and remove if stuck.
             if timer.expired():
                 self.logger.warning(f'Timer expired waiting for cameras to finish observing')
                 not_done = [cam_id for cam_id, cam in self.cameras.items() if cam.is_observing]
@@ -429,7 +430,7 @@ class Observatory(PanBase):
             record_observations (bool or None): If observation metadata should be saved.
                 If None (default), checks the `observations.record_observations`
                 config-server key.
-            make_pretty_images (bool or None): If should make a jpg from raw image.
+            make_pretty_images (bool or None): Make a jpg from raw image.
                 If None (default), checks the `observations.make_pretty_images`
                 config-server key.
             plate_solve (bool or None): If images should be plate solved, default None for config.

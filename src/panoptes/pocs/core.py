@@ -1,10 +1,12 @@
 import os
 from contextlib import suppress
 from multiprocessing import Process
+from typing import Optional
 
 from astropy import units as u
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_free_space
@@ -259,15 +261,21 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config('pocs.RETRY_ATTEMPTS', default=3)
 
-    def observe_target(self, park_if_unsafe: bool = True):
+    def observe_target(self,
+                       observation: Optional[Observation] = None,
+                       park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
+
         Note: This is a long-running blocking method.
+
         This is a high-level method to call the various `observation` methods that
         allow for observing.
         """
-        current_observation = self.observatory.current_observation
+        current_observation = observation or self.observatory.current_observation
+        self.say(f"Observing {current_observation}")
 
         for pic_num in range(current_observation.min_nexp):
+            self.logger.debug(f"Starting observation {pic_num} of {current_observation.min_nexp}")
             if self.is_safe() is False:
                 self.say(f'Safety warning! Stopping {current_observation}.')
                 if park_if_unsafe:
@@ -276,7 +284,7 @@ class POCS(PanStateMachine, PanBase):
                 break
 
             if not self.observatory.mount.is_tracking:
-                self.logger.info(f'Mount is not tracking, stopping observations.')
+                self.say(f'Mount is not tracking, stopping observations.')
                 break
 
             # Do the observing, once per exptime (usually only one unless a compound observation).
@@ -292,7 +300,7 @@ class POCS(PanStateMachine, PanBase):
                 # Do processing in background.
                 process_proc = Process(target=self.observatory.process_observation)
                 process_proc.start()
-                self.logger.debug(f'{current_observation} on {process_proc.pid=}')
+                self.logger.debug(f'Processing {current_observation} on {process_proc.pid=}')
 
             pic_num += 1
 

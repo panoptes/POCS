@@ -1,5 +1,3 @@
-from multiprocessing import Process
-
 from panoptes.utils import error
 
 
@@ -21,5 +19,5 @@ def on_enter(event_data):
         pocs.logger.warning(f"Problem with imaging: {e!r}")
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        pocs.logger.debug('Finished with observing, going to scheduling')
-        pocs.next_state = 'scheduling'
+        pocs.next_state = 'analyzing'
+        pocs.logger.debug('Finished with observing, going to {pocs.next_state}')
