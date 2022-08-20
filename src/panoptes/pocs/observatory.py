@@ -339,7 +339,7 @@ class Observatory(PanBase):
 
         Returns:
             observation (pocs.scheduler.observation.Observation or None): An
-                an object that represents the observation to be made
+                object that represents the observation to be made.
 
         Raises:
             error.NoObservation: If no valid observation is found
@@ -642,8 +642,7 @@ class Observatory(PanBase):
         if observation is None:
             observation = self.current_observation
 
-        assert observation is not None, self.logger.warning(
-            "No observation, can't get headers")
+        assert observation is not None, self.logger.warning("No observation, can't get headers")
 
         field = observation.field
 

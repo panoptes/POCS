@@ -2,6 +2,7 @@ import os
 import time
 
 import pytest
+from astropy.coordinates import get_sun
 from astropy.time import Time
 from panoptes.pocs import __version__
 from panoptes.utils import error
@@ -418,3 +419,20 @@ def test_operate_dome():
     assert observatory.open_dome()
     assert observatory.dome.is_open
     assert not observatory.dome.is_closed
+
+
+def test_create_flat_field(observatory):
+    flat_time = Time('2016-09-09 22:00:00')
+
+    flat0 = observatory._create_flat_field_observation(flat_time=flat_time)
+
+    sun_pos = observatory.observer.altaz(flat_time, target=get_sun(flat_time))
+    az = sun_pos.az.value - 180
+
+    assert flat0.field.dec.value == pytest.approx(38.4, rel=1e-2)
+
+    os.environ['POCSTIME'] = '2016-09-09 22:00:00'
+    flat1 = observatory._create_flat_field_observation(az=az, flat_time=flat_time)
+
+    assert flat1.field.ra.value == pytest.approx(flat0.field.ra.value, rel=1e-2)
+    assert flat1.field.dec.value == pytest.approx(flat0.field.dec.value, rel=1e-2)
