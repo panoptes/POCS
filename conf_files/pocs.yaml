@@ -55,7 +55,7 @@ state_machine: panoptes
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
-  fields_file: simple.yaml
+  fields_file: panoptes.yaml
   check_file: False
   iers_url: "https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
   iers_auto: False

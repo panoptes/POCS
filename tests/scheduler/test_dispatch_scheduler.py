@@ -31,7 +31,7 @@ def field_file():
     scheduler_config = get_config('scheduler', default={})
 
     # Read the targets from the file
-    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
+    fields_file = scheduler_config.get('fields_file', 'panoptes.yaml')
     fields_path = os.path.join(get_config('directories.fields'), fields_file)
 
     return fields_path

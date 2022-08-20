@@ -35,7 +35,7 @@ def on_enter(event_data):
 
                 # Make sure we are using existing observation (with pointing image)
                 pocs.observatory.current_observation = existing_observation
-                pocs.next_state = 'observing'
+                pocs.next_state = 'tracking'
             else:
                 pocs.say(f"Got it! I'm going to check out: {observation.name}")
 
