@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from astropy.utils.iers import Conf as iers_conf
 from panoptes.utils import error
@@ -17,7 +17,7 @@ logger = get_logger()
 
 
 def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args,
-                                 **kwargs) -> BaseScheduler | None:
+                                 **kwargs) -> Optional[BaseScheduler]:
     """ Sets up the scheduler that will be used by the observatory """
 
     scheduler_config = config or get_config('scheduler', default=None)
