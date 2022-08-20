@@ -39,7 +39,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
         observer = site_details.observer
 
     # Read the targets from the file
-    fields_file = Path(scheduler_config.get('fields_file', 'panoptes.yaml'))
+    fields_file = Path(scheduler_config.get('fields_file', 'simple.yaml'))
     fields_dir = Path(get_config('directories.fields', default='./conf_files/fields'))
     fields_path = fields_dir / fields_file
     logger.debug(f'Creating scheduler: {fields_path}')
