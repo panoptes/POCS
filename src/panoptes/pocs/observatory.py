@@ -369,11 +369,14 @@ class Observatory(PanBase):
 
     def take_observation(self, blocking: bool = True):
         """Take individual images for the current observation.
+
         This method gets the current observation and takes the next
         corresponding exposure.
+
         Args:
             blocking (bool): If True (the default), wait for cameras to finish
                 exposing before returning, otherwise return immediately.
+
         """
         if len(self.cameras) == 0:
             raise error.CameraNotFound("No cameras available, unable to take observation")
@@ -424,6 +427,7 @@ class Observatory(PanBase):
                             upload_image_immediately: Optional[bool] = None,
                             ):
         """Process an individual observation.
+
         Args:
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
                 If None (default), checks the `observations.compress_fits` config-server key.
