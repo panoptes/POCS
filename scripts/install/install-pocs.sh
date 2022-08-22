@@ -150,6 +150,7 @@ function system_deps() {
     make \
     nano \
     neovim \
+    supervisor \
     sshfs \
     usbmount \
     wget | sudo tee -a "${LOGFILE}"
@@ -234,49 +235,14 @@ function make_directories() {
 }
 
 function install_services() {
-  echo "Creating panoptes-config-server service."
+  echo "Installing supervisor services."
 
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
-[Unit]
-Description=PANOPTES Config Server
-After=network.target
-StartLimitIntervalSec=0
+  # Link the pocs-supervisord.conf file.
+  sudo ln -s "${HOME}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/
 
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  echo "Creating panoptes power service."
-
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
-[Unit]
-Description=PANOPTES Power Monitor
-After=panoptes-config-server.service
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStartPre=/bin/sleep 10
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  sudo systemctl enable panoptes-config-server
-  sudo systemctl enable panoptes-power-server
+  # Reread the supervisord conf and restart.
+  sudo supervisorctl reread
+  sudo supervisorctl update
 }
 
 function install_zsh() {
