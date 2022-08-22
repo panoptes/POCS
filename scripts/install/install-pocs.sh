@@ -23,13 +23,8 @@ usage() {
 #
 #   * Create
 #   * Create the needed directory structure for POCS.
-#   * Install docker and tools on the host computer.
 #   * Fetch the docker images needed to run.
 #   * Source \${PANDIR}/env if it exists.
-#
-# Docker Images:
-#
-#   gcr.io/panoptes-exp/panoptes-pocs:develop
 #
 # The regular install is for running units.
 #
@@ -71,7 +66,8 @@ USE_ZSH=false
 INSTALL_SERVICES=false
 DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
 
-ROUTER_IP="${ROUTER_IP:-192.168.8.1}"
+# We use htpdate below so this just needs to be a public url w/ trusted time.
+TIME_SERVER="${TIME_SERVER:-google.com}"
 
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
@@ -88,8 +84,6 @@ function which_branch() {
 }
 
 function get_time_settings() {
-  read -rp "What is the IP address of your router (default: ${ROUTER_IP})? " USER_NTP_SERVER
-  ROUTER_IP="${USER_NTP_SERVER:-$ROUTER_IP}"
   sudo dpkg-reconfigure tzdata
 }
 
@@ -156,6 +150,7 @@ function system_deps() {
     make \
     nano \
     neovim \
+    supervisor \
     sshfs \
     usbmount \
     wget | sudo tee -a "${LOGFILE}"
@@ -169,28 +164,6 @@ function system_deps() {
     ssh-keygen -t rsa -N "" -f "${HOME}/.ssh/id_rsa"
   fi
 
-}
-
-function get_or_build_docker_images() {
-  echo "Pulling POCS docker images from Google Cloud Registry (GCR)."
-
-  sudo docker pull "${DOCKER_IMAGE}:${CODE_BRANCH}"
-
-  if [[ $HOST == *-control-box ]]; then
-    # Copy the docker-compose file
-    sudo docker run --rm -it \
-      -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
-      "cp /panoptes-pocs/docker/docker-compose.yaml /temp/docker-compose.yaml"
-    sudo chown "${PANUSER}:${PANUSER}" "${PANDIR}/docker-compose.yaml"
-
-    # Copy the config file
-    sudo docker run --rm -it \
-      -v "${PANDIR}:/temp" \
-      "${DOCKER_IMAGE}:${CODE_BRANCH}" \
-      "cp -rv /panoptes-pocs/conf_files/* /temp/conf_files/"
-    sudo chown -R "${PANUSER}:${PANUSER}" "${PANDIR}/conf_files/"
-  fi
 }
 
 function install_conda() {
@@ -233,10 +206,10 @@ dependencies:
   - streamz
   - uvicorn[standard]
   - pip:
-      - "git+https://github.com/panoptes/POCS@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
-      - docker-compose
+      - -e "${PANDIR}[google,focuser,sensors]"
 EOF
 
+  cd "${PANDIR}"
   "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
 
@@ -262,49 +235,14 @@ function make_directories() {
 }
 
 function install_services() {
-  echo "Creating panoptes-config-server service."
+  echo "Installing supervisor services."
 
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-config-server.service' <<EOF
-[Unit]
-Description=PANOPTES Config Server
-After=network.target
-StartLimitIntervalSec=0
+  # Link the pocs-supervisord.conf file.
+  sudo ln -s "${HOME}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/
 
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file ${PANDIR}/conf_files/pocs.yaml
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  echo "Creating panoptes power service."
-
-  sudo bash -c 'cat > /etc/systemd/system/panoptes-power-server.service' <<EOF
-[Unit]
-Description=PANOPTES Power Monitor
-After=panoptes-config-server.service
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=ubuntu
-WorkingDirectory=~
-ExecStartPre=/bin/sleep 10
-ExecStart=${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/uvicorn --host 0.0.0.0 --port 6564 panoptes.pocs.utils.service.power:app
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  sudo systemctl enable panoptes-config-server
-  sudo systemctl enable panoptes-power-server
+  # Reread the supervisord conf and restart.
+  sudo supervisorctl reread
+  sudo supervisorctl update
 }
 
 function install_zsh() {
@@ -350,32 +288,23 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq ntpdate | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq htpdate | sudo tee -a "${LOGFILE}"
   sudo timedatectl set-ntp false
-  sudo ntpdate -s "${ROUTER_IP}"
+  sudo /usr/sbin/htpdate -as "${TIME_SERVER}"
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
   (
     sudo crontab -l
-    echo "@reboot ntpdate -s ${ROUTER_IP}"
+    echo "@reboot /usr/sbin/htpdate -as ${TIME_SERVER}"
   ) | sudo crontab -
   (
     sudo crontab -l
-    echo "13 * * * * ntpdate -s ${ROUTER_IP}"
+    echo "13 * * * * /usr/sbin/htpdate -s ${TIME_SERVER}"
   ) | sudo crontab -
 
   # Show updated time.
   timedatectl
-}
-
-function setup_nfs_host() {
-  sudo apt-get install -y nfs-kernel-server
-  sudo mkdir -p "${HOME}/images"
-  echo "${HOME}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
-
-  sudo exportfs -a
-  sudo systemctl restart nfs-kernel-server
 }
 
 function do_install() {
@@ -383,7 +312,7 @@ function do_install() {
 
   # Set up directory for log file.
   mkdir -p "${HOME}/logs"
-  echo "Starting POCS install at $(date)" >>"${LOGFILE}"  
+  echo "Starting POCS install at $(date)" >>"${LOGFILE}"
 
   name_me
 
@@ -401,32 +330,24 @@ function do_install() {
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
   echo "Logfile: ${LOGFILE}"
-  #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
 
-  # Make sure the time setting is correct on RPi.
-  if [ "$(uname -m)" = "aarch64" ]; then
-    echo "ROUTER_IP: ${ROUTER_IP}"
-    fix_time
-  fi
-
+  fix_time
   system_deps
 
   if [[ "${USE_ZSH}" == true ]]; then
     install_zsh
   fi
 
-  install_conda
-
   get_pocs_repo
+
+  install_conda
 
   make_directories
 
   if [[ "${INSTALL_SERVICES}" == true ]]; then
     install_services
   fi
-
-  # get_or_build_docker_images
 
   echo "Please reboot your machine before using POCS."
 
