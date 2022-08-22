@@ -23,13 +23,8 @@ usage() {
 #
 #   * Create
 #   * Create the needed directory structure for POCS.
-#   * Install docker and tools on the host computer.
 #   * Fetch the docker images needed to run.
 #   * Source \${PANDIR}/env if it exists.
-#
-# Docker Images:
-#
-#   gcr.io/panoptes-exp/panoptes-pocs:develop
 #
 # The regular install is for running units.
 #
@@ -211,10 +206,10 @@ dependencies:
   - streamz
   - uvicorn[standard]
   - pip:
-      - "git+https://github.com/panoptes/POCS@${CODE_BRANCH}#egg=panoptes-pocs[google,focuser,sensors]"
-      - docker-compose
+      - -e "${PANDIR}[google,focuser,sensors]"
 EOF
 
+  cd "${PANDIR}"
   "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
 
@@ -312,16 +307,6 @@ function fix_time() {
   timedatectl
 }
 
-function setup_nfs_host() {
-  sudo apt-get install -y nfs-kernel-server
-  sudo mkdir -p "${HOME}/images"
-  ROUTER_IP=$(ip r | grep default | cut -d ' ' -f 3)
-  echo "${HOME}/images ${ROUTER_IP}/24 (rw,async,no_subtree_check)" | sudo tee -a /etc/exports
-
-  sudo exportfs -a
-  sudo systemctl restart nfs-kernel-server
-}
-
 function do_install() {
   clear
 
@@ -345,7 +330,6 @@ function do_install() {
   echo "PANDIR: ${PANDIR}"
   echo "HOST: ${HOST}"
   echo "Logfile: ${LOGFILE}"
-  #  echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   fix_time
@@ -355,9 +339,9 @@ function do_install() {
     install_zsh
   fi
 
-  install_conda
-
   get_pocs_repo
+
+  install_conda
 
   make_directories
 
