@@ -1,18 +1,15 @@
 from typing import List, Union
 
-from panoptes.pocs.camera.gphoto.remote import Camera as RemoteCamera
+from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
 from panoptes.pocs.utils import error
 from panoptes.pocs.utils.tasks import TaskManager, RunTaskMixin
 
 
-class Camera(RemoteCamera, RunTaskMixin):
+class Camera(CanonCamera, RunTaskMixin):
     """A remote gphoto2 camera class that can call local or remote celery tasks."""
 
     def __init__(self, queue: str | None = None, *args, **kwargs):
-        """Control a remote gphoto2 camera via a celery task.
-
-        Interact with a camera via `panoptes.pocs.utils.service.camera`.
-        """
+        """Control a remote gphoto2 camera via a celery task. """
         super().__init__(connect=False, *args, **kwargs)
 
         self.celery_app = TaskManager.create_celery_app_from_config()
@@ -24,11 +21,7 @@ class Camera(RemoteCamera, RunTaskMixin):
 
     @property
     def is_exposing(self):
-        # Check if the last task was successful.
-        if self.task is not None and self.task.state == 'SUCCESS':
-            self.task = None
-
-        return self.task is not None
+        return self.task and self.task.state == 'EXPOSING'
 
     def command(self, cmd, queue=None, **kwargs):
         """Run a remote celery task attached to a camera. """
@@ -58,3 +51,7 @@ class Camera(RemoteCamera, RunTaskMixin):
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
         fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
         return {k.lower(): v for k, v in dict(fits_header).items()}
+
+    def _start_exposure(self, seconds=None, *args, **kwargs):
+        # TODO more here
+        self.task = self.call_task('camera.release_shutter', args=[seconds], queue=self.queue)
