@@ -476,7 +476,7 @@ class Observatory(PanBase):
 
             if compress_fits or self.get_config('observations.compress_fits', default=False):
                 self.logger.debug(f'Compressing {file_path=!r}')
-                compressed_file_path = fits_utils.fpack(file_path)
+                compressed_file_path = fits_utils.fpack(str(file_path))
                 exposure.path = Path(compressed_file_path)
                 metadata['filepath'] = compressed_file_path
                 self.logger.debug(f'Compressed {compressed_file_path}')
