@@ -107,11 +107,11 @@ class Mount(AbstractSerialMount):
             bool:   Returns the value from `self.is_initialized`.
         """
         if not self.is_connected:
-            self.logger.info(f'Connecting to mount {self.__name__}')
+            self.logger.info(f'Connecting to mount {__name__}')
             self.connect()
 
         if self.is_connected and not self.is_initialized:
-            self.logger.info(f'Initializing {self.__name__} mount')
+            self.logger.info(f'Initializing {__name__} mount')
 
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `query` method will test
