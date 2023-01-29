@@ -256,7 +256,7 @@ function do_install() {
   fi
 
   # Install services by default.
-  read -p "Would you like to install supervisor services automaticall? [Y/n]: " -r
+  read -p "Would you like to install supervisor services automatically? [Y/n]: " -r
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     INSTALL_SERVICES=true
   fi
