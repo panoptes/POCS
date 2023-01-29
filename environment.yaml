@@ -1,0 +1,21 @@
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - astroplan
+  - astropy
+  - docopt
+  - fastapi
+  - google-cloud-storage
+  - google-cloud-firestore
+  - gsutil
+  - matplotlib-base
+  - numpy
+  - pandas
+  - pip
+  - pynacl
+  - pyrsistent
+  - streamz
+  - uvicorn[standard]
+  - pip:
+      - panoptes-utils[config]
+      - -e ".[google,sensors]"
