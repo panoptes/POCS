@@ -17,5 +17,4 @@ dependencies:
   - streamz
   - uvicorn[standard]
   - pip:
-      - panoptes-utils[config]
       - -e ".[google,sensors]"
