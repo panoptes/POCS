@@ -146,7 +146,7 @@ function install_services() {
   echo "Installing supervisor services."
 
   # Make supervisor read our conf file at its current location.
-  echo "files = {HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
 
   # Reread the supervisord conf and restart.
   sudo supervisorctl reread
