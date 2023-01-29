@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2021-07-15
+# Script Version: 2023-01-29
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system
@@ -18,17 +18,8 @@ usage() {
 #   or
 #   $ wget -qO- https://install.projectpanoptes.org > install-pocs.sh
 #   $ bash install-pocs.sh
-#
-# The script will do the following:
-#
-#   * Create
-#   * Create the needed directory structure for POCS.
-#   * Fetch the docker images needed to run.
-#   * Source \${PANDIR}/env if it exists.
-#
-# The regular install is for running units.
-#
-# The script has been tested with a fresh install of Ubuntu Server 20.10
+##
+# The script has been tested with a fresh install of Ubuntu Server 22.10
 # but may work on other linux systems.
 #
 # Changes:
@@ -41,6 +32,7 @@ usage() {
 #   * 2020-11-08 (wtgee) - Add zsh, anaconda. Docker from apt.
 #   * 2021-01-18 (wtgee) - Simplify to only install minimal required on host,
 #                           removing zsh, etc. Removed Darwin options.
+#   * 2023-01-29 (wtgee) - Simplified options. Added supervisor. Clean up.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
@@ -58,13 +50,12 @@ PS3="Select: "
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
-HOST="${HOST:-pocs-control-box}"
 LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
 INSTALL_SERVICES=false
-DEFAULT_GROUPS="dialout,plugdev,input,sudo,docker"
+DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 # We use htpdate below so this just needs to be a public url w/ trusted time.
 TIME_SERVER="${TIME_SERVER:-google.com}"
@@ -74,87 +65,30 @@ CONDA_ENV_NAME=conda-pocs
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
 
-function name_me() {
-  read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
-}
-
-function which_branch() {
-  read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
-  CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
-}
-
-function get_time_settings() {
-  sudo dpkg-reconfigure tzdata
-}
-
-function which_version() {
-  PS3='Where are you installing?: '
-  versions=("Control box" "Camera box" "My computer")
-  select ver in "${versions[@]}"; do
-    case $ver in
-    "Control box")
-      HOST="${UNIT_NAME}-control-box"
-      break
-      ;;
-    "Camera box")
-      HOST="${UNIT_NAME}-camera-box"
-      break
-      ;;
-    "My computer")
-      echo "Installing on personal computer"
-      DEV_BOX=true
-      break
-      ;;
-    *) echo "invalid option $REPLY" ;;
-    esac
-  done
-
-  if [ "${DEV_BOX}" != true ]; then
-    echo "Setting hostname to ${HOST}"
-    sudo hostnamectl set-hostname "$HOST"
-  fi
-
-  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    USE_ZSH=true
-  fi
-
-  read -p "Would you like to install the Config Server and Power Monitor services? [Y/n]: " -r
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    INSTALL_SERVICES=true
-  fi
-}
-
 function system_deps() {
   echo "Installing system dependencies."
 
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq purge needrestart | sudo tee -a "${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get update --fix-missing -y -qq | sudo tee -a "${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq full-upgrade | sudo tee -a "${LOGFILE}"
+  # Clean up problems.
+  sudo apt-get -y -qq purge needrestart
+  sudo apt-get update --fix-missing -y -qq 
+  sudo apt-get -y -qq full-upgrade
 
-  # Raspberry Pi stuff
-  if [ "$(uname -m)" = "aarch64" ]; then
-    echo "Installing Raspberry Pi tools."
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
-      rpi.gpio-common linux-tools-raspi linux-modules-extra-raspi python3-lgpio | sudo tee -a "${LOGFILE}"
-  fi
-
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq install \
+  sudo apt-get -y -qq install \
     ack \
     byobu \
     docker.io \
+    fonts-powerline \
     gcc \
     htop \
     httpie \
+    jo \
     jq \
     make \
     nano \
-    neovim \
+    vim-nox \
     supervisor \
-    sshfs \
-    usbmount \
-    wget | sudo tee -a "${LOGFILE}"
-  DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq autoremove | sudo tee -a "${LOGFILE}"
+    wget
+  sudo apt-get -y -qq autoremove
 
   sudo usermod -aG "${DEFAULT_GROUPS}" "${PANUSER}"
 
@@ -170,12 +104,12 @@ function install_conda() {
   echo "Installing miniforge conda"
 
   wget -q "${CONDA_URL}" -O install-miniforge.sh
-  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda" >>"${LOGFILE}"
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda"
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "${HOME}/conda/bin/conda" init bash >>"${LOGFILE}"
-  "${HOME}/conda/bin/conda" init zsh >>"${LOGFILE}"
+  "${HOME}/conda/bin/conda" init bash 
+  "${HOME}/conda/bin/conda" init zsh 
 
   echo "Creating POCS conda environment"
   "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
@@ -237,8 +171,8 @@ function make_directories() {
 function install_services() {
   echo "Installing supervisor services."
 
-  # Link the pocs-supervisord.conf file.
-  sudo ln -s "${HOME}/conf_files/pocs-supervisord.conf" /etc/supervisor/conf.d/
+  # Make supervisor read our conf file at its current location.
+  echo "files = {HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
 
   # Reread the supervisord conf and restart.
   sudo supervisorctl reread
@@ -255,16 +189,12 @@ function install_zsh() {
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-    bash /tmp/install-ohmyzsh.sh --unattended >>"${LOGFILE}"
+    bash /tmp/install-ohmyzsh.sh --unattended 
 
     export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
     # Autosuggestions plugin
     git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
-
-    # Spaceship theme
-    git clone https://github.com/denysdovhan/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
-    ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
 
     write_zshrc
   fi
@@ -273,11 +203,13 @@ function install_zsh() {
 function write_zshrc() {
   cat >"${HOME}/.zshrc" <<EOT
 
+zstyle ':omz:update' mode disabled 
+
 export PATH="\$HOME/.local/bin:/usr/local/bin:\$PATH"
 export ZSH="/home/${PANUSER}/.oh-my-zsh"
 export PANDIR="${PANDIR}"
 
-ZSH_THEME="spaceship"
+ZSH_THEME="agnoster"
 
 plugins=(git sudo zsh-autosuggestions docker docker-compose python)
 source \$ZSH/oh-my-zsh.sh
@@ -288,7 +220,7 @@ EOT
 
 function fix_time() {
   echo "Syncing time."
-  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq htpdate | sudo tee -a "${LOGFILE}"
+  DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq htpdate
   sudo timedatectl set-ntp false
   sudo /usr/sbin/htpdate -as "${TIME_SERVER}"
   sudo timedatectl set-ntp true
@@ -312,24 +244,31 @@ function do_install() {
 
   # Set up directory for log file.
   mkdir -p "${HOME}/logs"
-  echo "Starting POCS install at $(date)" >>"${LOGFILE}"
+  echo "Starting POCS install at $(date)" 
 
-  name_me
+  # Get the unit name.
+  read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
 
-  which_version
-
-  which_branch
-
-  if [ "$(uname -m)" = "aarch64" ]; then
-    get_time_settings
+  # Check if user wants zsh.
+  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    USE_ZSH=true
   fi
+
+  # Install services by default.
+  read -p "Would you like to install supervisor services automaticall? [Y/n]: " -r
+  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+    INSTALL_SERVICES=true
+  fi
+
+  # Github code branch.
+  read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
+  CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
-  echo "HOST: ${HOST}"
-  echo "Logfile: ${LOGFILE}"
   echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   fix_time
