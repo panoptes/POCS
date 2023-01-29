@@ -117,32 +117,6 @@ function install_conda() {
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  cat <<EOF >environment.yaml
-channels:
-  - https://conda.anaconda.org/conda-forge
-dependencies:
-  - astroplan
-  - astropy
-  - docopt
-  - fastapi
-  - google-cloud-storage
-  - google-cloud-firestore
-  - gsutil
-  - jupyter_console
-  - matplotlib-base
-  - numpy
-  - pandas
-  - photutils
-  - pip
-  - pynacl
-  - pyrsistent
-  - scipy
-  - streamz
-  - uvicorn[standard]
-  - pip:
-      - -e "${PANDIR}[google,focuser,sensors]"
-EOF
-
   cd "${PANDIR}"
   "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
