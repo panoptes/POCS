@@ -33,6 +33,7 @@ usage() {
 #   * 2021-01-18 (wtgee) - Simplify to only install minimal required on host,
 #                           removing zsh, etc. Removed Darwin options.
 #   * 2023-01-29 (wtgee) - Simplified options. Added supervisor. Clean up.
+#   * 2023-04-25 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
@@ -54,7 +55,8 @@ LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
-INSTALL_SERVICES=false
+INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
+INSTALL_ARDUINO="${INSTALL_SERVICES:-true}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 # We use htpdate below so this just needs to be a public url w/ trusted time.
@@ -76,6 +78,7 @@ function system_deps() {
   sudo apt-get -y -qq install \
     ack \
     byobu \
+    curl \
     docker.io \
     fonts-powerline \
     gcc \
@@ -213,6 +216,11 @@ function fix_time() {
   timedatectl
 }
 
+function install_arduino() {
+  # Get the arduino-cli tool.
+  curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+}
+
 function do_install() {
   clear
 
@@ -227,12 +235,6 @@ function do_install() {
   read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     USE_ZSH=true
-  fi
-
-  # Install services by default.
-  read -p "Would you like to install supervisor services automatically? [Y/n]: " -r
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    INSTALL_SERVICES=true
   fi
 
   # Github code branch.
@@ -261,7 +263,11 @@ function do_install() {
   if [[ "${INSTALL_SERVICES}" == true ]]; then
     install_services
   fi
-
+  
+  if [[ "${INSTALL_ARDUINO}" == true ]]; then
+    install_arduino
+  fi  
+  
   echo "Please reboot your machine before using POCS."
 
   read -p "Reboot now? [y/N]: " -r
