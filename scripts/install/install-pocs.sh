@@ -56,7 +56,7 @@ OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
 INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
-INSTALL_ARDUINO="${INSTALL_SERVICES:-true}"
+INSTALL_ARDUINO="${INSTALL_SERVICES:-false}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 # We use htpdate below so this just needs to be a public url w/ trusted time.
@@ -182,7 +182,7 @@ function write_zshrc() {
 
 zstyle ':omz:update' mode disabled 
 
-export PATH="\$HOME/.local/bin:/usr/local/bin:\$PATH"
+export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
 export ZSH="/home/${PANUSER}/.oh-my-zsh"
 export PANDIR="${PANDIR}"
 
@@ -220,17 +220,8 @@ function install_arduino() {
   # Get the arduino-cli tool.
   curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
   
-  # Check if Arduino device node exists.
-  if ls /dev/ttyACM* >/dev/null 2>&1; then
-
-    # Prompt user if they want to run the additional install script.
-    echo "Arduino device exists. Would you like to install the PowerBoard? (y/n) [default: y]"
-    read -r answer
-
-    # If user doesn't respond or says yes, run the install script.
-    if [[ -z $answer || $answer == "y" ]]; then
-      bash "${PANDIR}/resources/arduino/install-arduino.sh"
-    fi
+  if [[ "${INSTALL_ARDUINO}" == true ]]; then
+    bash "${PANDIR}/resources/arduino/install-arduino.sh"
   fi
 }
 
@@ -254,6 +245,19 @@ function do_install() {
   read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
   CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 
+  # Check if Arduino device node exists.
+  if ls /dev/ttyACM* >/dev/null 2>&1; then
+
+    # Prompt user if they want to run the additional install script.
+    echo "Arduino device exists. Would you like to install the PowerBoard? [Y/n]"
+    read -r answer
+
+    # If user doesn't respond or says yes, run the install script.
+    if [[ -z $answer || $answer == "y" ]]; then
+      INSTALL_ARDUINO=true
+    fi
+  fi
+
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
@@ -269,16 +273,14 @@ function do_install() {
 
   get_pocs_repo
 
+  install_arduino
+
   install_conda
 
   make_directories
 
   if [[ "${INSTALL_SERVICES}" == true ]]; then
     install_services
-  fi
-  
-  if [[ "${INSTALL_ARDUINO}" == true ]]; then
-    install_arduino
   fi  
   
   echo "Please reboot your machine before using POCS."
