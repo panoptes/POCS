@@ -56,7 +56,6 @@ OS="$(uname -s)"
 DEV_BOX=false
 USE_ZSH=false
 INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
-INSTALL_ARDUINO="${INSTALL_SERVICES:-false}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
 # We use htpdate below so this just needs to be a public url w/ trusted time.
@@ -130,6 +129,7 @@ function get_pocs_repo() {
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "$CODE_BRANCH"
+  cd
 }
 
 function make_directories() {
@@ -217,12 +217,10 @@ function fix_time() {
 }
 
 function install_arduino() {
+  # Make sure we are at home.
+  cd
   # Get the arduino-cli tool.
   curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-  
-  if [[ "${INSTALL_ARDUINO}" == true ]]; then
-    bash "${PANDIR}/resources/arduino/install-arduino.sh"
-  fi
 }
 
 function do_install() {
@@ -244,19 +242,6 @@ function do_install() {
   # Github code branch.
   read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
   CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
-
-  # Check if Arduino device node exists.
-  if ls /dev/ttyACM* >/dev/null 2>&1; then
-
-    # Prompt user if they want to run the additional install script.
-    echo "Arduino device exists. Would you like to install the PowerBoard? [Y/n]"
-    read -r answer
-
-    # If user doesn't respond or says yes, run the install script.
-    if [[ -z $answer || $answer == "y" ]]; then
-      INSTALL_ARDUINO=true
-    fi
-  fi
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
