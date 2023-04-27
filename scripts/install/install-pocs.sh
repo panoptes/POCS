@@ -219,6 +219,19 @@ function fix_time() {
 function install_arduino() {
   # Get the arduino-cli tool.
   curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+  
+  # Check if Arduino device node exists.
+  if ls /dev/ttyACM* >/dev/null 2>&1; then
+
+    # Prompt user if they want to run the additional install script.
+    echo "Arduino device exists. Would you like to install the PowerBoard? (y/n) [default: y]"
+    read -r answer
+
+    # If user doesn't respond or says yes, run the install script.
+    if [[ -z $answer || $answer == "y" ]]; then
+      bash "${PANDIR}/resources/arduino/install-arduino.sh"
+    fi
+  fi
 }
 
 function do_install() {
