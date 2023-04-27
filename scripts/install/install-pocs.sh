@@ -5,7 +5,7 @@ usage() {
   echo -n "##################################################
 # Install POCS and friends.
 #
-# Script Version: 2023-01-29
+# Script Version: 2023-04-26
 #
 # This script is designed to install the PANOPTES Observatory
 # Control System (POCS) on a cleanly installed Ubuntu system
@@ -33,7 +33,7 @@ usage() {
 #   * 2021-01-18 (wtgee) - Simplify to only install minimal required on host,
 #                           removing zsh, etc. Removed Darwin options.
 #   * 2023-01-29 (wtgee) - Simplified options. Added supervisor. Clean up.
-#   * 2023-04-25 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
+#   * 2023-04-26 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
