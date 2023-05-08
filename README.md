@@ -2,7 +2,7 @@ Welcome to POCS documentation!
 ==============================
 
 <p align="center">
-<img src="https://projectpanoptes.org/uploads/2018/12/16/PAN001_sunset.png" alt="PAN001" />
+<img src="https://1730110767-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FDWxHUx4DyP5m2IEPanYp%2Fuploads%2FgQCffci1IsQlxhwQxspc%2FPAN001.png?alt=media&token=3b6a7fc1-efc1-416d-863b-d23304a6c28b" alt="PAN001" />
 </p>
 <br>
 
