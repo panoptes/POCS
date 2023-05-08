@@ -4,4 +4,5 @@ mkdocs==1.2.3
 myst-parser
 piccolo-theme
 pytest_mpl
+setuptools
 sphinx
