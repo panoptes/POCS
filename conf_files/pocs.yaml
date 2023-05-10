@@ -58,14 +58,14 @@ scheduler:
 
 mount:
   brand: ioptron
-  model: ieq30pro  #  cem40
-  driver: panoptes.pocs.mount.ioptron.ieq30pro
+  model: cem40 # ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40
   # Load a specific commands file relative to "mounts" dir.
   commands_file: ioptron/v250
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
-    baudrate: 9600  #  115200 for cem40
+    baudrate: 115200  # 9600 for iEQ30Pro
   settings:
     non_sidereal_available: True
     min_tracking_threshold: 100 # ms
