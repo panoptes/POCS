@@ -8,6 +8,7 @@ dependencies:
   - google-cloud-storage
   - google-cloud-firestore
   - gsutil
+  - ipython
   - matplotlib-base
   - numpy
   - pandas
