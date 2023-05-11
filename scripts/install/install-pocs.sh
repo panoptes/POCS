@@ -34,6 +34,7 @@ usage() {
 #                           removing zsh, etc. Removed Darwin options.
 #   * 2023-01-29 (wtgee) - Simplified options. Added supervisor. Clean up.
 #   * 2023-04-26 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
+#   * 2023-05-10 (wtgee) - Added install options for the camera.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
@@ -53,8 +54,8 @@ PANDIR="${PANDIR:-${HOME}/pocs}"
 UNIT_NAME="pocs"
 LOGFILE="${HOME}/logs/install-pocs.log"
 OS="$(uname -s)"
-DEV_BOX=false
-USE_ZSH=false
+CAM_BOX=false
+USE_ZSH=true
 INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
@@ -132,6 +133,17 @@ function get_pocs_repo() {
   cd
 }
 
+function get_pocs_cam_repo() {
+  echo "Cloning pocs-camera repo."
+
+  cd
+  git clone https://github.com/panoptes/pocs-camera.git "${PANDIR}"
+  cd
+
+  mkdir -p "${HOME}/images"
+  mkdir -p "${HOME}/logs"
+}
+
 function make_directories() {
   echo "Creating directories."
   mkdir -p "${HOME}/logs"
@@ -149,7 +161,11 @@ function install_services() {
   echo "Installing supervisor services."
 
   # Make supervisor read our conf file at its current location.
-  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+  if [[ "${CAM_BOX}" == true ]]; then
+    echo "files = ${PANDIR}/pocs-camera-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+  else
+    echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+  fi
 
   # Reread the supervisord conf and restart.
   sudo supervisorctl reread
@@ -223,6 +239,17 @@ function install_arduino() {
   curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
 }
 
+function install_gphoto2() {
+  # Make sure we are at home.
+  cd
+  
+  # Get the gphoto2-updater tool.
+  wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/.env && chmod +x gphoto2-updater.sh
+
+  # Install the development version.
+  sudo ./gphoto2-updater.sh -d
+}
+
 function do_install() {
   clear
 
@@ -232,37 +259,49 @@ function do_install() {
 
   # Get the unit name.
   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
-
-  # Check if user wants zsh.
-  read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+ 
+  # Are we installing for the camera box?
+  read -rp 'Are you installing the camera box? [y/N]' CAM_BOX
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    USE_ZSH=true
+    CAM_BOX=true
+    PANDIR="{HOME}/pocs-camera"
   fi
 
+  # Check if user wants zsh.
+  #read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
+  #if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+  #  USE_ZSH=true
+  #fi
+
   # Github code branch.
-  read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
+  # wtgee (2023--5-10) Only allow 'develop' branch for now.
+  # read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
   CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 
   echo "Installing POCS software for ${UNIT_NAME}"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
-  echo "CODE_BRANCH: ${CODE_BRANCH}"
+  # echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   fix_time
+
   system_deps
 
   if [[ "${USE_ZSH}" == true ]]; then
     install_zsh
   fi
 
-  get_pocs_repo
-
-  install_arduino
+  if [[ "${CAM_BOX}" == true ]]; then
+    install_gphoto2
+    get_pocs_cam_repo
+  else
+    install_arduino
+    get_pocs_repo
+    make_directories
+  fi
 
   install_conda
-
-  make_directories
 
   if [[ "${INSTALL_SERVICES}" == true ]]; then
     install_services
