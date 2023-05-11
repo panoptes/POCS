@@ -32,6 +32,16 @@ directories:
   mounts: resources/mounts
   fields: conf_files/fields
 
+# Celery task manager for distributed tasks.
+celery:
+  broker_url: redis://localhost:6379
+  result_backend: redis://localhost:6379
+  service:
+    - name: pocs-celery
+      image: redis
+      ports:
+        6379: 6379
+
 db:
   name: panoptes
   type: file
