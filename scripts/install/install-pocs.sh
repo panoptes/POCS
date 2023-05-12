@@ -79,7 +79,6 @@ function system_deps() {
     ack \
     byobu \
     curl \
-    docker.io \
     fonts-powerline \
     gcc \
     htop \
