@@ -258,10 +258,10 @@ function do_install() {
   echo "Starting POCS install at $(date)" 
 
   # Get the unit name.
-  read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
+  #   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
  
   # Are we installing for the camera box?
-  read -rp 'Are you installing the camera box? [y/N]' CAM_BOX
+  read -rp 'Are you installing the camera box? [y/N] ' CAM_BOX
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     CAM_BOX=true
     PANDIR="${HOME}/pocs-camera"
@@ -278,7 +278,7 @@ function do_install() {
   # read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
   CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 
-  echo "Installing POCS software for ${UNIT_NAME}"
+  echo "Installing POCS software"
   echo "OS: ${OS}"
   echo "PANUSER: ${PANUSER}"
   echo "PANDIR: ${PANDIR}"
