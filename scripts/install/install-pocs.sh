@@ -264,7 +264,7 @@ function do_install() {
   read -rp 'Are you installing the camera box? [y/N]' CAM_BOX
   if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     CAM_BOX=true
-    PANDIR="{HOME}/pocs-camera"
+    PANDIR="${HOME}/pocs-camera"
   fi
 
   # Check if user wants zsh.
