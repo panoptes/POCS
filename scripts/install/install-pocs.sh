@@ -279,9 +279,9 @@ function do_install() {
   CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
 
   echo "Installing POCS software"
-  echo "OS: ${OS}"
-  echo "PANUSER: ${PANUSER}"
-  echo "PANDIR: ${PANDIR}"
+  # echo "OS: ${OS}"
+  # echo "PANUSER: ${PANUSER}"
+  # echo "PANDIR: ${PANDIR}"
   # echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   fix_time
