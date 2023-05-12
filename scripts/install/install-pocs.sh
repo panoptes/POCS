@@ -260,7 +260,7 @@ function do_install() {
   #   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
  
   # Are we installing for the camera box?
-  read -rp 'Are you installing the camera box? [y/N] ' CAM_BOX
+  read -p "Are you installing the camera box? [y/N] " -r
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     CAM_BOX=true
     PANDIR="${HOME}/pocs-camera"
