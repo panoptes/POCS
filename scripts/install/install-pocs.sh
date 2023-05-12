@@ -262,7 +262,7 @@ function do_install() {
  
   # Are we installing for the camera box?
   read -rp 'Are you installing the camera box? [y/N] ' CAM_BOX
-  if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
     CAM_BOX=true
     PANDIR="${HOME}/pocs-camera"
   fi
