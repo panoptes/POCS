@@ -84,7 +84,7 @@ pointing:
 cameras:
   defaults:
     primary: None
-    auto_detect: False
+    auto_detect: True
     compress_fits: True
     make_pretty_images: True
     keep_jpgs: True
@@ -94,9 +94,9 @@ cameras:
     file_extension: cr2
     endpoint:  # Used for remote cameras
   devices:
-    - model: panoptes.pocs.camera.canon.remote.Camera
+    - model: panoptes.pocs.camera.gphoto.remote.Camera
       name: Cam00
-    - model: panoptes.pocs.camera.canon.remote.Camera
+    - model: panoptes.pocs.camera.gphoto.remote.Camera
       name: Cam01
       primary: True
 
