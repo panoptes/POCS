@@ -253,4 +253,4 @@ firmware_radec:
   response: YYMMDDYYMMDD
 mount_info:
   cmd: MountInfo
-  response: '0030'
+  response: '0040'
