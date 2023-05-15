@@ -1,5 +1,6 @@
 import time
 import subprocess
+import shutil
 from pathlib import Path
 
 import typer
@@ -19,6 +20,8 @@ def start(
 
 ):
     """Start a Jupyter notebook server"""
+    check_for_jupyter()
+
     typer.echo(f"Starting {environment} server.")
 
     if not notebook_dir.exists():
@@ -41,6 +44,23 @@ def set_password(
                                         help='The environment to set password for, either "lab" or "notebook".'),
 ):
     """Set a password for the notebook server"""
+    check_for_jupyter()
     typer.echo(f"Setting {environment} password.")
     cmd = ["jupyter", environment, "password"]
     subprocess.run(cmd)
+
+
+def check_for_jupyter():
+    """Check if Jupyter is installed"""
+    if shutil.which('jupyter-lab') is None:
+        mamba_available = shutil.which('mamba') is not None
+        conda_available = shutil.which('conda') is not None
+        if mamba_available:
+            install_msg = "Install with `mamba install -c conda-forge jupyterlab`."
+        elif conda_available:
+            install_msg = "Install with `conda install -c conda-forge jupyterlab`."
+        else:
+            install_msg = "Install with `pip install jupyterlab`"
+
+        typer.secho("Jupyter is not installed. " + install_msg, fg=typer.colors.RED)
+        raise typer.Abort()
