@@ -4,14 +4,16 @@ from panoptes.pocs.utils.cli import config
 from panoptes.pocs.utils.cli import sensor
 from panoptes.pocs.utils.cli import image
 from panoptes.pocs.utils.cli import power
+from panoptes.pocs.utils.cli import notebook
 
 app = typer.Typer()
 state = {'verbose': False}
 
 app.add_typer(config.app, name="config", help='Interact with the config server.')
-app.add_typer(sensor.app, name="sensor", help='Interact with system sensors.')
-app.add_typer(power.app, name="power", help='Interact with power relays.')
 app.add_typer(image.app, name="image", help='Interact with images.')
+app.add_typer(notebook.app, name="notebook", help='Start Jupyter notebook environment.')
+app.add_typer(power.app, name="power", help='Interact with power relays.')
+app.add_typer(sensor.app, name="sensor", help='Interact with system sensors.')
 
 
 @app.callback()
