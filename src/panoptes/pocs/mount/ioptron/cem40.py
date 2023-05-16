@@ -360,7 +360,8 @@ class Mount(AbstractSerialMount):
         # Get offset in hours (as int) then parse rearranged time string.
         ts = self.query('get_local_time')
         offset = int(float(ts[:4]) / 60)
-        status['timestamp'] = parse_date(f'{ts[5:11]}T{ts[11:]}{offset}', yearfirst=True)
+        status['daylight_savings'] = bool(ts[5])
+        status['timestamp'] = ts[6:]
         status['tracking_rate_ra'] = self.tracking_rate
 
         return status
