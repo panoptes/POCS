@@ -5,6 +5,7 @@ from enum import IntEnum
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 from dateutil.parser import parse as parse_date
 from panoptes.utils.time import current_time
 from panoptes.utils import error as error
@@ -243,10 +244,11 @@ class Mount(AbstractSerialMount):
         gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.query('set_gmt_offset', gmt_offset)
 
-        now = current_time() + gmt_offset * u.minute
-
-        self.query('set_local_time', now.datetime.strftime("%H%M%S"))
-        self.query('set_local_date', now.datetime.strftime("%y%m%d"))
+        now = current_time()
+        j2000 = Time(2000, format='jyear')
+        offset_time = (now - j2000).to(u.ms)
+        self.query('set_utc_time', f'{offset_time:0>13.0f}')
+        
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
