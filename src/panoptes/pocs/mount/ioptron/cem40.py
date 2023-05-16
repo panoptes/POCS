@@ -73,9 +73,12 @@ class Mount(AbstractSerialMount):
         self.logger.info('Creating iOptron CEM40 mount')
 
         # Regexp to match the iOptron RA/Dec format
-        self._ra_format = r'(?P<ra_millisecond>\d{8})'
+        self._ra_format = r'(?P<ra_millisecond>\d{9})'
         self._dec_format = r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
-        self._coords_format = re.compile(self._dec_format + self._ra_format)
+        self._pier_side = r'(?P<pier_side>\d{1})'
+        self._pointing_state = r'(?P<pointing_state>\d{1})'
+
+        self._coords_format = re.compile(self._dec_format + self._ra_format + self._pier_side + self._pointing_state)
 
         self._state = MountState.UNKNOWN
 
