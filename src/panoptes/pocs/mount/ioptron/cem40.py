@@ -81,8 +81,8 @@ class Mount(AbstractSerialMount):
 
         self._raw_status = None
         self._status_format = re.compile(
-            r'(?P<longitude>[+\-]\d{6})' +
-            r'(?P<latitude>\d{6})' +
+            r'(?P<longitude>[+\-]\d{8})' +
+            r'(?P<latitude>\d{8})' +
             r'(?P<gps>[0-2])' +
             r'(?P<state>[0-7])' +
             r'(?P<tracking>[0-4])' +
@@ -338,9 +338,9 @@ class Mount(AbstractSerialMount):
             status['state'] = self.state
             status['parked_software'] = self.is_parked
 
-            status['longitude'] = float(status_dict['longitude']) * u.arcsec
+            status['longitude'] = float(status_dict['longitude']) * u.milliarcsecond
             # Longitude has +90° so no negatives. Subtract for original.
-            status['latitude'] = (float(status_dict['latitude']) - 90) * u.arcsec
+            status['latitude'] = (float(status_dict['latitude']) - 90) * u.milliarcsecond
 
             status['gps'] = MountGPS(int(status_dict['gps']))
             status['tracking'] = MountTrackingState(int(status_dict['tracking']))
