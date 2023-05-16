@@ -32,7 +32,7 @@ get_max_slew_speed:
 get_altitude_limit:
   cmd: GAL
   response: snn
-.get_guide_rate:
+get_guide_rate:
   cmd: AG
   response: nnnn
 get_meridian_treatment:
