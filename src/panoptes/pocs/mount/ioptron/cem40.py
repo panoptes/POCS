@@ -236,8 +236,8 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(self.location.lat.to(u.arcsecond).value)
-        lon = '{:+07.0f}'.format(self.location.lon.to(u.arcsecond).value)
+        lat = '{:+08.0f}'.format(self.location.lat.to(u.arcsecond).value)
+        lon = '{:+08.0f}'.format(self.location.lon.to(u.arcsecond).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
