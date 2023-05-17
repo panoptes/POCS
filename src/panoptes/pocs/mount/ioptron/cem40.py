@@ -178,11 +178,14 @@ class Mount(AbstractSerialMount):
         dec_direction = dec_direction or self.get_config('mount.settings.park.dec_direction', 'north')
         dec_seconds = dec_seconds or self.get_config('mount.settings.park.dec_seconds', 15)
 
-        self.logger.debug(f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
-                          f'Dec: {dec_direction} {dec_seconds} seconds')
-
         self.unpark()
         self.query('set_button_moving_rate', 9)
+
+        self.logger.debug(f'Moving mount to home before parking.')
+        self.slew_to_home()
+
+        self.logger.debug(f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
+                          f'Dec: {dec_direction} {dec_seconds} seconds')
         self.move_direction(direction=dec_direction, seconds=dec_seconds)
         self.move_direction(direction=ra_direction, seconds=ra_seconds)
 
@@ -258,7 +261,6 @@ class Mount(AbstractSerialMount):
         j2000 = Time(2000, format='jyear')
         offset_time = (now - j2000).to(u.ms)
         self.query('set_utc_time', f'{offset_time:0>13.0f}')
-        
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
