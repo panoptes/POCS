@@ -61,7 +61,7 @@ mount:
   model: cem40 # ieq30pro
   driver: panoptes.pocs.mount.ioptron.cem40
   # Load a specific commands file relative to "mounts" dir.
-  commands_file: ioptron/v250
+  commands_file: ioptron/v310
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
@@ -94,9 +94,9 @@ cameras:
     file_extension: cr2
     endpoint:  # Used for remote cameras
   devices:
-    - model: panoptes.pocs.camera.gphoto.remote.Camera
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
       name: Cam00
-    - model: panoptes.pocs.camera.gphoto.remote.Camera
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
       name: Cam01
       primary: True
 

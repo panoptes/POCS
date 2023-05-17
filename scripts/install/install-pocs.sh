@@ -35,6 +35,7 @@ usage() {
 #   * 2023-01-29 (wtgee) - Simplified options. Added supervisor. Clean up.
 #   * 2023-04-26 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
 #   * 2023-05-10 (wtgee) - Added install options for the camera.
+#   * 2023-05-17 (wtgee) - Simplify (again). One script for all boxes.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
@@ -51,10 +52,6 @@ PS3="Select: "
 
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
-UNIT_NAME="pocs"
-LOGFILE="${HOME}/logs/install-pocs.log"
-OS="$(uname -s)"
-CAM_BOX=false
 USE_ZSH=true
 INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
@@ -72,7 +69,7 @@ function system_deps() {
 
   # Clean up problems.
   sudo apt-get -y -qq purge needrestart
-  sudo apt-get update --fix-missing -y -qq 
+  sudo apt-get update --fix-missing -y -qq
   sudo apt-get -y -qq full-upgrade
 
   sudo apt-get -y -qq install \
@@ -110,8 +107,8 @@ function install_conda() {
   rm install-miniforge.sh
 
   # Initialize conda for the shells.
-  "${HOME}/conda/bin/conda" init bash 
-  "${HOME}/conda/bin/conda" init zsh 
+  "${HOME}/conda/bin/conda" init bash
+  "${HOME}/conda/bin/conda" init zsh
 
   echo "Creating POCS conda environment"
   "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
@@ -160,11 +157,7 @@ function install_services() {
   echo "Installing supervisor services."
 
   # Make supervisor read our conf file at its current location.
-  if [[ "${CAM_BOX}" == true ]]; then
-    echo "files = ${PANDIR}/pocs-camera-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
-  else
-    echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
-  fi
+  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
 
   # Reread the supervisord conf and restart.
   sudo supervisorctl reread
@@ -181,7 +174,7 @@ function install_zsh() {
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-    bash /tmp/install-ohmyzsh.sh --unattended 
+    bash /tmp/install-ohmyzsh.sh --unattended
 
     export ZSH_CUSTOM="$HOME/.oh-my-zsh"
 
@@ -241,7 +234,7 @@ function install_arduino() {
 function install_gphoto2() {
   # Make sure we are at home.
   cd
-  
+
   # Get the gphoto2-updater tool.
   wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/.env && chmod +x gphoto2-updater.sh
 
@@ -249,63 +242,43 @@ function install_gphoto2() {
   sudo ./gphoto2-updater.sh -d
 }
 
+function write_udev_entries() {
+  echo "Writing udev entries for mounts."
+
+  # Write the udev rules for the ioptron mounts.
+  cat >/tmp/90-ioptron.rules <<EOT
+ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="ioptron"
+EOT
+  sudo mv /tmp/90-ioptron.rules /etc/udev/rules.d/
+}
+
 function do_install() {
   clear
 
   # Set up directory for log file.
   mkdir -p "${HOME}/logs"
-  echo "Starting POCS install at $(date)" 
-
-  # Get the unit name.
-  #   read -rp 'What is the name of your unit (e.g. "PAN001" or "Maia")? ' UNIT_NAME
- 
-  # Are we installing for the camera box?
-  read -p "Are you installing the camera box? [y/N] " -r
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    CAM_BOX=true
-    PANDIR="${HOME}/pocs-camera"
-  fi
-
-  # Check if user wants zsh.
-  #read -p "Would you like to use zsh as the default shell? [Y/n]: " -r
-  #if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-  #  USE_ZSH=true
-  #fi
-
-  # Github code branch.
-  # wtgee (2023--5-10) Only allow 'develop' branch for now.
-  # read -rp "What branch of the code would you like to use (default: ${CODE_BRANCH})? " USER_CODE_BRANCH
-  CODE_BRANCH="${USER_CODE_BRANCH:-$CODE_BRANCH}"
+  echo "Starting POCS install at $(date)"
 
   echo "Installing POCS software"
-  # echo "OS: ${OS}"
-  # echo "PANUSER: ${PANUSER}"
-  # echo "PANDIR: ${PANDIR}"
-  # echo "CODE_BRANCH: ${CODE_BRANCH}"
 
   fix_time
-
   system_deps
 
   if [[ "${USE_ZSH}" == true ]]; then
     install_zsh
   fi
 
-  if [[ "${CAM_BOX}" == true ]]; then
-    install_gphoto2
-    get_pocs_cam_repo
-  else
-    install_arduino
-    get_pocs_repo
-    make_directories
-  fi
-
+  install_gphoto2
+  install_arduino
+  get_pocs_repo
+  make_directories
+  write_udev_entries
   install_conda
 
   if [[ "${INSTALL_SERVICES}" == true ]]; then
     install_services
-  fi  
-  
+  fi
+
   echo "Please reboot your machine before using POCS."
 
   read -p "Reboot now? [y/N]: " -r
