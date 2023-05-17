@@ -362,7 +362,7 @@ class Mount(AbstractSerialMount):
         # Get and parse the time from the mount.
         ts = self.query('get_timestamp')
         offset = int(ts[:4]) * u.minute
-        now = ts[6:] * u.ms
+        now = int(ts[6:]) * u.ms
         j2000 = Time(2000, format='jyear')
         daylight_savings = bool(ts[5])
         t0 = j2000 + now + offset
