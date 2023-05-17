@@ -1,3 +1,4 @@
+import subprocess
 from pprint import pprint
 from typing import Optional, Dict
 
@@ -81,6 +82,14 @@ def set(
         metadata = host_info['config_server']
         item = set_config(key, value, host=metadata.host, port=metadata.port)
         typer.secho(pprint(item), fg=typer.colors.MAGENTA)
+
+
+@app.command()
+def restart():
+    """Restart the config server process via supervisorctl"""
+    cmd = f'supervisorctl restart pocs-config-server'
+    typer.echo(f'Running: {cmd}')
+    subprocess.run(cmd, shell=True)
 
 
 if __name__ == "__main__":
