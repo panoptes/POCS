@@ -251,7 +251,6 @@ class Mount(AbstractSerialMount):
         j2000 = Time(2000, format='jyear')
         offset_time = (now - j2000).to(u.ms)
         self.query('set_utc_time', f'{offset_time:0>13.0f}')
-        
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
@@ -360,11 +359,16 @@ class Mount(AbstractSerialMount):
                                 self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
-        # Get offset in hours (as int) then parse rearranged time string.
-        ts = self.query('get_local_time')
-        # offset = int(float(ts[:4]) / 60)
-        # status['daylight_savings'] = bool(ts[5])
-        status['timestamp'] = ts
+        # Get and parse the time from the mount.
+        ts = self.query('get_timestamp')
+        offset = int(ts[:4]) * u.minute
+        now = int(ts[6:]) * u.ms
+        j2000 = Time(2000, format='jyear')
+        daylight_savings = bool(int(ts[5]))
+        t0 = j2000 + now + offset
+
+        status['time_local'] = t0.iso
+        status['daylight_savings'] = daylight_savings
         status['tracking_rate_ra'] = self.tracking_rate
 
         return status
