@@ -141,7 +141,10 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
-    def park(self, park_direction=None, park_seconds=None, *args, **kwargs):
+    def park(self,
+             ra_direction=None, ra_seconds=None,
+             dec_direction=None, dec_seconds=None,
+             *args, **kwargs):
         """Slews to the park position and parks the mount.
 
         This still uses a custom park command because the mount will not allow
@@ -151,11 +154,16 @@ class Mount(AbstractSerialMount):
             When mount is parked no movement commands will be accepted.
 
         Args:
-            park_direction (str or None): The direction to move the Declination axis. If
-                not provided (the default), then look at config setting, otherwise 'north'.
-            park_seconds (str or None): The number of seconds to move the Declination axis at
+            ra_direction (str or None): The direction to move the RA axis. If
+                not provided (the default), then look at config setting, otherwise 'west'.
+            ra_seconds (str or None): The number of seconds to move the RA axis at
                 maximum move speed. If not provided (the default), then look at config setting,
-                otherwise 11 seconds.
+                otherwise 15 seconds.
+            dec_direction (str or None): The direction to move the Declination axis. If
+                not provided (the default), then look at config setting, otherwise 'north'.
+            dec_seconds (str or None): The number of seconds to move the Declination axis at
+                maximum move speed. If not provided (the default), then look at config setting,
+                otherwise 15 seconds.
 
         Returns:
             bool: indicating success
@@ -165,19 +173,21 @@ class Mount(AbstractSerialMount):
             return self.at_mount_park
 
         # Get the direction and timing
-        park_direction = park_direction or self.get_config('mount.settings.park_direction', 'north')
-        park_seconds = park_seconds or self.get_config('mount.settings.park_seconds', 11)
+        ra_direction = ra_direction or self.get_config('mount.settings.park.ra_direction', 'west')
+        ra_seconds = ra_seconds or self.get_config('mount.settings.park.ra_seconds', 15)
+        dec_direction = dec_direction or self.get_config('mount.settings.park.dec_direction', 'north')
+        dec_seconds = dec_seconds or self.get_config('mount.settings.park.dec_seconds', 15)
 
-        self.logger.debug(f'Parking mount: {park_direction=} {park_seconds=}')
-
-        self.unpark()
-        self.query('park')
-        while self.status.get('state') != MountState.PARKED:
-            self.logger.trace(f'Moving to park')
-            time.sleep(1)
         self.unpark()
         self.query('set_button_moving_rate', 9)
-        self.move_direction(direction=park_direction, seconds=park_seconds)
+
+        self.logger.debug(f'Moving mount to home before parking.')
+        self.slew_to_home()
+
+        self.logger.debug(f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
+                          f'Dec: {dec_direction} {dec_seconds} seconds')
+        self.move_direction(direction=dec_direction, seconds=dec_seconds)
+        self.move_direction(direction=ra_direction, seconds=ra_seconds)
 
         self._at_mount_park = True
         self._is_parked = True
@@ -251,7 +261,6 @@ class Mount(AbstractSerialMount):
         j2000 = Time(2000, format='jyear')
         offset_time = (now - j2000).to(u.ms)
         self.query('set_utc_time', f'{offset_time:0>13.0f}')
-        
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
@@ -360,11 +369,16 @@ class Mount(AbstractSerialMount):
                                 self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
-        # Get offset in hours (as int) then parse rearranged time string.
-        ts = self.query('get_local_time')
-        # offset = int(float(ts[:4]) / 60)
-        # status['daylight_savings'] = bool(ts[5])
-        status['timestamp'] = ts
+        # Get and parse the time from the mount.
+        ts = self.query('get_timestamp')
+        offset = int(ts[:4]) * u.minute
+        now = int(ts[6:]) * u.ms
+        j2000 = Time(2000, format='jyear')
+        daylight_savings = bool(int(ts[5]))
+        t0 = j2000 + now + offset
+
+        status['time_local'] = t0.iso
+        status['daylight_savings'] = daylight_savings
         status['tracking_rate_ra'] = self.tracking_rate
 
         return status
