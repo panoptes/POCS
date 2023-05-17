@@ -10,7 +10,7 @@ cmd_post: '#'
 get_status:
   cmd: GLS
   response: sTTTTTTTTTTTTTTTTnnnnnn
-get_local_time:
+get_timestamp:
   cmd: GUT
   response: sMMMnXXXXXXXXXXXXX
 
