@@ -16,7 +16,7 @@ get_local_time:
 
 get_coordinates:
   cmd: GEP
-  response: sTTTTTTTTTTTTTTTTnn
+  response: sTTTTTTTTTTTTTTTTTnn
 get_coordinates_altaz:
   cmd: GAC
   response: sTTTTTTTTTTTTTTTTT
