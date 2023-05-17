@@ -1,3 +1,4 @@
+import subprocess
 from contextlib import suppress
 from pprint import pprint
 
@@ -109,6 +110,14 @@ def control(
         typer.secho(pprint(content))
     except requests.exceptions.ConnectionError:
         typer.secho(f'Cannot connect to {url}', fg=typer.colors.RED)
+
+
+@app.command()
+def restart():
+    """Restart the power server process via supervisorctl"""
+    cmd = f'supervisorctl restart pocs-power-server'
+    typer.echo(f'Running: {cmd}')
+    subprocess.run(cmd, shell=True)
 
 
 if __name__ == "__main__":

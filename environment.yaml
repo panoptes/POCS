@@ -9,6 +9,7 @@ dependencies:
   - google-cloud-firestore
   - gsutil
   - ipython
+  - jupyterlab
   - matplotlib-base
   - numpy
   - pandas
