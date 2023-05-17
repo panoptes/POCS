@@ -364,7 +364,7 @@ class Mount(AbstractSerialMount):
         offset = int(ts[:4]) * u.minute
         now = int(ts[6:]) * u.ms
         j2000 = Time(2000, format='jyear')
-        daylight_savings = bool(ts[5])
+        daylight_savings = bool(int(ts[5]))
         t0 = j2000 + now + offset
 
         status['time_local'] = t0.iso
