@@ -71,9 +71,12 @@ mount:
     min_tracking_threshold: 100 # ms
     max_tracking_threshold: 99999 # ms
     update_tracking: False
-    # After moving to hardware park position, move Dec axis so cameras point down.
-    park_direction: north
-    park_seconds: 15
+    # Park the mount via the button movements.
+    park:
+      ra_direction: west
+      ra_seconds: 15
+      dec_direction: north
+      dec_seconds: 15
 
 pointing:
   max_attempts: 5  # Set to 0 to disable
