@@ -35,7 +35,7 @@ def list_connected_cameras(endpoint: Optional[AnyHttpUrl] = None):
         if response.ok:
             result = response.json()['output']
     else:
-        gphoto2 = shutil.which('gphoto2')
+        gphoto2 = shutil.which('gphoto2') or shutil.which('gphoto2', path='/usr/local/bin')
         if not gphoto2:  # pragma: no cover
             raise error.NotFound('gphoto2 is missing, please install or use the endpoint option.')
         command = [gphoto2, '--auto-detect']
