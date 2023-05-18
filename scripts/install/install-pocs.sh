@@ -249,7 +249,7 @@ function write_udev_entries() {
   cat >/tmp/90-ioptron.rules <<EOT
 ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="ioptron"
 EOT
-  sudo mv /tmp/90-ioptron.rules /etc/udev/rules.d/
+  sudo mv /tmp/91-ioptron.rules /etc/udev/rules.d/
 }
 
 function do_install() {
