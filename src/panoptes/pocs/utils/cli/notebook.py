@@ -16,21 +16,14 @@ def start(
                                     help='If True, start the server on all interfaces. '
                                          'If False, only start on localhost.'),
         port: int = typer.Option(8888, help='The port to start the server on.'),
-        notebook_dir: Path = typer.Option('~/notebooks', help='The directory to start the server in.'),
-
 ):
     """Start a Jupyter notebook server"""
     check_for_jupyter()
 
     typer.echo(f"Starting {environment} server.")
 
-    if not notebook_dir.exists():
-        typer.secho(f"Notebook directory {notebook_dir} does not exist, using current directory.", fg=typer.colors.RED)
-        time.sleep(1)
-        notebook_dir = Path('.')
-
     try:
-        cmd = ["jupyter", environment, "--no-browser", f"--port={port}", f"--notebook-dir={notebook_dir}"]
+        cmd = ["jupyter", environment, "--no-browser", f"--port={port}"]
         if public:
             cmd.append("--ip=0.0.0.0")
         subprocess.run(cmd)
@@ -64,3 +57,11 @@ def check_for_jupyter():
 
         typer.secho("Jupyter is not installed. " + install_msg, fg=typer.colors.RED)
         raise typer.Abort()
+
+
+@app.command()
+def restart():
+    """Restart the jupyter server process via supervisorctl"""
+    cmd = f'supervisorctl restart pocs-jupyter-server'
+    typer.echo(f'Running: {cmd}')
+    subprocess.run(cmd, shell=True)
