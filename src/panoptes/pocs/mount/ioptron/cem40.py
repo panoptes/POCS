@@ -202,6 +202,9 @@ class Mount(AbstractSerialMount):
         """
         self.logger.info('Searching for the home position.')
         self.query('search_for_home')
+        while self.status.get('state') != MountState.AT_HOME:
+            self.logger.trace(f'Searching for home position.')
+            time.sleep(1)        
 
     def _set_initial_rates(self, alt_limit='+30', meridian_treatment='015'):
         # Make sure we start at sidereal
