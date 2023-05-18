@@ -19,6 +19,11 @@ from panoptes.utils.library import load_module
 logger = get_logger()
 
 
+def get_gphoto2_cmd():
+    """Finds the gphoto2 command on the system"""
+    return shutil.which('gphoto2') or shutil.which('gphoto2', path='/usr/local/bin')
+
+
 def list_connected_cameras(endpoint: Optional[AnyHttpUrl] = None):
     """Detect connected cameras.
 
@@ -35,7 +40,7 @@ def list_connected_cameras(endpoint: Optional[AnyHttpUrl] = None):
         if response.ok:
             result = response.json()['output']
     else:
-        gphoto2 = shutil.which('gphoto2') or shutil.which('gphoto2', path='/usr/local/bin')
+        gphoto2 = get_gphoto2_cmd()
         if not gphoto2:  # pragma: no cover
             raise error.NotFound('gphoto2 is missing, please install or use the endpoint option.')
         command = [gphoto2, '--auto-detect']
