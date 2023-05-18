@@ -146,11 +146,11 @@ function make_directories() {
   mkdir -p "${HOME}/images"
   mkdir -p "${HOME}/json_store"
   mkdir -p "${HOME}/keys"
-  mkdir -p "${HOME}/notebooks"
 
   # Link the needed POCS folders.
   ln -s "${PANDIR}/conf_files" "${HOME}"
   ln -s "${PANDIR}/resources" "${HOME}"
+  ln -s "${PANDIR}/notebooks" "${HOME}"
 }
 
 function install_services() {
