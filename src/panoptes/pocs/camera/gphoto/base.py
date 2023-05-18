@@ -75,11 +75,11 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         except TimeoutError:
             self.logger.error(f'Error processing exposure for {file_path} on {self}')
 
-    def command(self, cmd: Union[List[str], str]):
+    def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
         """ Run gphoto2 command. """
 
         # Test to see if there is a running command already
-        if self.is_exposing:
+        if self.is_exposing and check_exposing:
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.

@@ -122,7 +122,7 @@ class Camera(AbstractGPhotoCamera):
             ])
 
         try:
-            self.command(cmd_args)
+            self.command(cmd_args, check_exposing=False)
         except error.InvalidCommand as e:
             self.logger.warning(e)
         else:
