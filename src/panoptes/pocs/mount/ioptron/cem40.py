@@ -141,6 +141,13 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        self._is_home = self.status.get('state') == MountState.AT_HOME
+        return self._is_home
+
+
     def park(self,
              ra_direction=None, ra_seconds=None,
              dec_direction=None, dec_seconds=None,
