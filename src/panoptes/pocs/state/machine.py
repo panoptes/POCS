@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from pathlib import Path
 
 from transitions.extensions.states import Tags as MachineState
 from transitions import Machine
@@ -7,6 +8,7 @@ from panoptes.utils import error
 from panoptes.utils.utils import listify
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
+from panoptes.utils.config.client import get_config
 
 
 class PanStateMachine(Machine):
@@ -317,17 +319,13 @@ class PanStateMachine(Machine):
         """
 
         if not state_table_name.startswith('/'):
-            state_table_file = os.path.join(
-                os.getenv('POCS', default='.'),
-                'conf_files',
-                'state_table',
-                f'{state_table_name}.yaml'
-            )
+            base_dir = Path(get_config('directories.base'))
+            state_table_file = base_dir / f'conf_files/state_table/{state_table_name}.yaml'            
         else:
-            state_table_file = state_table_name
+            state_table_file = Path(state_table_name)
 
         try:
-            with open(state_table_file, 'r') as f:
+            with state_table_file.open('r') as f:
                 state_table = from_yaml(f.read())
         except Exception as err:
             raise error.InvalidConfig(

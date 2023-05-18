@@ -788,7 +788,8 @@ class AbstractMount(PanBase):
         self.logger.debug('Setting up commands for mount.')
 
         if len(commands) == 0:
-            mount_dir = self.get_config('directories.mounts')
+            base_dir = Path(self.get_config('directories.base'))
+            mount_dir = base_dir / self.get_config('directories.mounts')
             commands_file = self.get_config('mount.commands_file')
 
             if commands_file is None:
