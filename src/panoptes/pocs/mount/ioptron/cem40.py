@@ -182,7 +182,7 @@ class Mount(AbstractSerialMount):
         self.query('set_button_moving_rate', 9)
 
         self.logger.debug(f'Moving mount to home before parking.')
-        self.slew_to_home()
+        self.slew_to_home(blocking=True)
 
         self.logger.debug(f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
                           f'Dec: {dec_direction} {dec_seconds} seconds')
