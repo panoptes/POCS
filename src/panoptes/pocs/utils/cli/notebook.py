@@ -16,6 +16,7 @@ def start(
                                     help='If True, start the server on all interfaces. '
                                          'If False, only start on localhost.'),
         port: int = typer.Option(8888, help='The port to start the server on.'),
+        notebook_dir: Path = typer.Option(None, envvar='HOME', help='The notebook directory.'),
 ):
     """Start a Jupyter notebook server"""
     check_for_jupyter()
@@ -23,7 +24,7 @@ def start(
     typer.echo(f"Starting {environment} server.")
 
     try:
-        cmd = ["jupyter", environment, "--no-browser", f"--port={port}"]
+        cmd = ["jupyter", environment, "--no-browser", f"--port={port}", f'--notebook-dir={notebook_dir}']
         if public:
             cmd.append("--ip=0.0.0.0")
         subprocess.run(cmd)
