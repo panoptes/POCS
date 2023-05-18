@@ -11,7 +11,7 @@ from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
 
-from panoptes.pocs.camera import AbstractCamera
+from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
 
 file_save_re = re.compile(r'Saving file as (.*)')
 
@@ -83,7 +83,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.
-            run_cmd = [shutil.which('gphoto2')]
+            run_cmd = [get_gphoto2_cmd()]
             if self.port is not None:
                 run_cmd.extend(['--port', self.port])
             run_cmd.extend(listify(cmd))
@@ -253,7 +253,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         """Start a tether for gphoto2 auto-download on given port using filename pattern."""
         print(f'Starting gphoto2 tether for {port=} using {filename_pattern=}')
 
-        full_command = [shutil.which('gphoto2'),
+        full_command = [get_gphoto2_cmd(),
                         '--port', port,
                         '--filename', filename_pattern,
                         '--capture-tethered']
@@ -277,7 +277,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                              ):
         """Downloads (newer) files from the camera on the given port using the filename pattern."""
         print(f'Starting gphoto2 download for {port=} using {filename_pattern=}')
-        command = [shutil.which('gphoto2'),
+        command = [get_gphoto2_cmd(),
                    '--port', port,
                    '--filename', filename_pattern,
                    '--get-all-files',
