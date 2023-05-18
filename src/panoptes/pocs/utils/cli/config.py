@@ -4,6 +4,7 @@ from typing import Optional, Dict
 
 import typer
 from pydantic import BaseModel
+from astropy import units as u
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config, server_is_running
@@ -83,6 +84,64 @@ def set(
         item = set_config(key, value, host=metadata.host, port=metadata.port)
         typer.secho(pprint(item), fg=typer.colors.MAGENTA)
 
+
+@app.command()
+def setup():
+    """Do initial setup of the config server"""
+    # Clear the screen.
+    subprocess.run('clear', shell=True)
+
+    typer.echo(f'Setting up configuration for your PANOPTES unit.')
+    # Make sure they want to proceed.
+    proceed = typer.confirm('This will overwrite any existing configuration. Proceed?')
+    if not proceed:
+        typer.echo('Exiting.')
+        raise typer.Abort()
+
+    # Set the base directory.
+    base_dir = typer.prompt('Enter the base directory for POCS', default='/home/panoptes/pocs')
+    set_config('directories.base', base_dir)
+
+    # Get the user-friendly name for the unit.
+    unit_name = typer.prompt('Enter the user-friendly name for this unit', default=get_config('name'))
+    set_config('name', unit_name)
+
+    # Get the pan_id for the unit.
+    pan_id = typer.prompt("Enter the PANOPTES ID for this unit. "
+                          "If you don't have one yet just use the default.",
+                          default=get_config('pan_id'))
+    set_config('pan_id', pan_id)
+
+    # Latitude
+    latitude = typer.prompt('Enter the latitude for this unit, e.g. "19.5 deg"',
+                            default=get_config('location.latitude'))
+    set_config('location.latitude', str(u.Unit(latitude)))
+    # Longitude
+    longitude = typer.prompt('Enter the longitude for this unit, e.g. "-154.12 deg"',
+                             default=get_config('location.longitude'))
+    set_config('location.longitude', str(u.Unit(longitude)))
+    # Elevation
+    elevation = typer.prompt('Enter the elevation for this unit. '
+                             'Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft"',
+                             default=get_config('location.elevation'))
+    if ' ft' in elevation:
+        elevation = (elevation.replace(' ft', '') * u.imperial.foot).to(u.meter)
+    else:
+        elevation = u.Unit(elevation)
+    set_config('location.elevation', str(elevation))
+
+    # Get timezone and then confirm if correct.
+    timezone = subprocess.check_output('cat /etc/timezone', shell=True).decode().strip()
+    timezone = typer.prompt('Enter the timezone for this unit', default=timezone)
+    set_config('location.timezone', timezone)
+
+    # Get GMT offset and then confirm if correct.
+    gmt_offset = subprocess.check_output('date +%z', shell=True).decode().strip()
+    # Convert GMT offset to minutes.
+    gmt_offset = int(gmt_offset[:3]) * 60 + int(gmt_offset[-2:])
+    gmt_offset = typer.prompt('Enter the GMT offset for this unit', default=gmt_offset)
+    set_config('location.gmt_offset', gmt_offset)
+    
 
 @app.command()
 def restart():
