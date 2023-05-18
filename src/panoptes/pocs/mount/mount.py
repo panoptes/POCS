@@ -570,7 +570,7 @@ class AbstractMount(PanBase):
 
         return success
 
-    def slew_to_home(self, blocking=False, timeout=180):
+    def slew_to_home(self, blocking=True, timeout=180):
         """Slews the mount to the home position.
 
         Note:
@@ -578,15 +578,12 @@ class AbstractMount(PanBase):
 
         Args:
             blocking (bool, optional): If command should block while slewing to
-                home, default False.
+                home, default True.
             timeout (int, optional): Maximum time spent slewing to home, default 180 seconds.
 
         Returns:
             bool: indicating success
 
-        Args:
-            blocking (bool, optional): If command should block while slewing to
-                home, default False.
         """
         response = 0
 
