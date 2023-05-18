@@ -5,6 +5,7 @@ from enum import IntEnum
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
 from dateutil.parser import parse as parse_date
 from panoptes.utils.time import current_time
@@ -245,7 +246,7 @@ class Mount(AbstractSerialMount):
         * Current Time set_local_time
 
         """
-        if not self.location:
+        if not isinstance(self.location, EarthLocation):
             self.logger.warning('Please set a location before attempting setup')
 
         if not self.is_initialized:
