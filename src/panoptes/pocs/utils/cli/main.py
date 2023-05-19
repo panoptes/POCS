@@ -5,6 +5,7 @@ from panoptes.pocs.utils.cli import sensor
 from panoptes.pocs.utils.cli import image
 from panoptes.pocs.utils.cli import power
 from panoptes.pocs.utils.cli import notebook
+from rich import print
 
 app = typer.Typer()
 state = {'verbose': False}
@@ -27,7 +28,7 @@ def main(context: typer.Context,
         'verbose': verbose,
     })
     if verbose:
-        typer.echo(f'Command options from main: {context.params!r}')
+        print(f'Command options from main: {context.params!r}')
 
 
 if __name__ == "__main__":
