@@ -1,18 +1,15 @@
 import subprocess
-from pathlib import Path
 from typing import Optional, Dict
 
 import typer
-from rich.console import Console
-from rich import print
-from rich import prompt
-
 from astropy import units as u
 from pydantic import BaseModel
+from rich import print
+from rich import prompt
+from rich.console import Console
 
-from panoptes.utils.config.client import get_config, set_config, server_is_running
-from panoptes.utils.config.helpers import load_config
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.utils.config.client import get_config, set_config, server_is_running
 
 
 class HostInfo(BaseModel):
@@ -57,8 +54,8 @@ def status():
     server_running()
 
 
-@app.command()
-def get(
+@app.command(name='get')
+def get_value(
         key: Optional[str] = typer.Argument(None,
                                             help='The key of the config item to get. '
                                                  'Can be specified in dotted-key notation '
@@ -72,8 +69,8 @@ def get(
         print(item)
 
 
-@app.command()
-def set(
+@app.command(name='set')
+def set_value(
         key: str = typer.Argument(...,
                                   help='The key, in dotted-notation, of the config item to get.'
                                        'A blank string (the default) will return the entire config.'),
