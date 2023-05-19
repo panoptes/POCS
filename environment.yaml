@@ -17,6 +17,7 @@ dependencies:
   - pynacl
   - pyrsistent
   - streamz
+  - typer[all]
   - uvicorn[standard]
   - pip:
       - -e ".[google,sensors]"

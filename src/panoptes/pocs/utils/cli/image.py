@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 import typer
+from rich import print
 
 from google.cloud import storage
 
@@ -20,9 +21,9 @@ def upload_image(file_path: Path, bucket_path: str,
     bucket: storage.Bucket = storage_client.bucket(bucket_name)
 
     blob = bucket.blob(bucket_path)
-    typer.secho(f'Uploading {file_path} to {bucket_name}/{bucket_path}')
+    print(f'Uploading {file_path} to {bucket_name}/{bucket_path}')
     blob.upload_from_filename(str(file_path), timeout=timeout)
-    typer.secho(f'File successfully uploaded to {blob.public_url}')
+    print(f'[green]File successfully uploaded to {blob.public_url}')
 
     return blob.public_url
 
@@ -44,8 +45,7 @@ def upload_directory(directory_path: Path,
     Note: It would be more efficient to use the `gsutil`. This function is offered
     merely as a convenience.
     """
-    assert directory_path.is_dir() and directory_path.exists(), typer.secho(
-        'Need a directory that exists')
+    assert directory_path.is_dir() and directory_path.exists(), print('[red]Need a directory that exists')
 
     storage_client = storage_client or storage.Client()
 
@@ -60,7 +60,7 @@ def upload_directory(directory_path: Path,
                                       storage_client=storage_client)
             public_urls.append(public_url)
         except Exception as e:
-            typer.secho(f'Upload error on {file_path}. {continue_on_error=}')
+            print(f'[red]Upload error on {file_path}. {continue_on_error=}')
             if continue_on_error:
                 continue
 
