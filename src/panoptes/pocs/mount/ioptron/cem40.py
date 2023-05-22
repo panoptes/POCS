@@ -58,7 +58,7 @@ class Mount(BaseMount):
 
         # Get and parse the time from the mount.
         ts = status['timestamp']
-        offset = status['offset']
+        offset = status['time_offset']
 
         try:
             now = int(ts[5:]) * u.ms
