@@ -65,7 +65,7 @@ class Mount(AbstractSerialMount):
     """Mount class for iOptron mounts."""
 
     def __init__(self, location, mount_version=None, *args, **kwargs):
-        self._mount_version = mount_version
+        self._mount_version = mount_version or self._mount_version
         super(Mount, self).__init__(location, *args, **kwargs)
 
         self._latitude_format = '{:.0f}'
@@ -108,6 +108,14 @@ class Mount(AbstractSerialMount):
             # initialize otherwise the `query` method will test
             # to see if initialized and be put into loop.
             self._is_initialized = True
+
+            # See if we are using old command set.
+            command_set = self.get_config('commands_file')
+            if command_set == 'ioptron/v140':
+                actual_version_info = self.query('version')
+                expected_version_info = self.commands.get('version').get('response')
+                if actual_version_info != expected_version_info:
+                    raise error.MountNotFound('Problem initializing mount - version numbers do not match')
 
             actual_mount_info = self.query('mount_info')
             expected_mount_info = self.commands.get('mount_info').get('response')
