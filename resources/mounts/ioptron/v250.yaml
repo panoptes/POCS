@@ -10,7 +10,7 @@ cmd_post: '#'
 get_status:
   cmd: GLS
   response: sSSSSSSSSSSSSnnnnnn
-get_local_time:
+get_timestamp:
   cmd: GLT
   response: sMMMYYMMDDHHMMSS
 get_coordinates:
