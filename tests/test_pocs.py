@@ -444,8 +444,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     while True:
         if pocs.state in ['parking', 'parked']:
             break
-        # Should be one of these states.
-        assert pocs.state in ["housekeeping", "slewing", "parking", "parked"]
+        assert pocs.state in ["slewing", "parking", "parked"]  # Should be one of these states
         time.sleep(0.5)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')
