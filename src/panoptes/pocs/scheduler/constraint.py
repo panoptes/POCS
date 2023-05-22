@@ -48,8 +48,14 @@ class Altitude(BaseConstraint):
         if isinstance(horizon, horizon_utils.Horizon):
             self.horizon_line = horizon.horizon_line
         elif horizon is None or isinstance(horizon, (int, float, u.Quantity)):
-            obstruction_list = obstructions or self.get_config('location.obstructions', default=[])
-            default_horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
+            obstruction_list = obstructions
+            default_horizon = horizon
+            
+            if obstructions is None:
+                obstruction_list = self.get_config('location.obstructions', default=[])
+            
+            if default_horizon is None:
+                default_horizon = self.get_config('location.horizon', default=30 * u.degree)
 
             horizon_obj = horizon_utils.Horizon(
                 obstructions=obstruction_list,
