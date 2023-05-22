@@ -17,8 +17,8 @@ class Mount(BaseMount):
         self.logger.info('Creating iOptron iEQ30Pro mount')
 
         self._coords_format = re.compile(
-            r'(?P<ra_millisecond>\d{8})' +
-            r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
+            r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})' +
+            r'(?P<ra_millisecond>\d{8})'
         )
 
         self._latitude_format = '{:+07.0f}'

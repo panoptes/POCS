@@ -19,8 +19,8 @@ class Mount(BaseMount):
         self.logger.info('Creating iOptron CEM40 mount')
 
         self._coords_format = re.compile(
-            r'(?P<ra_millisecond>\d{9})' +
             r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})' +
+            r'(?P<ra_millisecond>\d{9})' +
             r'(?P<pier_side>\d)' +
             r'(?P<pointing_state>\d)'
         )
