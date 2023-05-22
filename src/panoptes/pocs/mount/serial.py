@@ -18,15 +18,14 @@ class AbstractSerialMount(AbstractMount, ABC):
         # This should be overridden by derived classes.
         self._status_format = re.compile('.*')
 
-        # Setup our serial connection at the given port
+        # Set up our serial connection at the given port
         try:
             serial_config = self.get_config('mount.serial')
             self.serial = rs232.SerialData(**serial_config)
             if self.serial.is_connected is False:
                 raise error.MountNotFound("Can't open mount")
         except KeyError:
-            self.logger.critical("No serial config specified, cannot create mount: "
-                                 f"{self.get_config('mount')}")
+            self.logger.critical(f"No serial config specified, cannot create mount: {self.get_config('mount')}")
         except Exception as e:
             self.logger.critical(e)
 
@@ -111,14 +110,12 @@ class AbstractSerialMount(AbstractMount, ABC):
         self.serial.write(cmd)
 
     def read(self, *args):
-        """ Reads from the serial connection
+        """ Reads from the serial connection.
 
         Returns:
             str: Response from mount
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-
-        response = ''
 
         response = self.serial.read()
 
@@ -143,13 +140,12 @@ class AbstractSerialMount(AbstractMount, ABC):
         try:
             self.serial.connect()
         except Exception:
-            raise error.BadSerialConnection(
-                f'Cannot create serial connect for mount at port {self._port}')
+            raise error.BadSerialConnection(f'Cannot create serial connect for mount at port {self._port}')
 
         self.logger.debug('Mount connected via serial')
 
     def _get_command(self, cmd, params=None):
-        """ Looks up appropriate command for telescope """
+        """ Looks up appropriate command for telescope. """
         full_command = ''
 
         # Get the actual command
@@ -170,34 +166,3 @@ class AbstractSerialMount(AbstractMount, ABC):
             self.logger.warning(f'No command for {cmd}')
 
         return full_command
-
-    def _update_status(self):
-        self._raw_status = self.query('get_status')
-
-        status = dict()
-
-        status_match = self._status_format.fullmatch(self._raw_status)
-        if status_match:
-            status = status_match.groupdict()
-
-            # Lookup the text values and replace in status dict
-            for k, v in status.items():
-                status[k] = self._status_lookup[k][v]
-
-            self._state = status['state']
-            self._movement_speed = status['movement_speed']
-
-            self._at_mount_park = 'Park' in self.state
-            self._is_parked = self._at_mount_park
-            self._is_home = 'Stopped - Zero Position' in self.state
-            self._is_tracking = 'Tracking' in self.state
-            self._is_slewing = 'Slewing' in self.state
-
-            guide_rate = self.query('get_guide_rate')
-            self.ra_guide_rate = int(guide_rate[0:2]) / 100
-            self.dec_guide_rate = int(guide_rate[2:]) / 100
-
-        status['timestamp'] = self.query('get_local_time')
-        status['tracking_rate_ra'] = self.tracking_rate
-
-        return status
