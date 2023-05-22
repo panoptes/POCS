@@ -36,13 +36,3 @@ class Mount(BaseMount):
         )
 
         self.logger.success('iOptron iEQ30Pro Mount created')
-
-    def _update_status(self):
-        status = super()._update_status()
-
-        # Get and parse the time from the mount.
-        ts = status['timestamp']
-
-        status['time_local'] = Time(f'{ts[6:]}').iso
-
-        return status

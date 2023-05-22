@@ -365,7 +365,7 @@ class Mount(AbstractSerialMount):
 
         ts = self.query('get_timestamp')
         offset = int(ts[:4]) * u.minute
-        daylight_savings = bool(int(ts[5]))
+        daylight_savings = bool(int(ts[4]))
         status['timestamp'] = ts
         status['time_offset'] = offset
         status['time_daylight_savings'] = daylight_savings
