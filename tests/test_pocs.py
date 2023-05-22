@@ -439,13 +439,14 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     pocs.logger.info("Inserting bad weather record.")
     observatory.db.insert_current('weather', {'safe': False})
 
-    # No longer safe, so should transition to parking
-    pocs.logger.info('Waiting to get to parked state...')
+    # No longer safe, so should transition to parking then sleep.
+    pocs.logger.info('Waiting for shutdown.')
     while True:
-        if pocs.state in ['parking', 'parked']:
+        if pocs.state == 'sleeping':
             break
-        assert pocs.state in ["slewing", "parking", "parked"]  # Should be one of these states
-        time.sleep(0.5)
+        # Should be one of these states (race-condition could have it in sleeping also).
+        assert pocs.state in ["sleeping", "housekeeping", "slewing", "parking", "parked"]
+        time.sleep(0.25)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')
     observatory.set_config('pocs.DO_STATES', False)
