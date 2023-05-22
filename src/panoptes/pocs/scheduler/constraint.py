@@ -98,7 +98,10 @@ class Duration(BaseConstraint):
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.horizon = horizon or self.get_config('location.horizon', default=30 * u.degree)
+        if horizon is None:
+            horizon = self.get_config('location.horizon', default=30 * u.degree)
+            
+        self.horizon = horizon
 
     def get_score(self, time, observer, observation, **kwargs):
         score = self._score
