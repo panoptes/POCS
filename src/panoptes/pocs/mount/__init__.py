@@ -122,7 +122,9 @@ def create_mount_simulator(mount_info=None,
     # Set mount device info to simulator
     set_config('mount', mount_config)
 
-    earth_location = earth_location or create_location_from_config().earth_location
+    earth_location = earth_location
+    if earth_location is None:
+        earth_location = create_location_from_config().earth_location
 
     logger.debug(f"Loading mount driver: {mount_config['driver']}")
     try:

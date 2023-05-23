@@ -55,8 +55,7 @@ class AbstractMount(PanBase):
         self._location = location
 
         # Get mount settings from config.
-        self.non_sidereal_available = self.mount_settings.setdefault('non_sidereal_available',
-                                                                     False)
+        self.non_sidereal_available = self.mount_settings.setdefault('non_sidereal_available', False)
         self.PEC_available = self.mount_settings.setdefault('PEC_available', False)
 
         # Initial states
@@ -75,14 +74,10 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
-        self.min_tracking_threshold = self.mount_settings.setdefault('min_tracking_threshold',
-                                                                     100)  # ms
-        self.max_tracking_threshold = self.mount_settings.setdefault('max_tracking_threshold',
-                                                                     99999)  # ms
+        self.min_tracking_threshold = self.mount_settings.setdefault('min_tracking_threshold', 100)  # ms
+        self.max_tracking_threshold = self.mount_settings.setdefault('max_tracking_threshold', 99999)  # ms
 
         self._movement_speed = ''
-
-        self._status_lookup = dict()
 
         # Set initial coordinates
         self._target_coordinates = None
@@ -468,25 +463,17 @@ class AbstractMount(PanBase):
                 self.logger.debug("Waiting for {} tracking adjustment".format(axis))
                 time.sleep(0.5)
 
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
+    def slew_to_coordinates(self, coords, *args, **kwargs):
         """ Slews to given coordinates.
 
-        Note:
-            Slew rates are not implemented yet.
-
         Args:
-            coords (astropy.SkyCoord): Coordinates to slew to
-            ra_rate (Optional[float]): Slew speed - RA tracking rate in
-                arcsecond per second. Defaults to 15.0
-            dec_rate (Optional[float]): Slew speed - Dec tracking rate in
-                arcsec per second. Defaults to 0.0
+            coords (astropy.SkyCoord): The coordinates to slew to.
 
         Returns:
             bool: indicating success
         """
         if not isinstance(coords, SkyCoord):
-            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
-                            f" got {type(coords)}.")
+            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord, got {type(coords)}.")
         response = 0
 
         if not self.is_parked:
@@ -689,11 +676,6 @@ class AbstractMount(PanBase):
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
-    @abstractmethod
-    def set_tracking_rate(self, direction='ra', delta=1.0):
-        """Sets the tracking rate for the mount """
-        raise NotImplementedError
-
     def get_ms_offset(self, offset, axis='ra'):
         """ Get offset in milliseconds at current speed
 
@@ -727,6 +709,8 @@ class AbstractMount(PanBase):
             params (str, optional): Params to pass to serial connection
 
         Examples:
+            >>> from panoptes.pocs.mount import create_mount_from_config
+            >>> mount = create_mount_from_config()       #doctest: +SKIP
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
             '1'
             >>> mount.query('get_local_time')            #doctest: +SKIP
@@ -745,20 +729,7 @@ class AbstractMount(PanBase):
 
         response = self.read(**kwargs)
 
-        # TODO: Add in better checking of expected response.
-        # expected_response = self._get_expected_response(cmd)
-        # if str(response) != str(expected_response):
-        #     self.logger.warning(f"Expected: {expected_response} Got: {response}")
-
         return response
-
-    @abstractmethod
-    def write(self, cmd):
-        raise NotImplementedError
-
-    @abstractmethod
-    def read(self, *args, **kwargs):
-        raise NotImplementedError
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
@@ -772,11 +743,6 @@ class AbstractMount(PanBase):
             raise error.InvalidMountCommand(f'No result for command {cmd}')
 
         return response
-
-    @abstractmethod
-    def _setup_location_for_mount(self):
-        """ Sets the current location details for the mount. """
-        raise NotImplementedError
 
     def _setup_commands(self, commands):
         """
@@ -814,6 +780,29 @@ class AbstractMount(PanBase):
         self.commands = commands
 
         self.logger.debug('Mount commands set up')
+
+    @abstractmethod
+    def write(self, cmd):
+        raise NotImplementedError
+
+    @abstractmethod
+    def read(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def search_for_home(self):
+        """Search for the home position if supported. """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_tracking_rate(self, direction='ra', delta=1.0):
+        """Sets the tracking rate for the mount """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _setup_location_for_mount(self):
+        """ Sets the current location details for the mount. """
+        raise NotImplementedError
 
     @abstractmethod
     def _set_zero_position(self):
