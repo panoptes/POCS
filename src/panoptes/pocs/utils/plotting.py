@@ -1,10 +1,7 @@
-import gc
-
-import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-
-from panoptes.utils.images.plot import get_palette, add_colorbar
+from matplotlib.figure import Figure
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.utils.images.plot import get_palette, add_colorbar
 
 logger = get_logger()
 
@@ -47,7 +44,8 @@ def make_autofocus_plot(output_path,
     Returns:
         str: Full path the saved plot.
     """
-    fig, axes = plt.subplots(3, 1)
+    fig = Figure()
+    axes = fig.subplots(3, 1)
     fig.set_size_inches(plot_width, plot_height)
 
     # Initial thumbnail.
@@ -83,11 +81,5 @@ def make_autofocus_plot(output_path,
     ax2.set_title(f'Final focus position: {final_focus}')
 
     fig.savefig(output_path, transparent=False, bbox_inches='tight')
-
-    # Close, close, close, and close.
-    plt.cla()
-    plt.clf()
-    plt.close(fig)
-    gc.collect()
 
     return output_path
