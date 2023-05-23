@@ -36,3 +36,9 @@ class Mount(BaseMount):
         )
 
         self.logger.success('iOptron iEQ30Pro Mount created')
+
+    def search_for_home(self):
+        """Search for the home position not supported."""
+        self.logger.warning('Searching for home position not supported iEQ30Pro.'
+                            'Please set the home position manually via the hand-controller.')
+        
