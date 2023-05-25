@@ -129,17 +129,6 @@ function get_pocs_repo() {
   cd
 }
 
-function get_pocs_cam_repo() {
-  echo "Cloning pocs-camera repo."
-
-  cd
-  git clone https://github.com/panoptes/pocs-camera.git "${PANDIR}"
-  cd
-
-  mkdir -p "${HOME}/images"
-  mkdir -p "${HOME}/logs"
-}
-
 function make_directories() {
   echo "Creating directories."
   mkdir -p "${HOME}/logs"
