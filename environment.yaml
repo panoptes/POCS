@@ -14,7 +14,6 @@ dependencies:
   - numpy
   - pandas
   - pip
-  - protobuf==4.23.0
   - pynacl
   - pyrsistent
   - streamz
