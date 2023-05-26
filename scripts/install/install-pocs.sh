@@ -125,19 +125,8 @@ function get_pocs_repo() {
 
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
-  git checkout "$CODE_BRANCH"
+  git checkout "${CODE_BRANCH}"
   cd
-}
-
-function get_pocs_cam_repo() {
-  echo "Cloning pocs-camera repo."
-
-  cd
-  git clone https://github.com/panoptes/pocs-camera.git "${PANDIR}"
-  cd
-
-  mkdir -p "${HOME}/images"
-  mkdir -p "${HOME}/logs"
 }
 
 function make_directories() {
@@ -158,6 +147,11 @@ function install_services() {
 
   # Make supervisor read our conf file at its current location.
   echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+
+  # Change the user and home directory.
+  sed -i "s/chown=panoptes:panoptes/chown=${PANUSER}:${PANUSER}/g" "${HOME}/conf_files/pocs-supervisord.conf"
+  sed -i "s/user=panoptes/user=${PANUSER}/g" "${HOME}/conf_files/pocs-supervisord.conf"
+  sed -i "s|/home/panoptes|${HOME}|g" "${HOME}/conf_files/pocs-supervisord.conf"
 
   # Reread the supervisord conf and restart.
   sudo supervisorctl reread
