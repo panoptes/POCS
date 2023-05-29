@@ -36,6 +36,7 @@ usage() {
 #   * 2023-04-26 (wtgee) - Added arduino-cli. Removed prompt for supervisord.
 #   * 2023-05-10 (wtgee) - Added install options for the camera.
 #   * 2023-05-17 (wtgee) - Simplify (again). One script for all boxes.
+#   * 2023-05-28 (wtgee) - Hide all the output in a nice progress indicator. Use logfile.
 #
 #############################################################
  $ $(basename $0) [--user panoptes] [--pandir /panoptes]
@@ -47,12 +48,11 @@ usage() {
 "
 }
 
-# Better select prompt.
-PS3="Select: "
+LOGFILE="${LOGFILE:-install-pocs.log}"
 
 PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/pocs}"
-USE_ZSH=true
+USE_ZSH="${USE_ZSH:-true}"
 INSTALL_SERVICES="${INSTALL_SERVICES:-true}"
 DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 
@@ -63,6 +63,9 @@ CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Min
 CONDA_ENV_NAME=conda-pocs
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
+
+declare -x FRAME=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+declare -x FRAME_INTERVAL=(0.1)
 
 function system_deps() {
   echo "Installing system dependencies."
@@ -247,31 +250,46 @@ EOT
 }
 
 function do_install() {
-  clear
+  declare -x CMDS=(
+    'fix_time'
+    'system_deps'
+    'install_gphoto2'
+    'install_arduino'
+    'get_pocs_repo'
+    'make_directories'
+    'write_udev_entries'
+  )
 
-  # Set up directory for log file.
-  mkdir -p "${HOME}/logs"
-  echo "Starting POCS install at $(date)"
-
-  echo "Installing POCS software"
-
-  fix_time
-  system_deps
+  declare -x STEPS=(
+    'Syncing time'
+    'Installing system dependencies'
+    'Installing gphoto2'
+    'Installing arduino-cli'
+    'Getting POCS repo'
+    'Making directories'
+    'Writing udev entries'
+  )
 
   if [[ "${USE_ZSH}" == true ]]; then
-    install_zsh
+    CMDS+=('install_zsh')
+    STEPS+=('Installing zsh')
   fi
 
-  install_gphoto2
-  install_arduino
-  get_pocs_repo
-  make_directories
-  write_udev_entries
-  install_conda
+  # Install conda
+  CMDS+=('install_conda')
+  STEPS+=('Installing conda')
 
   if [[ "${INSTALL_SERVICES}" == true ]]; then
-    install_services
+    CMDS+=('install_services')
+    STEPS+=('Installing services')
   fi
+
+  # Get the sudo password first.
+  sudo -v
+  clear
+  echo "Starting POCS install at $(date)"
+  echo "Logging to ${LOGFILE}"
+  start_steps
 
   echo "Please reboot your machine before using POCS."
 
@@ -279,6 +297,33 @@ function do_install() {
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo reboot
   fi
+}
+
+# Wrap all the commands so we have a nice progress indicator.
+# Thanks to https://github.com/lnfnunes/bash-progress-indicator/
+function start_steps() {
+  local step=0
+
+  tput civis
+
+  while [ "$step" -lt "${#CMDS[@]}" ]; do
+    ${CMDS[$step]} &>>"${LOGFILE}" &
+    pid=$!
+
+    while ps -p $pid &>/dev/null; do
+      echo -ne "\\r[   ] ${STEPS[$step]} ..."
+
+      for k in "${!FRAME[@]}"; do
+        echo -ne "\\r[ ${FRAME[k]} ]"
+        sleep "${FRAME_INTERVAL}"
+      done
+    done
+
+    echo -ne "\\r[ ✔ ] ${STEPS[$step]}\\n"
+    step=$((step + 1))
+  done
+
+  tput cnorm
 }
 
 do_install
