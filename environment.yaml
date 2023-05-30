@@ -20,4 +20,4 @@ dependencies:
   - typer[all]
   - uvicorn[standard]
   - pip:
-      - -e ".[google,sensors]"
+      - -e ".[google,sensors,weather]"
