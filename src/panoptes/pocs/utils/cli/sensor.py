@@ -1,8 +1,8 @@
 import time
-from pprint import pprint
 from typing import Optional
 
 import typer
+from rich import print
 
 from panoptes.pocs.sensor.remote import RemoteMonitor
 from panoptes.pocs.utils.logger import get_logger
@@ -16,7 +16,7 @@ def main(context: typer.Context):
     context.params.update(context.parent.params)
     verbose = context.params['verbose']
     if verbose:
-        typer.echo(f'Command options from power: {context.params!r}')
+        print(f'Command options from power: {context.params!r}')
 
 
 @app.command()
@@ -35,10 +35,10 @@ def monitor(
         while True:
             result = remote_monitor.capture(store_result=store)
             if verbose:
-                pprint(result)
+                print(result)
             time.sleep(read_frequency)
     except KeyboardInterrupt:
-        typer.echo(f'Shutting down monitor script for {sensor_name}')
+        print(f'[red]Shutting down monitor script for {sensor_name}')
 
 
 if __name__ == "__main__":

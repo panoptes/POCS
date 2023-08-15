@@ -1,9 +1,9 @@
-import time
 import subprocess
 import shutil
 from pathlib import Path
 
 import typer
+from rich import print
 
 app = typer.Typer()
 
@@ -16,19 +16,20 @@ def start(
                                     help='If True, start the server on all interfaces. '
                                          'If False, only start on localhost.'),
         port: int = typer.Option(8888, help='The port to start the server on.'),
+        notebook_dir: Path = typer.Option(None, envvar='HOME', help='The notebook directory.'),
 ):
     """Start a Jupyter notebook server"""
     check_for_jupyter()
 
-    typer.echo(f"Starting {environment} server.")
+    print(f"Starting {environment} server.")
 
     try:
-        cmd = ["jupyter", environment, "--no-browser", f"--port={port}"]
+        cmd = ["jupyter", environment, "--no-browser", f"--port={port}", f'--notebook-dir={notebook_dir}']
         if public:
             cmd.append("--ip=0.0.0.0")
         subprocess.run(cmd)
     except KeyboardInterrupt:
-        typer.echo("Notebook server stopped.")
+        print("Notebook server stopped.")
 
 
 @app.command('password')
@@ -38,7 +39,7 @@ def set_password(
 ):
     """Set a password for the notebook server"""
     check_for_jupyter()
-    typer.echo(f"Setting {environment} password.")
+    print(f"Setting {environment} password.")
     cmd = ["jupyter", environment, "password"]
     subprocess.run(cmd)
 
@@ -55,13 +56,13 @@ def check_for_jupyter():
         else:
             install_msg = "Install with `pip install jupyterlab`"
 
-        typer.secho("Jupyter is not installed. " + install_msg, fg=typer.colors.RED)
-        raise typer.Abort()
+        print(f"[red]Jupyter is not installed. {install_msg}", )
+        raise typer.Exit()
 
 
 @app.command()
 def restart():
     """Restart the jupyter server process via supervisorctl"""
     cmd = f'supervisorctl restart pocs-jupyter-server'
-    typer.echo(f'Running: {cmd}')
+    print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)

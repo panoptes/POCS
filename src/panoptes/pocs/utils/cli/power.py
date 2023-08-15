@@ -1,11 +1,11 @@
 import subprocess
 from contextlib import suppress
-from pprint import pprint
+from dataclasses import dataclass
 
 import numpy as np
 import requests
 import typer
-from dataclasses import dataclass
+from rich import print
 
 from sparklines import sparklines
 from panoptes.pocs.utils.service.power import RelayCommand
@@ -49,11 +49,11 @@ def status(context: typer.Context):
                     else:
                         status_color = typer.colors.BRIGHT_RED
                     status_text = typer.style(relay_info['state'], fg=status_color)
-                    typer.echo(f'[{relay_index}] {relay_label} {status_text}')
+                    print(f'[{relay_index}] {relay_label} {status_text}')
         else:
-            typer.secho(res.content.decode(), fg=typer.colors.RED)
+            print(f'[red]{res.content.decode()}[/red]')
     except requests.exceptions.ConnectionError:
-        typer.secho(f'Cannot connect to {url}', fg=typer.colors.RED)
+        print(f'[red]Cannot connect to {url}[/red]')
 
 
 @app.command()
@@ -68,11 +68,11 @@ def readings(context: typer.Context):
                 relay_text = typer.style(f'{relay_label:.<20s}', fg=typer.colors.CYAN)
                 relay_readings = [int(x) if int(x) >= 0 else 0 for x in relay_readings.values()]
                 for val in sparklines(relay_readings):
-                    typer.echo(f'{relay_text} {val} [{np.array(relay_readings).mean():.0f}]')
+                    print(f'{relay_text} {val} [{np.array(relay_readings).mean():.0f}]')
         else:
-            typer.secho(res.content.decode(), fg=typer.colors.RED)
+            print(f'[red]{res.content.decode()}[/red]')
     except requests.exceptions.ConnectionError:
-        typer.secho(f'Cannot connect to {url}', fg=typer.colors.RED)
+        print(f'[red]Cannot connect to {url}[/red]')
 
 
 @app.command()
@@ -107,16 +107,16 @@ def control(
         relay_command = RelayCommand(relay=relay, command=command)
         res = requests.post(url, data=relay_command.json())
         content = res.json() if res.ok else res.content.decode()
-        typer.secho(pprint(content))
+        print(content)
     except requests.exceptions.ConnectionError:
-        typer.secho(f'Cannot connect to {url}', fg=typer.colors.RED)
+        print(f'[red]Cannot connect to {url}')
 
 
 @app.command()
 def restart():
     """Restart the power server process via supervisorctl"""
     cmd = f'supervisorctl restart pocs-power-server'
-    typer.echo(f'Running: {cmd}')
+    print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
 
 

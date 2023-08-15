@@ -1,10 +1,12 @@
 import subprocess
-from pprint import pprint
 from typing import Optional, Dict
 
 import typer
-from pydantic import BaseModel
 from astropy import units as u
+from pydantic import BaseModel
+from rich import print
+from rich import prompt
+from rich.console import Console
 
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config, set_config, server_is_running
@@ -31,8 +33,7 @@ def server_running():
     # NOTE: A bug in server_is_running means we cannot specify the port.
     is_running = server_is_running()
     if is_running is None or is_running is False:
-        run_status = typer.style('NOT RUNNING', fg=typer.colors.RED, bold=True)
-        typer.secho(f'Server status: {run_status}')
+        print('[red]The config server is not running. Please start it first.[/red]')
 
     return is_running
 
@@ -45,7 +46,7 @@ def main(context: typer.Context):
                                           port=context.params['config_port'],
                                           verbose=verbose)
     if verbose:
-        typer.echo(f'Command options from power: {context.params!r}')
+        print(f'Command options from power: {context.params!r}')
 
 
 @app.command()
@@ -53,26 +54,23 @@ def status():
     server_running()
 
 
-@app.command()
-def get(
+@app.command(name='get')
+def get_value(
         key: Optional[str] = typer.Argument(None,
                                             help='The key of the config item to get. '
                                                  'Can be specified in dotted-key notation '
                                                  'e.g. `directories.images`'),
-        pretty_print: bool = typer.Option(True, help='Pretty print the display.'),
+        parse: bool = typer.Option(True, help='Parse the item.'),
 ):
     """Get an item from the config"""
     if server_running():
         metadata = host_info['config_server']
-        item = get_config(key, parse=pretty_print, host=metadata.host, port=metadata.port)
-        if pretty_print:
-            typer.echo(pprint(item))
-        else:
-            typer.echo(item)
+        item = get_config(key, parse=parse, host=metadata.host, port=metadata.port)
+        print(item)
 
 
-@app.command()
-def set(
+@app.command(name='set')
+def set_value(
         key: str = typer.Argument(...,
                                   help='The key, in dotted-notation, of the config item to get.'
                                        'A blank string (the default) will return the entire config.'),
@@ -82,48 +80,51 @@ def set(
     if server_running():
         metadata = host_info['config_server']
         item = set_config(key, value, host=metadata.host, port=metadata.port)
-        typer.secho(pprint(item), fg=typer.colors.MAGENTA)
+        print(item)
 
 
 @app.command()
 def setup():
     """Do initial setup of the config server"""
     # Clear the screen.
-    subprocess.run('clear', shell=True)
+    console = Console()
+    console.clear()
+    if not server_running():
+        raise typer.Exit()
 
-    typer.echo(f'Setting up configuration for your PANOPTES unit.')
+    print(f'Setting up configuration for your PANOPTES unit.')
     # Make sure they want to proceed.
-    proceed = typer.confirm('This will overwrite any existing configuration. Proceed?')
+    proceed = prompt.Confirm.ask('This will overwrite any existing configuration. Proceed?', default=False)
     if not proceed:
-        typer.echo('Exiting.')
-        raise typer.Abort()
+        print('Exiting.')
+        return
 
     # Set the base directory.
-    base_dir = typer.prompt('Enter the base directory for POCS', default='/home/panoptes/pocs')
+    base_dir = prompt.Prompt.ask('Enter the base directory for POCS', default='/home/panoptes/pocs')
     set_config('directories.base', base_dir)
 
     # Get the user-friendly name for the unit.
-    unit_name = typer.prompt('Enter the user-friendly name for this unit', default=get_config('name'))
+    unit_name = prompt.Prompt.ask('Enter the user-friendly name for this unit', default=get_config('name'))
     set_config('name', unit_name)
 
     # Get the pan_id for the unit.
-    pan_id = typer.prompt("Enter the PANOPTES ID for this unit. "
-                          "If you don't have one yet just use the default.",
-                          default=get_config('pan_id'))
+    pan_id = prompt.Prompt.ask("Enter the PANOPTES ID for this unit. "
+                               "If you don't have one yet just use the default:",
+                               default=get_config('pan_id'))
     set_config('pan_id', pan_id)
 
     # Latitude
-    latitude = typer.prompt('Enter the latitude for this unit, e.g. "19.5 deg"',
-                            default=get_config('location.latitude'))
+    latitude = prompt.Prompt.ask('Enter the latitude for this unit, e.g. "19.5 deg":',
+                                 default=str(get_config('location.latitude')))
     set_config('location.latitude', str(u.Unit(latitude)))
     # Longitude
-    longitude = typer.prompt('Enter the longitude for this unit, e.g. "-154.12 deg"',
-                             default=get_config('location.longitude'))
+    longitude = prompt.Prompt.ask('Enter the longitude for this unit, e.g. "-154.12 deg":',
+                                  default=str(get_config('location.longitude')))
     set_config('location.longitude', str(u.Unit(longitude)))
     # Elevation
-    elevation = typer.prompt('Enter the elevation for this unit. '
-                             'Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft"',
-                             default=get_config('location.elevation'))
+    elevation = prompt.Prompt.ask('Enter the elevation for this unit. '
+                                  'Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft":',
+                                  default=str(get_config('location.elevation')))
     if ' ft' in elevation:
         elevation = (elevation.replace(' ft', '') * u.imperial.foot).to(u.meter)
     else:
@@ -132,22 +133,23 @@ def setup():
 
     # Get timezone and then confirm if correct.
     timezone = subprocess.check_output('cat /etc/timezone', shell=True).decode().strip()
-    timezone = typer.prompt('Enter the timezone for this unit', default=timezone)
+    timezone = prompt.Prompt.ask('Enter the timezone for this unit', default=timezone)
     set_config('location.timezone', timezone)
 
     # Get GMT offset and then confirm if correct.
     gmt_offset = subprocess.check_output('date +%z', shell=True).decode().strip()
     # Convert GMT offset to minutes.
     gmt_offset = int(gmt_offset[:3]) * 60 + int(gmt_offset[-2:])
-    gmt_offset = typer.prompt('Enter the GMT offset for this unit', default=gmt_offset)
-    set_config('location.gmt_offset', gmt_offset)
-    
+    gmt_offset = prompt.Prompt.ask('Enter the GMT offset for this unit in minutes, '
+                                   'e.g. 60 for 1 hour ahead, -120 for 2 hours behind:', default=str(gmt_offset))
+    set_config('location.gmt_offset', int(gmt_offset))
+
 
 @app.command()
 def restart():
     """Restart the config server process via supervisorctl"""
     cmd = f'supervisorctl restart pocs-config-server'
-    typer.echo(f'Running: {cmd}')
+    print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
 
 
