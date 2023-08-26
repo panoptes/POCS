@@ -70,7 +70,7 @@ def run_alignment(confirm: Annotated[
 
         return alignment_observation
 
-    print('[green]Running POCS in alignment mode!\tPress Ctrl-c to quit.[/green]')
+    print('[green]Running POCS in alignment mode!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
     pocs = POCS.from_config(simulators=simulator)
     pocs.initialize()
 
