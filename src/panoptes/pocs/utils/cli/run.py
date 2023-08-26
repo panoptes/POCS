@@ -18,6 +18,7 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
     """Runs POCS automatically, like it's meant to be run."""
 
     print(f'Running POCS with simulators: {simulator=}')
+    print()
 
     if confirm is True:
         try:
