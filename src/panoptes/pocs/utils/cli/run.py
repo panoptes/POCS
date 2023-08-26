@@ -30,8 +30,9 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
             print('POCS interrupted by user, shutting down.')
             print(f'[bold red]Please be patient, this may take a moment while the mount parks itself.[/bold red]')
             pocs.power_down()
-        except Exception:
+        except Exception as e:
             print('[bold red]POCS encountered an error.[/bold red]')
+            print(e)
 
 
 @app.command(name='alignment')
