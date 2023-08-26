@@ -25,11 +25,11 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
     if confirm is True:
         # Change to home directory.
         os.chdir(os.path.expanduser('~'))
-        try:
-            print('[green]Running POCS automatically!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
-            pocs = POCS.from_config(simulators=simulator)
-            pocs.initialize()
+        print('[green]Running POCS automatically!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
+        pocs = POCS.from_config(simulators=simulator)
+        pocs.initialize()
 
+        try:
             pocs.run()
         except KeyboardInterrupt:
             print('[red]POCS interrupted by user, shutting down.[/red]')
