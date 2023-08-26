@@ -32,12 +32,15 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
 
             pocs.run()
         except KeyboardInterrupt:
-            print('POCS interrupted by user, shutting down.')
-            print(f'[bold red]Please be patient, this may take a moment while the mount parks itself.[/bold red]')
-            pocs.power_down()
+            print('[red]POCS interrupted by user, shutting down.[/red]')
         except Exception as e:
             print('[bold red]POCS encountered an error.[/bold red]')
             print(e)
+        else:
+            print('[green]POCS finished, shutting down.[/green]')
+        finally:
+            print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
+            pocs.power_down()
 
 
 @app.command(name='alignment')
@@ -82,16 +85,29 @@ def run_alignment(confirm: Annotated[
 
     # Start the polar alignment sequence.
     mount = pocs.observatory.mount
-    for i, altaz_coord in enumerate(altaz_coords):
-        print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
-        observation = get_altaz_observation(altaz_coord)
-        pocs.observatory.current_observation = observation
 
-        if move_mount:
-            print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
-            mount.set_target_coordinates(observation.field.coord)
-            mount.slew_to_target(blocking=True)
+    try:
 
-        # Take the observation.
-        pocs.observatory.take_observation(blocking=True)
-        print(f'done.')
+        for i, altaz_coord in enumerate(altaz_coords):
+            print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
+            observation = get_altaz_observation(altaz_coord)
+            pocs.observatory.current_observation = observation
+
+            if move_mount:
+                print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
+                mount.set_target_coordinates(observation.field.coord)
+                mount.slew_to_target(blocking=True)
+
+            # Take the observation.
+            pocs.observatory.take_observation(blocking=True)
+            print()
+    except KeyboardInterrupt:
+        print('[red]POCS alignment interrupted by user, shutting down.[/red]')
+    except Exception as e:
+        print('[bold red]POCS encountered an error.[/bold red]')
+        print(e)
+    else:
+        print('[green]POCS alignment finished, shutting down.[/green]')
+    finally:
+        print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
+        pocs.power_down()
