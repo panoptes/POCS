@@ -39,10 +39,11 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
 @app.command(name='alignment')
 def run_alignment(confirm: Annotated[
     bool, typer.Option(prompt='Are you sure you want to run the polar alignment script?')],
+                  simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load'),
                   exptime: float = 30,
                   num_exposures: int = 10,
                   field_name: str = 'PolarAlignment',
-                  move_mount=True
+                  move_mount=True,
                   ) -> None:
     """Runs POCS in alignment mode."""
     if confirm is False:
@@ -70,7 +71,7 @@ def run_alignment(confirm: Annotated[
         return alignment_observation
 
     print('[green]Running POCS in alignment mode!\tPress Ctrl-c to quit.[/green]')
-    pocs = POCS.from_config()
+    pocs = POCS.from_config(simulators=simulator)
     pocs.initialize()
 
     # Start the polar alignment sequence.
