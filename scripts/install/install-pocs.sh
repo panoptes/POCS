@@ -79,6 +79,8 @@ function system_deps() {
     ack \
     byobu \
     curl \
+    dcraw \
+    exiftool \
     fonts-powerline \
     gcc \
     htop \
