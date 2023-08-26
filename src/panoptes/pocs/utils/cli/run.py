@@ -87,10 +87,11 @@ def run_alignment(confirm: Annotated[
     mount = pocs.observatory.mount
 
     try:
-
+        sequence_time = current_time(flatten=True)
         for i, altaz_coord in enumerate(altaz_coords):
             print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
             observation = get_altaz_observation(altaz_coord)
+            observation.seq_time = sequence_time
             pocs.observatory.current_observation = observation
 
             if move_mount:
