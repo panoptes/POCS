@@ -567,3 +567,24 @@ class POCS(PanStateMachine, PanBase):
         is_expired = sleep_timer.expired()
         self.logger.debug(f'Leaving wait timer: expired={is_expired}')
         return is_expired
+
+    ################################################################################################
+    # Class Methods
+    ################################################################################################
+
+    @classmethod
+    def from_config(cls, simulators=None):
+        """Create a new POCS instance using the config system."""
+
+        try:
+            from panoptes.pocs.scheduler import create_scheduler_from_config
+            from panoptes.pocs.mount import create_mount_from_config
+            from panoptes.pocs.camera import create_cameras_from_config
+            scheduler = create_scheduler_from_config()
+            mount = create_mount_from_config()
+            cameras = create_cameras_from_config()
+            observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
+            pocs = cls(observatory, simulators=simulators or list())
+            return pocs
+        except ImportError:
+            print(f'Cannot import')
