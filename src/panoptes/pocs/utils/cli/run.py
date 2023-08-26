@@ -2,6 +2,7 @@ import typer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 from rich import print
+from typing import List
 from typing_extensions import Annotated
 
 from panoptes.pocs.core import POCS
@@ -12,19 +13,22 @@ app = typer.Typer()
 
 
 @app.command(name='auto')
-def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want to run POCS automatically?')]) -> None:
+def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want to run POCS automatically?')],
+             simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load')) -> None:
     """Runs POCS automatically, like it's meant to be run."""
+
+    print(f'Running POCS with simulators: {simulator=}')
 
     if confirm is True:
         try:
             print('[green]Running POCS automatically!\tPress Ctrl-c to quit.[/green]')
-            pocs = POCS.from_config()
+            pocs = POCS.from_config(simulators=simulator)
             pocs.initialize()
 
             pocs.run()
         except KeyboardInterrupt:
             print('POCS interrupted by user, shutting down.')
-            print(f'[bold red]Please be patient, this may take a moment while the mount parks itself.[/bold red]]')
+            print(f'[bold red]Please be patient, this may take a moment while the mount parks itself.[/bold red]')
             pocs.power_down()
         except Exception:
             print('[bold red]POCS encountered an error.[/bold red]')
