@@ -77,12 +77,12 @@ def run_alignment(confirm: Annotated[
     # Start the polar alignment sequence.
     mount = pocs.observatory.mount
     for i, altaz_coord in enumerate(altaz_coords):
-        print(f'Starting coord #{i:02d} {altaz_coord=}...', end='')
+        print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
         observation = get_altaz_observation(altaz_coord)
         pocs.observatory.current_observation = observation
 
         if move_mount:
-            print(f'Slewing to {observation.field.coord=} for {altaz_coord=}')
+            print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
             mount.set_target_coordinates(observation.field.coord)
             mount.slew_to_target(blocking=True)
 
