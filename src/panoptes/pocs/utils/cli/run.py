@@ -1,3 +1,5 @@
+import os
+
 import typer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
@@ -21,6 +23,8 @@ def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want
     print()
 
     if confirm is True:
+        # Change to home directory.
+        os.chdir(os.path.expanduser('~'))
         try:
             print('[green]Running POCS automatically!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
             pocs = POCS.from_config(simulators=simulator)
@@ -70,6 +74,8 @@ def run_alignment(confirm: Annotated[
 
         return alignment_observation
 
+    # Change to home directory.
+    os.chdir(os.path.expanduser('~'))
     print('[green]Running POCS in alignment mode!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
     pocs = POCS.from_config(simulators=simulator)
     pocs.initialize()
