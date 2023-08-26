@@ -14,50 +14,64 @@ from panoptes.pocs.scheduler.observation.base import Observation
 app = typer.Typer()
 
 
-@app.command(name='auto')
-def run_auto(confirm: Annotated[bool, typer.Option(prompt='Are you sure you want to run POCS automatically?')],
-             simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load')) -> None:
-    """Runs POCS automatically, like it's meant to be run."""
+def get_pocs(simulator: List[str] = None):
+    """Helper to get pocs after confirming with user."""
+    confirm = typer.prompt('Are you sure you want to run POCS automatically?', default='n')
+    if confirm.lower() not in ['y', 'yes']:
+        raise typer.Abort()
+
+    # Change to home directory.
+    os.chdir(os.path.expanduser('~'))
 
     print(f'Running POCS with simulators: {simulator=}')
-    print()
+    print('[green]Running POCS automatically![/green]\n'
+          'Using simulators: {simulator=}\n'
+          '[bold green]Press Ctrl-c to quit.[/bold green]')
 
-    if confirm is True:
-        # Change to home directory.
-        os.chdir(os.path.expanduser('~'))
-        print('[green]Running POCS automatically!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
-        pocs = POCS.from_config(simulators=simulator)
-        pocs.initialize()
+    pocs = POCS.from_config(simulators=simulator)
+    pocs.initialize()
 
-        try:
-            pocs.run()
-        except KeyboardInterrupt:
-            print('[red]POCS interrupted by user, shutting down.[/red]')
-        except Exception as e:
-            print('[bold red]POCS encountered an error.[/bold red]')
-            print(e)
-        else:
-            print('[green]POCS finished, shutting down.[/green]')
-        finally:
-            print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
-            pocs.power_down()
+    return pocs
+
+
+@app.command(name='auto')
+def run_auto(simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load')) -> None:
+    """Runs POCS automatically, like it's meant to be run."""
+
+    pocs = get_pocs(simulator=simulator)
+
+    try:
+        pocs.run()
+    except KeyboardInterrupt:
+        print('[red]POCS interrupted by user, shutting down.[/red]')
+    except Exception as e:
+        print('[bold red]POCS encountered an error.[/bold red]')
+        print(e)
+    else:
+        print('[green]POCS finished, shutting down.[/green]')
+    finally:
+        print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
+        pocs.power_down()
 
 
 @app.command(name='alignment')
-def run_alignment(confirm: Annotated[
-    bool, typer.Option(prompt='Are you sure you want to run the polar alignment script?')],
-                  simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load'),
+def run_alignment(simulator: List[str] = typer.Option(None, '--simulator', '-s',
+                                                      help='Simulators to load'),
+                  coords: List[str] = typer.Option(None, '--coords', '-c',
+                                                   help='Alt/Az coordinates to use, e.g. 40,55'),
                   exptime: float = 30,
                   num_exposures: int = 10,
                   field_name: str = 'PolarAlignment',
                   move_mount=True,
                   ) -> None:
-    """Runs POCS in alignment mode."""
-    if confirm is False:
-        print('Exit.')
-        raise typer.Abort()
+    """Runs POCS in alignment mode.
 
-    altaz_coords = [
+    Not specifying coordinates is the same as the following:
+        -c 40,90 -c 55,60 -c 55,120 -c 70,210 -c 70,330
+    """
+    pocs = get_pocs(simulator=simulator)
+
+    altaz_coords = coords or [
         # (alt, az)
         (40, 90),
         (55, 60),
@@ -65,44 +79,42 @@ def run_alignment(confirm: Annotated[
         (70, 210),
         (70, 330),
     ]
+    print(f'Using {altaz_coords=} for alignment.')
 
     # Helper function to make an observation from altaz coordinates.
-    def get_altaz_observation(coords) -> Observation:
+    def get_altaz_observation(coords, seq_time) -> Observation:
         alt, az = coords
         coord = altaz_to_radec(alt, az, pocs.observatory.earth_location, current_time())
         alignment_observation = Observation(Field(field_name, coord),
                                             exptime=exptime,
                                             min_nexp=num_exposures,
                                             exp_set_size=num_exposures)
+        alignment_observation.seq_time = seq_time
 
         return alignment_observation
-
-    # Change to home directory.
-    os.chdir(os.path.expanduser('~'))
-    print('[green]Running POCS in alignment mode!\t[bold]Press Ctrl-c to quit.[/bold][/green]')
-    pocs = POCS.from_config(simulators=simulator)
-    pocs.initialize()
 
     # Start the polar alignment sequence.
     mount = pocs.observatory.mount
 
     try:
+        # Shared sequence time for all alignment observations.
         sequence_time = current_time(flatten=True)
+
         for i, altaz_coord in enumerate(altaz_coords):
             print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
-            observation = get_altaz_observation(altaz_coord)
-            observation.seq_time = sequence_time
+
+            # Create an observation and set it as current.
+            observation = get_altaz_observation(altaz_coord, sequence_time)
             pocs.observatory.current_observation = observation
 
             if move_mount:
-                mount.unpark()
                 print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
+                mount.unpark()
                 mount.set_target_coordinates(observation.field.coord)
                 mount.slew_to_target(blocking=True)
 
-            # Take the observation.
-            pocs.observatory.take_observation(blocking=True)
-            print()
+            # Take all the exposures for this altaz observation.
+            pocs.observe_target(observation=observation, blocking=True)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
