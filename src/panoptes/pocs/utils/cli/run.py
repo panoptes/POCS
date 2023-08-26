@@ -94,6 +94,7 @@ def run_alignment(confirm: Annotated[
             pocs.observatory.current_observation = observation
 
             if move_mount:
+                mount.unpark()
                 print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
                 mount.set_target_coordinates(observation.field.coord)
                 mount.slew_to_target(blocking=True)
