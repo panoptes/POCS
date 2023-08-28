@@ -30,7 +30,9 @@ def get_pocs(context: typer.Context):
     # Change to home directory.
     os.chdir(os.path.expanduser('~'))
 
-    print(f'Running POCS with simulators: {simulators=}')
+    if len(simulators) > 0:
+        print(f'Running POCS with simulators: {simulators=}')
+
     print('[green]Running POCS automatically![/green]\n'
           '[bold green]Press Ctrl-c to quit.[/bold green]')
 
