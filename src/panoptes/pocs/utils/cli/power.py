@@ -61,7 +61,7 @@ def readings(context: typer.Context):
         if res.ok:
             relays = res.json()
             for relay_label, relay_readings in relays.items():
-                relay_text = typer.style(f'{relay_label:.<20s}', fg=typer.colors.CYAN)
+                relay_text = f'[cyan]{relay_label:.<20s}[/cyan]'
                 relay_readings = [int(x) if int(x) >= 0 else 0 for x in relay_readings.values()]
                 for val in sparklines(relay_readings):
                     print(f'{relay_text} {val} [{np.array(relay_readings).mean():.0f}]')
