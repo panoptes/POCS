@@ -83,7 +83,7 @@ def run_alignment(context: typer.Context,
         (70, 210),
         (70, 330),
     ]
-    print(f'Using {altaz_coords=} for alignment.')
+    print(f'Using {altaz_coords=} for alignment.\n')
 
     # Helper function to make an observation from altaz coordinates.
     def get_altaz_observation(coords, seq_time, obs_name=field_name) -> Observation:
@@ -111,7 +111,7 @@ def run_alignment(context: typer.Context,
             observation = get_altaz_observation(altaz_coord, sequence_time, obs_name=f'{field_name}{i:02d}')
             pocs.observatory.current_observation = observation
 
-            print(f'Slewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
+            print(f'\tSlewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
             mount.unpark()
             mount.set_target_coordinates(observation.field.coord)
             mount.slew_to_target(blocking=True)
