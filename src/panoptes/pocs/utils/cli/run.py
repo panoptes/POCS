@@ -64,9 +64,9 @@ def run_auto(context: typer.Context) -> None:
 def run_alignment(context: typer.Context,
                   coords: List[str] = typer.Option(None, '--coords', '-c',
                                                    help='Alt/Az coordinates to use, e.g. 40,55'),
-                  exptime: float = 30,
-                  num_exposures: int = 10,
-                  field_name: str = 'PolarAlignment',
+                  exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
+                  num_exposures: int = typer.Option(5, '--num-exposures', '-n', help='Number of exposures.'),
+                  field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
                   ) -> None:
     """Runs POCS in alignment mode.
 
@@ -117,7 +117,7 @@ def run_alignment(context: typer.Context,
             mount.slew_to_target(blocking=True)
 
             # Take all the exposures for this altaz observation.
-            pocs.observe_target(observation=observation)
+            pocs.observatory.take_observation(blocking=True)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
