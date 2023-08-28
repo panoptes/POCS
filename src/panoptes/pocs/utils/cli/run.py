@@ -87,10 +87,10 @@ def run_alignment(context: typer.Context,
     print(f'Using {altaz_coords=} for alignment.')
 
     # Helper function to make an observation from altaz coordinates.
-    def get_altaz_observation(coords, seq_time) -> Observation:
+    def get_altaz_observation(coords, seq_time, obs_name=field_name) -> Observation:
         alt, az = coords
         coord = altaz_to_radec(alt, az, pocs.observatory.earth_location, current_time())
-        alignment_observation = Observation(Field(field_name, coord),
+        alignment_observation = Observation(Field(obs_name, coord),
                                             exptime=exptime,
                                             min_nexp=num_exposures,
                                             exp_set_size=num_exposures)
@@ -109,7 +109,7 @@ def run_alignment(context: typer.Context,
             print(f'Starting coord #{i:02d}/{num_exposures:02d} {altaz_coord=}')
 
             # Create an observation and set it as current.
-            observation = get_altaz_observation(altaz_coord, sequence_time)
+            observation = get_altaz_observation(altaz_coord, sequence_time, obs_name=f'{field_name}{i:02d}')
             pocs.observatory.current_observation = observation
 
             if move_mount:
