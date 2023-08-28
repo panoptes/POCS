@@ -119,7 +119,7 @@ def run_alignment(context: typer.Context,
                 mount.slew_to_target(blocking=True)
 
             # Take all the exposures for this altaz observation.
-            pocs.observe_target(observation=observation, blocking=True)
+            pocs.observe_target(observation=observation)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
