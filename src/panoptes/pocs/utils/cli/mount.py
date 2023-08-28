@@ -22,6 +22,7 @@ def park_mount(
         return typer.Abort()
 
     mount = create_mount_from_config()
+    mount.initialize()
     mount.unpark()
     mount.park()
 
@@ -41,6 +42,7 @@ def search_for_home(
         return typer.Abort()
 
     mount = create_mount_from_config()
+    mount.initialize()
     mount.unpark()
     mount.slew_to_home(blocking=True)
     mount.disconnect()
@@ -61,5 +63,6 @@ def search_for_home(
         return typer.Abort()
 
     mount = create_mount_from_config()
+    mount.initialize()
     mount.search_for_home()
     mount.disconnect()
