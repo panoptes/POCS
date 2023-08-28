@@ -67,7 +67,7 @@ def run_alignment(context: typer.Context,
                   exptime: float = 30,
                   num_exposures: int = 10,
                   field_name: str = 'PolarAlignment',
-                  move_mount=True,
+                  move_mount: bool = True,
                   ) -> None:
     """Runs POCS in alignment mode.
 
