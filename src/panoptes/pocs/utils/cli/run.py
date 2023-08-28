@@ -1,15 +1,12 @@
 import os
+from typing import List
 
 import typer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 from rich import print
-from typing import List
-from typing_extensions import Annotated
 
 from panoptes.pocs.core import POCS
-from panoptes.pocs.mount.mount import AbstractMount as Mount
-from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 
@@ -133,74 +130,3 @@ def run_alignment(context: typer.Context,
     finally:
         print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
         pocs.power_down()
-
-
-@app.command(name='park')
-def park_mount(
-        confirm: Annotated[bool, typer.Option(..., '--confirm',
-                                              prompt='Are you sure you want to park the mount?',
-                                              help='Confirm mount parking.')] = False):
-    """Parks the mount.
-
-    Warning: This will move the mount to the park position but will not do any safety
-    checking. Please make sure the mount is safe to park before running this command.
-    """
-    if not confirm:
-        print('[red]Cancelled.[/red]')
-        return typer.Abort()
-
-    mount = create_mount_from_config()
-    do_mount_command(mount, 'park')
-
-
-@app.command(name='slew-home')
-def search_for_home(
-        confirm: Annotated[bool, typer.Option(..., '--confirm',
-                                              prompt='Are you sure you want to slew to the home position?',
-                                              help='Confirm slew to home.')] = False):
-    """Slews the mount home position.
-
-    Warning: This will move the mount to the home position but will not do any safety
-    checking. Please make sure the mount is safe to move before running this command.
-    """
-    if not confirm:
-        print('[red]Cancelled.[/red]')
-        return typer.Abort()
-
-    mount = create_mount_from_config()
-    do_mount_command(mount, 'slew_to_home')
-
-
-@app.command(name='search-home')
-def search_for_home(
-        confirm: Annotated[bool, typer.Option(..., '--confirm',
-                                              prompt='Are you sure you want to search for home?',
-                                              help='Confirm mount searching for home.')] = False):
-    """Searches for the mount home position.
-
-    Warning: This will move the mount to the home position but will not do any safety
-    checking. Please make sure the mount is safe to move before running this command.
-    """
-    if not confirm:
-        print('[red]Cancelled.[/red]')
-        return typer.Abort()
-
-    mount = create_mount_from_config()
-    do_mount_command(mount, 'search_for_home')
-
-
-def do_mount_command(mount: Mount, cmd_name: str):
-    """Perform a mount command."""
-    try:
-        cmd = getattr(mount, cmd_name)
-        print(f'Running {cmd_name} on mount, please be patient.')
-        cmd()
-    except KeyboardInterrupt:
-        print('[red]Mount parking interrupted by user.[/red]')
-    except Exception as e:
-        print('[bold red]Mount encountered an error.[/bold red]')
-        print(e)
-    else:
-        print('[green]Mount parking finished.[/green]')
-    finally:
-        mount.disconnect()
