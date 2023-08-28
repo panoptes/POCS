@@ -16,8 +16,16 @@ from panoptes.pocs.scheduler.observation.base import Observation
 app = typer.Typer()
 
 
-def get_pocs(simulator: List[str] = None):
+@app.callback()
+def common(context: typer.Context,
+           simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load')
+           ):
+    context.obj = simulator
+
+
+def get_pocs(context: typer.Context):
     """Helper to get pocs after confirming with user."""
+    simulators = context.obj
     confirm = typer.prompt('Are you sure you want to run POCS automatically?', default='n')
     if confirm.lower() not in ['y', 'yes']:
         raise typer.Abort()
@@ -25,22 +33,21 @@ def get_pocs(simulator: List[str] = None):
     # Change to home directory.
     os.chdir(os.path.expanduser('~'))
 
-    print(f'Running POCS with simulators: {simulator=}')
+    print(f'Running POCS with simulators: {simulators=}')
     print('[green]Running POCS automatically![/green]\n'
-          'Using simulators: {simulator=}\n'
           '[bold green]Press Ctrl-c to quit.[/bold green]')
 
-    pocs = POCS.from_config(simulators=simulator)
+    pocs = POCS.from_config(simulators=simulators)
     pocs.initialize()
 
     return pocs
 
 
 @app.command(name='auto')
-def run_auto(simulator: List[str] = typer.Option(..., '--simulator', '-s', help='Simulators to load')) -> None:
+def run_auto(context: typer.Context) -> None:
     """Runs POCS automatically, like it's meant to be run."""
 
-    pocs = get_pocs(simulator=simulator)
+    pocs = get_pocs(context)
 
     try:
         pocs.run()
@@ -57,8 +64,7 @@ def run_auto(simulator: List[str] = typer.Option(..., '--simulator', '-s', help=
 
 
 @app.command(name='alignment')
-def run_alignment(simulator: List[str] = typer.Option(None, '--simulator', '-s',
-                                                      help='Simulators to load'),
+def run_alignment(context: typer.Context,
                   coords: List[str] = typer.Option(None, '--coords', '-c',
                                                    help='Alt/Az coordinates to use, e.g. 40,55'),
                   exptime: float = 30,
@@ -71,7 +77,7 @@ def run_alignment(simulator: List[str] = typer.Option(None, '--simulator', '-s',
     Not specifying coordinates is the same as the following:
         -c 40,90 -c 55,60 -c 55,120 -c 70,210 -c 70,330
     """
-    pocs = get_pocs(simulator=simulator)
+    pocs = get_pocs(context)
 
     altaz_coords = coords or [
         # (alt, az)
