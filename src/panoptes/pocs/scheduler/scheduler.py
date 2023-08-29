@@ -5,7 +5,7 @@ from contextlib import suppress
 
 from astroplan import Observer
 from astropy import units as u
-from astropy.coordinates import get_moon
+from astropy.coordinates import get_body
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
@@ -252,6 +252,6 @@ class BaseScheduler(PanBase):
         horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
         self.common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
-            'moon': get_moon(time, self.observer.location),
+            'moon': get_body('moon', time, self.observer.location),
             'observed_list': self.observed_list
         }
