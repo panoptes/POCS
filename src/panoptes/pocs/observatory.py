@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from astropy import units as u
-from astropy.coordinates import get_moon
-from astropy.coordinates import get_sun
+from astropy.coordinates import get_body
 from astropy.io.fits import setval
 from panoptes.utils import error
 from panoptes.utils.time import current_time, CountdownTimer, flatten_time
@@ -52,7 +51,7 @@ class Observatory(PanBase):
 
         # Do some one-time calculations
         now = current_time()
-        self._local_sun_pos = self.observer.altaz(now, target=get_sun(now)).alt  # Re-calculated
+        self._local_sun_pos = self.observer.altaz(now, target=get_body('sun', now)).alt  # Re-calculated
         self._local_sunrise = self.observer.sun_rise_time(now)
         self._local_sunset = self.observer.sun_set_time(now)
         self._evening_astro_time = self.observer.twilight_evening_astronomical(now, which='next')
@@ -104,7 +103,7 @@ class Observatory(PanBase):
         horizon_deg = self.get_config(f'location.{horizon}_horizon', default=default_dark)
         is_dark = self.observer.is_night(at_time, horizon=horizon_deg)
 
-        self._local_sun_pos = self.observer.altaz(at_time, target=get_sun(at_time)).alt
+        self._local_sun_pos = self.observer.altaz(at_time, target=get_body('sun', at_time)).alt
         self.logger.debug(f"Sun {self._local_sun_pos:.02f} > {horizon_deg} [{horizon}]")
 
         return is_dark
@@ -654,7 +653,7 @@ class Observatory(PanBase):
         self.logger.debug(f'Getting headers for : {observation}')
 
         t0 = current_time()
-        moon = get_moon(t0, self.observer.location)
+        moon = get_body('moon', t0, self.observer.location)
 
         headers = {
             'airmass': self.observer.altaz(t0, field).secz.value,
@@ -857,7 +856,7 @@ class Observatory(PanBase):
             fits_headers['start_time'] = flatten_time(start_time)
 
             # Report the sun level
-            sun_pos = self.observer.altaz(start_time, target=get_sun(start_time)).alt
+            sun_pos = self.observer.altaz(start_time, target=get_body('sun', start_time)).alt
             self.logger.debug(f"Sun {sun_pos:.02f}°")
 
             # Take the observations.
@@ -990,7 +989,7 @@ class Observatory(PanBase):
 
         # Get an azimuth that is roughly opposite the sun.
         if az is None:
-            sun_pos = self.observer.altaz(flat_time, target=get_sun(flat_time))
+            sun_pos = self.observer.altaz(flat_time, target=get_body('sun', flat_time))
             az = sun_pos.az.value - 180.  # Opposite the sun
 
         self.logger.debug(f'Flat-field coords: {alt=:.02f} {az=:.02f}')

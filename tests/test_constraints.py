@@ -3,7 +3,7 @@ import pytest
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
-from astropy.coordinates import get_moon
+from astropy.coordinates import get_body
 from astropy.time import Time
 
 from collections import OrderedDict
@@ -233,7 +233,7 @@ def test_moon_veto(observer):
 
     time = Time('2016-08-13 10:00:00')
 
-    moon = get_moon(time, observer.location)
+    moon = get_body('moon', time, observer.location)
 
     observation1 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
 
@@ -247,7 +247,7 @@ def test_moon_avoidance(observer):
 
     time = Time('2016-08-13 10:00:00')
 
-    moon = get_moon(time, observer.location)
+    moon = get_body('moon', time, observer.location)
 
     observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
     observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16

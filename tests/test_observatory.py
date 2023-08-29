@@ -2,7 +2,7 @@ import os
 import time
 
 import pytest
-from astropy.coordinates import get_sun
+from astropy.coordinates import get_body
 from astropy.time import Time
 from panoptes.pocs import __version__
 from panoptes.utils import error
@@ -426,7 +426,7 @@ def test_create_flat_field(observatory):
 
     flat0 = observatory._create_flat_field_observation(flat_time=flat_time)
 
-    sun_pos = observatory.observer.altaz(flat_time, target=get_sun(flat_time))
+    sun_pos = observatory.observer.altaz(flat_time, target=get_body('sun', flat_time))
     az = sun_pos.az.value - 180
 
     assert flat0.field.dec.value == pytest.approx(38.4, rel=1e-2)
