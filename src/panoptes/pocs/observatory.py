@@ -989,7 +989,7 @@ class Observatory(PanBase):
 
         # Get an azimuth that is roughly opposite the sun.
         if az is None:
-            sun_pos = self.observer.altaz(flat_time, target=get_body('moon', flat_time))
+            sun_pos = self.observer.altaz(flat_time, target=get_body('sun', flat_time))
             az = sun_pos.az.value - 180.  # Opposite the sun
 
         self.logger.debug(f'Flat-field coords: {alt=:.02f} {az=:.02f}')
