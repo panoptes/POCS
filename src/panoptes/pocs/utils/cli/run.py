@@ -76,6 +76,7 @@ def run_alignment(context: typer.Context,
 
     Not specifying coordinates is the same as the following:
         -c 55,60 -c 55,120 -c 55,240 -c 55,300
+        -c 70,60 -c 70,120 -c 70,240 -c 70,300
     """
     pocs = get_pocs(context)
 
