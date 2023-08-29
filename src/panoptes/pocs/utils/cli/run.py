@@ -107,7 +107,7 @@ def run_alignment(context: typer.Context,
         sequence_time = current_time(flatten=True)
 
         for i, altaz_coord in enumerate(altaz_coords):
-            print(f'Starting coord #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
+            print(f'{field_name} #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
 
             # Create an observation and set it as current.
             observation = get_altaz_observation(altaz_coord, sequence_time)
@@ -119,7 +119,9 @@ def run_alignment(context: typer.Context,
             mount.slew_to_target(blocking=True)
 
             # Take all the exposures for this altaz observation.
-            pocs.observe_target(observation)
+            for j in range(num_exposures):
+                print(f'\tStarting exposure #{j+1:02d}/{num_exposures:02d} for {altaz_coord=}')
+                pocs.observatory.take_observation(blocking=True)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
