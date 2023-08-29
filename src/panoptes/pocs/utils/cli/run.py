@@ -84,6 +84,7 @@ def run_alignment(context: typer.Context,
     azs = [60, 120, 240, 300]
 
     altaz_coords = coords or list(product(alts, azs))
+    altaz_coords = sorted(altaz_coords, key=lambda x: x[1])  # Sort by azimuth.
     print(f'Using {altaz_coords=} for alignment.\n')
 
     # Helper function to make an observation from altaz coordinates.
