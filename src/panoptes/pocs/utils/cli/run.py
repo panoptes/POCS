@@ -79,7 +79,7 @@ def run_alignment(context: typer.Context,
     """
     pocs = get_pocs(context)
 
-    alts = [40, 55, 70, 85]
+    alts = [55, 70]
     azs = [60, 120, 240, 300]
 
     altaz_coords = coords or list(product(alts, azs))
