@@ -562,13 +562,17 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         readout_thread.start()
 
         if blocking:
+            blocking_timer = CountdownTimer(duration=timeout)
             self.logger.debug(f"Blocking on exposure event for {self}")
             readout_thread.join()
-            while self.is_exposing:
+            while self.is_exposing and not blocking_timer.expired():
                 time.sleep(0.5)
             self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
-            while not os.path.exists(filename):
+            while not os.path.exists(filename) and not blocking_timer.expired():
                 time.sleep(0.1)
+            if blocking_timer.expired():
+                raise error.Timeout(f"Timeout waiting for {filename} to exist.")
+
             self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
         return readout_thread
