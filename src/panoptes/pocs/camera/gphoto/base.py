@@ -67,6 +67,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         metadata['filepath'] = metadata['filepath'].replace('.cr2', '.fits')
         super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
+        self._command_proc = None
 
     def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
         """ Run gphoto2 command. """
