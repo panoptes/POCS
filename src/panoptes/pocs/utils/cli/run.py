@@ -107,7 +107,7 @@ def run_alignment(context: typer.Context,
         sequence_time = current_time(flatten=True)
 
         for i, altaz_coord in enumerate(altaz_coords):
-            print(f'Starting coord #{i:02d}/{len(altaz_coord):02d} {altaz_coord=}')
+            print(f'Starting coord #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
 
             # Create an observation and set it as current.
             observation = get_altaz_observation(altaz_coord, sequence_time)
