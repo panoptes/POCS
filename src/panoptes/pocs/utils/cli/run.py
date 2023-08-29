@@ -1,6 +1,7 @@
 import os
 from typing import List
 
+from itertools import product
 import typer
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
@@ -64,27 +65,26 @@ def run_auto(context: typer.Context) -> None:
 
 @app.command(name='alignment')
 def run_alignment(context: typer.Context,
-                  coords: List[str] = typer.Option(None, '--coords', '-c',
-                                                   help='Alt/Az coordinates to use, e.g. 40,55'),
+                  alt: List[float] = typer.Option([40, 55, 70], '--alt', '-a', help='Altitude coordinates to use.'),
+                  az: List[float] = typer.Option([60, 120, 240, 300], '--az', '-z',
+                                                 help='Azimuth coordinates to use.'),
                   exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
                   num_exposures: int = typer.Option(5, '--num-exposures', '-n', help='Number of exposures.'),
                   field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
                   ) -> None:
     """Runs POCS in alignment mode.
 
-    Not specifying coordinates is the same as the following:
-        -c 40,90 -c 55,60 -c 55,120 -c 70,210 -c 70,330
+    The coordinates will be a product of the alt an az coordinates. For example, the defaults
+    alt=40,55,70 and az=60,120,240,300 result in the following:
+
+        (40, 60), (40, 120), (40, 240), (40, 300)
+        (55, 60), (55, 120), (55, 240), (55, 300)
+        (70, 60), (70, 120), (70, 240), (70, 300)
+
     """
     pocs = get_pocs(context)
 
-    altaz_coords = coords or [
-        # (alt, az)
-        (40, 90),
-        (55, 60),
-        (55, 120),
-        (70, 210),
-        (70, 330),
-    ]
+    altaz_coords = list(product(alt, az))
     print(f'Using {altaz_coords=} for alignment.\n')
 
     # Helper function to make an observation from altaz coordinates.
@@ -120,7 +120,7 @@ def run_alignment(context: typer.Context,
 
             # Take all the exposures for this altaz observation.
             for j in range(num_exposures):
-                print(f'\tStarting {exptime}s exposure #{j+1:02d}/{num_exposures:02d}')
+                print(f'\tStarting {exptime}s exposure #{j + 1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
