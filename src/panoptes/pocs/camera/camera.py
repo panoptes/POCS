@@ -562,7 +562,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         readout_thread.start()
 
         if blocking:
-            blocking_timer = CountdownTimer(duration=timeout or seconds + self.readout_time)
+            blocking_time = seconds.value + self.readout_time + timeout.value
+            blocking_timer = CountdownTimer(duration=blocking_time)
             self.logger.debug(f"Blocking on exposure event for {self}")
             readout_thread.join()
             while self.is_exposing and not blocking_timer.expired():
