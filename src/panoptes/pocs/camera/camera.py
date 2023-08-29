@@ -423,7 +423,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Set the camera is_observing.
         self._is_observing_event.set()
 
-        # Setup the observation
+        # Set up the observation
         metadata = self._setup_observation(observation, headers, filename, **kwargs)
         exptime = metadata['exptime']
         file_path = metadata['filepath']
