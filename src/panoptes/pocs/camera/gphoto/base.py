@@ -59,6 +59,15 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return self._is_exposing_event.is_set()
 
+    def process_exposure(self, metadata, **kwargs):
+        """Converts the CR2 to FITS then processes image."""
+        # Wait for exposure to complete. Timeout handled by exposure thread.
+        while self.is_exposing:
+            time.sleep(0.5)
+
+        metadata['filepath'] = metadata['filepath'].replace('.cr2', '.fits')
+        super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
+
     def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
         """ Run gphoto2 command. """
 
