@@ -913,7 +913,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        image_dir = os.path.join(observation.directory, self.uid, observation.seq_time)
+        image_dir = os.path.abspath(os.path.join(observation.directory, self.uid, observation.seq_time))
         self.logger.debug(f'Setting {image_dir=}')
 
         # Get full file path
