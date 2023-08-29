@@ -120,7 +120,7 @@ def run_alignment(context: typer.Context,
 
             # Take all the exposures for this altaz observation.
             for j in range(num_exposures):
-                print(f'\tStarting exposure #{j+1:02d}/{num_exposures:02d} for {altaz_coord=}')
+                print(f'\tStarting {exptime}s exposure #{j+1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
