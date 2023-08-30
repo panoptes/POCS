@@ -26,7 +26,7 @@ def get_pocs(context: typer.Context):
     simulators = context.obj
     confirm = typer.prompt('Are you sure you want to run POCS automatically?', default='n')
     if confirm.lower() not in ['y', 'yes']:
-        raise typer.Abort()
+        raise typer.Exit(0)
 
     # Change to home directory.
     os.chdir(os.path.expanduser('~'))
