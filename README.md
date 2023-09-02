@@ -85,7 +85,6 @@ A minimal working example with a simulated `Observatory` would be:
 ```python
 import os
 from panoptes.utils.config.server import config_server
-from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.core import POCS
 
 os.environ['PANDIR'] = '/var/panoptes'
@@ -95,13 +94,7 @@ S 01-20 01:01:10.926 Config server Loaded 17 top-level items
 I 01-20 01:01:10.928 Config items saved to flask config-server
 I 01-20 01:01:10.934 Starting panoptes config server with localhost:6563
 
-observatory = Observatory()
-I 01-20 01:01:16.157 Creating PanDB panoptes
-I 01-20 01:01:16.158 Initializing observatory
-I 01-20 01:01:16.158 Setting up location
-S 01-20 01:01:17.070 Observatory initialized
-
-pocs = POCS(observatory, simulators=['all'])
+pocs = POCS.from_config(simulators=['all'])
 I 01-20 01:01:20.408 Initializing PANOPTES unit - Generic PANOPTES Unit - Mauna Loa Observatory
 I 01-20 01:01:20.419 Making a POCS state machine from panoptes
 I 01-20 01:01:20.420 Loading state table: panoptes
