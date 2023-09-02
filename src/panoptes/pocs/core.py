@@ -1,16 +1,17 @@
 import os
 from contextlib import suppress
 from multiprocessing import Process
-from typing import Optional
+from typing import Optional, List
 
 from astropy import units as u
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
+from panoptes.utils.utils import get_free_space
+
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
-from panoptes.utils.time import current_time
-from panoptes.utils.utils import get_free_space
-from panoptes.utils.time import CountdownTimer
 from panoptes.pocs.utils import error
 
 
@@ -47,7 +48,7 @@ class POCS(PanStateMachine, PanBase):
             simulators=None,
             *args, **kwargs):
 
-        # Explicitly call the base classes in the order we want.
+        # Explicitly call the base class.
         PanBase.__init__(self, *args, **kwargs)
 
         if simulators:
@@ -567,3 +568,34 @@ class POCS(PanStateMachine, PanBase):
         is_expired = sleep_timer.expired()
         self.logger.debug(f'Leaving wait timer: expired={is_expired}')
         return is_expired
+
+    ################################################################################################
+    # Class Methods
+    ################################################################################################
+
+    @classmethod
+    def from_config(cls, simulators: List[str] = None):
+        """Create a new POCS instance using the config system.
+
+        Args:
+            simulators (List[str], optional): A list of the different modules that can run in
+                simulator mode. Possible modules include: all, mount, camera, weather, night.
+                Defaults to an empty list.
+        """
+        try:
+            from panoptes.pocs.scheduler import create_scheduler_from_config
+            from panoptes.pocs.mount import create_mount_from_config
+            from panoptes.pocs.camera import create_cameras_from_config
+        except ImportError:
+            print(f'Cannot import helper modules.')
+        else:
+            try:
+                scheduler = create_scheduler_from_config()
+                mount = create_mount_from_config()
+                cameras = create_cameras_from_config()
+
+                observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
+                pocs = cls(observatory, simulators=simulators or list())
+                return pocs
+            except Exception as e:
+                raise error.PanError(f'Problem creating POCS: {e!r}')

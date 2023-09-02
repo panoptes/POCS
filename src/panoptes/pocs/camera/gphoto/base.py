@@ -63,17 +63,11 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         """Converts the CR2 to FITS then processes image."""
         # Wait for exposure to complete. Timeout handled by exposure thread.
         while self.is_exposing:
-            time.sleep(1)
+            time.sleep(0.5)
 
-        self.logger.debug(f'Processing Canon DSLR exposure with {metadata=!r}')
-        file_path = metadata['filepath']
-        try:
-            self.logger.debug(f"Converting CR2 -> FITS: {file_path}")
-            fits_path = cr2_utils.cr2_to_fits(file_path, headers=metadata, remove_cr2=False)
-            metadata['filepath'] = fits_path
-            super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
-        except TimeoutError:
-            self.logger.error(f'Error processing exposure for {file_path} on {self}')
+        metadata['filepath'] = metadata['filepath'].replace('.cr2', '.fits')
+        super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
+        self._command_proc = None
 
     def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
         """ Run gphoto2 command. """
@@ -237,9 +231,14 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return properties
 
-    def _readout(self, filename, *args, **kwargs):
-        if os.path.exists(filename):
-            self.logger.debug(f'Readout complete for {filename}')
+    def _readout(self, filename, headers, *args, **kwargs):
+        self.logger.debug(f'Reading Canon DSLR exposure for {filename=}')
+        try:
+            self.logger.debug(f"Converting CR2 -> FITS: {filename}")
+            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
+        except TimeoutError:
+            self.logger.error(f'Error processing exposure for {filename} on {self}')
+        finally:
             self._readout_complete = True
 
     def _set_target_temperature(self, target):

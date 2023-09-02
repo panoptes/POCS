@@ -423,7 +423,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # Set the camera is_observing.
         self._is_observing_event.set()
 
-        # Setup the observation
+        # Set up the observation
         metadata = self._setup_observation(observation, headers, filename, **kwargs)
         exptime = metadata['exptime']
         file_path = metadata['filepath']
@@ -465,7 +465,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                       metadata=None,
                       dark=False,
                       blocking=False,
-                      timeout=None,
+                      timeout=10 * u.second,
                       *args,
                       **kwargs) -> threading.Thread:
         """Take an exposure for given number of seconds and saves to provided filename.
@@ -482,8 +482,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-            timeout (astropy.Quantity): The timeout to use for the exposure. If None, will be
-                calculated automatically.
+            timeout (astropy.Quantity): The timeout to use for the exposure, default 10 seconds.
         Returns:
             threading.Thread: The readout thread, which joins when readout has finished.
         """
@@ -562,13 +561,18 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         readout_thread.start()
 
         if blocking:
-            self.logger.debug(f"Blocking on exposure event for {self}")
+            blocking_time = seconds.to_value(u.second) + self.readout_time + timeout.to_value(u.second)
+            blocking_timer = CountdownTimer(duration=blocking_time)
+            self.logger.debug(f"Blocking on exposure event for {self} for {blocking_time:.02f}s")
             readout_thread.join()
-            while self.is_exposing:
+            while self.is_exposing and not blocking_timer.expired():
                 time.sleep(0.5)
             self.logger.trace(f'Exposure blocking complete, waiting for file to exist')
-            while not os.path.exists(filename):
+            while not os.path.exists(filename) and not blocking_timer.expired():
                 time.sleep(0.1)
+            if blocking_timer.expired():
+                raise error.Timeout(f"Timeout waiting for {filename} to exist.")
+
             self.logger.debug(f"Blocking complete on {self} for filename={filename!r}")
 
         return readout_thread
@@ -582,7 +586,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             2. Calls `_process_fits` with the filename and info, which is specific to each camera.
             3. Makes pretty images if requested.
             4. Records observation metadata if requested.
-            5. Compresses FITS files if requested.
+            5. Compress FITS files if requested.
             6. Sets the observation_event.
 
         If the camera is a primary camera, extract the jpeg image and save metadata to database
@@ -909,7 +913,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        image_dir = os.path.join(observation.directory, self.uid, observation.seq_time)
+        image_dir = os.path.abspath(os.path.join(observation.directory, self.uid, observation.seq_time))
         self.logger.debug(f'Setting {image_dir=}')
 
         # Get full file path

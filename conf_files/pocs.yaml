@@ -131,7 +131,7 @@ environment:
         label: mount
         default_state: on
   weather:
-    url: http://localhost:6566/current
+    url: http://localhost:6566/weather
 
 
 ########################## Observations ########################################

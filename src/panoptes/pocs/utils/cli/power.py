@@ -42,14 +42,10 @@ def status(context: typer.Context):
             relays = res.json()
             for relay_index, relay_info in relays.items():
                 with suppress(KeyError, TypeError):
-                    relay_label = typer.style(f'{relay_info["label"]:.<20s}',
-                                              fg=typer.colors.BRIGHT_CYAN)
-                    if relay_info['state'] == 'ON':
-                        status_color = typer.colors.BRIGHT_GREEN
-                    else:
-                        status_color = typer.colors.BRIGHT_RED
-                    status_text = typer.style(relay_info['state'], fg=status_color)
-                    print(f'[{relay_index}] {relay_label} {status_text}')
+                    relay_label = f'{relay_info["label"]:.<20s}'
+                    print(f'[{relay_index}] '
+                          f'{relay_label} [{"green" if relay_info["state"] == "ON" else "red"}]'
+                          f'{relay_info["state"]}[/]')
         else:
             print(f'[red]{res.content.decode()}[/red]')
     except requests.exceptions.ConnectionError:
@@ -65,7 +61,7 @@ def readings(context: typer.Context):
         if res.ok:
             relays = res.json()
             for relay_label, relay_readings in relays.items():
-                relay_text = typer.style(f'{relay_label:.<20s}', fg=typer.colors.CYAN)
+                relay_text = f'[cyan]{relay_label:.<20s}[/cyan]'
                 relay_readings = [int(x) if int(x) >= 0 else 0 for x in relay_readings.values()]
                 for val in sparklines(relay_readings):
                     print(f'{relay_text} {val} [{np.array(relay_readings).mean():.0f}]')
