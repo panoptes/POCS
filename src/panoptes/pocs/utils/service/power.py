@@ -76,7 +76,7 @@ def do_command(relay_command: RelayCommand):
     try:
         relay = power_board.relay_labels[relay_id]
     except KeyError:
-        relay = power_board.relays[relay_id]
+        relay = power_board.relays[int(relay_id)]
 
     command_func = getattr(relay, relay_command.command)
     # Perform function.
