@@ -131,7 +131,8 @@ environment:
         label: mount
         default_state: on
   weather:
-    url: http://localhost:6566/weather
+    #    url: http://localhost:6566/weather
+    serial_port: /dev/ttyUSB0
 
 
 ########################## Observations ########################################
