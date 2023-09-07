@@ -6,7 +6,7 @@ from panoptes.pocs.base import PanBase
 class WeatherStation(PanBase):
     """POCS weather station.
 
-    Ideally just a thin wrapper with support for putting entries into the database.
+    A thin wrapper with support for putting entries into the database.
     """
 
     def __init__(self,
@@ -17,8 +17,7 @@ class WeatherStation(PanBase):
         """Initialize the weather station.
 
         Args:
-            port (str, optional): The dev port for the arduino, if not provided, search for port
-                matching the vendor (2341) and product id (0043).
+            port (str, optional): The dev port for the mount, usually the usb-serial converter.
             name (str): The user-friendly name for the weather station.
             db_collection (str): Which collection (i.e. table) to store the values in, default 'weather'.
         """
