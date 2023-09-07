@@ -7,6 +7,7 @@ from panoptes.pocs.utils.cli import mount
 from panoptes.pocs.utils.cli import notebook
 from panoptes.pocs.utils.cli import power
 from panoptes.pocs.utils.cli import run
+from panoptes.pocs.utils.cli import weather
 from rich import print
 
 app = typer.Typer()
@@ -19,6 +20,7 @@ app.add_typer(notebook.app, name="notebook", help='Start Jupyter notebook enviro
 app.add_typer(power.app, name="power", help='Interact with power relays.')
 app.add_typer(run.app, name="run", help='Run POCS!')
 app.add_typer(sensor.app, name="sensor", help='Interact with system sensors.')
+app.add_typer(weather.app, name="weather", help='Interact with weather station service.')
 
 
 @app.callback()
