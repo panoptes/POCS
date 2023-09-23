@@ -389,7 +389,8 @@ class Observatory(PanBase):
         # Take exposure with each camera.
         for cam_name, camera in self.cameras.items():
             self.logger.debug(f"Exposing for camera: {cam_name}")
-            camera.take_observation(self.current_observation, headers=headers, blocking=blocking)
+            # Don't block in this call but handle blocking below.
+            camera.take_observation(self.current_observation, headers=headers, blocking=False)
 
         if blocking:
             cam = self.primary_camera

@@ -531,6 +531,7 @@ class AbstractMount(PanBase):
             self.logger.info("Target Coordinates not set")
         else:
             self.logger.debug('Slewing to target')
+            self._is_tracking = False
             success = self.query('slew_to_target')
 
             self.logger.debug(f"Mount response: {success}")
