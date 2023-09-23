@@ -41,11 +41,13 @@ def status(context: typer.Context):
         if res.ok:
             relays = res.json()
             for relay_index, relay_info in relays.items():
-                with suppress(KeyError, TypeError):
+                try:
                     relay_label = f'{relay_info["label"]:.<20s}'
                     print(f'[{relay_index}] '
                           f'{relay_label} [{"green" if relay_info["state"] == "ON" else "red"}]'
                           f'{relay_info["state"]}[/]')
+                except (KeyError, TypeError):
+                    print(f'[green]AC ok: [/green] [{"green" if relay_info is True else "red"}]{str(relay_info):.>25s}')
         else:
             print(f'[red]{res.content.decode()}[/red]')
     except requests.exceptions.ConnectionError:
