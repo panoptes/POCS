@@ -290,7 +290,7 @@ class AbstractMount(PanBase):
         except Exception as e:
             self.logger.warning(f"Problem setting mount coordinates: {mount_coords} {e!r}")
 
-        self.logger.debug(f'Mount simulator set target coordinates: {target_set}')
+        self.logger.debug(f'Mount set target coordinates: {target_set}')
         return target_set
 
     def get_current_coordinates(self):
