@@ -96,7 +96,12 @@ def setup_mount(
 
             device = serial.serial_for_url(port.device, baudrate=baudrate, timeout=1)
             device.write(b':MountInfo#')
-            response = device.readline().decode('utf-8')
+            try:
+                response = device.readline().decode('utf-8')
+            except serial.SerialException:
+                print('Device potentially being accessed by another process.')
+                continue
+
             if response > '':
                 print(f"Found mount at {port.device} at {baudrate} baud.")
                 print(f"Response: {response}")
