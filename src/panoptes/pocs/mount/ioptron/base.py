@@ -72,8 +72,8 @@ class Mount(AbstractSerialMount):
 
         self._latitude_format = self.commands.get('latitude_format', '{:.0f}')
         self._longitude_format = self.commands.get('longitude_format', '{:.0f}')
-        self._status_format = re.compile(self.commands.get('status_format'))
-        self._coords_format = re.compile(self.commands.get('coords_format'))
+        self._status_format = re.compile(self.commands.get('status_format'), flags=re.VERBOSE)
+        self._coords_format = re.compile(self.commands.get('coords_format'), flags=re.VERBOSE)
 
         self._state = MountState.UNKNOWN
 
