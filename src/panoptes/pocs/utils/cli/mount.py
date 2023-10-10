@@ -108,7 +108,7 @@ def setup_mount(
                 print(f'Handcontroller: {handcontroller_fw}')
 
                 device.write(b':FW2#')
-                response = device.readline().decode('utf-8').
+                response = device.readline().decode('utf-8')
                 ra_fw = response[:6]
                 dec_fw = response[6:]
                 print(f'RA: {ra_fw}')
