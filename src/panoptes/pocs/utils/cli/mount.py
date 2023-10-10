@@ -90,13 +90,13 @@ def setup_mount(
     # Loop through all the ports and baudrates.
     for port in ports:
         for baudrate in baudrates:
-            print(f"Trying {port} at {baudrate} baud...")
+            print(f"Trying {port.device} at {baudrate} baud...")
 
-            device = serial.serial_for_url(port, baudrate=baudrate, timeout=1)
+            device = serial.serial_for_url(port.device, baudrate=baudrate, timeout=1)
             device.write(b':MountInfo#')
             response = device.readline()
             if response > '':
-                print(f"Found mount at {port} at {baudrate} baud.")
+                print(f"Found mount at {port.device} at {baudrate} baud.")
                 print(f"Response: {response}")
 
                 # Get the firmware version.
