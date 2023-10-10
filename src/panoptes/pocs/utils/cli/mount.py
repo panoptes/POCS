@@ -94,21 +94,21 @@ def setup_mount(
 
             device = serial.serial_for_url(port.device, baudrate=baudrate, timeout=1)
             device.write(b':MountInfo#')
-            response = device.readline().decode('utf-8').strip()
+            response = device.readline().decode('utf-8')
             if response > '':
                 print(f"Found mount at {port.device} at {baudrate} baud.")
                 print(f"Response: {response}")
 
                 # Get the firmware version.
                 device.write(b':FW1#')
-                response = device.readline().decode('utf-8').strip()
+                response = device.readline().decode('utf-8')
                 mainboard_fw = response[:6]
                 handcontroller_fw = response[6:]
                 print(f'Mainboard: {mainboard_fw}')
                 print(f'Handcontroller: {handcontroller_fw}')
 
                 device.write(b':FW2#')
-                response = device.readline().decode('utf-8').strip()
+                response = device.readline().decode('utf-8').
                 ra_fw = response[:6]
                 dec_fw = response[6:]
                 print(f'RA: {ra_fw}')
