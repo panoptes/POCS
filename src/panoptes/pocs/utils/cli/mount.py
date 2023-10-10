@@ -94,16 +94,16 @@ def setup_mount(
 
             device = serial.serial_for_url(port.device, baudrate=baudrate, timeout=1)
             device.write(b':MountInfo#')
-            response = device.readline()
+            response = device.readline().decode('utf-8').strip()
             if response > '':
                 print(f"Found mount at {port.device} at {baudrate} baud.")
                 print(f"Response: {response}")
 
                 # Get the firmware version.
                 device.write(b':FW1#')
-                response = device.readline()
+                response = device.readline().decode('utf-8').strip()
                 print(f"Firmware 1: {response}")
 
                 device.write(b':FW2#')
-                response = device.readline()
+                response = device.readline().decode('utf-8').strip()
                 print(f"Firmware 2: {response}")
