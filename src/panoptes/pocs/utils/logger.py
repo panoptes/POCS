@@ -5,6 +5,15 @@ from pathlib import Path
 
 from loguru import logger as loguru_logger
 
+try:
+    import google.cloud.logging
+    from google.cloud.logging_v2.handlers import CloudLoggingHandler
+
+    cloud_client = google.cloud.logging.Client()
+    cloud_client.setup_logging()
+except ImportError:
+    cloud_client = None
+
 
 class PanLogger:
     """Custom formatter to have dynamic widths for logging.
@@ -121,6 +130,15 @@ def get_logger(console_log_file='panoptes.log',
                 diagnose=True,
                 level='TRACE')
             LOGGER_INFO.handlers['archive'] = archive_id
+
+    if 'cloud' not in LOGGER_INFO.handlers:
+        # TODO fix this.
+        unit_id = 'PAN000'
+        cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
+        cloud_id = loguru_logger.add(cloud_handler,
+                                     level='DEBUG',
+                                     format="{name} {function}:{line} {message}")
+        LOGGER_INFO.handlers['cloud'] = cloud_id
 
     # Customize colors.
     loguru_logger.level('TRACE', color='<cyan>')
