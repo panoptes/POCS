@@ -7,7 +7,7 @@ cmd_pre: ':'
 cmd_post: '#'
 
 # Mount formatting
-latitude_format: '{+08.0f}'
+latitude_format: '{:+08.0f}'
 longitude_format: '{:+08.0f}'
 coords_format: >-
   (?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8}) 
