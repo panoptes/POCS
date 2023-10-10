@@ -1,3 +1,5 @@
+import re
+
 import serial
 import typer
 from rich import print
@@ -102,7 +104,7 @@ def setup_mount(
                 print('Device potentially being accessed by another process.')
                 continue
 
-            if response > '':
+            if re.match(r'\d{4}', response):  # iOptron specific
                 print(f"Found mount at {port.device} at {baudrate} baud.")
                 print(f"Response: {response}")
 
