@@ -1,7 +1,9 @@
+import serial
 import typer
 from rich import print
 from typing_extensions import Annotated
 
+from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.pocs.mount import create_mount_from_config
 
 app = typer.Typer()
@@ -66,3 +68,42 @@ def search_for_home(
     mount.initialize()
     mount.search_for_home()
     mount.disconnect()
+
+
+@app.command(name='setup')
+def setup_mount(
+        confirm: Annotated[bool, typer.Option(..., '--confirm',
+                                              prompt='Are you sure you want to setup the mount?',
+                                              help='Confirm mount setup.')] = False,
+):
+    """Sets up the mount port, type, and firmware."""
+    if not confirm:
+        print('[red]Cancelled.[/red]')
+        return typer.Abort()
+
+    # Baudrates to check.
+    baudrates = [9600, 115200]
+
+    # Get all the ports.
+    ports = get_serial_port_info()
+
+    # Loop through all the ports and baudrates.
+    for port in ports:
+        for baudrate in baudrates:
+            print(f"Trying {port} at {baudrate} baud...")
+
+            device = serial.serial_for_url(port, baudrate=baudrate, timeout=1)
+            device.write(b':MountInfo#')
+            response = device.readline()
+            if response > '':
+                print(f"Found mount at {port} at {baudrate} baud.")
+                print(f"Response: {response}")
+
+                # Get the firmware version.
+                device.write(b':FW1#')
+                response = device.readline()
+                print(f"Firmware 1: {response}")
+
+                device.write(b':FW2#')
+                response = device.readline()
+                print(f"Firmware 2: {response}")
