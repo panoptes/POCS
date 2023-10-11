@@ -110,7 +110,7 @@ def setup_mount(
                     print(f"Response: {response}")
 
                     # Get the mainboard and handcontroller firmware version.
-                    device.write(b':FW1#')
+                    device.write(':FW1#')
                     response = device.read()
                     mainboard_fw = response[:6]
                     handcontroller_fw = response[6:]
@@ -118,7 +118,7 @@ def setup_mount(
                     print(f'Handcontroller: {handcontroller_fw}')
 
                     # Get the RA and DEC firmware version.
-                    device.write(b':FW2#')
+                    device.write(':FW2#')
                     response = device.read()
                     ra_fw = response[:6]
                     dec_fw = response[6:]
