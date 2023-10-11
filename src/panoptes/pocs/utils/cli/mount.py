@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 import serial
 import typer
@@ -141,7 +142,11 @@ def setup_mount(
                                     f'ATTRS{{idProduct}}=="{port.pid:04x}", '
                                     f'ATTRS{{serial}}=="{port.serial_number}", '
                                     f'SYMLINK+="ioptron"')
-                        print(f'UDEV entry: {udev_str}')
+                        udev_fn = Path('91-ioptron.rules')
+                        with udev_fn.open('w') as f:
+                            f.write(udev_str)
+                        print(f'Wrote udev entry to {udev_fn}.')
+                        print('Please copy this file to /etc/udev/rules.d/ and then reboot for changes to take effect.')
                     except Exception:
                         pass
 
