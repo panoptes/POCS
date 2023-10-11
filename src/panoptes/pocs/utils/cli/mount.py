@@ -95,7 +95,7 @@ def setup_mount(
     # Loop through all the ports and baudrates.
     for port in ports:
         for baudrate in baudrates:
-            if 'serial' in port.device or 'aag' in port.device
+            if 'serial' in port.device or 'aag' in port.device:
                 continue
             print(f"Trying {port.device=} at {baudrate=}...")
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
