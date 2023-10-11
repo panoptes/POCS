@@ -16,29 +16,6 @@ class Mount(BaseMount):
     def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
         super(Mount, self).__init__(location, *args, **kwargs)
-        self.logger.info('Creating iOptron CEM40 mount')
-
-        self._coords_format = re.compile(
-            r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})' +
-            r'(?P<ra_millisecond>\d{9})' +
-            r'(?P<pier_side>\d)' +
-            r'(?P<pointing_state>\d)'
-        )
-
-        self._latitude_format = '{:+08.0f}'
-        self._longitude_format = '{:+08.0f}'
-
-        self._status_format = re.compile(
-            r'(?P<longitude>[+\-]\d{8})' +
-            r'(?P<latitude>\d{8})' +
-            r'(?P<gps>[0-2])' +
-            r'(?P<state>[0-7])' +
-            r'(?P<tracking>[0-4])' +
-            r'(?P<movement_speed>[1-9])' +
-            r'(?P<time_source>[1-3])' +
-            r'(?P<hemisphere>[01])'
-        )
-
         self.logger.success('iOptron CEM40 mount created')
 
     def search_for_home(self):
