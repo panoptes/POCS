@@ -5,7 +5,7 @@ import typer
 from rich import print
 from typing_extensions import Annotated
 
-from panoptes.utils.serial.device import get_serial_port_info
+from panoptes.utils.rs232 import SerialData, get_serial_port_info
 from panoptes.pocs.mount import create_mount_from_config
 
 app = typer.Typer()
@@ -86,7 +86,7 @@ def setup_mount(
     # Baudrates to check.
     baudrates = [9600, 115200]
 
-    # Get all the ports.
+    # Get all the serial ports.
     ports = get_serial_port_info()
 
     # Loop through all the ports and baudrates.
@@ -94,30 +94,31 @@ def setup_mount(
         if 'serial' in port.device:
             continue
         for baudrate in baudrates:
-            print(f"Trying {port.device} at {baudrate} baud...")
+            print(f"Trying {port.device=} at {baudrate=}...")
 
-            device = serial.serial_for_url(port.device, baudrate=baudrate, timeout=1)
-            device.write(b':MountInfo#')
+            device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
+            device.write(':MountInfo#')
             try:
-                response = device.readline().decode('utf-8')
+                response = device.read()
             except serial.SerialException:
                 print('Device potentially being accessed by another process.')
                 continue
 
             if re.match(r'\d{4}', response):  # iOptron specific
-                print(f"Found mount at {port.device} at {baudrate} baud.")
+                print(f"Found mount at {port.device=} at {baudrate=}.")
                 print(f"Response: {response}")
 
-                # Get the firmware version.
+                # Get the mainboard and handcontroller firmware version.
                 device.write(b':FW1#')
-                response = device.readline().decode('utf-8')
+                response = device.read()
                 mainboard_fw = response[:6]
                 handcontroller_fw = response[6:]
                 print(f'Mainboard: {mainboard_fw}')
                 print(f'Handcontroller: {handcontroller_fw}')
 
+                # Get the RA and DEC firmware version.
                 device.write(b':FW2#')
-                response = device.readline().decode('utf-8')
+                response = device.read()
                 ra_fw = response[:6]
                 dec_fw = response[6:]
                 print(f'RA: {ra_fw}')
