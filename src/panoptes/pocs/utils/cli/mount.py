@@ -106,7 +106,7 @@ def setup_mount(
                 try:
                     response = device.read()
                 except serial.SerialException:
-                    print('Device potentially being accessed by another process.')
+                    print('\tDevice potentially being accessed by another process.')
                     continue
 
                 if re.match(r'\d{4}', response):  # iOptron specific
