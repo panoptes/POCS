@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 
 from panoptes.utils.rs232 import SerialData, get_serial_port_info
 from panoptes.pocs.mount import create_mount_from_config
+from panoptes.pocs.mount.ioptron.base import MountInfo
 
 app = typer.Typer()
 
@@ -106,26 +107,32 @@ def setup_mount(
                     continue
 
                 if re.match(r'\d{4}', response):  # iOptron specific
-                    print(f"Found mount at {port.device=} at {baudrate=}.")
-                    print(f"Response: {response}")
+                    mount_type = MountInfo(response[0:4])
+                    print(f'Found mount at {port.device=} at {baudrate=} with {response=}.')
+                    print(f'It looks like an iOptron {mount_type=}.')
 
                     # Get the mainboard and handcontroller firmware version.
                     device.write(':FW1#')
                     response = device.read()
-                    mainboard_fw = response[:6]
-                    handcontroller_fw = response[6:-1]
+                    mainboard_fw = int(response[:6])
+                    handcontroller_fw = response[6:-1]  # Returns a string if HC not plugged in.
                     print(f'Mainboard: {mainboard_fw}')
                     print(f'Handcontroller: {handcontroller_fw}')
 
                     # Get the RA and DEC firmware version.
                     device.write(':FW2#')
                     response = device.read()
-                    ra_fw = response[:6]
-                    dec_fw = response[6:-1]
+                    ra_fw = int(response[:6])
+                    dec_fw = int(response[6:-1])
                     print(f'RA: {ra_fw}')
                     print(f'DEC: {dec_fw}')
 
                     # Set config items here.
+                    if mount_type >= MountInfo.CEM40:
+                        if ra_fw >= 210101 and dec_fw >= 210101:
+                            print('Firmware is up to date, use the v310 command set.')
+                        else:
+                            print('Firmware is out of date, use the v250 command set.')
 
                     return typer.Exit()
             except serial.SerialTimeoutException:

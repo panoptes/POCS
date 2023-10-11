@@ -12,6 +12,29 @@ from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.utils import error as error
 
 
+class MountInfo(IntEnum):
+    """The return type given by the MountInfo command to identify the mount."""
+    CEM25 = 25
+    CEM26 = 26
+    CEM26EC = 27
+    GEM28 = 28
+    GEM28EC = 29
+    iEQ30Pro = 30
+    CEM40 = 40
+    CEM40EC = 41
+    GEM45 = 43
+    GEM45EC = 44
+    iEQ45Pro = 45
+    iEQ45ProAA = 46
+    CEM60 = 60
+    CEM60EC = 61
+    CEM70 = 70
+    CEM70EC = 71
+    CEM120 = 120
+    CEM120EC = 121
+    CEM120EC2 = 122
+
+
 class MountGPS(IntEnum):
     OFF = 0
     ON = 1
