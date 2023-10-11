@@ -6,7 +6,8 @@ from panoptes.utils.config.client import set_config
 from rich import print
 from typing_extensions import Annotated
 
-from panoptes.utils.rs232 import SerialData, get_serial_port_info
+from panoptes.utils.serial.device import get_serial_port_info
+from panoptes.utils.rs232 import SerialData
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
 
@@ -94,9 +95,9 @@ def setup_mount(
     # Loop through all the ports and baudrates.
     for port in ports:
         for baudrate in baudrates:
-            print(f"Trying {port.device=} at {baudrate=}...")
             if 'serial' in port.device:
                 continue
+            print(f"Trying {port.device=} at {baudrate=}...")
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
 
             try:
@@ -110,7 +111,7 @@ def setup_mount(
                 if re.match(r'\d{4}', response):  # iOptron specific
                     mount_type = MountInfo(int(response[0:4]))
                     print(f'Found mount at {port.device=} at {baudrate=} with {response=}.')
-                    print(f'It looks like an iOptron {mount_type=}.')
+                    print(f'It looks like an iOptron {mount_type.name}.')
 
                     # Get the mainboard and handcontroller firmware version.
                     device.write(':FW1#')
@@ -138,7 +139,7 @@ def setup_mount(
                         set_config('mount.brand', 'ioptron')
                         set_config('mount.serial.port', port.device)
                         set_config('mount.serial.baudrate', baudrate)
-                        set_config('mount.model', mount_type.name)
+                        set_config('mount.model', mount_type.name.lower())
                         set_config('mount.driver', f'panoptes.pocs.mount.ioptron.{mount_type.name.lower()}')
                         set_config('mount.commands_file', f'ioptron/{command_set}')
 
