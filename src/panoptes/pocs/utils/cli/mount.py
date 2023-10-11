@@ -107,7 +107,7 @@ def setup_mount(
                     continue
 
                 if re.match(r'\d{4}', response):  # iOptron specific
-                    mount_type = MountInfo(response[0:4])
+                    mount_type = MountInfo(int(response[0:4]))
                     print(f'Found mount at {port.device=} at {baudrate=} with {response=}.')
                     print(f'It looks like an iOptron {mount_type=}.')
 
