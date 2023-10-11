@@ -145,7 +145,7 @@ def setup_mount(
                         udev_fn = Path('91-ioptron.rules')
                         with udev_fn.open('w') as f:
                             f.write(udev_str)
-                        print(f'Wrote udev entry to {udev_fn}.')
+                        print(f'Wrote udev entry to [green]{udev_fn}[/green].')
                         print('Please copy this file to /etc/udev/rules.d/ and then reboot for changes to take effect.')
                     except Exception:
                         pass
