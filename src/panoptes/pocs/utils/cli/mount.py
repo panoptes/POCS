@@ -1,4 +1,5 @@
 import re
+import subprocess
 from pathlib import Path
 
 import serial
@@ -142,11 +143,18 @@ def setup_mount(
                                     f'ATTRS{{idProduct}}=="{port.pid:04x}", '
                                     f'ATTRS{{serial}}=="{port.serial_number}", '
                                     f'SYMLINK+="ioptron"')
-                        udev_fn = Path('91-ioptron.rules')
+                        udev_fn = Path('91-panoptes.rules')
                         with udev_fn.open('w') as f:
                             f.write(udev_str)
-                        print(f'Wrote udev entry to [green]{udev_fn}[/green].')
-                        print('Please copy this file to /etc/udev/rules.d/ and then reboot for changes to take effect.')
+
+                        print('Copying udev entry to /etc/udev/rules.d/.')
+                        subprocess.call([
+                            'cat', udev_fn.as_posix(),
+                            '|',
+                            'sudo', 'tee', '-a', f'/etc/udev/rules.d/{udev_fn}'
+                        ])
+                        udev_fn.unlink(missing_ok=True)
+                        print('Please reboot for changes to take effect.')
                     except Exception:
                         pass
 
