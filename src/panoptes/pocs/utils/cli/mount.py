@@ -113,7 +113,7 @@ def setup_mount(
                     device.write(':FW1#')
                     response = device.read()
                     mainboard_fw = response[:6]
-                    handcontroller_fw = response[6:]
+                    handcontroller_fw = response[6:-1]
                     print(f'Mainboard: {mainboard_fw}')
                     print(f'Handcontroller: {handcontroller_fw}')
 
@@ -121,10 +121,12 @@ def setup_mount(
                     device.write(':FW2#')
                     response = device.read()
                     ra_fw = response[:6]
-                    dec_fw = response[6:]
+                    dec_fw = response[6:-1]
                     print(f'RA: {ra_fw}')
                     print(f'DEC: {dec_fw}')
 
-                    break
+                    # Set config items here.
+
+                    return typer.Exit()
             except serial.SerialTimeoutException:
                 pass
