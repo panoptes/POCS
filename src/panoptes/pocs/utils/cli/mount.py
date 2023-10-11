@@ -97,31 +97,35 @@ def setup_mount(
             print(f"Trying {port.device=} at {baudrate=}...")
 
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
-            device.write(':MountInfo#')
+
             try:
-                response = device.read()
-            except serial.SerialException:
-                print('Device potentially being accessed by another process.')
-                continue
+                device.write(':MountInfo#')
+                try:
+                    response = device.read()
+                except serial.SerialException:
+                    print('Device potentially being accessed by another process.')
+                    continue
 
-            if re.match(r'\d{4}', response):  # iOptron specific
-                print(f"Found mount at {port.device=} at {baudrate=}.")
-                print(f"Response: {response}")
+                if re.match(r'\d{4}', response):  # iOptron specific
+                    print(f"Found mount at {port.device=} at {baudrate=}.")
+                    print(f"Response: {response}")
 
-                # Get the mainboard and handcontroller firmware version.
-                device.write(b':FW1#')
-                response = device.read()
-                mainboard_fw = response[:6]
-                handcontroller_fw = response[6:]
-                print(f'Mainboard: {mainboard_fw}')
-                print(f'Handcontroller: {handcontroller_fw}')
+                    # Get the mainboard and handcontroller firmware version.
+                    device.write(b':FW1#')
+                    response = device.read()
+                    mainboard_fw = response[:6]
+                    handcontroller_fw = response[6:]
+                    print(f'Mainboard: {mainboard_fw}')
+                    print(f'Handcontroller: {handcontroller_fw}')
 
-                # Get the RA and DEC firmware version.
-                device.write(b':FW2#')
-                response = device.read()
-                ra_fw = response[:6]
-                dec_fw = response[6:]
-                print(f'RA: {ra_fw}')
-                print(f'DEC: {dec_fw}')
+                    # Get the RA and DEC firmware version.
+                    device.write(b':FW2#')
+                    response = device.read()
+                    ra_fw = response[:6]
+                    dec_fw = response[6:]
+                    print(f'RA: {ra_fw}')
+                    print(f'DEC: {dec_fw}')
 
-            break
+                break
+            except serial.SerialTimeoutException:
+                pass
