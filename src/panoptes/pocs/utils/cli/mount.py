@@ -133,6 +133,15 @@ def setup_mount(
                     command_set = 'v310' if ra_fw >= 210101 and dec_fw >= 210101 else 'v250'
                     print(f'Suggested command set: {command_set}')
 
+                    # Get info for writing udev entry.
+                    udev_str = (f'SUBSYSTEM="tty", '
+                                f'SUBSYSTEMS=="{port.subsytem}", '
+                                f'ATTRS{{idVendor}}=="{port.vid:04x}", '
+                                f'ATTRS{{idProduct}}=="{port.pid:04x}", '
+                                f'ATTRS{{serial}}=="{port.serial_number}", '
+                                f'SYMLINK+="ioptron"')
+                    print(f'UDEV entry: {udev_str}')
+
                     # Confirm the user wants to update the config.
                     if typer.confirm('Do you want to update the config?'):
                         print('Updating config.')
