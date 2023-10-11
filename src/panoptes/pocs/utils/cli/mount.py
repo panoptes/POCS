@@ -1,5 +1,4 @@
 import re
-import subprocess
 from pathlib import Path
 
 import serial
@@ -147,16 +146,9 @@ def setup_mount(
                         with udev_fn.open('w') as f:
                             f.write(udev_str)
 
-                        print('Copying udev entry to /etc/udev/rules.d/.')
-                        cmd = [
-                            'cat', udev_fn.as_posix(),
-                            '|',
-                            'sudo', 'tee', '-a', f'/etc/udev/rules.d/{udev_fn}'
-                        ]
-                        print(f'Running: {" ".join(cmd)}')
-                        subprocess.call(cmd)
-                        udev_fn.unlink(missing_ok=True)
-                        print('Please reboot for changes to take effect.')
+                        print(f'Wrote udev entry to [green]{udev_fn}[/green].')
+                        print('Run the following command and then reboot for changes to take effect:')
+                        print(f'\t[green]sudo cp {udev_fn} /etc/udev/rules.d/[/green]')
                     except Exception:
                         pass
 
