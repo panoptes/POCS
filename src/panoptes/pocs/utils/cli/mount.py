@@ -136,7 +136,8 @@ def setup_mount(
 
                     # Get info for writing udev entry.
                     try:
-                        udev_str = (f'SUBSYSTEM=="tty", '
+                        udev_str = (f'ACTION=="add", '
+                                    f'SUBSYSTEM=="tty", '
                                     f'SUBSYSTEMS=="{port.subsystem}", '
                                     f'ATTRS{{idVendor}}=="{port.vid:04x}", '
                                     f'ATTRS{{idProduct}}=="{port.pid:04x}", '
