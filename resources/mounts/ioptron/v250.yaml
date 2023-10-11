@@ -28,7 +28,7 @@ get_status:
   response: sSSSSSSSSSSSSnnnnnn
 get_timestamp:
   cmd: GLT
-  response: sMMMYYMMDDHHMMSS
+  response: sMMMXYYMMDDHHMMSS
 get_coordinates:
   cmd: GEC
   response: sTTTTTTTTXXXXXXXX

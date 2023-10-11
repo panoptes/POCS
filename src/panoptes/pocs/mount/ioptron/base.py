@@ -322,6 +322,22 @@ class Mount(AbstractSerialMount):
         status['time_offset'] = offset
         status['time_daylight_savings'] = daylight_savings
 
+        if self.commands.get('command_version', 0) == 2.5:
+            year = int(ts[5:7])
+            month = int(ts[7:9])
+            day = int(ts[9:11])
+            hour = int(ts[11:13])
+            minute = int(ts[13:15])
+            second = int(ts[15:17])
+            status['time_local'] = Time(f'20{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}').iso
+        elif self.commands.get('command_version', 0) >= 3.10:
+            with suppress(Exception):
+                now = int(ts[5:]) * u.ms
+                j2000 = Time(2000, format='jyear')
+                t0 = j2000 + now + offset
+
+                status['time_local'] = t0.iso
+
         return status
 
     def _setup_commands(self, commands):
