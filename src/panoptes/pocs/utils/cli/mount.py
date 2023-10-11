@@ -156,7 +156,7 @@ def setup_mount(
                     if typer.confirm('Do you want to update the config?'):
                         print('Updating config.')
                         set_config('mount.brand', 'ioptron')
-                        set_config('mount.serial.port', port.device)
+                        set_config('mount.serial.port', '/dev/ioptron')
                         set_config('mount.serial.baudrate', baudrate)
                         set_config('mount.model', mount_type.name.lower())
                         set_config('mount.driver', f'panoptes.pocs.mount.ioptron.{mount_type.name.lower()}')
