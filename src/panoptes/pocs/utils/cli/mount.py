@@ -148,11 +148,13 @@ def setup_mount(
                             f.write(udev_str)
 
                         print('Copying udev entry to /etc/udev/rules.d/.')
-                        subprocess.call([
+                        cmd = [
                             'cat', udev_fn.as_posix(),
                             '|',
                             'sudo', 'tee', '-a', f'/etc/udev/rules.d/{udev_fn}'
-                        ])
+                        ]
+                        print(f'Running: {" ".join(cmd)}')
+                        subprocess.call(cmd)
                         udev_fn.unlink(missing_ok=True)
                         print('Please reboot for changes to take effect.')
                     except Exception:
