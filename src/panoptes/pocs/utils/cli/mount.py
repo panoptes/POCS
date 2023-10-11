@@ -91,11 +91,10 @@ def setup_mount(
 
     # Loop through all the ports and baudrates.
     for port in ports:
-        if 'serial' in port.device:
-            continue
         for baudrate in baudrates:
             print(f"Trying {port.device=} at {baudrate=}...")
-
+            if 'serial' in port.device:
+                continue
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
 
             try:
@@ -126,6 +125,6 @@ def setup_mount(
                     print(f'RA: {ra_fw}')
                     print(f'DEC: {dec_fw}')
 
-                break
+                    break
             except serial.SerialTimeoutException:
                 pass
