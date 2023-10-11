@@ -4,7 +4,8 @@ import time
 from astropy import units as u
 from astropy.time import Time
 
-from panoptes.pocs.mount.ioptron.base import Mount as BaseMount, MountState
+from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
+from panoptes.pocs.mount.ioptron import MountState
 
 
 class Mount(BaseMount):

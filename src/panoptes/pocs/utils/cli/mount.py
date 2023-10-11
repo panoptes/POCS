@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from panoptes.utils.rs232 import SerialData, get_serial_port_info
 from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount.ioptron.base import MountInfo
+from panoptes.pocs.mount.ioptron import MountInfo
 
 app = typer.Typer()
 
