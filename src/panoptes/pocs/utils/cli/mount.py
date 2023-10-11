@@ -134,12 +134,16 @@ def setup_mount(
                     print(f'Suggested command set: {command_set}')
 
                     # Get info for writing udev entry.
-                    udev_str = (f'SUBSYSTEM="tty", '
-                                f'ATTRS{{idVendor}}=="{port.vid:04x}", '
-                                f'ATTRS{{idProduct}}=="{port.pid:04x}", '
-                                f'ATTRS{{serial}}=="{port.serial_number}", '
-                                f'SYMLINK+="ioptron"')
-                    print(f'UDEV entry: {udev_str}')
+                    try:
+                        udev_str = (f'SUBSYSTEM="tty", '
+                                    f'SUBSYSTEMS=="{port.subsystem}", '
+                                    f'ATTRS{{idVendor}}=="{port.vid:04x}", '
+                                    f'ATTRS{{idProduct}}=="{port.pid:04x}", '
+                                    f'ATTRS{{serial}}=="{port.serial_number}", '
+                                    f'SYMLINK+="ioptron"')
+                        print(f'UDEV entry: {udev_str}')
+                    except Exception:
+                        pass
 
                     # Confirm the user wants to update the config.
                     if typer.confirm('Do you want to update the config?'):
