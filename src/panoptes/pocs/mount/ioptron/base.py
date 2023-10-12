@@ -22,10 +22,14 @@ class Mount(AbstractSerialMount):
 
         self._raw_status = None
 
-        self._latitude_format = self.commands.get('latitude_format', '{:.0f}')
-        self._longitude_format = self.commands.get('longitude_format', '{:.0f}')
-        self._status_format = re.compile(self.commands.get('status_format', ''), flags=re.VERBOSE)
-        self._coords_format = re.compile(self.commands.get('coords_format', ''), flags=re.VERBOSE)
+        self._latitude_format = self.commands['latitude_format']
+        self._longitude_format = self.commands['longitude_format']
+
+        self._ra_format = self.commands['ra_format']
+        self._dec_format = self.commands['dec_format']
+
+        self._status_format = re.compile(self.commands.get('status_format', '*'), flags=re.VERBOSE)
+        self._coords_format = re.compile(self.commands.get('coords_format', '*'), flags=re.VERBOSE)
 
         self._state = MountState.UNKNOWN
 
@@ -269,14 +273,14 @@ class Mount(AbstractSerialMount):
         @retval         A tuple of RA/Dec coordinates
         """
 
-        # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
-        mount_ra = f'{ra_ms.value:08.0f}'
-        self.logger.debug(f'RA (ms): {ra_ms}')
-
         dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
-        self.logger.debug(f'Dec (centiarcsec): {dec_dms}')
-        mount_dec = f'{dec_dms.value:=+08.0f}'
+
+        mount_ra = self._ra_format.format(ra_ms)
+        mount_dec = self._dec_format.format(dec_dms)
+
+        self.logger.debug(f'RA: {ra_ms} <-> {mount_ra=}')
+        self.logger.debug(f'Dec: {dec_dms} <-> {mount_dec=}')
 
         mount_coords = (mount_ra, mount_dec)
 
