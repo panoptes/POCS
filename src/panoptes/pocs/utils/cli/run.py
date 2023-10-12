@@ -122,6 +122,8 @@ def run_alignment(context: typer.Context,
             for j in range(num_exposures):
                 print(f'\tStarting {exptime}s exposure #{j + 1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
+
+            mount.query('stop_tracking')
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
