@@ -541,6 +541,8 @@ class AbstractMount(PanBase):
                     timeout_timer = CountdownTimer(timeout, name='SlewToTarget')
                     block_time = 3  # seconds
 
+                    # Check the status, which updates the tracking status.
+                    self.update_status()
                     while self.is_tracking is False:
                         if timeout_timer.expired():
                             self.logger.warning(f'slew_to_target timout: {timeout} seconds')
