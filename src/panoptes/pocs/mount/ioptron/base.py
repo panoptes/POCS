@@ -1,6 +1,5 @@
 import re
 from contextlib import suppress
-from enum import IntEnum
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -8,57 +7,10 @@ from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
 from panoptes.utils.time import current_time
 
+from panoptes.pocs.mount.ioptron import MountGPS, MountState, MountTrackingState, MountMovementSpeed, MountTimeSource, \
+    MountHemisphere
 from panoptes.pocs.mount.serial import AbstractSerialMount
 from panoptes.utils import error as error
-
-
-class MountGPS(IntEnum):
-    OFF = 0
-    ON = 1
-    EXTRACTED = 2
-
-
-class MountState(IntEnum):
-    STOPPED = 0
-    TRACKING = 1
-    SLEWING = 2
-    GUIDING = 3
-    MERIDIAN_FLIPPING = 4
-    TRACKING_PEC = 5
-    PARKED = 6
-    AT_HOME = 7
-    UNKNOWN = 8
-
-
-class MountTrackingState(IntEnum):
-    SIDEREAL = 0
-    LUNAR = 1
-    SOLAR = 2
-    KING = 3
-    CUSTOM = 4
-
-
-class MountMovementSpeed(IntEnum):
-    SIDEREAL_1 = 1
-    SIDEREAL_2 = 2
-    SIDEREAL_8 = 3
-    SIDEREAL_16 = 4
-    SIDEREAL_64 = 5
-    SIDEREAL_128 = 6
-    SIDEREAL_256 = 7
-    SIDEREAL_512 = 8
-    SIDEREAL_MAX = 9
-
-
-class MountTimeSource(IntEnum):
-    RS232 = 1
-    HAND_CONTROLLER = 2
-    GPS = 3
-
-
-class MountHemisphere(IntEnum):
-    SOUTHERN = 0
-    NORTHERN = 1
 
 
 class Mount(AbstractSerialMount):
@@ -369,6 +321,22 @@ class Mount(AbstractSerialMount):
         status['timestamp'] = ts
         status['time_offset'] = offset
         status['time_daylight_savings'] = daylight_savings
+
+        if self.commands.get('command_version', 0) == 2.5:
+            year = int(ts[5:7])
+            month = int(ts[7:9])
+            day = int(ts[9:11])
+            hour = int(ts[11:13])
+            minute = int(ts[13:15])
+            second = int(ts[15:17])
+            status['time_local'] = Time(f'20{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}').iso
+        elif self.commands.get('command_version', 0) >= 3.10:
+            with suppress(Exception):
+                now = int(ts[5:]) * u.ms
+                j2000 = Time(2000, format='jyear')
+                t0 = j2000 + now + offset
+
+                status['time_local'] = t0.iso
 
         return status
 

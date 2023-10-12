@@ -4,7 +4,8 @@ import time
 from astropy import units as u
 from astropy.time import Time
 
-from panoptes.pocs.mount.ioptron.base import Mount as BaseMount, MountState
+from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
+from panoptes.pocs.mount.ioptron import MountState
 
 
 class Mount(BaseMount):
@@ -29,21 +30,3 @@ class Mount(BaseMount):
         while self.status.get('state') != MountState.AT_HOME:
             self.logger.trace(f'Searching for home position.')
             time.sleep(1)
-
-    def _update_status(self):
-        status = super()._update_status()
-
-        # Get and parse the time from the mount.
-        ts = status['timestamp']
-        offset = status['time_offset']
-
-        try:
-            now = int(ts[5:]) * u.ms
-            j2000 = Time(2000, format='jyear')
-            t0 = j2000 + now + offset
-
-            status['time_local'] = t0.iso
-        except Exception:
-            pass
-
-        return status
