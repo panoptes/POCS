@@ -9,7 +9,7 @@ cmd_post: '#'
 # Mount formatting
 latitude_format: '{:+07.0f}'
 longitude_format: '{:+07.0f}'
-ra_format: '{:+08.0f}'
+ra_format: '{:08.0f}'
 dec_format: '{:+08.0f}'
 status_format: >-
   (?P<longitude>[+\-]\d{6}) 
