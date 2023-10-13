@@ -252,35 +252,16 @@ class Mount(AbstractSerialMount):
         return coords
 
     def _skycoord_to_mount_coord(self, coords):
-        """
-        Converts between SkyCoord and a iOptron RA/Dec format.
+        """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-            `
-            TTTTTTTT(T) 0.01 arc-seconds
-            XXXXX(XXX) milliseconds
+        ra_mas = coords.ra.to('milliarcsecond').value
+        dec_cas = coords.dec.to('centiarcsecond').value
 
-            Command: “:SrXXXXXXXX#”
-            Defines the commanded right ascension, RA. Slew, calibrate and
-            park commands operate on the most recently defined right ascension.
+        mount_ra = self._ra_format.format(ra_mas)
+        mount_dec = self._dec_format.format(dec_cas)
 
-            Command: “:SdsTTTTTTTT#”
-            Defines the commanded declination, Dec. Slew, calibrate and
-            park commands operate on the most recently defined declination.
-            `
-
-        @param  coords  astropy.coordinates.SkyCoord
-
-        @retval         A tuple of RA/Dec coordinates
-        """
-
-        ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
-        dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
-
-        mount_ra = self._ra_format.format(ra_ms)
-        mount_dec = self._dec_format.format(dec_dms)
-
-        self.logger.debug(f'RA: {ra_ms} <-> {mount_ra=}')
-        self.logger.debug(f'Dec: {dec_dms} <-> {mount_dec=}')
+        self.logger.debug(f'RA: {ra_mas} <-> {mount_ra=}')
+        self.logger.debug(f'Dec: {dec_cas} <-> {mount_dec=}')
 
         mount_coords = (mount_ra, mount_dec)
 
