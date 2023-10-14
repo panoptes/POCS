@@ -554,7 +554,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         threading.excepthook = log_thread_error
 
         # The full timeout is the exposure time plus the readout time plus the timeout.
-        timeout_duration = seconds.to_value(u.second) + self.readout_time + timeout.to_value(u.second)
+        timeout_duration = (get_quantity_value(seconds, u.second) +
+                            get_quantity_value(self.readout_time, u.second) +
+                            get_quantity_value(timeout, u.second))
 
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(name=f'{self.name}PollExposureThread',
