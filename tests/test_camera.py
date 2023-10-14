@@ -495,6 +495,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     # Make timeout extremely short to force a timeout error
     # This should result in a timeout error in the poll thread, but the exception won't
     # be seen in the main thread. Can check for logged error though.
+    camera._readout_time = 0.5 * u.second
     readout_thread = camera.take_exposure(seconds=2.0, filename=fits_path, timeout=0.01)
 
     # Wait for it all to be over.
