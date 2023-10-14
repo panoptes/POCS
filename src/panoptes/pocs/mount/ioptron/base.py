@@ -254,8 +254,8 @@ class Mount(AbstractSerialMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-        ra_mas = coords.ra.to('milliarcsecond').value
-        dec_cas = coords.dec.to('centiarcsecond').value
+        ra_mas = coords.ra.to('arcsecond').value * 100
+        dec_cas = coords.dec.to('arcsecond').value * 100
 
         mount_ra = self._ra_format.format(ra_mas)
         mount_dec = self._dec_format.format(dec_cas)
