@@ -553,17 +553,19 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         threading.excepthook = log_thread_error
 
+        # The full timeout is the exposure time plus the readout time plus the timeout.
+        timeout_duration = seconds.to_value(u.second) + self.readout_time + timeout.to_value(u.second)
+
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(name=f'{self.name}PollExposureThread',
                                           target=self._poll_exposure,
                                           args=(readout_args, seconds),
-                                          kwargs=dict(timeout=timeout, interval=self.readout_time))
+                                          kwargs=dict(timeout=timeout_duration, interval=self.readout_time))
         readout_thread.start()
 
         if blocking:
-            blocking_time = seconds.to_value(u.second) + self.readout_time + timeout.to_value(u.second)
-            blocking_timer = CountdownTimer(duration=blocking_time)
-            self.logger.debug(f"Blocking on exposure event for {self} for {blocking_time:.02f}s")
+            blocking_timer = CountdownTimer(duration=timeout_duration)
+            self.logger.debug(f"Blocking on exposure for {self} for {timeout_duration:.02f}s")
             readout_thread.join()
             while self.is_exposing and not blocking_timer.expired():
                 time.sleep(0.5)
