@@ -492,11 +492,11 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     Tests response to an exposure timeout
     """
     fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
-    # Make timeout extremely short to force a timeout error
-    # This should result in a timeout error in the poll thread, but the exception won't
-    # be seen in the main thread. Can check for logged error though.
-    camera._readout_time = 0.5 * u.second
-    readout_thread = camera.take_exposure(seconds=1.0, filename=fits_path, timeout=0.01)
+
+    # We set short exptime, readout, and timeout durations, but pass the `simulator_exptime` to our
+    # camera. This should cause the camera to timeout during the exposure.
+    camera._readout_time = 0.2 * u.second
+    readout_thread = camera.take_exposure(seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03)
 
     # Wait for it all to be over.
     time.sleep(5)
