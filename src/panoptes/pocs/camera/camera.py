@@ -482,9 +482,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 `IMAGETYP` keyword entirely.
             blocking (bool, optional): If False (default) returns immediately after starting
                 the exposure, if True will block until it completes and file exists.
-            timeout (astropy.Quantity): The timeout to use for the exposure, default 10 seconds.
+            timeout (astropy.Quantity): The timeout to use for the exposure, default 10 seconds. The
+                timeout gets added to the `seconds` and the `self.readout_time` to get the total
+                timeout for the exposure. If the exposure takes longer than this then a
+                `panoptes.utils.error.Timeout` exception will be raised.
         Returns:
             threading.Thread: The readout thread, which joins when readout has finished.
+        Raises:
+            error.PanError: If camera is not connected.
+            error.Timeout: If the exposure takes longer than total `timeout` to complete.
         """
         self._exposure_error = None
         # Reset the readout
@@ -553,17 +559,21 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         threading.excepthook = log_thread_error
 
+        # The full timeout is the exposure time plus the readout time plus the timeout.
+        timeout_duration = (get_quantity_value(seconds, u.second) +
+                            get_quantity_value(self.readout_time, u.second) +
+                            get_quantity_value(timeout, u.second))
+
         # Start polling thread that will call camera type specific _readout method when done
         readout_thread = threading.Thread(name=f'{self.name}PollExposureThread',
                                           target=self._poll_exposure,
                                           args=(readout_args, seconds),
-                                          kwargs=dict(timeout=timeout, interval=self.readout_time))
+                                          kwargs=dict(timeout=timeout_duration, interval=self.readout_time))
         readout_thread.start()
 
         if blocking:
-            blocking_time = seconds.to_value(u.second) + self.readout_time + timeout.to_value(u.second)
-            blocking_timer = CountdownTimer(duration=blocking_time)
-            self.logger.debug(f"Blocking on exposure event for {self} for {blocking_time:.02f}s")
+            blocking_timer = CountdownTimer(duration=timeout_duration)
+            self.logger.debug(f"Blocking on exposure for {self} for {timeout_duration:.02f}s")
             readout_thread.join()
             while self.is_exposing and not blocking_timer.expired():
                 time.sleep(0.5)
