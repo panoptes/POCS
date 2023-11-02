@@ -10,7 +10,7 @@ cmd_post: '#'
 latitude_format: '{:+07.0f}'
 longitude_format: '{:+07.0f}'
 ra_format: '{:08.0f}'
-dec_format: '{:+08.0f}'
+dec_format: '{:+09.0f}'
 status_format: >-
   (?P<longitude>[+\-]\d{6}) 
   (?P<latitude>\d{6})
