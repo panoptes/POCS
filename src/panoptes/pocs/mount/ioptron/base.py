@@ -190,7 +190,7 @@ class Mount(AbstractSerialMount):
         now = current_time() + gmt_offset * u.minute
         if 'set_utc_time' in self.commands:
             j2000 = Time(2000, format='jyear')
-            offset_time = (now - j2000).to(u.ms)
+            offset_time = (now - j2000).to(u.ms).value
             self.query('set_utc_time', f'{offset_time:0>13.0f}')
         else:
             self.query('set_local_time', now.datetime.strftime("%H%M%S"))
