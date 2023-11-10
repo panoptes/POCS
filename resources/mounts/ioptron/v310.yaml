@@ -11,7 +11,7 @@ latitude_format: '{:+09.0f}'
 longitude_format: '{:+09.0f}'
 ra_format: '{:09.0f}'
 dec_format: '{:+09.0f}'
-coords_precision: centiarcsecond
+coords_unit: centiarcsecond
 status_format: >-
   (?P<longitude>[+\-]\d{8}) 
   (?P<latitude>\d{8})
