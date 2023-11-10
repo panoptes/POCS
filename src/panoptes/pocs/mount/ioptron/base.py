@@ -259,7 +259,12 @@ class Mount(AbstractSerialMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-        ra_coord = coords.ra.to(self._ra_coords_units).value
+        # Do some special handling of older firmware that had RA coords in a time unit.
+        if self._ra_coords_units == 'millisecond':
+            ra_coord = (coords.ra.to(u.hourangle).value * u.hour).to(self._ra_coords_units).value
+        else:
+            ra_coord = coords.ra.to(self._ra_coords_units).value
+
         dec_coord = coords.dec.to(self._dec_coords_units).value
 
         ra_mount = self._ra_format.format(ra_coord)
