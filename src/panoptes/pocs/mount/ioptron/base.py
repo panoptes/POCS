@@ -28,6 +28,8 @@ class Mount(AbstractSerialMount):
         self._ra_format = self.commands['ra_format']
         self._dec_format = self.commands['dec_format']
 
+        self._coords_precision = self.commands['coords_precision']
+
         self._status_format = re.compile(self.commands.get('status_format', '*'), flags=re.VERBOSE)
         self._coords_format = re.compile(self.commands.get('coords_format', '*'), flags=re.VERBOSE)
 
@@ -238,14 +240,14 @@ class Mount(AbstractSerialMount):
         self.logger.trace(f'Mount coordinates: {coords_match}')
 
         if coords_match is not None:
-            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
-            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(u.arcsec)
+            ra = (coords_match.group('ra') * getattr(u, self._coords_precision)).to(u.deg)
+            dec = (coords_match.group('dec') * getattr(u, self._coords_precision)).to(u.deg)
 
             dec_sign = coords_match.group('dec_sign')
             if dec_sign == '-':
                 dec = dec * -1
 
-            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
+            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.deg, u.deg))
         else:
             self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
@@ -254,8 +256,8 @@ class Mount(AbstractSerialMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-        ra_mas = coords.ra.to('arcsecond').value * 100
-        dec_cas = coords.dec.to('arcsecond').value * 100
+        ra_mas = coords.ra.to(self._coords_precision).value
+        dec_cas = coords.dec.to(self._coords_precision).value
 
         mount_ra = self._ra_format.format(ra_mas)
         mount_dec = self._dec_format.format(dec_cas)

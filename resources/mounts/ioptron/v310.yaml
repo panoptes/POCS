@@ -11,6 +11,7 @@ latitude_format: '{:+09.0f}'
 longitude_format: '{:+09.0f}'
 ra_format: '{:09.0f}'
 dec_format: '{:+09.0f}'
+coords_precision: centiarcsecond
 status_format: >-
   (?P<longitude>[+\-]\d{8}) 
   (?P<latitude>\d{8})
@@ -21,8 +22,8 @@ status_format: >-
   (?P<time_source>[1-3])
   (?P<hemisphere>[01])
 coords_format: >-
-  (?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8}) 
-  (?P<ra_millisecond>\d{9}) 
+  (?P<dec_sign>[\+\-])(?P<dec>\d{8}) 
+  (?P<ra>\d{9}) 
   (?P<pier_side>\d)
   (?P<pointing_state>\d)
 
