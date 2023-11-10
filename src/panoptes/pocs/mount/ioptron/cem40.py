@@ -1,19 +1,10 @@
-import re
 import time
 
-from astropy import units as u
-from astropy.time import Time
-
-from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 from panoptes.pocs.mount.ioptron import MountState
+from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 
 class Mount(BaseMount):
-    """
-        Mount class for iOptron mounts. Overrides the base `initialize` method
-        and providers some helper methods to convert coordinates.
-    """
-
     def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
         super(Mount, self).__init__(location, *args, **kwargs)

@@ -791,10 +791,10 @@ class AbstractMount(PanBase):
     def read(self, *args, **kwargs):
         raise NotImplementedError
 
-    @abstractmethod
     def search_for_home(self):
-        """Search for the home position if supported. """
-        raise NotImplementedError
+        """Search for the home position not supported."""
+        self.logger.warning('Searching for home position not supported.'
+                            'Please set the home position manually via the hand-controller.')
 
     @abstractmethod
     def set_tracking_rate(self, direction='ra', delta=1.0):
