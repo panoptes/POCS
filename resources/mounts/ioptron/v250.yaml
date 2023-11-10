@@ -7,11 +7,13 @@ cmd_pre: ':'
 cmd_post: '#'
 
 # Mount formatting
+location_units: arcsecond
+ra_coords_units: millisecond
+dec_coords_units: centiarcsecond
 latitude_format: '{:+07.0f}'
 longitude_format: '{:+07.0f}'
 ra_format: '{:08.0f}'
 dec_format: '{:+09.0f}'
-coords_unit: arcsecond
 status_format: >-
   (?P<longitude>[+\-]\d{6}) 
   (?P<latitude>\d{6})

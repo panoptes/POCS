@@ -28,7 +28,9 @@ class Mount(AbstractSerialMount):
         self._ra_format = self.commands['ra_format']
         self._dec_format = self.commands['dec_format']
 
-        self._coords_unit = self.commands['coords_unit']
+        self._location_units = self.commands['location_units']
+        self._ra_coords_units = self.commands['ra_coords_units']
+        self._dec_coords_units = self.commands['dec_coords_units']
 
         self._status_format = re.compile(self.commands.get('status_format', '*'), flags=re.VERBOSE)
         self._coords_format = re.compile(self.commands.get('coords_format', '*'), flags=re.VERBOSE)
@@ -175,7 +177,7 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron.
-        coords_unit = getattr(u, self._coords_unit)
+        coords_unit = getattr(u, self._location_units)
         lat = self._latitude_format.format(self.location.lat.to(coords_unit).value)
         lon = self._longitude_format.format(self.location.lon.to(coords_unit).value)
 
@@ -241,9 +243,8 @@ class Mount(AbstractSerialMount):
         self.logger.trace(f'Mount coordinates: {coords_match}')
 
         if coords_match is not None:
-            coords_unit = getattr(u, self._coords_unit)
-            ra = (coords_match.group('ra') * coords_unit).to(u.deg)
-            dec = (coords_match.group('dec') * coords_unit).to(u.deg)
+            ra = (coords_match.group('ra') * getattr(u, self._ra_coords_units)).to(u.deg)
+            dec = (coords_match.group('dec') * getattr(u, self._dec_coords_units)).to(u.deg)
 
             dec_sign = coords_match.group('dec_sign')
             if dec_sign == '-':
@@ -258,8 +259,8 @@ class Mount(AbstractSerialMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-        ra_coord = coords.ra.to(self._coords_unit).value
-        dec_coord = coords.dec.to(self._coords_unit).value
+        ra_coord = coords.ra.to(self._ra_coords_units).value
+        dec_coord = coords.dec.to(self._dec_coords_units).value
 
         ra_mount = self._ra_format.format(ra_coord)
         dec_mount = self._dec_format.format(dec_coord)
