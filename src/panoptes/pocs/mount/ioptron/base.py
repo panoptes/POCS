@@ -257,18 +257,16 @@ class Mount(AbstractSerialMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
-        ra_mas = coords.ra.to(self._coords_unit).value
-        dec_cas = coords.dec.to(self._coords_unit).value
+        ra_coord = coords.ra.to(self._coords_unit).value
+        dec_coord = coords.dec.to(self._coords_unit).value
 
-        mount_ra = self._ra_format.format(ra_mas)
-        mount_dec = self._dec_format.format(dec_cas)
+        ra_mount = self._ra_format.format(ra_coord)
+        dec_mount = self._dec_format.format(dec_coord)
 
-        self.logger.debug(f'RA: {ra_mas} <-> {mount_ra=}')
-        self.logger.debug(f'Dec: {dec_cas} <-> {mount_dec=}')
+        self.logger.debug(f'RA: {ra_coord} <-> {ra_mount=}')
+        self.logger.debug(f'Dec: {dec_coord} <-> {dec_mount=}')
 
-        mount_coords = (mount_ra, mount_dec)
-
-        return mount_coords
+        return ra_mount, dec_mount
 
     def _update_status(self):
         self._raw_status = self.query('get_status')
