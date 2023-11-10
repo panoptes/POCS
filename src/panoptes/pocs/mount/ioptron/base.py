@@ -243,7 +243,12 @@ class Mount(AbstractSerialMount):
         self.logger.trace(f'Mount coordinates: {coords_match}')
 
         if coords_match is not None:
-            ra = (coords_match.group('ra') * getattr(u, self._ra_coords_units)).to(u.deg)
+            if self._ra_coords_units == 'millisecond':
+                ra = (coords_match.group('ra') * getattr(u, self._ra_coords_units)).to(u.hour).value
+                ra = (ra * u.hourangle).to(u.degree)
+            else:
+                ra = (coords_match.group('ra') * getattr(u, self._ra_coords_units)).to(u.deg)
+
             dec = (coords_match.group('dec') * getattr(u, self._dec_coords_units)).to(u.deg)
 
             dec_sign = coords_match.group('dec_sign')
