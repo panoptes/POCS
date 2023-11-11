@@ -78,7 +78,10 @@ def create_mount_from_config(mount_info=None,
         port = mount_info['serial']['port']
         logger.info(f'Looking for {driver} on {port}.')
         if port is None or len(glob(port)) == 0:
-            raise error.MountNotFound(msg=f'Mount {port=} not available.')
+            if port == 'loop://':
+                logger.warning('Using loop:// for mount connection.')
+            else:
+                raise error.MountNotFound(msg=f'Mount {port=} not available.')
     except KeyError:
         # See Issue 866
         if model == 'bisque':

@@ -236,14 +236,14 @@ class Mount(AbstractSerialMount):
             astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
                 EarthLocation included.
         """
+        self.logger.debug(f'Mount coordinates: {mount_coords}')
         coords_match = self._coords_format.fullmatch(mount_coords)
-
         coords = None
-
-        self.logger.trace(f'Mount coordinates: {coords_match}')
+        self.logger.debug(f'Mount coordinates match: {coords_match}')
 
         if coords_match is not None:
             if self._ra_coords_units == 'millisecond':
+                self.logger.debug(f'Converting RA from {self._ra_coords_units} to degrees')
                 ra = (int(coords_match.group('ra')) * getattr(u, self._ra_coords_units)).to(u.hour).value
                 ra = (ra * u.hourangle).to(u.degree)
             else:
@@ -255,10 +255,12 @@ class Mount(AbstractSerialMount):
             if dec_sign == '-':
                 dec = dec * -1
 
+            self.logger.debug(f'Creating SkyCoord for {ra=} {dec=}')
             coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.deg, u.deg))
         else:
             self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
+        self.logger.debug(f'Created SkyCoord: {coords=}')
         return coords
 
     def _skycoord_to_mount_coord(self, coords):
@@ -266,6 +268,7 @@ class Mount(AbstractSerialMount):
 
         # Do some special handling of older firmware that had RA coords in a time unit.
         if self._ra_coords_units == 'millisecond':
+            self.logger.debug(f'Converting RA from degrees to {self._ra_coords_units}')
             ra_coord = (coords.ra.to(u.hourangle).value * u.hour).to(self._ra_coords_units).value
         else:
             ra_coord = coords.ra.to(self._ra_coords_units).value
