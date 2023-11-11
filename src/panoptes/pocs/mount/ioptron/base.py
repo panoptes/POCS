@@ -238,43 +238,51 @@ class Mount(AbstractSerialMount):
         """
         self.logger.debug(f'Mount coordinates: {mount_coords}')
         coords_match = self._coords_format.fullmatch(mount_coords)
-        coords = None
         self.logger.debug(f'Mount coordinates match: {coords_match}')
 
+        coords = None
         if coords_match is not None:
+            ra_coords_units = getattr(u, self._ra_coords_units)
+            dec_coords_units = getattr(u, self._dec_coords_units)
+
+            # Turn into units output by the mount.
+            ra = (int(coords_match.group('ra')) * ra_coords_units)
+            dec = (int(coords_match.group('dec')) * dec_coords_units)
+
+            # Old firmware had RA in a time unit.
             if self._ra_coords_units == 'millisecond':
                 self.logger.debug(f'Converting RA from {self._ra_coords_units} to degrees')
-                ra = (int(coords_match.group('ra')) * getattr(u, self._ra_coords_units)).to(u.hour).value
-                ra = (ra * u.hourangle).to(u.degree)
-            else:
-                ra = (int(coords_match.group('ra')) * getattr(u, self._ra_coords_units)).to(u.deg)
+                ra = (ra.to(u.hour).value * u.hourangle)
 
-            dec = (int(coords_match.group('dec')) * getattr(u, self._dec_coords_units)).to(u.deg)
+            # Convert to degrees.
+            ra = ra.to(u.deg)
+            dec = dec.to(u.deg)
 
-            dec_sign = coords_match.group('dec_sign')
-            if dec_sign == '-':
+            # Add the sign back in.
+            if coords_match.group('dec_sign') == '-':
                 dec = dec * -1
 
             self.logger.debug(f'Creating SkyCoord for {ra=} {dec=}')
             coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.deg, u.deg))
+            self.logger.debug(f'Created SkyCoord: {coords=}')
         else:
             self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
-        self.logger.debug(f'Created SkyCoord: {coords=}')
         return coords
 
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
 
+        # Convert to the units expected by the mount.
+        ra_coord = coords.ra.to(self._ra_coords_units).value
+        dec_coord = coords.dec.to(self._dec_coords_units).value
+
         # Do some special handling of older firmware that had RA coords in a time unit.
         if self._ra_coords_units == 'millisecond':
             self.logger.debug(f'Converting RA from degrees to {self._ra_coords_units}')
             ra_coord = (coords.ra.to(u.hourangle).value * u.hour).to(self._ra_coords_units).value
-        else:
-            ra_coord = coords.ra.to(self._ra_coords_units).value
 
-        dec_coord = coords.dec.to(self._dec_coords_units).value
-
+        # Convert to a string for the mount.
         ra_mount = self._ra_format.format(ra_coord)
         dec_mount = self._dec_format.format(dec_coord)
 
