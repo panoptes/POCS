@@ -296,7 +296,7 @@ class Mount(AbstractSerialMount):
             status['state'] = self.state
             status['parked_software'] = self.is_parked
 
-            coords_unit = getattr(u, self._coords_unit)
+            coords_unit = getattr(u, self._location_units)
             status['longitude'] = float(status_dict['longitude']) * coords_unit
             # Longitude adds +90° to avoid negative numbers, so subtract for original.
             status['latitude'] = (float(status_dict['latitude']) * coords_unit) - (90 * u.degree)
