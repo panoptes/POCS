@@ -494,7 +494,7 @@ class Observatory(PanBase):
 
                     self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
-                    if metadata['is_primary']:
+                    if metadata.get('is_primary', False):
                         # TODO This should be in the config somewhere.
                         link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
