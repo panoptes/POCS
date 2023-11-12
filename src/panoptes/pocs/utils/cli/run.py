@@ -131,7 +131,6 @@ def run_alignment(context: typer.Context,
 
                 # Do processing in background (if exposure time is long enough).
                 if exptime > 10:
-                    print('\tStarting image processing in background.')
                     process_proc = Process(target=pocs.observatory.process_observation)
                     process_proc.start()
                     procs.append(process_proc)
