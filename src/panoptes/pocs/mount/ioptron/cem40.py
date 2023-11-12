@@ -35,7 +35,7 @@ class Mount(BaseMount):
         self.logger.debug(f'Number of possible positions: {num_possible_positions}')
 
         if num_possible_positions == 0:
-            self.logger.warning(f'No possible positions for {self._target_coordinates=}')
+            self.logger.warning(f'No possible positions for {self._target_coordinates}')
             target_set = False
 
         return target_set
