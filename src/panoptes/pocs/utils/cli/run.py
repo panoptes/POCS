@@ -129,10 +129,12 @@ def run_alignment(context: typer.Context,
                 print(f'\tStarting {exptime}s exposure #{j + 1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
 
-                # Do processing in background.
-                process_proc = Process(target=pocs.observatory.process_observation)
-                process_proc.start()
-                procs.append(process_proc)
+                # Do processing in background (if exposure time is long enough).
+                if exptime > 10:
+                    print('\tStarting image processing in background.')
+                    process_proc = Process(target=pocs.observatory.process_observation)
+                    process_proc.start()
+                    procs.append(process_proc)
 
             mount.query('stop_tracking')
 
