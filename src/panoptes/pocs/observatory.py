@@ -24,7 +24,7 @@ from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.compound import Observation as CompoundObservation
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
-from panoptes.pocs.utils.cli.image import upload_image
+from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.location import create_location_from_config
 
 
