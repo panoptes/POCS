@@ -848,7 +848,13 @@ class Observatory(PanBase):
 
         # Slew to position
         self.logger.debug(f"Slewing to flat-field coords: {flat_obs.field}")
-        self.mount.set_target_coordinates(flat_obs.field)
+        target_set = self.mount.set_target_coordinates(flat_obs.field)
+
+        # Check to make sure we had a target.
+        if not target_set:
+            self.logger.warning(f'No target set, cannot take flat fields')
+            return
+
         self.mount.slew_to_target(blocking=True)
         if no_tracking:
             self.logger.info(f'Stopping the mount tracking')

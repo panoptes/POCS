@@ -31,7 +31,11 @@ class Mount(BaseMount):
             """
             target_set = super().set_target_coordinates(*args, **kwargs)
             self.logger.debug(f'Checking number of possible positions for {self._target_coordinates=}')
-            _num_possible_positions = self.query('query_positions')
+            num_possible_positions = self.query('query_positions')
             self.logger.debug(f'Number of possible positions: {_num_possible_positions}')
+
+            if num_possible_positions == 0:
+                self.logger.warning(f'No possible positions for {self._target_coordinates=}')
+                target_set = False
 
             return target_set

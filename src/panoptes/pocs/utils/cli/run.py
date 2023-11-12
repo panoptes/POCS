@@ -121,8 +121,19 @@ def run_alignment(context: typer.Context,
 
             print(f'\tSlewing to RA/Dec {observation.field.coord.to_string()} for {altaz_coord=}')
             mount.unpark()
-            mount.set_target_coordinates(observation.field.coord)
-            mount.slew_to_target(blocking=True)
+            target_set = mount.set_target_coordinates(observation.field.coord)
+
+            # If the mount can't set the target coordinates, skip this observation.
+            if not target_set:
+                print(f'\tInvalid coords, skipping {altaz_coord=}')
+                continue
+
+            started_slew = mount.slew_to_target(blocking=True)
+
+            # If the mount can't slew to the target, skip this observation.
+            if not started_slew:
+                print(f'\tNo slew, skipping {altaz_coord=}')
+                continue
 
             # Take all the exposures for this altaz observation.
             for j in range(num_exposures):
