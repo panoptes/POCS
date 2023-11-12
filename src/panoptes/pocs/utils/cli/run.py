@@ -1,4 +1,5 @@
 import os
+import warnings
 from itertools import product
 from multiprocessing import Process
 from typing import List
@@ -13,6 +14,9 @@ from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 
 app = typer.Typer()
+
+# Ignore FITS header warnings.
+warnings.filterwarnings(action='ignore', message='datfix')
 
 
 @app.callback()
