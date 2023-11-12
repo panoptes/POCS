@@ -572,7 +572,7 @@ class Observatory(PanBase):
 
         # Remove the local images directory for the upload name and replace with PAN_ID.
         images_dir = self.get_config('directories.images', default=Path('~/images')).expanduser().as_posix()
-        bucket_path = Path(images_path[image_path.find(images_dir + len(images_dir)):] + '/' + str(self.get_config('pan_id')))
+        bucket_path = Path(image_path[image_path.find(images_dir + len(images_dir)):] + '/' + str(self.get_config('pan_id')))
 
         # Create a separate process for the upload.
         upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
