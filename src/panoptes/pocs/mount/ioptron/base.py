@@ -305,9 +305,9 @@ class Mount(AbstractSerialMount):
             status['parked_software'] = self.is_parked
 
             coords_unit = getattr(u, self._location_units)
-            status['longitude'] = float(status_dict['longitude']) * coords_unit
+            status['longitude'] = (float(status_dict['longitude']) * coords_unit).to(u.degree)
             # Longitude adds +90° to avoid negative numbers, so subtract for original.
-            status['latitude'] = (float(status_dict['latitude']) * coords_unit) - (90 * u.degree)
+            status['latitude'] = (float(status_dict['latitude']) * coords_unit).to(u.degree) - (90 * u.degree)
 
             status['gps'] = MountGPS(int(status_dict['gps']))
             status['tracking'] = MountTrackingState(int(status_dict['tracking']))
