@@ -1,5 +1,6 @@
 import os
 from itertools import product
+from multiprocessing import Process
 from typing import List
 
 import typer
@@ -106,6 +107,7 @@ def run_alignment(context: typer.Context,
         # Shared sequence time for all alignment observations.
         sequence_time = current_time(flatten=True)
 
+        procs = list()
         for i, altaz_coord in enumerate(altaz_coords):
             print(f'{field_name} #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
 
@@ -123,7 +125,13 @@ def run_alignment(context: typer.Context,
                 print(f'\tStarting {exptime}s exposure #{j + 1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
 
+                # Do processing in background.
+                process_proc = Process(target=pocs.observatory.process_observation)
+                process_proc.start()
+                procs.append(process_proc)
+
             mount.query('stop_tracking')
+
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
@@ -133,4 +141,11 @@ def run_alignment(context: typer.Context,
         print('[green]POCS alignment finished, shutting down.[/green]')
     finally:
         print(f'[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]')
+        pocs.observatory.mount.park()
+
+        # Wait for all the processing to finish.
+        print('Waiting for image processing to finish.')
+        for proc in procs:
+            proc.join()
+
         pocs.power_down()
