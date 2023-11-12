@@ -575,9 +575,9 @@ class Observatory(PanBase):
         # Remove images directory from path so it's stored in bucket relative to images directory.
         bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
         # Prepend the PANOPTES unit id to the bucket path.
-        bucket_path = Path(str(self.get_config('pan_id'))) / bucket_path
-        # Strip any leading slashes.
-        bucket_path = bucket_path.relative_to('/')
+        pan_id = self.get_config('pan_id')
+        self.logger.debug(f'Adding {pan_id=} to {bucket_path=}')
+        bucket_path = Path(pan_id) / bucket_path
 
         # Create a separate process for the upload.
         upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
@@ -586,7 +586,7 @@ class Observatory(PanBase):
                                              bucket_path=bucket_path.as_posix(),
                                              bucket_name=bucket_name))
 
-        self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
+        self.logger.debug(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
         upload_process.start()
 
     def update_tracking(self, **kwargs):
