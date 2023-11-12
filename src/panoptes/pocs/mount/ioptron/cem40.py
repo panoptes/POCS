@@ -21,3 +21,17 @@ class Mount(BaseMount):
         while self.status.get('state') != MountState.AT_HOME:
             self.logger.trace(f'Searching for home position.')
             time.sleep(1)
+
+        def set_target_coordinates(self, *args, **kwargs):
+            """After setting target coordinates, check number of positions.
+
+            The CEM40 can determine if there are 0, 1, or 2 possible positions
+            for the given RA/Dec, with the latter being the case for the meridian
+            flip.
+            """
+            target_set = super().set_target_coordinates(*args, **kwargs)
+            self.logger.debug(f'Checking number of possible positions for {self._target_coordinates=}')
+            _num_possible_positions = self.query('query_positions')
+            self.logger.debug(f'Number of possible positions: {_num_possible_positions}')
+
+            return target_set
