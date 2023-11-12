@@ -30,7 +30,7 @@ class Mount(BaseMount):
         flip.
         """
         target_set = super().set_target_coordinates(*args, **kwargs)
-        self.logger.debug(f'Checking number of possible positions for {self._target_coordinates=}')
+        self.logger.debug(f'Checking number of possible positions for {self._target_coordinates}')
         num_possible_positions = self.query('query_positions')
         self.logger.debug(f'Number of possible positions: {num_possible_positions}')
 
