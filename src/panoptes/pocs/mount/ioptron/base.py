@@ -187,17 +187,20 @@ class Mount(AbstractSerialMount):
         # Daylight savings and GMT offset.
         self.query('disable_daylight_savings')
         gmt_offset = self.get_config('location.gmt_offset', default=0)
-        self.query('set_gmt_offset', gmt_offset)
+        self.logger.debug(f'Setting GMT offset to {gmt_offset:+04.0f}')
+        self.query('set_gmt_offset', f'{gmt_offset:+04.0f}')
 
         # Set the date and time.
         # Newer firmware has the `set_utc_time` method which sets both the date and time.
         # Older firmware has `set_local_date` and `set_local_time` which must be called separately.
-        now = current_time() + gmt_offset * u.minute
+        now = current_time()
         if 'set_utc_time' in self.commands:
             j2000 = Time(2000, format='jyear')
             offset_time = (now - j2000).to(u.ms).value
+            self.logger.debug(f'Setting UTC time to {offset_time:0>13.0f}')
             self.query('set_utc_time', f'{offset_time:0>13.0f}')
         else:
+            now = now + gmt_offset * u.minute
             self.query('set_local_time', now.datetime.strftime("%H%M%S"))
             self.query('set_local_date', now.datetime.strftime("%y%m%d"))
 
