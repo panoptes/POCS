@@ -570,9 +570,12 @@ class Observatory(PanBase):
 
         self.logger.debug(f'Preparing {image_path} for upload')
 
-        # Remove the local images directory for the upload name and replace with PAN_ID.
+        # Get the images directory.
         images_dir = Path(self.get_config('directories.images', default=Path('~/images'))).expanduser().as_posix()
-        bucket_path = Path(image_path[image_path.find(images_dir + len(images_dir)):] + '/' + str(self.get_config('pan_id')))
+        # Remove images directory from path so it's stored in bucket relative to images directory.
+        bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
+        # Prepend the PANOPTES unit id to the bucket path.
+        bucket_path = Path(str(self.get_config('pan_id'))) / bucket_path
 
         # Create a separate process for the upload.
         upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
@@ -584,422 +587,429 @@ class Observatory(PanBase):
         self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
         upload_process.start()
 
-    def update_tracking(self, **kwargs):
-        """Update tracking with rate adjustment.
 
-        The `current_offset_info` contains information about how far off
-        the center of the current image is from the pointing image taken
-        at the start of an observation. This offset info is given in arcseconds
-        for the RA and Dec.
+def update_tracking(self, **kwargs):
+    """Update tracking with rate adjustment.
 
-        A mount will accept guiding adjustments in number of milliseconds
-        to move in a specified direction, where the direction is either `east/west`
-        for the RA axis and `north/south` for the Dec.
+    The `current_offset_info` contains information about how far off
+    the center of the current image is from the pointing image taken
+    at the start of an observation. This offset info is given in arcseconds
+    for the RA and Dec.
 
-        Here we take the number of arcseconds that the mount is offset and,
-        via the `mount.get_ms_offset`, find the number of milliseconds we
-        should adjust in a given direction, one for each axis.
+    A mount will accept guiding adjustments in number of milliseconds
+    to move in a specified direction, where the direction is either `east/west`
+    for the RA axis and `north/south` for the Dec.
 
-        The minimum and maximum tracking corrections can be passed as keyword
-        arguments (`min_tracking_threshold=100` and `max_tracking_threshold=99999`)
-        or can be specified in the mount config settings.
+    Here we take the number of arcseconds that the mount is offset and,
+    via the `mount.get_ms_offset`, find the number of milliseconds we
+    should adjust in a given direction, one for each axis.
 
-        Args:
-            **kwargs: Keyword arguments that are passed to `get_tracking_correction`
-                and `correct_tracking`.
-        """
-        if self.current_offset_info is not None:
-            self.logger.debug("Updating the tracking")
+    The minimum and maximum tracking corrections can be passed as keyword
+    arguments (`min_tracking_threshold=100` and `max_tracking_threshold=99999`)
+    or can be specified in the mount config settings.
 
-            # Get the pier side of pointing image
-            _, pointing_image = self.current_observation.pointing_image
-            pointing_ha = pointing_image.header_ha
+    Args:
+        **kwargs: Keyword arguments that are passed to `get_tracking_correction`
+            and `correct_tracking`.
+    """
+    if self.current_offset_info is not None:
+        self.logger.debug("Updating the tracking")
 
-            try:
-                pointing_ha = pointing_ha.value
-            except AttributeError:
-                pass
+        # Get the pier side of pointing image
+        _, pointing_image = self.current_observation.pointing_image
+        pointing_ha = pointing_image.header_ha
 
-            self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
-            correction_info = self.mount.get_tracking_correction(
-                self.current_offset_info,
-                pointing_ha,
-                **kwargs
-            )
-
-            try:
-                self.mount.correct_tracking(correction_info, **kwargs)
-            except error.Timeout:
-                self.logger.warning("Timeout while correcting tracking")
-
-    def get_standard_headers(self, observation=None):
-        """Get a set of standard headers
-
-        Args:
-            observation (`~pocs.scheduler.observation.Observation`, optional): The
-                observation to use for header values. If None is given, use
-                the `current_observation`.
-
-        Returns:
-            dict: The standard headers
-        """
-
-        if observation is None:
-            observation = self.current_observation
-
-        assert observation is not None, self.logger.warning("No observation, can't get headers")
-
-        field = observation.field
-
-        self.logger.debug(f'Getting headers for : {observation}')
-
-        t0 = current_time()
-        moon = get_body('moon', t0, self.observer.location)
-
-        headers = {
-            'airmass': self.observer.altaz(t0, field).secz.value,
-            'creator': "POCSv{}".format(self.__version__),
-            'elevation': self.location.get('elevation').value,
-            'ha_mnt': self.observer.target_hour_angle(t0, field).value,
-            'latitude': self.location.get('latitude').value,
-            'longitude': self.location.get('longitude').value,
-            'moon_fraction': self.observer.moon_illumination(t0),
-            'moon_separation': field.coord.separation(moon).value,
-            'observer': self.get_config('name', default=''),
-            'origin': 'Project PANOPTES',
-            'tracking_rate_ra': self.mount.tracking_rate,
-        }
-
-        # Add observation metadata
-        headers.update(observation.status)
-
-        # Explicitly convert EQUINOX to float
         try:
-            equinox = float(headers['equinox'].replace('J', ''))
-        except Exception:
-            equinox = 2000.  # We assume J2000
+            pointing_ha = pointing_ha.value
+        except AttributeError:
+            pass
 
-        headers['equinox'] = equinox
+        self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
+        correction_info = self.mount.get_tracking_correction(
+            self.current_offset_info,
+            pointing_ha,
+            **kwargs
+        )
 
-        return headers
+        try:
+            self.mount.correct_tracking(correction_info, **kwargs)
+        except error.Timeout:
+            self.logger.warning("Timeout while correcting tracking")
 
-    def autofocus_cameras(self, camera_list=None, **kwargs):
-        """
-        Perform autofocus on all cameras with focus capability, or a named subset
-        of these. Optionally will perform a coarse autofocus first, otherwise will
-        just fine tune focus.
 
-        Args:
-            camera_list (list, optional): list containing names of cameras to autofocus.
-            **kwargs: Options passed to the underlying `Focuser.autofocus` method.
+def get_standard_headers(self, observation=None):
+    """Get a set of standard headers
 
-        Returns:
-            dict of str:threading_Event key:value pairs, containing camera names and
-                corresponding Events which will be set when the camera completes autofocus.
-        """
-        if camera_list:
-            # Have been passed a list of camera names, extract dictionary
-            # containing only cameras named in the list
-            cameras = {cam_name: self.cameras[
-                cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
-            if cameras == {}:
-                self.logger.warning(f"No matching camera names in ({camera_list})")
+    Args:
+        observation (`~pocs.scheduler.observation.Observation`, optional): The
+            observation to use for header values. If None is given, use
+            the `current_observation`.
+
+    Returns:
+        dict: The standard headers
+    """
+
+    if observation is None:
+        observation = self.current_observation
+
+    assert observation is not None, self.logger.warning("No observation, can't get headers")
+
+    field = observation.field
+
+    self.logger.debug(f'Getting headers for : {observation}')
+
+    t0 = current_time()
+    moon = get_body('moon', t0, self.observer.location)
+
+    headers = {
+        'airmass': self.observer.altaz(t0, field).secz.value,
+        'creator': "POCSv{}".format(self.__version__),
+        'elevation': self.location.get('elevation').value,
+        'ha_mnt': self.observer.target_hour_angle(t0, field).value,
+        'latitude': self.location.get('latitude').value,
+        'longitude': self.location.get('longitude').value,
+        'moon_fraction': self.observer.moon_illumination(t0),
+        'moon_separation': field.coord.separation(moon).value,
+        'observer': self.get_config('name', default=''),
+        'origin': 'Project PANOPTES',
+        'tracking_rate_ra': self.mount.tracking_rate,
+    }
+
+    # Add observation metadata
+    headers.update(observation.status)
+
+    # Explicitly convert EQUINOX to float
+    try:
+        equinox = float(headers['equinox'].replace('J', ''))
+    except Exception:
+        equinox = 2000.  # We assume J2000
+
+    headers['equinox'] = equinox
+
+    return headers
+
+
+def autofocus_cameras(self, camera_list=None, **kwargs):
+    """
+    Perform autofocus on all cameras with focus capability, or a named subset
+    of these. Optionally will perform a coarse autofocus first, otherwise will
+    just fine tune focus.
+
+    Args:
+        camera_list (list, optional): list containing names of cameras to autofocus.
+        **kwargs: Options passed to the underlying `Focuser.autofocus` method.
+
+    Returns:
+        dict of str:threading_Event key:value pairs, containing camera names and
+            corresponding Events which will be set when the camera completes autofocus.
+    """
+    if camera_list:
+        # Have been passed a list of camera names, extract dictionary
+        # containing only cameras named in the list
+        cameras = {cam_name: self.cameras[
+            cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+        if cameras == {}:
+            self.logger.warning(f"No matching camera names in ({camera_list})")
+    else:
+        # No cameras specified, will try to autofocus all cameras from self.cameras
+        cameras = self.cameras
+
+    autofocus_events = dict()
+
+    # Start autofocus with each camera
+    for cam_name, camera in cameras.items():
+        self.logger.debug(f"Autofocusing camera: {cam_name}")
+
+        try:
+            assert camera.focuser.is_connected
+        except AttributeError:
+            self.logger.debug(f'Camera {cam_name} has no focuser, skipping autofocus')
+        except AssertionError:
+            self.logger.debug(f'Camera {cam_name} focuser not connected, skipping autofocus')
         else:
-            # No cameras specified, will try to autofocus all cameras from self.cameras
-            cameras = self.cameras
-
-        autofocus_events = dict()
-
-        # Start autofocus with each camera
-        for cam_name, camera in cameras.items():
-            self.logger.debug(f"Autofocusing camera: {cam_name}")
-
             try:
-                assert camera.focuser.is_connected
-            except AttributeError:
-                self.logger.debug(f'Camera {cam_name} has no focuser, skipping autofocus')
-            except AssertionError:
-                self.logger.debug(f'Camera {cam_name} focuser not connected, skipping autofocus')
+                # Start the autofocus
+                autofocus_event = camera.autofocus(**kwargs)
+            except Exception as e:
+                self.logger.error(f"Problem running autofocus: {e!r}")
             else:
-                try:
-                    # Start the autofocus
-                    autofocus_event = camera.autofocus(**kwargs)
-                except Exception as e:
-                    self.logger.error(f"Problem running autofocus: {e!r}")
-                else:
-                    autofocus_events[cam_name] = autofocus_event
+                autofocus_events[cam_name] = autofocus_event
 
-        return autofocus_events
+    return autofocus_events
 
-    def open_dome(self):
-        """Open the dome, if there is one.
 
-        Returns: False if there is a problem opening the dome,
-                 else True if open (or if not exists).
-        """
-        if not self.dome:
-            return True
-        if not self.dome.connect():
-            return False
-        if not self.dome.is_open:
-            self.logger.info('Opening dome')
-        return self.dome.open()
+def open_dome(self):
+    """Open the dome, if there is one.
 
-    def close_dome(self):
-        """Close the dome, if there is one.
+    Returns: False if there is a problem opening the dome,
+             else True if open (or if not exists).
+    """
+    if not self.dome:
+        return True
+    if not self.dome.connect():
+        return False
+    if not self.dome.is_open:
+        self.logger.info('Opening dome')
+    return self.dome.open()
 
-        Returns: False if there is a problem closing the dome,
-                 else True if closed (or if not exists).
-        """
-        if not self.dome:
-            return True
-        if not self.dome.connect():
-            return False
-        if not self.dome.is_closed:
-            self.logger.info('Closed dome')
-        return self.dome.close()
 
-    def take_flat_fields(self,
-                         which='evening',
-                         alt=None,
-                         az=None,
-                         min_counts=1000,
-                         max_counts=12000,
-                         target_adu_percentage=0.5,
-                         initial_exptime=3.,
-                         min_exptime=0.,
-                         max_exptime=60.,
-                         readout=5.,
-                         camera_list=None,
-                         bias=2048,
-                         max_num_exposures=10,
-                         no_tracking=True
-                         ):  # pragma: no cover
-        """Take flat fields.
-        This method will slew the mount to the given AltAz coordinates(which
-        should be roughly opposite of the setting sun) and then begin the flat-field
-        procedure. The first image starts with a simple 1 second exposure and
-        after each image is taken the average counts are analyzed and the exposure
-        time is adjusted to try to keep the counts close to `target_adu_percentage`
-        of the `(max_counts + min_counts) - bias`.
-        The next exposure time is calculated as:
-        .. code-block:: python
-            # Get the sun direction multiplier used to determine if exposure
-            # times are increasing or decreasing.
-            if which == 'evening':
-                sun_direction = 1
-            else:
-                sun_direction = -1
-            exptime = previous_exptime * (target_adu / counts) *
-                          (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5
-        Under - and over-exposed images are rejected. If image is saturated with
-        a short exposure the method will wait 60 seconds before beginning next
-        exposure.
-        Optionally, the method can also take dark exposures of equal exposure
-        time to each flat-field image.
-        Args:
-            which (str, optional): Specify either 'evening' or 'morning' to lookup coordinates
-                in config, default 'evening'.
-            alt (float, optional): Altitude for flats, default None.
-            az (float, optional): Azimuth for flats, default None.
-            min_counts (int, optional): Minimum ADU count.
-            max_counts (int, optional): Maximum ADU count.
-            target_adu_percentage (float, optional): Exposure time will be adjust so
-                that counts are close to: target * (`min_counts` + `max_counts`). Defaults
-                to 0.5.
-            initial_exptime (float, optional): Start the flat fields with this exposure
-                time, default 3 seconds.
-            max_exptime (float, optional): Maximum exposure time before stopping.
-            camera_list (list, optional): List of cameras to use for flat-fielding.
-            bias (int, optional): Default bias for the cameras.
-            max_num_exposures (int, optional): Maximum number of flats to take.
-            no_tracking (bool, optional): If tracking should be stopped for drift flats,
-                default True.
-        """
-        if camera_list is None:
-            camera_list = list(self.cameras.keys())
+def close_dome(self):
+    """Close the dome, if there is one.
 
-        target_adu = target_adu_percentage * (min_counts + max_counts)
+    Returns: False if there is a problem closing the dome,
+             else True if closed (or if not exists).
+    """
+    if not self.dome:
+        return True
+    if not self.dome.connect():
+        return False
+    if not self.dome.is_closed:
+        self.logger.info('Closed dome')
+    return self.dome.close()
 
+
+def take_flat_fields(self,
+                     which='evening',
+                     alt=None,
+                     az=None,
+                     min_counts=1000,
+                     max_counts=12000,
+                     target_adu_percentage=0.5,
+                     initial_exptime=3.,
+                     min_exptime=0.,
+                     max_exptime=60.,
+                     readout=5.,
+                     camera_list=None,
+                     bias=2048,
+                     max_num_exposures=10,
+                     no_tracking=True
+                     ):  # pragma: no cover
+    """Take flat fields.
+    This method will slew the mount to the given AltAz coordinates(which
+    should be roughly opposite of the setting sun) and then begin the flat-field
+    procedure. The first image starts with a simple 1 second exposure and
+    after each image is taken the average counts are analyzed and the exposure
+    time is adjusted to try to keep the counts close to `target_adu_percentage`
+    of the `(max_counts + min_counts) - bias`.
+    The next exposure time is calculated as:
+    .. code-block:: python
         # Get the sun direction multiplier used to determine if exposure
         # times are increasing or decreasing.
         if which == 'evening':
             sun_direction = 1
         else:
             sun_direction = -1
+        exptime = previous_exptime * (target_adu / counts) *
+                      (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5
+    Under - and over-exposed images are rejected. If image is saturated with
+    a short exposure the method will wait 60 seconds before beginning next
+    exposure.
+    Optionally, the method can also take dark exposures of equal exposure
+    time to each flat-field image.
+    Args:
+        which (str, optional): Specify either 'evening' or 'morning' to lookup coordinates
+            in config, default 'evening'.
+        alt (float, optional): Altitude for flats, default None.
+        az (float, optional): Azimuth for flats, default None.
+        min_counts (int, optional): Minimum ADU count.
+        max_counts (int, optional): Maximum ADU count.
+        target_adu_percentage (float, optional): Exposure time will be adjust so
+            that counts are close to: target * (`min_counts` + `max_counts`). Defaults
+            to 0.5.
+        initial_exptime (float, optional): Start the flat fields with this exposure
+            time, default 3 seconds.
+        max_exptime (float, optional): Maximum exposure time before stopping.
+        camera_list (list, optional): List of cameras to use for flat-fielding.
+        bias (int, optional): Default bias for the cameras.
+        max_num_exposures (int, optional): Maximum number of flats to take.
+        no_tracking (bool, optional): If tracking should be stopped for drift flats,
+            default True.
+    """
+    if camera_list is None:
+        camera_list = list(self.cameras.keys())
 
-        # Setup initial exposure times.
-        exptimes = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
+    target_adu = target_adu_percentage * (min_counts + max_counts)
 
-        # Create the observation.
-        try:
-            flat_obs = self._create_flat_field_observation(
-                alt=alt, az=az, initial_exptime=initial_exptime,
-                field_name=f'{which.title()}Flat'
-            )
-        except Exception as e:
-            self.logger.warning(f'Problem making flat field: {e}')
-            return
+    # Get the sun direction multiplier used to determine if exposure
+    # times are increasing or decreasing.
+    if which == 'evening':
+        sun_direction = 1
+    else:
+        sun_direction = -1
 
-        # Slew to position
-        self.logger.debug(f"Slewing to flat-field coords: {flat_obs.field}")
-        self.mount.set_target_coordinates(flat_obs.field)
-        self.mount.slew_to_target(blocking=True)
-        if no_tracking:
-            self.logger.info(f'Stopping the mount tracking')
-            self.mount.query('stop_tracking')
-        self.logger.info(f'At {flat_obs.field=} with tracking stopped, starting flats.')
+    # Setup initial exposure times.
+    exptimes = {cam_name: [initial_exptime * u.second] for cam_name in camera_list}
 
-        while len(camera_list) > 0:
+    # Create the observation.
+    try:
+        flat_obs = self._create_flat_field_observation(
+            alt=alt, az=az, initial_exptime=initial_exptime,
+            field_name=f'{which.title()}Flat'
+        )
+    except Exception as e:
+        self.logger.warning(f'Problem making flat field: {e}')
+        return
 
-            start_time = current_time()
-            fits_headers = self.get_standard_headers(observation=flat_obs)
-            fits_headers['start_time'] = flatten_time(start_time)
+    # Slew to position
+    self.logger.debug(f"Slewing to flat-field coords: {flat_obs.field}")
+    self.mount.set_target_coordinates(flat_obs.field)
+    self.mount.slew_to_target(blocking=True)
+    if no_tracking:
+        self.logger.info(f'Stopping the mount tracking')
+        self.mount.query('stop_tracking')
+    self.logger.info(f'At {flat_obs.field=} with tracking stopped, starting flats.')
 
-            # Report the sun level
-            sun_pos = self.observer.altaz(start_time, target=get_body('sun', start_time)).alt
-            self.logger.debug(f"Sun {sun_pos:.02f}°")
+    while len(camera_list) > 0:
 
-            # Take the observations.
-            exptime = min_exptime
-            camera_filename = dict()
-            for cam_name in camera_list:
-                # Get latest exposure time.
-                exptime = max(exptimes[cam_name][-1].value, min_exptime)
-                fits_headers['exptime'] = exptime
+        start_time = current_time()
+        fits_headers = self.get_standard_headers(observation=flat_obs)
+        fits_headers['start_time'] = flatten_time(start_time)
 
-                # Take picture and get filename.
-                self.logger.info(f'Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=}')
-                camera = self.cameras[cam_name]
-                metadata = camera.take_observation(flat_obs, headers=fits_headers, exptime=exptime)
-                camera_filename[cam_name] = metadata['filepath']
+        # Report the sun level
+        sun_pos = self.observer.altaz(start_time, target=get_body('sun', start_time)).alt
+        self.logger.debug(f"Sun {sun_pos:.02f}°")
 
-            # Block until done exposing on all cameras.
-            flat_field_timer = CountdownTimer(exptime + readout, name='Flat Field Images')
-            while any([cam.is_observing for cam_name, cam in self.cameras.items()
-                       if cam_name in camera_list]):
-                if flat_field_timer.expired():
-                    self.logger.warning(f'{flat_field_timer} expired while waiting for flat fields')
-                    return
+        # Take the observations.
+        exptime = min_exptime
+        camera_filename = dict()
+        for cam_name in camera_list:
+            # Get latest exposure time.
+            exptime = max(exptimes[cam_name][-1].value, min_exptime)
+            fits_headers['exptime'] = exptime
 
-                self.logger.trace('Waiting for flat-field image')
-                flat_field_timer.sleep(1)
+            # Take picture and get filename.
+            self.logger.info(f'Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=}')
+            camera = self.cameras[cam_name]
+            metadata = camera.take_observation(flat_obs, headers=fits_headers, exptime=exptime)
+            camera_filename[cam_name] = metadata['filepath']
 
-            # Check the counts for each image.
-            is_saturated = False
-            too_bright = False
-            for cam_name, filename in camera_filename.items():
+        # Block until done exposing on all cameras.
+        flat_field_timer = CountdownTimer(exptime + readout, name='Flat Field Images')
+        while any([cam.is_observing for cam_name, cam in self.cameras.items()
+                   if cam_name in camera_list]):
+            if flat_field_timer.expired():
+                self.logger.warning(f'{flat_field_timer} expired while waiting for flat fields')
+                return
 
-                # Make sure we can find the file.
-                img_file = filename.replace('.cr2', '.fits')
-                if not os.path.exists(img_file):
-                    img_file = img_file.replace('.fits', '.fits.fz')
-                    if not os.path.exists(img_file):  # pragma: no cover
-                        self.logger.warning(f"No flat file {img_file} found, skipping")
-                        continue
+            self.logger.trace('Waiting for flat-field image')
+            flat_field_timer.sleep(1)
 
-                self.logger.debug(f"Checking counts for {img_file}")
+        # Check the counts for each image.
+        is_saturated = False
+        too_bright = False
+        for cam_name, filename in camera_filename.items():
 
-                # Get the bias subtracted data.
-                data = fits_utils.getdata(img_file) - bias
+            # Make sure we can find the file.
+            img_file = filename.replace('.cr2', '.fits')
+            if not os.path.exists(img_file):
+                img_file = img_file.replace('.fits', '.fits.fz')
+                if not os.path.exists(img_file):  # pragma: no cover
+                    self.logger.warning(f"No flat file {img_file} found, skipping")
+                    continue
 
-                # Simple mean works just as well as sigma_clipping and is quicker for RGB.
-                # TODO(wtgee) verify this.
-                counts = data.mean()
-                self.logger.info(f"Counts: {counts:.02f} Desired: {target_adu:.02f}")
+            self.logger.debug(f"Checking counts for {img_file}")
 
-                # Check we are above minimum counts.
-                if counts < min_counts:
-                    self.logger.info("Counts are too low, flat should be discarded")
-                    setval(img_file, 'QUALITY', value='BAD', ext=int(img_file.endswith('.fz')))
+            # Get the bias subtracted data.
+            data = fits_utils.getdata(img_file) - bias
 
-                # Check we are below maximum counts.
-                if counts >= max_counts:
-                    self.logger.info("Image is saturated")
-                    is_saturated = True
-                    setval(img_file, 'QUALITY', value='BAD', ext=int(img_file.endswith('fz')))
+            # Simple mean works just as well as sigma_clipping and is quicker for RGB.
+            # TODO(wtgee) verify this.
+            counts = data.mean()
+            self.logger.info(f"Counts: {counts:.02f} Desired: {target_adu:.02f}")
 
-                # Get suggested exposure time.
-                elapsed_time = (current_time() - start_time).sec
-                self.logger.debug(f"Elapsed time: {elapsed_time:.02f}")
-                previous_exptime = exptimes[cam_name][-1].value
+            # Check we are above minimum counts.
+            if counts < min_counts:
+                self.logger.info("Counts are too low, flat should be discarded")
+                setval(img_file, 'QUALITY', value='BAD', ext=int(img_file.endswith('.fz')))
 
-                # TODO(wtgee) Document this better.
-                suggested_exptime = int(previous_exptime * (target_adu / counts) *
-                                        (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5)
+            # Check we are below maximum counts.
+            if counts >= max_counts:
+                self.logger.info("Image is saturated")
+                is_saturated = True
+                setval(img_file, 'QUALITY', value='BAD', ext=int(img_file.endswith('fz')))
 
-                self.logger.info(f"Suggested exptime for {cam_name}: {suggested_exptime:.02f}")
+            # Get suggested exposure time.
+            elapsed_time = (current_time() - start_time).sec
+            self.logger.debug(f"Elapsed time: {elapsed_time:.02f}")
+            previous_exptime = exptimes[cam_name][-1].value
 
-                # Stop flats if we are going on too long.
-                self.logger.debug(f"Checking for too many exposures on {cam_name}")
-                if len(exptimes) == max_num_exposures:
-                    self.logger.info(f"Have ({max_num_exposures=}), stopping {cam_name}.")
-                    camera_list.remove(cam_name)
+            # TODO(wtgee) Document this better.
+            suggested_exptime = int(previous_exptime * (target_adu / counts) *
+                                    (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5)
 
-                # Stop flats if any time is greater than max.
-                self.logger.debug(f"Checking for long exposures on {cam_name}")
-                if suggested_exptime >= max_exptime:
-                    self.logger.info(f"Suggested exposure time greater than max, "
-                                     f"stopping flat fields for {cam_name}")
-                    camera_list.remove(cam_name)
+            self.logger.info(f"Suggested exptime for {cam_name}: {suggested_exptime:.02f}")
 
-                self.logger.debug(f"Checking for saturation on short exposure on {cam_name}")
-                short_exptime = 2
-                if is_saturated and previous_exptime <= short_exptime:
-                    too_bright = True
+            # Stop flats if we are going on too long.
+            self.logger.debug(f"Checking for too many exposures on {cam_name}")
+            if len(exptimes) == max_num_exposures:
+                self.logger.info(f"Have ({max_num_exposures=}), stopping {cam_name}.")
+                camera_list.remove(cam_name)
 
-                # Add next exptime to list.
-                exptimes[cam_name].append(suggested_exptime * u.second)
+            # Stop flats if any time is greater than max.
+            self.logger.debug(f"Checking for long exposures on {cam_name}")
+            if suggested_exptime >= max_exptime:
+                self.logger.info(f"Suggested exposure time greater than max, "
+                                 f"stopping flat fields for {cam_name}")
+                camera_list.remove(cam_name)
 
-            if too_bright:
-                if which == 'evening':
-                    self.logger.info("Saturated short exposure, waiting 60 seconds for more dark")
-                    CountdownTimer(60, name='WaitingForTheDarkness').sleep()
-                else:
-                    self.logger.info('Saturated short exposure, too bright to continue')
-                    return
+            self.logger.debug(f"Checking for saturation on short exposure on {cam_name}")
+            short_exptime = 2
+            if is_saturated and previous_exptime <= short_exptime:
+                too_bright = True
 
-    def _create_flat_field_observation(self,
-                                       alt=70,  # degrees
-                                       az=None,
-                                       field_name='FlatField',
-                                       flat_time=None,
-                                       initial_exptime=5):
-        """Small convenience wrapper to create a flat-field Observation.
-        Flat-fields are specified by AltAz coordinates so this method is just a helper
-        to look up the current RA-Dec coordinates based on the unit's location and
-        the current time (or `flat_time` if provided).
-        If no azimuth is provided this will figure out the azimuth of the sun at
-        `flat_time` and use that position minus 180 degrees.
-        Args:
-            alt (float, optional): Altitude desired, default 70 degrees.
-            az (float, optional): Azimuth desired in degrees, defaults to a position
-                -180 degrees opposite the sun at `flat_time`.
-            field_name (str, optional): Name of the field, which will also be directory
-                name. Note that it is probably best to pass the camera.uid as name.
-            flat_time (`astropy.time.Time`, optional): The time at which the flats
-                will be taken, default `now`.
-            initial_exptime (int, optional): Initial exptime in seconds, default 5.
-        Returns:
-            `pocs.scheduler.Observation`: Information about the flat-field.
-        """
-        self.logger.debug("Creating flat-field observation")
+            # Add next exptime to list.
+            exptimes[cam_name].append(suggested_exptime * u.second)
 
-        if flat_time is None:
-            flat_time = current_time()
+        if too_bright:
+            if which == 'evening':
+                self.logger.info("Saturated short exposure, waiting 60 seconds for more dark")
+                CountdownTimer(60, name='WaitingForTheDarkness').sleep()
+            else:
+                self.logger.info('Saturated short exposure, too bright to continue')
+                return
 
-        # Get an azimuth that is roughly opposite the sun.
-        if az is None:
-            sun_pos = self.observer.altaz(flat_time, target=get_body('sun', flat_time))
-            az = sun_pos.az.value - 180.  # Opposite the sun
 
-        self.logger.debug(f'Flat-field coords: {alt=:.02f} {az=:.02f}')
+def _create_flat_field_observation(self,
+                                   alt=70,  # degrees
+                                   az=None,
+                                   field_name='FlatField',
+                                   flat_time=None,
+                                   initial_exptime=5):
+    """Small convenience wrapper to create a flat-field Observation.
+    Flat-fields are specified by AltAz coordinates so this method is just a helper
+    to look up the current RA-Dec coordinates based on the unit's location and
+    the current time (or `flat_time` if provided).
+    If no azimuth is provided this will figure out the azimuth of the sun at
+    `flat_time` and use that position minus 180 degrees.
+    Args:
+        alt (float, optional): Altitude desired, default 70 degrees.
+        az (float, optional): Azimuth desired in degrees, defaults to a position
+            -180 degrees opposite the sun at `flat_time`.
+        field_name (str, optional): Name of the field, which will also be directory
+            name. Note that it is probably best to pass the camera.uid as name.
+        flat_time (`astropy.time.Time`, optional): The time at which the flats
+            will be taken, default `now`.
+        initial_exptime (int, optional): Initial exptime in seconds, default 5.
+    Returns:
+        `pocs.scheduler.Observation`: Information about the flat-field.
+    """
+    self.logger.debug("Creating flat-field observation")
 
-        field = Field.from_altaz(field_name, alt, az, self.earth_location, time=flat_time)
-        flat_obs = CompoundObservation(field, exptime=initial_exptime)
+    if flat_time is None:
+        flat_time = current_time()
 
-        # Note different 'flat' concepts.
-        flat_obs.seq_time = flatten_time(flat_time)
+    # Get an azimuth that is roughly opposite the sun.
+    if az is None:
+        sun_pos = self.observer.altaz(flat_time, target=get_body('sun', flat_time))
+        az = sun_pos.az.value - 180.  # Opposite the sun
 
-        self.logger.debug(f'Flat-field observation: {flat_obs}')
-        return flat_obs
+    self.logger.debug(f'Flat-field coords: {alt=:.02f} {az=:.02f}')
+
+    field = Field.from_altaz(field_name, alt, az, self.earth_location, time=flat_time)
+    flat_obs = CompoundObservation(field, exptime=initial_exptime)
+
+    # Note different 'flat' concepts.
+    flat_obs.seq_time = flatten_time(flat_time)
+
+    self.logger.debug(f'Flat-field observation: {flat_obs}')
+    return flat_obs
