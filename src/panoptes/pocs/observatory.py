@@ -577,7 +577,7 @@ class Observatory(PanBase):
         # Prepend the PANOPTES unit id to the bucket path.
         pan_id = self.get_config('pan_id')
         self.logger.debug(f'Adding {pan_id=} to {bucket_path=}')
-        bucket_path = Path(pan_id) / bucket_path
+        bucket_path = Path(pan_id) / bucket_path.relative_to('/')
 
         # Create a separate process for the upload.
         upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
