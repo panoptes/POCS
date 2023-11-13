@@ -2,7 +2,7 @@ import re
 from contextlib import suppress
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Latitude, Longitude
 from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
 from panoptes.utils.time import current_time
@@ -308,9 +308,9 @@ class Mount(AbstractSerialMount):
             status['parked_software'] = self.is_parked
 
             coords_unit = getattr(u, self._location_units)
-            status['longitude'] = (float(status_dict['longitude']) * coords_unit).to(u.degree)
+            status['longitude'] = Longitude((float(status_dict['longitude']) * coords_unit).to(u.degree))
             # Longitude adds +90° to avoid negative numbers, so subtract for original.
-            status['latitude'] = (float(status_dict['latitude']) * coords_unit).to(u.degree) - (90 * u.degree)
+            status['latitude'] = Latitude((float(status_dict['latitude']) * coords_unit).to(u.degree) - (90 * u.degree))
 
             status['gps'] = MountGPS(int(status_dict['gps']))
             status['tracking'] = MountTrackingState(int(status_dict['tracking']))
