@@ -118,7 +118,7 @@ class AbstractMount(PanBase):
     def status(self):
         status = {}
         try:
-            status['tracking_rate'] = f'{self.tracking_rate:0.04f}'
+            status['tracking_rate'] = self.tracking_rate
             status['ra_guide_rate'] = self.ra_guide_rate
             status['dec_guide_rate'] = self.dec_guide_rate
             status['movement_speed'] = self.movement_speed
