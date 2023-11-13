@@ -347,9 +347,8 @@ class Mount(AbstractSerialMount):
             with suppress(Exception):
                 now = int(ts[5:]) * u.ms
                 j2000 = Time(2000, format='jyear')
-                t0 = j2000 + now + offset
-
-                status['time_local'] = t0.iso
+                status['time_utc'] = (j2000 + now).iso
+                status['time_local'] = (status['time_utc'] + offset).iso
 
         return status
 
