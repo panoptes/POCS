@@ -2,10 +2,6 @@ from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 
 class Mount(BaseMount):
-    """
-        Mount class for iOptron mounts. Overrides the base `initialize` method
-        and providers some helper methods to convert coordinates.
-    """
 
     def __init__(self, location, mount_version='0030', *args, **kwargs):
         self._mount_version = mount_version
