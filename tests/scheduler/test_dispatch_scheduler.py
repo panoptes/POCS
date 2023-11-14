@@ -248,21 +248,17 @@ def test_observed_list(scheduler):
 
     time = Time('2016-09-11 07:08:00')
     scheduler.get_observation(time=time)
-
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time = Time('2016-09-11 10:30:00')
+    time = Time('2016-09-11 12:30:00')
     scheduler.get_observation(time=time)
-
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
     time = Time('2016-09-11 14:30:00')
     scheduler.get_observation(time=time)
-
     assert len(scheduler.observed_list) == 2
 
     scheduler.reset_observed_list()
-
     assert len(scheduler.observed_list) == 0
