@@ -1,7 +1,3 @@
-import re
-
-from astropy.time import Time
-
 from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 
