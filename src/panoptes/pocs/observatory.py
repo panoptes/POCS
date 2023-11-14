@@ -564,17 +564,17 @@ class Observatory(PanBase):
         image_path = exposure_info.path
         if not image_path.exists():
             raise FileNotFoundError(f'File does not exist: {image_path.as_posix()}')
-        
+
         bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
 
         self.logger.debug(f'Preparing {image_path=} for upload to {bucket_name=}')
 
         # Get the images directory.
         images_dir = Path(self.get_config('directories.images', default=Path('~/images'))).expanduser().as_posix()
-        
+
         # Remove images directory from path so it's stored in bucket relative to images directory.
         bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
-        
+
         # Prepend the PANOPTES unit id to the bucket path.
         pan_id = self.get_config('pan_id')
         self.logger.debug(f'Adding {pan_id=} to {bucket_path=}')
