@@ -97,7 +97,7 @@ def field_list():
     """)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def scheduler(field_list, observer, constraints):
     return Scheduler(observer,
                      fields_list=field_list,
