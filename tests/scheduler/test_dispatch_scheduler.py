@@ -246,17 +246,17 @@ def test_new_observation_seq_time(scheduler):
 def test_observed_list(scheduler):
     assert len(scheduler.observed_list) == 0
 
-    time = Time('2016-09-11 07:08:00')
+    time = Time('2023-09-11 07:08:00')
     scheduler.get_observation(time=time)
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time = Time('2016-09-11 12:30:00')
+    time = Time('2023-09-11 12:30:00')
     scheduler.get_observation(time=time)
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
-    time = Time('2016-09-11 14:30:00')
+    time = Time('2023-09-11 14:30:00')
     scheduler.get_observation(time=time)
     assert len(scheduler.observed_list) == 2
 
