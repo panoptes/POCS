@@ -24,6 +24,7 @@ def upload_image_cmd(file_path: Path, bucket_path: str,
                               storage_client=storage_client)
     print(f'[green]File successfully uploaded to {public_url}[/]')
 
+
 @upload_app.command('directory')
 def upload_directory(directory_path: Path,
                      exclude: str,
