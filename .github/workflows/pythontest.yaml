@@ -9,7 +9,7 @@ jobs:
         python-version: [ "3.11" ]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -28,7 +28,7 @@ jobs:
         python-version: [ "3.8", "3.9", "3.10", "3.11" ]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -38,15 +38,15 @@ jobs:
       - name: Test
         run: pytest
       - name: Upload coverage report to codecov.io
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         if: success()
         with:
           name: codecov-upload
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: build/coverage.xml
+          files: build/coverage.xml
           fail_ci_if_error: true
       - name: Create log file artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: log-files
