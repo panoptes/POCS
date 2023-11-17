@@ -99,6 +99,10 @@ def field_list():
 
 @pytest.fixture(scope='function')
 def scheduler(field_list, observer, constraints):
+    try:
+        del os.environ['POCSTIME']
+    except Exception:
+        pass
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints)
@@ -179,11 +183,6 @@ def test_continue_observation(scheduler):
 
 
 def test_set_observation_then_reset(scheduler):
-    try:
-        del os.environ['POCSTIME']
-    except Exception:
-        pass
-
     time = Time('2016-08-13 05:00:00')
     scheduler.get_observation(time=time)
 
