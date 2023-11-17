@@ -1,6 +1,7 @@
 import os
 import yaml
 import pytest
+import time
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -245,18 +246,20 @@ def test_new_observation_seq_time(scheduler):
 def test_observed_list(scheduler):
     assert len(scheduler.observed_list) == 0
 
-    time = Time('2016-09-11 07:08:00')
-    scheduler.get_observation(time=time)
+    time0 = Time('2016-09-11 07:08:00')
+    scheduler.get_observation(time=time0)
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time = Time('2016-09-11 10:08:00')
-    scheduler.get_observation(time=time)
+    time.sleep(1)
+    time1 = Time('2016-09-11 10:08:00')
+    scheduler.get_observation(time=time1)
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
-    time = Time('2016-09-11 14:38:00')
-    scheduler.get_observation(time=time)
+    time.sleep(1)
+    time2 = Time('2016-09-11 14:38:00')
+    scheduler.get_observation(time=time2)
     assert len(scheduler.observed_list) == 2
 
     scheduler.reset_observed_list()
