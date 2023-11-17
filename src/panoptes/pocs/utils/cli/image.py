@@ -5,7 +5,7 @@ import typer
 from google.cloud import storage
 from rich import print
 
-from panoptes.pocs.utils.image import upload_image
+from panoptes.pocs.utils.cloud import upload_image
 
 app = typer.Typer()
 upload_app = typer.Typer()
