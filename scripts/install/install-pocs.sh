@@ -77,6 +77,8 @@ function system_deps() {
 
   sudo apt-get -y -qq install \
     ack \
+    astrometry-net \
+    astrometry-data-tycho2-10-19 \
     byobu \
     curl \
     dcraw \
@@ -87,6 +89,7 @@ function system_deps() {
     httpie \
     jo \
     jq \
+    libcfitsio-bin \
     make \
     nano \
     vim-nox \
@@ -246,7 +249,7 @@ function write_udev_entries() {
 
   # Write the udev rules for the ioptron mounts.
   cat >/tmp/91-ioptron.rules <<EOT
-ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="ioptron"
+ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="ioptron"
 EOT
   sudo mv /tmp/91-ioptron.rules /etc/udev/rules.d/
 }

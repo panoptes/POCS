@@ -1,44 +1,14 @@
-import re
 import time
 
-from astropy import units as u
-from astropy.time import Time
-
-from panoptes.pocs.mount.ioptron.base import Mount as BaseMount, MountState
+from panoptes.pocs.mount.ioptron import MountState
+from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 
 class Mount(BaseMount):
-    """
-        Mount class for iOptron mounts. Overrides the base `initialize` method
-        and providers some helper methods to convert coordinates.
-    """
 
     def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
         super(Mount, self).__init__(location, *args, **kwargs)
-        self.logger.info('Creating iOptron CEM40 mount')
-
-        self._coords_format = re.compile(
-            r'(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})' +
-            r'(?P<ra_millisecond>\d{9})' +
-            r'(?P<pier_side>\d)' +
-            r'(?P<pointing_state>\d)'
-        )
-
-        self._latitude_format = '{:+08.0f}'
-        self._longitude_format = '{:+08.0f}'
-
-        self._status_format = re.compile(
-            r'(?P<longitude>[+\-]\d{8})' +
-            r'(?P<latitude>\d{8})' +
-            r'(?P<gps>[0-2])' +
-            r'(?P<state>[0-7])' +
-            r'(?P<tracking>[0-4])' +
-            r'(?P<movement_speed>[1-9])' +
-            r'(?P<time_source>[1-3])' +
-            r'(?P<hemisphere>[01])'
-        )
-
         self.logger.success('iOptron CEM40 mount created')
 
     def search_for_home(self):
@@ -53,20 +23,19 @@ class Mount(BaseMount):
             self.logger.trace(f'Searching for home position.')
             time.sleep(1)
 
-    def _update_status(self):
-        status = super()._update_status()
+    def set_target_coordinates(self, *args, **kwargs):
+        """After setting target coordinates, check number of positions.
+        The CEM40 can determine if there are 0, 1, or 2 possible positions
+        for the given RA/Dec, with the latter being the case for the meridian
+        flip.
+        """
+        target_set = super().set_target_coordinates(*args, **kwargs)
+        self.logger.debug(f'Checking number of possible positions for {self._target_coordinates}')
+        num_possible_positions = self.query('query_positions')
+        self.logger.debug(f'Number of possible positions: {num_possible_positions}')
 
-        # Get and parse the time from the mount.
-        ts = status['timestamp']
-        offset = status['time_offset']
+        if num_possible_positions == 0:
+            self.logger.warning(f'No possible positions for {self._target_coordinates}')
+            target_set = False
 
-        try:
-            now = int(ts[5:]) * u.ms
-            j2000 = Time(2000, format='jyear')
-            t0 = j2000 + now + offset
-
-            status['time_local'] = t0.iso
-        except Exception:
-            pass
-
-        return status
+        return target_set

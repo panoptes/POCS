@@ -24,7 +24,7 @@ from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.compound import Observation as CompoundObservation
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
-from panoptes.pocs.utils.cli.image import upload_image
+from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.location import create_location_from_config
 
 
@@ -494,8 +494,7 @@ class Observatory(PanBase):
 
                     self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
-                    if metadata['is_primary']:
-                        # TODO This should be in the config somewhere.
+                    if metadata.get('is_primary', False):
                         link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
 
                     pretty_process = Process(name=f'PrettyImageProcess-{image_id}',
@@ -562,26 +561,33 @@ class Observatory(PanBase):
 
     def upload_exposure(self, exposure_info, bucket_name=None):
         """Uploads the most recent image from the current observation."""
-        bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
-
         image_path = exposure_info.path
         if not image_path.exists():
-            raise FileNotFoundError(f'File does not exist: {str(image_path)}')
+            raise FileNotFoundError(f'File does not exist: {image_path.as_posix()}')
 
-        self.logger.debug(f'Preparing {image_path} for upload')
+        bucket_name = bucket_name or self.get_config('panoptes_network.buckets.upload')
 
-        # Remove the local images directory for the upload name and replace with PAN_ID.
-        bucket_path = str(image_path.absolute()).replace(self.get_config('directories.images'),
-                                                         self.get_config('pan_id'))
+        self.logger.debug(f'Preparing {image_path=} for upload to {bucket_name=}')
+
+        # Get the images directory.
+        images_dir = Path(self.get_config('directories.images', default=Path('~/images'))).expanduser().as_posix()
+
+        # Remove images directory from path so it's stored in bucket relative to images directory.
+        bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
+
+        # Prepend the PANOPTES unit id to the bucket path.
+        pan_id = self.get_config('pan_id')
+        self.logger.debug(f'Adding {pan_id=} to {bucket_path=}')
+        bucket_path = Path(pan_id) / bucket_path.relative_to('/')
 
         # Create a separate process for the upload.
         upload_process = Process(name=f'ImageUploaderProcess-{exposure_info.image_id}',
                                  target=upload_image,
                                  kwargs=dict(file_path=image_path,
-                                             bucket_path=bucket_path,
+                                             bucket_path=bucket_path.as_posix(),
                                              bucket_name=bucket_name))
 
-        self.logger.info(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
+        self.logger.debug(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
         upload_process.start()
 
     def update_tracking(self, **kwargs):
