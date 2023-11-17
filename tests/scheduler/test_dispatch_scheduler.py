@@ -19,14 +19,14 @@ def constraints():
     return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def observer():
     loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def field_file():
     scheduler_config = get_config('scheduler', default={})
 
@@ -37,7 +37,7 @@ def field_file():
     return fields_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def field_list():
     return yaml.full_load("""
     -
@@ -251,7 +251,7 @@ def test_observed_list(scheduler):
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time = Time('2016-09-11 14:08:00')
+    time = Time('2016-09-11 10:08:00')
     scheduler.get_observation(time=time)
     assert len(scheduler.observed_list) == 2
 
