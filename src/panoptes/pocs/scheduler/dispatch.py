@@ -78,17 +78,17 @@ class Scheduler(BaseScheduler):
             self.logger.info(f'Best observation: {top_obs_name}\tScore: {top_obs_score:.02f}')
 
             # Check new best against current_observation
-            if self.current_observation is not None \
-                    and top_obs_name != self.current_observation.name:
+            if self.current_observation is not None and top_obs_name != self.current_observation.name:
+                self.logger.debug(f'Checking if {self.current_observation} is still valid')
 
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
                 if self.observation_available(self.current_observation, end_of_next_set):
-
                     # If current is better or equal to top, use it
+                    self.logger.debug(f'{self.current_observation.merit=}')
+                    self.logger.debug(f'{top_obs_score=}')
                     if self.current_observation.merit >= top_obs_score:
-                        best_obs.insert(0, (self.current_observation,
-                                            self.current_observation.merit))
+                        best_obs.insert(0, (self.current_observation, self.current_observation.merit))
 
             # Set the current
             self.current_observation = self.observations[top_obs_name]

@@ -7,7 +7,6 @@ from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_body
 from panoptes.utils import error
-from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
 
@@ -121,7 +120,7 @@ class BaseScheduler(PanBase):
                     # Add the new observation to the list
                     self.observed_list[new_observation.seq_time] = new_observation
 
-        self.logger.info("Setting new observation to {}".format(new_observation))
+        self.logger.info(f'Setting new observation to {new_observation}')
         self._current_observation = new_observation
 
     @property

@@ -1,18 +1,10 @@
-import re
 import time
 
-from astropy import units as u
-from astropy.time import Time
-
-from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 from panoptes.pocs.mount.ioptron import MountState
+from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 
 class Mount(BaseMount):
-    """
-        Mount class for iOptron mounts. Overrides the base `initialize` method
-        and providers some helper methods to convert coordinates.
-    """
 
     def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
@@ -30,3 +22,20 @@ class Mount(BaseMount):
         while self.status.get('state') != MountState.AT_HOME:
             self.logger.trace(f'Searching for home position.')
             time.sleep(1)
+
+    def set_target_coordinates(self, *args, **kwargs):
+        """After setting target coordinates, check number of positions.
+        The CEM40 can determine if there are 0, 1, or 2 possible positions
+        for the given RA/Dec, with the latter being the case for the meridian
+        flip.
+        """
+        target_set = super().set_target_coordinates(*args, **kwargs)
+        self.logger.debug(f'Checking number of possible positions for {self._target_coordinates}')
+        num_possible_positions = self.query('query_positions')
+        self.logger.debug(f'Number of possible positions: {num_possible_positions}')
+
+        if num_possible_positions == 0:
+            self.logger.warning(f'No possible positions for {self._target_coordinates}')
+            target_set = False
+
+        return target_set
