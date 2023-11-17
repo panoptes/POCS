@@ -5,14 +5,14 @@ from pathlib import Path
 
 from loguru import logger as loguru_logger
 
-try:
-    import google.cloud.logging
-    from google.cloud.logging_v2.handlers import CloudLoggingHandler
+cloud_client = None
+if bool(os.getenv('CLOUD_LOGGING', False)) is True:
+    with suppress(ImportError):
+        import google.cloud.logging
+        from google.cloud.logging_v2.handlers import CloudLoggingHandler
 
-    cloud_client = google.cloud.logging.Client()
-    cloud_client.setup_logging()
-except ImportError:
-    cloud_client = None
+        cloud_client = google.cloud.logging.Client()
+        cloud_client.setup_logging()
 
 
 class PanLogger:
