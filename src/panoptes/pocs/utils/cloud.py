@@ -1,5 +1,6 @@
 from pathlib import Path
 from google.cloud import storage
+
 from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
