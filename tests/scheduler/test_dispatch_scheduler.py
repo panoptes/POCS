@@ -1,6 +1,7 @@
 import os
 import yaml
 import pytest
+import time
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -19,14 +20,14 @@ def constraints():
     return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def observer():
     loc = get_config('location')
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def field_file():
     scheduler_config = get_config('scheduler', default={})
 
@@ -37,7 +38,7 @@ def field_file():
     return fields_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def field_list():
     return yaml.full_load("""
     -
@@ -97,8 +98,12 @@ def field_list():
     """)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def scheduler(field_list, observer, constraints):
+    try:
+        del os.environ['POCSTIME']
+    except Exception:
+        pass
     return Scheduler(observer,
                      fields_list=field_list,
                      constraints=constraints)
@@ -179,11 +184,6 @@ def test_continue_observation(scheduler):
 
 
 def test_set_observation_then_reset(scheduler):
-    try:
-        del os.environ['POCSTIME']
-    except Exception:
-        pass
-
     time = Time('2016-08-13 05:00:00')
     scheduler.get_observation(time=time)
 
@@ -246,23 +246,21 @@ def test_new_observation_seq_time(scheduler):
 def test_observed_list(scheduler):
     assert len(scheduler.observed_list) == 0
 
-    time = Time('2016-09-11 07:08:00')
-    scheduler.get_observation(time=time)
-
+    time0 = Time('2016-09-11 07:08:00')
+    scheduler.get_observation(time=time0)
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time = Time('2016-09-11 10:30:00')
-    scheduler.get_observation(time=time)
-
+    time.sleep(1)
+    time1 = Time('2016-09-11 10:08:00')
+    scheduler.get_observation(time=time1)
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
-    time = Time('2016-09-11 14:30:00')
-    scheduler.get_observation(time=time)
-
+    time.sleep(1)
+    time2 = Time('2016-09-11 14:38:00')
+    scheduler.get_observation(time=time2)
     assert len(scheduler.observed_list) == 2
 
     scheduler.reset_observed_list()
-
     assert len(scheduler.observed_list) == 0
