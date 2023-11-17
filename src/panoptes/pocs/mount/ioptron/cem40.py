@@ -25,6 +25,7 @@ class Mount(BaseMount):
 
     def set_target_coordinates(self, *args, **kwargs):
         """After setting target coordinates, check number of positions.
+
         The CEM40 can determine if there are 0, 1, or 2 possible positions
         for the given RA/Dec, with the latter being the case for the meridian
         flip.

@@ -118,7 +118,7 @@ class AbstractMount(PanBase):
     def status(self):
         status = {}
         try:
-            status['tracking_rate'] = f'{self.tracking_rate:0.04f}'
+            status['tracking_rate'] = self.tracking_rate
             status['ra_guide_rate'] = self.ra_guide_rate
             status['dec_guide_rate'] = self.dec_guide_rate
             status['movement_speed'] = self.movement_speed
@@ -783,17 +783,17 @@ class AbstractMount(PanBase):
 
         self.logger.debug('Mount commands set up')
 
+    def search_for_home(self):
+        """Search for the home position not supported."""
+        self.logger.warning('Searching for home position not supported.'
+                            'Please set the home position manually via the hand-controller.')
+
     @abstractmethod
     def write(self, cmd):
         raise NotImplementedError
 
     @abstractmethod
     def read(self, *args, **kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def search_for_home(self):
-        """Search for the home position if supported. """
         raise NotImplementedError
 
     @abstractmethod
