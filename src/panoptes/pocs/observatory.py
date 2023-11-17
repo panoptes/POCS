@@ -573,7 +573,6 @@ class Observatory(PanBase):
         images_dir = Path(self.get_config('directories.images', default=Path('~/images'))).expanduser().as_posix()
 
         # Remove images directory from path so it's stored in bucket relative to images directory.
-        # Remove images directory from path so it's stored in bucket relative to images directory.
         bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
         # Prepend the PANOPTES unit id to the bucket path.
         pan_id = self.get_config('pan_id')
