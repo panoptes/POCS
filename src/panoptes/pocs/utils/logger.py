@@ -7,7 +7,7 @@ from loguru import logger as loguru_logger
 
 cloud_client = None
 if bool(os.getenv('CLOUD_LOGGING', False)) is True:
-    with suppress(ImportError):
+    with suppress(ImportError, NameError):
         import google.cloud.logging
         from google.cloud.logging_v2.handlers import CloudLoggingHandler
 
@@ -131,13 +131,10 @@ def get_logger(console_log_file='panoptes.log',
                 level='TRACE')
             LOGGER_INFO.handlers['archive'] = archive_id
 
-    if 'cloud' not in LOGGER_INFO.handlers:
-        # TODO fix this.
-        unit_id = 'PAN000'
+    if cloud_client is not None and 'cloud' not in LOGGER_INFO.handlers:
+        unit_id = os.getenv('PANID', os.environ['USER'])
         cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
-        cloud_id = loguru_logger.add(cloud_handler,
-                                     level='DEBUG',
-                                     format="{name} {function}:{line} {message}")
+        cloud_id = loguru_logger.add(cloud_handler, level='DEBUG', format="{name} {function}:{line} {message}")
         LOGGER_INFO.handlers['cloud'] = cloud_id
 
     # Customize colors.
