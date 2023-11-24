@@ -77,7 +77,7 @@ function system_deps() {
 
   sudo apt-get -y -qq install \
     ack \
-    astrometry-net \
+    astrometry.net \
     astrometry-data-tycho2-10-19 \
     byobu \
     curl \
