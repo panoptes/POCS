@@ -784,7 +784,7 @@ class AbstractMount(PanBase):
         self.logger.debug('Mount commands set up')
 
     def search_for_home(self):
-        """Search for the home position not supported."""
+        """Search for the home position if supported."""
         self.logger.warning('Searching for home position not supported.'
                             'Please set the home position manually via the hand-controller.')
 

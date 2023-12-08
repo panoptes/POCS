@@ -574,7 +574,6 @@ class Observatory(PanBase):
 
         # Remove images directory from path so it's stored in bucket relative to images directory.
         bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
-
         # Prepend the PANOPTES unit id to the bucket path.
         pan_id = self.get_config('pan_id')
         self.logger.debug(f'Adding {pan_id=} to {bucket_path=}')
@@ -849,7 +848,13 @@ class Observatory(PanBase):
 
         # Slew to position
         self.logger.debug(f"Slewing to flat-field coords: {flat_obs.field}")
-        self.mount.set_target_coordinates(flat_obs.field)
+        target_set = self.mount.set_target_coordinates(flat_obs.field)
+
+        # Check to make sure we had a target.
+        if not target_set:
+            self.logger.warning(f'No target set, cannot take flat fields')
+            return
+
         self.mount.slew_to_target(blocking=True)
         if no_tracking:
             self.logger.info(f'Stopping the mount tracking')
