@@ -248,7 +248,7 @@ class Mount(AbstractSerialMount):
             ra_coords_units = getattr(u, self._ra_coords_units)
             dec_coords_units = getattr(u, self._dec_coords_units)
 
-            # Turn into units output by the mount.
+            # Turn mount output into appropriate units.
             ra = (int(coords_match.group('ra')) * ra_coords_units)
             dec = (int(coords_match.group('dec')) * dec_coords_units)
 
