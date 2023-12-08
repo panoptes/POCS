@@ -22,7 +22,6 @@ def upload_image_cmd(file_path: Path, bucket_path: str,
                               bucket_name=bucket_name,
                               timeout=timeout,
                               storage_client=storage_client)
-    
     print(f'[green]File successfully uploaded to {public_url}[/]')
 
 

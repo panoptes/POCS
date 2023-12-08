@@ -23,20 +23,25 @@ class Mount(BaseMount):
             self.logger.trace(f'Searching for home position.')
             time.sleep(1)
 
-    # def set_target_coordinates(self, *args, **kwargs):
-    #     """After setting target coordinates, check number of positions.
+    def set_target_coordinates(self, *args, **kwargs):
+        """After setting target coordinates, check number of positions.
 
-    #     The CEM40 can determine if there are 0, 1, or 2 possible positions
-    #     for the given RA/Dec, with the latter being the case for the meridian
-    #     flip.
-    #     """
-    #     target_set = super().set_target_coordinates(*args, **kwargs)
-    #     self.logger.debug(f'Checking number of possible positions for {self._target_coordinates}')
-    #     num_possible_positions = self.query('query_positions')
-    #     self.logger.debug(f'Number of possible positions: {num_possible_positions}')
+        The CEM40 can determine if there are 0, 1, or 2 possible positions
+        for the given RA/Dec, with the latter being the case for the meridian
+        flip.
+        """
+        target_set = super().set_target_coordinates(*args, **kwargs)
+        self.logger.debug(f'Checking number of possible positions for {self._target_coordinates}')
+        num_possible_positions = self.query('query_positions')
+        self.logger.debug(f'Number of possible positions: {num_possible_positions}')
 
-    #     if num_possible_positions == 0:
-    #         self.logger.warning(f'No possible positions for {self._target_coordinates}')
-    #         target_set = False
+        if num_possible_positions == 0:
+            self.logger.warning(f'No possible positions for {self._target_coordinates}')
+            return False
 
-    #     return target_set
+        # There is currently a bug with with the CEM40 where it will reset the
+        # target coordinates after querying the number of possible positions so
+        # we need to set them again.
+        target_set = super().set_target_coordinates(*args, **kwargs)
+
+        return target_set
