@@ -157,7 +157,7 @@ observations:
   make_pretty_images: True
   keep_jpgs: True
   plate_solve: True
-  upload_image_immediately: True
+  upload_image: False
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -170,10 +170,9 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-  image_storage: False
   use_firestore: False
   service_account_key: # Location of JSON account key
-  project_id: panoptes-exp
+  project_id: panoptes-project-01
   buckets:
     upload: panoptes-images-incoming
 
