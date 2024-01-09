@@ -424,7 +424,7 @@ class Observatory(PanBase):
                             record_observations: Optional[bool] = None,
                             make_pretty_images: Optional[bool] = None,
                             plate_solve: Optional[bool] = None,
-                            upload_image_immediately: Optional[bool] = None,
+                            upload_image: Optional[bool] = None,
                             ):
         """Process an individual observation.
 
@@ -438,8 +438,7 @@ class Observatory(PanBase):
                 If None (default), checks the `observations.make_pretty_images`
                 config-server key.
             plate_solve (bool or None): If images should be plate solved, default None for config.
-            upload_image_immediately (bool or None): If images should be uploaded (in a separate
-                process).
+            upload_image (bool or None): If images should be uploaded (in a separate process).
         """
         for cam_name in self.cameras.keys():
             try:
@@ -506,8 +505,7 @@ class Observatory(PanBase):
                 except Exception as e:  # pragma: no cover
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-            if upload_image_immediately or self.get_config('observations.upload_image_immediately',
-                                                           default=False):
+            if upload_image or self.get_config('observations.upload_image', default=False):
                 self.logger.debug(f"Uploading current observation: {image_id}")
                 try:
                     self.upload_exposure(exposure_info=exposure)

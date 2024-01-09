@@ -2,7 +2,7 @@ import typer
 
 from panoptes.pocs.utils.cli import config
 from panoptes.pocs.utils.cli import sensor
-from panoptes.pocs.utils.cli import image
+from panoptes.pocs.utils.cli import network
 from panoptes.pocs.utils.cli import mount
 from panoptes.pocs.utils.cli import notebook
 from panoptes.pocs.utils.cli import power
@@ -14,7 +14,7 @@ app = typer.Typer()
 state = {'verbose': False}
 
 app.add_typer(config.app, name="config", help='Interact with the config server.')
-app.add_typer(image.app, name="image", help='Interact with images.')
+app.add_typer(network.app, name="network", help='Interact with panoptes network.')
 app.add_typer(mount.app, name="mount", help='Simple mount controls.')
 app.add_typer(notebook.app, name="notebook", help='Start Jupyter notebook environment.')
 app.add_typer(power.app, name="power", help='Interact with power relays.')
