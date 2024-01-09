@@ -15,7 +15,7 @@ async def startup():
 
     conf = get_config('environment.weather', {})
 
-    if conf['auto_detect'] is True:
+    if conf.get('auto_detect', False) is True:
         ports = get_comports()
     else:
         ports = [conf['port']]
