@@ -30,7 +30,7 @@ async def startup():
             weather_station = WeatherStation(**conf)
             break
         except Exception as e:
-            print(f'Could not connect to weather station on {port.device}: {e}')
+            print(f'Could not connect to weather station on {port}: {e}')
     else:
         raise RuntimeError('Could not connect to weather station.')
 
