@@ -16,7 +16,7 @@ async def startup():
     conf = get_config('environment.weather', {})
 
     if conf.get('auto_detect', False) is True:
-        ports = get_comports()
+        ports = [p.device for p in get_comports()]
     else:
         ports = [conf['port']]
 
@@ -25,8 +25,8 @@ async def startup():
         if 'ioptron' in port:
             continue
 
+        conf['port'] = port
         try:
-            conf['port'] = port.device
             weather_station = WeatherStation(**conf)
             break
         except Exception as e:
