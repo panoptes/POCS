@@ -17,16 +17,18 @@ app.add_typer(upload_app, name='upload')
 
 
 @app.command('get-key')
-def get_key_cmd(secret_password: str,
+def get_key_cmd(secret_password: str = typer.Option(..., prompt=True, hide_input=True),
                 save_dir: Path = Path('~/keys').expanduser(),
+                key_name: str = 'panoptes-upload-key.json',
+                enable_image_upload: bool = True,
                 url: str = 'https://us-central1-project-panoptes-01.cloudfunctions.net/get-upload-key'
                 ):
     """Get a service account key for image uploading.
 
     Note: You must know the `secret_password` to get the key.
     """
-    save_dir.mkdir(parents=True, exist_ok=True)
-    save_path = save_dir / 'panoptes-upload-key.json'
+    # Check if a key already exists at location.
+    save_path = save_dir / key_name
     if save_path.exists():
         print(f'[red]Key already exists at {save_path}[/]')
         return
@@ -38,6 +40,7 @@ def get_key_cmd(secret_password: str,
         return
 
     # Save the response content as the key.
+    save_dir.mkdir(parents=True, exist_ok=True)
     with open(save_path, 'w') as f:
         f.write(res.content.decode('utf-8'))
 
@@ -46,19 +49,20 @@ def get_key_cmd(secret_password: str,
     print(f'Key saved to [blue]{save_path.absolute().as_posix()}[/]')
 
     # Update the config entries.
-    try:
-        response = set_config('panoptes_network.service_account_key', save_path.absolute().as_posix())
-        if response is None:
-            raise ValueError('No response from config server')
+    if enable_image_upload:
+        try:
+            response = set_config('panoptes_network.service_account_key', save_path.absolute().as_posix())
+            if response is None:
+                raise ValueError('No response from config server')
 
-        response = set_config('observations.upload_image', True)
-        if response is None:
-            raise ValueError('No response from config server')
+            response = set_config('observations.upload_image', True)
+            if response is None:
+                raise ValueError('No response from config server')
 
-        print(f'Service account key added to config and image uploading turned on.')
+            print(f'Service account key added to config and image uploading turned on.')
 
-    except Exception as e:
-        print(f'[red]Error updating config: {e}[/]')
+        except Exception as e:
+            print(f'[red]Error updating config: {e}[/]')
 
 
 @upload_app.command('image')
