@@ -1,13 +1,12 @@
 import subprocess
-from contextlib import suppress
 from dataclasses import dataclass
 
 import numpy as np
 import requests
 import typer
 from rich import print
-
 from sparklines import sparklines
+
 from panoptes.pocs.utils.service.power import RelayCommand
 
 
