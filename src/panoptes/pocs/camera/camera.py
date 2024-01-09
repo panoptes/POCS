@@ -280,6 +280,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """ True if camera has image sensor cooling capability """
         return self._is_cooled_camera
 
+    @is_cooled_camera.setter
+    def is_cooled_camera(self, value):
+        """ Set whether camera has image sensor cooling capability """
+        self._is_cooled_camera = bool(value)        
+
     @property
     def is_temperature_stable(self):
         """ True if image sensor temperature is stable, False if not.
