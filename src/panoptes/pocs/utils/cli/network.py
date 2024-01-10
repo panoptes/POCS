@@ -17,7 +17,8 @@ app.add_typer(upload_app, name='upload')
 
 
 @app.command('get-key')
-def get_key_cmd(secret_password: str = typer.Option(..., prompt=True, hide_input=True),
+def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
+                secret_password: str = typer.Option(..., prompt=True, hide_input=True),
                 save_dir: Path = Path('~/keys').expanduser(),
                 key_name: str = 'panoptes-upload-key.json',
                 enable_image_upload: bool = True,
@@ -34,7 +35,7 @@ def get_key_cmd(secret_password: str = typer.Option(..., prompt=True, hide_input
         return
 
     # Make a request for the key.
-    res = requests.post(url, json=dict(pwd=secret_password))
+    res = requests.post(url, json=dict(pwd=secret_password, unit_id=unit_id))
     if not res.ok:
         print(f'[red]Error getting key: {res.text}[/]')
         return
