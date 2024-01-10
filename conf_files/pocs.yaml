@@ -131,9 +131,7 @@ environment:
         label: mount
         default_state: on
   weather:
-    #    url: http://localhost:6566/weather
-    serial_port: /dev/ttyUSB0
-
+    auto_detect: True
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
