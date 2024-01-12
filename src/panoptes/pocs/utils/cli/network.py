@@ -45,9 +45,21 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
     with open(save_path, 'w') as f:
         f.write(res.content.decode('utf-8'))
 
+    # Store the path to the key in the GOOGLE_APPLICATION_CREDENTIALS env var in zshrc and bashrc.
+    try:
+        for rc_file in [Path('~/.zshrc').expanduser(), Path('~/.bashrc').expanduser()]:
+            if not rc_file.exists():
+                continue
+
+            with rc_file.open('a') as f:
+                f.write(f'\nexport GOOGLE_APPLICATION_CREDENTIALS="{save_path.absolute().as_posix()}"\n')
+
+    except Exception as e:
+        print(f'[red]Error writing to ~/.zshrc: {e}[/]')
+
     # Change file permissions so only the owner can read/write.
     os.chmod(save_path, stat.S_IRUSR | stat.S_IWUSR)
-    print(f'Key saved to [blue]{save_path.absolute().as_posix()}[/]')
+    print(f'Key saved to env var [green]GOOGLE_APPLICATION_CREDENTIALS=[/][blue]{save_path.absolute().as_posix()}[/]')
 
     # Update the config entries.
     if enable_image_upload:
