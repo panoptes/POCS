@@ -52,7 +52,7 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
                 continue
 
             with rc_file.open('a') as f:
-                f.write(f'\nexport GOOGLE_APPLICATION_CREDENTIALS={save_path.absolute().as_posix()}\n')
+                f.write(f'\nexport GOOGLE_APPLICATION_CREDENTIALS="{save_path.absolute().as_posix()}"\n')
 
     except Exception as e:
         print(f'[red]Error writing to ~/.zshrc: {e}[/]')
