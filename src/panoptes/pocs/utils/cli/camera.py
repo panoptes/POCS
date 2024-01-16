@@ -34,7 +34,7 @@ def take_pictures(
         print(f'Taking image {i + 1} of {num_images}')
         threads = list()
         for cam_name, cam in cameras.items():
-            fn = output_dir / f'{cam_name}-{i:04d}.{cam.file_extension}'
+            fn = output_dir / f'{cam_name}-{i:04d}-{current_time(flatten=True)}.{cam.file_extension}'
             thread = cam.take_exposure(seconds=exptime, filename=fn, blocking=False)
             threads.append(thread)
 
