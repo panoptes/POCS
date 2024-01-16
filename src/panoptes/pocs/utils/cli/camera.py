@@ -14,7 +14,7 @@ def take_pictures(
         num_images: int = 1,
         exptime: float = 1.0,
         output_dir: Path = '/home/panoptes/images',
-        delay: float = 0.1,
+        delay: float = 0.0,
 ):
     """Takes pictures with cameras.
 
