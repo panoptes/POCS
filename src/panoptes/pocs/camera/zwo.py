@@ -20,8 +20,7 @@ class Camera(AbstractSDKCamera):
 
     def __init__(self,
                  name='ZWO ASI Camera',
-                 gain=None,
-                 file_extension='fits',
+                 gain=100,
                  image_type=None,
                  *args, **kwargs):
         """
@@ -147,7 +146,7 @@ class Camera(AbstractSDKCamera):
 
     # Methods
 
-    def connect(self):
+    def connect(self, enable_cooling=False):
         """
         Connect to ZWO ASI camera.
 
@@ -159,7 +158,7 @@ class Camera(AbstractSDKCamera):
         self._handle = self.properties['camera_ID']
         self.model, _, _ = self.properties['name'].partition('(')
         if self.properties['has_cooler']:
-            self._is_cooled_camera = True
+            self._is_cooled_camera = enable_cooling
         if self.properties['is_color_camera']:
             self._filter_type = self.properties['bayer_pattern']
         else:

@@ -138,7 +138,7 @@ def create_cameras_from_config(config=None,
         model = device_config['model']
 
         # Assign an auto-detected port. If none are left, skip
-        if auto_detect:
+        if auto_detect and 'gphoto' in model:
             try:
                 device_config['port'] = ports.pop()
             except IndexError:
