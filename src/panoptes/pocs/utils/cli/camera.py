@@ -45,6 +45,3 @@ def take_pictures(
         # Wait for delay.
         print(f'Waiting {delay} seconds')
         time.sleep(delay)
-
-    # Small delay to make sure writing is finished before cameras are closed.
-    time.sleep(1.0)

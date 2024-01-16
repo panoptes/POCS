@@ -73,7 +73,7 @@ class Camera(AbstractSDKCamera):
         with suppress(AttributeError):
             camera_ID = self._handle
             self._driver.close_camera(camera_ID)
-            self.logger.debug("Closed ZWO camera {}".format(camera_ID))
+            self.logger.debug(f'Closed ZWO camera {camera_ID}')
         super().__del__()
 
     # Properties
