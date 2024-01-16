@@ -70,7 +70,7 @@ class Camera(AbstractSDKCamera):
 
     def __del__(self):
         """ Attempt some clean up """
-        with suppress(AttributeError):
+        with suppress(AttributeError, TypeError):
             camera_ID = self._handle
             self._driver.close_camera(camera_ID)
             self.logger.debug(f'Closed ZWO camera {camera_ID}')
