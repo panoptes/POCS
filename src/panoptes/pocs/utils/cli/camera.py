@@ -46,9 +46,5 @@ def take_pictures(
         print(f'Waiting {delay} seconds')
         time.sleep(delay)
 
-    # Wait for cameras to finish.
-    while still_working := any([c for c in cameras.values() if c.is_exposing]):
-        print(f'Waiting for {len([c for c in cameras.values() if c.is_exposing])} cameras to finish.')
-        time.sleep(1.0)
-        if not still_working:
-            break
+    # Small delay to make sure writing is finished before cameras are closed.
+    time.sleep(1.0)
