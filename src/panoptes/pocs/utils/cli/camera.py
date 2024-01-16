@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import time
 import typer
 from panoptes.utils.time import current_time
 from rich import print
@@ -14,6 +14,7 @@ def take_pictures(
         num_images: int = 1,
         exptime: float = 1.0,
         output_dir: Path = '/home/panoptes/images',
+        delay: float = 0.1,
 ):
     """Takes pictures with cameras.
 
@@ -40,3 +41,7 @@ def take_pictures(
         # Wait for cameras to finish.
         for thread in threads:
             thread.join()
+
+        # Wait for delay.
+        print(f'Waiting {delay} seconds')
+        time.sleep(delay)
