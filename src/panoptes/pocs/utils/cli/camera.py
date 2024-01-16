@@ -27,12 +27,12 @@ def take_pictures(
     output_dir = Path(output_dir) / str(now)
 
     for i in range(num_images):
+        threads = list()
         for cam_name, cam in cameras.items():
             fn = output_dir / f'{cam_name}-{i:04d}.cr2'
-            cam.take_exposure(seconds=exptime, filename=fn, blocking=False)
+            thread = cam.take_exposure(seconds=exptime, filename=fn, blocking=False)
+            threads.append(thread)
 
         # Wait for cameras to finish.
-        while is_exposing := any([c.is_exposing for c in cameras.values()]):
-            if is_exposing is False:
-                break
-            sleep(0.1)
+        for thread in threads:
+            thread.join()
