@@ -1,5 +1,4 @@
 from pathlib import Path
-from time import sleep
 
 import typer
 from panoptes.utils.time import current_time
@@ -19,14 +18,19 @@ def take_pictures(
     """Takes pictures with cameras.
 
     """
-    print('Taking pictures')
     cameras = create_cameras_from_config()
+    if len(cameras) == 0:
+        print('No cameras found, exiting.')
+        return
+
+    print(f'Taking {num_images} images with {len(cameras)} cameras.')
 
     # For a unique filename.
     now = current_time(flatten=True)
     output_dir = Path(output_dir) / str(now)
 
     for i in range(num_images):
+        print(f'Taking image {i + 1} of {num_images}')
         threads = list()
         for cam_name, cam in cameras.items():
             fn = output_dir / f'{cam_name}-{i:04d}.cr2'
