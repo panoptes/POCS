@@ -21,6 +21,7 @@ class Camera(AbstractSDKCamera):
     def __init__(self,
                  name='ZWO ASI Camera',
                  gain=None,
+                 file_extension='fits',
                  image_type=None,
                  *args, **kwargs):
         """
@@ -247,7 +248,7 @@ class Camera(AbstractSDKCamera):
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
-                filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
+                filename = f'{filename_root}_{frame_number:06d}.{file_extension}'
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
                 video_data = np.right_shift(video_data, pad_bits)
