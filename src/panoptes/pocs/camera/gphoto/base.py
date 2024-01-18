@@ -235,7 +235,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         self.logger.debug(f'Reading Canon DSLR exposure for {filename=}')
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {filename}")
-            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
+            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=True)
         except TimeoutError:
             self.logger.error(f'Error processing exposure for {filename} on {self}')
         finally:
