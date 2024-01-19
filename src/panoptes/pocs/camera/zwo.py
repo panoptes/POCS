@@ -20,7 +20,7 @@ class Camera(AbstractSDKCamera):
 
     def __init__(self,
                  name='ZWO ASI Camera',
-                 gain=None,
+                 gain=100,
                  image_type=None,
                  *args, **kwargs):
         """
@@ -69,10 +69,10 @@ class Camera(AbstractSDKCamera):
 
     def __del__(self):
         """ Attempt some clean up """
-        with suppress(AttributeError):
+        with suppress(AttributeError, TypeError):
             camera_ID = self._handle
             self._driver.close_camera(camera_ID)
-            self.logger.debug("Closed ZWO camera {}".format(camera_ID))
+            self.logger.debug(f'Closed ZWO camera {camera_ID}')
         super().__del__()
 
     # Properties
@@ -146,7 +146,7 @@ class Camera(AbstractSDKCamera):
 
     # Methods
 
-    def connect(self):
+    def connect(self, enable_cooling=False):
         """
         Connect to ZWO ASI camera.
 
@@ -158,7 +158,7 @@ class Camera(AbstractSDKCamera):
         self._handle = self.properties['camera_ID']
         self.model, _, _ = self.properties['name'].partition('(')
         if self.properties['has_cooler']:
-            self._is_cooled_camera = True
+            self._is_cooled_camera = enable_cooling
         if self.properties['is_color_camera']:
             self._filter_type = self.properties['bayer_pattern']
         else:
@@ -247,7 +247,7 @@ class Camera(AbstractSDKCamera):
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
-                filename = "{}_{:06d}.{}".format(filename_root, frame_number, file_extension)
+                filename = f'{filename_root}_{frame_number:06d}.{file_extension}'
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
                 video_data = np.right_shift(video_data, pad_bits)
