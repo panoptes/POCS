@@ -1,7 +1,7 @@
 from contextlib import suppress
 
 import pytest
-from astropy.utils.data import conf
+from astropy.utils.iers import Conf as iers_conf
 from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.mount import create_mount_from_config
@@ -25,7 +25,7 @@ def reset_conf(config_host, config_port):
 
 def test_create_mount_simulator(config_host, config_port):
     # Use the simulator create function directly.
-    with conf.set_temp('iers_degraded_accuracy', 'warn'):
+    with iers_conf.set_temp('iers_degraded_accuracy', 'warn'):
         mount = create_mount_simulator()
         assert isinstance(mount, AbstractMount) is True
 
