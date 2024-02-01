@@ -13,6 +13,8 @@ from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
 import requests
 
+iers_conf.iers_degraded_accuracy.set_temp('warn')
+
 
 def reset_conf(config_host, config_port):
     url = f'http://{config_host}:{config_port}/reset-config'
@@ -25,9 +27,8 @@ def reset_conf(config_host, config_port):
 
 def test_create_mount_simulator(config_host, config_port):
     # Use the simulator create function directly.
-    with iers_conf.iers_degraded_accuracy.set_temp('warn'):
-        mount = create_mount_simulator()
-        assert isinstance(mount, AbstractMount) is True
+    mount = create_mount_simulator()
+    assert isinstance(mount, AbstractMount) is True
 
 
 def test_create_mount_simulator_with_config(config_host, config_port):
