@@ -25,7 +25,7 @@ def reset_conf(config_host, config_port):
 
 def test_create_mount_simulator(config_host, config_port):
     # Use the simulator create function directly.
-    with conf.set_temp('astropy.utils.iers.conf.iers_degraded_accuracy', 'warn'):
+    with conf.set_temp('iers_degraded_accuracy', 'warn'):
         mount = create_mount_simulator()
         assert isinstance(mount, AbstractMount) is True
 
