@@ -3,6 +3,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
+import pyudev
 
 import numpy as np
 import requests
@@ -144,7 +145,24 @@ def setup_power(
         os.chdir(install_script.parent)
         cmd = f'bash {install_script.name}'
         print(f'Running: {cmd}')
-        subprocess.run(cmd, shell=True)
+        try:
+            subprocess.run(cmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(f'[red]Error running install script: {e}[/red]')
+        else:
+            print('[green]Arduino script installed.[/green]')
+
+    context = pyudev.Context()
+    monitor = pyudev.Monitor.from_netlink(context)
+    monitor.filter_by('block')
+
+    def log_event(action, device):
+        if 'ID_FS_TYPE' in device:
+            with open('filesystems.log', 'a+') as stream:
+                print('{0} - {1}'.format(action, device.get('ID_FS_LABEL')), file=stream)
+
+    observer = pyudev.MonitorObserver(monitor, log_event)
+    observer.start()
 
 
 if __name__ == "__main__":
