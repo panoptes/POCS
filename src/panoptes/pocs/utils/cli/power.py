@@ -137,6 +137,9 @@ def setup_power(
         return typer.Abort()
 
     if do_install:
+        if not install_script.exists():
+            print(f'[red]Cannot find install script at {install_script}[/red]')
+            return typer.Abort()
         # Change directory to the arduino script.
         os.chdir(install_script.parent)
         cmd = f'bash {install_script.name}'
