@@ -35,6 +35,66 @@ def park_mount(
     mount.park()
 
 
+@app.command(name='set-park')
+def set_park_position(
+        confirm: Annotated[bool, typer.Option(..., '--confirm',
+                                              prompt='Are you sure you want to set the park position?',
+                                              help='Confirm setting the park position.')] = False):
+    """Sets the park position.
+
+    Warning: This will move the mount to the park position but will not do any safety
+    checking. Please make sure the mount is safe to move before running this command.
+    """
+    if not confirm:
+        print('[red]Cancelled.[/red]')
+        return typer.Abort()
+
+    mount = create_mount_from_config()
+    mount.initialize()
+
+    # Confirm that they have previously set the home position.
+    if not typer.confirm('Have you previously set the home position?'):
+        print('Please set the home position before setting the park position.')
+        return typer.Exit()
+
+    print(f'The mount will first park at the default position and then ask you to confirm the new park position.')
+    mount.unpark()
+    mount.park()
+
+    # Check if correct side of the pier (i.e. RA axis).
+    if not typer.confirm('Is the mount on the correct side of the pier?'):
+        # Switch the RA axis.
+        old_ra_direction = mount.get_config('mount.settings.park.ra_direction')
+        new_ra_direction = 'east' if old_ra_direction == 'west' else 'west'
+        mount.set_config('mount.settings.park.ra_direction', new_ra_direction)
+        print(f'Changed RA direction from {old_ra_direction} to {new_ra_direction}.')
+        print('Sending the mount home to try the parking again.')
+        mount.unpark()
+        mount.slew_to_home(blocking=True)
+        mount.park()
+
+    # Check to make sure cameras are facing down (i.e. Dec axis).
+    if not typer.confirm('Are the cameras facing down?'):
+        # Switch the DEC axis.
+        old_dec_direction = mount.get_config('mount.settings.park.dec_direction')
+        new_dec_direction = 'north' if old_dec_direction == 'south' else 'south'
+        mount.set_config('mount.settings.park.dec_direction', new_dec_direction)
+        print(f'Changed Dec direction from {old_dec_direction} to {new_dec_direction}.')
+        print('Sending the mount home to try the parking again.')
+        mount.unpark()
+        mount.slew_to_home(blocking=True)
+        mount.park()
+
+    # Double-check the park position.
+    if not typer.confirm('Is the mount parked in the correct position?'):
+        # Give warning and bail out.
+        print('[red]Sorry! Please try again or ask the PANOPTES team.[/red]')
+    else:
+        print('Park position set. If the directions are correct but the mount is not parked in the correct position, '
+              'then you may need to adjust the number of seconds the mount moves in each direction. If you are unsure, '
+              'please ask the PANOPTES team for help.')
+
+
 @app.command(name='slew-home')
 def search_for_home(
         confirm: Annotated[bool, typer.Option(..., '--confirm',
