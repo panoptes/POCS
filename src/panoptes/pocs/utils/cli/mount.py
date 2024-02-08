@@ -52,6 +52,11 @@ def set_park_position(
     mount = create_mount_from_config()
     mount.initialize()
 
+    # Confirm that they have previously set the home position.
+    if not typer.confirm('Have you previously set the home position?'):
+        print('Please set the home position before setting the park position.')
+        return typer.Exit()
+
     print(f'The mount will first park at the default position and then ask you to confirm the new park position.')
     mount.unpark()
     mount.park()
@@ -64,6 +69,7 @@ def set_park_position(
         mount.set_config('mount.settings.park.ra_direction', new_ra_direction)
         print(f'Changed RA direction from {old_ra_direction} to {new_ra_direction}.')
         print('Sending the mount home to try the parking again.')
+        mount.unpark()
         mount.slew_to_home(blocking=True)
         mount.park()
 
@@ -75,6 +81,7 @@ def set_park_position(
         mount.set_config('mount.settings.park.dec_direction', new_dec_direction)
         print(f'Changed Dec direction from {old_dec_direction} to {new_dec_direction}.')
         print('Sending the mount home to try the parking again.')
+        mount.unpark()
         mount.slew_to_home(blocking=True)
         mount.park()
 
