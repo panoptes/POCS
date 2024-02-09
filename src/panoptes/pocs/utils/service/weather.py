@@ -57,4 +57,4 @@ def record_readings():
 async def root():
     """Returns the power board status."""
     global weather_station
-    return weather_station.status
+    return dict(status=weather_station.status, config=weather_station.weather_station.config)
