@@ -10,7 +10,7 @@ app = typer.Typer()
 @app.command(name='status', help='Get the status of the weather station.')
 def status(url: str = 'http://localhost:6566'):
     """Get the status of the weather station."""
-    return requests.get(url).json()
+    print(requests.get(url).json())
 
 
 @app.command(help='Restart the weather station service via supervisorctl')
