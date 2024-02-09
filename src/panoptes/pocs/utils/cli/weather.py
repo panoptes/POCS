@@ -8,9 +8,20 @@ app = typer.Typer()
 
 
 @app.command(name='status', help='Get the status of the weather station.')
-def status(url: str = 'http://localhost:6566'):
+def status(page='status', base_url='http://localhost:6566'):
     """Get the status of the weather station."""
-    print(requests.get(url).json())
+    print(get_page(page, base_url))
+
+
+@app.command(name='config', help='Get the configuration of the weather station.')
+def config(page='config', base_url='http://localhost:6566'):
+    """Get the configuration of the weather station."""
+    print(get_page(page, base_url))
+
+
+def get_page(page, base_url):
+    url = f'{base_url}/{page}'
+    return requests.get(url).json()
 
 
 @app.command(help='Restart the weather station service via supervisorctl')
