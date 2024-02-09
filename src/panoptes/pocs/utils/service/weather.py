@@ -48,8 +48,15 @@ def record_readings():
     return reading
 
 
-@app.get('/')
-async def root():
+@app.get('/status')
+async def status():
     """Returns the power board status."""
     global weather_station
-    return dict(status=weather_station.status, config=weather_station.weather_station.config)
+    return weather_station.status
+
+
+@app.get('/config')
+async def get_config():
+    """Returns the power board status."""
+    global weather_station
+    return weather_station.weather_station.config
