@@ -42,7 +42,13 @@ class WeatherStation(PanBase):
     @property
     def status(self):
         """Returns the most recent weather reading."""
-        return self.weather_station.readings[-1]
+        reading = 'No valid readings found. If the system just started, wait a few seconds and try again.'
+        try:
+            reading = self.weather_station.readings[-1]
+        except Exception as e:
+            self.logger.warning(f'Could not get reading: {e!r}')
+
+        return reading
 
     def record(self):
         """Record the rolling mean of the power readings in the database."""
