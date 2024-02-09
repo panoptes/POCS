@@ -47,7 +47,10 @@ async def startup():
 def record_readings():
     """Record the current readings in the db."""
     global weather_station
-    return weather_station.record()
+    reading = weather_station.record()
+    print(f'Recorded weather reading: {reading}')
+    print(f'Next reading in {capture_delay} seconds')
+    return reading
 
 
 @app.get('/')
