@@ -14,6 +14,7 @@ async def startup():
     global weather_station
 
     conf = get_config('environment.weather', {})
+    print(f'Weather config: {conf}')
 
     # Get list of possible ports for auto-detect or use the configured port.
     if conf.get('auto_detect', False) is True:

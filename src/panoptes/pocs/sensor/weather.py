@@ -23,12 +23,18 @@ class WeatherStation(PanBase):
         """
         super().__init__(*args, **kwargs)
 
-        self.port = port or self.get_config('environment.weather.port', '/dev/ttyUSB0')
+        conf = self.get_config('environment.weather', {})
+
+        # Update with passed parameters.
+        conf.update(kwargs)
+        conf.pop('auto_detect', None)
+
+        self.port = port or conf.get('port', '/dev/ttyUSB0')
         self.name = name
         self.collection_name = db_collection
 
         self.logger.debug(f'Setting up weather station connection for {name=} on {self.port}')
-        self.weather_station = CloudSensor(serial_port=self.port, **kwargs)
+        self.weather_station = CloudSensor(serial_port=self.port, **conf)
 
         self.logger.debug(f'Weather station config: {self.weather_station.config}')
         self.logger.info(f'{self.weather_station} initialized')
