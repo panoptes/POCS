@@ -28,8 +28,9 @@ class WeatherStation(PanBase):
         self.collection_name = db_collection
 
         self.logger.debug(f'Setting up weather station connection for {name=} on {self.port}')
-        self.weather_station = CloudSensor(serial_port=self.port)
+        self.weather_station = CloudSensor(serial_port=self.port, **kwargs)
 
+        self.logger.debug(f'Weather station config: {self.weather_station.config}')
         self.logger.info(f'{self.weather_station} initialized')
 
     @property
