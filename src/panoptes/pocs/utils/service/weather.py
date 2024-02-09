@@ -7,19 +7,15 @@ from panoptes.pocs.sensor.weather import WeatherStation
 
 app = FastAPI()
 weather_station: WeatherStation
-capture_delay: int = 60  # seconds
+conf = get_config('environment.weather', {})
 
 
 @app.on_event('startup')
 async def startup():
     global weather_station
+    global conf
 
-    conf = get_config('environment.weather', {})
     print(f'Weather config: {conf}')
-
-    # Update the capture_delay from the config.
-    global capture_delay
-    capture_delay = conf.get('capture_delay', capture_delay)
 
     # Get list of possible ports for auto-detect or use the configured port.
     if conf.get('auto_detect', False) is True:
@@ -43,13 +39,12 @@ async def startup():
 
 
 @app.on_event('startup')
-@repeat_every(seconds=capture_delay, wait_first=True)
+@repeat_every(seconds=conf.get('capture_delay', 60), wait_first=True)
 def record_readings():
     """Record the current readings in the db."""
     global weather_station
     reading = weather_station.record()
     print(f'Recorded weather reading: {reading}')
-    print(f'Next reading in {capture_delay} seconds')
     return reading
 
 
