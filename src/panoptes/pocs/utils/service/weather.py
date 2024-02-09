@@ -52,7 +52,7 @@ def record_readings():
 async def status():
     """Returns the power board status."""
     global weather_station
-    return dict(status=weather_station.status, config=weather_station.weather_station.config)
+    return weather_station.status
 
 
 @app.get('/config')
