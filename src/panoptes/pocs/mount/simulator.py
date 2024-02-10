@@ -151,6 +151,11 @@ class Mount(AbstractMount):
 
         self.stop_slew(next_position='is_home')
 
+    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
+        """ Set the park coordinates for the mount simulator """
+        self.logger.debug('Setting park coordinates')
+        self._park_coordinates = self._mount_coord_to_skycoord([ha, dec])
+
     def park(self):
         """ Sets the mount to park for simulator """
         self.logger.debug('Setting to park')

@@ -216,7 +216,7 @@ class AbstractMount(PanBase):
         self._tracking_rate = value
 
     def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
-        """ Calculates the RA-Dec for the the park position.
+        """ Calculates the RA-Dec for the park position.
 
         This method returns a location that points the optics of the unit down toward the ground.
 
