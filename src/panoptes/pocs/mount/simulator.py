@@ -19,9 +19,6 @@ class Mount(AbstractMount):
 
         self._loop_delay = self.get_config('loop_delay', default=0.01)
 
-        self.set_park_coordinates()
-        self._current_coordinates = self._park_coordinates
-
         self.logger.debug('Simulator mount created')
 
     def initialize(self, unpark=False, *arg, **kwargs):
@@ -150,11 +147,6 @@ class Mount(AbstractMount):
         self._is_parked = False
 
         self.stop_slew(next_position='is_home')
-
-    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
-        """ Set the park coordinates for the mount simulator """
-        self.logger.debug('Setting park coordinates')
-        self._park_coordinates = self._mount_coord_to_skycoord([ha, dec])
 
     def park(self):
         """ Sets the mount to park for simulator """
