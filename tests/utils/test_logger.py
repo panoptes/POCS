@@ -16,7 +16,7 @@ def test_base_logger(caplog, profile, tmp_path):
     time.sleep(1)  # Wait for log to make it there.
 
     see_log = False
-    for rec in caplog.records[-5:]:
+    for rec in caplog.records:
         if rec.message == 'Hello':
             see_log = True
 

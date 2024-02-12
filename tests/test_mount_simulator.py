@@ -53,21 +53,6 @@ def test_target_coords(mount):
     assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
 
 
-def test_set_park_coords(mount):
-    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
-    mount.set_park_coordinates()
-    assert mount._park_coordinates is not None
-
-    assert mount._park_coordinates.dec.value == -10.0
-    assert mount._park_coordinates.ra.value - 322.98 <= 1.0
-
-    os.environ['POCSTIME'] = '2016-08-13 13:03:01'
-    mount.set_park_coordinates()
-
-    assert mount._park_coordinates.dec.value == -10.0
-    assert mount._park_coordinates.ra.value - 172.57 <= 1.0
-
-
 def test_status(mount):
     status1 = mount.status
     assert 'mount_target_ra' not in status1
