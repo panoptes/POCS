@@ -23,19 +23,32 @@ class WeatherStation(PanBase):
         """
         super().__init__(*args, **kwargs)
 
-        self.port = port or self.get_config('environment.weather.port', '/dev/ttyUSB0')
+        conf = self.get_config('environment.weather', {})
+
+        # Update with passed parameters.
+        conf.update(kwargs)
+        conf.pop('auto_detect', None)
+
+        self.port = port or conf.get('port', '/dev/ttyUSB0')
         self.name = name
         self.collection_name = db_collection
 
         self.logger.debug(f'Setting up weather station connection for {name=} on {self.port}')
-        self.weather_station = CloudSensor(serial_port=self.port)
+        self.weather_station = CloudSensor(serial_port=self.port, **conf)
 
+        self.logger.debug(f'Weather station config: {self.weather_station.config}')
         self.logger.info(f'{self.weather_station} initialized')
 
     @property
     def status(self):
         """Returns the most recent weather reading."""
-        return self.weather_station.readings[-1]
+        reading = 'No valid readings found. If the system just started, wait a few seconds and try again.'
+        try:
+            reading = self.weather_station.readings[-1]
+        except Exception as e:
+            self.logger.warning(f'Could not get reading: {e!r}')
+
+        return reading
 
     def record(self):
         """Record the rolling mean of the power readings in the database."""

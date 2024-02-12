@@ -132,6 +132,19 @@ environment:
         default_state: on
   weather:
     auto_detect: True
+    safety_delay: 15  # minutes from bad reading until safe again
+    capture_delay: 60  # seconds between taking measurements
+    num_readings: 5  # number of readings to average for each measurement
+    thresholds:
+      cloudy: -25  # Cloudy threshold in delta degrees C
+      very_cloudy: -15  # Very cloudy threshold in delta degrees C
+      windy: 50  # Windy threshold in km/h
+      very_windy: 75  # Very windy threshold in km/h
+      gusty: 100  # Gusty threshold in km/h
+      very_gusty: 125  # Very gusty threshold in km/h
+      wet: 2200  # Ohms of resistance in rain sensor (lower is wetter)
+      rainy: 1800  # Ohms of resistance in rain sensor (lower is wetter)
+
 
 ########################## Observations ########################################
 # An observation folder contains a contiguous sequence of images of a target/field
