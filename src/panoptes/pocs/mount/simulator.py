@@ -19,9 +19,6 @@ class Mount(AbstractMount):
 
         self._loop_delay = self.get_config('loop_delay', default=0.01)
 
-        self.set_park_coordinates()
-        self._current_coordinates = self._park_coordinates
-
         self.logger.debug('Simulator mount created')
 
     def initialize(self, unpark=False, *arg, **kwargs):
