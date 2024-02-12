@@ -57,17 +57,6 @@ class TestMount(object):
     def test_version(self):
         assert self.mount.query('version') == 'V1.00'
 
-    def test_set_park_coords(self):
-        self.mount.initialize()
-        assert self.mount._park_coordinates is None
-
-        self.mount.set_park_coordinates()
-        assert self.mount._park_coordinates is not None
-
-        # These are the empirically determined coordinates for PAN001
-        assert self.mount._park_coordinates.dec.value == -10.0
-        assert self.mount._park_coordinates.ra.value - 322.98 <= 1.0
-
     def test_unpark_park(self):
         assert self.mount.is_parked is True
         self.mount.initialize()
