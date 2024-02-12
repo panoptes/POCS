@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List, Optional
 
-from astropy.utils.iers import Conf as iers_conf
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
@@ -12,6 +11,7 @@ from panoptes.pocs.scheduler.constraint import MoonAvoidance
 from panoptes.pocs.scheduler.scheduler import BaseScheduler  # noqa; needed for import
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils.location import download_iers_a_file
 
 logger = get_logger()
 
@@ -27,11 +27,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
         logger.info("No scheduler in config")
         return None
 
-    iers_url = iers_url or scheduler_config.get('iers_url')
-    if iers_url is not None:
-        logger.info(f'Getting IERS data at {iers_url=}')
-        iers_conf.iers_auto_url.set(iers_url)
-        iers_conf.auto_download.set(scheduler_config.get('iers_auto', False))
+    download_iers_a_file(iers_url=iers_url)
 
     if not observer:
         logger.debug(f'No Observer provided, creating location from config.')
@@ -40,8 +36,9 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
 
     # Read the targets from the file
     fields_file = Path(scheduler_config.get('fields_file', 'simple.yaml'))
-    fields_dir = Path(get_config('directories.base'), default='.') / Path(get_config('directories.fields', default='./conf_files/fields'))
-    fields_path = fields_dir / fields_file
+    base_dir = Path(str(get_config('directories.base', default='.')))
+    fields_dir = Path(str(get_config('directories.fields', default='./conf_files/fields')))
+    fields_path = base_dir / fields_dir / fields_file
     logger.debug(f'Creating scheduler: {fields_path}')
 
     if fields_path.exists():

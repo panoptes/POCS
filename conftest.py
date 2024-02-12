@@ -12,8 +12,7 @@ from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
-
-# TODO download IERS files.
+from panoptes.pocs.utils.location import download_iers_a_file
 
 _all_databases = ['file', 'memory']
 
@@ -63,6 +62,7 @@ def pytest_configure(config):
     os.environ['PANOPTES_CONFIG_PORT'] = port
 
     config_server(config_file, host=host, port=port, load_local=False, save_local=False)
+    download_iers_a_file()
     logger.success('Config server set up')
 
 
