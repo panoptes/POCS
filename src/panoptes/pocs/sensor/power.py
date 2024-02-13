@@ -194,7 +194,7 @@ class PowerBoard(PanBase):
         try:
             values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
             values['battery_low'] = bool(df.iloc[-1]['battery_low'])
-        except KeyError:
+        except (KeyError, IndexError):
             values['ac_ok'] = None
             values['battery_low'] = None
 
@@ -290,6 +290,7 @@ class PowerBoard(PanBase):
         relay_key = 'relays'
         values_key = 'readings'
         ac_key = 'ac_ok'
+        battery_key = 'battery_low'
 
         if self._ignore_readings > 0:
             self._ignore_readings -= 1
@@ -316,7 +317,8 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time and AC reading.
         new_data = [
             current_time().to_datetime(),
-            data.get(ac_key, 0)
+            data.get(ac_key, 0),
+            data.get(battery_key, 0)
         ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.
