@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from astropy.utils.iers import Conf as iers_conf
 
 from panoptes.utils import error
 from panoptes.pocs.utils.logger import get_logger
@@ -15,6 +16,20 @@ class SiteDetails:
     observer: Observer
     earth_location: EarthLocation
     location: dict
+
+
+def download_iers_a_file(iers_url: str = None):
+    """ Download the IERS A file.
+
+    This will download the IERS from the PANOPTES mirror and then set the
+    auto download to False.
+     """
+    iers_url = iers_url or get_config('scheduler.iers_url')
+    if iers_url is not None:
+        logger.info(f'Getting IERS data at {iers_url=}')
+        iers_conf.iers_auto_url.set(iers_url)
+        logger.debug(f'Setting auto_download to "scheduler.iers_auto" to False')
+        iers_conf.auto_download.set(get_config('scheduler.iers_auto', False))
 
 
 def create_location_from_config() -> SiteDetails:
