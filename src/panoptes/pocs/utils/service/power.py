@@ -29,7 +29,7 @@ conf = get_config('environment.power', {})
 async def startup():
     global power_board
     power_board = PowerBoard(**get_config('environment.power', {}))
-    yield
+    print(f'Power board setup: {power_board}')
 
 
 @app.on_event('startup')
