@@ -223,7 +223,7 @@ class PowerBoard(PanBase):
 
         """
         try:
-            columns = ['time', 'ac_ok'] + list(self.relay_labels.keys())
+            columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
         except:
