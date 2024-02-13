@@ -179,6 +179,7 @@ class PowerBoard(PanBase):
             for r in self.relays
         }
         status['ac_ok'] = readings['ac_ok']
+        status['battery_low'] = readings['battery_low']
 
         return status
 
@@ -189,11 +190,13 @@ class PowerBoard(PanBase):
         df = self.to_dataframe()[time_start:]
         values = df.mean().astype('int').to_dict()
 
-        # Add the most recent ac_ok check.
+        # Add the most recent ac_ok and battery_low check.
         try:
             values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
+            values['battery_low'] = bool(df.iloc[-1]['battery_low'])
         except KeyError:
             values['ac_ok'] = None
+            values['battery_low'] = None
 
         return values
 
