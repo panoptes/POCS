@@ -26,7 +26,7 @@ conf = get_config('environment.power', {})
 
 
 @app.on_event('startup')
-async def startup(app: FastAPI):
+async def startup():
     global power_board
     power_board = PowerBoard(**get_config('environment.power', {}))
     yield
