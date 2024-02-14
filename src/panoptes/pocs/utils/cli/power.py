@@ -45,12 +45,11 @@ def status(context: typer.Context):
             for relay_index, relay_info in relays.items():
                 try:
                     relay_label = f'{relay_info["label"]:.<20s}'
-                    print(f'[{relay_index}] '
+                    print(f'[{relay_index:.<12s}] '
                           f'{relay_label} [{"green" if relay_info["state"] == "ON" else "red"}]'
                           f'{relay_info["state"]}[/]')
                 except (KeyError, TypeError):
-                    print(f'[{relay_index.upper()}:.<25s] {str(relay_info):.>8s}')
-                    print(f'[green]AC ok: [/green] [{"green" if relay_info is True else "red"}]{str(relay_info):.>25s}')
+                    print(f'[{relay_index.upper():.<12s}] {str(relay_info):.>23s}')
         else:
             print(f'[red]{res.content.decode()}[/red]')
     except requests.exceptions.ConnectionError:
