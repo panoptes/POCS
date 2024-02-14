@@ -1,5 +1,8 @@
+import os
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Annotated
 
 import numpy as np
 import requests
@@ -46,6 +49,7 @@ def status(context: typer.Context):
                           f'{relay_label} [{"green" if relay_info["state"] == "ON" else "red"}]'
                           f'{relay_info["state"]}[/]')
                 except (KeyError, TypeError):
+                    print(f'[{relay_index.upper()}:.<25s] {str(relay_info):.>8s}')
                     print(f'[green]AC ok: [/green] [{"green" if relay_info is True else "red"}]{str(relay_info):.>25s}')
         else:
             print(f'[red]{res.content.decode()}[/red]')
@@ -112,9 +116,41 @@ def control(
 @app.command()
 def restart():
     """Restart the power server process via supervisorctl"""
-    cmd = f'supervisorctl restart pocs-power-server'
+    cmd = f'supervisorctl restart pocs-power-monitor'
     print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
+
+
+@app.command(name='setup')
+def setup_power(
+        confirm: Annotated[bool, typer.Option(..., '--confirm',
+                                              prompt='Are you sure you want to setup the power board?',
+                                              help='Confirm power board setup.')] = False,
+        do_install: Annotated[bool, typer.Option(..., '--install',
+                                                 prompt='Would you like to install the arduino script?',
+                                                 help='Install the arduino script.')] = False,
+        install_script: Path = typer.Option('resources/arduino/install-arduino.sh',
+                                            help='Path to the power monitor script.'),
+):
+    """Sets up the power board port and labels."""
+    if not confirm:
+        print('[red]Cancelled.[/red]')
+        return typer.Abort()
+
+    if do_install:
+        if not install_script.exists():
+            print(f'[red]Cannot find install script at {install_script}[/red]')
+            return typer.Abort()
+        # Change directory to the arduino script.
+        os.chdir(install_script.parent)
+        cmd = f'bash {install_script.name}'
+        print(f'Running: {cmd}')
+        try:
+            subprocess.run(cmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(f'[red]Error running install script: {e}[/red]')
+        else:
+            print('[green]Arduino script installed.[/green]')
 
 
 if __name__ == "__main__":

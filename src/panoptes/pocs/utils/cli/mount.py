@@ -54,7 +54,7 @@ def set_park_position(
 
     # Confirm that they have previously set the home position.
     if not typer.confirm('Have you previously set the home position?'):
-        print('Please set the home position before setting the park position.')
+        print('Please set the home position before setting the park position by running "pocs mount search-home".')
         return typer.Exit()
 
     print(f'The mount will first park at the default position and then ask you to confirm the new park position.')

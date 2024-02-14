@@ -179,6 +179,7 @@ class PowerBoard(PanBase):
             for r in self.relays
         }
         status['ac_ok'] = readings['ac_ok']
+        status['battery_low'] = readings['battery_low']
 
         return status
 
@@ -189,11 +190,13 @@ class PowerBoard(PanBase):
         df = self.to_dataframe()[time_start:]
         values = df.mean().astype('int').to_dict()
 
-        # Add the most recent ac_ok check.
+        # Add the most recent ac_ok and battery_low check.
         try:
             values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
-        except KeyError:
+            values['battery_low'] = bool(df.iloc[-1]['battery_low'])
+        except (KeyError, IndexError):
             values['ac_ok'] = None
+            values['battery_low'] = None
 
         return values
 
@@ -220,7 +223,7 @@ class PowerBoard(PanBase):
 
         """
         try:
-            columns = ['time', 'ac_ok'] + list(self.relay_labels.keys())
+            columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
         except:
@@ -287,6 +290,7 @@ class PowerBoard(PanBase):
         relay_key = 'relays'
         values_key = 'readings'
         ac_key = 'ac_ok'
+        battery_key = 'battery_low'
 
         if self._ignore_readings > 0:
             self._ignore_readings -= 1
@@ -313,7 +317,8 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time and AC reading.
         new_data = [
             current_time().to_datetime(),
-            data.get(ac_key, 0)
+            data.get(ac_key, 0),
+            data.get(battery_key, 0)
         ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.
