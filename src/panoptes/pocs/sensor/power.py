@@ -226,9 +226,7 @@ class PowerBoard(PanBase):
             columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
-            # Convert negative values to NaN.
-            df0[df0 < 0] = pd.NA
-        except:
+        except Exception:
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
         return df0
