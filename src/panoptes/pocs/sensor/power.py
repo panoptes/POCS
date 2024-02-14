@@ -226,6 +226,8 @@ class PowerBoard(PanBase):
             columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
+            # Convert negative values to NaN.
+            df0[df0 < 0] = pd.NA
         except:
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
@@ -317,8 +319,8 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time and AC reading.
         new_data = [
             current_time().to_datetime(),
-            data.get(ac_key, pd.NA),
-            data.get(battery_key, pd.NA)
+            data.get(ac_key, -1),
+            data.get(battery_key, -1)
         ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.
