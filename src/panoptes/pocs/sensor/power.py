@@ -213,7 +213,7 @@ class PowerBoard(PanBase):
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.TOGGLE)
 
     def cycle_relay(self, label):
-        """Cycle the relay with a default 5 second delay."""
+        """Cycle the relay with a default 5-second delay."""
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
     def to_dataframe(self, **kwargs):
@@ -226,7 +226,7 @@ class PowerBoard(PanBase):
             columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
-        except:
+        except Exception:
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
         return df0
@@ -317,8 +317,8 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time and AC reading.
         new_data = [
             current_time().to_datetime(),
-            data.get(ac_key, 0),
-            data.get(battery_key, 0)
+            data.get(ac_key, -1),
+            data.get(battery_key, -1)
         ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.

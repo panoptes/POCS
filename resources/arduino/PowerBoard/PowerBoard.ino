@@ -146,7 +146,7 @@ void get_readings() {
   StaticJsonDocument<192> doc;
 
   doc["ac_ok"] = !digitalRead(AC_OK);
-  doc["battery_low"] = digitalRead(BAT_LOW);
+  doc["battery_low"] = !digitalRead(BAT_LOW);
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));
