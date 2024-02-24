@@ -5,6 +5,7 @@ from multiprocessing import Process
 from typing import List
 
 import typer
+from panoptes.utils.config.client import get_config
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 from rich import print
@@ -21,9 +22,13 @@ warnings.filterwarnings(action='ignore', message='datfix')
 
 @app.callback()
 def common(context: typer.Context,
-           simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load')
+           simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
+           cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
            ):
     context.obj = simulator
+    if cloud_logging:
+        os.environ['CLOUD_LOGGING'] = True
+        os.environ['PANID'] = get_config('PANID')
 
 
 def get_pocs(context: typer.Context):
