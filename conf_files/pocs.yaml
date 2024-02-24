@@ -47,7 +47,7 @@ scheduler:
   type: panoptes.pocs.scheduler.dispatch
   fields_file: simple.yaml
   check_file: False
-  iers_url: "https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
+  iers_url: "https://storage.googleapis.com/panoptes-assets/iers/ser7.dat"
   iers_auto: True
   constraints:
     - name: panoptes.pocs.scheduler.constraint.Altitude
@@ -131,8 +131,19 @@ environment:
         label: mount
         default_state: on
   weather:
-    #    url: http://localhost:6566/weather
-    serial_port: /dev/ttyUSB0
+    auto_detect: True
+    safety_delay: 15  # minutes from bad reading until safe again
+    capture_delay: 60  # seconds between taking measurements
+    num_readings: 5  # number of readings to average for each measurement
+    thresholds:
+      cloudy: -25  # Cloudy threshold in delta degrees C
+      very_cloudy: -15  # Very cloudy threshold in delta degrees C
+      windy: 50  # Windy threshold in km/h
+      very_windy: 75  # Very windy threshold in km/h
+      gusty: 100  # Gusty threshold in km/h
+      very_gusty: 125  # Very gusty threshold in km/h
+      wet: 2200  # Ohms of resistance in rain sensor (lower is wetter)
+      rainy: 1800  # Ohms of resistance in rain sensor (lower is wetter)
 
 
 ########################## Observations ########################################
@@ -157,7 +168,7 @@ observations:
   make_pretty_images: True
   keep_jpgs: True
   plate_solve: True
-  upload_image_immediately: True
+  upload_image: False
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -170,10 +181,9 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-  image_storage: False
   use_firestore: False
   service_account_key: # Location of JSON account key
-  project_id: panoptes-exp
+  project_id: panoptes-project-01
   buckets:
     upload: panoptes-images-incoming
 

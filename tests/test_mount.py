@@ -1,6 +1,7 @@
 from contextlib import suppress
 
 import pytest
+from astropy.utils.iers import Conf as iers_conf
 from panoptes.pocs import hardware
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.mount import create_mount_from_config
@@ -11,6 +12,8 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
 import requests
+
+iers_conf.iers_degraded_accuracy.set_temp('warn')
 
 
 def reset_conf(config_host, config_port):

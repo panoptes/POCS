@@ -179,6 +179,7 @@ class PowerBoard(PanBase):
             for r in self.relays
         }
         status['ac_ok'] = readings['ac_ok']
+        status['battery_low'] = readings['battery_low']
 
         return status
 
@@ -189,11 +190,13 @@ class PowerBoard(PanBase):
         df = self.to_dataframe()[time_start:]
         values = df.mean().astype('int').to_dict()
 
-        # Add the most recent ac_ok check.
+        # Add the most recent ac_ok and battery_low check.
         try:
             values['ac_ok'] = bool(df.iloc[-1]['ac_ok'])
-        except KeyError:
+            values['battery_low'] = bool(df.iloc[-1]['battery_low'])
+        except (KeyError, IndexError):
             values['ac_ok'] = None
+            values['battery_low'] = None
 
         return values
 
@@ -210,7 +213,7 @@ class PowerBoard(PanBase):
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.TOGGLE)
 
     def cycle_relay(self, label):
-        """Cycle the relay with a default 5 second delay."""
+        """Cycle the relay with a default 5-second delay."""
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
     def to_dataframe(self, **kwargs):
@@ -220,10 +223,10 @@ class PowerBoard(PanBase):
 
         """
         try:
-            columns = ['time', 'ac_ok'] + list(self.relay_labels.keys())
+            columns = ['time', 'ac_ok', 'battery_low'] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(['time'], inplace=True)
-        except:
+        except Exception:
             df0 = pd.DataFrame([], index=pd.DatetimeIndex([]))
 
         return df0
@@ -287,6 +290,7 @@ class PowerBoard(PanBase):
         relay_key = 'relays'
         values_key = 'readings'
         ac_key = 'ac_ok'
+        battery_key = 'battery_low'
 
         if self._ignore_readings > 0:
             self._ignore_readings -= 1
@@ -313,7 +317,8 @@ class PowerBoard(PanBase):
         # Create a list for the new data row and add common time and AC reading.
         new_data = [
             current_time().to_datetime(),
-            data.get(ac_key, 0)
+            data.get(ac_key, -1),
+            data.get(battery_key, -1)
         ]
         for relay_index, read_relay in enumerate(self.relays):
             # Update the state of the pin.

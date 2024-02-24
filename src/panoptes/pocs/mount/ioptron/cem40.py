@@ -37,6 +37,11 @@ class Mount(BaseMount):
 
         if num_possible_positions == 0:
             self.logger.warning(f'No possible positions for {self._target_coordinates}')
-            target_set = False
+            return False
+
+        # There is currently a bug with with the CEM40 where it will reset the
+        # target coordinates after querying the number of possible positions so
+        # we need to set them again.
+        target_set = super().set_target_coordinates(*args, **kwargs)
 
         return target_set

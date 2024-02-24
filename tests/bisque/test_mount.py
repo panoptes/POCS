@@ -56,22 +56,6 @@ def test_initialize(mount):
     assert mount.initialize() is True
 
 
-def test_set_park_coords(mount):
-    mount.initialize()
-    assert mount._park_coordinates is None
-
-    mount.set_park_coordinates()
-    assert mount._park_coordinates is not None
-
-    assert mount._park_coordinates.dec.value == -10.0
-    assert mount._park_coordinates.ra.value - 322.98 <= 1.0
-
-    mount.set_park_coordinates()
-
-    assert mount._park_coordinates.dec.value == -10.0
-    assert mount._park_coordinates.ra.value - 172.57 <= 1.0
-
-
 def test_unpark_park(mount):
     assert mount.is_parked is True
     mount.initialize()

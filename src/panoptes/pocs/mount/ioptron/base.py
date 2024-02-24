@@ -2,7 +2,7 @@ import re
 from contextlib import suppress
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Latitude, Longitude
 from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
 from panoptes.utils.time import current_time
@@ -27,6 +27,10 @@ class Mount(AbstractSerialMount):
 
         self._ra_format = self.commands['ra_format']
         self._dec_format = self.commands['dec_format']
+
+        self._location_units = self.commands['location_units']
+        self._ra_coords_units = self.commands['ra_coords_units']
+        self._dec_coords_units = self.commands['dec_coords_units']
 
         self._status_format = re.compile(self.commands.get('status_format', '*'), flags=re.VERBOSE)
         self._coords_format = re.compile(self.commands.get('coords_format', '*'), flags=re.VERBOSE)
@@ -173,8 +177,9 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron.
-        lat = self._latitude_format.format(self.location.lat.to(u.arcsecond).value)
-        lon = self._longitude_format.format(self.location.lon.to(u.arcsecond).value)
+        coords_unit = getattr(u, self._location_units)
+        lat = self._latitude_format.format(self.location.lat.to(coords_unit).value)
+        lon = self._longitude_format.format(self.location.lon.to(coords_unit).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
@@ -182,17 +187,20 @@ class Mount(AbstractSerialMount):
         # Daylight savings and GMT offset.
         self.query('disable_daylight_savings')
         gmt_offset = self.get_config('location.gmt_offset', default=0)
-        self.query('set_gmt_offset', gmt_offset)
+        self.logger.debug(f'Setting GMT offset to {gmt_offset:+04.0f}')
+        self.query('set_gmt_offset', f'{gmt_offset:+04.0f}')
 
         # Set the date and time.
         # Newer firmware has the `set_utc_time` method which sets both the date and time.
         # Older firmware has `set_local_date` and `set_local_time` which must be called separately.
-        now = current_time() + gmt_offset * u.minute
+        now = current_time()
         if 'set_utc_time' in self.commands:
             j2000 = Time(2000, format='jyear')
             offset_time = (now - j2000).to(u.ms).value
+            self.logger.debug(f'Setting UTC time to {offset_time:0>13.0f}')
             self.query('set_utc_time', f'{offset_time:0>13.0f}')
         else:
+            now = now + gmt_offset * u.minute
             self.query('set_local_time', now.datetime.strftime("%H%M%S"))
             self.query('set_local_date', now.datetime.strftime("%y%m%d"))
 
@@ -231,21 +239,35 @@ class Mount(AbstractSerialMount):
             astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
                 EarthLocation included.
         """
+        self.logger.debug(f'Mount coordinates: {mount_coords}')
         coords_match = self._coords_format.fullmatch(mount_coords)
+        self.logger.debug(f'Mount coordinates match: {coords_match}')
 
         coords = None
-
-        self.logger.trace(f'Mount coordinates: {coords_match}')
-
         if coords_match is not None:
-            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
-            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(u.arcsec)
+            ra_coords_units = getattr(u, self._ra_coords_units)
+            dec_coords_units = getattr(u, self._dec_coords_units)
 
-            dec_sign = coords_match.group('dec_sign')
-            if dec_sign == '-':
+            # Turn mount output into appropriate units.
+            ra = (int(coords_match.group('ra')) * ra_coords_units)
+            dec = (int(coords_match.group('dec')) * dec_coords_units)
+
+            # Old firmware had RA in a time unit.
+            if self._ra_coords_units == 'millisecond':
+                self.logger.debug(f'Converting RA from {self._ra_coords_units} to degrees')
+                ra = (ra.to(u.hour).value * u.hourangle)
+
+            # Convert to degrees.
+            ra = ra.to(u.deg)
+            dec = dec.to(u.deg)
+
+            # Add the sign back in.
+            if coords_match.group('dec_sign') == '-':
                 dec = dec * -1
 
-            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
+            self.logger.debug(f'Creating SkyCoord for {ra=} {dec=}')
+            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.deg, u.deg))
+            self.logger.debug(f'Created SkyCoord: {coords=}')
         else:
             self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
@@ -253,19 +275,23 @@ class Mount(AbstractSerialMount):
 
     def _skycoord_to_mount_coord(self, coords):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
+        # Do some special handling of older firmware that had RA coords in a time unit.
+        if self._ra_coords_units == 'millisecond':
+            self.logger.debug(f'Converting RA from degrees to {self._ra_coords_units}')
+            ra_coord = (coords.ra.to(u.hourangle).value * u.hour).to(self._ra_coords_units).value
+        else:
+            ra_coord = coords.ra.to(self._ra_coords_units).value
 
-        ra_mas = coords.ra.to('arcsecond').value * 100
-        dec_cas = coords.dec.to('arcsecond').value * 100
+        dec_coord = coords.dec.to(self._dec_coords_units).value
 
-        mount_ra = self._ra_format.format(ra_mas)
-        mount_dec = self._dec_format.format(dec_cas)
+        # Convert to a string for the mount.
+        ra_mount = self._ra_format.format(ra_coord)
+        dec_mount = self._dec_format.format(dec_coord)
 
-        self.logger.debug(f'RA: {ra_mas} <-> {mount_ra=}')
-        self.logger.debug(f'Dec: {dec_cas} <-> {mount_dec=}')
+        self.logger.debug(f'RA: {ra_coord} <-> {ra_mount=}')
+        self.logger.debug(f'Dec: {dec_coord} <-> {dec_mount=}')
 
-        mount_coords = (mount_ra, mount_dec)
-
-        return mount_coords
+        return ra_mount, dec_mount
 
     def _update_status(self):
         self._raw_status = self.query('get_status')
@@ -280,9 +306,10 @@ class Mount(AbstractSerialMount):
             status['state'] = self.state
             status['parked_software'] = self.is_parked
 
-            status['longitude'] = float(status_dict['longitude']) * u.milliarcsecond
-            # Longitude has +90° so no negatives. Subtract for original.
-            status['latitude'] = (float(status_dict['latitude']) - 90) * u.milliarcsecond
+            coords_unit = getattr(u, self._location_units)
+            status['longitude'] = Longitude((float(status_dict['longitude']) * coords_unit).to(u.degree))
+            # Longitude adds +90° to avoid negative numbers, so subtract for original.
+            status['latitude'] = Latitude((float(status_dict['latitude']) * coords_unit).to(u.degree) - (90 * u.degree))
 
             status['gps'] = MountGPS(int(status_dict['gps']))
             status['tracking'] = MountTrackingState(int(status_dict['tracking']))
@@ -319,9 +346,8 @@ class Mount(AbstractSerialMount):
             with suppress(Exception):
                 now = int(ts[5:]) * u.ms
                 j2000 = Time(2000, format='jyear')
-                t0 = j2000 + now + offset
-
-                status['time_local'] = t0.iso
+                status['time_utc'] = (j2000 + now).iso
+                status['time_local'] = (j2000 + now + offset).iso
 
         return status
 

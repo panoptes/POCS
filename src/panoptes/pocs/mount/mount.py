@@ -215,46 +215,6 @@ class AbstractMount(PanBase):
         """ Set the tracking rate """
         self._tracking_rate = value
 
-    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
-        """ Calculates the RA-Dec for the the park position.
-
-        This method returns a location that points the optics of the unit down toward the ground.
-
-        The RA is calculated from subtracting the desired hourangle from the
-        local sidereal time. This requires a proper location be set.
-
-        Note:
-            Mounts usually don't like to track or slew below the horizon so this
-                will most likely require a configuration item be set on the mount
-                itself.
-
-        Args:
-            ha (Optional[astropy.units.degree]): Hourangle of desired parking
-                position. Defaults to -165 degrees.
-            dec (Optional[astropy.units.degree]): Declination of desired parking
-                position. Defaults to -165 degrees.
-
-        Returns:
-            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object
-                representing current parking position.
-        """
-        self.logger.debug('Setting park position')
-
-        park_time = current_time()
-        park_time.location = self.location
-
-        lst = park_time.sidereal_time('apparent')
-        self.logger.debug(f'LST: {lst}')
-        self.logger.debug(f'HA: {ha}')
-
-        ra = lst - ha
-        self.logger.debug(f'RA: {ra}')
-        self.logger.debug(f'Dec: {dec}')
-
-        self._park_coordinates = SkyCoord(ra, dec)
-
-        self.logger.debug(f'Park Coordinates RA-Dec: {self._park_coordinates}')
-
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
         reflect the current position of the mount, see `get_current_coordinates`.
@@ -606,16 +566,17 @@ class AbstractMount(PanBase):
     def park(self, *args, **kwargs):
         """ Slews to the park position and parks the mount.
 
+        The park position must be set manually first for this method to work.
+
+        Most mount subclasses will override this method to provide mount-specific
+        park functionality.
+
         Note:
             When mount is parked no movement commands will be accepted.
 
         Returns:
             bool: indicating success
         """
-
-        self.set_park_coordinates()
-        self.set_target_coordinates(self._park_coordinates)
-
         response = self.query('park')
 
         if response:
@@ -784,7 +745,7 @@ class AbstractMount(PanBase):
         self.logger.debug('Mount commands set up')
 
     def search_for_home(self):
-        """Search for the home position not supported."""
+        """Search for the home position if supported."""
         self.logger.warning('Searching for home position not supported.'
                             'Please set the home position manually via the hand-controller.')
 

@@ -1,24 +1,33 @@
 import subprocess
 
+import requests
 import typer
 from rich import print
 
-from panoptes.utils.database import PanDB
-
 app = typer.Typer()
-DB = PanDB(db_type='file')
 
 
-@app.command(name='status')
-def status(context: typer.Context):
+@app.command(name='status', help='Get the status of the weather station.')
+def status(page='status', base_url='http://localhost:6566'):
     """Get the status of the weather station."""
-    return DB.get_current('weather')['data']
+    print(get_page(page, base_url))
 
 
-@app.command()
-def restart():
+@app.command(name='config', help='Get the configuration of the weather station.')
+def config(page='config', base_url='http://localhost:6566'):
+    """Get the configuration of the weather station."""
+    print(get_page(page, base_url))
+
+
+def get_page(page, base_url):
+    url = f'{base_url}/{page}'
+    return requests.get(url).json()
+
+
+@app.command(help='Restart the weather station service via supervisorctl')
+def restart(serivce: str = 'pocs-weather-reader'):
     """Restart the weather station service via supervisorctl"""
-    cmd = f'supervisorctl restart pocs-weather-reader'
+    cmd = f'supervisorctl restart {serivce}'
     print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
 
