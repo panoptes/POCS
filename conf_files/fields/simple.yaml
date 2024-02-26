@@ -4,6 +4,9 @@
     position: 239.876deg +25.916deg
   observation:
     priority: 1000
+    exptime: 30
+    min_nexp: 10
+    exp_set_size: 5
 - field:
     name: "KIC 8462852"
     position: "20h06m15.4536s +44d27m24.75s"

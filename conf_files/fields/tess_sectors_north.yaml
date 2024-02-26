@@ -4,6 +4,9 @@
     position: 239.876deg +25.916deg
   observation:
     priority: 1000
+    exptime: 30
+    min_nexp: 10
+    exp_set_size: 5    
 -
   field:
     name: TESS_SEC14_CAM01
