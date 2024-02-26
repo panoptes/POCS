@@ -33,3 +33,11 @@
     exptime: 30
     min_nexp: 10
     priority: 100
+- field:
+    name: "Beehive Cluster"
+    position: 130.105deg +19.668deg
+  observation:
+    priority: 100
+    exptime: 30
+    min_nexp: 10
+    exp_set_size: 10
