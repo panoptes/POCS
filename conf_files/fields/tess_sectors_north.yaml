@@ -1,3 +1,9 @@
+---
+- field:
+    name: "Blaze Star"
+    position: 239.876deg +25.916deg
+  observation:
+    priority: 1000
 -
   field:
     name: TESS_SEC14_CAM01
