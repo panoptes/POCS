@@ -150,16 +150,24 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         set_cmd = list()
         if prop2index:
             for prop, val in prop2index.items():
-                set_cmd.extend(['--set-config-index', f'{prop}={val}'])
+                try:
+                    set_cmd.extend(['--set-config-index', f'{prop}={val}'])
+                    self.command(set_cmd)
+                    # Forces the command to wait
+                    self.get_command_result()                
+                except Exception:
+                    self.logger.debug(f'Skipping {prop=} {val=}')
 
         if prop2value:
             for prop, val in prop2value.items():
-                set_cmd.extend(['--set-config-value', f'{prop}="{val}"'])
+                try:
+                    set_cmd.extend(['--set-config-value', f'{prop}="{val}"'])
+                    self.command(set_cmd)
+                    # Forces the command to wait
+                    self.get_command_result()                                
+                except Exception:
+                    self.logger.debug(f'Skipping {prop=} {val=}')                    
 
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
 
     def get_property(self, prop: str) -> str:
         """ Gets a property from the camera """
