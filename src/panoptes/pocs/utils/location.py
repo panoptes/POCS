@@ -7,6 +7,7 @@ from astropy.utils.iers import Conf as iers_conf
 from panoptes.utils import error
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
+from panoptes.utils.utils import get_quantity_value
 
 logger = get_logger()
 
@@ -56,17 +57,26 @@ def create_location_from_config() -> SiteDetails:
 
         name = config_site.get('name', 'Nameless Location')
 
-        latitude = config_site.get('latitude')
-        longitude = config_site.get('longitude')
+        def get_config_with_unit(key, default_value=None, default_unit=None):
+            '''Small helper function to get the config item and ensure a unit.'''
+            v = config_site.get(key, default_value)
+            if default_unit is not None:
+                v = get_quantity_value(v) * default_unit
+    
+            return v
 
-        timezone = config_site.get('timezone')
+        timezone = get_config_with_unit('timezone')
 
-        pressure = config_site.get('pressure', 0.680) * u.bar
-        elevation = config_site.get('elevation', 0 * u.meter)
-        horizon = config_site.get('horizon', 30 * u.degree)
-        flat_horizon = config_site.get('flat_horizon', -6 * u.degree)
-        focus_horizon = config_site.get('focus_horizon', -12 * u.degree)
-        observe_horizon = config_site.get('observe_horizon', -18 * u.degree)
+        latitude = get_config_with_unit('latitude', default_unit=u.degree)
+        longitude = get_config_with_unit('longitude', default_unit=u.degree)
+        elevation = get_config_with_unit('elevation', default_value=0, default_unit=u.meter)
+
+        pressure = get_config_with_unit('pressure', default_value=0.68, default_unit=u.bar)
+
+        horizon = get_config_with_unit('horizon', default_value=30, default_unit=u.degree)
+        flat_horizon = get_config_with_unit('flat_horizon', default_value=-6, default_unit=u.degree)
+        focus_horizon = get_config_with_unit('focus_horizon', default_value=-12, default_unit=u.degree)
+        observe_horizon = get_config_with_unit('observe_horizon', default_value=-18, default_unit=u.degree)
 
         location = {
             'name': name,
