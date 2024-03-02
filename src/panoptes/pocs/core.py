@@ -440,7 +440,10 @@ class POCS(PanStateMachine, PanBase):
             if record is None:
                 return False
 
-            is_safe = bool(record['data'].get('is_safe', False))
+            is_safe = False
+            for key in ['safe', 'is_safe']:
+                with suppress(KeyError):
+                    is_safe = bool(record['data'][key])
 
             timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
