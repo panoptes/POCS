@@ -1,6 +1,4 @@
-import os.path
 import re
-import shutil
 import subprocess
 import time
 from abc import ABC
@@ -129,9 +127,25 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return outs
 
-    def set_property(self, prop: str, val: Union[str, int]):
-        """ Set a property on the camera """
-        set_cmd = ['--set-config', f'{prop}="{val}"']
+    def set_property(self, prop: str, val: Union[str, int], is_value: bool = False, is_index: bool = False):
+        """ Set a property on the camera.
+
+        Args:
+            prop (str): The property to set.
+            val (str, int): The value to set the property to.
+            is_value (bool): If True, then the value is a literal value. Default False.
+            is_index (bool): If True, then the value is an index. Default False.
+
+        Raises:
+            ValueError: If the property is not found.
+        """
+        self.logger.debug(f'Setting {prop=} to {val=}')
+        if is_index:
+            set_cmd = ['--set-config-index', f'{prop}={val}']
+        elif is_value:
+            set_cmd = ['--set-config-value', f'{prop}="{val}"']
+        else:
+            set_cmd = ['--set-config', f'{prop}="{val}"']
 
         self.command(set_cmd)
 
@@ -147,27 +161,19 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             prop2value (dict or None): A dict with keys corresponding to the property to
                 be set and values corresponding to the literal value.
         """
-        set_cmd = list()
         if prop2index:
             for prop, val in prop2index.items():
                 try:
-                    set_cmd.extend(['--set-config-index', f'{prop}={val}'])
-                    self.command(set_cmd)
-                    # Forces the command to wait
-                    self.get_command_result()                
+                    self.set_property(prop, val, is_index=True)
                 except Exception:
                     self.logger.debug(f'Skipping {prop=} {val=}')
 
         if prop2value:
             for prop, val in prop2value.items():
                 try:
-                    set_cmd.extend(['--set-config-value', f'{prop}="{val}"'])
-                    self.command(set_cmd)
-                    # Forces the command to wait
-                    self.get_command_result()                                
+                    self.set_property(prop, val, is_value=True)
                 except Exception:
-                    self.logger.debug(f'Skipping {prop=} {val=}')                    
-
+                    self.logger.debug(f'Skipping {prop=} {val=}')
 
     def get_property(self, prop: str) -> str:
         """ Gets a property from the camera """
