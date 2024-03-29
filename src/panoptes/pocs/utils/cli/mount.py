@@ -208,7 +208,7 @@ def setup_mount(
 
                         print(f'Wrote udev entry to [green]{udev_fn}[/green].')
                         print('Run the following command and then reboot for changes to take effect:')
-                        print(f'\t[green]cat {udev_fn} | sudo tee -a /etc/udev/rules.d/{udev_fn}[/green]')
+                        print(f'\t[green]cat {udev_fn} | sudo tee /etc/udev/rules.d/{udev_fn}[/green]')
                     except Exception:
                         pass
 
