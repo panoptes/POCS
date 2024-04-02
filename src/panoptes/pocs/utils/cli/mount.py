@@ -196,19 +196,25 @@ def setup_mount(
 
                     # Get info for writing udev entry.
                     try:
-                        udev_str = (f'ACTION=="add", '
-                                    f'SUBSYSTEM=="tty", '
-                                    f'ATTRS{{idVendor}}=="{port.vid:04x}", '
-                                    f'ATTRS{{idProduct}}=="{port.pid:04x}", '
-                                    f'ATTRS{{serial}}=="{port.serial_number}", '
-                                    f'SYMLINK+="ioptron"')
+                        udev_str = (
+                            f'ACTION=="add", '
+                            f'SUBSYSTEM=="tty", '
+                            f'ATTRS{{idVendor}}=="{port.vid:04x}", '
+                            f'ATTRS{{idProduct}}=="{port.pid:04x}", '
+                        )
+                        if port.serial_number is not None:
+                            udev_str += f'ATTRS{{serial}}=="{port.serial_number}", '
+
+                        # The name we want it known by.    
+                        udev_str += f'SYMLINK+="ioptron"'
+    
                         udev_fn = Path('91-panoptes.rules')
                         with udev_fn.open('w') as f:
                             f.write(udev_str)
 
                         print(f'Wrote udev entry to [green]{udev_fn}[/green].')
                         print('Run the following command and then reboot for changes to take effect:')
-                        print(f'\t[green]cat {udev_fn} | sudo tee -a /etc/udev/rules.d/{udev_fn}[/green]')
+                        print(f'\t[green]cat {udev_fn} | sudo tee /etc/udev/rules.d/{udev_fn}[/green]')
                     except Exception:
                         pass
 
