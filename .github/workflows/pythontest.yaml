@@ -44,9 +44,10 @@ jobs:
         if: success()
         with:
           name: codecov-upload
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: build/coverage.xml
           fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Create log file artifact
         uses: actions/upload-artifact@v3
         if: always()
