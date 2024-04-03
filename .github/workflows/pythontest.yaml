@@ -36,7 +36,9 @@ jobs:
       - name: Install
         run: pip install ".[google,focuser,sensors,testing]"
       - name: Test
-        run: mkdir build && pytest
+        run: pytest
+      - name: Check files
+        run: ls -l build  
       - name: Upload coverage report to codecov.io
         uses: codecov/codecov-action@v4
         if: success()
