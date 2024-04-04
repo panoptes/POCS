@@ -4,7 +4,7 @@ from panoptes.pocs import __version__
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config import client
-from panoptes.utils.database import PanDB
+from panoptes.pocs.utils.database import PocsDB as PanDB
 from requests.exceptions import ConnectionError
 
 # Global database.

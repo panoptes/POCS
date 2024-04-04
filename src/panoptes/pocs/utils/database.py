@@ -35,6 +35,7 @@ class PocsDB(PanFileDB):
 
         self.use_firestore = get_config('panoptes_network.use_firestore', default=False)
         if self.use_firestore:
+            logger.info('Setting up Firestore connection')
             self.firestore_db = firestore.Client()
         else:
             self.firestore_db = None        
@@ -49,8 +50,10 @@ class PocsDB(PanFileDB):
             metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
 
             try:
+                logger.debug(f'Inserting into firestore: {fs_key!r} {metadata}')
                 doc_ref = self.firestore_db.document(fs_key)
                 doc_ref.set(metadata)
+                logger.debug(f'Inserted into firestore: {doc_ref.id}')
             except Exception as e:
                 logger.warning(f'Problem inserting firestore record: {e!r}')
 
