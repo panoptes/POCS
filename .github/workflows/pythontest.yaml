@@ -9,9 +9,9 @@ jobs:
         python-version: [ "3.11" ]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
       - name: Lint with flake8
@@ -37,11 +37,9 @@ jobs:
         run: pip install ".[google,focuser,sensors,testing]"
       - name: Test
         run: pytest
-      - name: Check files
-        run: ls -l build  
       - uses: codecov/codecov-action@v4
         with:
-          name: codecov-umbrella
+          name: Upload to codecov.io
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
       - name: Create log file artifact
