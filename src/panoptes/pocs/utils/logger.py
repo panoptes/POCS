@@ -6,7 +6,9 @@ from pathlib import Path
 from loguru import logger as loguru_logger
 
 cloud_client = None
-if bool(os.getenv('CLOUD_LOGGING', False)) is True:
+use_cloud_logging = os.getenv('CLOUD_LOGGING', 'False').lower() == 'true'
+
+if use_cloud_logging is True:
     with suppress(ImportError, NameError):
         import google.cloud.logging
         from google.cloud.logging_v2.handlers import CloudLoggingHandler
