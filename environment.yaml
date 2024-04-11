@@ -5,8 +5,9 @@ dependencies:
   - astropy
   - docopt
   - fastapi
-  - google-cloud-storage
   - google-cloud-firestore
+  - google-cloud-logging
+  - google-cloud-storage
   - gsutil
   - ipython
   - jupyterlab
