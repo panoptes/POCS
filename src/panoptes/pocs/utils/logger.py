@@ -9,12 +9,17 @@ cloud_client = None
 use_cloud_logging = os.getenv('CLOUD_LOGGING', 'False').lower() == 'true'
 
 if use_cloud_logging is True:
-    with suppress(ImportError, NameError):
+    print('Setting up cloud logging')
+    try:
         import google.cloud.logging
         from google.cloud.logging_v2.handlers import CloudLoggingHandler
 
         cloud_client = google.cloud.logging.Client()
         cloud_client.setup_logging()
+    except ImportError:
+        print(f'Cloud logging library not installed: google-cloud-logging')
+    except Exception as e:
+        print(f'Could not set up cloud logging: {e}')
 
 
 class PanLogger:
