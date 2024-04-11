@@ -46,6 +46,7 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
         f.write(res.content.decode('utf-8'))
 
     # Store the path to the key in the GOOGLE_APPLICATION_CREDENTIALS env var in zshrc and bashrc.
+    # Also sets the UNIT_ID and PANID env vars (to the same thing).
     try:
         for rc_file in [Path('~/.zshrc').expanduser(), Path('~/.bashrc').expanduser()]:
             if not rc_file.exists():
@@ -53,6 +54,8 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
 
             with rc_file.open('a') as f:
                 f.write(f'\nexport GOOGLE_APPLICATION_CREDENTIALS="{save_path.absolute().as_posix()}"\n')
+                f.write(f'\nexport PANID="{unit_id}"\n')
+                f.write(f'\nexport UNIT_ID="{unit_id}"\n')
 
     except Exception as e:
         print(f'[red]Error writing to ~/.zshrc: {e}[/]')
