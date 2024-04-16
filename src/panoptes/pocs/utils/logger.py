@@ -18,13 +18,14 @@ class PanLogger:
 
     """
 
-    def __init__(self):
+    def __init__(self, unit_id=''):
         self.padding = 0
+        self.unit_id = unit_id
         # Level Time_UTC Time_Local dynamic_padding Message
         self.fmt = "<lvl>{level:.1s}</lvl> " \
                    "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
                    " <blue>({time:HH:mm:ss zz})</> " \
-                   "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
+                   "| {extra[unit_id]} | <c>{name} {function}:{line}{extra[padding]}</c> | " \
                    "<lvl>{message}</lvl>\n"
         self.handlers = dict()
 
@@ -32,11 +33,13 @@ class PanLogger:
         length = len("{name}:{function}:{line}".format(**record))
         self.padding = max(self.padding, length)
         record["extra"]["padding"] = " " * (self.padding - length)
+        record['extra']['unit_id'] = unit_id
         return self.fmt
 
 
 # Create a global singleton to hold the handlers and padding info.
-LOGGER_INFO = PanLogger()
+unit_id = os.getenv('UNIT_ID', os.environ['USER'])
+LOGGER_INFO = PanLogger(unit_id=unit_id)
 
 
 def get_logger(console_log_file='panoptes.log',
@@ -143,7 +146,6 @@ def get_logger(console_log_file='panoptes.log',
         except Exception as e:
             print(f'Could not set up cloud logging: {e}')
         else:
-            unit_id = os.getenv('UNIT_ID', os.environ['USER'])
             cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
             cloud_id = loguru_logger.add(
                 cloud_handler,
