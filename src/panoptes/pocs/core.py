@@ -13,6 +13,7 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.pocs.utils import error
+from panoptes.pocs.utils.logger import get_logger
 
 
 class POCS(PanStateMachine, PanBase):
@@ -42,11 +43,11 @@ class POCS(PanStateMachine, PanBase):
     """
 
     def __init__(
-            self,
-            observatory,
-            state_machine_file=None,
-            simulators=None,
-            *args, **kwargs):
+        self,
+        observatory,
+        state_machine_file=None,
+        simulators=None,
+        *args, **kwargs):
 
         # Explicitly call the base class.
         PanBase.__init__(self, *args, **kwargs)
@@ -58,8 +59,9 @@ class POCS(PanStateMachine, PanBase):
         assert isinstance(observatory, Observatory)
 
         self.name = self.get_config('name', default='Generic PANOPTES Unit')
+        self.unit_id = self.get_config('pan_id', default='PAN000')
         location = self.get_config('location.name', default='Unknown location')
-        self.logger.info(f'Initializing PANOPTES unit - {self.name} - {location}')
+        self.logger.info(f'Initializing PANOPTES unit - {self.name} {self.unit_id} - {location}')
 
         if state_machine_file is None:
             state_machine_file = self.get_config('state_machine', default='panoptes')
@@ -211,9 +213,9 @@ class POCS(PanStateMachine, PanBase):
         Send a message.
 
         Args:
-            msg(str): Message to be sent to topic PANCHAT.
+            msg(str): Message to be sent to logs.
         """
-        self.logger.success(f'Unit says: {msg}')
+        self.logger.success(f'{self.unit_id} says: {msg}')
 
     def power_down(self):
         """Actions to be performed upon shutdown
@@ -290,8 +292,10 @@ class POCS(PanStateMachine, PanBase):
 
             # Do the observing, once per exptime (usually only one unless a compound observation).
             for exptime in current_observation.exptimes:
-                self.logger.info(f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
-                                 f'with {exptime=}')
+                self.logger.info(
+                    f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
+                    f'with {exptime=}'
+                )
                 try:
                     self.observatory.take_observation(blocking=True)
                 except error.CameraNotFound:
@@ -363,9 +367,11 @@ class POCS(PanStateMachine, PanBase):
         # Check overall safety, ignoring some checks if necessary
         missing_keys = [k for k in ignore if k not in is_safe_values.keys()]
         if missing_keys:
-            self.logger.warning("Found the following invalid checks to ignore in "
-                                f"is_safe: {missing_keys}. Valid keys are: "
-                                f"{list(is_safe_values.keys())}.")
+            self.logger.warning(
+                "Found the following invalid checks to ignore in "
+                f"is_safe: {missing_keys}. Valid keys are: "
+                f"{list(is_safe_values.keys())}."
+            )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
@@ -485,11 +491,15 @@ class POCS(PanStateMachine, PanBase):
         has_space = bool(self._free_space.value >= req_space.value)
 
         if not has_space:
-            self.logger.error(f'No disk space for directory={directory!r}: '
-                              f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
+            self.logger.error(
+                f'No disk space for directory={directory!r}: '
+                f'Free {self._free_space:.02f}\t req_space={req_space:.02f}'
+            )
         elif space_is_low:  # pragma: no cover
-            self.logger.warning(f'Low disk space for directory={directory!r}: '
-                                f'Free {self._free_space:.02f}\t req_space={req_space:.02f}')
+            self.logger.warning(
+                f'Low disk space for directory={directory!r}: '
+                f'Free {self._free_space:.02f}\t req_space={req_space:.02f}'
+            )
 
         return has_space
 
