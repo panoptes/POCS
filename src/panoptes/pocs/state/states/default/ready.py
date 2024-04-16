@@ -5,11 +5,19 @@ def on_enter(event_data):
     """
     pocs = event_data.model
 
-    pocs.say("Ok, I'm all set up and ready to go!")
-
     if pocs.observatory.has_dome and not pocs.observatory.open_dome():
         pocs.say("Failed to open the dome while entering state 'ready'")
         pocs.logger.error("Failed to open the dome while entering state 'ready'")
         pocs.next_state = 'parking'
     else:
         pocs.next_state = 'scheduling'
+
+        # Wait until it's safe to proceed.
+        wait_delay = pocs.get_config('wait_delay', default=180)  # seconds
+
+        # TODO separate check for disk space, which will never break this loop.
+        disk_space_checks = ['free_space_root', 'free_space_images']
+        while pocs.is_safe(park_if_not_safe=False, ignore=disk_space_checks) is False:
+            pocs.wait(delay=wait_delay)
+
+        pocs.say("Ok, I'm all set up and ready to go!")
