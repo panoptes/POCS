@@ -23,12 +23,8 @@ warnings.filterwarnings(action='ignore', message='datfix')
 @app.callback()
 def common(context: typer.Context,
            simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
-           cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
            ):
     context.obj = simulator
-    if cloud_logging:
-        os.environ['CLOUD_LOGGING'] = 'True'
-        os.environ['UNIT_ID'] = str(get_config('UNIT_ID'))
 
 
 def get_pocs(context: typer.Context):
@@ -44,8 +40,10 @@ def get_pocs(context: typer.Context):
     if len(simulators) > 0:
         print(f'Running POCS with simulators: {simulators=}')
 
-    print('[green]Running POCS automatically![/green]\n'
-          '[bold green]Press Ctrl-c to quit.[/bold green]')
+    print(
+        '[green]Running POCS automatically![/green]\n'
+        '[bold green]Press Ctrl-c to quit.[/bold green]'
+    )
 
     pocs = POCS.from_config(simulators=simulators)
     pocs.initialize()
@@ -75,11 +73,15 @@ def run_auto(context: typer.Context) -> None:
 
 @app.command(name='alignment')
 def run_alignment(context: typer.Context,
-                  coords: List[str] = typer.Option(None, '--coords', '-c',
-                                                   help='Alt/Az coordinates to use, e.g. 40,120'),
+                  coords: List[str] = typer.Option(
+                      None, '--coords', '-c',
+                      help='Alt/Az coordinates to use, e.g. 40,120'
+                  ),
                   exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
-                  num_exposures: int = typer.Option(5, '--num-exposures', '-n',
-                                                    help='Number of exposures per coordinate.'),
+                  num_exposures: int = typer.Option(
+                      5, '--num-exposures', '-n',
+                      help='Number of exposures per coordinate.'
+                  ),
                   field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
                   ) -> None:
     """Runs POCS in alignment mode.
@@ -101,10 +103,12 @@ def run_alignment(context: typer.Context,
     def get_altaz_observation(coords, seq_time) -> Observation:
         alt, az = coords
         coord = altaz_to_radec(alt, az, pocs.observatory.earth_location, current_time())
-        alignment_observation = Observation(Field(field_name, coord),
-                                            exptime=exptime,
-                                            min_nexp=num_exposures,
-                                            exp_set_size=num_exposures)
+        alignment_observation = Observation(
+            Field(field_name, coord),
+            exptime=exptime,
+            min_nexp=num_exposures,
+            exp_set_size=num_exposures
+        )
         alignment_observation.seq_time = seq_time
 
         return alignment_observation
