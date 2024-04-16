@@ -5,7 +5,6 @@ from multiprocessing import Process
 from typing import List
 
 import typer
-from panoptes.utils.config.client import get_config
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 from rich import print

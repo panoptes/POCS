@@ -602,9 +602,9 @@ class POCS(PanStateMachine, PanBase):
             print(f'Cannot import helper modules.')
         else:
             try:
-                mount = create_mount_from_config()
-                cameras = create_cameras_from_config()
-                scheduler = create_scheduler_from_config()
+                mount = create_mount_from_config(*args, **kwargs)
+                cameras = create_cameras_from_config(*args, **kwargs)
+                scheduler = create_scheduler_from_config(*args, **kwargs)
 
                 observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
                 pocs = cls(observatory, simulators=simulators or list(), *args, **kwargs)
