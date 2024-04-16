@@ -131,7 +131,7 @@ def get_logger(console_log_file='panoptes.log',
 
     global cloud_client
     if cloud_logging_level is not None and cloud_client is None and 'cloud' not in LOGGER_INFO.handlers:
-        print('Setting up cloud logging')
+        print(f'Setting up cloud logging at {cloud_logging_level=}')
         try:
             import google.cloud.logging
             from google.cloud.logging_v2.handlers import CloudLoggingHandler
