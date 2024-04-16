@@ -18,14 +18,13 @@ class PanLogger:
 
     """
 
-    def __init__(self, unit_id=''):
+    def __init__(self):
         self.padding = 0
-        self.unit_id = unit_id
         # Level Time_UTC Time_Local dynamic_padding Message
         self.fmt = "<lvl>{level:.1s}</lvl> " \
                    "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
                    " <blue>({time:HH:mm:ss zz})</> " \
-                   "| {extra[unit_id]} | <c>{name} {function}:{line}{extra[padding]}</c> | " \
+                   "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
                    "<lvl>{message}</lvl>\n"
         self.handlers = dict()
 
@@ -33,13 +32,11 @@ class PanLogger:
         length = len("{name}:{function}:{line}".format(**record))
         self.padding = max(self.padding, length)
         record["extra"]["padding"] = " " * (self.padding - length)
-        record['extra']['unit_id'] = unit_id
         return self.fmt
 
 
 # Create a global singleton to hold the handlers and padding info.
-unit_id = os.getenv('UNIT_ID', os.environ['USER'])
-LOGGER_INFO = PanLogger(unit_id=unit_id)
+LOGGER_INFO = PanLogger()
 
 
 def get_logger(console_log_file='panoptes.log',
@@ -146,12 +143,18 @@ def get_logger(console_log_file='panoptes.log',
         except Exception as e:
             print(f'Could not set up cloud logging: {e}')
         else:
+            unit_id = os.getenv('UNIT_ID', os.environ['USER'])
+
+            log_level = cloud_logging_level.upper()
+            if log_level == 'INFO':
+                fmt = "{message}"
+            else:
+                fmt = "{name} {function}:{line} {message}"
+
+            fmt = f'{unit_id} | {fmt}'
+
             cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
-            cloud_id = loguru_logger.add(
-                cloud_handler,
-                level=cloud_logging_level.upper(),
-                format="{name} {function}:{line} {message}"
-            )
+            cloud_id = loguru_logger.add(cloud_handler, level=log_level, format=fmt)
             LOGGER_INFO.handlers['cloud'] = cloud_id
 
     # Customize colors.
