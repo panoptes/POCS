@@ -58,7 +58,7 @@ class POCS(PanStateMachine, PanBase):
         assert isinstance(observatory, Observatory)
 
         self.name = self.get_config('name', default='Generic PANOPTES Unit')
-        self.unit_id = self.get_config('unit_id', default='PAN000')
+        self.unit_id = self.get_config('pan_id', default='PAN000')
         location = self.get_config('location.name', default='Unknown location')
         self.logger.info(f'Initializing PANOPTES unit - {self.name} {self.unit_id} - {location}')
 
