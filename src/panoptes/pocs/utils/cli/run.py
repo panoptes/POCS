@@ -23,13 +23,14 @@ warnings.filterwarnings(action='ignore', message='datfix')
 @app.callback()
 def common(context: typer.Context,
            simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
+           cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
            ):
-    context.obj = simulator
+    context.obj = [simulator, cloud_logging]
 
 
 def get_pocs(context: typer.Context):
     """Helper to get pocs after confirming with user."""
-    simulators = context.obj
+    simulators, cloud_logging = context.obj
     confirm = typer.prompt('Are you sure you want to run POCS automatically?', default='n')
     if confirm.lower() not in ['y', 'yes']:
         raise typer.Exit(0)
@@ -45,7 +46,8 @@ def get_pocs(context: typer.Context):
         '[bold green]Press Ctrl-c to quit.[/bold green]'
     )
 
-    pocs = POCS.from_config(simulators=simulators)
+    cloud_logging_level = 'DEBUG' if cloud_logging is True else None
+    pocs = POCS.from_config(simulators=simulators, cloud_logging_level=cloud_logging_level)
     pocs.initialize()
 
     return pocs

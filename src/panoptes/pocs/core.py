@@ -586,7 +586,7 @@ class POCS(PanStateMachine, PanBase):
     ################################################################################################
 
     @classmethod
-    def from_config(cls, simulators: List[str] = None):
+    def from_config(cls, simulators: List[str] = None, *args, **kwargs):
         """Create a new POCS instance using the config system.
 
         Args:
@@ -607,7 +607,7 @@ class POCS(PanStateMachine, PanBase):
                 scheduler = create_scheduler_from_config()
 
                 observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
-                pocs = cls(observatory, simulators=simulators or list())
+                pocs = cls(observatory, simulators=simulators or list(), *args, **kwargs)
                 return pocs
             except Exception as e:
                 raise error.PanError(f'Problem creating POCS: {e!r}')
