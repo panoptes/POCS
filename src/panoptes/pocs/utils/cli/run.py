@@ -28,7 +28,7 @@ def common(context: typer.Context,
     context.obj = simulator
     if cloud_logging:
         os.environ['CLOUD_LOGGING'] = 'True'
-        os.environ['PANID'] = str(get_config('PANID'))
+        os.environ['UNIT_ID'] = str(get_config('UNIT_ID'))
 
 
 def get_pocs(context: typer.Context):
