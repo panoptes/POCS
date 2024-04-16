@@ -24,7 +24,8 @@ class PanBase(object):
         self._config_port = config_port or os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
         log_dir = self.get_config('directories.base') + '/../logs'
-        self.logger = get_logger(log_dir=kwargs.get('log_dir', log_dir))
+        use_cloud_logging = self.get_config('panoptes_network.use_cloud_logging', default=False)
+        self.logger = get_logger(log_dir=kwargs.get('log_dir', log_dir), use_cloud_logging=use_cloud_logging)
 
         global PAN_DB_OBJ
         if PAN_DB_OBJ is None:
@@ -48,10 +49,12 @@ class PanBase(object):
         """
         config_value = None
         try:
-            config_value = client.get_config(host=self._config_host,
-                                             port=self._config_port,
-                                             verbose=False,
-                                             *args, **kwargs)
+            config_value = client.get_config(
+                host=self._config_host,
+                port=self._config_port,
+                verbose=False,
+                *args, **kwargs
+            )
         except ConnectionError as e:  # pragma: no cover
             self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
@@ -76,10 +79,12 @@ class PanBase(object):
 
         try:
             self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')
-            config_value = client.set_config(key, new_value,
-                                             host=self._config_host,
-                                             port=self._config_port,
-                                             *args, **kwargs)
+            config_value = client.set_config(
+                key, new_value,
+                host=self._config_host,
+                port=self._config_port,
+                *args, **kwargs
+            )
             self.logger.trace(f'Config set config_value={config_value!r}')
         except ConnectionError as e:  # pragma: no cover
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')

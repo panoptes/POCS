@@ -6,20 +6,6 @@ from pathlib import Path
 from loguru import logger as loguru_logger
 
 cloud_client = None
-use_cloud_logging = os.getenv('CLOUD_LOGGING', 'False').lower() == 'true'
-
-if use_cloud_logging is True:
-    print('Setting up cloud logging')
-    try:
-        import google.cloud.logging
-        from google.cloud.logging_v2.handlers import CloudLoggingHandler
-
-        cloud_client = google.cloud.logging.Client()
-        cloud_client.setup_logging()
-    except ImportError:
-        print(f'Cloud logging library not installed: google-cloud-logging')
-    except Exception as e:
-        print(f'Could not set up cloud logging: {e}')
 
 
 class PanLogger:
@@ -59,6 +45,7 @@ def get_logger(console_log_file='panoptes.log',
                log_dir=None,
                console_log_level='DEBUG',
                stderr_log_level='INFO',
+               use_cloud_logging=False,
                ):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
@@ -84,6 +71,7 @@ def get_logger(console_log_file='panoptes.log',
             Note that it should be a string that matches standard `logging` levels and
             also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`). Also note this
             is not the stderr output, but the output to the file to be tailed.
+        use_cloud_logging (bool, optional): Whether logs should be sent to the cloud.
 
     Returns:
         `loguru.logger`: A configured instance of the logger.
@@ -119,7 +107,8 @@ def get_logger(console_log_file='panoptes.log',
                 backtrace=True,
                 diagnose=True,
                 catch=True,
-                level=console_log_level)
+                level=console_log_level
+            )
             LOGGER_INFO.handlers['console'] = console_id
 
         # Log file for ingesting into log file service.
@@ -135,14 +124,28 @@ def get_logger(console_log_file='panoptes.log',
                 serialize=serialize_full_log,
                 backtrace=True,
                 diagnose=True,
-                level='TRACE')
+                level='TRACE'
+            )
             LOGGER_INFO.handlers['archive'] = archive_id
 
-    if cloud_client is not None and 'cloud' not in LOGGER_INFO.handlers:
-        unit_id = os.getenv('UNIT_ID', os.environ['USER'])
-        cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
-        cloud_id = loguru_logger.add(cloud_handler, level='DEBUG', format="{name} {function}:{line} {message}")
-        LOGGER_INFO.handlers['cloud'] = cloud_id
+    global cloud_client
+    if use_cloud_logging and cloud_client is None and 'cloud' not in LOGGER_INFO.handlers:
+        print('Setting up cloud logging')
+        try:
+            import google.cloud.logging
+            from google.cloud.logging_v2.handlers import CloudLoggingHandler
+
+            cloud_client = google.cloud.logging.Client()
+            cloud_client.setup_logging()
+        except ImportError:
+            print(f'Cloud logging library not installed: google-cloud-logging')
+        except Exception as e:
+            print(f'Could not set up cloud logging: {e}')
+        else:
+            unit_id = os.getenv('UNIT_ID', os.environ['USER'])
+            cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
+            cloud_id = loguru_logger.add(cloud_handler, level='DEBUG', format="{name} {function}:{line} {message}")
+            LOGGER_INFO.handlers['cloud'] = cloud_id
 
     # Customize colors.
     loguru_logger.level('TRACE', color='<cyan>')
