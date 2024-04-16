@@ -45,7 +45,7 @@ def get_logger(console_log_file='panoptes.log',
                log_dir=None,
                console_log_level='DEBUG',
                stderr_log_level='INFO',
-               use_cloud_logging=False,
+               cloud_logging_level=None,
                ):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
@@ -71,7 +71,8 @@ def get_logger(console_log_file='panoptes.log',
             Note that it should be a string that matches standard `logging` levels and
             also includes `TRACE` (below `DEBUG`) and `SUCCESS` (above `INFO`). Also note this
             is not the stderr output, but the output to the file to be tailed.
-        use_cloud_logging (bool, optional): Whether logs should be sent to the cloud.
+        cloud_logging_level (bool|None, optional): If a valid log level is specified, send logs to
+            cloud at that level. If `None` (the default) don't send logs to the cloud.
 
     Returns:
         `loguru.logger`: A configured instance of the logger.
@@ -129,7 +130,7 @@ def get_logger(console_log_file='panoptes.log',
             LOGGER_INFO.handlers['archive'] = archive_id
 
     global cloud_client
-    if use_cloud_logging and cloud_client is None and 'cloud' not in LOGGER_INFO.handlers:
+    if cloud_logging_level is not None and cloud_client is None and 'cloud' not in LOGGER_INFO.handlers:
         print('Setting up cloud logging')
         try:
             import google.cloud.logging
@@ -144,7 +145,11 @@ def get_logger(console_log_file='panoptes.log',
         else:
             unit_id = os.getenv('UNIT_ID', os.environ['USER'])
             cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
-            cloud_id = loguru_logger.add(cloud_handler, level='DEBUG', format="{name} {function}:{line} {message}")
+            cloud_id = loguru_logger.add(
+                cloud_handler,
+                level=cloud_logging_level.upper(),
+                format="{name} {function}:{line} {message}"
+            )
             LOGGER_INFO.handlers['cloud'] = cloud_id
 
     # Customize colors.
