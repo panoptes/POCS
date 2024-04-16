@@ -12,6 +12,7 @@ from rich import print
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
+from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
 
@@ -45,8 +46,12 @@ def get_pocs(context: typer.Context):
         '[bold green]Press Ctrl-c to quit.[/bold green]'
     )
 
-    cloud_logging_level = 'DEBUG' if cloud_logging is True else None
-    pocs = POCS.from_config(simulators=simulators, cloud_logging_level=cloud_logging_level)
+    # If cloud logging is requested, set DEBUG level, otherwise the config
+    # and regular set up will handle things.
+    if cloud_logging:
+        logger = get_logger(cloud_logging_level='DEBUG')
+
+    pocs = POCS.from_config(simulators=simulators)
     pocs.initialize()
 
     return pocs

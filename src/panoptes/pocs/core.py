@@ -13,6 +13,7 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.pocs.utils import error
+from panoptes.pocs.utils.logger import get_logger
 
 
 class POCS(PanStateMachine, PanBase):
@@ -586,7 +587,7 @@ class POCS(PanStateMachine, PanBase):
     ################################################################################################
 
     @classmethod
-    def from_config(cls, simulators: List[str] = None, *args, **kwargs):
+    def from_config(cls, simulators: List[str] = None):
         """Create a new POCS instance using the config system.
 
         Args:
@@ -602,12 +603,12 @@ class POCS(PanStateMachine, PanBase):
             print(f'Cannot import helper modules.')
         else:
             try:
-                mount = create_mount_from_config(*args, **kwargs)
-                cameras = create_cameras_from_config(*args, **kwargs)
-                scheduler = create_scheduler_from_config(*args, **kwargs)
+                mount = create_mount_from_config()
+                cameras = create_cameras_from_config()
+                scheduler = create_scheduler_from_config()
 
                 observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
-                pocs = cls(observatory, simulators=simulators or list(), *args, **kwargs)
+                pocs = cls(observatory, simulators=simulators or list())
                 return pocs
             except Exception as e:
                 raise error.PanError(f'Problem creating POCS: {e!r}')
