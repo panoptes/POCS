@@ -22,11 +22,13 @@ class PanStateMachine(Machine):
         if isinstance(state_machine_table, str):
             self.logger.info(f"Loading state table: {state_machine_table}")
             state_machine_table = PanStateMachine.load_state_table(
-                state_table_name=state_machine_table)
+                state_table_name=state_machine_table
+            )
 
         assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
         assert 'transitions' in state_machine_table, self.logger.warning(
-            'transitions keyword required.')
+            'transitions keyword required.'
+        )
 
         self._state_table_name = state_machine_table.get('name', 'default')
         self._states_location = state_machine_table.get('location', 'panoptes.pocs.state.states')
@@ -147,8 +149,10 @@ class PanStateMachine(Machine):
                 # The state's `on_enter` logic will be performed here.
                 state_changed = self.goto_next_state()
             except Exception as e:
-                self.logger.critical(f"Problem going from {self.state!r} to {self.next_state!r}, "
-                                     f"exiting loop [{e!r}]")
+                self.logger.critical(
+                    f"Problem going from {self.state!r} to {self.next_state!r}, "
+                    f"exiting loop [{e!r}]"
+                )
                 # TODO should we automatically park here?
                 self.stop_states()
                 break
@@ -159,18 +163,17 @@ class PanStateMachine(Machine):
             if not state_changed:
                 self.logger.warning(f"Failed to move from {self.state!r} to {self.next_state!r}")
                 if self.is_safe() is False:
-                    self.logger.warning(
-                        "Conditions have become unsafe; setting next state to 'parking'")
+                    self.logger.warning("Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = 'parking'
                 elif _transition_iteration > max_transition_attempts:
-                    self.logger.warning(
-                        f"Stuck in current state for {max_transition_attempts=!r}, parking")
+                    self.logger.warning(f"Stuck in current state for {max_transition_attempts=!r}, parking")
                     self.next_state = 'parking'
                 else:
                     _transition_iteration = _transition_iteration + 1
                     self.logger.warning(
                         f"Sleeping before trying again ({_transition_iteration}/"
-                        f"{max_transition_attempts})")
+                        f"{max_transition_attempts})"
+                    )
                     self.wait(delay=7)  # wait 7 seconds (no good reason)
             else:
                 _transition_iteration = 0
@@ -301,7 +304,8 @@ class PanStateMachine(Machine):
         """
 
         self.logger.debug(
-            f"After {event_data.event.name} transition. In {event_data.state.name} state")
+            f"After {event_data.event.name} transition. In {event_data.state.name} state"
+        )
 
     ################################################################################################
     # Class Methods
@@ -320,7 +324,7 @@ class PanStateMachine(Machine):
 
         if not state_table_name.startswith('/'):
             base_dir = Path(get_config('directories.base'))
-            state_table_file = base_dir / f'conf_files/state_table/{state_table_name}.yaml'            
+            state_table_file = base_dir / f'conf_files/state_table/{state_table_name}.yaml'
         else:
             state_table_file = Path(state_table_name)
 
@@ -329,7 +333,8 @@ class PanStateMachine(Machine):
                 state_table = from_yaml(f.read())
         except Exception as err:
             raise error.InvalidConfig(
-                f'Problem loading state table yaml file: {err!r} {state_table_file}')
+                f'Problem loading state table yaml file: {err!r} {state_table_file}'
+            )
 
         return state_table
 
