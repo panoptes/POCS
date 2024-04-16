@@ -182,6 +182,7 @@ observations:
 ################################################################################
 panoptes_network:
   use_firestore: False
+  cloud_logging_level:
   service_account_key: # Location of JSON account key
   project_id: panoptes-project-01
   buckets:
