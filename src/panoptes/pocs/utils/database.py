@@ -1,4 +1,5 @@
 import warnings
+
 from panoptes.utils.config.client import get_config
 from panoptes.utils.database.file import PanFileDB
 
@@ -25,7 +26,7 @@ class PocsDB(PanFileDB):
         super(PocsDB, self).__init__(*args, **kwargs)
 
         # Set up Firestore if config is set.
-        self.check_firestore()        
+        self.check_firestore()
 
     def check_firestore(self):
         """Check if we should use firestore or not."""
@@ -38,7 +39,7 @@ class PocsDB(PanFileDB):
             logger.info('Setting up Firestore connection')
             self.firestore_db = firestore.Client()
         else:
-            self.firestore_db = None        
+            self.firestore_db = None
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Inserts into the current collection locally and on firestore db."""
@@ -46,13 +47,20 @@ class PocsDB(PanFileDB):
 
         if self.use_firestore:
             # Update the "current" collection.
-            fs_key = f'units/{self.unit_id}/metadata/{collection}'
-            metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP, **obj)
+            fs_key = f'units/{self.unit_id}'
+            record = {
+                'status': {
+                    collection: {
+                        'received_time': firestore.SERVER_TIMESTAMP,
+                        **obj
+                    }
+                }
+            }
 
             try:
-                logger.debug(f'Inserting into firestore: {fs_key!r} {metadata}')
+                logger.debug(f'Inserting into firestore: {fs_key!r} {record}')
                 doc_ref = self.firestore_db.document(fs_key)
-                doc_ref.set(metadata)
+                doc_ref.set(record, merge=True)
                 logger.debug(f'Inserted into firestore: {doc_ref.id}')
             except Exception as e:
                 logger.warning(f'Problem inserting firestore record: {e!r}')
@@ -66,11 +74,14 @@ class PocsDB(PanFileDB):
         if self.use_firestore:
             # Add a document.
             try:
-                fs_key = f'units/{self.unit_id}/metadata/{collection}/records'
-                metadata = dict(collection=collection, received_time=firestore.SERVER_TIMESTAMP,
-                                **obj)
+                fs_key = f'units/{self.unit_id}/metadata'
+                record = {
+                    'received_time': firestore.SERVER_TIMESTAMP,
+                    'collection': collection,
+                    **obj
+                }
 
-                doc_ts, obj_id = self.firestore_db.collection(fs_key).add(metadata)
+                doc_ts, obj_id = self.firestore_db.collection(fs_key).add(record)
             except Exception as e:
                 logger.warning(f'Problem inserting firestore record: {e!r}')
 
