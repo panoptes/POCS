@@ -22,7 +22,8 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obstructions: [ ]
+  obstructions:
+    -
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
 
