@@ -45,26 +45,6 @@ class PocsDB(PanFileDB):
         """Inserts into the current collection locally and on firestore db."""
         obj_id = super().insert_current(collection, obj, store_permanently=store_permanently)
 
-        if self.use_firestore:
-            # Update the "current" collection.
-            fs_key = f'units/{self.unit_id}'
-            record = {
-                'status': {
-                    collection: {
-                        'received_time': firestore.SERVER_TIMESTAMP,
-                        **obj
-                    }
-                }
-            }
-
-            try:
-                logger.debug(f'Inserting into firestore: {fs_key!r} {record}')
-                doc_ref = self.firestore_db.document(fs_key)
-                doc_ref.set(record, merge=True)
-                logger.debug(f'Inserted into firestore: {doc_ref.id}')
-            except Exception as e:
-                logger.warning(f'Problem inserting firestore record: {e!r}')
-
         return obj_id
 
     def insert(self, collection, obj):
@@ -72,17 +52,18 @@ class PocsDB(PanFileDB):
         obj_id = super().insert(collection, obj)
 
         if self.use_firestore:
-            # Add a document.
             try:
-                fs_key = f'units/{self.unit_id}/metadata'
+                # Add a document.
+                fs_key = f'metadata/{collection}/records'
+
                 record = {
                     'received_time': firestore.SERVER_TIMESTAMP,
-                    'collection': collection,
+                    'unit_id': self.firestore_db.document(f'/units/{self.unit_id}'),
                     **obj
                 }
 
                 doc_ts, obj_id = self.firestore_db.collection(fs_key).add(record)
             except Exception as e:
-                logger.warning(f'Problem inserting firestore record: {e!r}')
+                logger.warning(f'Problem inserting record into firestore: {e}')
 
         return obj_id
