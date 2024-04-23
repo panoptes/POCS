@@ -48,11 +48,11 @@ class PocsDB(PanFileDB):
     def insert(self, collection, obj):
         """Insert document into either the firestore db or a local file."""
         obj_id = None
-        
+
         if self.use_firestore:
             try:
                 # Add a document.
-                fs_key = f'metadata/{collection}/records'
+                fs_key = f'metadata/{collection}'
 
                 record = {
                     'received_time': firestore.SERVER_TIMESTAMP,
