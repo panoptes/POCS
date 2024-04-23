@@ -93,7 +93,7 @@ def upload_metadata(dir_path: Path = '.',
                     verbose: bool = False):
     """Send json files in directory to firestore."""
     try:
-        unit_id = unit_id or os.getenv('unit_id', get_config('UNIT_ID', default='PAN000'))
+        unit_id = unit_id or os.getenv('unit_id', get_config('pan_id', default='PAN000'))
     except KeyError:
         print(f'Need to pass a unit_id param or set UNIT_ID envvar.')
         return
