@@ -107,14 +107,25 @@ def upload_metadata(dir_path: Path = '.',
     unit_ref = firestore_db.document(f'units/{unit_id}')
 
     def handleEvent(event):
+        if 'current' not in event.src_path:
+            if verbose:
+                print(f'Skipping {event.src_path}')
+            return
+
         if verbose:
             print(event)
+
         try:
             record = from_json(Path(event.src_path).read_text())
-            data = record['data']
             collection = record['type']
             fs_key = f'{firestore_collection}/{collection}/records'
+
+            # Unpack the envelope.
+            data = record['data']
+            data['date'] = record['date']
+            data['received_time'] = firestore.SERVER_TIMESTAMP
             data['unit'] = unit_ref
+
             doc_ts, doc_id = firestore_db.collection(fs_key).add(data)
             if verbose:
                 print(f'Added data to firestore with {doc_id=} at {doc_ts}')
