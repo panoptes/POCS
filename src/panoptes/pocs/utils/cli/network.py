@@ -128,6 +128,7 @@ def upload_metadata(dir_path: Path = '.',
             data['date'] = record['date']
             data['received_time'] = firestore.SERVER_TIMESTAMP
             data['unit'] = unit_ref
+            print(f'Adding {data=}')
 
             doc_ts, doc_id = firestore_db.collection(fs_key).add(data)
             if verbose:
@@ -135,7 +136,7 @@ def upload_metadata(dir_path: Path = '.',
         except Exception as e:
             print(f'Exception {e!r}')
 
-    event_handler.on_created = handleEvent
+    event_handler.on_modified = handleEvent
     file_observer = Observer()
     file_observer.schedule(event_handler, dir_path.as_posix())
     file_observer.start()
