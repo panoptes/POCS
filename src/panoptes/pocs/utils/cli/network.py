@@ -125,11 +125,11 @@ def upload_metadata(dir_path: Path = '.',
             data['date'] = record['date']
             data['received_time'] = firestore.SERVER_TIMESTAMP
             data['unit'] = unit_ref
-            print(f'Adding {data=}')
+            if verbose:
+                print(f'Adding {data=}')
 
             doc_ts, doc_id = firestore_db.collection(fs_key).add(data)
-            if verbose:
-                print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
+            print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
         except Exception as e:
             print(f'Exception {e!r}')
 
