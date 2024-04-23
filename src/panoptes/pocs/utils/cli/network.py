@@ -115,9 +115,6 @@ def upload_metadata(dir_path: Path = '.',
                 print(f'Skipping {event.src_path}')
             return
 
-        if verbose:
-            print(f'{event=}')
-
         try:
             record = from_json(Path(event.src_path).read_text())
             collection = record['type']
