@@ -116,7 +116,7 @@ def upload_metadata(dir_path: Path = '.',
             return
 
         if verbose:
-            print(event)
+            print(f'{event=}')
 
         try:
             record = from_json(Path(event.src_path).read_text())
@@ -133,7 +133,7 @@ def upload_metadata(dir_path: Path = '.',
             if verbose:
                 print(f'Added data to firestore with {doc_id=} at {doc_ts}')
         except Exception as e:
-            print(f'{e}')
+            print(f'Exception {e!r}')
 
     event_handler.on_modified = handleEvent
     file_observer = Observer()
