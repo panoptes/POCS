@@ -107,7 +107,7 @@ def upload_metadata(dir_path: Path = '.',
     unit_ref = firestore_db.document(f'units/{unit_id}')
 
     def handleEvent(event):
-        if event.event_type != 'modified':
+        if event.is_directory:
             return
 
         if 'current' not in event.src_path:
@@ -135,7 +135,7 @@ def upload_metadata(dir_path: Path = '.',
         except Exception as e:
             print(f'{e}')
 
-    event_handler.on_any_event = handleEvent
+    event_handler.on_modified = handleEvent
     file_observer = Observer()
     file_observer.schedule(event_handler, dir_path.as_posix())
     file_observer.start()
