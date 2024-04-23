@@ -131,8 +131,13 @@ def setup():
         elevation = u.Unit(elevation)
     set_config('location.elevation', str(elevation))
 
-    # Get timezone and then confirm if correct.
-    timezone = subprocess.check_output('cat /etc/timezone', shell=True).decode().strip()
+    # Default timezone to UTC but try to probe OS.
+    timezone = 'UTC'
+    try:
+        timezone = subprocess.check_output('cat /etc/timezone', shell=True).decode().strip()
+    except subprocess.CalledProcessError as e:
+        pass
+    
     timezone = prompt.Prompt.ask('Enter the timezone for this unit', default=timezone)
     set_config('location.timezone', timezone)
 
