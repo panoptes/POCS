@@ -43,14 +43,12 @@ class PocsDB(PanFileDB):
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Inserts into the current collection locally and on firestore db."""
-        obj_id = super().insert_current(collection, obj, store_permanently=store_permanently)
-
-        return obj_id
+        return super().insert_current(collection, obj, store_permanently=store_permanently)
 
     def insert(self, collection, obj):
-        """Insert document into local file and firestore db."""
-        obj_id = super().insert(collection, obj)
-
+        """Insert document into either the firestore db or a local file."""
+        obj_id = None
+        
         if self.use_firestore:
             try:
                 # Add a document.
@@ -58,12 +56,14 @@ class PocsDB(PanFileDB):
 
                 record = {
                     'received_time': firestore.SERVER_TIMESTAMP,
-                    'unit_id': self.firestore_db.document(f'/units/{self.unit_id}'),
+                    'unit': self.firestore_db.document(f'/units/{self.unit_id}'),
                     **obj
                 }
 
                 doc_ts, obj_id = self.firestore_db.collection(fs_key).add(record)
             except Exception as e:
                 logger.warning(f'Problem inserting record into firestore: {e}')
+        else:
+            obj_id = super().insert(collection, obj)
 
         return obj_id
