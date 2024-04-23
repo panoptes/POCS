@@ -107,13 +107,16 @@ def upload_metadata(dir_path: Path = '.',
     unit_ref = firestore_db.document(f'units/{unit_id}')
 
     def handleEvent(event):
-        if verbose:
-            print(event)
+        if event.event_type != 'modified':
+            return
 
         if 'current' not in event.src_path:
             if verbose:
                 print(f'Skipping {event.src_path}')
             return
+
+        if verbose:
+            print(event)
 
         try:
             record = from_json(Path(event.src_path).read_text())
