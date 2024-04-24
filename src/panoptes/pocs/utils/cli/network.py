@@ -87,10 +87,7 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
 
 
 @app.command('upload-metadata')
-def upload_metadata(dir_path: Path = '.',
-                    unit_id: str = None,
-                    firestore_collection: str = 'metadata',
-                    verbose: bool = False):
+def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = False):
     """Send json files in directory to firestore."""
     try:
         unit_id = unit_id or os.getenv('unit_id', get_config('pan_id', default='PAN000'))
@@ -105,6 +102,7 @@ def upload_metadata(dir_path: Path = '.',
 
     # Get the unit reference to link metadata to unit.
     unit_ref = firestore_db.document(f'units/{unit_id}')
+    unit_metadata_ref = firestore_db.collection(f'units/{unit_id}/metadata')
 
     def handleEvent(event):
         if event.is_directory:
@@ -118,7 +116,10 @@ def upload_metadata(dir_path: Path = '.',
         try:
             record = from_json(Path(event.src_path).read_text())
             collection = record['type']
-            fs_key = f'{firestore_collection}/{collection}/records'
+
+            # Get the "current" record and collections refs.
+            metadata_record = unit_metadata_ref.document(collection)
+            records_ref = metadata_record.collection('records')
 
             # Unpack the envelope.
             data = record['data']
@@ -128,8 +129,12 @@ def upload_metadata(dir_path: Path = '.',
             if verbose:
                 print(f'Adding {data=}')
 
-            doc_ts, doc_id = firestore_db.collection(fs_key).add(data)
-            print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
+            # Update the "current" record.
+            metadata_record.set(data, merge=True)
+            # Add a new record.
+            doc_ts, doc_id = records_ref.add(data)
+            if verbose:
+                print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
         except Exception as e:
             print(f'Exception {e!r}')
 
