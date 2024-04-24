@@ -101,7 +101,6 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
     firestore_db = firestore.Client()
 
     # Get the unit reference to link metadata to unit.
-    unit_ref = firestore_db.document(f'units/{unit_id}')
     unit_metadata_ref = firestore_db.collection(f'units/{unit_id}/metadata')
 
     def handleEvent(event):
@@ -125,7 +124,6 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
             data = record['data']
             data['date'] = record['date']
             data['received_time'] = firestore.SERVER_TIMESTAMP
-            data['unit'] = unit_ref
             if verbose:
                 print(f'Adding {data=}')
 
