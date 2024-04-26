@@ -97,9 +97,7 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
 
     print(f'Listening to {dir_path.absolute()} for {unit_id}')
     event_handler = FileSystemEventHandler()
-
     firestore_db = firestore.Client()
-
     # Get the unit reference to link metadata to unit.
     unit_metadata_ref = firestore_db.collection(f'units/{unit_id}/metadata')
 
