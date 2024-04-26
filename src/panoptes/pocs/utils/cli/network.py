@@ -1,15 +1,20 @@
+import os
+import stat
+import time
 from pathlib import Path
 from typing import List
 
-import os
-import stat
 import requests
 import typer
+from google.cloud import firestore
 from google.cloud import storage
+from panoptes.utils.config.client import set_config, get_config
+from panoptes.utils.serializers import from_json
 from rich import print
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 from panoptes.pocs.utils.cloud import upload_image
-from panoptes.utils.config.client import set_config
 
 app = typer.Typer()
 upload_app = typer.Typer()
@@ -81,16 +86,80 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
             print(f'[red]Error updating config: {e}[/]')
 
 
+@app.command('upload-metadata')
+def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = False):
+    """Send json files in directory to firestore."""
+    try:
+        unit_id = unit_id or os.getenv('unit_id', get_config('pan_id', default='PAN000'))
+    except KeyError:
+        print(f'Need to pass a unit_id param or set UNIT_ID envvar.')
+        return
+
+    print(f'Listening to {dir_path.absolute()} for {unit_id}')
+    event_handler = FileSystemEventHandler()
+    firestore_db = firestore.Client()
+    # Get the unit reference to link metadata to unit.
+    unit_metadata_ref = firestore_db.collection(f'units/{unit_id}/metadata')
+
+    def handleEvent(event):
+        if event.is_directory:
+            return
+
+        if 'current' not in event.src_path:
+            if verbose:
+                print(f'Skipping {event.src_path}')
+            return
+
+        try:
+            record = from_json(Path(event.src_path).read_text())
+            collection = record['type']
+
+            # Get the "current" record and collections refs.
+            metadata_record = unit_metadata_ref.document(collection)
+            records_ref = metadata_record.collection('records')
+
+            # Unpack the envelope.
+            data = record['data']
+            data['date'] = record['date']
+            data['received_time'] = firestore.SERVER_TIMESTAMP
+            if verbose:
+                print(f'Adding {data=}')
+
+            # Update the "current" record.
+            metadata_record.set(data, merge=True)
+            # Add a new record.
+            doc_ts, doc_id = records_ref.add(data)
+            if verbose:
+                print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
+        except Exception as e:
+            print(f'Exception {e!r}')
+
+    event_handler.on_modified = handleEvent
+    file_observer = Observer()
+    file_observer.schedule(event_handler, dir_path.as_posix())
+    file_observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print(f'Cleaning up file watcher')
+        file_observer.stop()
+    finally:
+        file_observer.join()
+
+
 @upload_app.command('image')
 def upload_image_cmd(file_path: Path, bucket_path: str,
                      bucket_name: str = 'panoptes-images-incoming',
                      timeout: float = 180.,
                      storage_client=None) -> str:
     """Uploads an image to google storage bucket."""
-    public_url = upload_image(file_path, bucket_path,
-                              bucket_name=bucket_name,
-                              timeout=timeout,
-                              storage_client=storage_client)
+    public_url = upload_image(
+        file_path, bucket_path,
+        bucket_name=bucket_name,
+        timeout=timeout,
+        storage_client=storage_client
+    )
     print(f'[green]File successfully uploaded to {public_url}[/]')
 
 
@@ -122,8 +191,10 @@ def upload_directory(directory_path: Path,
 
         bucket_path = str(Path(prefix) / file_path)
         try:
-            public_url = upload_image(file_path, bucket_path, bucket_name=bucket_name,
-                                      storage_client=storage_client)
+            public_url = upload_image(
+                file_path, bucket_path, bucket_name=bucket_name,
+                storage_client=storage_client
+            )
             public_urls.append(public_url)
         except Exception as e:
             print(f'[red]Upload error on {file_path}. {continue_on_error=}')
