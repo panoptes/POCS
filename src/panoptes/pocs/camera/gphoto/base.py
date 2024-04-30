@@ -89,6 +89,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                 )
+                self.logger.debug(f'Started command on proc={self._command_proc.pid}')
             except OSError as e:
                 raise error.InvalidCommand(f"Can't send command to gphoto2. {e} \t {run_cmd}")
             except ValueError as e:
@@ -143,7 +144,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         if is_index:
             set_cmd = ['--set-config-index', f'{prop}={val}']
         elif is_value:
-            set_cmd = ['--set-config-value', f'{prop}="{val}"']
+            set_cmd = ['--set-config-value', f'{prop}={val}']
         else:
             set_cmd = ['--set-config', f'{prop}="{val}"']
 
