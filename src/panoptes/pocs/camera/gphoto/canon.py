@@ -1,14 +1,17 @@
 from astropy import units as u
-from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 from panoptes.utils import error
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
+from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
+
 
 class Camera(AbstractGPhotoCamera):
 
-    def __init__(self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
-                 *args, **kwargs):
+    def __init__(
+            self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
+            *args, **kwargs
+    ):
         """Create a camera object for a Canon EOS DSLR.
 
         Args:
@@ -48,18 +51,6 @@ class Camera(AbstractGPhotoCamera):
         self._serial_number = _serial_number
 
         # Properties to be set upon init.
-        prop2index = {
-            '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
-            '/main/capturesettings/drivemode': 0,  # Single exposure
-            '/main/capturesettings/focusmode': 0,  # Manual (don't try to focus)
-            '/main/imgsettings/imageformat': 9,  # RAW
-            '/main/imgsettings/imageformatsd': 9,  # RAW
-            '/main/settings/capturetarget': 0,  # Capture to RAM, for download
-            '/main/settings/reviewtime': 0,  # Screen off after taking pictures
-            '/main/imgsettings/iso': 1,  # ISO 100
-            '/main/capturesettings/shutterspeed': 0,  # Bulb
-        }
-
         owner_name = 'PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
         copy_right = f'{owner_name}_{current_time().datetime:%Y}'
@@ -68,22 +59,33 @@ class Camera(AbstractGPhotoCamera):
             'artist': artist_name,
             'copyright': copy_right,
             'ownername': owner_name,
+            'autoexposuremode': 'Manual',
+            'drivemode': 'Single',
+            'focusmode': 'Manual',
+            'imageformat': 'RAW',
+            # 'imageformatsd': 'RAW',  # We shouldn't need to set this.
+            'capturetarget': 'Internal RAM',
+            'reviewtime': 'None',
+            'iso': 100,
+            'shutterspeed': 'bulb',
         }
 
-        self.set_properties(prop2index=prop2index, prop2value=prop2value)
+        self.set_properties(prop2value=prop2value)
 
         # TODO check this works on all Canon models.
-        # self.model = self.get_property('d402')
+        self.model = self.get_property('d402')
 
         self._connected = True
 
-    def _start_exposure(self,
-                        seconds=None,
-                        filename=None,
-                        dark=False,
-                        header=None,
-                        iso=100,
-                        *args, **kwargs):
+    def _start_exposure(
+            self,
+            seconds=None,
+            filename=None,
+            dark=False,
+            header=None,
+            iso=100,
+            *args, **kwargs
+    ):
         """Start the exposure.
 
         Tested With:
@@ -109,17 +111,21 @@ class Camera(AbstractGPhotoCamera):
 
         if shutterspeed_idx == 0:
             # Bulb setting.
-            cmd_args.extend([
-                f'--set-config-index', 'eosremoterelease=2',
-                f'--wait-event={int(seconds):d}s',
-                f'--set-config-index', 'eosremoterelease=4',
-                f'--wait-event-and-download=2s',
-            ])
+            cmd_args.extend(
+                [
+                    f'--set-config-index', 'eosremoterelease=2',
+                    f'--wait-event={int(seconds):d}s',
+                    f'--set-config-index', 'eosremoterelease=4',
+                    f'--wait-event-and-download=2s',
+                ]
+            )
         else:
             # Known shutterspeed value.
-            cmd_args.extend([
-                f'--capture-image-and-download',
-            ])
+            cmd_args.extend(
+                [
+                    f'--capture-image-and-download',
+                ]
+            )
 
         try:
             self.command(cmd_args, check_exposing=False)
