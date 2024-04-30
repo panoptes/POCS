@@ -59,10 +59,10 @@ class Camera(AbstractGPhotoCamera):
             'artist': artist_name,
             'copyright': copy_right,
             'ownername': owner_name,
-            'autoexposuremode': 'Manual',
             'drivemode': 'Single',
             'focusmode': 'Manual',
             'imageformat': 'RAW',
+            # 'autoexposuremode': 'Manual',  # Need physical toggle.
             # 'imageformatsd': 'RAW',  # We shouldn't need to set this.
             'capturetarget': 'Internal RAM',
             'reviewtime': 'None',
