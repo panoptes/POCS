@@ -56,9 +56,6 @@ class Camera(AbstractGPhotoCamera):
         copy_right = f'{owner_name}_{current_time().datetime:%Y}'
 
         prop2value = {
-            'artist': artist_name,
-            'copyright': copy_right,
-            'ownername': owner_name,
             'drivemode': 'Single',
             'focusmode': 'Manual',
             'imageformat': 'RAW',
@@ -68,6 +65,9 @@ class Camera(AbstractGPhotoCamera):
             'reviewtime': 'None',
             'iso': 100,
             'shutterspeed': 'bulb',
+            'artist': artist_name,
+            'copyright': copy_right,
+            'ownername': owner_name,
         }
 
         self.set_properties(prop2value=prop2value)
