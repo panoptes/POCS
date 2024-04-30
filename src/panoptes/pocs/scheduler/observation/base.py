@@ -184,7 +184,7 @@ class Observation(PanBase):
         """
         if self._directory is None:
             self._directory = os.path.join(self._image_dir, self.field.field_name)
-            self.logger.warning(f'Observation directory set to {self._directory}')
+            self.logger.info(f'Observation directory set to {self._directory}')
 
         return self._directory
 
