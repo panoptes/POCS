@@ -10,14 +10,14 @@ class WeatherStation(PanBase):
     """
 
     def __init__(self,
-                 port: str = None,
+                 serial_port: str = None,
                  name: str = 'Weather Station',
                  db_collection: str = 'weather',
                  *args, **kwargs):
         """Initialize the weather station.
 
         Args:
-            port (str, optional): The dev port for the mount, usually the usb-serial converter.
+            serial_port (str, optional): The dev port for the mount, usually the usb-serial converter.
             name (str): The user-friendly name for the weather station.
             db_collection (str): Which collection (i.e. table) to store the values in, default 'weather'.
         """
@@ -29,12 +29,12 @@ class WeatherStation(PanBase):
         conf.update(kwargs)
         conf.pop('auto_detect', None)
 
-        self.port = port or conf.get('port', '/dev/ttyUSB0')
+        self.serial_port = serial_port or conf.get('serial_port', '/dev/ttyUSB0')
         self.name = name
         self.collection_name = db_collection
 
-        self.logger.debug(f'Setting up weather station connection for {name=} on {self.port}')
-        self.weather_station = CloudSensor(serial_port=self.port, **conf)
+        self.logger.debug(f'Setting up weather station connection for {name=} on {self.serial_port}')
+        self.weather_station = CloudSensor(serial_port=self.serial_port, **conf)
 
         self.logger.debug(f'Weather station config: {self.weather_station.config}')
         self.logger.info(f'{self.weather_station} initialized')
