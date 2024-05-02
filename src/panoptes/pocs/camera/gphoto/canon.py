@@ -72,8 +72,7 @@ class Camera(AbstractGPhotoCamera):
 
         self.set_properties(prop2value=prop2value)
 
-        # TODO check this works on all Canon models.
-        self.model = self.get_property('d402')
+        self.model = self.get_property('model')
 
         self._connected = True
 

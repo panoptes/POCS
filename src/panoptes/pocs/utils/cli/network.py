@@ -126,7 +126,7 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
                 print(f'Adding {data=}')
 
             # Update the "current" record.
-            metadata_record.set(data, merge=True)
+            metadata_record.set(data)
             # Add a new record.
             doc_ts, doc_id = records_ref.add(data)
             if verbose:

@@ -39,4 +39,4 @@ def on_enter(event_data):
                     pocs.next_state = 'housekeeping'
                     break
                 else:
-                    pocs.say("Seems to be bad weather. I'll wait another 30 minutes.")
+                    pocs.say("Seems to be bad weather. I'll wait another 5 minutes.")
