@@ -21,14 +21,14 @@ async def startup():
     if conf.get('auto_detect', False) is True:
         ports = [p.device for p in get_comports()]
     else:
-        ports = [conf['port']]
+        ports = [conf['serial_port']]
 
     # Try to connect to the weather station.
     for port in ports:
         if 'ioptron' in port:
             continue
 
-        conf['port'] = port
+        conf['serial_port'] = port
         try:
             weather_station = WeatherStation(**conf)
             break
