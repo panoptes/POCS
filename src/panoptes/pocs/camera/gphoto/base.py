@@ -119,7 +119,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         self.logger.trace(f'gphoto2 output: {outs=!r}')
         if errs != '':
-            self.logger.error(f'gphoto2 error: {errs!r}')
+            self.logger.warning(f'gphoto2 error: {errs!r}')
 
         if isinstance(outs, str):
             outs = outs.split('\n')
