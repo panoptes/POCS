@@ -25,9 +25,9 @@ def get_page(page, base_url):
 
 
 @app.command(help='Restart the weather station service via supervisorctl')
-def restart(serivce: str = 'pocs-weather-reader'):
+def restart(service: str = 'pocs-weather-reader'):
     """Restart the weather station service via supervisorctl"""
-    cmd = f'supervisorctl restart {serivce}'
+    cmd = f'supervisorctl restart {service}'
     print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
 
