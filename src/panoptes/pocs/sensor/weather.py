@@ -29,6 +29,10 @@ class WeatherStation(PanBase):
         conf.update(kwargs)
         conf.pop('auto_detect', None)
 
+        # Remove the conf port if passed one.
+        if serial_port is not None:
+            conf.pop('serial_port', None)
+
         self.serial_port = serial_port or conf.get('serial_port', '/dev/ttyUSB0')
         self.name = name
         self.collection_name = db_collection
