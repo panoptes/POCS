@@ -115,7 +115,7 @@ class Camera(AbstractGPhotoCamera):
                     f'--set-config-index', 'eosremoterelease=2',
                     f'--wait-event={int(seconds):d}s',
                     f'--set-config-index', 'eosremoterelease=4',
-                    f'--wait-event-and-download=2s',
+                    f'--wait-event-and-download=CAPTURECOMPLETE',
                 ]
             )
         else:
