@@ -246,11 +246,16 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return properties
 
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        self.logger.info('Calling get_command_result from base gphoto2')
+        self.get_command_result(timeout)
+        super()._poll_exposure(readout_args, exposure_time, timeout=timeout, interval=interval)
+
     def _readout(self, filename, headers, *args, **kwargs):
         self.logger.debug(f'Reading Canon DSLR exposure for {filename=}')
         try:
             self.logger.debug(f"Converting CR2 -> FITS: {filename}")
-            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=True)
+            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remopve_cr2=True)
         except TimeoutError:
             self.logger.error(f'Error processing exposure for {filename} on {self}')
         finally:
@@ -273,9 +278,11 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                         '--capture-tethered']
 
         # Start tether process.
-        process = subprocess.Popen(full_command,
-                                   stderr=subprocess.STDOUT,
-                                   stdout=subprocess.PIPE)
+        process = subprocess.Popen(
+            full_command,
+            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE
+            )
         print(f'gphoto2 tether started on {port=} on {process.pid=}')
 
         try:
@@ -284,11 +291,12 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             print(f'Stopping tether on {port=}')
 
     @classmethod
-    def gphoto_file_download(cls,
-                             port: str,
-                             filename_pattern: str,
-                             only_new: bool = True
-                             ):
+    def gphoto_file_download(
+            cls,
+            port: str,
+            filename_pattern: str,
+            only_new: bool = True
+            ):
         """Downloads (newer) files from the camera on the given port using the filename pattern."""
         print(f'Starting gphoto2 download for {port=} using {filename_pattern=}')
         command = [get_gphoto2_cmd(),
