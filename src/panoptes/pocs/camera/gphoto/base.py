@@ -247,12 +247,17 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         return properties
 
     def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
-        self.logger.info('Calling get_command_result from base gphoto2')
+        """Check the command output from gphoto2 for polling.
+
+        This will essentially block until the camera is done exposing, which means
+        the super call should not have to wait.
+        """
+        self.logger.debug(f'Calling get_command_result from base gphoto2 for {self}')
         # Wait for and clear the _command_proc.
         outs = self.get_command_result(timeout)
-        self.logger.info(f'Camera response: {outs}')
-        self.logger.info(f'Clearing exposing event for {self}')
+        self.logger.debug(f'Camera response for {self}: {outs}')
         self._is_exposing_event.clear()
+        self.logger.debug(f'Exposing event cleared for {self}')
 
         super()._poll_exposure(readout_args, exposure_time, timeout=timeout, interval=interval)
 
