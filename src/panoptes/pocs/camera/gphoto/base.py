@@ -248,7 +248,12 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
         self.logger.info('Calling get_command_result from base gphoto2')
-        self.get_command_result(timeout)
+        # Wait for and clear the _command_proc.
+        outs = self.get_command_result(timeout)
+        self.logger.info(f'Camera response: {outs}')
+        self.logger.info(f'Clearing exposing event for {self}')
+        self._is_exposing_event.clear()
+
         super()._poll_exposure(readout_args, exposure_time, timeout=timeout, interval=interval)
 
     def _readout(self, filename, headers, *args, **kwargs):
@@ -282,7 +287,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             full_command,
             stderr=subprocess.STDOUT,
             stdout=subprocess.PIPE
-            )
+        )
         print(f'gphoto2 tether started on {port=} on {process.pid=}')
 
         try:
@@ -296,7 +301,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             port: str,
             filename_pattern: str,
             only_new: bool = True
-            ):
+    ):
         """Downloads (newer) files from the camera on the given port using the filename pattern."""
         print(f'Starting gphoto2 download for {port=} using {filename_pattern=}')
         command = [get_gphoto2_cmd(),
