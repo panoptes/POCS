@@ -79,6 +79,16 @@ def set_value(
     """Get an item from the config"""
     if server_running():
         metadata = host_info['config_server']
+        if value.startswith('\-'):
+            value = value[1:]
+        try:
+            value = int(value)
+        except ValueError:
+            try:
+                value = float(value)
+            except ValueError:
+                print(f'{value=} is not a number.')
+        print(f'{type(value)=} {value=}')
         item = set_config(key, value, host=metadata.host, port=metadata.port)
         print(item)
 
@@ -127,9 +137,9 @@ def setup():
                                   default=str(get_config('location.elevation')))
     if ' ft' in elevation:
         elevation = (elevation.replace(' ft', '') * u.imperial.foot).to(u.meter)
-    else:
-        elevation = u.Unit(elevation)
-    set_config('location.elevation', str(elevation))
+    elif elevation.endswith('m'):
+        elevation = str(u.Unit(elevation))
+    set_config('location.elevation', elevation)
 
     # Default timezone to UTC but try to probe OS.
     timezone = 'UTC'
