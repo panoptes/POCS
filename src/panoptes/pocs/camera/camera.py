@@ -595,17 +595,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
     def process_exposure(self, metadata, **kwargs):
         """ Processes the exposure.
 
-        Performs the following steps:
-
-            1. First checks to make sure that the file exists on the file system.
-            2. Calls `_process_fits` with the filename and info, which is specific to each camera.
-            3. Makes pretty images if requested.
-            4. Records observation metadata if requested.
-            5. Compress FITS files if requested.
-            6. Sets the observation_event.
-
-        If the camera is a primary camera, extract the jpeg image and save metadata to database
-        `current` collection. Saves metadata to `observations` collection for all images.
+        This checks if the file exists and if so calls _do_process_exposure.
 
         Args:
             metadata (dict): Header metadata saved for the image.
