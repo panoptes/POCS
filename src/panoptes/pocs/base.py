@@ -1,9 +1,9 @@
 import os
 
-from requests.exceptions import ConnectionError
-
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
+from requests.exceptions import ConnectionError
+
 from panoptes.pocs import __version__
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.logger import get_logger
@@ -39,6 +39,10 @@ class PanBase(object):
             db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
 
             PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
+
+            # Insert the current config into the DB since we just set it up. This will also
+            # send to the cloud (if enabled).
+            PAN_DB_OBJ.insert_current('config', self.get_config(), store_permanently=False)
 
         self.db = PAN_DB_OBJ
 
