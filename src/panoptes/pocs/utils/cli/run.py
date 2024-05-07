@@ -6,7 +6,7 @@ from typing import List
 
 import typer
 from panoptes.utils.time import current_time
-from panoptes.utils.utils import altaz_to_radec
+from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
 
 from panoptes.pocs.core import POCS
@@ -37,6 +37,8 @@ def get_pocs(context: typer.Context):
 
     # Change to home directory.
     os.chdir(os.path.expanduser('~'))
+
+    simulators = listify(simulators)
 
     if len(simulators) > 0:
         print(f'Running POCS with simulators: {simulators=}')
