@@ -501,7 +501,7 @@ class Observatory(PanBase):
                     ):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
-                self.db.insert_current('observations', metadata)
+                self.db.insert_current('images', metadata)
 
             if make_pretty_images or self.get_config(
                     'observations.make_pretty_images',
