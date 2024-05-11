@@ -14,20 +14,20 @@ conf = get_config('environment.weather', {})
 async def startup():
     global weather_station
     global conf
-
+    
     print(f'Weather config: {conf}')
-
+    
     # Get list of possible ports for auto-detect or use the configured port.
     if conf.get('auto_detect', False) is True:
         ports = [p.device for p in get_comports()]
     else:
         ports = [conf['serial_port']]
-
+    
     # Try to connect to the weather station.
     for port in ports:
-        if 'ioptron' in port:
+        if 'ttyUSB' not in port:
             continue
-
+        
         conf['serial_port'] = port
         try:
             weather_station = WeatherStation(**conf)
