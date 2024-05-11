@@ -21,7 +21,7 @@ def park_mount(
         ..., '--confirm',
         prompt='Are you sure you want to park the mount?',
         help='Confirm mount parking.'
-        )] = False
+    )] = False
 ):
     """Parks the mount.
 
@@ -44,7 +44,7 @@ def set_park_position(
         ..., '--confirm',
         prompt='Are you sure you want to set the park position?',
         help='Confirm setting the park position.'
-        )] = False
+    )] = False
 ):
     """Sets the park position.
 
@@ -100,7 +100,7 @@ def set_park_position(
             'Park position set. If the directions are correct but the mount is not parked in the correct position, '
             'then you may need to adjust the number of seconds the mount moves in each direction. If you are unsure, '
             'please ask the PANOPTES team for help.'
-            )
+        )
 
 
 @app.command(name='slew-home')
@@ -109,7 +109,7 @@ def search_for_home(
         ..., '--confirm',
         prompt='Are you sure you want to slew to the home position?',
         help='Confirm slew to home.'
-        )] = False
+    )] = False
 ):
     """Slews the mount home position.
 
@@ -133,7 +133,7 @@ def search_for_home(
         ..., '--confirm',
         prompt='Are you sure you want to search for home?',
         help='Confirm mount searching for home.'
-        )] = False
+    )] = False
 ):
     """Searches for the mount home position.
 
@@ -156,7 +156,7 @@ def setup_mount(
         ..., '--confirm',
         prompt='Are you sure you want to setup the mount?',
         help='Confirm mount setup.'
-        )] = False,
+    )] = False,
 ):
     """Sets up the mount port, type, and firmware."""
     if not confirm:
@@ -166,17 +166,14 @@ def setup_mount(
     # Baudrates to check.
     baudrates = [9600, 115200]
     
-    # Ports to ignore
-    ignore_ports = ['/dev/ioptron', '/dev/aag', '/dev/ttyACM0', '/dev/serial']
-    
     # Get all the serial ports.
     ports = get_serial_port_info()
     
     # Loop through all the ports and baudrates.
     for port in ports:
+        if 'ttyUSB' not in port.device:
+            continue
         for baudrate in baudrates:
-            if port.device in ignore_ports:
-                continue
             print(f"Trying {port.device=} at {baudrate=}...")
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
             
