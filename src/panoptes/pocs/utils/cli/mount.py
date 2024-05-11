@@ -149,6 +149,9 @@ def setup_mount(
 
     # Baudrates to check.
     baudrates = [9600, 115200]
+    
+    # Ports to ignore
+    ignore_ports = ['/dev/serial', '/dev/aag', '/dev/ttyACM0']
 
     # Get all the serial ports.
     ports = get_serial_port_info()
@@ -156,7 +159,7 @@ def setup_mount(
     # Loop through all the ports and baudrates.
     for port in ports:
         for baudrate in baudrates:
-            if 'serial' in port.device:
+            if port.device in ignore_ports:
                 continue
             print(f"Trying {port.device=} at {baudrate=}...")
             device = SerialData(port=port.device, baudrate=baudrate, timeout=1)
