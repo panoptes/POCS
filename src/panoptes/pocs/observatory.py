@@ -1,11 +1,11 @@
 import os
 from collections import OrderedDict
 from contextlib import suppress
-from datetime import datetime
 from multiprocessing import Process
 from pathlib import Path
 from typing import Dict, Optional
 
+import numpy as np
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
@@ -13,6 +13,7 @@ from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import current_time, CountdownTimer, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -314,17 +315,16 @@ class Observatory(PanBase):
 
         try:
             status['observer'] = {
-                'siderealtime': str(self.sidereal_time),
+                'siderealtime': get_quantity_value(self.sidereal_time, unit='degree'),
                 'utctime': now,
-                'localtime': datetime.now(),
                 'local_evening_astro_time': self._evening_astro_time,
                 'local_morning_astro_time': self._morning_astro_time,
                 'local_sun_set_time': self._local_sunset,
                 'local_sun_rise_time': self._local_sunrise,
-                'local_sun_position': self._local_sun_pos,
-                'local_moon_alt': self.observer.moon_altaz(now).alt,
+                'local_sun_position': get_quantity_value(self._local_sun_pos, unit='degree'),
+                'local_moon_alt': get_quantity_value(self.observer.moon_altaz(now).alt, unit='degree'),
                 'local_moon_illumination': self.observer.moon_illumination(now),
-                'local_moon_phase': self.observer.moon_phase(now),
+                'local_moon_phase': get_quantity_value(self.observer.moon_phase(now)) / np.pi,
             }
 
         except Exception as e:  # pragma: no cover
