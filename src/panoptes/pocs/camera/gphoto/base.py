@@ -63,6 +63,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         while self.is_exposing:
             time.sleep(0.5)
 
+        metadata['cr2_filepath'] = metadata['filepath']
         metadata['filepath'] = metadata['filepath'].replace('.cr2', '.fits')
         super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
         self._command_proc = None
@@ -302,10 +303,10 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     @classmethod
     def gphoto_file_download(
-            cls,
-            port: str,
-            filename_pattern: str,
-            only_new: bool = True
+        cls,
+        port: str,
+        filename_pattern: str,
+        only_new: bool = True
     ):
         """Downloads (newer) files from the camera on the given port using the filename pattern."""
         print(f'Starting gphoto2 download for {port=} using {filename_pattern=}')

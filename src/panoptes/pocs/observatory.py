@@ -351,9 +351,9 @@ class Observatory(PanBase):
 
         # If observation list is empty or a reread is requested
         reread_file = (
-                self.scheduler.has_valid_observations is False or
-                kwargs.get('read_file', False) or
-                self.get_config('scheduler.check_file', default=False)
+            self.scheduler.has_valid_observations is False or
+            kwargs.get('read_file', False) or
+            self.get_config('scheduler.check_file', default=False)
         )
 
         # This will set the `current_observation`.
@@ -419,13 +419,13 @@ class Observatory(PanBase):
                         del self.cameras[cam_id]
 
     def process_observation(
-            self,
-            compress_fits: Optional[bool] = None,
-            record_observations: Optional[bool] = None,
-            make_pretty_images: Optional[bool] = None,
-            plate_solve: Optional[bool] = None,
-            upload_image: Optional[bool] = None,
-            ):
+        self,
+        compress_fits: Optional[bool] = None,
+        record_observations: Optional[bool] = None,
+        make_pretty_images: Optional[bool] = None,
+        plate_solve: Optional[bool] = None,
+        upload_image: Optional[bool] = None,
+    ):
         """Process an individual observation.
 
         Performs the following steps:
@@ -496,19 +496,22 @@ class Observatory(PanBase):
                 self.logger.debug(f'Compressed {compressed_file_path}')
 
             if record_observations or self.get_config(
-                    'observations.record_observations',
-                    default=False
-                    ):
+                'observations.record_observations',
+                default=False
+            ):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
                 self.db.insert_current('images', metadata)
 
             if make_pretty_images or self.get_config(
-                    'observations.make_pretty_images',
-                    default=False
-                    ):
+                'observations.make_pretty_images',
+                default=False
+            ):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
+
+                    if 'cr2_filepath' in metadata:
+                        file_path = metadata['cr2_filepath']
 
                     self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
@@ -522,8 +525,8 @@ class Observatory(PanBase):
                         kwargs=dict(
                             title=image_title,
                             link_path=str(link_path)
-                            )
                         )
+                    )
                     pretty_process.start()
                 except Exception as e:  # pragma: no cover
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
@@ -573,7 +576,7 @@ class Observatory(PanBase):
                     'magnitude': self.current_offset_info.magnitude.value,
                     'unit': 'arcsec',
                 }
-                )
+            )
 
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
@@ -610,8 +613,8 @@ class Observatory(PanBase):
                 file_path=image_path,
                 bucket_path=bucket_path.as_posix(),
                 bucket_name=bucket_name
-                )
             )
+        )
 
         self.logger.debug(f'Uploading {str(image_path)} to {bucket_path} on {bucket_name}')
         upload_process.start()
@@ -792,22 +795,22 @@ class Observatory(PanBase):
         return self.dome.close()
 
     def take_flat_fields(
-            self,
-            which='evening',
-            alt=None,
-            az=None,
-            min_counts=1000,
-            max_counts=12000,
-            target_adu_percentage=0.5,
-            initial_exptime=3.,
-            min_exptime=0.,
-            max_exptime=60.,
-            readout=5.,
-            camera_list=None,
-            bias=2048,
-            max_num_exposures=10,
-            no_tracking=True
-            ):  # pragma: no cover
+        self,
+        which='evening',
+        alt=None,
+        az=None,
+        min_counts=1000,
+        max_counts=12000,
+        target_adu_percentage=0.5,
+        initial_exptime=3.,
+        min_exptime=0.,
+        max_exptime=60.,
+        readout=5.,
+        camera_list=None,
+        bias=2048,
+        max_num_exposures=10,
+        no_tracking=True
+    ):  # pragma: no cover
         """Take flat fields.
         This method will slew the mount to the given AltAz coordinates(which
         should be roughly opposite of the setting sun) and then begin the flat-field
@@ -916,9 +919,9 @@ class Observatory(PanBase):
             # Block until done exposing on all cameras.
             flat_field_timer = CountdownTimer(exptime + readout, name='Flat Field Images')
             while any(
-                    [cam.is_observing for cam_name, cam in self.cameras.items()
-                     if cam_name in camera_list]
-                    ):
+                [cam.is_observing for cam_name, cam in self.cameras.items()
+                 if cam_name in camera_list]
+            ):
                 if flat_field_timer.expired():
                     self.logger.warning(f'{flat_field_timer} expired while waiting for flat fields')
                     return
@@ -969,7 +972,7 @@ class Observatory(PanBase):
                 suggested_exptime = int(
                     previous_exptime * (target_adu / counts) *
                     (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5
-                    )
+                )
 
                 self.logger.info(f"Suggested exptime for {cam_name}: {suggested_exptime:.02f}")
 
@@ -985,7 +988,7 @@ class Observatory(PanBase):
                     self.logger.info(
                         f"Suggested exposure time greater than max, "
                         f"stopping flat fields for {cam_name}"
-                        )
+                    )
                     camera_list.remove(cam_name)
 
                 self.logger.debug(f"Checking for saturation on short exposure on {cam_name}")
@@ -1005,13 +1008,13 @@ class Observatory(PanBase):
                     return
 
     def _create_flat_field_observation(
-            self,
-            alt=70,  # degrees
-            az=None,
-            field_name='FlatField',
-            flat_time=None,
-            initial_exptime=5
-            ):
+        self,
+        alt=70,  # degrees
+        az=None,
+        field_name='FlatField',
+        flat_time=None,
+        initial_exptime=5
+    ):
         """Small convenience wrapper to create a flat-field Observation.
         Flat-fields are specified by AltAz coordinates so this method is just a helper
         to look up the current RA-Dec coordinates based on the unit's location and
