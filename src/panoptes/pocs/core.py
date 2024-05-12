@@ -299,6 +299,10 @@ class POCS(PanStateMachine, PanBase):
                     f'Starting {pic_num:03d} of {current_observation.min_nexp:03d} '
                     f'with {exptime=}'
                 )
+
+                status = self.status
+                self.logger.debug(f'Status before starting observation: {status}')
+
                 try:
                     self.observatory.take_observation(blocking=True)
                 except error.CameraNotFound:
