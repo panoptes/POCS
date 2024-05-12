@@ -1,3 +1,4 @@
+import json
 import os
 import stat
 import time
@@ -9,7 +10,6 @@ import typer
 from google.cloud import firestore
 from google.cloud import storage
 from panoptes.utils.config.client import set_config, get_config
-from panoptes.utils.serializers import from_json
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -111,7 +111,7 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
             return
 
         try:
-            record = from_json(Path(event.src_path).read_text())
+            record = json.loads(Path(event.src_path).read_text())
             collection = record['type']
 
             # Get the "current" record and collections refs.

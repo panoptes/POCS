@@ -501,7 +501,7 @@ class Observatory(PanBase):
             ):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
-                self.db.insert_current('observations', metadata, store_permanently=False)
+                self.db.insert_current('images', metadata, store_permanently=False)
 
             if make_pretty_images or self.get_config(
                 'observations.make_pretty_images',
@@ -509,6 +509,9 @@ class Observatory(PanBase):
             ):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
+
+                    if 'cr2_filepath' in metadata:
+                        file_path = metadata['cr2_filepath']
 
                     self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None

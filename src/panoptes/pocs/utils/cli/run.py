@@ -21,10 +21,11 @@ warnings.filterwarnings(action='ignore', message='datfix')
 
 
 @app.callback()
-def common(context: typer.Context,
-           simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
-           cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
-           ):
+def common(
+        context: typer.Context,
+        simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
+        cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
+):
     context.obj = [simulator, cloud_logging]
 
 
@@ -54,6 +55,14 @@ def get_pocs(context: typer.Context):
         logger = get_logger(cloud_logging_level='DEBUG')
 
     pocs = POCS.from_config(simulators=simulators)
+
+    pocs.logger.debug(f'POCS created from config')
+    pocs.logger.debug(f'Sending POCS config to cloud')
+    try:
+        pocs.db.insert_current('config', pocs.get_config())
+    except Exception as e:
+        pocs.logger.warning(f'Unable to send config to cloud: {e}')
+
     pocs.initialize()
 
     return pocs
@@ -80,18 +89,19 @@ def run_auto(context: typer.Context) -> None:
 
 
 @app.command(name='alignment')
-def run_alignment(context: typer.Context,
-                  coords: List[str] = typer.Option(
-                      None, '--coords', '-c',
-                      help='Alt/Az coordinates to use, e.g. 40,120'
-                  ),
-                  exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
-                  num_exposures: int = typer.Option(
-                      5, '--num-exposures', '-n',
-                      help='Number of exposures per coordinate.'
-                  ),
-                  field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
-                  ) -> None:
+def run_alignment(
+        context: typer.Context,
+        coords: List[str] = typer.Option(
+            None, '--coords', '-c',
+            help='Alt/Az coordinates to use, e.g. 40,120'
+        ),
+        exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
+        num_exposures: int = typer.Option(
+            5, '--num-exposures', '-n',
+            help='Number of exposures per coordinate.'
+        ),
+        field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
+) -> None:
     """Runs POCS in alignment mode.
 
     Not specifying coordinates is the same as the following:
