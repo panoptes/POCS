@@ -58,7 +58,7 @@ class WeatherStation(PanBase):
         """Record the rolling mean of the power readings in the database."""
         recent_values = self.weather_station.get_reading()
 
-        self.db.insert_current(self.collection_name, recent_values)
+        self.db.insert_current(self.collection_name, recent_values, store_permanently=False)
 
         return recent_values
 

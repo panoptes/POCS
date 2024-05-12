@@ -1,11 +1,11 @@
 import os
 from collections import OrderedDict
 from contextlib import suppress
-from datetime import datetime
 from multiprocessing import Process
 from pathlib import Path
 from typing import Dict, Optional
 
+import numpy as np
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
@@ -13,6 +13,7 @@ from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import current_time, CountdownTimer, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -290,11 +291,13 @@ class Observatory(PanBase):
             if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
                 current_coords = self.mount.get_current_coordinates()
-                status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
+                status['mount']['current_ha'] = get_quantity_value(
+                    self.observer.target_hour_angle(now, current_coords), unit='degree'
+                )
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
                     target_ha = self.observer.target_hour_angle(now, target_coords)
-                    status['mount']['mount_target_ha'] = target_ha
+                    status['mount']['mount_target_ha'] = get_quantity_value(target_ha, unit='degree')
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -314,17 +317,16 @@ class Observatory(PanBase):
 
         try:
             status['observer'] = {
-                'siderealtime': str(self.sidereal_time),
+                'siderealtime': get_quantity_value(self.sidereal_time, unit='degree'),
                 'utctime': now,
-                'localtime': datetime.now(),
                 'local_evening_astro_time': self._evening_astro_time,
                 'local_morning_astro_time': self._morning_astro_time,
                 'local_sun_set_time': self._local_sunset,
                 'local_sun_rise_time': self._local_sunrise,
-                'local_sun_position': self._local_sun_pos,
-                'local_moon_alt': self.observer.moon_altaz(now).alt,
+                'local_sun_position': get_quantity_value(self._local_sun_pos, unit='degree'),
+                'local_moon_alt': get_quantity_value(self.observer.moon_altaz(now).alt, unit='degree'),
                 'local_moon_illumination': self.observer.moon_illumination(now),
-                'local_moon_phase': self.observer.moon_phase(now),
+                'local_moon_phase': get_quantity_value(self.observer.moon_phase(now)) / np.pi,
             }
 
         except Exception as e:  # pragma: no cover
@@ -501,7 +503,7 @@ class Observatory(PanBase):
             ):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
-                self.db.insert_current('images', metadata)
+                self.db.insert_current('images', metadata, store_permanently=False)
 
             if make_pretty_images or self.get_config(
                 'observations.make_pretty_images',
@@ -575,7 +577,7 @@ class Observatory(PanBase):
                     'd_dec': self.current_offset_info.delta_dec.value,
                     'magnitude': self.current_offset_info.magnitude.value,
                     'unit': 'arcsec',
-                }
+                }, store_permanently=False
             )
 
         except error.SolveError:
