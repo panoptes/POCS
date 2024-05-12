@@ -291,11 +291,13 @@ class Observatory(PanBase):
             if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
                 current_coords = self.mount.get_current_coordinates()
-                status['mount']['current_ha'] = self.observer.target_hour_angle(now, current_coords)
+                status['mount']['current_ha'] = get_quantity_value(
+                    self.observer.target_hour_angle(now, current_coords), unit='degree'
+                )
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
                     target_ha = self.observer.target_hour_angle(now, target_coords)
-                    status['mount']['mount_target_ha'] = target_ha
+                    status['mount']['mount_target_ha'] = get_quantity_value(target_ha, unit='degree')
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
