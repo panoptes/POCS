@@ -510,6 +510,9 @@ class Observatory(PanBase):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
+                    if 'cr2_filepath' in metadata:
+                        file_path = metadata['cr2_filepath']
+
                     self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
                     if metadata.get('is_primary', False):
