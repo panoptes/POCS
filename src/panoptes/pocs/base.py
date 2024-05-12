@@ -24,7 +24,7 @@ class PanBase(object):
         self._config_host = config_host or os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
         self._config_port = config_port or os.getenv('PANOPTES_CONFIG_PORT', 6563)
 
-        log_dir = self.get_config('directories.base') + '/../logs'
+        log_dir = self.get_config('directories.base', default='.') + '/../logs'
         cloud_logging_level = kwargs.get(
             'cloud_logging_level',
             self.get_config('panoptes_network.cloud_logging_level', default=None)
