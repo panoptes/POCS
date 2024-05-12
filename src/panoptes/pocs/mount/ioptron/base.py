@@ -303,7 +303,7 @@ class Mount(AbstractSerialMount):
             status_dict = status_match.groupdict()
 
             self._state = MountState(int(status_dict['state']))
-            status['state'] = self.state
+            status['state'] = self.state.name
             status['parked_software'] = self.is_parked
 
             coords_unit = getattr(u, self._location_units)
@@ -311,14 +311,14 @@ class Mount(AbstractSerialMount):
             # Longitude adds +90° to avoid negative numbers, so subtract for original.
             status['latitude'] = Latitude((float(status_dict['latitude']) * coords_unit).to(u.degree) - (90 * u.degree))
 
-            status['gps'] = MountGPS(int(status_dict['gps']))
-            status['tracking'] = MountTrackingState(int(status_dict['tracking']))
+            status['gps'] = MountGPS(int(status_dict['gps'])).name
+            status['tracking'] = MountTrackingState(int(status_dict['tracking'])).name
 
             self._movement_speed = MountMovementSpeed(int(status_dict['movement_speed']))
-            status['movement_speed'] = self._movement_speed
+            status['movement_speed'] = self._movement_speed.name
 
-            status['time_source'] = MountTimeSource(int(status_dict['time_source']))
-            status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere']))
+            status['time_source'] = MountTimeSource(int(status_dict['time_source'])).name
+            status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere'])).name
 
             self._at_mount_park = self.state == MountState.PARKED
             self._is_home = self.state == MountState.AT_HOME
