@@ -377,7 +377,7 @@ class POCS(PanStateMachine, PanBase):
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
-        self.db.insert_current('safety', is_safe_values)
+        self.db.insert_current('safety', is_safe_values, store_permanently=False)
 
         if not safe:
             if no_warning is False:
