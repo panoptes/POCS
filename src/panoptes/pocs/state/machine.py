@@ -1,14 +1,13 @@
-import os
 from contextlib import suppress
 from pathlib import Path
 
-from transitions.extensions.states import Tags as MachineState
-from transitions import Machine
 from panoptes.utils import error
-from panoptes.utils.utils import listify
+from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
-from panoptes.utils.config.client import get_config
+from panoptes.utils.utils import listify
+from transitions import Machine
+from transitions.extensions.states import Tags as MachineState
 
 
 class PanStateMachine(Machine):
@@ -85,7 +84,8 @@ class PanStateMachine(Machine):
     ################################################################################################
 
     def run(self, exit_when_done=False, run_once=False, park_when_done=True,
-            initial_next_state='ready'):
+            initial_next_state='ready'
+            ):
         """Runs the state machine loop.
 
         This runs the state machine in a loop. Setting the machine property
@@ -218,7 +218,11 @@ class PanStateMachine(Machine):
         state_changed = transition_method()
         if state_changed:
             self.logger.success(f'Finished with {self.state} state')
-            self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
+            self.db.insert_current(
+                'state',
+                {"source": self.state, "dest": self.next_state},
+                store_permanently=False
+            )
 
         return state_changed
 

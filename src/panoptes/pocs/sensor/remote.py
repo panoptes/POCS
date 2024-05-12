@@ -55,11 +55,11 @@ class RemoteMonitor(PanBase):
         sensor_data['date'] = current_time(flatten=True)
         
         if store_result and len(sensor_data) > 0:
-            self.db.insert_current(self.sensor_name, sensor_data)
+            self.db.insert_current(self.sensor_name, sensor_data, store_permanently=False)
             
             # Make a separate power entry
             if 'power' in sensor_data:
-                self.db.insert_current('power', sensor_data['power'])
+                self.db.insert_current('power', sensor_data['power'], store_permanently=False)
         
         self.logger.debug(f'Remote data: {sensor_data}')
         

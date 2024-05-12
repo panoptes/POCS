@@ -13,7 +13,6 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.pocs.utils import error
-from panoptes.pocs.utils.logger import get_logger
 
 
 class POCS(PanStateMachine, PanBase):
@@ -47,7 +46,8 @@ class POCS(PanStateMachine, PanBase):
         observatory,
         state_machine_file=None,
         simulators=None,
-        *args, **kwargs):
+        *args, **kwargs
+    ):
 
         # Explicitly call the base class.
         PanBase.__init__(self, *args, **kwargs)
@@ -158,19 +158,21 @@ class POCS(PanStateMachine, PanBase):
         return self._obs_run_retries >= 0
 
     @property
-    def status(self):
-        status = dict()
-
+    def status(self) -> dict:
         try:
-            status['state'] = self.state
-            status['system'] = {
-                'free_space': str(self._free_space),
+            status = {
+                'from_state': self.state,
+                'to_state': self.next_state,
+                'system': {
+                    'free_space': str(self._free_space),
+                },
+                'observatory': self.observatory.status
             }
-            status['observatory'] = self.observatory.status
+            self.db.insert_current('status', status, store_permanently=False)
+            return status
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get status: {e!r}")
-
-        return status
+            return {}
 
     ################################################################################################
     # Methods
@@ -266,7 +268,8 @@ class POCS(PanStateMachine, PanBase):
 
     def observe_target(self,
                        observation: Optional[Observation] = None,
-                       park_if_unsafe: bool = True):
+                       park_if_unsafe: bool = True
+                       ):
         """Observe something! 🔭🌠
 
         Note: This is a long-running blocking method.
@@ -375,7 +378,7 @@ class POCS(PanStateMachine, PanBase):
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
         # Insert safety reading
-        self.db.insert_current('safety', is_safe_values)
+        self.db.insert_current('safety', is_safe_values, store_permanently=False)
 
         if not safe:
             if no_warning is False:
@@ -465,8 +468,12 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte,
-                       low_space_percent=1.5):
+    def has_free_space(
+        self,
+        directory=None,
+        required_space=0.25 * u.gigabyte,
+        low_space_percent=1.5
+    ):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:

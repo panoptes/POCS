@@ -5,6 +5,8 @@ from pathlib import Path
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from panoptes.utils.utils import get_quantity_value
+
 from panoptes.pocs.base import PanBase
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
@@ -125,13 +127,13 @@ class AbstractMount(PanBase):
 
             current_coord = self.get_current_coordinates()
             if current_coord is not None:
-                status['current_ra'] = current_coord.ra
-                status['current_dec'] = current_coord.dec
+                status['current_ra'] = get_quantity_value(current_coord.ra, unit='degree')
+                status['current_dec'] = get_quantity_value(current_coord.dec, unit='degree')
 
             if self.has_target:
                 target_coord = self.get_target_coordinates()
-                status['mount_target_ra'] = target_coord.ra
-                status['mount_target_dec'] = target_coord.dec
+                status['mount_target_ra'] = get_quantity_value(target_coord.ra, unit='degree')
+                status['mount_target_dec'] = get_quantity_value(target_coord.dec, unit='degree')
         except Exception as e:
             self.logger.debug(f'Problem getting mount status: {e!r}')
 
