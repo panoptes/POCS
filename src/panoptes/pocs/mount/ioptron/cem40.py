@@ -19,7 +19,6 @@ class Mount(BaseMount):
         self.logger.info('Searching for the home position.')
         self.query('search_for_home')
         while self.is_home is False:
-            self.logger.trace(f'Searching for home position.')
             time.sleep(1)
             self.update_status()
 

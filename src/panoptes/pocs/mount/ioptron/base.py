@@ -39,8 +39,8 @@ class Mount(AbstractSerialMount):
 
     @property
     def is_home(self):
-        """ bool: Mount home status. """
-        self._is_home = self.status.get('state') == MountState.AT_HOME
+        """ Mount home status. """
+        self.update_status()
         return self._is_home
 
     def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
