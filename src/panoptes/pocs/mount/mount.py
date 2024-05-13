@@ -1,17 +1,17 @@
-from abc import abstractmethod
 import time
+from abc import abstractmethod
 from pathlib import Path
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from panoptes.utils import error
+from panoptes.utils.serializers import from_yaml
+from panoptes.utils.time import CountdownTimer
+from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
-from panoptes.utils.serializers import from_yaml
-from panoptes.utils.time import current_time
-from panoptes.utils import error
-from panoptes.utils.time import CountdownTimer
 
 
 class AbstractMount(PanBase):
@@ -114,7 +114,7 @@ class AbstractMount(PanBase):
 
     def update_status(self):
         """Thin-wrapper to call the status property."""
-        self.logger.trace(f'Updating status: {self.status}')
+        self.logger.debug(f'Updating mount status: {self.status}')
 
     @property
     def status(self):
@@ -408,8 +408,11 @@ class AbstractMount(PanBase):
             offset_ms = corrections[1]
             delta_direction = corrections[2]
 
-            self.logger.info("Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
-                axis, delta_direction, offset_ms, offset))
+            self.logger.info(
+                "Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
+                    axis, delta_direction, offset_ms, offset
+                )
+            )
 
             self.query(
                 'move_ms_{}'.format(delta_direction),
@@ -586,7 +589,7 @@ class AbstractMount(PanBase):
         else:
             self.logger.warning('Problem with slew_to_park')
 
-        while not self.at_mount_park:
+        while not self.is_parked:
             self._update_status()
             time.sleep(2)
 
@@ -748,8 +751,10 @@ class AbstractMount(PanBase):
 
     def search_for_home(self):
         """Search for the home position if supported."""
-        self.logger.warning('Searching for home position not supported.'
-                            'Please set the home position manually via the hand-controller.')
+        self.logger.warning(
+            'Searching for home position not supported.'
+            'Please set the home position manually via the hand-controller.'
+            )
 
     @abstractmethod
     def write(self, cmd):

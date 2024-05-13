@@ -5,12 +5,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, Latitude, Longitude
 from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
+from panoptes.utils import error as error
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.mount.ioptron import MountGPS, MountState, MountTrackingState, MountMovementSpeed, MountTimeSource, \
     MountHemisphere
 from panoptes.pocs.mount.serial import AbstractSerialMount
-from panoptes.utils import error as error
 
 
 class Mount(AbstractSerialMount):
@@ -39,8 +39,8 @@ class Mount(AbstractSerialMount):
 
     @property
     def is_home(self):
-        """ bool: Mount home status. """
-        self._is_home = self.status.get('state') == MountState.AT_HOME
+        """ Mount home status. """
+        self.update_status()
         return self._is_home
 
     def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
@@ -99,7 +99,8 @@ class Mount(AbstractSerialMount):
     def park(self,
              ra_direction=None, ra_seconds=None,
              dec_direction=None, dec_seconds=None,
-             *args, **kwargs):
+             *args, **kwargs
+             ):
         """Slews to the park position and parks the mount.
 
         This still uses a custom park command because the mount will not allow
@@ -123,9 +124,9 @@ class Mount(AbstractSerialMount):
         Returns:
             bool: indicating success
         """
-        if self.at_mount_park or self.is_parked:
+        if self.is_parked:
             self.logger.success("Mount is already parked")
-            return self.at_mount_park
+            return self.is_parked
 
         # Get the direction and timing
         ra_direction = ra_direction or self.get_config('mount.settings.park.ra_direction', 'west')
@@ -138,16 +139,17 @@ class Mount(AbstractSerialMount):
 
         self.logger.debug(f'Moving mount to home before parking.')
         if self.slew_to_home(blocking=True):
-            self.logger.debug(f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
-                              f'Dec: {dec_direction} {dec_seconds} seconds')
+            self.logger.debug(
+                f'Parking mount: RA: {ra_direction} {ra_seconds} seconds, '
+                f'Dec: {dec_direction} {dec_seconds} seconds'
+            )
             self.move_direction(direction=dec_direction, seconds=dec_seconds)
             self.move_direction(direction=ra_direction, seconds=ra_seconds)
 
-            self._at_mount_park = True
             self._is_parked = True
             self.logger.success('Mount successfully parked.')
 
-        return self.at_mount_park
+        return self.is_parked
 
     def _setup_location_for_mount(self):
         """
@@ -303,8 +305,14 @@ class Mount(AbstractSerialMount):
             status_dict = status_match.groupdict()
 
             self._state = MountState(int(status_dict['state']))
+            self._at_mount_park = self.state == MountState.PARKED
+            self._is_home = self.state == MountState.AT_HOME
+            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
+            self._is_slewing = self.state == MountState.SLEWING
+
             status['state'] = self.state.name
-            status['parked_software'] = self.is_parked
+            status['is_parked'] = self.is_parked
+            status['at_mount_park'] = self._at_mount_park
 
             coords_unit = getattr(u, self._location_units)
             status['longitude'] = Longitude((float(status_dict['longitude']) * coords_unit).to(u.degree))
@@ -319,11 +327,6 @@ class Mount(AbstractSerialMount):
 
             status['time_source'] = MountTimeSource(int(status_dict['time_source'])).name
             status['hemisphere'] = MountHemisphere(int(status_dict['hemisphere'])).name
-
-            self._at_mount_park = self.state == MountState.PARKED
-            self._is_home = self.state == MountState.AT_HOME
-            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
-            self._is_slewing = self.state == MountState.SLEWING
 
         status['tracking_rate_ra'] = self.tracking_rate
 
