@@ -311,7 +311,8 @@ class Mount(AbstractSerialMount):
             self._is_slewing = self.state == MountState.SLEWING
 
             status['state'] = self.state.name
-            status['parked_software'] = self.is_parked
+            status['is_parked'] = self.is_parked
+            status['at_mount_park'] = self._at_mount_park
 
             coords_unit = getattr(u, self._location_units)
             status['longitude'] = Longitude((float(status_dict['longitude']) * coords_unit).to(u.degree))
