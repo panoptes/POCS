@@ -13,11 +13,15 @@ def on_enter(event_data):
         pocs.next_state = 'scheduling'
 
         # Wait until it's safe to proceed.
-        wait_delay = pocs.get_config('wait_delay', default=180)  # seconds
-
         # TODO separate check for disk space, which will never break this loop.
         disk_space_checks = ['free_space_root', 'free_space_images']
         while pocs.is_safe(park_if_not_safe=False, ignore=disk_space_checks) is False:
+            if pocs.is_dark() is False:
+                # TODO figure out how long until sunset and wait until then.
+                wait_delay = 10 * 60  # 10 minutes
+            else:
+                wait_delay = pocs.get_config('wait_delay', default=180)  # seconds
+
             pocs.wait(delay=wait_delay)
 
         pocs.say("Ok, I'm all set up and ready to go!")

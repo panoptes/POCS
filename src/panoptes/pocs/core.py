@@ -583,14 +583,16 @@ class POCS(PanStateMachine, PanBase):
         if delay is None:  # pragma: no cover
             delay = self.get_config('wait_delay', default=2.5)
 
-        sleep_timer = CountdownTimer(delay, name='POCSWait')
-        self.logger.info(f'Starting a wait timer of {delay} seconds')
+        timer_name = 'POCSWait'
+        sleep_timer = CountdownTimer(delay, name=timer_name)
+        self.logger.info(f'Starting {timer_name} timer of {delay} seconds')
         while not sleep_timer.expired() and not self.interrupted:
-            self.logger.debug(f'Wait timer: {sleep_timer.time_left():.02f} / {delay:.02f}')
+            self.logger.debug(f'POCS status: {self.status}')
+            self.logger.debug(f'{timer_name}: {sleep_timer.time_left():.02f} / {delay:.02f}')
             sleep_timer.sleep(max_sleep=30)
 
         is_expired = sleep_timer.expired()
-        self.logger.debug(f'Leaving wait timer: expired={is_expired}')
+        self.logger.debug(f'Leaving wait timer: {is_expired}')
         return is_expired
 
     ################################################################################################
