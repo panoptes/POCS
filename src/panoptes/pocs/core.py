@@ -161,8 +161,8 @@ class POCS(PanStateMachine, PanBase):
     def status(self) -> dict:
         try:
             status = {
-                'from_state': self.state,
-                'to_state': self.next_state,
+                'state': self.state,
+                'next_state': self.next_state,
                 'system': {
                     'free_space': str(self._free_space),
                 },
