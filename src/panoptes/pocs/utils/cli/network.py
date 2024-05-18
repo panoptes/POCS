@@ -99,7 +99,8 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
     event_handler = FileSystemEventHandler()
     firestore_db = firestore.Client()
     # Get the unit reference to link metadata to unit.
-    unit_metadata_ref = firestore_db.collection(f'units/{unit_id}/metadata')
+    unit_metadata_ref = firestore_db.document(f'units/{unit_id}/metadata')
+    metadata_records_ref = unit_metadata_ref.collection('records')
 
     def handleEvent(event):
         if event.is_directory:
@@ -112,23 +113,22 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
 
         try:
             record = json.loads(Path(event.src_path).read_text())
-            collection = record['type']
-
-            # Get the "current" record and collections refs.
-            metadata_record = unit_metadata_ref.document(collection)
-            records_ref = metadata_record.collection('records')
 
             # Unpack the envelope.
+            collection = record['type']
             data = record['data']
             data['date'] = record['date']
             data['received_time'] = firestore.SERVER_TIMESTAMP
-            if verbose:
-                print(f'Adding {data=}')
 
-            # Update the "current" record.
-            metadata_record.set(data)
-            # Add a new record.
-            doc_ts, doc_id = records_ref.add(data)
+            if verbose:
+                print(f'Adding data for {collection=}: {data}')
+
+            # Update the main "current" record for the unit.
+            unit_metadata_ref.set({collection: data}, merge=True)
+
+            # Add the record, storing the collection name in the data.
+            data['collection'] = collection
+            doc_ts, doc_id = metadata_records_ref.add(data)
             if verbose:
                 print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
         except Exception as e:
@@ -152,7 +152,8 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
 def upload_image_cmd(file_path: Path, bucket_path: str,
                      bucket_name: str = 'panoptes-images-incoming',
                      timeout: float = 180.,
-                     storage_client=None) -> str:
+                     storage_client=None
+                     ) -> str:
     """Uploads an image to google storage bucket."""
     public_url = upload_image(
         file_path, bucket_path,
