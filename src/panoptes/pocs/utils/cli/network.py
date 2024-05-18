@@ -99,8 +99,8 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
     event_handler = FileSystemEventHandler()
     firestore_db = firestore.Client()
     # Get the unit reference to link metadata to unit.
-    unit_metadata_ref = firestore_db.document(f'units/{unit_id}/metadata')
-    metadata_records_ref = unit_metadata_ref.collection('records')
+    unit_ref = firestore_db.document(f'units/{unit_id}')
+    metadata_records_ref = unit_ref.collection('metadata')
 
     def handleEvent(event):
         if event.is_directory:
@@ -115,19 +115,19 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
             record = json.loads(Path(event.src_path).read_text())
 
             # Unpack the envelope.
-            collection = record['type']
+            record_type = record['type']
             data = record['data']
             data['date'] = record['date']
             data['received_time'] = firestore.SERVER_TIMESTAMP
 
             if verbose:
-                print(f'Adding data for {collection=}: {data}')
+                print(f'Adding data for {record_type=}: {data}')
 
-            # Update the main "current" record for the unit.
-            unit_metadata_ref.set({collection: data}, merge=True)
+            # Update the unit's metadata with the record_type.
+            unit_ref.set({'metadata': {record_type: data}}, merge=True)
 
-            # Add the record, storing the collection name in the data.
-            data['collection'] = collection
+            # Add the record, storing the record_type name in the data.
+            data['record_type'] = record_type
             doc_ts, doc_id = metadata_records_ref.add(data)
             if verbose:
                 print(f'Added data to firestore with {doc_id.id=} at {doc_ts}')
