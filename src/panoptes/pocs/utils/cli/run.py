@@ -143,7 +143,8 @@ def run_alignment(
 
         procs = list()
         for i, altaz_coord in enumerate(altaz_coords):
-            if pocs.is_safe() is False:
+            # Check safety (parking happens below if unsafe).
+            if pocs.is_safe(park_if_not_safe=False) is False:
                 print('[red]POCS is not safe, shutting down.[/red]')
                 raise PanError('POCS is not safe.')
 
