@@ -5,6 +5,7 @@ from multiprocessing import Process
 from typing import List
 
 import typer
+from panoptes.utils.error import PanError
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
@@ -144,7 +145,7 @@ def run_alignment(
         for i, altaz_coord in enumerate(altaz_coords):
             if pocs.is_safe() is False:
                 print('[red]POCS is not safe, shutting down.[/red]')
-                break
+                raise PanError('POCS is not safe.')
 
             print(f'{field_name} #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
 
@@ -185,6 +186,9 @@ def run_alignment(
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
     except Exception as e:
+        print('[bold red]POCS encountered an error.[/bold red]')
+        print(e)
+    except PanError as e:
         print('[bold red]POCS encountered an error.[/bold red]')
         print(e)
     else:
