@@ -22,9 +22,9 @@ warnings.filterwarnings(action='ignore', message='datfix')
 
 @app.callback()
 def common(
-        context: typer.Context,
-        simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
-        cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
+    context: typer.Context,
+    simulator: List[str] = typer.Option(None, '--simulator', '-s', help='Simulators to load'),
+    cloud_logging: bool = typer.Option(False, '--cloud-logging', '-c', help='Enable cloud logging'),
 ):
     context.obj = [simulator, cloud_logging]
 
@@ -90,17 +90,17 @@ def run_auto(context: typer.Context) -> None:
 
 @app.command(name='alignment')
 def run_alignment(
-        context: typer.Context,
-        coords: List[str] = typer.Option(
-            None, '--coords', '-c',
-            help='Alt/Az coordinates to use, e.g. 40,120'
-        ),
-        exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
-        num_exposures: int = typer.Option(
-            5, '--num-exposures', '-n',
-            help='Number of exposures per coordinate.'
-        ),
-        field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
+    context: typer.Context,
+    coords: List[str] = typer.Option(
+        None, '--coords', '-c',
+        help='Alt/Az coordinates to use, e.g. 40,120'
+    ),
+    exptime: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
+    num_exposures: int = typer.Option(
+        5, '--num-exposures', '-n',
+        help='Number of exposures per coordinate.'
+    ),
+    field_name: str = typer.Option('PolarAlignment', '--field-name', '-f', help='Name of field.'),
 ) -> None:
     """Runs POCS in alignment mode.
 
@@ -109,6 +109,8 @@ def run_alignment(
         -c 70,60 -c 70,120 -c 70,240 -c 70,300
     """
     pocs = get_pocs(context)
+    print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
+    pocs.update_status()
 
     alts = [55, 70]
     azs = [60, 120, 240, 300]
@@ -140,6 +142,10 @@ def run_alignment(
 
         procs = list()
         for i, altaz_coord in enumerate(altaz_coords):
+            if pocs.is_safe() is False:
+                print('[red]POCS is not safe, shutting down.[/red]')
+                break
+
             print(f'{field_name} #{i:02d}/{len(altaz_coords):02d} {altaz_coord=}')
 
             # Create an observation and set it as current.
@@ -166,6 +172,7 @@ def run_alignment(
             for j in range(num_exposures):
                 print(f'\tStarting {exptime}s exposure #{j + 1:02d}/{num_exposures:02d}')
                 pocs.observatory.take_observation(blocking=True)
+                pocs.update_status()
 
                 # Do processing in background (if exposure time is long enough).
                 if exptime > 10:
