@@ -174,6 +174,13 @@ class POCS(PanStateMachine, PanBase):
             self.logger.warning(f"Can't get status: {e!r}")
             return {}
 
+    def update_status(self) -> dict:
+        """Thin-wrapper around status property.
+
+        This method will update the status of the system in the database.
+        """
+        return self.status
+
     ################################################################################################
     # Methods
     ################################################################################################
@@ -394,6 +401,7 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.warning(f'Safety failed, setting {self.next_state=} to "parking"')
                 self.next_state = 'parking'
 
+        self.update_status()
         return safe
 
     def _in_simulator(self, key):
