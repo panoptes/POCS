@@ -63,7 +63,6 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         while self.is_exposing:
             time.sleep(0.5)
 
-        metadata['cr2_filepath'] = metadata['filepath']
         metadata['filepath'] = metadata['filepath'].replace('.cr2', '.fits')
         super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
         self._command_proc = None
