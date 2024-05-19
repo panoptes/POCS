@@ -464,9 +464,9 @@ class Observatory(PanBase):
             try:
                 self.logger.debug(f'Processing observation with {exposure=!r}')
                 metadata = exposure.metadata
-                unit_id = metadata['unit_id']
                 image_id = metadata['image_id']
                 seq_id = metadata['sequence_id']
+                unit_id = seq_id.split('_')[0]
                 file_path = metadata['filepath']
                 exptime = metadata['exptime']
             except KeyError as e:
