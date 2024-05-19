@@ -165,7 +165,7 @@ def upload_images(dir_path: Path = '/home/panoptes/images', unit_id: str = None,
         try:
             upload_image_cmd(
                 event.src_path,
-                bucket_path=f'{unit_id}',
+                bucket_path=f'{unit_id}/{Path(event.src_path).name}',
                 bucket_name='panoptes-images-pretty',
                 storage_client=storage_client
             )
