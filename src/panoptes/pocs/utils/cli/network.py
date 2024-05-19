@@ -143,47 +143,6 @@ def upload_metadata(dir_path: Path = '/home/panoptes/json_store/panoptes', unit_
         file_observer.join()
 
 
-@app.command('upload-images')
-def upload_images(dir_path: Path = '/home/panoptes/images', unit_id: str = None, verbose: bool = False):
-    """Send images in directory to google storage."""
-    unit_id = unit_id or _get_unit_id()
-
-    if verbose:
-        print(f'Listening to {dir_path.absolute()} for {unit_id}')
-
-    storage_client = storage.Client()
-
-    def handleEvent(event):
-        if event.is_directory:
-            return
-
-        if event.src_path.endswith('.jpg') is False:
-            if verbose:
-                print(f'Skipping {event.src_path}')
-            return
-
-        try:
-            upload_image_cmd(
-                event.src_path,
-                bucket_path=f'{unit_id}/{Path(event.src_path).name}',
-                bucket_name='panoptes-images-pretty',
-                storage_client=storage_client
-            )
-        except Exception as e:
-            print(f'Exception {e!r}')
-
-    file_observer = _start_event_handler(dir_path, handleEvent)
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        if verbose:
-            print(f'Cleaning up pretty image file watcher')
-        file_observer.stop()
-    finally:
-        file_observer.join()
-
-
 @upload_app.command('image')
 def upload_image_cmd(file_path: Path,
                      bucket_path: str,
