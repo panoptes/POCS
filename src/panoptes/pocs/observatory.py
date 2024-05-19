@@ -516,15 +516,14 @@ class Observatory(PanBase):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                    if 'cr2_filepath' in metadata:
-                        file_path = metadata['cr2_filepath']
+                    cr2_file_path = file_path.replace('.fits', '.cr2').repalce('.fz', '')
 
                     link_path = None
                     if metadata.get('is_primary', False):
                         link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
-                    self.logger.debug(f"Making pretty image for {file_path=!r}")
+                    self.logger.debug(f"Making pretty image for {cr2_file_path=!r}")
 
-                    pretty_image_path = img_utils.make_pretty_image(file_path, title=image_title, link_path=link_path)
+                    pretty_image_path = img_utils.make_pretty_image(cr2_file_path, title=image_title, link_path=link_path)
                     self.logger.debug(f"Pretty image created: {pretty_image_path}")
                     self.logger.debug(f'Pretty image linked to {link_path}')
                     if should_upload:
