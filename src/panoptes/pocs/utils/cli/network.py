@@ -87,16 +87,13 @@ def get_key_cmd(unit_id: str = typer.Option(..., prompt=True),
 
 
 @app.command('upload-metadata')
-def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = False):
+def upload_metadata(dir_path: Path = '/home/panoptes/json_store/panoptes', unit_id: str = None, verbose: bool = False):
     """Send json files in directory to firestore."""
-    try:
-        unit_id = unit_id or os.getenv('unit_id', get_config('pan_id', default='PAN000'))
-    except KeyError:
-        print(f'Need to pass a unit_id param or set UNIT_ID envvar.')
-        return
+    unit_id = unit_id or _get_unit_id()
 
-    print(f'Listening to {dir_path.absolute()} for {unit_id}')
-    event_handler = FileSystemEventHandler()
+    if verbose:
+        print(f'Listening to {dir_path.absolute()} for {unit_id}')
+
     firestore_db = firestore.Client()
     # Get the unit reference to link metadata to unit.
     unit_ref = firestore_db.document(f'units/{unit_id}')
@@ -134,22 +131,62 @@ def upload_metadata(dir_path: Path = '.', unit_id: str = None, verbose: bool = F
         except Exception as e:
             print(f'Exception {e!r}')
 
-    event_handler.on_modified = handleEvent
-    file_observer = Observer()
-    file_observer.schedule(event_handler, dir_path.as_posix())
-    file_observer.start()
+    file_observer = _start_event_handler(dir_path, handleEvent)
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print(f'Cleaning up file watcher')
+        if verbose:
+            print(f'Cleaning up file watcher')
+        file_observer.stop()
+    finally:
+        file_observer.join()
+
+
+@app.command('upload-images')
+def upload_images(dir_path: Path = '/home/panoptes/images', unit_id: str = None, verbose: bool = False):
+    """Send images in directory to google storage."""
+    unit_id = unit_id or _get_unit_id()
+
+    if verbose:
+        print(f'Listening to {dir_path.absolute()} for {unit_id}')
+
+    storage_client = storage.Client()
+
+    def handleEvent(event):
+        if event.is_directory:
+            return
+
+        if event.src_path.endswith('.jpg') is False:
+            if verbose:
+                print(f'Skipping {event.src_path}')
+            return
+
+        try:
+            upload_image_cmd(
+                event.src_path,
+                bucket_path=f'images/{unit_id}',
+                bucket_name='panoptes-images-pretty',
+                storage_client=storage_client
+            )
+        except Exception as e:
+            print(f'Exception {e!r}')
+
+    file_observer = _start_event_handler(dir_path, handleEvent)
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        if verbose:
+            print(f'Cleaning up pretty image file watcher')
         file_observer.stop()
     finally:
         file_observer.join()
 
 
 @upload_app.command('image')
-def upload_image_cmd(file_path: Path, bucket_path: str,
+def upload_image_cmd(file_path: Path,
+                     bucket_path: str,
                      bucket_name: str = 'panoptes-images-incoming',
                      timeout: float = 180.,
                      storage_client=None
@@ -203,3 +240,23 @@ def upload_directory(directory_path: Path,
                 continue
 
     return public_urls
+
+
+def _get_unit_id():
+    """Get the unit id from the environment or config."""
+    unit_id = os.getenv('UNIT_ID', get_config('pan_id'))
+
+    if unit_id is None:
+        raise ValueError('No unit id found in environment or config')
+
+    return unit_id
+
+
+def _start_event_handler(dir_path: Path, handle_event: callable):
+    """Start the event handler."""
+    event_handler = FileSystemEventHandler()
+    event_handler.on_modified = handle_event
+    file_observer = Observer()
+    file_observer.schedule(event_handler, dir_path.as_posix())
+    file_observer.start()
+    return file_observer
