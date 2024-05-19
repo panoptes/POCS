@@ -25,7 +25,7 @@ from panoptes.pocs.scheduler import BaseScheduler
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.compound import Observation as CompoundObservation
-from panoptes.pocs.utils.cloud import upload_image
+from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
 
 
@@ -464,6 +464,7 @@ class Observatory(PanBase):
             try:
                 self.logger.debug(f'Processing observation with {exposure=!r}')
                 metadata = exposure.metadata
+                unit_id = metadata['unit_id']
                 image_id = metadata['image_id']
                 seq_id = metadata['sequence_id']
                 file_path = metadata['filepath']
@@ -473,6 +474,8 @@ class Observatory(PanBase):
                 continue
 
             field_name = metadata.get('field_name', '')
+
+            should_upload = upload_image or self.get_config('observations.upload_image', default=False)
 
             if Path(file_path).exists() is False:
                 self.logger.error(f'Trying to process observation but missing {file_path=}')
@@ -497,48 +500,42 @@ class Observatory(PanBase):
                 metadata['filepath'] = compressed_file_path
                 self.logger.debug(f'Compressed {compressed_file_path}')
 
-            if record_observations or self.get_config(
-                'observations.record_observations',
-                default=False
-            ):
+            if record_observations or self.get_config('observations.record_observations', default=False):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
                 self.db.insert_current('images', metadata, store_permanently=False)
 
-            if make_pretty_images or self.get_config(
-                'observations.make_pretty_images',
-                default=False
-            ):
+            if should_upload:
+                self.logger.debug(f"Uploading current observation: {image_id}")
+                try:
+                    self.upload_exposure(exposure_info=exposure)
+                except Exception as e:
+                    self.logger.warning(f'Problem uploading exposure: {e!r}')
+
+            if make_pretty_images or self.get_config('observations.make_pretty_images', default=False):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
                     if 'cr2_filepath' in metadata:
                         file_path = metadata['cr2_filepath']
 
-                    self.logger.debug(f"Making pretty image for {file_path=!r}")
                     link_path = None
                     if metadata.get('is_primary', False):
                         link_path = Path(self.get_config('directories.images')) / 'latest.jpg'
+                    self.logger.debug(f"Making pretty image for {file_path=!r}")
 
-                    pretty_process = Process(
-                        name=f'PrettyImageProcess-{image_id}',
-                        target=img_utils.make_pretty_image,
-                        args=(file_path,),
-                        kwargs=dict(
-                            title=image_title,
-                            link_path=str(link_path)
+                    pretty_image_path = img_utils.make_pretty_image(file_path, title=image_title, link_path=link_path)
+                    self.logger.debug(f"Pretty image created: {pretty_image_path}")
+                    self.logger.debug(f'Pretty image linked to {link_path}')
+                    if should_upload:
+                        public_url = image_uploader(
+                            file_path=pretty_image_path,
+                            bucket_path=f'{unit_id}/{seq_id}/{image_id}.jpg',
+                            bucket_name='panoptes-images-pretty'
                         )
-                    )
-                    pretty_process.start()
+                        self.logger.info(f"Pretty image uploaded: {public_url}")
                 except Exception as e:  # pragma: no cover
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
-
-            if upload_image or self.get_config('observations.upload_image', default=False):
-                self.logger.debug(f"Uploading current observation: {image_id}")
-                try:
-                    self.upload_exposure(exposure_info=exposure)
-                except Exception as e:
-                    self.logger.warning(f'Problem uploading exposure: {e!r}')
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -610,7 +607,7 @@ class Observatory(PanBase):
         # Create a separate process for the upload.
         upload_process = Process(
             name=f'ImageUploaderProcess-{exposure_info.image_id}',
-            target=upload_image,
+            target=image_uploader,
             kwargs=dict(
                 file_path=image_path,
                 bucket_path=bucket_path.as_posix(),
