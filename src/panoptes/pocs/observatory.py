@@ -513,7 +513,7 @@ class Observatory(PanBase):
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
-                    cr2_file_path = file_path.replace('.fits', '.cr2').repalce('.fz', '')
+                    cr2_file_path = file_path.replace('.fits', '.cr2').replace('.fz', '')
 
                     link_path = None
                     if metadata.get('is_primary', False):
