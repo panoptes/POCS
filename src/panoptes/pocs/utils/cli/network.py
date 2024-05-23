@@ -121,7 +121,12 @@ def upload_metadata(dir_path: Path = '/home/panoptes/json_store/panoptes', unit_
                 print(f'Adding data for {record_type=}: {data}')
 
             # Update the unit's metadata with the record_type.
-            unit_ref.set({'metadata': {record_type: data}}, merge=True)
+            unit_ref.set({
+                'metadata': {
+                    record_type: data
+                },
+                'last_updated': firestore.SERVER_TIMESTAMP,
+            }, merge=True)
 
             # Add the record, storing the record_type name in the data.
             data['record_type'] = record_type
