@@ -21,20 +21,21 @@ class RelayCommand(BaseModel):
     command: RelayAction
 
 
-power_board: PowerBoard
-conf: dict
-repeat_interval: int = 60
+objects: dict = {}
 
 
 @asynccontextmanager
 def lifespan(app: FastAPI):
-    global conf
-    global repeat_interval
-    global power_board
-    conf = get_config('environment.power', {})
+    """Context manager for the lifespan of the app."""
+    conf: dict = get_config('environment.power', {})
     repeat_interval = conf.get('record_interval', repeat_interval)
-    power_board = PowerBoard(**conf)
+    power_board: PowerBoard = PowerBoard(**conf)
     power_board.logger.info(f'Power board setup: {power_board}')
+
+    objects['power_board'] = power_board
+    objects['repeat_interval'] = repeat_interval
+    objects['conf'] = conf
+
     yield
     power_board.logger.info('Shutting down power board')
 
@@ -42,24 +43,24 @@ def lifespan(app: FastAPI):
 app = FastAPI()
 
 
-@repeat_every(seconds=repeat_interval, wait_first=True)
+@repeat_every(seconds=60, wait_first=True)
 def record_readings():
     """Record the current readings in the db."""
-    global power_board
+    power_board = objects['power_board']
     return power_board.record(collection_name='power')
 
 
 @app.get('/')
 async def root():
     """Returns the power board status."""
-    global power_board
+    power_board = objects['power_board']
     return power_board.status
 
 
 @app.get('/readings')
 async def readings():
     """Return the current readings as a dict."""
-    global power_board
+    power_board = objects['power_board']
     return power_board.to_dataframe().to_dict()
 
 
@@ -81,7 +82,7 @@ def do_command(relay_command: RelayCommand):
     This function performs the actual relay control and is used by both request
     types.
     """
-    global power_board
+    power_board = objects['power_board']
     relay_id = relay_command.relay
     try:
         relay = power_board.relay_labels[relay_id]
