@@ -45,7 +45,6 @@ async def lifespan(app: FastAPI):
         while True:
             time.sleep(record_interval)
             power_board.record(collection_name='power')
-            power_board.logger.debug('Recorded power reading')
 
     # Create a thread to record the readings at an interval.
     power_thread = Thread(target=record_readings)
