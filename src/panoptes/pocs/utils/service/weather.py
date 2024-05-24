@@ -58,7 +58,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.on_event('startup')
 @repeat_every(seconds=60, wait_first=True)
 def record_readings():
     """Record the current readings in the db."""
