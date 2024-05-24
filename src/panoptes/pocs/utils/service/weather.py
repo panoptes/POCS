@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
         raise RuntimeError('Could not connect to weather station.')
 
     yield
-    print('Shutting down weather station')
+    weather_station.logger.info('Shutting down weather station')
 
 
 app = FastAPI(lifespan=lifespan)

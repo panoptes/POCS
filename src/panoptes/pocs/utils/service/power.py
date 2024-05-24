@@ -1,10 +1,11 @@
+import time
 from contextlib import asynccontextmanager
 from enum import auto
+from threading import Thread
 from typing import Union
 
 from fastapi import FastAPI
 from fastapi_utils.enums import StrEnum
-from fastapi_utils.tasks import repeat_every
 from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
 
@@ -35,18 +36,27 @@ async def lifespan(app: FastAPI):
     power_board.logger.info(f'Power board setup: {power_board}')
     app_objects['power_board'] = power_board
     app_objects['conf'] = conf
+
+    # Set up a thread to record the readings at an interval.
+    def record_readings():
+        """Record the current readings in the db."""
+        record_interval = conf.get('record_interval', 60)
+        power_board.logger.info(f'Setting up power recording {record_interval=}')
+        while True:
+            time.sleep(record_interval)
+            power_board.record(collection_name='power')
+            power_board.logger.debug('Recorded power reading')
+
+    # Create a thread to record the readings at an interval.
+    power_thread = Thread(target=record_readings)
+    power_thread.daemon = True
+    power_thread.start()
+
     yield
     power_board.logger.info('Shutting down power board')
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-@repeat_every(seconds=60, wait_first=True)
-def record_readings():
-    """Record the current readings in the db."""
-    power_board = app_objects['power_board']
-    return power_board.record(collection_name='power')
 
 
 @app.get('/')
