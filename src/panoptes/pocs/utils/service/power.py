@@ -27,7 +27,7 @@ repeat_interval: int = 60
 
 
 @asynccontextmanager
-def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):
     """Context manager for the lifespan of the app."""
     power_board = PowerBoard(**conf)
     power_board.logger.info(f'Power board setup: {power_board}')
