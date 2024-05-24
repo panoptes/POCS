@@ -1,9 +1,11 @@
+import time
+from contextlib import asynccontextmanager
 from enum import auto
+from threading import Thread
 from typing import Union
 
 from fastapi import FastAPI
 from fastapi_utils.enums import StrEnum
-from fastapi_utils.tasks import repeat_every
 from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
 
@@ -20,37 +22,54 @@ class RelayCommand(BaseModel):
     command: RelayAction
 
 
-app = FastAPI()
-power_board: PowerBoard
-conf = get_config('environment.power', {})
+app_objects = {}
 
 
-@app.on_event('startup')
-async def startup():
-    global power_board
-    power_board = PowerBoard(**get_config('environment.power', {}))
-    print(f'Power board setup: {power_board}')
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Context manager for the lifespan of the app.
+
+    This will connect to the power board and record readings at a regular interval.
+    """
+    conf: dict = get_config('environment.power', {})
+    power_board = PowerBoard(**conf)
+    power_board.logger.info(f'Power board setup: {power_board}')
+    app_objects['power_board'] = power_board
+    app_objects['conf'] = conf
+
+    # Set up a thread to record the readings at an interval.
+    def record_readings():
+        """Record the current readings in the db."""
+        record_interval = conf.get('record_interval', 60)
+        power_board.logger.info(f'Setting up power recording {record_interval=}')
+        while True:
+            time.sleep(record_interval)
+            power_board.record(collection_name='power')
+
+    # Create a thread to record the readings at an interval.
+    power_thread = Thread(target=record_readings)
+    power_thread.daemon = True
+    power_thread.start()
+
+    yield
+    power_board.logger.info('Shutting down power board, please wait.')
+    power_thread.join()
 
 
-@app.on_event('startup')
-@repeat_every(seconds=conf.get('record_interval', 60), wait_first=True)
-def record_readings():
-    """Record the current readings in the db."""
-    global power_board
-    return power_board.record(collection_name='power')
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get('/')
 async def root():
     """Returns the power board status."""
-    global power_board
+    power_board = app_objects['power_board']
     return power_board.status
 
 
 @app.get('/readings')
 async def readings():
     """Return the current readings as a dict."""
-    global power_board
+    power_board = app_objects['power_board']
     return power_board.to_dataframe().to_dict()
 
 
@@ -63,7 +82,7 @@ def control_relay(relay_command: RelayCommand):
 @app.get('/relay/{relay}/control/{command}')
 def control_relay_url(relay: Union[int, str], command: str = 'turn_on'):
     """Control a relay via a GET request"""
-    return do_command(RelayCommand(relay=relay, command=command))
+    return do_command(RelayCommand(relay=relay, command=RelayAction(command)))
 
 
 def do_command(relay_command: RelayCommand):
@@ -72,7 +91,7 @@ def do_command(relay_command: RelayCommand):
     This function performs the actual relay control and is used by both request
     types.
     """
-    global power_board
+    power_board = app_objects['power_board']
     relay_id = relay_command.relay
     try:
         relay = power_board.relay_labels[relay_id]
