@@ -75,6 +75,6 @@ async def status():
 
 
 @app.get('/config')
-async def get_config():
+async def get_ws_config():
     """Returns the power board status."""
     return app_objects['weather_station']
