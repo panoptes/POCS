@@ -2,19 +2,18 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional, Dict, List, Callable
 from functools import partial
+from typing import Optional, Dict, List, Callable
+
 import pandas as pd
-from panoptes.utils import error
-
-from streamz.dataframe import PeriodicDataFrame
-
 from astropy import units as u
-
+from panoptes.utils import error
 from panoptes.utils.serial.device import find_serial_port, SerialDevice
 from panoptes.utils.serializers import to_json, from_json
-from panoptes.pocs.base import PanBase
 from panoptes.utils.time import current_time
+from streamz.dataframe import PeriodicDataFrame
+
+from panoptes.pocs.base import PanBase
 
 
 class PinState(IntEnum):
@@ -106,7 +105,8 @@ class PowerBoard(PanBase):
                  dataframe_period: int = 1,
                  mean_interval: Optional[int] = 5,
                  arduino_board_name: str = 'power_board',
-                 *args, **kwargs):
+                 *args, **kwargs
+                 ):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
@@ -146,11 +146,12 @@ class PowerBoard(PanBase):
 
         self.logger.debug(f'Setting up Power board connection for {name=} on {self.port}')
         self._ignore_readings = 5
-        self.arduino_board = SerialDevice(port=self.port,
-                                          serial_settings=dict(baudrate=9600),
-                                          reader_callback=reader_callback,
-                                          name=arduino_board_name
-                                          )
+        self.arduino_board = SerialDevice(
+            port=self.port,
+            serial_settings=dict(baudrate=9600),
+            reader_callback=reader_callback,
+            name=arduino_board_name
+        )
 
         self.relays: List[Relay] = list()
         self.relay_labels: Dict[str, Relay] = dict()
@@ -164,8 +165,10 @@ class PowerBoard(PanBase):
 
         self.dataframe = None
         if dataframe_period is not None:
-            self.dataframe = PeriodicDataFrame(interval=f'{dataframe_period}s',
-                                               datafn=self.to_dataframe)
+            self.dataframe = PeriodicDataFrame(
+                interval=f'{dataframe_period}s',
+                datafn=self.to_dataframe
+            )
 
         self._mean_interval = mean_interval
 
@@ -175,7 +178,10 @@ class PowerBoard(PanBase):
     def status(self):
         readings = self.readings
         if not readings:
-            self.logger.info('No readings available. If the system just started, please wait a moment.')
+            self.logger.warning(
+                'No readings available. '
+                'If system just started please wait a moment.'
+                )
             return {}
         status = {
             r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
@@ -191,6 +197,9 @@ class PowerBoard(PanBase):
         """Return the rolling mean of the readings. """
         time_start = (current_time() - self._mean_interval * u.second).to_datetime()
         df = self.to_dataframe()[time_start:]
+        if len(df) == 0:
+            return {}
+
         values = df.mean().astype('int').to_dict()
 
         # Add the most recent ac_ok and battery_low check.
@@ -258,11 +267,12 @@ class PowerBoard(PanBase):
 
             # Create relay object.
             self.logger.debug(f'Creating {relay_label=} for {relay_config!r}')
-            relay = Relay(name=relay_name,
-                          label=relay_config.get('label', ''),
-                          relay_index=relay_index,
-                          default_state=default_state
-                          )
+            relay = Relay(
+                name=relay_name,
+                label=relay_config.get('label', ''),
+                relay_index=relay_index,
+                default_state=default_state
+            )
 
             # Add convenience methods on the relay itself.
             setattr(relay, 'turn_on', partial(self.turn_on, relay.label))
@@ -312,7 +322,7 @@ class PowerBoard(PanBase):
 
         # Check we got a valid reading.
         if len(data[relay_key]) != len(TruckerRelayIndex) \
-                and len(data[values_key]) != len(TruckerRelayIndex):
+            and len(data[values_key]) != len(TruckerRelayIndex):
             self.logger.debug('Did not get a full valid reading')
             return
 
@@ -339,11 +349,13 @@ class PowerBoard(PanBase):
         return f'{self.name} [{relay_states}]'
 
     def __repr__(self):
-        return to_json({
-            'name': self.name,
-            'port': self.port,
-            'relays': [dict(name=r.name, label=r.label, state=r.state.name) for r in self.relays],
-        })
+        return to_json(
+            {
+                'name': self.name,
+                'port': self.port,
+                'relays': [dict(name=r.name, label=r.label, state=r.state.name) for r in self.relays],
+            }
+        )
 
     @classmethod
     def lookup_port(cls, vendor_id=0x2341, product_id=0x0043, **kwargs):
