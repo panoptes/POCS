@@ -54,7 +54,10 @@ async def lifespan(app: FastAPI):
                 weather_station.logger.info(f'Setting up weather recording {record_interval=}')
                 while True:
                     time.sleep(record_interval)
-                    weather_station.record()
+                    try:
+                        weather_station.record()
+                    except Exception as e:
+                        weather_station.logger.warning(f'Could not get weather record: {e}')
 
             # Create a thread to record the readings at an interval
             weather_thread = Thread(target=record_readings)
