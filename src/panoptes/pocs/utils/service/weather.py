@@ -1,8 +1,9 @@
 import os
+import time
 from contextlib import asynccontextmanager, suppress
+from threading import Thread
 
 from fastapi import FastAPI
-from fastapi_utils.tasks import repeat_every
 from panoptes.utils.config.client import get_config
 from serial.tools.list_ports import comports as get_comports
 
@@ -44,6 +45,21 @@ async def lifespan(app: FastAPI):
         try:
             weather_station = WeatherStation(**conf)
             weather_station.logger.info(f'Weather station setup: {weather_station}')
+
+            def record_readings():
+                """Record the current readings in the db."""
+                record_interval = conf.get('record_interval', 60)
+                weather_station.logger.info(f'Setting up weather recording {record_interval=}')
+                while True:
+                    time.sleep(record_interval)
+                    weather_station.record()
+                    weather_station.logger.debug('Recorded weather reading')
+
+            # Create a thread to record the readings at an interval
+            weather_thread = Thread(target=record_readings)
+            weather_thread.daemon = True
+            weather_thread.start()
+
             app_objects['weather_station'] = weather_station
             break
         except Exception as e:
@@ -56,15 +72,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-@repeat_every(seconds=60, wait_first=True)
-def record_readings():
-    """Record the current readings in the db."""
-    weather_station = app_objects['weather_station']
-    reading = weather_station.record()
-    weather_station.logger.debug(f'Recorded weather reading: {reading}')
-    return reading
 
 
 @app.get('/status')
