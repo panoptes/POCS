@@ -33,6 +33,8 @@ async def lifespan(app: FastAPI):
     with suppress(FileNotFoundError):
         ioptron_port = os.readlink('/dev/ioptron')
 
+    weather_thread: Thread = None
+
     # Try to connect to the weather station.
     for port in ports:
         if 'ttyUSB' not in port:
@@ -68,7 +70,8 @@ async def lifespan(app: FastAPI):
         raise RuntimeError('Could not connect to weather station.')
 
     yield
-    weather_station.logger.info('Shutting down weather station')
+    weather_station.logger.info('Shutting down weather station, please wait')
+    weather_thread.join()
 
 
 app = FastAPI(lifespan=lifespan)

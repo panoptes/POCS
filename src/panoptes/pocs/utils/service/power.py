@@ -53,7 +53,8 @@ async def lifespan(app: FastAPI):
     power_thread.start()
 
     yield
-    power_board.logger.info('Shutting down power board')
+    power_board.logger.info('Shutting down power board, please wait.')
+    power_thread.join()
 
 
 app = FastAPI(lifespan=lifespan)
