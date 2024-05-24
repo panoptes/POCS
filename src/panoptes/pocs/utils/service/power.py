@@ -26,7 +26,10 @@ app_objects = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Context manager for the lifespan of the app."""
+    """Context manager for the lifespan of the app.
+
+    This will connect to the power board and record readings at a regular interval.
+    """
     conf: dict = get_config('environment.power', {})
     power_board = PowerBoard(**conf)
     power_board.logger.info(f'Power board setup: {power_board}')
