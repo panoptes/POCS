@@ -174,6 +174,9 @@ class PowerBoard(PanBase):
     @property
     def status(self):
         readings = self.readings
+        if not readings:
+            self.logger.info('No readings available. If the system just started, please wait a moment.')
+            return {}
         status = {
             r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
             for r in self.relays
