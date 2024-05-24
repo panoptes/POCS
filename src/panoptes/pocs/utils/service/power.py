@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from enum import auto
 from typing import Union
 
@@ -20,19 +21,24 @@ class RelayCommand(BaseModel):
     command: RelayAction
 
 
-app = FastAPI()
 power_board: PowerBoard
-conf = get_config('environment.power', {})
+conf: dict
 
 
-@app.on_event('startup')
-async def startup():
+@asynccontextmanager
+def lifespan(app: FastAPI):
+    global conf
     global power_board
-    power_board = PowerBoard(**get_config('environment.power', {}))
-    print(f'Power board setup: {power_board}')
+    conf = get_config('environment.power', {})
+    power_board = PowerBoard(**conf)
+    power_board.logger.info(f'Power board setup: {power_board}')
+    yield
+    power_board.logger.info('Shutting down power board')
 
 
-@app.on_event('startup')
+app = FastAPI()
+
+
 @repeat_every(seconds=conf.get('record_interval', 60), wait_first=True)
 def record_readings():
     """Record the current readings in the db."""
