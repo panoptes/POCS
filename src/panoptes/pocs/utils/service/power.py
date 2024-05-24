@@ -23,13 +23,16 @@ class RelayCommand(BaseModel):
 
 power_board: PowerBoard
 conf: dict
+repeat_interval: int = 60
 
 
 @asynccontextmanager
 def lifespan(app: FastAPI):
     global conf
+    global repeat_interval
     global power_board
     conf = get_config('environment.power', {})
+    repeat_interval = conf.get('record_interval', repeat_interval)
     power_board = PowerBoard(**conf)
     power_board.logger.info(f'Power board setup: {power_board}')
     yield
@@ -39,7 +42,7 @@ def lifespan(app: FastAPI):
 app = FastAPI()
 
 
-@repeat_every(seconds=conf.get('record_interval', 60), wait_first=True)
+@repeat_every(seconds=repeat_interval, wait_first=True)
 def record_readings():
     """Record the current readings in the db."""
     global power_board
