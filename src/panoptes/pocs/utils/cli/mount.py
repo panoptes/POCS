@@ -104,7 +104,7 @@ def set_park_position(
 
 
 @app.command(name='slew-home')
-def search_for_home(
+def slew_to_home(
     confirm: Annotated[bool, typer.Option(
         ..., '--confirm',
         prompt='Are you sure you want to slew to the home position?',
