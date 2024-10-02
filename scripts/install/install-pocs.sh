@@ -85,6 +85,7 @@ function system_deps() {
     exiftool \
     fonts-powerline \
     gcc \
+    gphoto2 \
     htop \
     httpie \
     jo \
@@ -258,21 +259,17 @@ function do_install() {
   declare -x CMDS=(
     'fix_time'
     'system_deps'
-    'install_gphoto2'
     'install_arduino'
     'get_pocs_repo'
     'make_directories'
-    'write_udev_entries'
   )
 
   declare -x STEPS=(
     'Syncing time'
     'Installing system dependencies'
-    'Installing gphoto2'
     'Installing arduino-cli'
     'Getting POCS repo'
     'Making directories'
-    'Writing udev entries'
   )
 
   if [[ "${USE_ZSH}" == true ]]; then
