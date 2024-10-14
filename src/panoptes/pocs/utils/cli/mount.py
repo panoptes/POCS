@@ -1,5 +1,4 @@
 import re
-import time
 from pathlib import Path
 
 import serial
@@ -11,7 +10,7 @@ from human_readable import time_delta as friendly_time_delta
 from panoptes.utils.config.client import set_config
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.serial.device import get_serial_port_info
-from panoptes.utils.time import current_time
+from panoptes.utils.time import CountdownTimer, current_time
 from rich import print
 from typing_extensions import Annotated
 
@@ -145,10 +144,6 @@ def slew_to_target(
         prompt='The name of the target to slew the mount to.',
         help='The name of the target to slew the mount to.'
     )] = None,
-    horizon: Annotated[float, typer.Option(
-        ..., '--horizon', '-h',
-        help='The horizon of the target to slew the mount to.'
-    )] = 30,
 ):
     """Slews the mount target position."""
     print(f'Looking for coordinates for {target}.')
@@ -167,25 +162,26 @@ def slew_to_target(
 
     # Get the observer location
     location = create_location_from_config()
-
-    print(f'Using {coords=} from {location.observer.name}')
+    observe_horizon = location.location.get('horizon', 30 * u.deg)
 
     # Check that the target is observable.
-    is_observable = location.observer.target_is_up(current_time(), coords, horizon=horizon * u.deg)
+    is_observable = location.observer.target_is_up(current_time(), coords, horizon=observe_horizon)
     if not is_observable:
         print(f'[red]Target is not observable[/red]')
         return typer.Abort()
 
-    # Show target info for observatory.
-    target_set_time = location.observer.target_set_time(current_time(), coords, horizon=horizon * u.deg, which='next')
-    print(
-        f'Target will be above {horizon}° for '
-        f'{friendly_time_delta(current_time().to_datetime(), target_set_time.to_datetime())}'
-    )
-
     # Get AltAz for coordinates.
     alt_az = coords.transform_to(AltAz(location=location.earth_location, obstime=current_time()))
-    print(f'Current position: Alt={alt_az.alt:.02f} Az={alt_az.az:.02f}')
+    print(
+        f'Current position: '
+        f'\n\tRA/Dec: {coords.ra:.02f} {coords.dec:.02f}'
+        f'\n\t AltAz: {alt_az.alt:.02f} {alt_az.az:.02f}'
+    )
+
+    # Show target info for observatory.
+    target_set_time = location.observer.target_set_time(current_time(), coords, horizon=observe_horizon, which='next')
+    set_delta = (target_set_time - current_time()).to_datetime()
+    print(f'Target will be above {observe_horizon}° for {friendly_time_delta(set_delta)}')
 
     # If not specified on the command line, ask for confirmation.
     if not confirm:
@@ -195,6 +191,7 @@ def slew_to_target(
         print(f'[red]Dry run, will not move the mount.[/red]')
         return typer.Abort()
 
+    # Initialize the mount and slew to the target.
     mount = create_mount_from_config()
     mount.initialize()
     mount.set_target_coordinates(coords)
@@ -202,9 +199,13 @@ def slew_to_target(
 
     print('[green]Starting to track target, press Ctrl-C to cancel[/green]')
     try:
+        # Show the status every 5 seconds.
+        timer = CountdownTimer(5)
         while mount.is_tracking:
-            print(mount.status)
-            time.sleep(1)
+            if timer.expired():
+                print(mount.status)
+                timer.restart()
+            timer.sleep(1)
     except KeyboardInterrupt:
         print('[red]Tracking interrupted.[/red]')
     finally:
