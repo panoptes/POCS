@@ -1,4 +1,5 @@
 import re
+import time
 from pathlib import Path
 
 import serial
@@ -137,7 +138,6 @@ def slew_to_home(
 def slew_to_target(
     confirm: Annotated[bool, typer.Option(
         ..., '--confirm',
-        prompt='Are you sure you want to slew to the target position?',
         help='Confirm slew to target.'
     )] = False,
     target: Annotated[str, typer.Option(
@@ -145,16 +145,12 @@ def slew_to_target(
         prompt='The name of the target to slew the mount to.',
         help='The name of the target to slew the mount to.'
     )] = None,
-    dry_run: Annotated[bool, typer.Option(
-        ..., '--dry-run',
-        help="Show target info but don't actually initialize or move the mount."
-    )] = False,
+    horizon: Annotated[float, typer.Option(
+        ..., '--horizon', '-h',
+        help='The horizon of the target to slew the mount to.'
+    )] = 30,
 ):
     """Slews the mount target position."""
-    if not confirm:
-        print('[red]Cancelled.[/red]')
-        return typer.Abort()
-
     print(f'Looking for coordinates for {target}.')
     coords = None
     try:
@@ -175,15 +171,15 @@ def slew_to_target(
     print(f'Using {coords=} from {location.observer.name}')
 
     # Check that the target is observable.
-    is_observable = location.observer.target_is_up(current_time(), coords, horizon=30. * u.deg)
+    is_observable = location.observer.target_is_up(current_time(), coords, horizon=horizon * u.deg)
     if not is_observable:
         print(f'[red]Target is not observable[/red]')
         return typer.Abort()
 
     # Show target info for observatory.
-    target_set_time = location.observer.target_set_time(current_time(), coords, horizon=30. * u.deg, which='next')
+    target_set_time = location.observer.target_set_time(current_time(), coords, horizon=horizon * u.deg, which='next')
     print(
-        f'Target will be above 30° for '
+        f'Target will be above {horizon}° for '
         f'{friendly_time_delta(current_time().to_datetime(), target_set_time.to_datetime())}'
     )
 
@@ -191,7 +187,11 @@ def slew_to_target(
     alt_az = coords.transform_to(AltAz(location=location.earth_location, obstime=current_time()))
     print(f'Current position: Alt={alt_az.alt:.02f} Az={alt_az.az:.02f}')
 
-    if dry_run:
+    # If not specified on the command line, ask for confirmation.
+    if not confirm:
+        confirm = typer.confirm('Are you sure you want to slew to the target position?')
+
+    if not confirm:
         print(f'[red]Dry run, will not move the mount.[/red]')
         return typer.Abort()
 
@@ -200,9 +200,17 @@ def slew_to_target(
     mount.set_target_coordinates(coords)
     mount.slew_to_target(blocking=True)
 
-    # TODO create a watchdog for park/safety?
-
-    mount.disconnect()
+    print('[green]Starting to track target, press Ctrl-C to cancel[/green]')
+    try:
+        while mount.is_tracking:
+            print(mount.status)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print('[red]Tracking interrupted.[/red]')
+    finally:
+        print("[green]Moving mount to the home position (don't forget to park!)[/green]")
+        mount.slew_to_home(blocking=True)
+        mount.disconnect()
 
 
 @app.command(name='search-home')
