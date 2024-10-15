@@ -12,6 +12,7 @@ from panoptes.utils.config.client import set_config
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.utils.time import CountdownTimer, current_time
+from pick import pick
 from rich import print
 from typing_extensions import Annotated
 
@@ -170,8 +171,8 @@ def slew_to_target(
     alt_az = coords.transform_to(AltAz(location=location.earth_location, obstime=current_time()))
     print(
         f'Current position: '
-        f'\n\tRA/Dec: {coords.ra:.02f} {coords.dec:.02f}'
-        f'\n\t AltAz: {alt_az.alt:.02f} {alt_az.az:.02f}'
+        f'\n\tRA/Dec: {coords.ra:5.02f} {coords.dec:+5.02f}'
+        f'\n\t AltAz: {alt_az.alt:5.02f} {alt_az.az:5.02f}'
     )
 
     # Show target info for observatory.
@@ -181,8 +182,10 @@ def slew_to_target(
 
     # If not specified on the command line, ask for confirmation.
     if not confirm:
-        print('[red]¡ALERT! This command does not do any safety checking for weather, etc. '
-              'Please use with caution.[/red]')
+        print(
+            '[red]¡ALERT! This command does not do any safety checking for weather, etc. '
+            'Please use with caution.[/red]'
+        )
         confirm = typer.confirm('Are you sure you want to slew to the target position?')
 
     if not confirm:
@@ -193,22 +196,29 @@ def slew_to_target(
     mount = create_mount_from_config()
     mount.initialize()
     mount.set_target_coordinates(coords)
+    mount.unpark()
     mount.slew_to_target(blocking=True)
 
     print('[green]Starting to track target, press Ctrl-C to cancel[/green]')
     try:
         # Show the status every 5 seconds.
-        timer = CountdownTimer(5)
+        timer = CountdownTimer(30)
         while mount.is_tracking:
             if timer.expired():
-                print(mount.status)
+                print(f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}")
                 timer.restart()
             timer.sleep(1)
     except KeyboardInterrupt:
         print('[red]Tracking interrupted.[/red]')
     finally:
-        print("[green]Moving mount to the home position (don't forget to park!)[/green]")
-        mount.slew_to_home(blocking=True)
+        option, index = pick(['Home', 'Park', 'Nothing'], 'What would you like to do next?')
+        if option == 'Home':
+            print("[green]Moving mount to the home position (don't forget to park!)[/green]")
+            mount.slew_to_home(blocking=True)
+        elif option == 'Park':
+            print('[green]Moving mount to the parking position [/green]')
+            mount.home_and_park(blocking=True)
+
         mount.disconnect()
 
 
@@ -253,10 +263,11 @@ def setup_mount(
 
     # Get all the serial ports.
     ports = get_serial_port_info()
+    print(f'Checking on {len(ports)} ports...')
 
     # Loop through all the ports and baudrates.
     for port in ports:
-        if 'ttyUSB' not in port.device:
+        if 'usb' not in port.device.lower():
             continue
         for baudrate in baudrates:
             print(f"Trying {port.device=} at {baudrate=}...")
