@@ -181,6 +181,8 @@ def slew_to_target(
 
     # If not specified on the command line, ask for confirmation.
     if not confirm:
+        print('[red]¡ALERT! This command does not do any safety checking for weather, etc. '
+              'Please use with caution.[/red]')
         confirm = typer.confirm('Are you sure you want to slew to the target position?')
 
     if not confirm:
