@@ -3,6 +3,7 @@ channels:
 dependencies:
   - astroplan
   - astropy
+  - astroquery
   - docopt
   - fastapi
   - google-cloud-firestore
