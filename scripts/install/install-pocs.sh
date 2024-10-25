@@ -59,7 +59,8 @@ DEFAULT_GROUPS="dialout,plugdev,input,sudo"
 # We use htpdate below so this just needs to be a public url w/ trusted time.
 TIME_SERVER="${TIME_SERVER:-google.com}"
 
-CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/24.7.1-2/Miniforge3-Linux-$(uname -m).sh"
+MINIFORGE_VERSION="24.7.1-2"
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/download/${MINIFORGE_VERSION}/Miniforge3-${MINIFORGE_VERSION}-Linux-$(uname -m).sh"
 CONDA_ENV_NAME=conda-pocs
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
