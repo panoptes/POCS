@@ -119,6 +119,9 @@ function install_conda() {
   "${HOME}/conda/bin/conda" init bash
   "${HOME}/conda/bin/conda" init zsh
 
+  source "${HOME}/conda/etc/profile.d/conda.sh"
+  "${HOME}/conda/bin/conda" activate
+
   echo "Creating POCS conda environment"
   "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
 
@@ -235,6 +238,8 @@ function install_arduino() {
 }
 
 function install_gphoto2() {
+  #### NOTE, this is note currently being used as gphoto2 is current in system deps.
+
   # Make sure we are at home.
   cd
 
