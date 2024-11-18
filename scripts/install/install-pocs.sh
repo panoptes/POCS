@@ -115,21 +115,20 @@ function install_conda() {
   /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda"
   rm install-miniforge.sh
 
-  # Initialize conda for the shells.
-  "${HOME}/conda/bin/conda" init bash
-  "${HOME}/conda/bin/conda" init zsh
-
   source "${HOME}/conda/etc/profile.d/conda.sh"
-  "${HOME}/conda/bin/conda" activate
+  source "${HOME}/conda/etc/profile.d/mamba.sh"
+
+  # Initialize conda for the shells.
+  "${HOME}/conda/bin/conda" init bash zsh
 
   echo "Creating POCS conda environment"
-  "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3 mamba
+  "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3
 
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
   cd "${PANDIR}"
-  "${HOME}/conda/envs/${CONDA_ENV_NAME}/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
+  "${HOME}/conda/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
 
 function get_pocs_repo() {
