@@ -229,13 +229,6 @@ function fix_time() {
   timedatectl
 }
 
-function install_arduino() {
-  # Make sure we are at home.
-  cd
-  # Get the arduino-cli tool.
-  curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-}
-
 function do_install() {
   declare -x CMDS=(
     'fix_time'
