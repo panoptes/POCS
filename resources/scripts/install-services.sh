@@ -14,8 +14,8 @@ function install_services() {
   sed -i "s|/home/panoptes|${HOME}|g" "${HOME}/conf_files/pocs-supervisord.conf"
 
   # Reread the supervisord conf and restart.
-  supervisorctl reread
-  supervisorctl update
+  sudo supervisorctl reread
+  sudo supervisorctl update
 }
 
 install_services
