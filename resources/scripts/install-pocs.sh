@@ -6,14 +6,13 @@ PANDIR="${PANDIR:-${HOME}/POCS}"
 # Check if PANDIR exists and if not, clone.
 if [ -d "${PANDIR}" ]; then
   echo "POCS repo already exists."
-  return
+else
+  echo "Cloning POCS repo."
+  git clone https://github.com/panoptes/POCS "${PANDIR}"
+  cd "${PANDIR}"
+  git checkout "${CODE_BRANCH}"
+  cd
 fi
-
-echo "Cloning POCS repo."
-git clone https://github.com/panoptes/POCS "${PANDIR}"
-cd "${PANDIR}"
-git checkout "${CODE_BRANCH}"
-cd
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
