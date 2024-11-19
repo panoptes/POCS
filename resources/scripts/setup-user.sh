@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-PANUSER="${PANUSER:-$USER}"
-
 function setup_user() {
   # Add an SSH key if one doesn't exist.
   if [[ ! -f "${HOME}/.ssh/id_rsa" ]]; then

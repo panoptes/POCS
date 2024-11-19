@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
-PANUSER="${PANUSER:-$USER}"
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function get_pocs_repo() {
-  echo "Cloning POCS repo."
+  # Check if PANDIR exists and if not, clone.
+  if [ -d "${PANDIR}" ]; then
+    echo "POCS repo already exists."
+    return
+  fi
 
+  echo "Cloning POCS repo."
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "${CODE_BRANCH}"

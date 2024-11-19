@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-PANUSER="${PANUSER:-$USER}"
-PANDIR="${PANDIR:-${HOME}/pocs}"
+PANUSER="${PANUSER:-panoptes}"
+PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then

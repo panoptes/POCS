@@ -4,14 +4,14 @@ function system_deps() {
   echo "Installing system dependencies."
 
   # Set up passwordless sudo for all sudo group.
-  echo "%sudo ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/panoptes
+  echo "%sudo ALL=(ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/panoptes
 
   # Clean up problems.
-  sudo apt-get -y -qq purge needrestart
-  sudo apt-get update --fix-missing -y -qq
-  sudo apt-get -y -qq full-upgrade
+  apt-get -y -qq purge needrestart
+  apt-get update --fix-missing -y -qq
+  apt-get -y -qq full-upgrade
 
-  sudo apt-get -y -qq install \
+  apt-get -y -qq install \
     ack \
     astrometry.net \
     astrometry-data-tycho2-10-19 \
@@ -33,7 +33,7 @@ function system_deps() {
     supervisor \
     wget \
     zsh
-  sudo apt-get -y -qq autoremove
+  apt-get -y -qq autoremove
 }
 
 system_deps

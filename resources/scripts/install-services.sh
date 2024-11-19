@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
-PANUSER="${PANUSER:-$USER}"
-PANDIR="${PANDIR:-${HOME}/pocs}"
+PANUSER="${PANUSER:-panoptes}"
 
 function install_services() {
   echo "Installing supervisor services."
 
   # Make supervisor read our conf file at its current location.
-  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
+  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | tee -a /etc/supervisor/supervisord.conf
 
   # Change the user and home directory.
   sed -i "s/chown=panoptes:panoptes/chown=${PANUSER}:${PANUSER}/g" "${HOME}/conf_files/pocs-supervisord.conf"
@@ -15,8 +14,8 @@ function install_services() {
   sed -i "s|/home/panoptes|${HOME}|g" "${HOME}/conf_files/pocs-supervisord.conf"
 
   # Reread the supervisord conf and restart.
-  sudo supervisorctl reread
-  sudo supervisorctl update
+  supervisorctl reread
+  supervisorctl update
 }
 
 install_services
