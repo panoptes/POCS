@@ -2,25 +2,24 @@
 set -e
 
 echo "Installing POCS"
-echo "Installing POCS" >> install.log
 
 echo "Setting up user."
-source ./setup-user.sh 2>&1 | tee -a install.log
+source ./setup-user.sh
 
 echo "Fixing system time."
-source ./fix-time.sh 2>&1 | tee -a install.log
+source ./fix-time.sh
 
 echo "Installing system dependencies."
-source ./install-system-deps.sh 2>&1 | tee -a install.log
+source ./install-system-deps.sh
 
 echo "Installing POCS software."
-source ./install-pocs.sh 2>&1 | tee -a install.log
+source ./install-pocs.sh
 
 echo "Installing conda python."
-source ./install-conda.sh 2>&1 | tee -a install.log
+source ./install-conda.sh
 
 echo "Installing ZSH for a better shell."
-source ./install-zsh.sh 2>&1 | tee -a install.log
+source ./install-zsh.sh
 
 echo "Installing services so things run at startup."
-source ./install-services.sh 2>&1 | tee -a install.log
+source ./install-services.sh
