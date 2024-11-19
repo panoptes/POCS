@@ -3,12 +3,12 @@
 echo "Installing system dependencies."
 
 # Clean up problems.
-apt-get update --fix-missing -y
+sudo apt-get update --fix-missing -y
 
 # Upgrade.
-apt-get -y full-upgrade
+sudo apt-get -y full-upgrade
 
-apt-get -y install \
+sudo apt-get -y install \
   ack \
   astrometry.net \
   astrometry-data-tycho2-10-19 \
@@ -34,4 +34,4 @@ apt-get -y install \
   wget \
   zsh
 
-apt-get -y autoremove
+sudo apt-get -y autoremove
