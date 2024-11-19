@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
+CONDA_ENV_NAME=conda-pocs
+
+function install_conda() {
+  echo "Installing miniforge conda"
+
+  wget -q "${CONDA_URL}" -O install-miniforge.sh
+  /bin/sh install-miniforge.sh -b -f -p "${HOME}/conda"
+  rm install-miniforge.sh
+
+  source "${HOME}/conda/etc/profile.d/conda.sh"
+  source "${HOME}/conda/etc/profile.d/mamba.sh"
+
+  # Initialize conda for the shells.
+  "${HOME}/conda/bin/conda" init bash zsh
+
+  echo "Creating POCS conda environment"
+  "${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3
+
+  # Activate by default
+  echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
+
+  cd "${PANDIR}"
+  "${HOME}/conda/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
+}
+
+install_conda
