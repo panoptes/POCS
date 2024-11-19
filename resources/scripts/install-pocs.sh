@@ -2,7 +2,7 @@
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
 PANUSER="${PANUSER:-$USER}"
-PANDIR="${PANDIR:-${HOME}/pocs}"
+PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function get_pocs_repo() {
   echo "Cloning POCS repo."
