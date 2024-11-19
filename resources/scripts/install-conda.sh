@@ -22,7 +22,6 @@ function install_conda() {
   # Activate by default
   echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
 
-  cd "${PANDIR}"
   "${HOME}/conda/bin/mamba" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f environment.yaml
 }
 
