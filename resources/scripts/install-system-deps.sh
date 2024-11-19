@@ -27,8 +27,6 @@ sudo apt-get -y install \
   libcfitsio-bin \
   make \
   nano \
-  python3 \
-  python3-pip \
   supervisor \
   vim-nox \
   wget \
