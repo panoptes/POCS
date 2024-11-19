@@ -7,7 +7,7 @@ function install_zsh() {
   if [ ! -d "$ZSH_CUSTOM" ]; then
     echo "Using zsh for a better shell experience."
 
-    chsh --shell /usr/bin/zsh "${PANUSER}"
+    sudo chsh --shell /usr/bin/zsh "${PANUSER}"
 
     # Oh my zsh
     wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
