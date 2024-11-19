@@ -236,19 +236,6 @@ function install_arduino() {
   curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
 }
 
-function install_gphoto2() {
-  #### NOTE, this is note currently being used as gphoto2 is current in system deps.
-
-  # Make sure we are at home.
-  cd
-
-  # Get the gphoto2-updater tool.
-  wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/.env && chmod +x gphoto2-updater.sh
-
-  # Install the development version.
-  sudo ./gphoto2-updater.sh -d
-}
-
 function do_install() {
   declare -x CMDS=(
     'fix_time'
@@ -321,5 +308,3 @@ function start_steps() {
 
   tput cnorm
 }
-
-do_install
