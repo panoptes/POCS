@@ -229,8 +229,7 @@ def setup_mount(
                             udev_str += f'SYMLINK+="ioptron"'
                             
                             udev_fn = Path('92-panoptes.rules')
-                            with udev_fn.open('w') as f:
-                                f.write(udev_str)
+                            udev_fn.write_text(udev_str)
                             
                             write_port = '/dev/ioptron'
                             
