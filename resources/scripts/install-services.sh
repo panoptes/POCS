@@ -6,7 +6,7 @@ function install_services() {
   echo "Installing supervisor services."
 
   # Make supervisor read our conf file at its current location.
-  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | tee -a /etc/supervisor/supervisord.conf
+  echo "files = ${HOME}/conf_files/pocs-supervisord.conf" | sudo tee -a /etc/supervisor/supervisord.conf
 
   # Change the user and home directory.
   sed -i "s/chown=panoptes:panoptes/chown=${PANUSER}:${PANUSER}/g" "${HOME}/conf_files/pocs-supervisord.conf"
