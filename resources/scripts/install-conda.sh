@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
-CONDA_ENV_NAME=conda-pocs
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 echo "Installing miniforge conda"
@@ -20,5 +19,3 @@ echo "Creating POCS conda environment"
 
 # Activate by default
 echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
-
-"${HOME}/conda/bin/conda" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f "${PANDIR}/environment.yaml"

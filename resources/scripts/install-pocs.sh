@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
+CONDA_ENV_NAME=conda-pocs
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 # Check if PANDIR exists and if not, clone.
@@ -13,6 +14,9 @@ else
   git checkout "${CODE_BRANCH}"
   cd
 fi
+
+echo "Installing POCS into ${CONDA_ENV_NAME} environment."
+"${HOME}/conda/bin/conda" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f "${PANDIR}/environment.yaml"
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
