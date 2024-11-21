@@ -8,4 +8,7 @@ git checkout "${BRANCH}"
 cd resources/scripts
 ./install.sh
 
+"${HOME}/conda/envs/conda-pocs/pocs" config setup
+
+echo
 echo "POCS installed, please reboot."
