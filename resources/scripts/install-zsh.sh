@@ -4,7 +4,7 @@ PANUSER="${PANUSER:-panoptes}"
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function install_zsh() {
-  if [ ! -d "$ZSH" ]; then
+  if [ ! -d "${HOME}/.oh-my-zsh" ]; then
     echo "Using zsh for a better shell experience."
 
     sudo chsh --shell /usr/bin/zsh "${PANUSER}"
