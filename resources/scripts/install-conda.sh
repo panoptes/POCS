@@ -2,6 +2,7 @@
 
 CONDA_URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh"
 PANDIR="${PANDIR:-${HOME}/POCS}"
+CONDA_ENV_NAME=conda-pocs
 
 echo "Installing miniforge conda"
 
