@@ -128,7 +128,7 @@ def setup_power(
         do_install: Annotated[bool, typer.Option(..., '--install',
                                                  prompt='Would you like to install the arduino script?',
                                                  help='Install the arduino script.')] = False,
-        install_script: Path = typer.Option('resources/arduino/install-arduino.sh',
+        install_script: Path = typer.Option('resources/arduino/install-power-board.sh',
                                             help='Path to the power monitor script.'),
 ):
     """Sets up the power board port and labels."""

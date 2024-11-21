@@ -38,15 +38,15 @@ folks even report that it works on a Mac.
 To install POCS via the script, open a terminal and enter (you may be prompted for your `sudo` password):
 
 ```bash
-curl -fsSL https://install.projectpanoptes.org > install-pocs.sh
-bash install-pocs.sh
+curl -fsSL https://install.projectpanoptes.org > install.sh
+bash install.sh
 ```
 
 Or using `wget`:
 
 ```bash
-wget -qO- https://install.projectpanoptes.org > install-pocs.sh
-bash install-pocs.sh
+wget -qO- https://install.projectpanoptes.org > install.sh
+bash install.sh
 ```
 
 The install script will ask a few questions at the beginning of the process. If you are unsure of 
