@@ -16,7 +16,7 @@ source "${HOME}/conda/etc/profile.d/conda.sh"
 "${HOME}/conda/bin/conda" init bash zsh
 
 echo "Creating POCS conda environment"
-"${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3
+"${HOME}/conda/bin/conda" create -y -q -n "${CONDA_ENV_NAME}" python=3.12
 
 # Activate by default
 echo "conda activate ${CONDA_ENV_NAME}" >>"${HOME}/.zshrc"
