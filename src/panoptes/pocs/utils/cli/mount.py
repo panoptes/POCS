@@ -324,10 +324,8 @@ def setup_mount(
                             # The name we want it known by.
                             udev_str += f'SYMLINK+="ioptron"'
 
-                            udev_fn = Path('91-panoptes.rules')
-                            with udev_fn.open('w') as f:
-                                f.write(udev_str)
-
+                            udev_fn = Path('92-panoptes.rules')
+                            udev_fn.write_text(udev_str)
                             write_port = '/dev/ioptron'
 
                             print(f'Wrote udev entry to [green]{udev_fn}[/green].')
