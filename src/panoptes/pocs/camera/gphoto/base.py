@@ -2,7 +2,7 @@ import re
 import subprocess
 import time
 from abc import ABC
-from typing import List, Dict, Union
+from typing import Dict, List, Union
 
 from panoptes.utils import error
 from panoptes.utils.images import cr2 as cr2_utils
@@ -252,14 +252,21 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         This will essentially block until the camera is done exposing, which means
         the super call should not have to wait.
         """
-        self.logger.debug(f'Calling get_command_result from base gphoto2 for {self}')
         # Wait for and clear the _command_proc.
-        outs = self.get_command_result(timeout)
-        self.logger.debug(f'Camera response for {self}: {outs}')
-        self._is_exposing_event.clear()
-        self.logger.debug(f'Exposing event cleared for {self}')
-
-        super()._poll_exposure(readout_args, exposure_time, timeout=timeout, interval=interval)
+        try:
+            self.logger.debug(f'Calling get_command_result from base gphoto2 for {self}')
+            # Wait for the exposure to complete, this blocks in gphoto2.
+            outs = self.get_command_result(timeout)
+            self.logger.debug(f'Exposure complete for {self}, getting readout')
+            self._readout(*readout_args)
+        except Exception as err:
+            self.logger.error(f"Error during readout on {self}: {err!r}")
+            self._exposure_error = repr(err)
+            raise err
+        finally:
+            self.logger.debug(f'Camera response for {self}: {outs}')
+            self._is_exposing_event.clear()
+            self.logger.debug(f'Exposing event cleared for {self}')
 
     def _readout(self, filename, headers, *args, **kwargs):
         self.logger.debug(f'Reading Canon DSLR exposure for {filename=}')
