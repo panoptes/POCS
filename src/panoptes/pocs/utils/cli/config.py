@@ -110,7 +110,7 @@ def setup():
         return
 
     # Set the base directory.
-    base_dir = prompt.Prompt.ask('Enter the base directory for POCS', default='/home/panoptes/pocs')
+    base_dir = prompt.Prompt.ask('Enter the base directory for POCS', default='/home/panoptes/POCS')
     set_config('directories.base', base_dir)
 
     # Get the user-friendly name for the unit.
