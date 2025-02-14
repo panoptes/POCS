@@ -13,7 +13,7 @@ class Mount(BaseMount):
     def search_for_home(self):
         """Search for the home position.
 
-        This method uses the internal homing pin on the CEM40 mount to return the
+        This method uses the internal homing pin on the mount to return the
         mount to the home (or zero) position.
         """
         self.logger.info('Searching for the home position.')
@@ -25,7 +25,7 @@ class Mount(BaseMount):
     def set_target_coordinates(self, *args, **kwargs):
         """After setting target coordinates, check number of positions.
 
-        The CEM40 can determine if there are 0, 1, or 2 possible positions
+        The newer mounts can determine if there are 0, 1, or 2 possible positions
         for the given RA/Dec, with the latter being the case for the meridian
         flip.
         """
@@ -38,7 +38,7 @@ class Mount(BaseMount):
             self.logger.warning(f'No possible positions for {self._target_coordinates}')
             return False
 
-        # There is currently a bug with with the CEM40 where it will reset the
+        # There is currently a bug with the CEM40 where it will reset the
         # target coordinates after querying the number of possible positions so
         # we need to set them again.
         target_set = super().set_target_coordinates(*args, **kwargs)
