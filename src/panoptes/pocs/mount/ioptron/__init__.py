@@ -3,6 +3,7 @@ from enum import IntEnum
 
 class MountInfo(IntEnum):
     """The return type given by the MountInfo command to identify the mount."""
+    HAE16 = 12
     CEM25 = 25
     CEM26 = 26
     CEM26EC = 27
