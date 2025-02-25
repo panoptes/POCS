@@ -36,15 +36,23 @@ def analyze_ra_rotation(rotate_fn):
     rotate_hough_res = hough_circle(rotate_edges, rotate_hough_radii)
     rotate_accums, rotate_cx, rotate_cy, rotate_radii = hough_circle_peaks(
         rotate_hough_res, rotate_hough_radii, total_num_peaks=1
-        )
+    )
 
     return d1.to_original_position((rotate_cx[-1], rotate_cy[-1]))
 
 
-def plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn=None):
-
-    d0 = getdata(pole_fn) - 2048.
-    d1 = getdata(rotate_fn) - 2048.
+def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
+    """ Overlay the celestial pole and RA rotation axis images
+    Args:
+        pole_fn (str): FITS file of polar center
+        rotate_fn (str): FITS file of RA rotation image
+        pole_center (tuple(int)): Polar center XY coordinates
+        rotate_center (tuple(int)): RA axis center of rotation XY coordinates
+    Returns:
+        matplotlib.Figure: Plotted image
+    """
+    d0 = getdata(pole_fn)  # Easy cast to float
+    d1 = getdata(rotate_fn)  # Easy cast to float
 
     d0 /= d0.max()
     d1 /= d1.max()
@@ -52,17 +60,28 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn=None):
     pole_cx, pole_cy = pole_center
     rotate_cx, rotate_cy = rotate_center
 
-    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(20, 18))
+    d_x = pole_center[0] - rotate_center[0]
+    d_y = pole_center[1] - rotate_center[1]
 
-    ax.scatter(pole_cx, pole_cy, color='r', marker='x', lw=5)
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(20, 14))
+
+    # Show rotation center in red
     ax.scatter(rotate_cx, rotate_cy, color='r', marker='x', lw=5)
 
+    # Show polar center in green
+    ax.scatter(pole_cx, pole_cy, color='g', marker='x', lw=5)
+
+    # Show both images in background
     norm = ImageNormalize(stretch=SqrtStretch())
+    ax.imshow(d0 + d1, cmap='Greys_r', norm=norm, origin='lower')
 
-    ax.imshow(d0 + d1, cmap='Greys_r', norm=norm)
-    ax.arrow(rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy - rotate_cy, fc='r', ec='r')
+    # Show an arrow
+    if (np.abs(pole_cy - rotate_cy) > 25) or (np.abs(pole_cx - rotate_cx) > 25):
+        ax.arrow(
+            rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy -
+            rotate_cy, fc='r', ec='r', width=20, length_includes_head=True
+            )
 
-    if plot_fn is not None:
-        fig.savefig(plot_fn)
+    ax.set_title("dx: {:0.2f} pix \t dy: {:0.2f} pix".format(d_x, d_y))
 
     return fig
