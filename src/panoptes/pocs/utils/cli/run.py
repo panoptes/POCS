@@ -383,7 +383,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, west_time=11, east_t
         for cam_name, cam in pocs.observatory.cameras.items():
             if cam.is_primary:
                 fn = f'{base_dir}/rotation_{direction}_{cam_name.lower()}.cr2'
-                proc = cam.take_exposure(seconds=exp_time, filename=fn, blocking=True)
+                proc = cam.take_exposure(seconds=exp_time, filename=fn, blocking=False)
                 procs[fn] = proc
                 rotate_fn = fn
 
