@@ -3,7 +3,6 @@ import time
 import warnings
 from itertools import product
 from multiprocessing import Process
-from subprocess import TimeoutExpired
 from typing import List
 
 import typer
@@ -17,8 +16,8 @@ from rich import print
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs.utils import alignment as polar_alignment
+from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
 
@@ -150,8 +149,8 @@ def run_alignment(context: typer.Context) -> None:
             f.write(
                 '{}.{},{},{},{},{},{}\n'.format(
                     start_time, pole_center[0], pole_center[1], rotate_center[0], rotate_center[1], d_x, d_y
-                    )
                 )
+            )
 
         print("Done with polar alignment test")
         pocs.say("Done with polar alignment test")
