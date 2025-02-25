@@ -43,8 +43,8 @@ def analyze_ra_rotation(rotate_fn):
 
 def plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn=None):
 
-    d0 = fits.getdata(pole_fn) - 2048.
-    d1 = fits.getdata(rotate_fn) - 2048.
+    d0 = getdata(pole_fn) - 2048.
+    d1 = getdata(rotate_fn) - 2048.
 
     d0 /= d0.max()
     d1 /= d1.max()
