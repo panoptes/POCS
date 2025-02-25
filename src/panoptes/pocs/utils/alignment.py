@@ -1,15 +1,24 @@
+from pathlib import Path
+
 import numpy as np
 from astropy.nddata import Cutout2D
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.wcs import WCS
 from matplotlib import pyplot as plt
-from panoptes.utils.images.fits import get_solve_field, get_solve_field, getdata
+from panoptes.utils.images.fits import get_solve_field, getdata
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
 
-def analyze_polar_rotation(pole_fn):
+def analyze_polar_rotation(pole_fn: Path | str):
+    """Analyze the polar rotation image to get the center of the pole.
+
+    Args:
+        pole_fn (str): FITS file of polar center
+    Returns:
+        tuple(int): Polar center XY coordinates
+    """
     get_solve_field(pole_fn)
 
     wcs = WCS(pole_fn)
@@ -19,8 +28,15 @@ def analyze_polar_rotation(pole_fn):
     return pole_cx, pole_cy
 
 
-def analyze_ra_rotation(rotate_fn):
-    d0 = getdata(rotate_fn)  # - 2048
+def analyze_ra_rotation(rotate_fn: Path | str):
+    """Analyze the RA rotation image to get the center of rotation.
+
+    Args:
+        rotate_fn (str): FITS file of RA rotation image
+    Returns:
+        tuple(int): RA axis center of rotation XY coordinates
+    """
+    d0 = getdata(rotate_fn)
 
     # Get center
     position = (d0.shape[1] // 2, d0.shape[0] // 2)
@@ -42,7 +58,8 @@ def analyze_ra_rotation(rotate_fn):
 
 
 def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
-    """ Overlay the celestial pole and RA rotation axis images
+    """ Overlay the celestial pole and RA rotation axis images.
+
     Args:
         pole_fn (str): FITS file of polar center
         rotate_fn (str): FITS file of RA rotation image
@@ -76,10 +93,18 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
     ax.imshow(d0 + d1, cmap='Greys_r', norm=norm, origin='lower')
 
     # Show an arrow
-    if (np.abs(pole_cy - rotate_cy) > 25) or (np.abs(pole_cx - rotate_cx) > 25):
+    delta_cy = pole_cy - rotate_cy
+    delta_cx = pole_cx - rotate_cx
+    if (np.abs(delta_cy) > 25) or (np.abs(delta_cx) > 25):
         ax.arrow(
-            rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy -
-                                  rotate_cy, fc='r', ec='r', width=20, length_includes_head=True
+            rotate_cx,
+            rotate_cy,
+            delta_cx,
+            delta_cy,
+            fc='r',
+            ec='r',
+            width=20,
+            length_includes_head=True
         )
 
     ax.set_title(f"dx: {d_x:0.2f} pix   dy: {d_y:0.2f} pix")

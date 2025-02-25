@@ -264,11 +264,11 @@ def run_old_alignment(context: typer.Context) -> None:
             pocs.say(f"Rotate: {rotate_center} {rotate_fn}")
             pocs.say(f"Rotate: {rotate_center[0]:0.2f} x {rotate_center[1]:0.2f}")
 
-            d_x = pole_center[0] - rotate_center[0]
-            d_y = pole_center[1] - rotate_center[1]
+            dx = pole_center[0] - rotate_center[0]
+            dy = pole_center[1] - rotate_center[1]
 
-            pocs.say(f"d_x: {d_x:0.2f}")
-            pocs.say(f"d_y: {d_y:0.2f}")
+            pocs.say(f"dx: {dx:0.2f}")
+            pocs.say(f"dy: {dy:0.2f}")
 
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
@@ -287,12 +287,9 @@ def run_old_alignment(context: typer.Context) -> None:
 
             with open(f'/home/panoptes/images/drift_align/center.txt', 'a') as f:
                 f.write(
-                    '{}.{},{},{},{},{},{}\n'.format(
-                        start_time, pole_center[0], pole_center[1], rotate_center[0], rotate_center[1], d_x, d_y
-                    )
+                    f'{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n'
                 )
 
-            print("Done with polar alignment test")
             pocs.say("Done with polar alignment test")
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
