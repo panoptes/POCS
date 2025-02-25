@@ -82,6 +82,6 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
                                   rotate_cy, fc='r', ec='r', width=20, length_includes_head=True
         )
 
-    ax.set_title("dx: {:0.2f} pix \t dy: {:0.2f} pix".format(d_x, d_y))
+    ax.set_title(f"dx: {d_x:0.2f} pix   dy: {d_y:0.2f} pix")
 
     return fig
