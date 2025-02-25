@@ -1,11 +1,15 @@
 import os
+import time
 import warnings
 from itertools import product
 from multiprocessing import Process
+from subprocess import TimeoutExpired
 from typing import List
 
 import typer
 from panoptes.utils.error import PanError
+from panoptes.utils.images import make_pretty_image
+from panoptes.utils.images.cr2 import cr2_to_fits
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
@@ -14,6 +18,7 @@ from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils.logger import get_logger
+from panoptes.pocs.utils import alignment as polar_alignment
 
 app = typer.Typer()
 
@@ -67,6 +72,89 @@ def get_pocs(context: typer.Context):
     pocs.initialize()
 
     return pocs
+
+
+@app.command(name='alignment')
+def run_alignment(context: typer.Context) -> None:
+    """Runs POCS in alignment mode."""
+    pocs = get_pocs(context)
+    print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
+    start_time = current_time(flatten=True)
+
+    base_dir = f'/home/panoptes/images/drift_align/{start_time}'
+    plot_fn = f'{base_dir}/{start_time}_center_overlay.jpg'
+
+    mount = pocs.observatory.mount
+
+    pocs.say("Moving to home position")
+    mount.slew_to_home()
+
+    # Polar Rotation
+    pole_fn = polar_rotation(pocs, base_dir=base_dir)
+    pole_fn = pole_fn.replace('.cr2', '.fits')
+
+    # Mount Rotation
+    rotate_fn = mount_rotation(pocs, base_dir=base_dir)
+    rotate_fn = rotate_fn.replace('.cr2', '.fits')
+
+    pocs.say("Moving back to home")
+    mount.slew_to_home()
+
+    pocs.say("Solving celestial pole image")
+    try:
+        pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+    except Exception:
+        print("Unable to solve pole image.")
+        print("Will proceed with rotation image but analysis not possible")
+        pole_center = None
+    else:
+        pole_center = (float(pole_center[0]), float(pole_center[1]))
+
+    pocs.say("Starting analysis of rotation image")
+    try:
+        rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+    except Exception:
+        print("Unable to process rotation image")
+        rotate_center = None
+
+    if pole_center is not None and rotate_center is not None:
+        pocs.say("Plotting centers")
+
+        pocs.say(f"Pole ({pole_fn}) : {pole_center[0]:0.2f} x {pole_center[1]:0.2f}")
+
+        pocs.say(f"Rotate: {rotate_center} {rotate_fn}")
+        pocs.say(f"Rotate: {rotate_center[0]:0.2f} x {rotate_center[1]:0.2f}")
+
+        d_x = pole_center[0] - rotate_center[0]
+        d_y = pole_center[1] - rotate_center[1]
+
+        pocs.say(f"d_x: {d_x:0.2f}")
+        pocs.say(f"d_y: {d_y:0.2f}")
+
+        fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
+
+        print(f"Plot image: {plot_fn}")
+        fig.tight_layout()
+        fig.savefig(plot_fn)
+
+        try:
+            os.unlink('/var/panoptes/images/latest.jpg')
+        except Exception:
+            pass
+        try:
+            os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
+        except Exception:
+            print("Can't link latest image")
+
+        with open(f'/home/panoptes/images/drift_align/center.txt', 'a') as f:
+            f.write(
+                '{}.{},{},{},{},{},{}\n'.format(
+                    start_time, pole_center[0], pole_center[1], rotate_center[0], rotate_center[1], d_x, d_y
+                    )
+                )
+
+        print("Done with polar alignment test")
+        pocs.say("Done with polar alignment test")
 
 
 @app.command(name='auto')
@@ -204,3 +292,110 @@ def run_alignment(
             proc.join()
 
         pocs.power_down()
+
+
+def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
+    assert base_dir is not None, print("base_dir cannot be empty")
+
+    mount = pocs.observatory.mount
+
+    print('Performing polar rotation test')
+    pocs.say('Performing polar rotation test')
+    mount.slew_to_home()
+
+    while not mount.is_home:
+        time.sleep(2)
+
+    analyze_fn = None
+
+    print('At home position, taking {} sec exposure'.format(exp_time))
+    pocs.say('At home position, taking {} sec exposure'.format(exp_time))
+    procs = dict()
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = f'{base_dir}/pole_{cam_name.lower()}.cr2'
+        proc = cam.take_exposure(seconds=exp_time, filename=fn)
+        procs[fn] = proc
+        if cam.is_primary:
+            analyze_fn = fn
+
+    for fn, proc in procs.items():
+        try:
+            outs, errs = proc.communicate(timeout=(exp_time + 15))
+        except AttributeError:
+            continue
+        except KeyboardInterrupt:
+            print('Pole test interrupted')
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
+        except Exception:
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
+
+        time.sleep(2)
+        try:
+            make_pretty_image(fn, title='Alignment Test - Celestial Pole', primary=True)
+            cr2_to_fits(fn, remove_cr2=True)
+        except AssertionError:
+            print(f"Can't make image for {fn}")
+            pocs.say(f"Can't make image for {fn}")
+
+    return analyze_fn
+
+
+def mount_rotation(pocs, base_dir=None, include_west=False, west_time=11, east_time=21, **kwargs):
+    mount = pocs.observatory.mount
+
+    print("Doing rotation test")
+    pocs.say("Doing rotation test")
+    mount.slew_to_home()
+    exp_time = 25
+    mount.move_direction(direction='west', seconds=west_time)
+
+    rotate_fn = None
+
+    # Start exposing on cameras
+    for direction in ['east', 'west']:
+        if include_west is False and direction == 'west':
+            continue
+
+        print(f"Rotating to {direction}")
+        pocs.say(f"Rotating to {direction}")
+        procs = dict()
+        for cam_name, cam in pocs.observatory.cameras.items():
+            fn = f'{base_dir}/rotation_{direction}_{cam_name.lower()}.cr2'
+            proc = cam.take_exposure(seconds=exp_time, filename=fn)
+            procs[fn] = proc
+            if cam.is_primary:
+                rotate_fn = fn
+
+        # Move mount
+        mount.move_direction(direction=direction, seconds=east_time)
+
+        # Get exposures
+        for fn, proc in procs.items():
+            try:
+                outs, errs = proc.communicate(timeout=(exp_time + 15))
+            except AttributeError:
+                continue
+            except KeyboardInterrupt:
+                print('Pole test interrupted')
+                pocs.say('Pole test interrupted')
+                proc.kill()
+                outs, errs = proc.communicate()
+                break
+            except Exception:
+                proc.kill()
+                outs, errs = proc.communicate()
+                break
+
+            time.sleep(2)
+            try:
+                make_pretty_image(fn, title=f'Alignment Test - Rotate {direction}', primary=True)
+                cr2_to_fits(fn, remove_cr2=True)
+            except AssertionError:
+                print(f"Can't make image for {fn}")
+                pocs.say(f"Can't make image for {fn}")
+
+    return rotate_fn
