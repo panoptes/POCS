@@ -224,6 +224,7 @@ def run_old_alignment(context: typer.Context) -> None:
 
     try:
 
+        mount.unpark()
         pocs.say("Moving to home position")
         mount.slew_to_home()
 
