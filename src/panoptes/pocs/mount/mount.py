@@ -3,12 +3,10 @@ from abc import abstractmethod
 from pathlib import Path
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import EarthLocation, SkyCoord
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
-from panoptes.utils.time import CountdownTimer
-from panoptes.utils.time import current_time
+from panoptes.utils.time import CountdownTimer, current_time
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
@@ -468,7 +466,7 @@ class AbstractMount(PanBase):
 
         self.logger.debug("Mount parked")
 
-    def slew_to_target(self, blocking=False, timeout=180):
+    def slew_to_target(self, blocking: bool = False, timeout: int | float = 180) -> bool:
         """ Slews to the currently assigned target coordinates.
 
         Slews the mount to the coordinates that have been assigned by `~set_target_coordinates`.
@@ -667,7 +665,7 @@ class AbstractMount(PanBase):
     def query(self, cmd, params=None, **kwargs):
         """Sends a query to the mount and returns response.
 
-        Performs a send and then returns response. Will do a translate on cmd first. This should
+        Sends cmd  and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
 
@@ -754,7 +752,7 @@ class AbstractMount(PanBase):
         self.logger.warning(
             'Searching for home position not supported.'
             'Please set the home position manually via the hand-controller.'
-            )
+        )
 
     @abstractmethod
     def write(self, cmd):
