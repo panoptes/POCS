@@ -1,15 +1,16 @@
 import re
+import time
 from contextlib import suppress
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord, Latitude, Longitude
+from astropy.coordinates import Latitude, Longitude, SkyCoord
 from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
 from panoptes.utils import error as error
 from panoptes.utils.time import current_time
 
-from panoptes.pocs.mount.ioptron import MountGPS, MountState, MountTrackingState, MountMovementSpeed, MountTimeSource, \
-    MountHemisphere
+from panoptes.pocs.mount.ioptron import MountGPS, MountHemisphere, MountMovementSpeed, MountState, MountTimeSource, \
+    MountTrackingState
 from panoptes.pocs.mount.serial import AbstractSerialMount
 
 
@@ -187,7 +188,13 @@ class Mount(AbstractSerialMount):
         self.query('set_lat', lat)
 
         # Daylight savings and GMT offset.
-        self.query('disable_daylight_savings')
+        is_dst = bool(time.localtime().tm_isdst)
+        self.logger.debug(f'Setting daylight savings to {is_dst}')
+        if is_dst:
+            self.query('enable_daylight_savings')
+        else:
+            self.query('disable_daylight_savings')
+
         gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.logger.debug(f'Setting GMT offset to {gmt_offset:+04.0f}')
         self.query('set_gmt_offset', f'{gmt_offset:+04.0f}')
