@@ -1,6 +1,13 @@
 name: Test Python
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
 jobs:
   lint:
     runs-on: ubuntu-latest
