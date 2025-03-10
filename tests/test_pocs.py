@@ -83,7 +83,7 @@ def dome():
 def pocs(observatory, config_host, config_port):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
-    pocs = POCS(observatory, run_once=True, simulators=['power'])
+    pocs = POCS(observatory, run_once=True, simulators=['power', 'weather'])
     yield pocs
     pocs.power_down()
     reset_conf(config_host, config_port)
