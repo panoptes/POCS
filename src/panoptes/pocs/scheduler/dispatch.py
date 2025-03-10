@@ -45,6 +45,11 @@ class Scheduler(BaseScheduler):
             self.logger.info(f"Checking Constraint: {constraint}")
             for obs_name, observation in self.observations.items():
                 if obs_name in valid_obs:
+                    # Add a special case where we skip the Moon Avoidance constraint if the observation name is "Moon".
+                    if constraint.name == 'Moon Avoidance' and obs_name.lower() == 'moon':
+                        self.logger.info(f"Skipping Moon Avoidance constraint for {obs_name}")
+                        continue
+
                     current_score = valid_obs[obs_name]
                     self.logger.info(f"\t{obs_name}\tCurrent score: {current_score:.03f}")
 
