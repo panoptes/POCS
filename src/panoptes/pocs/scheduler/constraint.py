@@ -1,9 +1,7 @@
 from contextlib import suppress
 
 from astropy import units as u
-
-from panoptes.utils import error
-from panoptes.utils import horizon as horizon_utils
+from panoptes.utils import error, horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
@@ -25,6 +23,8 @@ class BaseConstraint(PanBase):
         """
         super().__init__(*args, **kwargs)
 
+        self.name = self.__class__.__name__
+
         weight = float(weight)
         assert isinstance(weight, float), \
             self.logger.error("Constraint weight must be a float greater than 0.0")
@@ -36,6 +36,9 @@ class BaseConstraint(PanBase):
 
     def get_score(self, time, observer, target, **kwargs):
         raise NotImplementedError
+
+    def __str__(self):
+        return self.name
 
 
 class Altitude(BaseConstraint):
@@ -50,10 +53,10 @@ class Altitude(BaseConstraint):
         elif horizon is None or isinstance(horizon, (int, float, u.Quantity)):
             obstruction_list = obstructions
             default_horizon = horizon
-            
+
             if obstructions is None:
                 obstruction_list = self.get_config('location.obstructions', default=[])
-            
+
             if default_horizon is None:
                 default_horizon = self.get_config('location.horizon', default=30 * u.degree)
 
@@ -89,9 +92,6 @@ class Altitude(BaseConstraint):
             score = 1
         return veto, score * self.weight
 
-    def __str__(self):
-        return "Altitude"
-
 
 class Duration(BaseConstraint):
 
@@ -100,7 +100,7 @@ class Duration(BaseConstraint):
         super().__init__(*args, **kwargs)
         if horizon is None:
             horizon = self.get_config('location.horizon', default=30 * u.degree)
-            
+
         self.horizon = horizon
 
     def get_score(self, time, observer, observation, **kwargs):
@@ -108,9 +108,13 @@ class Duration(BaseConstraint):
         target = observation.field
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        end_of_night = observer.tonight(time=time,
-                                        horizon=self.get_config('location.observe_horizon',
-                                                                default=-18 * u.degree))[1]
+        end_of_night = observer.tonight(
+            time=time,
+            horizon=self.get_config(
+                'location.observe_horizon',
+                default=-18 * u.degree
+            )
+        )[1]
 
         if not veto:
             # Get the next meridian flip
@@ -130,7 +134,8 @@ class Duration(BaseConstraint):
             target_end_time = observer.target_set_time(
                 time, target,
                 which='next',
-                horizon=self.horizon)
+                horizon=self.horizon
+            )
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
@@ -206,6 +211,3 @@ class AlreadyVisited(BaseConstraint):
             veto = True
 
         return veto, score * self.weight
-
-    def __str__(self):
-        return "Already Visited"
