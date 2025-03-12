@@ -27,11 +27,10 @@ VERSION = '2021-05-20'
 #
 ################################################################
 
-SATURATION = 13365
 PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
 OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
-OUTPUT_DIRECTORY = Path('images')
+OUTPUT_DIRECTORY = Path('/home/panoptes/images/')
 SETTINGS_FILE = Path('lunar-exposure-times.yaml')
 
 try:
