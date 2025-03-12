@@ -14,11 +14,13 @@ from panoptes.utils.time import current_time, flatten_time
 
 from panoptes.pocs.camera import create_cameras_from_config
 
-VERSION = '2021-05-20'
+VERSION = '2025-03-12'
 
 ################################################################
 # CHANGELOG
 #
+# 2025-03-12    wtg     * Updates to match new project. Slightly more generic
+#                           file structure.
 # 2021-05-20    wtg     * Changed version number to be a date.
 #                       * Script only handles taking images and does not
 #                           control the mount.
@@ -65,7 +67,7 @@ def main(*args, **kwargs):
             exposure_settings['settings'],
             output_dir,
             unit_id=unit_id
-            )
+        )
     except Exception as e:
         print(f'Error in pictures: {e!r}')
 
@@ -143,7 +145,7 @@ def take_pic(port, cr2_fn, settings):
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
-        )
+    )
     return p
 
 
