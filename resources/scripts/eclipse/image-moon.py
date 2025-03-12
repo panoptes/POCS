@@ -28,11 +28,11 @@ VERSION = '2021-05-20'
 ################################################################
 
 SATURATION = 13365
-PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-exp')
-BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-events')
-OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-events')
-OUTPUT_DIRECTORY = Path('/panoptes-pocs/images')
-SETTINGS_FILE = Path('/scripts/lunar-exposure-times.yaml')
+PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
+BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
+OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
+OUTPUT_DIRECTORY = Path('images')
+SETTINGS_FILE = Path('lunar-exposure-times.yaml')
 
 try:
     storage_client = storage.Client(project=PROJECT_ID)
@@ -45,15 +45,20 @@ def main(*args, **kwargs):
     unit_id = get_config('pan_id', '').upper()
     output_dir = OUTPUT_DIRECTORY / unit_id
     output_dir.mkdir(exist_ok=True)
-    print(f'Output directory: {output_dir}')
+
+    print(storage_client)
 
     print(f'Initializing cameras')
     cameras = create_cameras_from_config()
 
+    if not cameras:
+        print(f'No cameras found, exiting')
+        return
+
     # Load exposure settings
     with SETTINGS_FILE.open() as f:
         exposure_settings = from_yaml(f.read())
-        # print(f'Exposure settings: {exposure_settings!r}')
+        print(f'Exposure settings: {exposure_settings!r}')
 
     try:
         start_pictures(
