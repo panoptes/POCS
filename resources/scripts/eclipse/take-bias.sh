@@ -31,18 +31,16 @@ SAVE_FILE=${2:-"bias-%Y%m%d-%H%M%S.cr2"}
 echo "Taking bias frames on port ${PORT}: ${SAVE_FILE}"
 
 SHUTTER_INDEX=${3:-52} # 1/4000s on EOS 100D
-ISO=${4:-100}
 NUM_FRAMES=${5:-1}
-
-# Set shutter speed.
-gphoto2 --port="${PORT}" --set-config-index shutterspeed="${SHUTTER_INDEX}"
-sleep 0.5
-# Set iso.
-gphoto2 --port="${PORT}" --set-config iso="${ISO}"
 
 COUNTER=0
 until [[ ${COUNTER} -eq ${NUM_FRAMES} ]]; do
-  gphoto2 --port="${PORT}" --wait-event=1s --capture-image-and-download --filename="${SAVE_FILE}"
+  gphoto2 \
+    --port="${PORT}" \
+    --set-config-index shutterspeed="${SHUTTER_INDEX}" \
+    --wait-event=1s \
+    --capture-image-and-download \
+    --filename="${SAVE_FILE}"
   let COUNTER+=1
 done
 
