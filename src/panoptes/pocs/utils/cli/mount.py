@@ -1,11 +1,13 @@
 import re
+from datetime import datetime
 from pathlib import Path
 
 import serial
 import typer
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
+from astropy.coordinates import AltAz, EarthLocation, SkyCoord, get_body
 from astropy.coordinates.name_resolve import NameResolveError
+from astropy.time import Time
 from astroquery.jplhorizons import Horizons
 from human_readable import time_delta as friendly_time_delta
 from panoptes.utils.config.client import set_config
@@ -349,17 +351,34 @@ def setup_mount(
                 pass
 
 
-def get_target_coords(target: str, location: dict, is_comet: bool = False):
-    """Get the coordinates of the target. """
-    print(f'Looking for coordinates for {target}.')
-    coords = None
+def get_target_coords(
+    target: str,
+    location: EarthLocation | None = None,
+    obstime: datetime | Time | None = None,
+    is_body: bool = False,
+    is_comet: bool = False
+) -> SkyCoord:
+    """Get the coordinates of the target.
 
-    if is_comet:
-        location['lat'] = location['latitude']
-        location['lon'] = location['longitude']
-        obj = Horizons(id=target, id_type='smallbody', epochs=current_time().jd1, location=location)
+    Args:
+        target (str): The target to look for.
+        location (dict, optional): The location of the observer. Defaults to None.
+        obstime (datetime, Time, optional): The time of the observation. Defaults to None.
+        is_body (bool, optional): Is the target a solar system body? Defaults to False.
+        is_comet (bool, optional): Is the target a comet? Defaults to False.
+
+    Returns:
+        SkyCoord: The coordinates of the target.
+    """
+    obstime = obstime or current_time()
+    print(f'Looking for coordinates for {target} at {obstime}.')
+
+    if is_comet and location is not None:
+        obj = Horizons(id=target, id_type='smallbody', epochs=obstime.jd1, location=location)
         eph = obj.ephemerides()
         coords = SkyCoord(eph[0]['RA'], eph[0]['DEC'], unit=(u.deg, u.deg))
+    elif is_body and location is not None:
+        coords = get_body(target, time=obstime, location=location)
     else:
         try:
             coords = SkyCoord(target)
@@ -367,6 +386,6 @@ def get_target_coords(target: str, location: dict, is_comet: bool = False):
             try:
                 coords = SkyCoord.from_name(target)
             except NameResolveError:
-                pass
+                raise ValueError(f'Could not resolve target {target}')
 
     return coords
