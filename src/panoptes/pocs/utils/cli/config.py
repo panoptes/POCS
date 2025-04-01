@@ -79,7 +79,7 @@ def set_value(
     """Get an item from the config"""
     if server_running():
         metadata = host_info['config_server']
-        if value.startswith('\-'):
+        if value.startswith(r'\-'):
             value = value[1:]
         try:
             value = int(value)

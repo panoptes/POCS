@@ -248,9 +248,9 @@ class Mount(AbstractSerialMount):
             astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
                 EarthLocation included.
         """
-        self.logger.debug(f'Mount coordinates: {mount_coords}')
+        self.logger.trace(f'Mount coordinates: {mount_coords}')
         coords_match = self._coords_format.fullmatch(mount_coords)
-        self.logger.debug(f'Mount coordinates match: {coords_match}')
+        self.logger.trace(f'Mount coordinates match: {coords_match}')
 
         coords = None
         if coords_match is not None:
@@ -263,7 +263,7 @@ class Mount(AbstractSerialMount):
 
             # Old firmware had RA in a time unit.
             if self._ra_coords_units == 'millisecond':
-                self.logger.debug(f'Converting RA from {self._ra_coords_units} to degrees')
+                self.logger.trace(f'Converting RA from {self._ra_coords_units} to degrees')
                 ra = (ra.to(u.hour).value * u.hourangle)
 
             # Convert to degrees.
@@ -274,9 +274,9 @@ class Mount(AbstractSerialMount):
             if coords_match.group('dec_sign') == '-':
                 dec = dec * -1
 
-            self.logger.debug(f'Creating SkyCoord for {ra=} {dec=}')
+            self.logger.trace(f'Creating SkyCoord for {ra=} {dec=}')
             coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.deg, u.deg))
-            self.logger.debug(f'Created SkyCoord: {coords=}')
+            self.logger.trace(f'Created SkyCoord: {coords=}')
         else:
             self.logger.warning('Cannot create SkyCoord from mount coordinates')
 
@@ -286,7 +286,7 @@ class Mount(AbstractSerialMount):
         """ Converts between SkyCoord and a iOptron RA/Dec format. """
         # Do some special handling of older firmware that had RA coords in a time unit.
         if self._ra_coords_units == 'millisecond':
-            self.logger.debug(f'Converting RA from degrees to {self._ra_coords_units}')
+            self.logger.trace(f'Converting RA from degrees to {self._ra_coords_units}')
             ra_coord = (coords.ra.to(u.hourangle).value * u.hour).to(self._ra_coords_units).value
         else:
             ra_coord = coords.ra.to(self._ra_coords_units).value
@@ -297,8 +297,8 @@ class Mount(AbstractSerialMount):
         ra_mount = self._ra_format.format(ra_coord)
         dec_mount = self._dec_format.format(dec_coord)
 
-        self.logger.debug(f'RA: {ra_coord} <-> {ra_mount=}')
-        self.logger.debug(f'Dec: {dec_coord} <-> {dec_mount=}')
+        self.logger.trace(f'RA: {ra_coord} <-> {ra_mount=}')
+        self.logger.trace(f'Dec: {dec_coord} <-> {dec_mount=}')
 
         return ra_mount, dec_mount
 
