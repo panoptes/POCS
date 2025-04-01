@@ -289,10 +289,14 @@ class Observatory(PanBase):
         try:
             if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
+                self.logger.info('Getting mount current coordinates')
                 current_coords = self.mount.get_current_coordinates()
-                status['mount']['current_ha'] = get_quantity_value(
-                    self.observer.target_hour_angle(now, current_coords), unit='degree'
-                )
+                self.logger.debug(f"Current coordinates: {current_coords!r}")
+                self.logger.info('Getting mount current HA')
+                if current_coords:
+                    status['mount']['current_ha'] = get_quantity_value(
+                        self.observer.target_hour_angle(now, current_coords), unit='degree'
+                    )
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
                     target_ha = self.observer.target_hour_angle(now, target_coords)
