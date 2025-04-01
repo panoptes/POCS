@@ -336,9 +336,7 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     os.environ['POCSTIME'] = pocstime_day
 
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', hardware.get_all_names(without=['night']))
-
-    pocs = POCS(observatory)
+    pocs = POCS(observatory, run_once=True, simulators=hardware.get_all_names(without=['night']))
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
@@ -378,8 +376,8 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     os.environ['POCSTIME'] = pocstime_night
     assert pocs.is_dark()
 
-    pocs.logger.warning('Waiting to get to slewing state...')
     while pocs.next_state != 'slewing':
+        pocs.logger.warning('Waiting to get to slewing state...')
         time.sleep(1)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')
