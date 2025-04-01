@@ -173,7 +173,7 @@ class MoonAvoidance(BaseConstraint):
         except KeyError:
             raise error.PanError(f'Moon must be set for MoonAvoidance constraint')
 
-        moon_sep = get_quantity_value(moon.separation(observation.field.coord))
+        moon_sep = get_quantity_value(moon.separation(observation.field.coord, origin_mismatch='ignore'))
 
         # Check we are a certain number of degrees from moon.
         if moon_sep < get_quantity_value(self.separation):
