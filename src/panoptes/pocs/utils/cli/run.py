@@ -3,6 +3,7 @@ import time
 import warnings
 from itertools import product
 from multiprocessing import Process
+from pathlib import Path
 from typing import List
 
 import typer
@@ -217,7 +218,9 @@ def run_old_alignment(context: typer.Context) -> None:
     print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
     start_time = current_time(flatten=True)
 
-    base_dir = f'/home/panoptes/images/drift_align/{start_time}'
+    images_dir = Path(pocs.get_config('directories.images'))
+    base_dir = images_dir / 'drift_align' / str(start_time)
+
     plot_fn = f'{base_dir}/{start_time}_center_overlay.jpg'
 
     mount = pocs.observatory.mount
@@ -276,27 +279,22 @@ def run_old_alignment(context: typer.Context) -> None:
             fig.tight_layout()
             fig.savefig(plot_fn)
 
-            try:
-                os.unlink('/var/panoptes/images/latest.jpg')
-            except Exception:
-                pass
-            try:
-                os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
-            except Exception:
-                print("Can't link latest image")
+            latest_fn = images_dir / 'latest.jpg'
+            if latest_fn.exists():
+                latest_fn.unlink()
 
-            with open(f'/home/panoptes/images/drift_align/center.txt', 'a') as f:
-                f.write(
-                    f'{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n'
-                )
+            latest_fn.symlink_to(plot_fn)
+
+            with Path(images_dir / 'drift_align' / 'center.txt').open('a') as f:
+                f.write(f'{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n')
 
             pocs.say("Done with polar alignment test")
     except KeyboardInterrupt:
         print('[red]POCS alignment interrupted by user, shutting down.[/red]')
-    except Exception as e:
+    except PanError as e:
         print('[bold red]POCS encountered an error.[/bold red]')
         print(e)
-    except PanError as e:
+    except Exception as e:
         print('[bold red]POCS encountered an error.[/bold red]')
         print(e)
     else:
