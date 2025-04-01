@@ -8,10 +8,9 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
-from panoptes.utils import error
-from panoptes.utils import images as img_utils
+from panoptes.utils import error, images as img_utils
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.time import current_time, CountdownTimer, flatten_time
+from panoptes.utils.time import CountdownTimer, current_time, flatten_time
 from panoptes.utils.utils import get_quantity_value
 
 import panoptes.pocs.camera.fli
@@ -291,8 +290,6 @@ class Observatory(PanBase):
                 status['mount'] = self.mount.status
                 self.logger.info('Getting mount current coordinates')
                 current_coords = self.mount.get_current_coordinates()
-                self.logger.debug(f"Current coordinates: {current_coords!r}")
-                self.logger.info('Getting mount current HA')
                 if current_coords:
                     status['mount']['current_ha'] = get_quantity_value(
                         self.observer.target_hour_angle(now, current_coords), unit='degree'
