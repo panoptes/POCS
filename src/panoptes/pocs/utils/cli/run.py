@@ -3,6 +3,7 @@ import time
 import warnings
 from itertools import product
 from multiprocessing import Process
+from numbers import Number
 from pathlib import Path
 from typing import List
 
@@ -286,7 +287,9 @@ def run_old_alignment(context: typer.Context) -> None:
             latest_fn.symlink_to(plot_fn)
 
             with Path(images_dir / 'drift_align' / 'center.txt').open('a') as f:
-                f.write(f'{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n')
+                f.write(
+                    f'{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n'
+                )
 
             pocs.say("Done with polar alignment test")
     except KeyboardInterrupt:
@@ -306,8 +309,11 @@ def run_old_alignment(context: typer.Context) -> None:
         pocs.power_down()
 
 
-def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
+def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
     assert base_dir is not None, print("base_dir cannot be empty")
+
+    # Make sure base_dir is a Path and valid.
+    base_dir = Path(base_dir)
 
     mount = pocs.observatory.mount
 
@@ -325,8 +331,8 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     procs = dict()
     for cam_name, cam in pocs.observatory.cameras.items():
         if cam.is_primary:
-            fn = f'{base_dir}/pole_{cam_name.lower()}.cr2'
-            proc = cam.take_exposure(seconds=exp_time, filename=fn, blocking=True)
+            fn = base_dir / f'pole_{cam_name.lower()}.cr2'
+            proc = cam.take_exposure(seconds=exp_time, filename=fn.as_posix(), blocking=True)
             procs[fn] = proc
             analyze_fn = fn
 
@@ -356,8 +362,13 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     return analyze_fn
 
 
-def mount_rotation(pocs, base_dir=None, include_west=False, west_time=11, east_time=21, **kwargs):
+def mount_rotation(pocs: POCS, base_dir: Path | str, include_west: bool = False, west_time: Number = 11,
+                   east_time: Number = 21, **kwargs
+                   ):
     mount = pocs.observatory.mount
+
+    assert base_dir is not None, print("base_dir cannot be empty")
+    base_dir = Path(base_dir)
 
     print("Doing rotation test")
     pocs.say("Doing rotation test")
@@ -377,8 +388,8 @@ def mount_rotation(pocs, base_dir=None, include_west=False, west_time=11, east_t
         procs = dict()
         for cam_name, cam in pocs.observatory.cameras.items():
             if cam.is_primary:
-                fn = f'{base_dir}/rotation_{direction}_{cam_name.lower()}.cr2'
-                proc = cam.take_exposure(seconds=exp_time, filename=fn, blocking=False)
+                fn = base_dir / f'rotation_{direction}_{cam_name.lower()}.cr2'
+                proc = cam.take_exposure(seconds=exp_time, filename=fn.as_posix(), blocking=False)
                 procs[fn] = proc
                 rotate_fn = fn
 
