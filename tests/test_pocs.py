@@ -83,7 +83,7 @@ def dome():
 def pocs(observatory, config_host, config_port):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
-    pocs = POCS(observatory, run_once=True, simulators=['power', 'weather'])
+    pocs = POCS(observatory, run_once=True, simulators=['power'])
     yield pocs
     pocs.power_down()
     reset_conf(config_host, config_port)
@@ -349,7 +349,7 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
-    # Not dark and unit is is connected but not set.
+    # Not dark and unit is connected but not set.
     assert not pocs.is_dark()
     assert pocs.is_initialized
     assert pocs.connected
