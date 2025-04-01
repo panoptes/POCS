@@ -401,9 +401,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     os.environ['POCSTIME'] = pocstime_night
 
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', hardware.get_all_names(without=['night', 'weather']))
-
-    pocs = POCS(observatory)
+    pocs = POCS(observatory, run_once=True, simulators=hardware.get_all_names(without=['night', 'weather']))
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
@@ -416,7 +414,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
-    # Weather is bad and unit is is connected but not set.
+    # Weather is bad and unit is connected but not set.
     assert pocs.is_safe()
     assert pocs.is_initialized
     assert pocs.connected
