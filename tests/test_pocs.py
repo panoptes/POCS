@@ -336,9 +336,7 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     os.environ['POCSTIME'] = pocstime_day
 
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', hardware.get_all_names(without=['night']))
-
-    pocs = POCS(observatory)
+    pocs = POCS(observatory, run_once=True, simulators=hardware.get_all_names(without=['night']))
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
@@ -349,7 +347,7 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
-    # Not dark and unit is is connected but not set.
+    # Not dark and unit is connected but not set.
     assert not pocs.is_dark()
     assert pocs.is_initialized
     assert pocs.connected
@@ -371,15 +369,19 @@ def test_run_wait_until_safe(observatory, valid_observation_day, pocstime_day, p
     pocs_thread = threading.Thread(target=start_pocs, daemon=True)
     pocs_thread.start()
 
+    pocs.logger.info('Check if dark, should be False')
     assert pocs.is_safe(park_if_not_safe=False) is False
 
     # Wait to pretend we're waiting for horizon
+    pocs.logger.info('Waiting for dark for 5 seconds')
     time.sleep(5)
     os.environ['POCSTIME'] = pocstime_night
+    pocs.logger.info('Check if dark, should be True')
     assert pocs.is_dark()
 
-    pocs.logger.warning('Waiting to get to slewing state...')
+    pocs.logger.info('Checking if POCS has started slewing')
     while pocs.next_state != 'slewing':
+        pocs.logger.warning('Waiting to get to slewing state...')
         time.sleep(1)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')
