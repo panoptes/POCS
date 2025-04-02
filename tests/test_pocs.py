@@ -494,8 +494,7 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread.start()
 
     while pocs.next_state != 'slewing':
-        pocs.logger.debug(
-            f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
+        pocs.logger.debug(f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')
