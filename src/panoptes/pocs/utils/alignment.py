@@ -11,7 +11,7 @@ from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
 
-def analyze_polar_rotation(pole_fn: Path | str):
+def analyze_polar_rotation(pole_fn: Path | str, **kwargs):
     """Analyze the polar rotation image to get the center of the pole.
 
     Args:
@@ -19,7 +19,7 @@ def analyze_polar_rotation(pole_fn: Path | str):
     Returns:
         tuple(int): Polar center XY coordinates
     """
-    get_solve_field(pole_fn)
+    get_solve_field(pole_fn, **kwargs)
 
     wcs = WCS(pole_fn)
 
