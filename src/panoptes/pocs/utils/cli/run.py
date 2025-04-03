@@ -246,9 +246,10 @@ def run_old_alignment(
         pocs.say("Solving celestial pole image")
         try:
             pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
-        except Exception:
+        except Exception as e:
             print("[bold red]Unable to solve pole image.[/bold red]")
             print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
+            print(e)
             pole_center = None
         else:
             pole_center = (float(pole_center[0]), float(pole_center[1]))
