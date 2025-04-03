@@ -244,8 +244,8 @@ def run_old_alignment(context: typer.Context) -> None:
         try:
             pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
         except Exception:
-            print("Unable to solve pole image.")
-            print("Will proceed with rotation image but analysis not possible")
+            print("[bold red]Unable to solve pole image.[/bold red]")
+            print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
             pole_center = None
         else:
             pole_center = (float(pole_center[0]), float(pole_center[1]))
