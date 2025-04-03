@@ -91,7 +91,7 @@ class Mount(AbstractSerialMount):
                 self._is_initialized = True
                 self._setup_location_for_mount()
                 if set_rates:
-                    self._set_initial_rates()
+                    self.set_rates()
 
         self.logger.info(f'Mount initialized: {self.is_initialized}')
 
@@ -151,6 +151,46 @@ class Mount(AbstractSerialMount):
             self.logger.success('Mount successfully parked.')
 
         return self.is_parked
+
+    def set_rates(self,
+                  alt_limit: float | str | None = None,
+                  meridian_treatment: str = '015',
+                  button_moving_rate: int = 9
+                  ):
+        """ Set the mount rates.
+
+        Args:
+            alt_limit (float, str, None): Altitude limit in degrees or string with sign.
+            meridian_treatment (str): Meridian treatment. Default is '015'.
+            button_moving_rate (int): Button moving rate. Default is 9.
+
+        Returns:
+            None
+        """
+
+        # Make sure we start at sidereal.
+        self.query('set_sidereal_tracking')
+
+        if alt_limit is None:
+            alt_limit = self.get_config('location.horizon', default=30 * u.degree)
+
+        if isinstance(alt_limit, u.Quantity):
+            alt_limit = alt_limit.to(u.deg).value
+
+        # Convert limit to a string with sign if a number.
+        if isinstance(alt_limit, (int, float)):
+            alt_limit = f'{alt_limit:+d}'
+
+        self.logger.debug(f'Setting altitude limit to {alt_limit}')
+        self.query('set_altitude_limit', alt_limit)
+
+        self.logger.debug(f'Setting {meridian_treatment=}')
+        self.query('set_meridian_treatment', meridian_treatment)
+
+        self.logger.debug('Setting manual moving rate to max')
+        self.query('set_button_moving_rate', button_moving_rate)
+
+        self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
 
     def _setup_location_for_mount(self):
         """
@@ -212,31 +252,6 @@ class Mount(AbstractSerialMount):
             now = now + gmt_offset * u.minute
             self.query('set_local_time', now.datetime.strftime("%H%M%S"))
             self.query('set_local_date', now.datetime.strftime("%y%m%d"))
-
-    def _set_initial_rates(self, alt_limit: float | str | None = None, meridian_treatment='015'):
-        # Make sure we start at sidereal.
-        self.query('set_sidereal_tracking')
-
-        if alt_limit is None:
-            alt_limit = self.get_config('location.horizon', default=30 * u.degree)
-
-        if isinstance(alt_limit, u.Quantity):
-            alt_limit = alt_limit.to(u.deg).value
-
-        # Convert limit to a string with sign if a number.
-        if isinstance(alt_limit, (int, float)):
-            alt_limit = f'{alt_limit:+d}'
-
-        self.logger.debug(f'Setting altitude limit to {alt_limit}')
-        self.query('set_altitude_limit', alt_limit)
-
-        self.logger.debug(f'Setting {meridian_treatment=}')
-        self.query('set_meridian_treatment', meridian_treatment)
-
-        self.logger.debug('Setting manual moving rate to max')
-        self.query('set_button_moving_rate', 9)
-
-        self.logger.debug(f"Mount guide rate: {self.query('get_guide_rate')}")
 
     def _set_zero_position(self):
         """ Sets the current position as the zero position.
