@@ -401,7 +401,9 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     os.environ['POCSTIME'] = pocstime_night
 
     # Remove weather simulator, else it would always be safe.
-    pocs = POCS(observatory, run_once=True, simulators=hardware.get_all_names(without=['night', 'weather']))
+    simulators = hardware.get_all_names(without=['night', 'weather'])
+    observatory.logger.warning(f'Using simulators: {simulators}')
+    pocs = POCS(observatory, run_once=True, simulators=simulators)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
