@@ -471,7 +471,7 @@ def test_run_power_down_interrupt(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    simulators = hardware.get_all_names(without=['night', 'weather'])
+    simulators = hardware.get_all_names()
     observatory.logger.warning(f'Using simulators: {simulators}')
     pocs = POCS(observatory, simulators=simulators)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
