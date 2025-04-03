@@ -249,7 +249,7 @@ def run_old_alignment(
         except Exception as e:
             print("[bold red]Unable to solve pole image.[/bold red]")
             print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
-            print(e)
+            print(f'{e!r}')
             pole_center = None
         else:
             pole_center = (float(pole_center[0]), float(pole_center[1]))

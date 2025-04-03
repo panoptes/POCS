@@ -15,13 +15,13 @@ def analyze_polar_rotation(pole_fn: Path | str, **kwargs):
     """Analyze the polar rotation image to get the center of the pole.
 
     Args:
-        pole_fn (str): FITS file of polar center
+        pole_fn (Path | str): FITS file of polar center
     Returns:
         tuple(int): Polar center XY coordinates
     """
     get_solve_field(pole_fn, **kwargs)
 
-    wcs = WCS(pole_fn)
+    wcs = WCS(pole_fn.as_posix())
 
     pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
 
@@ -32,11 +32,11 @@ def analyze_ra_rotation(rotate_fn: Path | str):
     """Analyze the RA rotation image to get the center of rotation.
 
     Args:
-        rotate_fn (str): FITS file of RA rotation image
+        rotate_fn (Path | str): FITS file of RA rotation image
     Returns:
         tuple(int): RA axis center of rotation XY coordinates
     """
-    d0 = getdata(rotate_fn)
+    d0 = getdata(rotate_fn.as_posix())
 
     # Get center
     position = (d0.shape[1] // 2, d0.shape[0] // 2)
