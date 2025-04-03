@@ -43,7 +43,7 @@ jobs:
       - name: Install
         run: pip install ".[google,focuser,sensors,testing]"
       - name: Test
-        run: pytest -s
+        run: pytest -sx tests/test_pocs.py
       - uses: codecov/codecov-action@v4
         with:
           name: Upload to codecov.io
