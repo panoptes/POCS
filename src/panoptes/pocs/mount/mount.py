@@ -116,6 +116,7 @@ class AbstractMount(PanBase):
 
     @property
     def status(self):
+        self.logger.trace('Getting mount status')
         status = {}
         try:
             status['tracking_rate'] = self.tracking_rate
@@ -124,17 +125,21 @@ class AbstractMount(PanBase):
             status['movement_speed'] = self.movement_speed
 
             current_coord = self.get_current_coordinates()
+            self.logger.trace(f'{current_coord=}')
             if current_coord is not None:
+                self.logger.trace('Getting current_ra and current_dec')
                 status['current_ra'] = get_quantity_value(current_coord.ra, unit='degree')
                 status['current_dec'] = get_quantity_value(current_coord.dec, unit='degree')
 
             if self.has_target:
                 target_coord = self.get_target_coordinates()
+                self.logger.trace(f'{target_coord=}')
                 status['mount_target_ra'] = get_quantity_value(target_coord.ra, unit='degree')
                 status['mount_target_dec'] = get_quantity_value(target_coord.dec, unit='degree')
         except Exception as e:
-            self.logger.debug(f'Problem getting mount status: {e!r}')
+            self.logger.trace(f'Problem getting mount status: {e!r}')
 
+        self.logger.trace('Updating status with _update_status')
         status.update(self._update_status())
         return status
 
@@ -263,8 +268,6 @@ class AbstractMount(PanBase):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        # self.logger.debug('Getting current mount coordinates')
-
         mount_coords = self.query('get_coordinates')
 
         # Turn the mount coordinates into a SkyCoord

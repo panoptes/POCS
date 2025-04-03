@@ -52,9 +52,10 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base class.
         PanBase.__init__(self, *args, **kwargs)
 
-        if simulators:
-            self.logger.warning(f'Using simulators={simulators!r}')
-            self.set_config('simulator', simulators)
+        simulators = self.set_config('simulator', simulators)['simulator']
+        if simulators and len(simulators) > 0:
+            print(f'Running POCS with simulators: {simulators=}')
+            self.logger.warning(f'Using {simulators=}')
 
         assert isinstance(observatory, Observatory)
 

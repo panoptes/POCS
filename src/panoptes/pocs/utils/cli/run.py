@@ -48,9 +48,6 @@ def get_pocs(context: typer.Context):
 
     simulators = listify(simulators)
 
-    if len(simulators) > 0:
-        print(f'Running POCS with simulators: {simulators=}')
-
     print(
         '[green]Running POCS automatically![/green]\n'
         '[bold green]Press Ctrl-c to quit.[/bold green]'
