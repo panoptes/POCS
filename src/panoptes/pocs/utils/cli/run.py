@@ -210,7 +210,10 @@ def run_alignment(
 
 
 @app.command(name='old-alignment')
-def run_old_alignment(context: typer.Context) -> None:
+def run_old_alignment(
+    context: typer.Context,
+    exp_time: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
+) -> None:
     """Runs POCS in alignment mode."""
     pocs = get_pocs(context)
     print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
@@ -230,7 +233,7 @@ def run_old_alignment(context: typer.Context) -> None:
         mount.slew_to_home()
 
         # Polar Rotation
-        pole_fn = polar_rotation(pocs, base_dir=base_dir)
+        pole_fn = polar_rotation(pocs, base_dir=base_dir, exp_time=exp_time)
         pole_fn = pole_fn.with_suffix('.fits')
 
         # Mount Rotation
