@@ -43,7 +43,7 @@ jobs:
       - name: Install
         run: pip install ".[google,focuser,sensors,testing]"
       - name: Test
-        run: pytest
+        run: pytest -sx --tb=short --disable-warnings --maxfail=1
       - uses: codecov/codecov-action@v4
         with:
           name: Upload to codecov.io

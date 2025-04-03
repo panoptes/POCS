@@ -401,9 +401,9 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     os.environ['POCSTIME'] = pocstime_night
 
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', hardware.get_all_names(without=['night', 'weather']))
-
-    pocs = POCS(observatory)
+    simulators = hardware.get_all_names(without=['night', 'weather'])
+    observatory.logger.warning(f'Using simulators: {simulators}')
+    pocs = POCS(observatory, run_once=True, simulators=simulators)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
@@ -416,7 +416,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     pocs.initialize()
     pocs.logger.info('Starting observatory run')
 
-    # Weather is bad and unit is is connected but not set.
+    # Weather is bad and unit is connected but not set.
     assert pocs.is_safe()
     assert pocs.is_initialized
     assert pocs.connected
@@ -471,9 +471,9 @@ def test_run_power_down_interrupt(observatory,
 
     observatory.logger.info('start_pocs ENTER')
     # Remove weather simulator, else it would always be safe.
-    observatory.set_config('simulator', 'all')
-
-    pocs = POCS(observatory)
+    simulators = hardware.get_simulator_names('all')
+    observatory.logger.warning(f'Using simulators: {simulators}')
+    pocs = POCS(observatory, simulators=simulators)
     pocs.set_config('wait_delay', 5)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
@@ -498,8 +498,7 @@ def test_run_power_down_interrupt(observatory,
     pocs_thread.start()
 
     while pocs.next_state != 'slewing':
-        pocs.logger.debug(
-            f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
+        pocs.logger.debug(f'Waiting to get to slewing state. Currently next_state={pocs.next_state}')
         time.sleep(1)
 
     pocs.logger.warning('Stopping states via pocs.DO_STATES')

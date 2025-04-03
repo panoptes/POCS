@@ -288,6 +288,7 @@ class Observatory(PanBase):
         try:
             if self.mount and self.mount.is_initialized:
                 status['mount'] = self.mount.status
+                self.logger.info('Getting mount current coordinates')
                 current_coords = self.mount.get_current_coordinates()
                 if current_coords:
                     status['mount']['current_ha'] = get_quantity_value(
