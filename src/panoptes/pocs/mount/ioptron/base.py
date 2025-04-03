@@ -213,9 +213,18 @@ class Mount(AbstractSerialMount):
             self.query('set_local_time', now.datetime.strftime("%H%M%S"))
             self.query('set_local_date', now.datetime.strftime("%y%m%d"))
 
-    def _set_initial_rates(self, alt_limit='+30', meridian_treatment='015'):
+    def _set_initial_rates(self, alt_limit: float | str | None = None, meridian_treatment='015'):
         # Make sure we start at sidereal.
         self.query('set_sidereal_tracking')
+
+        if alt_limit is None:
+            alt_limit = self.get_config('location.horizon', default=30 * u.degree)
+
+        if isinstance(alt_limit, u.Quantity):
+            alt_limit = alt_limit.to(u.deg).value
+
+        # Convert limit to a string with sign.
+        alt_limit = f'{alt_limit:+d}'
 
         self.logger.debug(f'Setting altitude limit to {alt_limit}')
         self.query('set_altitude_limit', alt_limit)
