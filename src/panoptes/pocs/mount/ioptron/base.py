@@ -223,8 +223,9 @@ class Mount(AbstractSerialMount):
         if isinstance(alt_limit, u.Quantity):
             alt_limit = alt_limit.to(u.deg).value
 
-        # Convert limit to a string with sign.
-        alt_limit = f'{alt_limit:+d}'
+        # Convert limit to a string with sign if a number.
+        if isinstance(alt_limit, (int, float)):
+            alt_limit = f'{alt_limit:+d}'
 
         self.logger.debug(f'Setting altitude limit to {alt_limit}')
         self.query('set_altitude_limit', alt_limit)
