@@ -231,11 +231,11 @@ def run_old_alignment(context: typer.Context) -> None:
 
         # Polar Rotation
         pole_fn = polar_rotation(pocs, base_dir=base_dir)
-        pole_fn = pole_fn.replace('.cr2', '.fits')
+        pole_fn = pole_fn.with_suffix('.fits')
 
         # Mount Rotation
         rotate_fn = mount_rotation(pocs, base_dir=base_dir)
-        rotate_fn = rotate_fn.replace('.cr2', '.fits')
+        rotate_fn = rotate_fn.with_suffix('.fits')
 
         pocs.say("Moving back to home")
         mount.slew_to_home()
