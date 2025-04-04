@@ -282,7 +282,7 @@ class AbstractMount(PanBase):
             u.Angle: An angle represeting the current on-sky separation from the target
         """
         target = self.get_target_coordinates().coord
-        separation = self.get_current_coordinates().separation(target)
+        separation = self.get_current_coordinates().separation(target, origin_mismatch="ignore")
 
         self.logger.debug("Current separation from target: {}".format(separation))
 
