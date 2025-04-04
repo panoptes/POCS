@@ -689,7 +689,7 @@ class Observatory(PanBase):
             'latitude': self.location.get('latitude').value,
             'longitude': self.location.get('longitude').value,
             'moon_fraction': self.observer.moon_illumination(t0),
-            'moon_separation': field.coord.separation(moon).value,
+            'moon_separation': moon.separation(field.coord, origin_mismatch="ignore").value,
             'observer': self.get_config('name', default=''),
             'origin': 'Project PANOPTES',
             'tracking_rate_ra': self.mount.tracking_rate,
