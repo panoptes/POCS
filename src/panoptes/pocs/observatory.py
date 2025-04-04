@@ -477,6 +477,10 @@ class Observatory(PanBase):
 
             should_upload = upload_image or self.get_config('observations.upload_image', default=False)
 
+            # Check for a FITS file of whatever file_path we have.
+            if Path(file_path).with_suffix('.fits').exists():
+                file_path = Path(file_path).with_suffix('.fits').as_posix()
+
             if Path(file_path).exists() is False:
                 self.logger.error(f'Trying to process observation but missing {file_path=}')
 
