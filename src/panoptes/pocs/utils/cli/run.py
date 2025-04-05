@@ -213,10 +213,6 @@ def run_alignment(
 def run_old_alignment(
     context: typer.Context,
     exp_time: float = typer.Option(30.0, '--exptime', '-e', help='Exposure time in seconds.'),
-    rotate_slower: bool = typer.Option(
-        False, '--rotate-slower', '-r',
-        help='Rotate the mount slower for the rotation test.'
-    ),
 ) -> None:
     """Runs POCS in alignment mode."""
     pocs = get_pocs(context)
@@ -241,18 +237,8 @@ def run_old_alignment(
         pole_fn = pole_fn.with_suffix('.fits')
 
         # Mount Rotation
-        # If rotate_slower is True, change the button_moving_rate.
-        if rotate_slower:
-            pocs.say("Changing mount moving rate for a slower rotation.")
-            mount.query('set_button_moving_rate', 8)
-
         rotate_fn = mount_rotation(pocs, base_dir=base_dir)
         rotate_fn = rotate_fn.with_suffix('.fits')
-
-        # Change the button_moving_rate back to normal (i.e. max=9)
-        if rotate_slower:
-            pocs.say("Changing mount moving rate back to normal.")
-            mount.query('set_button_moving_rate', 9)
 
         pocs.say("Moving back to home")
         mount.slew_to_home()
