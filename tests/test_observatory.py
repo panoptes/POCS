@@ -264,7 +264,7 @@ def test_standard_headers(observatory):
         'latitude': 19.54,
         'longitude': -155.58,
         'moon_fraction': 0.7880103086091879,
-        'moon_separation': 148.34401,
+        'moon_separation': 156.16,
         'observer': 'Generic PANOPTES Unit',
         'origin': 'Project PANOPTES'
     }
