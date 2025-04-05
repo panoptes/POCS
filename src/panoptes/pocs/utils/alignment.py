@@ -1,31 +1,34 @@
 from pathlib import Path
 
 import numpy as np
+from astropy import units as u
 from astropy.nddata import Cutout2D
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.wcs import WCS
 from matplotlib import pyplot as plt
-from panoptes.utils.images.fits import get_solve_field, getdata
+from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
 
-def analyze_polar_rotation(pole_fn: Path | str, **kwargs):
+def analyze_polar_rotation(pole_fn: Path | str, **kwargs) -> tuple[float, float, float]:
     """Analyze the polar rotation image to get the center of the pole.
 
     Args:
-        pole_fn (Path | str): FITS file of polar center
+        pole_fn (Path | str): FITS file of polar center.
     Returns:
-        tuple(int): Polar center XY coordinates
+        tuple(float, float, float): Polar center XY coordinates and pixel scale.
     """
     get_solve_field(pole_fn, **kwargs)
 
     wcs = WCS(pole_fn.as_posix())
+    wcsinfo = get_wcsinfo(pole_fn.as_posix())
+    pixel_scale = wcsinfo['pixscale']
 
     pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
 
-    return pole_cx, pole_cy
+    return pole_cx, pole_cy, float(pixel_scale.to_value())
 
 
 def analyze_ra_rotation(rotate_fn: Path | str):
@@ -57,28 +60,37 @@ def analyze_ra_rotation(rotate_fn: Path | str):
     return d1.to_original_position((rotate_cx[-1], rotate_cy[-1]))
 
 
-def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
+def plot_center(pole_fn: Path, rotate_fn: Path, pole_center: tuple[float, float], rotate_center: tuple[float, float],
+                pixel_scale: float
+                ):
     """ Overlay the celestial pole and RA rotation axis images.
 
     Args:
-        pole_fn (str): FITS file of polar center
-        rotate_fn (str): FITS file of RA rotation image
-        pole_center (tuple(int)): Polar center XY coordinates
-        rotate_center (tuple(int)): RA axis center of rotation XY coordinates
+        pole_fn (Path): FITS file of polar center.
+        rotate_fn (Path): FITS file of RA rotation image.
+        pole_center (tuple(int)): Polar center XY coordinates.
+        rotate_center (tuple(int)): RA axis center of rotation XY coordinates.
+        pixel_scale (float): Pixel scale in arcseconds per pixel.
     Returns:
         matplotlib.Figure: Plotted image
     """
-    d0 = getdata(pole_fn) - 0.  # Easy cast to float
-    d1 = getdata(rotate_fn) - 0.  # Easy cast to float
+    d0 = getdata(pole_fn.as_posix()) - 0.  # Easy cast to float
+    d1 = getdata(rotate_fn.as_posix()) - 0.  # Easy cast to float
 
     d0 /= d0.max()
     d1 /= d1.max()
 
-    pole_cx, pole_cy = pole_center
-    rotate_cx, rotate_cy = rotate_center
+    pole_cx, pole_cy = pole_center * u.pixel
+    rotate_cx, rotate_cy = rotate_center * u.pixel
 
-    d_x = pole_center[0] - rotate_center[0]
-    d_y = pole_center[1] - rotate_center[1]
+    dx = pole_center[0] - rotate_center[0]
+    dy = pole_center[1] - rotate_center[1]
+
+    pixel_scale = pixel_scale * u.arcsec / u.pixel
+
+    # Convert pixel change to degrees.
+    dx_deg = dx * pixel_scale
+    dy_deg = dy * pixel_scale
 
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(20, 14))
 
@@ -107,6 +119,7 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
             length_includes_head=True
         )
 
-    ax.set_title(f"dx: {d_x:0.2f} pix   dy: {d_y:0.2f} pix")
+    # Show the pixel and degree deltas in the title.
+    ax.set_title(f"({dx=:.1f}, {dy=:.1f}) pixels\n({dx_deg=:.1f}, {dy_deg=:.1f}) degrees")
 
     return fig

@@ -245,7 +245,10 @@ def run_old_alignment(
 
         pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment.analyze_polar_rotation(pole_fn, timeout=exp_time + 15)
+            pole_center_x, pole_center_y, pixel_scale = polar_alignment.analyze_polar_rotation(
+                pole_fn, timeout=exp_time + 15
+            )
+            pole_center = (pole_center_x, pole_center_y)
         except Exception as e:
             print("[bold red]Unable to solve pole image.[/bold red]")
             print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
@@ -269,13 +272,11 @@ def run_old_alignment(
             pocs.say(f"Rotate: {rotate_center} {rotate_fn}")
             pocs.say(f"Rotate: {rotate_center[0]:0.2f} x {rotate_center[1]:0.2f}")
 
+            # Get the pixel change between the two centers.
             dx = pole_center[0] - rotate_center[0]
             dy = pole_center[1] - rotate_center[1]
 
-            pocs.say(f"dx: {dx:0.2f}")
-            pocs.say(f"dy: {dy:0.2f}")
-
-            fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
+            fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center, pixel_scale)
 
             print(f"Plot image: {plot_fn}")
             fig.tight_layout()
@@ -310,7 +311,7 @@ def run_old_alignment(
         pocs.power_down()
 
 
-def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
+def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs) -> Path:
     assert base_dir is not None, print("base_dir cannot be empty")
 
     # Make sure base_dir is a Path and valid.
@@ -365,7 +366,7 @@ def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kw
 
 def mount_rotation(pocs: POCS, base_dir: Path | str, include_west: bool = False, west_time: Number = 11,
                    east_time: Number = 21, **kwargs
-                   ):
+                   ) -> Path:
     mount = pocs.observatory.mount
 
     assert base_dir is not None, print("base_dir cannot be empty")
