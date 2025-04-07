@@ -364,7 +364,10 @@ def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kw
     return analyze_fn
 
 
-def mount_rotation(pocs: POCS, base_dir: Path | str, include_west: bool = False, west_time: Number = 11,
+def mount_rotation(pocs: POCS,
+                   base_dir: Path | str,
+                   include_west: bool = False,
+                   west_time: Number = 11,
                    east_time: Number = 21, **kwargs
                    ) -> Path:
     mount = pocs.observatory.mount
