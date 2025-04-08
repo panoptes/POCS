@@ -343,9 +343,14 @@ def run_quick_alignment(
     center_fn = f'{base_dir}/center.csv'
 
     mount = pocs.observatory.mount
+    mount.unpark()
 
     pocs.say('Performing polar rotation test')
     mount.slew_to_home(blocking=True)
+
+    if not mount.is_home:
+        print('[red]Mount is not at home position, exiting.[/red]')
+        return
 
     futures = defaultdict(dict)
     executor = ThreadPoolExecutor(max_workers=3)
@@ -476,6 +481,9 @@ def run_quick_alignment(
                  f'{rotate_center[1]:.02f},{dx:.02f},{dy:.02f}\n')
             f.write(l)
             print(l)
+
+    pocs.say('Done with quick alignment test')
+    pocs.say('MOUNT IS STILL AT HOME POSITION')
 
 
 def find_circle_params(points):
