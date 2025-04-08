@@ -1,6 +1,8 @@
 import os
 import time
 import warnings
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from multiprocessing import Process
 from numbers import Number
@@ -8,17 +10,20 @@ from pathlib import Path
 from typing import List
 
 import typer
+from astropy.coordinates import SkyCoord
 from panoptes.utils.error import PanError
 from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.cr2 import cr2_to_fits
+from panoptes.utils.images.fits import get_solve_field
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
 
+from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.utils import alignment as polar_alignment
+from panoptes.pocs.utils import alignment, alignment as polar_alignment
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -308,6 +313,206 @@ def run_old_alignment(
         pocs.observatory.mount.park()
 
         pocs.power_down()
+
+
+@app.command(name='quick-alignment')
+def run_quick_alignment(
+    context: typer.Context,
+    exp_time: float = typer.Option(20.0, '--exptime', '-e', help='Exposure time in seconds.'),
+    move_time: float = typer.Option(5.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
+):
+    """
+    Runs a quick alignment analysis.
+
+    This function will take three exposures, one while at the "home" position,
+    which is the celestial pole, and one on each side of the axis. It will then
+    analyze the images to figure out the center of rotation for the mount.
+
+    A plot will be created showing the celestial pole and the RA rotation axis as
+    well as an arrow indicating the difference between the two, which corresponds
+    to the offset of the mount from the celestial pole.
+    """
+    pocs = get_pocs(context)
+    print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
+    start_time = current_time(flatten=True)
+
+    images_dir = Path(pocs.get_config('directories.images'))
+    base_dir = images_dir / 'drift_align' / str(start_time)
+
+    plot_fn = f'{base_dir}/{start_time}_center_overlay.jpg'
+
+    mount = pocs.observatory.mount
+
+    pocs.say('Performing polar rotation test')
+    mount.slew_to_home(blocking=True)
+
+    futures = defaultdict(dict)
+    executor = ThreadPoolExecutor(max_workers=3)
+
+    def _take_pic(_cam: AbstractCamera, exptime: float, _fn: Path) -> Path:
+        # Take the exposure.
+        _cam.take_exposure(seconds=exptime, filename=_fn, blocking=True)
+
+        # After blocking, convert to FITS.
+        _fits_fn = cr2_to_fits(_fn, remove_cr2=True)
+
+        # Plate solve.
+        if _fits_fn is not None:
+            get_solve_field(_fits_fn.as_posix(), timeout=exptime + 15)
+
+        return Path(_fits_fn)
+
+    pocs.say(f'At home position, taking {exp_time} sec exposure')
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = base_dir / f'pole_{cam_name.lower()}.cr2'
+        future = executor.submit(_take_pic, cam, exp_time, fn)
+        futures[cam_name]['pole'] = future
+
+    pocs.say('Moving to east for {move_time} sec')
+    mount.move_direction(direction='east', seconds=move_time, blocking=True)
+    pocs.say(f'At east position, taking {exp_time} sec exposure')
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = base_dir / f'east_{cam_name.lower()}.cr2'
+        future = executor.submit(_take_pic, cam, exp_time, fn)
+        futures[cam_name]['east'] = future
+
+    pocs.say('Moving back to home')
+    mount.slew_to_home(blocking=True)
+
+    pocs.say('Moving to west for {move_time} sec')
+    mount.move_direction(direction='west', seconds=move_time, blocking=True)
+    pocs.say(f'At west position, taking {exp_time} sec exposure')
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = base_dir / f'west_{cam_name.lower()}.cr2'
+        future = executor.submit(_take_pic, cam, exp_time, fn)
+        futures[cam_name]['west'] = future
+
+    pocs.say('Moving back to home')
+    mount.slew_to_home()
+
+    pocs.say('Waiting for images to be processed')
+    executor.shutdown(wait=True)
+
+    # Sort the files by camera name and position.
+    fits_files = defaultdict(dict)
+    for cam_name, positions in futures.items():
+        for position, future in positions.items():
+            fits_fn = future.result()
+            if fits_fn is not None:
+                fits_files[cam_name][position] = fits_fn
+
+    # Get coordinates for Polaris in each of the images.
+    polaris = SkyCoord.from_name('Polaris')
+
+    def _process_cam(files):
+        points = list()
+        pole_center = None
+        pixscale = None
+        # Find the xy-coords of Polaris in each of the images using the wcs.
+        for _position, _fits_fn in files.items():
+            if _position == 'home':
+                pole_center_x, pole_center_y, pixscale = alignment.analyze_polar_rotation(
+                    _fits_fn, timeout=exp_time + 15
+                )
+                pole_center = (float(pole_center_x), float(pole_center_y))
+
+            try:
+                wcs = polar_alignment.get_solve_field(_fits_fn.as_posix(), timeout=exp_time + 15)
+            except PanError:
+                print(f"Unable to solve image {_fits_fn}")
+                continue
+
+            # Get the pixel coordinates of Polaris in the image.
+            x, y = wcs.all_world2pix(polaris.ra.deg, polaris.dec.deg, 1)
+            points.append((x, y))
+
+        # Find the circle that best fits the points.
+        h, k, R = find_circle_params(points)
+        rotate_center = (h, k)
+
+        dx = None
+        dy = None
+
+        # Get the distance from the center of the circle to the center of celestial pole.
+        if pole_center is not None:
+            dx = pole_center[0] - rotate_center[0]
+            dy = pole_center[1] - rotate_center[1]
+
+        # Convert deltas to degrees.
+        if pixscale is not None:
+            dx = dx * pixscale / 3600
+            dy = dy * pixscale / 3600
+
+        return pole_center, rotate_center, dx, dy, pixscale
+
+    # Process each camera's images with a ThreadPoolExecutor
+    results = dict()
+    with ThreadPoolExecutor(max_workers=len(fits_files)) as executor:
+        futures = {
+            cam_name: executor.submit(_process_cam, files)
+            for cam_name, files in fits_files.items()
+        }
+        for cam_name, future in futures.items():
+            results[cam_name] = future.result()
+
+    def _make_plot(_files, _pole_center, _rotate_center, _dx, _dy, _pixscale):
+        pass
+
+    # Make the plot for each cameras.
+    for cam_name, (pole_center, rotate_center, dx, dy, pixscale) in results.items():
+        print(f'{cam_name=} {pole_center=} {rotate_center=} {dx=} {dy=} {pixscale=}')
+
+
+def find_circle_params(points):
+    """
+    Calculates the center (h, k) and radius (R) of a circle given a list of points.
+
+    Args:
+        points: A list of tuples, where each tuple represents a point (x, y).
+                The list must contain at least three points.
+
+    Returns:
+        A tuple (h, k, R) representing the center and radius of the circle.
+        Returns (None, None, None) if the input is invalid or no circle can be found.
+    """
+    if not isinstance(points, list) or len(points) < 3:
+        print("Error: Input must be a list of at least three points.")
+        return None, None, None
+
+    # Extract x and y coordinates
+    x_coords = [p[0] for p in points]
+    y_coords = [p[1] for p in points]
+
+    # Construct the matrix A and vector b for the system of equations
+    A = np.array(
+        [
+            [x_coords[0], y_coords[0], 1],
+            [x_coords[1], y_coords[1], 1],
+            [x_coords[2], y_coords[2], 1]
+        ]
+    )
+    b = np.array(
+        [
+            -(x_coords[0] ** 2 + y_coords[0] ** 2),
+            -(x_coords[1] ** 2 + y_coords[1] ** 2),
+            -(x_coords[2] ** 2 + y_coords[2] ** 2)
+        ]
+    )
+
+    # Solve the system of equations Ax = b for the coefficients D, E, and F
+    try:
+        x = np.linalg.solve(A, b)
+        D, E, F = x
+    except np.linalg.LinAlgError:
+        print("Error: Points are collinear or do not form a unique circle.")
+        return None, None, None
+
+    # Calculate the center (h, k) and radius (R)
+    h = -D / 2
+    k = -E / 2
+    R = np.sqrt(h ** 2 + k ** 2 - F)
+
+    return h, k, R
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
