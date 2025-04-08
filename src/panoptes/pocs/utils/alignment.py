@@ -1,17 +1,21 @@
 from pathlib import Path
 
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.wcs import WCS
 from matplotlib import pyplot as plt
-from panoptes.utils.images.fits import get_solve_field, getdata, get_wcsinfo
+from panoptes.utils.error import PanError
+from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
+from panoptes.pocs.utils.cli.run import find_circle_params
 
-def analyze_polar_rotation(pole_fn: Path | str, **kwargs):
+
+def get_celestial_center(pole_fn: Path | str, **kwargs):
     """Analyze the polar rotation image to get the center of the pole.
 
     Args:
@@ -60,6 +64,60 @@ def analyze_ra_rotation(rotate_fn: Path | str):
     )
 
     return d1.to_original_position((rotate_cx[-1], rotate_cy[-1]))
+
+
+def process_quick_alignment(files: dict[str, Path]) -> tuple[
+    tuple[float, float], tuple[float, float], float, float, float]:
+    """Process the quick alignment of polar rotation and RA rotation images.
+
+    Args:
+        files (dict[str, Path]): Dictionary of image positions and their FITS file paths.
+
+    Returns:
+        tuple: Polar center coordinates, RA rotation center coordinates, dx, dy, pixel scale
+    """
+    # Get coordinates for Polaris in each of the images.
+    polaris = SkyCoord.from_name('Polaris')
+
+    points = list()
+    pole_center = None
+    pix_scale = None
+    # Find the xy-coords of Polaris in each of the images using the wcs.
+    for position, fits_fn in files.items():
+        if position == 'home':
+            print(f"Processing polar rotation image: {fits_fn}")
+            pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
+            pole_center = (float(pole_center_x), float(pole_center_y))
+        else:
+            try:
+                print(f"Processing RA rotation image: {fits_fn}")
+                wcs = get_solve_field(fits_fn.as_posix())
+            except PanError:
+                print(f"Unable to solve image {fits_fn}")
+                continue
+            else:
+                # Get the pixel coordinates of Polaris in the image.
+                x, y = wcs.all_world2pix(polaris.ra.deg, polaris.dec.deg, 1)
+                points.append((x, y))
+
+    # Find the circle that best fits the points.
+    h, k, R = find_circle_params(points)
+    rotate_center = (h, k)
+
+    dx = None
+    dy = None
+
+    # Get the distance from the center of the circle to the center of celestial pole.
+    if pole_center is not None:
+        dx = pole_center[0] - rotate_center[0]
+        dy = pole_center[1] - rotate_center[1]
+
+    # Convert deltas to degrees.
+    if pix_scale is not None:
+        dx = dx * pix_scale / 3600
+        dy = dy * pix_scale / 3600
+
+    return pole_center, rotate_center, dx, dy, pix_scale
 
 
 def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
