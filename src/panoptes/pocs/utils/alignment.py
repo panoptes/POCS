@@ -9,10 +9,9 @@ from astropy.wcs import WCS
 from matplotlib import pyplot as plt
 from panoptes.utils.error import PanError
 from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
+from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
-
-from panoptes.pocs.utils.cli.run import find_circle_params
 
 
 def get_celestial_center(pole_fn: Path | str, **kwargs):
@@ -23,9 +22,12 @@ def get_celestial_center(pole_fn: Path | str, **kwargs):
     Returns:
         tuple(int): Polar center XY coordinates
     """
+    if isinstance(pole_fn, Path):
+        pole_fn = pole_fn.as_posix()
+
     get_solve_field(pole_fn, **kwargs)
 
-    wcs = WCS(pole_fn.as_posix())
+    wcs = WCS(pole_fn)
 
     pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
 
@@ -84,6 +86,9 @@ def process_quick_alignment(files: dict[str, Path]) -> tuple[
     pix_scale = None
     # Find the xy-coords of Polaris in each of the images using the wcs.
     for position, fits_fn in files.items():
+        if not isinstance(fits_fn, Path):
+            fits_fn = Path(fits_fn)
+
         if position == 'home':
             print(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
@@ -91,12 +96,13 @@ def process_quick_alignment(files: dict[str, Path]) -> tuple[
         else:
             try:
                 print(f"Processing RA rotation image: {fits_fn}")
-                wcs = get_solve_field(fits_fn.as_posix())
+                solve_info = get_solve_field(fits_fn.as_posix())
             except PanError:
                 print(f"Unable to solve image {fits_fn}")
                 continue
             else:
                 # Get the pixel coordinates of Polaris in the image.
+                wcs = WCS(fits_fn.as_posix())
                 x, y = wcs.all_world2pix(polaris.ra.deg, polaris.dec.deg, 1)
                 points.append((x, y))
 
@@ -173,3 +179,55 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
     ax.set_title(f"dx: {d_x:0.2f} pix   dy: {d_y:0.2f} pix")
 
     return fig
+
+
+def find_circle_params(points):
+    """
+    Calculates the center (h, k) and radius (R) of a circle given a list of points.
+
+    Args:
+        points: A list of tuples, where each tuple represents a point (x, y).
+                The list must contain at least three points.
+
+    Returns:
+        A tuple (h, k, R) representing the center and radius of the circle.
+        Returns (None, None, None) if the input is invalid or no circle can be found.
+    """
+    if not isinstance(points, list) or len(points) < 3:
+        print("Error: Input must be a list of at least three points.")
+        return None, None, None
+
+    # Extract x and y coordinates
+    x_coords = [p[0] for p in points]
+    y_coords = [p[1] for p in points]
+
+    # Construct the matrix A and vector b for the system of equations
+    A = np.array(
+        [
+            [x_coords[0], y_coords[0], 1],
+            [x_coords[1], y_coords[1], 1],
+            [x_coords[2], y_coords[2], 1]
+        ]
+    )
+    b = np.array(
+        [
+            -(x_coords[0] ** 2 + y_coords[0] ** 2),
+            -(x_coords[1] ** 2 + y_coords[1] ** 2),
+            -(x_coords[2] ** 2 + y_coords[2] ** 2)
+        ]
+    )
+
+    # Solve the system of equations Ax = b for the coefficients D, E, and F
+    try:
+        x = np.linalg.solve(A, b)
+        D, E, F = x
+    except np.linalg.LinAlgError:
+        print("Error: Points are collinear or do not form a unique circle.")
+        return None, None, None
+
+    # Calculate the center (h, k) and radius (R)
+    h = -D / 2
+    k = -E / 2
+    R = np.sqrt(h ** 2 + k ** 2 - F)
+
+    return h, k, R
