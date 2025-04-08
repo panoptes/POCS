@@ -370,7 +370,10 @@ def run_quick_alignment(
         futures[cam_name]['pole'] = future
 
     pocs.say('Moving to east for {move_time} sec')
-    mount.move_direction(direction='east', seconds=move_time, blocking=True)
+    mount.move_direction(direction='east', seconds=move_time)
+    while mount.is_slewing:
+        time.sleep(1)
+
     pocs.say(f'At east position, taking {exp_time} sec exposure')
     for cam_name, cam in pocs.observatory.cameras.items():
         fn = base_dir / f'east_{cam_name.lower()}.cr2'
@@ -381,7 +384,10 @@ def run_quick_alignment(
     mount.slew_to_home(blocking=True)
 
     pocs.say('Moving to west for {move_time} sec')
-    mount.move_direction(direction='west', seconds=move_time, blocking=True)
+    mount.move_direction(direction='west', seconds=move_time)
+    while mount.is_slewing:
+        time.sleep(1)
+
     pocs.say(f'At west position, taking {exp_time} sec exposure')
     for cam_name, cam in pocs.observatory.cameras.items():
         fn = base_dir / f'west_{cam_name.lower()}.cr2'
