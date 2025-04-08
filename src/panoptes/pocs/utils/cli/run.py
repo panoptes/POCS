@@ -2,7 +2,6 @@ import os
 import time
 import warnings
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from multiprocessing import Process
 from numbers import Number
@@ -10,20 +9,19 @@ from pathlib import Path
 from typing import List
 
 import typer
+from astropy.coordinates import SkyCoord
 from panoptes.utils.error import PanError
 from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.cr2 import cr2_to_fits
-from panoptes.utils.images.fits import get_solve_field
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
 
-from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils import alignment as polar_alignment
-from panoptes.pocs.utils.alignment import process_quick_alignment
+from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_alignment
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -334,128 +332,102 @@ def run_quick_alignment(
     """
     pocs = get_pocs(context)
     print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
-    start_time = current_time(flatten=True)
 
-    images_dir = Path(pocs.get_config('directories.images'))
-    base_dir = images_dir / 'drift_align' / str(start_time)
-
-    plot_fn = f'{base_dir}/{start_time}_center_overlay.jpg'
-    center_fn = f'{base_dir}/center.csv'
-
+    # Create a dummy observation.
+    observation = Observation(
+        Field('QuickAlignment', position=SkyCoord.from_name('Polaris')),
+        exptime=exp_time,
+        min_nexp=1,
+        exp_set_size=1
+    )
+    pocs.observatory.current_observation = observation
     mount = pocs.observatory.mount
 
-    if not mount.is_home:
-        print('[red]Mount is not at home position, exiting.[/red]')
-        return
+    procs = list()
 
-    futures = defaultdict(dict)
-    executor = ThreadPoolExecutor(max_workers=3)
-
-    def _take_pic(_cam: AbstractCamera, exptime: float, _fn: Path) -> Path | None:
-        # Take the exposure.
-        cam.logger.info(f'Taking exposure for {_fn}')
-        proc = _cam.take_exposure(seconds=exptime, filename=_fn, blocking=True)
-
-        try:
-            outs, errs = proc.communicate(timeout=(exptime + 15))
-        except Exception as e:
-            cam.logger.error(f'Error taking exposure for {_fn}: {e}')
-            return None
-
-        # After blocking, convert to FITS.
-        cam.logger.info(f'Converting {_fn} to FITS')
-        _fits_fn = cr2_to_fits(_fn, remove_cr2=True)
-
-        # Plate solve.
-        if _fits_fn is not None:
-            cam.logger.info(f'Plate solving {_fits_fn}')
-            get_solve_field(_fits_fn.as_posix(), timeout=exptime + 15)
-
-        cam.logger.info(f'Taking pic and converting complete for {_fn}')
-        return Path(_fits_fn)
+    def _start_processing():
+        process_proc = Process(
+            target=pocs.observatory.process_observation, kwargs=dict(
+                plate_solve=True,
+                compress_fits=False,
+                record_observations=False,
+                make_pretty_image=False,
+                upload_image=False
+            )
+        )
+        process_proc.start()
+        procs.append(process_proc)
 
     try:
         mount.unpark()
 
-        pocs.say('Performing polar rotation test')
+        # At home position for celestial sphere.
+        print('Performing polar rotation test to find celestial sphere.')
         mount.slew_to_home(blocking=True)
+        print(f'At home position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
 
-        pocs.say(f'At home position, taking {exp_time} sec exposure')
-        for cam_name, cam in pocs.observatory.cameras.items():
-            fn = base_dir / f'pole_{cam_name.lower()}.cr2'
-            future = executor.submit(_take_pic, cam, exp_time, fn)
-            futures[cam_name]['pole'] = future
-
-        pocs.say(f'Moving to east for {move_time} sec')
+        # Move to side.
+        print(f'Moving to east for {move_time} sec')
         mount.move_direction(direction='east', seconds=move_time)
-        while mount.is_slewing:
-            time.sleep(1)
+        print(f'At east position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
 
-        pocs.say(f'At east position, taking {exp_time} sec exposure')
-        for cam_name, cam in pocs.observatory.cameras.items():
-            fn = base_dir / f'east_{cam_name.lower()}.cr2'
-            future = executor.submit(_take_pic, cam, exp_time, fn)
-            futures[cam_name]['east'] = future
-
-        pocs.say('Moving back to home')
+        # Move back to home.
+        print('Moving back to home')
         mount.slew_to_home(blocking=True)
 
-        pocs.say(f'Moving to west for {move_time} sec')
+        # Move to other side.
+        print(f'Moving to west for {move_time} sec')
         mount.move_direction(direction='west', seconds=move_time)
-        while mount.is_slewing:
-            time.sleep(1)
+        print(f'At west position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
 
-        pocs.say(f'At west position, taking {exp_time} sec exposure')
-        for cam_name, cam in pocs.observatory.cameras.items():
-            fn = base_dir / f'west_{cam_name.lower()}.cr2'
-            future = executor.submit(_take_pic, cam, exp_time, fn)
-            futures[cam_name]['west'] = future
-
-        pocs.say('Moving back to home')
+        # Move back to home.
+        print('Moving back to home')
         mount.slew_to_home()
     except Exception as e:
         print(f'[red]Error during alignment process: {e}[/red]')
-        pocs.say('Error during alignment process, shutting down.')
-        pocs.say('Parking mount')
+        print('Error during alignment process, shutting down.')
+        print('Parking mount')
         mount.park()
-        pocs.say('Waiting for cameras')
-        executor.shutdown(wait=True)
         return
 
-    pocs.say('Waiting for images to be processed')
-    executor.shutdown(wait=True)
+    # Wait for all the processing to finish.
+    print('Waiting for image processing to finish.')
+    for proc in procs:
+        proc.join()
 
-    # Sort the files by camera name and position.
+    # Gather a list of files from the exposure_list.
     fits_files = defaultdict(dict)
-    for cam_name, positions in futures.items():
-        for position, future in positions.items():
-            fits_fn = future.result()
-            if fits_fn is not None:
-                fits_files[cam_name][position] = fits_fn
+    # Each camera should have three exposures: home, east, west
+    for cam_id, exposures in pocs.observatory.exposure_list.items():
+        for position, exposure in zip(['home', 'east', 'west'], exposures):
+            fits_files[cam_id][position] = exposure.path.with_suffix('.fits')
 
-    # Process each camera's images with a ThreadPoolExecutor
-    results = dict()
-    with ThreadPoolExecutor(max_workers=len(fits_files)) as executor:
-        futures = {
-            cam_name: executor.submit(process_quick_alignment, files)
-            for cam_name, files in fits_files.items()
-        }
-        for cam_name, future in futures.items():
-            results[cam_name] = future.result()
+    # Get the results form the alignment analysis for each camera.
+    for cam_id, files in fits_files.items():
+        try:
+            print(f'Analyzing camera {cam_id} exposures')
+            results = process_quick_alignment(pocs, files)
 
-    def _make_plot(_files, _pole_center, _rotate_center, _dx, _dy, _pixscale):
-        pass
+            if results:
+                print(f'Camera {cam_id} alignment results: {results}')
 
-    # Make the plot for each cameras and write out the values.
-    with Path(center_fn).open('w') as f:
-        for cam_name, (pole_center, rotate_center, dx, dy, pixscale) in results.items():
-            l = (f'{cam_name},{pole_center[0]:.02f},{pole_center[1]:.02f},{rotate_center[0]:.02f},'
-                 f'{rotate_center[1]:.02f},{dx:.02f},{dy:.02f}\n')
-            f.write(l)
-            print(l)
+                # Plot.
+                fig = plot_alignment_diff(cam_id, files, results)
+                fig.tight_layout()
+                fig.savefig(observation.directory / f'{cam_id}_alignment_overlay.jpg')
+                print(f'Plot image: {observation.directory / f"{cam_id}_alignment_overlay.jpg"}')
+        except Exception as e:
+            print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
+            continue
 
-    pocs.say('Done with quick alignment test')
-    pocs.say('MOUNT IS STILL AT HOME POSITION')
+    print('Done with quick alignment test')
+    print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
