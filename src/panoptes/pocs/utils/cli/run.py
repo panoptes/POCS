@@ -340,6 +340,7 @@ def run_quick_alignment(
     base_dir = images_dir / 'drift_align' / str(start_time)
 
     plot_fn = f'{base_dir}/{start_time}_center_overlay.jpg'
+    center_fn = f'{base_dir}/center.csv'
 
     mount = pocs.observatory.mount
 
@@ -458,9 +459,13 @@ def run_quick_alignment(
     def _make_plot(_files, _pole_center, _rotate_center, _dx, _dy, _pixscale):
         pass
 
-    # Make the plot for each cameras.
-    for cam_name, (pole_center, rotate_center, dx, dy, pixscale) in results.items():
-        print(f'{cam_name=} {pole_center=} {rotate_center=} {dx=} {dy=} {pixscale=}')
+    # Make the plot for each cameras and write out the values.
+    with Path(center_fn).open('w') as f:
+        for cam_name, (pole_center, rotate_center, dx, dy, pixscale) in results.items():
+            l = (f'{cam_name},{pole_center[0]:.02f},{pole_center[1]:.02f},{rotate_center[0]:.02f},'
+                 f'{rotate_center[1]:.02f},{dx:.02f},{dy:.02f}\n')
+            f.write(l)
+            print(l)
 
 
 def find_circle_params(points):
