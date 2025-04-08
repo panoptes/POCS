@@ -378,33 +378,42 @@ def run_quick_alignment(
         future = executor.submit(_take_pic, cam, exp_time, fn)
         futures[cam_name]['pole'] = future
 
-    pocs.say(f'Moving to east for {move_time} sec')
-    mount.move_direction(direction='east', seconds=move_time)
-    while mount.is_slewing:
-        time.sleep(1)
+    try:
+        pocs.say(f'Moving to east for {move_time} sec')
+        mount.move_direction(direction='east', seconds=move_time)
+        while mount.is_slewing:
+            time.sleep(1)
 
-    pocs.say(f'At east position, taking {exp_time} sec exposure')
-    for cam_name, cam in pocs.observatory.cameras.items():
-        fn = base_dir / f'east_{cam_name.lower()}.cr2'
-        future = executor.submit(_take_pic, cam, exp_time, fn)
-        futures[cam_name]['east'] = future
+        pocs.say(f'At east position, taking {exp_time} sec exposure')
+        for cam_name, cam in pocs.observatory.cameras.items():
+            fn = base_dir / f'east_{cam_name.lower()}.cr2'
+            future = executor.submit(_take_pic, cam, exp_time, fn)
+            futures[cam_name]['east'] = future
 
-    pocs.say('Moving back to home')
-    mount.slew_to_home(blocking=True)
+        pocs.say('Moving back to home')
+        mount.slew_to_home(blocking=True)
 
-    pocs.say(f'Moving to west for {move_time} sec')
-    mount.move_direction(direction='west', seconds=move_time)
-    while mount.is_slewing:
-        time.sleep(1)
+        pocs.say(f'Moving to west for {move_time} sec')
+        mount.move_direction(direction='west', seconds=move_time)
+        while mount.is_slewing:
+            time.sleep(1)
 
-    pocs.say(f'At west position, taking {exp_time} sec exposure')
-    for cam_name, cam in pocs.observatory.cameras.items():
-        fn = base_dir / f'west_{cam_name.lower()}.cr2'
-        future = executor.submit(_take_pic, cam, exp_time, fn)
-        futures[cam_name]['west'] = future
+        pocs.say(f'At west position, taking {exp_time} sec exposure')
+        for cam_name, cam in pocs.observatory.cameras.items():
+            fn = base_dir / f'west_{cam_name.lower()}.cr2'
+            future = executor.submit(_take_pic, cam, exp_time, fn)
+            futures[cam_name]['west'] = future
 
-    pocs.say('Moving back to home')
-    mount.slew_to_home()
+        pocs.say('Moving back to home')
+        mount.slew_to_home()
+    except Exception as e:
+        print(f'[red]Error during alignment process: {e}[/red]')
+        pocs.say('Error during alignment process, shutting down.')
+        pocs.say('Parking mount')
+        mount.park()
+        pocs.say('Waiting for cameras')
+        executor.shutdown(wait=True)
+        return
 
     pocs.say('Waiting for images to be processed')
     executor.shutdown(wait=True)
