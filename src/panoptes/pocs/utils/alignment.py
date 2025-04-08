@@ -79,11 +79,23 @@ class AlignmentResult:
     rotate_radius: float
     pix_scale: float
     target_points: dict[str, tuple[float, float]]
+    target_name: str
     dx_deg: float
     dy_deg: float
 
+    def __str__(self):
+        # Pretty print
+        return (f"Celestial Center: {self.pole_center[0]:.2f}, {self.pole_center[1]:.2f}\n"
+                f"Rotate Center: {self.rotate_center[0]:.2f}, {self.rotate_center[1]:.2f}\n"
+                f"Rotate Radius: {self.rotate_radius:.02f}\n"
+                f"Pixel Scale: {self.pix_scale:.02f}\n"
+                f"Target Name: {self.target_name}\n"
+                f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
+                f"Delta (degrees): {self.dx_deg:.02f} {self.dy_deg:.02f}\n"
+                )
 
-def process_quick_alignment(files: dict[str, Path]) -> AlignmentResult:
+
+def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris') -> AlignmentResult:
     """Process the quick alignment of polar rotation and RA rotation images.
 
     Args:
@@ -93,7 +105,7 @@ def process_quick_alignment(files: dict[str, Path]) -> AlignmentResult:
         tuple: Polar center coordinates, RA rotation center coordinates, dx, dy, pixel scale
     """
     # Get coordinates for Polaris in each of the images.
-    polaris = SkyCoord.from_name('Polaris')
+    target = SkyCoord.from_name(target_name)
 
     points = dict()
     pole_center = None
@@ -117,7 +129,7 @@ def process_quick_alignment(files: dict[str, Path]) -> AlignmentResult:
             else:
                 # Get the pixel coordinates of Polaris in the image.
                 wcs = WCS(fits_fn.as_posix())
-                x, y = wcs.all_world2pix(polaris.ra.deg, polaris.dec.deg, 1)
+                x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
                 points[position] = (x, y)
 
     # Find the circle that best fits the points.
@@ -144,7 +156,8 @@ def process_quick_alignment(files: dict[str, Path]) -> AlignmentResult:
         dx_deg=dx,
         dy_deg=dy,
         pix_scale=pix_scale,
-        target_points=points
+        target_points=points,
+        target_name=target_name
     )
 
 
@@ -267,7 +280,6 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
 
     alpha = 0.3
     number_ticks = 9
-    clip_percent = 99.5
 
     ax.grid(True, color='blue', ls='-', alpha=alpha)
 
@@ -296,9 +308,9 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
     # Show the background
     im = ax.imshow(data0, cmap='Greys_r', norm=norm)
 
-    # Show the detected Polaris points.
+    # Show the detected points.
     for pos, (x, y) in results.target_points.items():
-        ax.scatter(x, y, marker='o', ec='coral', fc='none', lw=2, label=f"Polaris {pos}")
+        ax.scatter(x, y, marker='o', ec='coral', fc='none', lw=2, label=f"{results.target_name} {pos}")
         ax.annotate(pos, (x, y), c='coral', xytext=(3, 3), textcoords='offset pixels')
 
     # Show the rotation center.
