@@ -352,15 +352,19 @@ def run_quick_alignment(
 
     def _take_pic(_cam: AbstractCamera, exptime: float, _fn: Path) -> Path:
         # Take the exposure.
+        cam.logger.info(f'Taking exposure for {_fn}')
         _cam.take_exposure(seconds=exptime, filename=_fn, blocking=True)
 
         # After blocking, convert to FITS.
+        cam.logger.info(f'Converting {_fn} to FITS')
         _fits_fn = cr2_to_fits(_fn, remove_cr2=True)
 
         # Plate solve.
         if _fits_fn is not None:
+            cam.logger.info(f'Plate solving {_fits_fn}')
             get_solve_field(_fits_fn.as_posix(), timeout=exptime + 15)
 
+        cam.logger.info(f'Taking pic and converting complete for {_fn}')
         return Path(_fits_fn)
 
     pocs.say(f'At home position, taking {exp_time} sec exposure')
