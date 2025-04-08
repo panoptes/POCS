@@ -369,7 +369,7 @@ def run_quick_alignment(
         future = executor.submit(_take_pic, cam, exp_time, fn)
         futures[cam_name]['pole'] = future
 
-    pocs.say('Moving to east for {move_time} sec')
+    pocs.say(f'Moving to east for {move_time} sec')
     mount.move_direction(direction='east', seconds=move_time)
     while mount.is_slewing:
         time.sleep(1)
@@ -383,7 +383,7 @@ def run_quick_alignment(
     pocs.say('Moving back to home')
     mount.slew_to_home(blocking=True)
 
-    pocs.say('Moving to west for {move_time} sec')
+    pocs.say(f'Moving to west for {move_time} sec')
     mount.move_direction(direction='west', seconds=move_time)
     while mount.is_slewing:
         time.sleep(1)
