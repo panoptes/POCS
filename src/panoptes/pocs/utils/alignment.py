@@ -6,7 +6,7 @@ from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.wcs import WCS
 from matplotlib import pyplot as plt
-from panoptes.utils.images.fits import get_solve_field, getdata
+from panoptes.utils.images.fits import get_solve_field, getdata, get_wcsinfo
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
@@ -25,7 +25,12 @@ def analyze_polar_rotation(pole_fn: Path | str, **kwargs):
 
     pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
 
-    return pole_cx, pole_cy
+    wcsinfo = get_wcsinfo(pole_fn)
+    pixscale = None
+    if wcsinfo is not None:
+        pixscale = wcsinfo['pixscale'].value
+
+    return pole_cx, pole_cy, pixscale
 
 
 def analyze_ra_rotation(rotate_fn: Path | str):
