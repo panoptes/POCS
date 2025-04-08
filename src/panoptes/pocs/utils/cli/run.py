@@ -458,58 +458,6 @@ def run_quick_alignment(
     pocs.say('MOUNT IS STILL AT HOME POSITION')
 
 
-def find_circle_params(points):
-    """
-    Calculates the center (h, k) and radius (R) of a circle given a list of points.
-
-    Args:
-        points: A list of tuples, where each tuple represents a point (x, y).
-                The list must contain at least three points.
-
-    Returns:
-        A tuple (h, k, R) representing the center and radius of the circle.
-        Returns (None, None, None) if the input is invalid or no circle can be found.
-    """
-    if not isinstance(points, list) or len(points) < 3:
-        print("Error: Input must be a list of at least three points.")
-        return None, None, None
-
-    # Extract x and y coordinates
-    x_coords = [p[0] for p in points]
-    y_coords = [p[1] for p in points]
-
-    # Construct the matrix A and vector b for the system of equations
-    A = np.array(
-        [
-            [x_coords[0], y_coords[0], 1],
-            [x_coords[1], y_coords[1], 1],
-            [x_coords[2], y_coords[2], 1]
-        ]
-    )
-    b = np.array(
-        [
-            -(x_coords[0] ** 2 + y_coords[0] ** 2),
-            -(x_coords[1] ** 2 + y_coords[1] ** 2),
-            -(x_coords[2] ** 2 + y_coords[2] ** 2)
-        ]
-    )
-
-    # Solve the system of equations Ax = b for the coefficients D, E, and F
-    try:
-        x = np.linalg.solve(A, b)
-        D, E, F = x
-    except np.linalg.LinAlgError:
-        print("Error: Points are collinear or do not form a unique circle.")
-        return None, None, None
-
-    # Calculate the center (h, k) and radius (R)
-    h = -D / 2
-    k = -E / 2
-    R = np.sqrt(h ** 2 + k ** 2 - F)
-
-    return h, k, R
-
-
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
     assert base_dir is not None, print("base_dir cannot be empty")
 
