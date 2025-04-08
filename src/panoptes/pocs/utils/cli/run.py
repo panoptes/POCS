@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import List
 
 import typer
-from astropy.coordinates import SkyCoord
 from panoptes.utils.error import PanError
 from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.cr2 import cr2_to_fits
@@ -23,7 +22,8 @@ from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.utils import alignment, alignment as polar_alignment
+from panoptes.pocs.utils import alignment as polar_alignment
+from panoptes.pocs.utils.alignment import process_quick_alignment
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -250,7 +250,7 @@ def run_old_alignment(
 
         pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment.analyze_polar_rotation(pole_fn, timeout=exp_time + 15)
+            pole_center = polar_alignment.get_celestial_center(pole_fn, timeout=exp_time + 15)
         except Exception as e:
             print("[bold red]Unable to solve pole image.[/bold red]")
             print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
@@ -343,10 +343,6 @@ def run_quick_alignment(
     center_fn = f'{base_dir}/center.csv'
 
     mount = pocs.observatory.mount
-    mount.unpark()
-
-    pocs.say('Performing polar rotation test')
-    mount.slew_to_home(blocking=True)
 
     if not mount.is_home:
         print('[red]Mount is not at home position, exiting.[/red]')
@@ -355,10 +351,16 @@ def run_quick_alignment(
     futures = defaultdict(dict)
     executor = ThreadPoolExecutor(max_workers=3)
 
-    def _take_pic(_cam: AbstractCamera, exptime: float, _fn: Path) -> Path:
+    def _take_pic(_cam: AbstractCamera, exptime: float, _fn: Path) -> Path | None:
         # Take the exposure.
         cam.logger.info(f'Taking exposure for {_fn}')
-        _cam.take_exposure(seconds=exptime, filename=_fn, blocking=True)
+        proc = _cam.take_exposure(seconds=exptime, filename=_fn, blocking=True)
+
+        try:
+            outs, errs = proc.communicate(timeout=(exptime + 15))
+        except Exception as e:
+            cam.logger.error(f'Error taking exposure for {_fn}: {e}')
+            return None
 
         # After blocking, convert to FITS.
         cam.logger.info(f'Converting {_fn} to FITS')
@@ -372,13 +374,18 @@ def run_quick_alignment(
         cam.logger.info(f'Taking pic and converting complete for {_fn}')
         return Path(_fits_fn)
 
-    pocs.say(f'At home position, taking {exp_time} sec exposure')
-    for cam_name, cam in pocs.observatory.cameras.items():
-        fn = base_dir / f'pole_{cam_name.lower()}.cr2'
-        future = executor.submit(_take_pic, cam, exp_time, fn)
-        futures[cam_name]['pole'] = future
-
     try:
+        mount.unpark()
+
+        pocs.say('Performing polar rotation test')
+        mount.slew_to_home(blocking=True)
+
+        pocs.say(f'At home position, taking {exp_time} sec exposure')
+        for cam_name, cam in pocs.observatory.cameras.items():
+            fn = base_dir / f'pole_{cam_name.lower()}.cr2'
+            future = executor.submit(_take_pic, cam, exp_time, fn)
+            futures[cam_name]['pole'] = future
+
         pocs.say(f'Moving to east for {move_time} sec')
         mount.move_direction(direction='east', seconds=move_time)
         while mount.is_slewing:
@@ -426,55 +433,11 @@ def run_quick_alignment(
             if fits_fn is not None:
                 fits_files[cam_name][position] = fits_fn
 
-    # Get coordinates for Polaris in each of the images.
-    polaris = SkyCoord.from_name('Polaris')
-
-    def _process_cam(files):
-        points = list()
-        pole_center = None
-        pixscale = None
-        # Find the xy-coords of Polaris in each of the images using the wcs.
-        for _position, _fits_fn in files.items():
-            if _position == 'home':
-                pole_center_x, pole_center_y, pixscale = alignment.analyze_polar_rotation(
-                    _fits_fn, timeout=exp_time + 15
-                )
-                pole_center = (float(pole_center_x), float(pole_center_y))
-
-            try:
-                wcs = polar_alignment.get_solve_field(_fits_fn.as_posix(), timeout=exp_time + 15)
-            except PanError:
-                print(f"Unable to solve image {_fits_fn}")
-                continue
-
-            # Get the pixel coordinates of Polaris in the image.
-            x, y = wcs.all_world2pix(polaris.ra.deg, polaris.dec.deg, 1)
-            points.append((x, y))
-
-        # Find the circle that best fits the points.
-        h, k, R = find_circle_params(points)
-        rotate_center = (h, k)
-
-        dx = None
-        dy = None
-
-        # Get the distance from the center of the circle to the center of celestial pole.
-        if pole_center is not None:
-            dx = pole_center[0] - rotate_center[0]
-            dy = pole_center[1] - rotate_center[1]
-
-        # Convert deltas to degrees.
-        if pixscale is not None:
-            dx = dx * pixscale / 3600
-            dy = dy * pixscale / 3600
-
-        return pole_center, rotate_center, dx, dy, pixscale
-
     # Process each camera's images with a ThreadPoolExecutor
     results = dict()
     with ThreadPoolExecutor(max_workers=len(fits_files)) as executor:
         futures = {
-            cam_name: executor.submit(_process_cam, files)
+            cam_name: executor.submit(process_quick_alignment, files)
             for cam_name, files in fits_files.items()
         }
         for cam_name, future in futures.items():
