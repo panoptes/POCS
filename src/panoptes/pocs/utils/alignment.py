@@ -262,8 +262,11 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     # Calculate the center (h, k) and radius (R)
     h = -D / 2
     k = -E / 2
-    R = np.sqrt(h ** 2 + k ** 2 - F)
-
+    discriminant = h ** 2 + k ** 2 - F
+    if discriminant < 0:
+        print("Error: Invalid circle parameters, negative value under square root.")
+        return None, None, None
+    R = np.sqrt(discriminant)
     return h, k, R
 
 
