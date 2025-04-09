@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+from collections import defaultdict
 from itertools import product
 from multiprocessing import Process
 from numbers import Number
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import List
 
 import typer
+from astropy.coordinates import SkyCoord
 from panoptes.utils.error import PanError
 from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.cr2 import cr2_to_fits
@@ -19,6 +21,7 @@ from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils import alignment as polar_alignment
+from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_alignment
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -245,7 +248,7 @@ def run_old_alignment(
 
         pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment.analyze_polar_rotation(pole_fn, timeout=exp_time + 15)
+            pole_center = polar_alignment.get_celestial_center(pole_fn, timeout=exp_time + 15)
         except Exception as e:
             print("[bold red]Unable to solve pole image.[/bold red]")
             print("[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]")
@@ -308,6 +311,123 @@ def run_old_alignment(
         pocs.observatory.mount.park()
 
         pocs.power_down()
+
+
+@app.command(name='quick-alignment')
+def run_quick_alignment(
+    context: typer.Context,
+    exp_time: float = typer.Option(20.0, '--exptime', '-e', help='Exposure time in seconds.'),
+    move_time: float = typer.Option(5.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
+):
+    """
+    Runs a quick alignment analysis.
+
+    This function will take three exposures, one while at the "home" position,
+    which is the celestial pole, and one on each side of the axis. It will then
+    analyze the images to figure out the center of rotation for the mount.
+
+    A plot will be created showing the celestial pole and the RA rotation axis as
+    well as an arrow indicating the difference between the two, which corresponds
+    to the offset of the mount from the celestial pole.
+    """
+    pocs = get_pocs(context)
+    print(f'[bold yellow]Starting POCS in alignment mode.[/bold yellow]')
+
+    # Create a dummy observation.
+    observation = Observation(
+        Field('QuickAlignment', position=SkyCoord.from_name('Polaris')),
+        exptime=exp_time,
+        min_nexp=1,
+        exp_set_size=1
+    )
+    pocs.observatory.current_observation = observation
+    mount = pocs.observatory.mount
+
+    procs = list()
+
+    def _start_processing():
+        process_proc = Process(
+            target=pocs.observatory.process_observation, kwargs=dict(
+                plate_solve=True,
+                compress_fits=False,
+                record_observations=False,
+                make_pretty_image=False,
+                upload_image=False
+            )
+        )
+        process_proc.start()
+        procs.append(process_proc)
+
+    try:
+        mount.unpark()
+
+        # At home position for celestial sphere.
+        print('Performing polar rotation test to find celestial sphere.')
+        mount.slew_to_home(blocking=True)
+        print(f'At home position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
+
+        # Move to side.
+        print(f'Moving to east for {move_time} sec')
+        mount.move_direction(direction='east', seconds=move_time)
+        print(f'At east position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
+
+        # Move back to home.
+        print('Moving back to home')
+        mount.slew_to_home(blocking=True)
+
+        # Move to other side.
+        print(f'Moving to west for {move_time} sec')
+        mount.move_direction(direction='west', seconds=move_time)
+        print(f'At west position, taking {exp_time} sec exposure')
+        pocs.observatory.take_observation(blocking=True)
+        _start_processing()
+
+        # Move back to home.
+        print('Moving back to home')
+        mount.slew_to_home()
+    except Exception as e:
+        print(f'[red]Error during alignment process: {e}[/red]')
+        print('Error during alignment process, shutting down.')
+        print('Parking mount')
+        mount.park()
+        return
+
+    # Wait for all the processing to finish.
+    print('Waiting for image processing to finish.')
+    for proc in procs:
+        proc.join()
+
+    # Gather a list of files from the exposure_list.
+    fits_files = defaultdict(dict)
+    # Each camera should have three exposures: home, east, west
+    for cam_id, exposures in pocs.observatory.exposure_list.items():
+        for position, exposure in zip(['home', 'east', 'west'], exposures):
+            fits_files[cam_id][position] = exposure.path.with_suffix('.fits')
+
+    # Get the results form the alignment analysis for each camera.
+    for cam_id, files in fits_files.items():
+        try:
+            print(f'Analyzing camera {cam_id} exposures')
+            results = process_quick_alignment(pocs, files)
+
+            if results:
+                print(f'Camera {cam_id} alignment results: {results}')
+
+                # Plot.
+                fig = plot_alignment_diff(cam_id, files, results)
+                fig.tight_layout()
+                fig.savefig(observation.directory / f'{cam_id}_alignment_overlay.jpg')
+                print(f'Plot image: {observation.directory / f"{cam_id}_alignment_overlay.jpg"}')
+        except Exception as e:
+            print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
+            continue
+
+    print('Done with quick alignment test')
+    print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
