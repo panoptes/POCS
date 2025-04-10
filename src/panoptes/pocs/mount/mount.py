@@ -51,6 +51,8 @@ class AbstractMount(PanBase):
         self._setup_commands(commands)
         self.logger.debug("Mount commands set up")
 
+        self._mount_version = None
+
         # Set the initial location
         self._location = location
 
@@ -219,6 +221,11 @@ class AbstractMount(PanBase):
     def tracking_rate(self, value):
         """ Set the tracking rate """
         self._tracking_rate = value
+
+    @property
+    def mount_version(self):
+        """ str: Mount version """
+        return self._mount_version
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
