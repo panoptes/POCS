@@ -60,6 +60,7 @@ def setup_cameras(
                     'model': 'panoptes.pocs.camera.zwo.Camera',
                     'name': f'Cam{num_cameras:02d}',
                     'serial_number': serial_number,
+                    'file_extension': 'fits',
                     'readout_time': 1.0,
                     'uid': cam_id,
                     'library_path': asi_library_path.absolute().as_posix(),
