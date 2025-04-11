@@ -26,9 +26,8 @@ def get_gphoto2_cmd():
 def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
     """Detect connected cameras.
 
-    If detect_dslr is True, will try to detect DSLRs using gphoto2.
-    If detect_zwo is True, will try to detect ZWO cameras using the ZWO SDK.
-    If endpoint is provided, will use the endpoint to detect cameras.
+    Uses gphoto2 to try and detect which cameras are connected. Cameras should
+    be known and placed in config but this is a useful utility.
 
     Returns:
         list: A list of the ports with detected cameras.
