@@ -79,7 +79,9 @@ class Mount(AbstractSerialMount):
                     raise error.MountNotFound('Problem initializing mount - version numbers do not match')
 
             actual_mount_info = self.query('mount_info')
-            expected_mount_info = self.commands.get('mount_info').get('response')
+
+            # Use the expected mount info if provided otherwise the command set default.
+            expected_mount_info = self.mount_version or self.commands.get('mount_info').get('response')
 
             self._is_initialized = False
 
@@ -180,7 +182,7 @@ class Mount(AbstractSerialMount):
         # Convert limit to a string with sign if a number.
         if isinstance(alt_limit, float):
             alt_limit = int(alt_limit)
-        
+
         if isinstance(alt_limit, int):
             alt_limit = f'{alt_limit:+d}'
 

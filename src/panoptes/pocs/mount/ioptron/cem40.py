@@ -8,7 +8,7 @@ class Mount(BaseMount):
     def __init__(self, location, mount_version='0040', *args, **kwargs):
         self._mount_version = mount_version
         super(Mount, self).__init__(location, *args, **kwargs)
-        self.logger.success('iOptron CEM40 mount created')
+        self.logger.success('iOptron mount created')
 
     def search_for_home(self):
         """Search for the home position.
