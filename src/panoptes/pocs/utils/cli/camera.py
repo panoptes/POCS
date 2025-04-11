@@ -55,7 +55,7 @@ def setup_cameras(
                 platform = 'x64'
             asi_library_path = Path(
                 get_config('directories.base')
-                ) / f'resources/cameras/zwo/{platform}/libASICamera2.so'
+                ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.37'
         print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
         zwo_cameras = asi_driver.get_devices()
