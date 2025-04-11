@@ -62,4 +62,3 @@ def _take_pics(cam_name: str, cam: AbstractCamera, exptime: float, num: int, out
             time.sleep(delay)
 
     return files
-
