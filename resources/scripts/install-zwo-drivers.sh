@@ -23,6 +23,7 @@ sudo install "$FILTERWHEEL_DIR/efw.rules"  /etc/udev/rules.d
 
 echo "ZWO drivers installed successfully."
 echo "Disconnect and reconnect your camera, then running the following command to check if the drivers are loaded:"
+echo ""
 echo "cat /sys/module/usbcore/parameters/usbfs_memory_mb"
-echo "You should see the value 200 if the camera is recognized."
-echo "You may also need to reboot your system for the changes to take effect."
+echo ""
+echo "You should see the value '200' if the camera is recognized."
