@@ -49,7 +49,7 @@ def setup_cameras(
     if detect_zwo:
         print('Detecting ZWO cameras...')
         if asi_library_path is None:
-            asi_library_path = Path(get_config('directories.resources')) / 'cameras/zwo/armv8/libASICamera2.so.1.37'
+            asi_library_path = Path(get_config('directories.base')) / 'resources/cameras/zwo/armv8/libASICamera2.so.1.37'
         print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
         zwo_cameras = asi_driver.get_devices()
