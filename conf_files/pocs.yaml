@@ -22,13 +22,14 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obstructions: []
+  obstructions: [ ]
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
 
 directories:
   base: .
   images: images
+  resources: resources
   mounts: resources/mounts
   fields: conf_files/fields
 
@@ -91,7 +92,7 @@ cameras:
     compress_fits: True
     make_pretty_images: True
     keep_jpgs: True
-    readout_time: 1.0  # seconds
+    readout_time: 5.0  # seconds
     timeout: 60  # seconds
     filter_type: RGGB
     file_extension: cr2
@@ -162,12 +163,12 @@ environment:
 # TODO: Add options for cleaning up old data (e.g. >30 days)
 ################################################################################
 observations:
-  make_timelapse: True
+  make_timelapse: False
   compress_fits: True
   record_observations: True
   make_pretty_images: True
-  keep_jpgs: True
-  plate_solve: True
+  keep_jpgs: False
+  plate_solve: False
   upload_image: False
 
 ######################## Google Network ########################################
