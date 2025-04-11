@@ -66,6 +66,8 @@ def setup_cameras(
                     'library_path': asi_library_path.absolute().as_posix(),
                 }
                 num_cameras += 1
+                # Close the camera by id.
+                asi_driver.close_camera(cam_id)
 
     if not cameras:
         print('No cameras detected, exiting.')
