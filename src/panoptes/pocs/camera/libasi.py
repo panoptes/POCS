@@ -3,9 +3,10 @@ import enum
 
 import numpy as np
 from astropy import units as u
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 
 ####################################################################################################
@@ -52,7 +53,7 @@ class ASIDriver(AbstractSDKDriver):
         version = version.replace(', ', '.')  # Format the version string properly
         return version
 
-    def get_devices(self):
+    def get_devices(self) -> dict[str, int]:
         """Gets currently connected camera info.
 
         Returns:
@@ -62,7 +63,7 @@ class ASIDriver(AbstractSDKDriver):
         Notes:
             If a camera does not have a serial number it will attempt to fall back to string ID.
             Cameras with neither serial number nor string ID will be left out of the dictionary
-            as they have no unique indentifier.
+            as they have no unique identifier.
         """
         n_cameras = self.get_num_of_connected_cameras()
         if n_cameras == 0:
@@ -134,9 +135,11 @@ class ASIDriver(AbstractSDKDriver):
     def get_camera_property_by_id(self, camera_ID):
         """Get properties of the camera with a given integer ID."""
         camera_info = CameraInfo()
-        self._call_function('ASIGetCameraPropertyByID',
-                            camera_ID,
-                            ctypes.byref(camera_info))
+        self._call_function(
+            'ASIGetCameraPropertyByID',
+            camera_ID,
+            ctypes.byref(camera_info)
+            )
 
         pythonic_info = self._parse_info(camera_info)
         self.logger.debug("Got info from camera {camera_ID}, {name}".format(**pythonic_info))
@@ -158,7 +161,7 @@ class ASIDriver(AbstractSDKDriver):
         self.logger.debug("Closed camera {}".format(camera_ID))
 
     def get_ID(self, camera_ID):
-        """Get string ID from firmaware for the camera with given integer ID
+        """Get string ID from firmware for the camera with given integer ID
 
         The saved ID is an array of 8 unsigned chars for some reason.
         """
@@ -178,8 +181,11 @@ class ASIDriver(AbstractSDKDriver):
         bytes_ID = string_ID.encode()  # Convert string to bytes
         if len(bytes_ID) > 8:
             bytes_ID = bytes_ID[:8]  # This may chop out part of a UTF-8 multibyte character
-            self.logger.warning("New ID longer than 8 bytes, truncating {} to {}".format(
-                string_ID, bytes_ID.decode()))
+            self.logger.warning(
+                "New ID longer than 8 bytes, truncating {} to {}".format(
+                    string_ID, bytes_ID.decode()
+                )
+            )
         else:
             bytes_ID = bytes_ID.ljust(8)  # Pad to 8 bytes with spaces, if necessary
         uchar_ID = (ctypes.c_ubyte * 8).from_buffer_copy(bytes_ID)
@@ -200,10 +206,12 @@ class ASIDriver(AbstractSDKDriver):
         controls = {}
         for i in range(n_controls):
             control_caps = ControlCaps()
-            self._call_function('ASIGetControlCaps',
-                                camera_ID,
-                                ctypes.c_int(i),
-                                ctypes.byref(control_caps))
+            self._call_function(
+                'ASIGetControlCaps',
+                camera_ID,
+                ctypes.c_int(i),
+                ctypes.byref(control_caps)
+                )
             control = self._parse_caps(control_caps)
             controls[control['control_type']] = control
         self.logger.debug("Got details of {} controls from camera {}".format(n_controls, camera_ID))
@@ -213,11 +221,13 @@ class ASIDriver(AbstractSDKDriver):
         """ Gets the value of the control control_type from camera with given integer ID """
         value = ctypes.c_long()
         is_auto = ctypes.c_int()
-        self._call_function('ASIGetControlValue',
-                            camera_ID,
-                            ControlType[control_type],
-                            ctypes.byref(value),
-                            ctypes.byref(is_auto))
+        self._call_function(
+            'ASIGetControlValue',
+            camera_ID,
+            ControlType[control_type],
+            ctypes.byref(value),
+            ctypes.byref(is_auto)
+            )
         nice_value = self._parse_return_value(value, control_type)
         return nice_value, bool(is_auto)
 
@@ -229,14 +239,20 @@ class ASIDriver(AbstractSDKDriver):
             value = self.get_control_value(camera_ID, control_type)[0]
         else:
             auto = False
-        self._call_function('ASISetControlValue',
-                            camera_ID,
-                            ctypes.c_int(ControlType[control_type]),
-                            self._parse_input_value(value, control_type),
-                            ctypes.c_int(auto))
-        self.logger.debug("Set {} to {} on camera {}".format(control_type,
-                                                             'AUTO' if auto else value,
-                                                             camera_ID))
+        self._call_function(
+            'ASISetControlValue',
+            camera_ID,
+            ctypes.c_int(ControlType[control_type]),
+            self._parse_input_value(value, control_type),
+            ctypes.c_int(auto)
+            )
+        self.logger.debug(
+            "Set {} to {} on camera {}".format(
+                control_type,
+                'AUTO' if auto else value,
+                camera_ID
+                )
+            )
 
     def get_roi_format(self, camera_ID):
         """ Get the ROI size and image format setting for camera with given integer ID """
@@ -244,12 +260,14 @@ class ASIDriver(AbstractSDKDriver):
         height = ctypes.c_int()
         binning = ctypes.c_int()
         image_type = ctypes.c_int()
-        self._call_function('ASIGetROIFormat',
-                            camera_ID,
-                            ctypes.byref(width),
-                            ctypes.byref(height),
-                            ctypes.byref(binning),
-                            ctypes.byref(image_type))
+        self._call_function(
+            'ASIGetROIFormat',
+            camera_ID,
+            ctypes.byref(width),
+            ctypes.byref(height),
+            ctypes.byref(binning),
+            ctypes.byref(image_type)
+            )
         roi_format = {'width': width.value * u.pixel,
                       'height': height.value * u.pixel,
                       'binning': binning.value,
@@ -261,14 +279,19 @@ class ASIDriver(AbstractSDKDriver):
         width = int(get_quantity_value(width, unit=u.pixel))
         height = int(get_quantity_value(height, unit=u.pixel))
         binning = int(binning)
-        self._call_function('ASISetROIFormat',
-                            camera_ID,
-                            ctypes.c_int(width),
-                            ctypes.c_int(height),
-                            ctypes.c_int(binning),
-                            ctypes.c_int(ImgType[image_type]))
-        self.logger.debug("Set ROI, format on camera {} to {}x{}/{}, {}".format(
-            camera_ID, width, height, binning, image_type))
+        self._call_function(
+            'ASISetROIFormat',
+            camera_ID,
+            ctypes.c_int(width),
+            ctypes.c_int(height),
+            ctypes.c_int(binning),
+            ctypes.c_int(ImgType[image_type])
+            )
+        self.logger.debug(
+            "Set ROI, format on camera {} to {}x{}/{}, {}".format(
+                camera_ID, width, height, binning, image_type
+            )
+        )
 
     def get_start_position(self, camera_ID):
         """ Get position of the upper left corner of the ROI for camera with given integer ID
@@ -282,10 +305,12 @@ class ASIDriver(AbstractSDKDriver):
         """
         start_x = ctypes.c_int()
         start_y = ctypes.c_int()
-        self._call_function('ASIGetStartPos',
-                            camera_ID,
-                            ctypes.byref(start_x),
-                            ctypes.byref(start_y))
+        self._call_function(
+            'ASIGetStartPos',
+            camera_ID,
+            ctypes.byref(start_x),
+            ctypes.byref(start_y)
+            )
         start_x = start_x.value * u.pixel
         start_y = start_y.value * u.pixel
         return start_x, start_y
@@ -294,19 +319,26 @@ class ASIDriver(AbstractSDKDriver):
         """ Set position of the upper left corner of the ROI for camera with given integer ID """
         start_x = int(get_quantity_value(start_x, unit=u.pixel))
         start_y = int(get_quantity_value(start_y, unit=u.pixel))
-        self._call_function('ASISetStartPos',
-                            camera_ID,
-                            ctypes.c_int(start_x),
-                            ctypes.c_int(start_y))
-        self.logger.debug("Set ROI start position of camera {} to ({}, {})".format(
-            camera_ID, start_x, start_y))
+        self._call_function(
+            'ASISetStartPos',
+            camera_ID,
+            ctypes.c_int(start_x),
+            ctypes.c_int(start_y)
+            )
+        self.logger.debug(
+            "Set ROI start position of camera {} to ({}, {})".format(
+                camera_ID, start_x, start_y
+            )
+        )
 
     def get_dropped_frames(self, camera_ID):
         """Get the number of dropped frames during video capture."""
         n_dropped_frames = ctypes.c_int()
-        self._call_function('ASIGetDroppedFrames',
-                            camera_ID,
-                            ctypes.byref(n_dropped_frames))
+        self._call_function(
+            'ASIGetDroppedFrames',
+            camera_ID,
+            ctypes.byref(n_dropped_frames)
+            )
         self.logger_debug("Camera {} has dropped {} frames.".format(camera_ID, n_dropped_frames))
         return n_dropped_frames
 
@@ -325,24 +357,30 @@ class ASIDriver(AbstractSDKDriver):
         May need to call this as dark current subtraction settings persist in the registry
         on Windows.
         """
-        self._call_function('ASIDisableDarkSubtract',
-                            camera_ID)
+        self._call_function(
+            'ASIDisableDarkSubtract',
+            camera_ID
+            )
         self.logger.debug("Dark subtraction on camera {} disabled.".format(camera_ID))
 
     def pulse_guide_on(self, camera_ID, direction):
         """Turn on PulseGuide on ST4 port of given camera in given direction."""
-        self._call_function('ASIPulseGuideOn',
-                            camera_ID,
-                            GuideDirection[direction])
+        self._call_function(
+            'ASIPulseGuideOn',
+            camera_ID,
+            GuideDirection[direction]
+            )
         dname = GuideDirection[direction].name
         msg = f"PulseGuide on camera {camera_ID} on in direction {dname}."
         self.logger.debug(msg)
 
     def pulse_guide_off(self, camera_ID, direction):
         """Turn off PulseGuide on ST4 port of given camera in given direction."""
-        self._call_function('ASIPulseGuideOff',
-                            camera_ID,
-                            GuideDirection[direction])
+        self._call_function(
+            'ASIPulseGuideOff',
+            camera_ID,
+            GuideDirection[direction]
+            )
         dname = GuideDirection[direction].name
         msg = f"PulseGuide on camera {camera_ID} off in direction {dname}."
         self.logger.debug(msg)
@@ -353,37 +391,47 @@ class ASIDriver(AbstractSDKDriver):
         offset_unity_gain = ctypes.c_int()
         gain_lowest_rn = ctypes.c_int()
         offset_lowest_rn = ctypes.c_int()
-        self._call_function('ASIGetGainOffset',
-                            camera_ID,
-                            ctypes.byref(offset_highest_dr),
-                            ctypes.byref(offset_unity_gain),
-                            ctypes.byref(gain_lowest_rn),
-                            ctypes.byref(offset_lowest_rn))
+        self._call_function(
+            'ASIGetGainOffset',
+            camera_ID,
+            ctypes.byref(offset_highest_dr),
+            ctypes.byref(offset_unity_gain),
+            ctypes.byref(gain_lowest_rn),
+            ctypes.byref(offset_lowest_rn)
+            )
         self.logger.debug('Got pre-setting parameters from camera {}.'.format(camera_ID))
         return offset_highest_dr, offset_unity_gain, gain_lowest_rn, offset_lowest_rn
 
     def get_camera_supported_mode(self, camera_ID):
         """Get supported trigger modes for camera with given integer ID."""
         modes_struct = SupportedMode()
-        self._call_function('ASIGetCameraSupportMode',
-                            camera_ID,
-                            ctypes.byref(modes_struct.modes))
+        self._call_function(
+            'ASIGetCameraSupportMode',
+            camera_ID,
+            ctypes.byref(modes_struct.modes)
+            )
         supported_modes = []
         for mode_int in modes_struct.modes:
             if mode_int == CameraMode.END:
                 break
             supported_modes.append(CameraMode(mode_int).name)
 
-        self.logger.debug("Got supported modes {} for camera {}".format(supported_modes,
-                                                                        camera_ID))
+        self.logger.debug(
+            "Got supported modes {} for camera {}".format(
+                supported_modes,
+                camera_ID
+                )
+            )
         return supported_modes
 
     def get_camera_mode(self, camera_ID):
         """Get current trigger mode for camera with given integer ID."""
         mode = ctypes.int()
-        self._call_function('ASIGetCameraMode',
-                            camera_ID,
-                            ctypes.byref(mode))
+        self._call_function(
+            'ASIGetCameraMode',
+            camera_ID,
+            ctypes.byref(mode)
+            )
         mode_name = CameraMode(mode).name
         self.logger.debug('Camera {} is in trigger mode {}'.format(camera_ID, mode_name))
         return mode_name
@@ -391,19 +439,23 @@ class ASIDriver(AbstractSDKDriver):
     def set_camera_mode(self, camera_ID, mode_name):
         """Set trigger mode for camera with given integer ID."""
         mode = CameraMode[mode_name]
-        self._call_function('ASISetCameraMode',
-                            camera_ID,
-                            mode)
+        self._call_function(
+            'ASISetCameraMode',
+            camera_ID,
+            mode
+            )
         self.logger.debug('Set trigger mode of camera {} to {}.'.format(camera_ID, mode_name))
 
     def send_soft_trigger(self, camera_ID, start_stop_signal):
         """Send out a soft trigger on camera with given integer ID."""
-        self._call_function('ASISendSoftTrigger',
-                            camera_ID,
-                            int(bool(start_stop_signal)))
+        self._call_function(
+            'ASISendSoftTrigger',
+            camera_ID,
+            int(bool(start_stop_signal))
+            )
         self.logger.debug('Soft trigger sent to camera {}.'.format(camera_ID))
 
-    def get_serial_number(self, camera_ID):
+    def get_serial_number(self, camera_ID) -> str:
         """Get serial number of the camera with given integer ID.
 
         The serial number is an array of 8 unsigned chars, the same as string ID,
@@ -412,9 +464,11 @@ class ASIDriver(AbstractSDKDriver):
         representation.
         """
         struct_SN = ID()  # Same structure as string ID.
-        self._call_function('ASIGetSerialNumber',
-                            camera_ID,
-                            ctypes.byref(struct_SN))
+        self._call_function(
+            'ASIGetSerialNumber',
+            camera_ID,
+            ctypes.byref(struct_SN)
+            )
         bytes_SN = bytes(struct_SN.id)
         serial_number = "".join(f"{b:02x}" for b in bytes_SN)
         self.logger.debug("Got serial number '{}' from camera {}".format(serial_number, camera_ID))
@@ -426,23 +480,27 @@ class ASIDriver(AbstractSDKDriver):
         pin_high = ctypes.c_int()
         delay = ctypes.c_long()
         duration = ctypes.c_long()
-        self._call_function('ASIGetTriggerOutputIOConf',
-                            camera_ID,
-                            ctypes.byref(pin),
-                            ctypes.bytef(pin_high),
-                            ctypes.byref(delay),
-                            ctypes.byref(duration))
+        self._call_function(
+            'ASIGetTriggerOutputIOConf',
+            camera_ID,
+            ctypes.byref(pin),
+            ctypes.bytef(pin_high),
+            ctypes.byref(delay),
+            ctypes.byref(duration)
+            )
         self.logger.debug("Got trigger config from camera {}".format(camera_ID))
         return TrigOutput(pin).name, bool(pin_high), int(delay), int(duration)
 
     def set_trigger_ouput_io_conf(self, camera_ID, pin, pin_high, delay, duration):
         """Set external trigger configuration of the camera with given integer ID."""
-        self._call_function('ASISetTriggerOutputIOConf',
-                            camera_ID,
-                            TrigOutput[pin],
-                            ctypes.c_int(pin_high),
-                            ctypes.c_long(delay),
-                            ctypes.c_long(duration))
+        self._call_function(
+            'ASISetTriggerOutputIOConf',
+            camera_ID,
+            TrigOutput[pin],
+            ctypes.c_int(pin_high),
+            ctypes.c_long(delay),
+            ctypes.c_long(duration)
+            )
         self.logger.debug("Set trigger config of camera {}".format(camera_ID))
 
     def start_exposure(self, camera_ID):
@@ -465,10 +523,12 @@ class ASIDriver(AbstractSDKDriver):
         """ Get image data from exposure on camera with given integer ID """
         exposure_data = self._image_array(width, height, image_type)
 
-        self._call_function('ASIGetDataAfterExp',
-                            camera_ID,
-                            exposure_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
-                            ctypes.c_long(exposure_data.nbytes))
+        self._call_function(
+            'ASIGetDataAfterExp',
+            camera_ID,
+            exposure_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
+            ctypes.c_long(exposure_data.nbytes)
+            )
         self.logger.debug("Got exposure data from camera {}".format(camera_ID))
         return exposure_data
 
@@ -485,11 +545,13 @@ class ASIDriver(AbstractSDKDriver):
         video_data = self._image_array(width, height, image_type)
         timeout = int(get_quantity_value(timeout, unit=u.ms))
         try:
-            self._call_function('ASIGetVideoData',
-                                camera_ID,
-                                video_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
-                                ctypes.c_long(video_data.nbytes),
-                                ctypes.c_int(-1))
+            self._call_function(
+                'ASIGetVideoData',
+                camera_ID,
+                video_data.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
+                ctypes.c_long(video_data.nbytes),
+                ctypes.c_int(-1)
+                )
             # If set timeout to anything but -1 (no timeout) this call times out instantly?
         except RuntimeError:
             # Expect some dropped frames during video capture
@@ -523,7 +585,8 @@ class ASIDriver(AbstractSDKDriver):
                          'bayer_pattern': BayerPattern(camera_info.bayer_pattern).name,
                          'supported_bins': self._parse_bins(camera_info.supported_bins),
                          'supported_video_format': self._parse_formats(
-                             camera_info.supported_video_format),
+                             camera_info.supported_video_format
+                         ),
                          'pixel_size': camera_info.pixel_size * u.um,
                          'has_mechanical_shutter': bool(camera_info.has_mechanical_shutter),
                          'has_ST4_port': bool(camera_info.has_ST4_port),
@@ -554,12 +617,18 @@ class ASIDriver(AbstractSDKDriver):
         control_type = ControlType(control_caps.control_type).name
         control_info = {'name': control_caps.name.decode(),
                         'description': control_caps.description.decode(),
-                        'max_value': self._parse_return_value(control_caps.max_value,
-                                                              control_type),
-                        'min_value': self._parse_return_value(control_caps.min_value,
-                                                              control_type),
-                        'default_value': self._parse_return_value(control_caps.default_value,
-                                                                  control_type),
+                        'max_value': self._parse_return_value(
+                            control_caps.max_value,
+                            control_type
+                            ),
+                        'min_value': self._parse_return_value(
+                            control_caps.min_value,
+                            control_type
+                            ),
+                        'default_value': self._parse_return_value(
+                            control_caps.default_value,
+                            control_type
+                            ),
                         'is_auto_supported': bool(control_caps.is_auto_supported),
                         'is_writable': bool(control_caps.is_writable),
                         'control_type': control_type}
