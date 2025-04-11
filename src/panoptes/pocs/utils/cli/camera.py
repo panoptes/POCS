@@ -1,6 +1,7 @@
 import concurrent.futures
 import time
 from pathlib import Path
+from platform import uname
 from typing import Dict, List
 
 import typer
@@ -49,7 +50,12 @@ def setup_cameras(
     if detect_zwo:
         print('Detecting ZWO cameras...')
         if asi_library_path is None:
-            asi_library_path = Path(get_config('directories.base')) / 'resources/cameras/zwo/armv8/libASICamera2.so.1.37'
+            platform = uname().machine
+            if platform == 'x86_64':
+                platform = 'x64'
+            asi_library_path = Path(
+                get_config('directories.base')
+                ) / f'resources/cameras/zwo/{platform}/libASICamera2.so'
         print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
         zwo_cameras = asi_driver.get_devices()
