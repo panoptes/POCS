@@ -82,16 +82,16 @@ def setup_cameras(
 def take_pictures(
     num_images: int = 1,
     exptime: float = 1.0,
-    output_dir: Path | str = '/home/panoptes/images',
+    output_dir: str = '/home/panoptes/images',
     delay: float = 0.0,
-) -> Dict[str, List[Path]]:
+) -> Dict[str, List[Path]] | None:
     """Takes pictures with cameras.
 
     """
     cameras = create_cameras_from_config()
     if len(cameras) == 0:
         print('No cameras found, exiting.')
-        return
+        return None
 
     print(f'Taking {num_images} images with {len(cameras)} cameras.')
 
