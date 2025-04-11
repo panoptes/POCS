@@ -68,7 +68,7 @@ def setup_cameras(
                     'serial_number': serial_number,
                     'file_extension': 'fits',
                     'readout_time': 1.0,
-                    'uid': cam_id,
+                    'uid': serial_number,
                     'library_path': asi_library_path.absolute().as_posix(),
                 }
                 num_cameras += 1
@@ -82,6 +82,9 @@ def setup_cameras(
     print(f'Found {num_cameras} cameras to set up.')
     print('Updating camera config...')
     set_config('cameras.devices', list(cameras.values()))
+
+    # Turn off the autodetect
+    set_config('cameras.defaults.auto_detect', False)
 
     print('Now creating the cameras from the config and taking a test picture with each.')
     images = take_pictures(num_images=1, exptime=1.0, output_dir='/home/panoptes/images/test')
