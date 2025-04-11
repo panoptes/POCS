@@ -55,7 +55,7 @@ def setup_cameras(
         zwo_cameras = asi_driver.get_devices()
         if zwo_cameras:
             print(f'Detected {len(zwo_cameras)} ZWO cameras.')
-            for i, serial_number, cam_id in enumerate(zwo_cameras.items()):
+            for i, (serial_number, cam_id) in enumerate(zwo_cameras.items()):
                 cameras[f'zwo-{i:02d}'] = {
                     'model': 'panoptes.pocs.camera.zwo.Camera',
                     'name': f'Cam{num_cameras:02d}',
