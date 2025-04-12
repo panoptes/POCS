@@ -127,7 +127,11 @@ def take_pictures(
         files[cam_name].append(future.result())
 
     print('Finished taking pictures.')
-    print(f'{files}')
+    for cam_name, file_list in files.items():
+        print(f'Camera {cam_name} took pictures:')
+        for file in file_list:
+            print(f'  - {file}')
+
     return files
 
 
