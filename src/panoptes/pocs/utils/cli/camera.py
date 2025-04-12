@@ -130,7 +130,7 @@ def take_pictures(
     for cam_name, file_list in files.items():
         print(f'Camera {cam_name} took pictures:')
         for file in file_list:
-            print(f'  - {file}')
+            print(f'  - {file.as_posix()}\n')
 
     return files
 
