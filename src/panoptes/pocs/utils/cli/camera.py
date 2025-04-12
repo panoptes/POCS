@@ -1,6 +1,5 @@
 import concurrent.futures
 import time
-from collections import defaultdict
 from pathlib import Path
 from platform import uname
 from typing import Dict, List
@@ -9,6 +8,7 @@ import typer
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.time import current_time
 from rich import print
+from tqdm import trange
 
 from panoptes.pocs.camera import AbstractCamera, create_cameras_from_config, list_connected_gphoto2_cameras
 from panoptes.pocs.camera.libasi import ASIDriver
@@ -119,28 +119,27 @@ def take_pictures(
             future = executor.submit(_take_pics, cam_name, cam, exptime, num_images, output_dir, delay)
             futures[future] = cam_name
 
-    files = defaultdict(list)
+    files = dict()
     for future in concurrent.futures.as_completed(futures):
         if future.exception():
             print(future.exception())
             continue
 
         cam_name = futures[future]
-        files[cam_name].append(future.result()[0])
+        files[cam_name] = future.result()
 
     print('Finished taking pictures.')
     for cam_name, file_list in files.items():
         print(f'Camera {cam_name} took pictures:')
         for file in file_list:
-            print(f'  - {file.as_posix()}\n')
+            print(f'  - {file}')
 
     return files
 
 
 def _take_pics(cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path, delay: float):
     files = list()
-    for i in range(num):
-        print(f'Taking {cam_name} image {i + 1} of {num}')
+    for i in trange(num):
         fn = output_dir / f'{cam_name}-{i:04d}-{current_time(flatten=True)}.{cam.file_extension}'
         cam.take_exposure(seconds=exptime, filename=fn, blocking=True)
         files.append(fn)
