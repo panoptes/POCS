@@ -1,5 +1,6 @@
 import concurrent.futures
 import time
+from collections import defaultdict
 from pathlib import Path
 from platform import uname
 from typing import Dict, List
@@ -55,7 +56,7 @@ def setup_cameras(
                 platform = 'x64'
             asi_library_path = Path(
                 get_config('directories.base')
-                ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.37'
+            ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.37'
         print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
         zwo_cameras = asi_driver.get_devices()
@@ -116,14 +117,18 @@ def take_pictures(
             future = executor.submit(_take_pics, cam_name, cam, exptime, num_images, output_dir, delay)
             futures[future] = cam_name
 
+    files = defaultdict(list)
     for future in concurrent.futures.as_completed(futures):
         if future.exception():
             print(future.exception())
             continue
 
-        print(f'{cam_name}: {future.result()}')
+        cam_name = futures[future]
+        files[cam_name].append(future.result())
 
-    return futures
+    print('Finished taking pictures.')
+    print(f'{files}')
+    return files
 
 
 def _take_pics(cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path, delay: float):
