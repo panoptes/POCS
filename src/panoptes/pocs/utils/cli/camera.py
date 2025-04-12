@@ -124,7 +124,7 @@ def take_pictures(
             continue
 
         cam_name = futures[future]
-        files[cam_name].append(future.result())
+        files[cam_name].append(future.result()[0])
 
     print('Finished taking pictures.')
     for cam_name, file_list in files.items():
