@@ -54,6 +54,8 @@ def setup_cameras(
             platform = uname().machine
             if platform == 'x86_64':
                 platform = 'x64'
+            elif platform == 'aarch64':
+                platform = 'armv8'
             asi_library_path = Path(
                 get_config('directories.base')
             ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.37'
