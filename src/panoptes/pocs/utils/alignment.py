@@ -119,6 +119,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             print(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
             pole_center = (float(pole_center_x), float(pole_center_y))
+            points[position] = pole_center
         else:
             try:
                 print(f"Processing RA rotation image: {fits_fn}")
