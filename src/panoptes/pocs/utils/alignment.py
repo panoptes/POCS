@@ -1,8 +1,10 @@
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 from astropy.coordinates import SkyCoord
+from astropy.io.fits.verify import VerifyWarning
 from astropy.nddata import Cutout2D
 from astropy.visualization import LogStretch, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
@@ -17,6 +19,8 @@ from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
+
+warnings.simplefilter('ignore', category=VerifyWarning)
 
 
 def get_celestial_center(pole_fn: Path | str, **kwargs):
