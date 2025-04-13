@@ -407,10 +407,12 @@ def run_quick_alignment(
     # Each camera should have three exposures: home, east, west
     for cam_id, exposures in pocs.observatory.current_observation.exposure_list.items():
         for position, exposure in zip(['home', 'east', 'west'], exposures):
-            fits_files[cam_id][position] = exposure.path.with_suffix('.fits').as_posix()
+            cam_uid = exposure.metadata['camera_uid']
+            fits_files[cam_uid][position] = exposure.path.with_suffix('.fits').as_posix()
 
     # Get the results form the alignment analysis for each camera.
     now = current_time(flatten=True)
+    csv_path = Path(observation.directory) / f'alignment.csv'
     for cam_id, files in fits_files.items():
         try:
             print(f'Analyzing camera {cam_id} exposures')
@@ -427,8 +429,8 @@ def run_quick_alignment(
                 print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
 
                 # Save deltas to CSV.
-                csv_path = Path(observation.directory) / f'{cam_id}-{now}-alignment.csv'
-                csv_path.write_text(results.to_csv_line(), encoding='utf-8', newline='\n')
+                line = f'{now},{cam_id},{results.to_csv_line()}'
+                csv_path.write_text(line, encoding='utf-8', newline='\n')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
