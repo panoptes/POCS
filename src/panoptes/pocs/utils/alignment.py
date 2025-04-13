@@ -126,7 +126,6 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             logger.debug(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
             pole_center = (float(pole_center_x), float(pole_center_y))
-            points[position] = pole_center
         else:
             try:
                 logger.debug(f"Processing RA rotation image: {fits_fn}")
@@ -135,11 +134,11 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             except PanError:
                 logger.warning(f"Unable to solve image {fits_fn}")
                 continue
-            else:
-                # Get the pixel coordinates of Polaris in the image.
-                wcs = WCS(fits_fn.as_posix())
-                x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
-                points[position] = (x, y)
+
+        # Get the pixel coordinates of Polaris in the image.
+        wcs = WCS(fits_fn.as_posix())
+        x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
+        points[position] = (x, y)
 
     # Find the circle that best fits the points.
     h, k, R = find_circle_params(points)
