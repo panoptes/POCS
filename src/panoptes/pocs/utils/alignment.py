@@ -152,16 +152,20 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
                 continue
 
         # Get the pixel coordinates of Polaris in the image.
+        logger.debug(f"Finding Polaris in image: {fits_fn}")
         wcs = WCS(fits_fn.as_posix())
         x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
+        logger.debug(f"Polaris position in image: {x}, {y}")
         points[position] = (x, y)
 
     # Find the circle that best fits the points.
     h, k, R = find_circle_params(points)
+    logger.debug(f"Circle parameters: center=({h}, {k}), radius={R}")
     rotate_center_pix = (h, k)
 
     # Put the rotate center back into celestial coordinates using the 'home' image.
-    wcs0 = WCS(files['home'].as_posix())
+    logger.debug(f"Determining celestial coordinates for rotate center.")
+    wcs0 = WCS(files['home'])
     rotate_center_celestial = wcs0.all_pix2world(rotate_center_pix[0], rotate_center_pix[1], 1, ra_dec_order=True)[0]
     pole_center_celestial = wcs0.all_pix2world(pole_center_pix[0], pole_center_pix[1], 1, ra_dec_order=True)[0]
 
