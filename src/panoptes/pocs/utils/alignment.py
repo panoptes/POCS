@@ -4,11 +4,10 @@ from pathlib import Path
 
 import numpy as np
 from astropy.coordinates import SkyCoord
-from astropy.io.fits.verify import VerifyWarning
 from astropy.nddata import Cutout2D
 from astropy.visualization import LogStretch, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.wcs import WCS
+from astropy.wcs import FITSFixedWarning, WCS
 from loguru import Logger
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
@@ -20,7 +19,7 @@ from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
-warnings.simplefilter('ignore', category=VerifyWarning)
+warnings.simplefilter('ignore', category=FITSFixedWarning)
 
 
 def get_celestial_center(pole_fn: Path | str, **kwargs):
