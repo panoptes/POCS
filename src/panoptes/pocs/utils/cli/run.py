@@ -22,6 +22,7 @@ from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils import alignment as polar_alignment
 from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_alignment
+from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -430,6 +431,14 @@ def run_quick_alignment(
 
                 # Save deltas to CSV.
                 csv_file.write(f'{now},{cam_id},{results.to_csv_line()}\n')
+
+                # Remove everything in the path before 'images' for upload.
+                path_parts = alignment_plot_fn.parts
+                bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
+                upload_image(
+                    file_path=alignment_plot_fn,
+                    bucket_path=bucket_path,
+                )
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
