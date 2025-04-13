@@ -1,20 +1,19 @@
-from collections import OrderedDict
+import random
 import re
 import shutil
 import subprocess
-import random
+from collections import OrderedDict
 from contextlib import suppress
 from typing import Optional
 
 import requests
-from pydantic import AnyHttpUrl
-
-from panoptes.pocs.camera.camera import AbstractCamera  # noqa
-
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
+from pydantic import AnyHttpUrl
+
+from panoptes.pocs.camera.camera import AbstractCamera  # noqa
+from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -24,7 +23,7 @@ def get_gphoto2_cmd():
     return shutil.which('gphoto2') or shutil.which('gphoto2', path='/usr/local/bin')
 
 
-def list_connected_cameras(endpoint: Optional[AnyHttpUrl] = None):
+def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
     """Detect connected cameras.
 
     Uses gphoto2 to try and detect which cameras are connected. Cameras should
@@ -63,7 +62,8 @@ def create_cameras_from_config(config=None,
                                cameras=None,
                                auto_primary=True,
                                recreate_existing=False,
-                               *args, **kwargs):
+                               *args, **kwargs
+                               ):
     """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
@@ -115,7 +115,7 @@ def create_cameras_from_config(config=None,
     if auto_detect:
         logger.debug("Auto-detecting ports for cameras")
         try:
-            ports = list_connected_cameras(endpoint=endpoint)
+            ports = list_connected_gphoto2_cameras(endpoint=endpoint)
         except error.PanError as e:
             logger.warning(e)
 
