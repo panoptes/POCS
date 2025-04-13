@@ -425,6 +425,11 @@ def run_quick_alignment(
                 alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
                 fig.savefig(alignment_plot_fn.absolute().as_posix())
                 print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
+
+                # Save deltas to CSV.
+                csv_path = Path(observation.directory) / f'{cam_id}-{now}-alignment.csv'
+                line = f'{now},{cam_id},{results.dx_deg:.02f},{results.dy_deg:.02f}'
+                csv_path.write_text(line, encoding='utf-8', newline='\n')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
