@@ -87,6 +87,17 @@ class AlignmentResult:
     dx_deg: float
     dy_deg: float
 
+    def to_csv_line(self):
+        """Convert the alignment result to a CSV line.
+
+        Returns:
+            str: CSV line with the alignment result.
+        """
+        return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
+                f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
+                f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
+                f"{self.dx_deg:.02f},{self.dy_deg:.02f}")
+
     def __str__(self):
         # Pretty print
         return (f"Celestial Center: {self.pole_center[0]:.2f}, {self.pole_center[1]:.2f}\n"

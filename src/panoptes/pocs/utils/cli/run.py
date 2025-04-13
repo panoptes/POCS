@@ -428,8 +428,7 @@ def run_quick_alignment(
 
                 # Save deltas to CSV.
                 csv_path = Path(observation.directory) / f'{cam_id}-{now}-alignment.csv'
-                line = f'{now},{cam_id},{results.dx_deg:.02f},{results.dy_deg:.02f}'
-                csv_path.write_text(line, encoding='utf-8', newline='\n')
+                csv_path.write_text(results.to_csv_line(), encoding='utf-8', newline='\n')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
