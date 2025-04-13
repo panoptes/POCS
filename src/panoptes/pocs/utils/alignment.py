@@ -37,7 +37,7 @@ def get_celestial_center(pole_fn: Path | str, **kwargs):
 
     wcs = WCS(pole_fn)
 
-    pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
+    pole_cx, pole_cy = wcs.all_world2pix(360, 90, 0)
 
     wcsinfo = get_wcsinfo(pole_fn)
     pixscale = None
@@ -166,8 +166,8 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     # Put the rotate center back into celestial coordinates using the 'home' image.
     logger.debug(f"Determining celestial coordinates for rotate center.")
     wcs0 = WCS(files['home'])
-    rotate_center_celestial = wcs0.all_pix2world(rotate_center_pix[0], rotate_center_pix[1], 1, ra_dec_order=True)
-    pole_center_celestial = wcs0.all_pix2world(pole_center_pix[0], pole_center_pix[1], 1, ra_dec_order=True)
+    rotate_center_celestial = wcs0.all_pix2world(rotate_center_pix[0], rotate_center_pix[1], 0, ra_dec_order=True)
+    pole_center_celestial = wcs0.all_pix2world(pole_center_pix[0], pole_center_pix[1], 0, ra_dec_order=True)
 
     if pole_center_celestial is None or rotate_center_celestial is None:
         logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')

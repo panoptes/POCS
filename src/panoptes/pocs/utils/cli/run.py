@@ -15,7 +15,6 @@ from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.cr2 import cr2_to_fits
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
-from pick import pick
 from rich import print
 
 from panoptes.pocs.core import POCS
@@ -424,7 +423,7 @@ def run_quick_alignment(
                 print(
                     f"\tDelta (degrees): dx={results.dx_deg:.02f} dy={results.dy_deg:.02f} "
                     f"dra={results.dra_deg:.02f} ddec={results.ddec_deg:.02f}"
-                    )
+                )
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
@@ -439,18 +438,19 @@ def run_quick_alignment(
             continue
 
     print('Done with quick alignment test')
-    option, index = pick(
-        ['Home', 'Park', 'Nothing'],
-        'What would you like to do next?',
-        clear_screen=False
-    )
-    if option == 'Home':
-        print("[green]Moving mount to the home position (don't forget to park!)[/green]")
-        mount.slew_to_home(blocking=True)
-        print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
-    elif option == 'Park':
-        print('[green]Moving mount to the parking position [/green]')
-        mount.home_and_park(blocking=True)
+    print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
+    # option, index = pick(
+    #     ['Home', 'Park', 'Nothing'],
+    #     'What would you like to do next?',
+    #     clear_screen=False
+    # )
+    # if option == 'Home':
+    #     print("[green]Moving mount to the home position (don't forget to park!)[/green]")
+    #     mount.slew_to_home(blocking=True)
+    #
+    # elif option == 'Park':
+    #     print('[green]Moving mount to the parking position [/green]')
+    #     mount.home_and_park(blocking=True)
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
