@@ -84,8 +84,8 @@ class AlignmentResult:
     pix_scale: float
     target_points: dict[str, tuple[float, float]]
     target_name: str
-    dx_deg: float
-    dy_deg: float
+    az_deg: float
+    alt_deg: float
     """Class to store the results of the alignment process."""
 
     def to_csv_line(self):
@@ -97,7 +97,7 @@ class AlignmentResult:
         return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
                 f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
                 f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
-                f"{self.dx_deg:.02f},{self.dy_deg:.02f}"
+                f"{self.az_deg:.02f},{self.alt_deg:.02f}"
                 )
 
     def __str__(self):
@@ -108,7 +108,7 @@ class AlignmentResult:
                 f"Pixel Scale: {self.pix_scale:.02f}\n"
                 f"Target Name: {self.target_name}\n"
                 f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
-                f"Delta (degrees): {self.dx_deg:.02f} {self.dy_deg:.02f}\n"
+                f"Delta (degrees): {self.az_deg:.02f} {self.alt_deg:.02f}\n"
                 )
 
 
@@ -177,8 +177,8 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         pole_center=pole_center_pix,
         rotate_center=rotate_center_pix,
         rotate_radius=R,
-        dx_deg=dx,
-        dy_deg=dy,
+        az_deg=dx,
+        alt_deg=dy,
         pix_scale=pix_scale,
         target_points=points,
         target_name=target_name
@@ -401,8 +401,8 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
         # Call legend() again to update the legend
         ax.legend(handles, labels, loc='upper right')
 
-    title0 = (f'{delta_cx=:10.01f} pix RA ={results.dx_deg:10.02f} deg \n '
-              f'{delta_cy=:10.01f} pix  Dec={results.dy_deg:10.02f} deg')
+    title0 = (f'{delta_cx=:10.01f} pix Az ={results.az_deg:10.02f} deg \n '
+              f'{delta_cy=:10.01f} pix Alt={results.alt_deg:10.02f} deg')
     fig.suptitle(f'{cam_name}\n{title0}', y=0.93)
 
     return fig

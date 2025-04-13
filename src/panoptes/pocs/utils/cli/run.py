@@ -421,7 +421,7 @@ def run_quick_alignment(
 
             if results:
                 print(f'Camera {cam_id} alignment results:')
-                print(f"\tDelta (degrees): dx={results.dx_deg:.02f} dy={results.dy_deg:.02f}")
+                print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
