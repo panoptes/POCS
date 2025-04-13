@@ -492,7 +492,8 @@ class Observatory(PanBase):
             if plate_solve:
                 self.logger.debug(f'Plate solving {file_path=}')
                 try:
-                    metadata = fits_utils.get_solve_field(file_path)
+                    default_timeout = self.get_config('cameras.defaults.timeout', default=60)
+                    metadata = fits_utils.get_solve_field(file_path, timeout=default_timeout)
                     file_path = metadata['solved_fits_file']
                     self.logger.debug(f'Solved {file_path}, replacing metadata.')
                 except Exception as e:
