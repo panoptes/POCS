@@ -85,7 +85,10 @@ class AlignmentResult:
     target_points: dict[str, tuple[float, float]]
     target_name: str
     dx_deg: float
+    dra_deg: float
     dy_deg: float
+    ddec_deg: float
+    """Class to store the results of the alignment process."""
 
     def to_csv_line(self):
         """Convert the alignment result to a CSV line.
@@ -96,7 +99,9 @@ class AlignmentResult:
         return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
                 f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
                 f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
-                f"{self.dx_deg:.02f},{self.dy_deg:.02f}")
+                f"{self.dx_deg:.02f},{self.dy_deg:.02f},"
+                f"{self.dra_deg:.02f},{self.ddec_deg:.02f}"
+                )
 
     def __str__(self):
         # Pretty print
@@ -126,7 +131,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     target = SkyCoord.from_name(target_name)
 
     points = dict()
-    pole_center = None
+    pole_center_pix = None
     pix_scale = None
     # Find the xy-coords of Polaris in each of the images using the wcs.
     for position, fits_fn in files.items():
@@ -136,7 +141,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         if position == 'home':
             logger.debug(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
-            pole_center = (float(pole_center_x), float(pole_center_y))
+            pole_center_pix = (float(pole_center_x), float(pole_center_y))
         else:
             try:
                 logger.debug(f"Processing RA rotation image: {fits_fn}")
@@ -153,15 +158,22 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
 
     # Find the circle that best fits the points.
     h, k, R = find_circle_params(points)
-    rotate_center = (h, k)
+    rotate_center_pix = (h, k)
 
-    if pole_center is None or rotate_center is None:
-        logger.warning(f'Unable to determine centers for alignment. {pole_center=} {rotate_center=}')
+    # Put the rotate center back into celestial coordinates using the 'home' image.
+    wcs0 = WCS(files['home'].as_posix())
+    rotate_center_celestial = wcs0.all_pix2world(rotate_center_pix[0], rotate_center_pix[1], 1, ra_dec_order=True)[0]
+    pole_center_celestial = wcs0.all_pix2world(pole_center_pix[0], pole_center_pix[1], 1, ra_dec_order=True)[0]
+
+    if pole_center_celestial is None or rotate_center_celestial is None:
+        logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
-    dx = pole_center[0] - rotate_center[0]
-    dy = pole_center[1] - rotate_center[1]
+    dx = pole_center_pix[0] - rotate_center_pix[0]
+    dra = pole_center_celestial[0] - rotate_center_celestial[0]
+    dy = pole_center_pix[1] - rotate_center_pix[1]
+    ddec = pole_center_celestial[1] - rotate_center_celestial[1]
 
     # Convert deltas to degrees.
     if pix_scale is not None:
@@ -169,11 +181,13 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         dy = dy * pix_scale / 3600
 
     return AlignmentResult(
-        pole_center=pole_center,
-        rotate_center=rotate_center,
+        pole_center=pole_center_pix,
+        rotate_center=rotate_center_pix,
         rotate_radius=R,
         dx_deg=dx,
+        dra_deg=dra,
         dy_deg=dy,
+        ddec_deg=ddec,
         pix_scale=pix_scale,
         target_points=points,
         target_name=target_name
@@ -396,8 +410,8 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
         # Call legend() again to update the legend
         ax.legend(handles, labels, loc='upper right')
 
-    title0 = (f'{delta_cx=:10.01f} pix RA ={results.dx_deg:10.02f} deg \n {delta_cy=:10.01f} pix  Dec='
-              f'{results.dy_deg:10.02f} deg')
+    title0 = (f'{delta_cx=:10.01f} pix RA ={results.dra_deg:10.02f} deg \n '
+              f'{delta_cy=:10.01f} pix  Dec={results.ddec_deg:10.02f} deg')
     fig.suptitle(f'{cam_name}\n{title0}', y=0.93)
 
     return fig
