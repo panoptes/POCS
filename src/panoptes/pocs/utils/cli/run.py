@@ -410,6 +410,7 @@ def run_quick_alignment(
             fits_files[cam_id][position] = exposure.path.with_suffix('.fits').as_posix()
 
     # Get the results form the alignment analysis for each camera.
+    now = current_time(flatten=True)
     for cam_id, files in fits_files.items():
         try:
             print(f'Analyzing camera {cam_id} exposures')
@@ -417,12 +418,13 @@ def run_quick_alignment(
 
             if results:
                 print(f'Camera {cam_id} alignment results:')
-                print(f"\tDelta (degrees): {results.dx_deg:.02f} {results.dy_deg:.02f}\n")
+                print(f"\tDelta (degrees): {results.dx_deg:.02f} {results.dy_deg:.02f}")
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
-                fig.savefig(Path(observation.directory) / f'{cam_id}_alignment_overlay.jpg')
-                print(f'\tPlot image: {observation.directory}/{cam_id}_alignment_overlay.jpg"')
+                alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
+                fig.savefig(alignment_plot_fn.absolute().as_posix())
+                print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
