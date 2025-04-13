@@ -436,8 +436,6 @@ def run_quick_alignment(
             continue
 
     print('Done with quick alignment test')
-    print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
-
     option, index = pick(
         ['Home', 'Park', 'Nothing'],
         'What would you like to do next?',
@@ -446,6 +444,7 @@ def run_quick_alignment(
     if option == 'Home':
         print("[green]Moving mount to the home position (don't forget to park!)[/green]")
         mount.slew_to_home(blocking=True)
+        print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
     elif option == 'Park':
         print('[green]Moving mount to the parking position [/green]')
         mount.home_and_park(blocking=True)
