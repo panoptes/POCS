@@ -136,12 +136,9 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     h, k, R = find_circle_params(points)
     rotate_center = (h, k)
 
-    dx = None
-    dy = None
-
+    print(f'{pole_center=}, {rotate_center=}')
     if pole_center is None or rotate_center is None:
         print(f'Unable to determine centers for alignment.')
-        print(f'{pole_center=}, {rotate_center=}')
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
