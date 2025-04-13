@@ -318,7 +318,7 @@ def run_old_alignment(
 def run_quick_alignment(
     context: typer.Context,
     exp_time: float = typer.Option(20.0, '--exptime', '-e', help='Exposure time in seconds.'),
-    move_time: float = typer.Option(5.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
+    move_time: float = typer.Option(3.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
 ):
     """
     Runs a quick alignment analysis.
