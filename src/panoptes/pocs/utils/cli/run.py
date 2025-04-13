@@ -416,13 +416,13 @@ def run_quick_alignment(
             results = process_quick_alignment(files)
 
             if results:
-                print(f'Camera {cam_id} alignment results: {results}')
+                print(f'Camera {cam_id} alignment results:')
+                print(f'{results}')
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
-                fig.tight_layout()
-                fig.savefig(observation.directory / f'{cam_id}_alignment_overlay.jpg')
-                print(f'Plot image: {observation.directory / f"{cam_id}_alignment_overlay.jpg"}')
+                fig.savefig(Path(observation.directory) / f'{cam_id}_alignment_overlay.jpg')
+                print(f'Plot image: {observation.directory}/{cam_id}_alignment_overlay.jpg"')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
