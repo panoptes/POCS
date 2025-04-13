@@ -417,12 +417,12 @@ def run_quick_alignment(
 
             if results:
                 print(f'Camera {cam_id} alignment results:')
-                print(f'{results}')
+                print(f"\tDelta (degrees): {results.dx_deg:.02f} {results.dy_deg:.02f}\n")
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
                 fig.savefig(Path(observation.directory) / f'{cam_id}_alignment_overlay.jpg')
-                print(f'Plot image: {observation.directory}/{cam_id}_alignment_overlay.jpg"')
+                print(f'\tPlot image: {observation.directory}/{cam_id}_alignment_overlay.jpg"')
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
