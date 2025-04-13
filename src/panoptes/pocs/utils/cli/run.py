@@ -422,7 +422,7 @@ def run_quick_alignment(
                 print(f'Camera {cam_id} alignment results:')
                 print(
                     f"\tDelta (degrees): dx={results.dx_deg:.02f} dy={results.dy_deg:.02f} "
-                    f"dra={results.dra_deg:.02f} ddec={results.ddec_deg:.02f}"
+                    f"dra={results.dx_deg:.02f} ddec={results.dy_deg:.02f}"
                 )
 
                 # Plot.

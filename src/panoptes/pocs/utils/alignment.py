@@ -85,9 +85,7 @@ class AlignmentResult:
     target_points: dict[str, tuple[float, float]]
     target_name: str
     dx_deg: float
-    dra_deg: float
     dy_deg: float
-    ddec_deg: float
     """Class to store the results of the alignment process."""
 
     def to_csv_line(self):
@@ -99,8 +97,7 @@ class AlignmentResult:
         return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
                 f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
                 f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
-                f"{self.dx_deg:.02f},{self.dy_deg:.02f},"
-                f"{self.dra_deg:.02f},{self.ddec_deg:.02f}"
+                f"{self.dx_deg:.02f},{self.dy_deg:.02f}"
                 )
 
     def __str__(self):
@@ -163,21 +160,13 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     logger.debug(f"Circle parameters: center=({h}, {k}), radius={R}")
     rotate_center_pix = (h, k)
 
-    # Put the rotate center back into celestial coordinates using the 'home' image.
-    logger.debug(f"Determining celestial coordinates for rotate center.")
-    wcs0 = WCS(files['home'])
-    rotate_center_celestial = wcs0.all_pix2world(rotate_center_pix[0], rotate_center_pix[1], 0, ra_dec_order=True)
-    pole_center_celestial = wcs0.all_pix2world(pole_center_pix[0], pole_center_pix[1], 0, ra_dec_order=True)
-
-    if pole_center_celestial is None or rotate_center_celestial is None:
+    if pole_center_pix is None or rotate_center_pix is None:
         logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
     dx = pole_center_pix[0] - rotate_center_pix[0]
-    dra = pole_center_celestial[0] - rotate_center_celestial[0]
     dy = pole_center_pix[1] - rotate_center_pix[1]
-    ddec = pole_center_celestial[1] - rotate_center_celestial[1]
 
     # Convert deltas to degrees.
     if pix_scale is not None:
@@ -189,9 +178,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         rotate_center=rotate_center_pix,
         rotate_radius=R,
         dx_deg=dx,
-        dra_deg=dra,
         dy_deg=dy,
-        ddec_deg=ddec,
         pix_scale=pix_scale,
         target_points=points,
         target_name=target_name
