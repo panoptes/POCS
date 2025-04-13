@@ -413,7 +413,7 @@ def run_quick_alignment(
     for cam_id, files in fits_files.items():
         try:
             print(f'Analyzing camera {cam_id} exposures')
-            results = process_quick_alignment(files)
+            results = process_quick_alignment(files, logger=pocs.logger)
 
             if results:
                 print(f'Camera {cam_id} alignment results:')

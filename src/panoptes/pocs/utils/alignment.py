@@ -7,6 +7,7 @@ from astropy.nddata import Cutout2D
 from astropy.visualization import LogStretch, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.wcs import WCS
+from loguru import Logger
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
@@ -95,11 +96,14 @@ class AlignmentResult:
                 )
 
 
-def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris') -> AlignmentResult:
+def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris', logger: Logger | None = None
+                            ) -> AlignmentResult:
     """Process the quick alignment of polar rotation and RA rotation images.
 
     Args:
         files (dict[str, Path]): Dictionary of image positions and their FITS file paths.
+        target_name (str): Name of the target to align to (default: 'Polaris').
+        logger (Logger | None): Logger instance for logging messages.
 
     Returns:
         tuple: Polar center coordinates, RA rotation center coordinates, dx, dy, pixel scale
@@ -116,17 +120,17 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             fits_fn = Path(fits_fn)
 
         if position == 'home':
-            print(f"Processing polar rotation image: {fits_fn}")
+            logger.debug(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
             pole_center = (float(pole_center_x), float(pole_center_y))
             points[position] = pole_center
         else:
             try:
-                print(f"Processing RA rotation image: {fits_fn}")
+                logger.debug(f"Processing RA rotation image: {fits_fn}")
                 # If it's not already solved it probably needs a longer timeout.
                 solve_info = get_solve_field(fits_fn.as_posix(), timeout=90)
             except PanError:
-                print(f"Unable to solve image {fits_fn}")
+                logger.warning(f"Unable to solve image {fits_fn}")
                 continue
             else:
                 # Get the pixel coordinates of Polaris in the image.
@@ -139,7 +143,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     rotate_center = (h, k)
 
     if pole_center is None or rotate_center is None:
-        print(f'Unable to determine centers for alignment. {pole_center=} {rotate_center=}')
+        logger.warning(f'Unable to determine centers for alignment. {pole_center=} {rotate_center=}')
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
@@ -272,7 +276,17 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     return h, k, R
 
 
-def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult):
+def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult) -> Figure:
+    """Plot the difference between the celestial pole and RA rotation images.
+
+    Args:
+        cam_name (str): Name of the camera.
+        files (dict[str, str | Path]): Dictionary of image positions and their FITS file paths.
+        results (AlignmentResult): Results from the alignment process.
+
+    Returns:
+        Figure: Matplotlib figure object.
+    """
     pole_cx, pole_cy = results.pole_center
     rotate_cx, rotate_cy = results.rotate_center
 
