@@ -123,7 +123,8 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         else:
             try:
                 print(f"Processing RA rotation image: {fits_fn}")
-                solve_info = get_solve_field(fits_fn.as_posix())
+                # If it's not already solved it probably needs a longer timeout.
+                solve_info = get_solve_field(fits_fn.as_posix(), timeout=90)
             except PanError:
                 print(f"Unable to solve image {fits_fn}")
                 continue
