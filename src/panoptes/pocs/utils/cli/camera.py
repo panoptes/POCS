@@ -89,6 +89,21 @@ def setup_cameras(
     # Turn off the autodetect
     set_config('cameras.defaults.auto_detect', False)
 
+    # Now create the cameras from the config, calling the `setup_camera` method if available.
+    print('Now creating the cameras from the config and setting them up.')
+    cameras = create_cameras_from_config()
+    if len(cameras) == 0:
+        print('No cameras found after setup, exiting.')
+        return
+    else:
+        # Call setup_properties on each of the cameras
+        for cam_name, cam in cameras.items():
+            try:
+                print(f'Setting up camera: {cam_name}')
+                cam.setup_camera()
+            except AttributeError:
+                print(f'Camera {cam_name} does not have a setup_camera method, skipping.')
+
     print('Now creating the cameras from the config and taking a test picture with each.')
     images = take_pictures(num_images=1, exptime=1.0, output_dir='/home/panoptes/images/test')
 
