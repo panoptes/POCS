@@ -9,8 +9,8 @@ from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 class Camera(AbstractGPhotoCamera):
 
     def __init__(
-            self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
-            *args, **kwargs
+        self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
+        *args, **kwargs
     ):
         """Create a camera object for a Canon EOS DSLR.
 
@@ -49,7 +49,14 @@ class Camera(AbstractGPhotoCamera):
             raise error.CameraNotFound(f"Camera not responding: {self}")
 
         self._serial_number = _serial_number
+        self._connected = True
 
+    def setup_camera(self):
+        """Set up the camera.
+
+        Usually called as part of an initial setup, this will set properties
+        on the canon cameras that should persist across power cycles.
+        """
         # Properties to be set upon init.
         owner_name = 'PANOPTES'
         artist_name = self.get_config('pan_id', default=owner_name)
@@ -74,16 +81,14 @@ class Camera(AbstractGPhotoCamera):
 
         self.model = self.get_property('model')
 
-        self._connected = True
-
     def _start_exposure(
-            self,
-            seconds=None,
-            filename=None,
-            dark=False,
-            header=None,
-            iso=100,
-            *args, **kwargs
+        self,
+        seconds=None,
+        filename=None,
+        dark=False,
+        header=None,
+        iso=100,
+        *args, **kwargs
     ):
         """Start the exposure.
 

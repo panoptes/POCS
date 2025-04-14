@@ -62,6 +62,7 @@ def create_cameras_from_config(config=None,
                                cameras=None,
                                auto_primary=True,
                                recreate_existing=False,
+                               setup_cameras=False,
                                *args, **kwargs
                                ):
     """Create camera object(s) based on the config.
@@ -80,6 +81,8 @@ def create_cameras_from_config(config=None,
             existing camera with the same `uid` is already assigned. Should currently
             only affect cameras that use the `sdk` (i.g. not DSLRs). Default False
             raises an exception if camera is already assigned.
+        setup_cameras (bool): If True, will call the `setup_camera` method on
+            each camera object after creation. Default False.
         *args (list): Passed to `get_config`.
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
@@ -160,6 +163,9 @@ def create_cameras_from_config(config=None,
             # We either got a class or a module.
             if callable(module):
                 camera_obj = module(**device_config)
+                if setup_cameras and hasattr(camera_obj, 'setup_camera'):
+                    logger.info(f'Setting up camera: {camera_obj}')
+                    camera_obj.setup_camera()
             else:
                 if hasattr(module, 'Camera'):
                     camera_obj = module.Camera(**device_config)
