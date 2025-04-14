@@ -1,4 +1,6 @@
+import warnings
 from dataclasses import dataclass
+from logging import Logger
 from pathlib import Path
 
 import numpy as np
@@ -6,7 +8,7 @@ from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from astropy.visualization import LogStretch, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.wcs import WCS
+from astropy.wcs import FITSFixedWarning, WCS
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
@@ -16,6 +18,8 @@ from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
+
+warnings.simplefilter('ignore', category=FITSFixedWarning)
 
 
 def get_celestial_center(pole_fn: Path | str, **kwargs):
@@ -33,7 +37,7 @@ def get_celestial_center(pole_fn: Path | str, **kwargs):
 
     wcs = WCS(pole_fn)
 
-    pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
+    pole_cx, pole_cy = wcs.all_world2pix(360, 90, 0)
 
     wcsinfo = get_wcsinfo(pole_fn)
     pixscale = None
@@ -80,8 +84,21 @@ class AlignmentResult:
     pix_scale: float
     target_points: dict[str, tuple[float, float]]
     target_name: str
-    dx_deg: float
-    dy_deg: float
+    az_deg: float
+    alt_deg: float
+    """Class to store the results of the alignment process."""
+
+    def to_csv_line(self):
+        """Convert the alignment result to a CSV line.
+
+        Returns:
+            str: CSV line with the alignment result.
+        """
+        return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
+                f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
+                f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
+                f"{self.az_deg:.02f},{self.alt_deg:.02f}"
+                )
 
     def __str__(self):
         # Pretty print
@@ -91,15 +108,18 @@ class AlignmentResult:
                 f"Pixel Scale: {self.pix_scale:.02f}\n"
                 f"Target Name: {self.target_name}\n"
                 f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
-                f"Delta (degrees): {self.dx_deg:.02f} {self.dy_deg:.02f}\n"
+                f"Delta (degrees): {self.az_deg:.02f} {self.alt_deg:.02f}\n"
                 )
 
 
-def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris') -> AlignmentResult:
+def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris', logger: Logger | None = None
+                            ) -> AlignmentResult:
     """Process the quick alignment of polar rotation and RA rotation images.
 
     Args:
         files (dict[str, Path]): Dictionary of image positions and their FITS file paths.
+        target_name (str): Name of the target to align to (default: 'Polaris').
+        logger (Logger | None): Logger instance for logging messages.
 
     Returns:
         tuple: Polar center coordinates, RA rotation center coordinates, dx, dy, pixel scale
@@ -108,7 +128,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     target = SkyCoord.from_name(target_name)
 
     points = dict()
-    pole_center = None
+    pole_center_pix = None
     pix_scale = None
     # Find the xy-coords of Polaris in each of the images using the wcs.
     for position, fits_fn in files.items():
@@ -116,33 +136,37 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             fits_fn = Path(fits_fn)
 
         if position == 'home':
-            print(f"Processing polar rotation image: {fits_fn}")
+            logger.debug(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
-            pole_center = (float(pole_center_x), float(pole_center_y))
+            pole_center_pix = (float(pole_center_x), float(pole_center_y))
         else:
             try:
-                print(f"Processing RA rotation image: {fits_fn}")
-                solve_info = get_solve_field(fits_fn.as_posix())
+                logger.debug(f"Processing RA rotation image: {fits_fn}")
+                # If it's not already solved it probably needs a longer timeout.
+                solve_info = get_solve_field(fits_fn.as_posix(), timeout=90)
             except PanError:
-                print(f"Unable to solve image {fits_fn}")
+                logger.warning(f"Unable to solve image {fits_fn}")
                 continue
-            else:
-                # Get the pixel coordinates of Polaris in the image.
-                wcs = WCS(fits_fn.as_posix())
-                x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
-                points[position] = (x, y)
+
+        # Get the pixel coordinates of Polaris in the image.
+        logger.debug(f"Finding Polaris in image: {fits_fn}")
+        wcs = WCS(fits_fn.as_posix())
+        x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
+        logger.debug(f"Polaris position in image: {x}, {y}")
+        points[position] = (x, y)
 
     # Find the circle that best fits the points.
     h, k, R = find_circle_params(points)
-    rotate_center = (h, k)
+    logger.debug(f"Circle parameters: center=({h}, {k}), radius={R}")
+    rotate_center_pix = (h, k)
 
-    dx = None
-    dy = None
+    if pole_center_pix is None or rotate_center_pix is None:
+        logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')
+        raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
-    if pole_center is not None:
-        dx = pole_center[0] - rotate_center[0]
-        dy = pole_center[1] - rotate_center[1]
+    dx = pole_center_pix[0] - rotate_center_pix[0]
+    dy = pole_center_pix[1] - rotate_center_pix[1]
 
     # Convert deltas to degrees.
     if pix_scale is not None:
@@ -150,11 +174,11 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         dy = dy * pix_scale / 3600
 
     return AlignmentResult(
-        pole_center=pole_center,
-        rotate_center=rotate_center,
+        pole_center=pole_center_pix,
+        rotate_center=rotate_center_pix,
         rotate_radius=R,
-        dx_deg=dx,
-        dy_deg=dy,
+        az_deg=dx,
+        alt_deg=dy,
         pix_scale=pix_scale,
         target_points=points,
         target_name=target_name
@@ -270,7 +294,17 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     return h, k, R
 
 
-def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult):
+def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult) -> Figure:
+    """Plot the difference between the celestial pole and RA rotation images.
+
+    Args:
+        cam_name (str): Name of the camera.
+        files (dict[str, str | Path]): Dictionary of image positions and their FITS file paths.
+        results (AlignmentResult): Results from the alignment process.
+
+    Returns:
+        Figure: Matplotlib figure object.
+    """
     pole_cx, pole_cy = results.pole_center
     rotate_cx, rotate_cy = results.rotate_center
 
@@ -367,8 +401,8 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
         # Call legend() again to update the legend
         ax.legend(handles, labels, loc='upper right')
 
-    title0 = (f'{delta_cx=:10.01f} pix RA ={results.dx_deg:10.02f} deg \n {delta_cy=:10.01f} pix  Dec='
-              f'{results.dy_deg:10.02f} deg')
+    title0 = (f'{delta_cx=:10.01f} pix Az ={results.az_deg:10.02f} deg \n '
+              f'{delta_cy=:10.01f} pix Alt={results.alt_deg:10.02f} deg')
     fig.suptitle(f'{cam_name}\n{title0}', y=0.93)
 
     return fig

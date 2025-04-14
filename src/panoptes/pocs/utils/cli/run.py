@@ -22,6 +22,7 @@ from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils import alignment as polar_alignment
 from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_alignment
+from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer()
@@ -317,7 +318,7 @@ def run_old_alignment(
 def run_quick_alignment(
     context: typer.Context,
     exp_time: float = typer.Option(20.0, '--exptime', '-e', help='Exposure time in seconds.'),
-    move_time: float = typer.Option(5.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
+    move_time: float = typer.Option(3.0, '--move-time', '-m', help='Time to move to each side of the axis.'),
 ):
     """
     Runs a quick alignment analysis.
@@ -404,30 +405,58 @@ def run_quick_alignment(
     # Gather a list of files from the exposure_list.
     fits_files = defaultdict(dict)
     # Each camera should have three exposures: home, east, west
-    for cam_id, exposures in pocs.observatory.exposure_list.items():
+    for cam_id, exposures in pocs.observatory.current_observation.exposure_list.items():
         for position, exposure in zip(['home', 'east', 'west'], exposures):
-            fits_files[cam_id][position] = exposure.path.with_suffix('.fits')
+            cam_uid = exposure.metadata['camera_uid']
+            fits_files[cam_uid][position] = exposure.path.with_suffix('.fits').as_posix()
 
     # Get the results form the alignment analysis for each camera.
+    now = current_time(flatten=True)
+    csv_path = Path(observation.directory) / f'alignment.csv'
+    csv_file = csv_path.open('a', encoding='utf-8')
     for cam_id, files in fits_files.items():
         try:
             print(f'Analyzing camera {cam_id} exposures')
-            results = process_quick_alignment(files)
+            results = process_quick_alignment(files, logger=pocs.logger)
 
             if results:
-                print(f'Camera {cam_id} alignment results: {results}')
+                print(f'Camera {cam_id} alignment results:')
+                print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
-                fig.tight_layout()
-                fig.savefig(observation.directory / f'{cam_id}_alignment_overlay.jpg')
-                print(f'Plot image: {observation.directory / f"{cam_id}_alignment_overlay.jpg"}')
+                alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
+                fig.savefig(alignment_plot_fn.absolute().as_posix())
+                print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
+
+                # Save deltas to CSV.
+                csv_file.write(f'{now},{cam_id},{results.to_csv_line()}\n')
+
+                # Remove everything in the path before 'images' for upload.
+                path_parts = alignment_plot_fn.parts
+                bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
+                upload_image(
+                    file_path=alignment_plot_fn,
+                    bucket_path=bucket_path,
+                )
         except Exception as e:
             print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
             continue
 
     print('Done with quick alignment test')
     print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
+    # option, index = pick(
+    #     ['Home', 'Park', 'Nothing'],
+    #     'What would you like to do next?',
+    #     clear_screen=False
+    # )
+    # if option == 'Home':
+    #     print("[green]Moving mount to the home position (don't forget to park!)[/green]")
+    #     mount.slew_to_home(blocking=True)
+    #
+    # elif option == 'Park':
+    #     print('[green]Moving mount to the parking position [/green]')
+    #     mount.home_and_park(blocking=True)
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
