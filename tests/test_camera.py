@@ -1,58 +1,55 @@
+import glob
 import os
 import time
-import glob
-from ctypes.util import find_library
 from contextlib import suppress
+from ctypes.util import find_library
 
-import pytest
 import astropy.units as u
-from astropy.io import fits
+import pytest
 import requests
+from astropy.io import fits
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.error import NotFound
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.serializers import to_json
+from panoptes.utils.time import CountdownTimer
 
-from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
-from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from panoptes.pocs.camera import AbstractCamera, create_cameras_from_config
+from panoptes.pocs.camera.fli import Camera as FLICamera
 from panoptes.pocs.camera.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
-from panoptes.pocs.camera.fli import Camera as FLICamera
+from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
-from panoptes.pocs.camera import AbstractCamera
-
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.bias import BiasObservation
 from panoptes.pocs.scheduler.observation.dark import DarkObservation
 
-from panoptes.utils.error import NotFound
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
 
-from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.utils.serializers import to_json
-from panoptes.utils.time import CountdownTimer
-
-
-@pytest.fixture(scope='module', params=[
-    pytest.param([SimCamera, dict()]),
-    pytest.param([SimCamera, get_config('cameras.devices[0]')]),
-    pytest.param([SimCamera, get_config('cameras.devices[1]')]),
-    pytest.param([SimCamera, get_config('cameras.devices[2]')]),
-    pytest.param([SimSDKCamera, get_config('cameras.devices[3]')]),
-    pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
-    pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
-    pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
-], ids=[
-    'dslr',
-    'dslr.00',
-    'dslr.focuser.cooling.00',
-    'dslr.filterwheel.cooling.00',
-    'ccd.filterwheel.cooling.00',
-    'sbig',
-    'fli',
-    'zwo'
-])
+@pytest.fixture(
+    scope='module', params=[
+        pytest.param([SimCamera, dict()]),
+        pytest.param([SimCamera, get_config('cameras.devices[0]')]),
+        pytest.param([SimCamera, get_config('cameras.devices[1]')]),
+        pytest.param([SimCamera, get_config('cameras.devices[2]')]),
+        pytest.param([SimSDKCamera, get_config('cameras.devices[3]')]),
+        pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
+        pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
+        pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
+    ], ids=[
+        'dslr',
+        'dslr.00',
+        'dslr.focuser.cooling.00',
+        'dslr.filterwheel.cooling.00',
+        'ccd.filterwheel.cooling.00',
+        'sbig',
+        'fli',
+        'zwo'
+    ]
+    )
 def camera(request) -> AbstractCamera:
     CamClass = request.param[0]
     cam_params = request.param[1]
@@ -78,8 +75,10 @@ def camera(request) -> AbstractCamera:
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
         while not camera.is_temperature_stable and not cooling_timeout.expired():
-            camera.logger.log('testing',
-                              f'Still waiting for cooling: {cooling_timeout.time_left()}')
+            camera.logger.log(
+                'testing',
+                f'Still waiting for cooling: {cooling_timeout.time_left()}'
+                )
             cooling_timeout.sleep(max_sleep=2)
         assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
@@ -111,19 +110,22 @@ def patterns(camera, images_dir):
 
 def reset_conf(config_host, config_port):
     url = f'http://{config_host}:{config_port}/reset-config'
-    response = requests.post(url,
-                             data=to_json({'reset': True}),
-                             headers={'Content-Type': 'application/json'}
-                             )
+    response = requests.post(
+        url,
+        data=to_json({'reset': True}),
+        headers={'Content-Type': 'application/json'}
+        )
     assert response.ok
 
 
 def test_create_cameras_from_config_no_autodetect(config_host, config_port):
     set_config('cameras.auto_detect', False)
-    set_config('cameras.devices', [
-        dict(model='canon_gphoto2', port='/dev/fake01'),
-        dict(model='canon_gphoto2', port='/dev/fake02'),
-    ])
+    set_config(
+        'cameras.devices', [
+            dict(model='canon_gphoto2', port='/dev/fake01'),
+            dict(model='canon_gphoto2', port='/dev/fake02'),
+        ]
+        )
 
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
@@ -141,8 +143,10 @@ def test_create_cameras_from_config_autodetect(config_host, config_port):
 # Hardware independent tests, mostly use simulator:
 
 def test_sim_create_focuser():
-    sim_camera = SimCamera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
-                                    'focus_port': '/dev/ttyFAKE'})
+    sim_camera = SimCamera(
+        focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
+                 'focus_port': '/dev/ttyFAKE'}
+        )
     assert isinstance(sim_camera.focuser, Focuser)
 
 
@@ -521,8 +525,10 @@ def test_observation(camera, images_dir):
     while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, 'TestObservation',
+        camera.uid, observation.seq_time, '*.fits*'
+        )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -534,8 +540,10 @@ def test_observation_headers_and_blocking(camera, images_dir):
     observation = Observation(field, exptime=1.5 * u.second)
     observation.seq_time = '19991231T235559'
     camera.take_observation(observation, headers={'field_name': 'TESTVALUE'}, blocking=True)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, 'TestObservation',
+        camera.uid, observation.seq_time, '*.fits*'
+        )
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
     camera.logger.debug(f'{image_files=}')
@@ -552,8 +560,10 @@ def test_observation_nofilter(camera, images_dir):
     observation = Observation(field, exptime=1.5 * u.second, filter_name=None)
     observation.seq_time = '19991231T235159'
     camera.take_observation(observation, blocking=True)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, 'TestObservation',
+        camera.uid, observation.seq_time, '*.fits*'
+        )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -570,8 +580,10 @@ def test_observation_dark(camera, images_dir):
     while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test. {camera.is_observing}')
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'dark',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, 'dark',
+        camera.uid, observation.seq_time, '*.fits*'
+        )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -588,8 +600,10 @@ def test_observation_bias(camera, images_dir):
     while camera.is_observing:
         camera.logger.trace(f'Waiting for observation event from inside test.')
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'bias',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, 'bias',
+        camera.uid, observation.seq_time, '*.fits*'
+        )
     assert len(glob.glob(observation_pattern)) == 1
 
 

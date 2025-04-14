@@ -5,10 +5,11 @@ from threading import Timer
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
-from panoptes.pocs.camera import AbstractCamera
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.camera import AbstractCamera
 
 
 class Camera(AbstractCamera):
@@ -25,20 +26,30 @@ class Camera(AbstractCamera):
         kwargs['timeout'] = kwargs.get('timeout', 1.5 * u.second)
         kwargs['readout_time'] = kwargs.get('readout_time', 1.0 * u.second)
         super().__init__(name=name, *args, **kwargs)
-        self.connect()
-        self.logger.info(f"{self} initialised")
-
-    def connect(self):
-        """ Connect to camera simulator
-
-        The simulator merely marks the `connected` property.
-        """
         # Create a random serial number if one hasn't been specified
         if self._serial_number == 'XXXXXX':
             self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
-        self._connected = True
+        self.connect()
         self.logger.debug(f'{self.name} connected')
+        self.setup_camera()
+        self.logger.info(f"{self} initialised")
+
+    def connect(self):
+        """Connect to the camera simulator.
+
+        This is a no-op for the simulator.
+        """
+        self.logger.debug(f'Connecting to camera simulator {self.name}')
+        self._connected = True
+
+    def setup_camera(self):
+        """Set up the camera simulator.
+
+        This is a no-op for the simulator.
+        """
+        self.logger.debug(f'Setting up camera simulator {self.name}')
+        pass
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
 
@@ -47,20 +58,25 @@ class Camera(AbstractCamera):
             kwargs['exptime'] = 1
             self.logger.debug("Trimming camera simulator exposure to 1 s")
 
-        return super().take_observation(observation,
-                                        headers,
-                                        filename,
-                                        **kwargs)
+        return super().take_observation(
+            observation,
+            headers,
+            filename,
+            **kwargs
+        )
 
     def _end_exposure(self):
         self._is_exposing_event.clear()
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
-                        **kwargs):
+                        **kwargs
+                        ):
         self._is_exposing_event.set()
         seconds = kwargs.get('simulator_exptime', seconds)
-        exposure_thread = Timer(interval=get_quantity_value(seconds, unit=u.second),
-                                function=self._end_exposure)
+        exposure_thread = Timer(
+            interval=get_quantity_value(seconds, unit=u.second),
+            function=self._end_exposure
+        )
         exposure_thread.start()
         readout_args = (filename, header)
         return readout_args
@@ -74,9 +90,11 @@ class Camera(AbstractCamera):
 
         if header.get('IMAGETYP') == 'Dark Frame':
             # Replace example data with a bunch of random numbers
-            fake_data = np.random.randint(low=975, high=1026,
-                                          size=fake_data.shape,
-                                          dtype=fake_data.dtype)
+            fake_data = np.random.randint(
+                low=975, high=1026,
+                size=fake_data.shape,
+                dtype=fake_data.dtype
+            )
         self.logger.debug(f'Writing filename={filename!r} for {self}')
         self.write_fits(fake_data, header, filename)
         self.logger.debug(f'Finished writing {filename=}')
