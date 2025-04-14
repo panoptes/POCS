@@ -26,13 +26,7 @@ class Camera(AbstractGPhotoCamera):
         super().__init__(*args, **kwargs)
         self.logger.debug("Creating Canon DSLR GPhoto2 camera")
 
-        # Get serial number
-        _serial_number = self.get_property('serialnumber')
-        if not _serial_number:
-            raise error.CameraNotFound(f"Camera not responding: {self}")
-
-        self._serial_number = _serial_number
-        self._connected = True
+        self.connect()
 
         if setup_properties:
             self.setup_camera()
@@ -44,6 +38,19 @@ class Camera(AbstractGPhotoCamera):
     @property
     def egain(self):
         return 1.5 * (u.electron / u.adu)
+
+    def connect(self):
+        """Connect to the camera.
+
+        This will attempt to connect to the camera using gphoto2.
+        """
+        # Get serial number
+        _serial_number = self.get_property('serialnumber')
+        if not _serial_number:
+            raise error.CameraNotFound(f"Camera not responding: {self}")
+
+        self._serial_number = _serial_number
+        self._connected = True
 
     def setup_camera(self):
         """Set up the camera.
