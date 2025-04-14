@@ -475,8 +475,6 @@ class Observatory(PanBase):
 
             field_name = metadata.get('field_name', '')
 
-            should_upload = upload_image or self.get_config('observations.upload_image', default=False)
-
             # Check for a FITS file of whatever file_path we have.
             if Path(file_path).with_suffix('.fits').exists():
                 file_path = Path(file_path).with_suffix('.fits').as_posix()
@@ -488,7 +486,10 @@ class Observatory(PanBase):
                 self.logger.debug(f'{image_id} has already been processed, skipping')
                 return
 
-            if plate_solve or self.get_config('observations.plate_solve', default=False):
+            if plate_solve is None:
+                plate_solve = self.get_config('observations.plate_solve', default=False)
+
+            if plate_solve:
                 self.logger.debug(f'Plate solving {file_path=}')
                 try:
                     metadata = fits_utils.get_solve_field(file_path)
@@ -497,7 +498,10 @@ class Observatory(PanBase):
                 except Exception as e:
                     self.logger.warning(f'Problem solving {file_path=}: {e!r}')
 
-            if compress_fits or self.get_config('observations.compress_fits', default=False):
+            if compress_fits is None:
+                compress_fits = self.get_config('observations.compress_fits', default=False)
+
+            if compress_fits:
                 self.logger.debug(f'Compressing {file_path=!r}')
                 compressed_file_path = fits_utils.fpack(str(file_path))
                 exposure.path = Path(compressed_file_path)
@@ -514,7 +518,10 @@ class Observatory(PanBase):
             ).expanduser().as_posix()
 
             pretty_image_path = None
-            if make_pretty_images or self.get_config('observations.make_pretty_images', default=False):
+            if make_pretty_images is None:
+                make_pretty_images = self.get_config('observations.make_pretty_images', default=False)
+
+            if make_pretty_images:
                 try:
                     image_title = f'{field_name} [{exptime}s] {seq_id}'
 
@@ -533,7 +540,10 @@ class Observatory(PanBase):
                 except Exception as e:  # pragma: no cover
                     self.logger.warning(f'Problem with extracting pretty image: {e!r}')
 
-            if should_upload:
+            if upload_image is None:
+                upload_image = self.get_config('observations.upload_image', default=False)
+
+            if upload_image:
                 self.logger.debug(f"Uploading current observation: {image_id}")
                 try:
                     image_path = exposure.path.as_posix()
@@ -561,7 +571,9 @@ class Observatory(PanBase):
                 except Exception as e:
                     self.logger.warning(f'Problem uploading exposure: {e!r}')
 
-            if record_observations or self.get_config('observations.record_observations', default=False):
+            if record_observations is None:
+                record_observations = self.get_config('observations.record_observations', default=False)
+            if record_observations:
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata['status'] = 'complete'
                 self.db.insert_current('images', metadata, store_permanently=False)
