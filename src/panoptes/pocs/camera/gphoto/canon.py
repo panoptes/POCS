@@ -9,8 +9,8 @@ from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 class Camera(AbstractGPhotoCamera):
 
     def __init__(
-        self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
-        *args, **kwargs
+            self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
+            *args, **kwargs
     ):
         """Create a camera object for a Canon EOS DSLR.
 
@@ -36,7 +36,7 @@ class Camera(AbstractGPhotoCamera):
     def egain(self):
         return 1.5 * (u.electron / u.adu)
 
-    def connect(self, skip_properties: bool = True):
+    def connect(self):
         """Connect to Canon DSLR.
 
         Gets the serial number from the camera and sets various settings.
@@ -70,20 +70,20 @@ class Camera(AbstractGPhotoCamera):
             'ownername': owner_name,
         }
 
-        if skip_properties is False:
-            self.set_properties(prop2value=prop2value)
-            self.model = self.get_property('model')
+        self.set_properties(prop2value=prop2value)
+
+        self.model = self.get_property('model')
 
         self._connected = True
 
     def _start_exposure(
-        self,
-        seconds=None,
-        filename=None,
-        dark=False,
-        header=None,
-        iso=100,
-        *args, **kwargs
+            self,
+            seconds=None,
+            filename=None,
+            dark=False,
+            header=None,
+            iso=100,
+            *args, **kwargs
     ):
         """Start the exposure.
 
