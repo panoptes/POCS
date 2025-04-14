@@ -26,20 +26,14 @@ class Camera(AbstractCamera):
         kwargs['timeout'] = kwargs.get('timeout', 1.5 * u.second)
         kwargs['readout_time'] = kwargs.get('readout_time', 1.0 * u.second)
         super().__init__(name=name, *args, **kwargs)
-        self.connect()
-        self.logger.info(f"{self} initialised")
-
-    def connect(self):
-        """ Connect to camera simulator
-
-        The simulator merely marks the `connected` property.
-        """
         # Create a random serial number if one hasn't been specified
         if self._serial_number == 'XXXXXX':
             self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug(f'{self.name} connected')
+        self.setup_camera()
+        self.logger.info(f"{self} initialised")
 
     def setup_camera(self):
         """Set up the camera simulator.
@@ -61,7 +55,7 @@ class Camera(AbstractCamera):
             headers,
             filename,
             **kwargs
-            )
+        )
 
     def _end_exposure(self):
         self._is_exposing_event.clear()
@@ -74,7 +68,7 @@ class Camera(AbstractCamera):
         exposure_thread = Timer(
             interval=get_quantity_value(seconds, unit=u.second),
             function=self._end_exposure
-            )
+        )
         exposure_thread.start()
         readout_args = (filename, header)
         return readout_args
@@ -92,7 +86,7 @@ class Camera(AbstractCamera):
                 low=975, high=1026,
                 size=fake_data.shape,
                 dtype=fake_data.dtype
-                )
+            )
         self.logger.debug(f'Writing filename={filename!r} for {self}')
         self.write_fits(fake_data, header, filename)
         self.logger.debug(f'Finished writing {filename=}')

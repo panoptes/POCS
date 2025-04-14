@@ -9,7 +9,7 @@ from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 class Camera(AbstractGPhotoCamera):
 
     def __init__(
-        self, readout_time: float = 1.0, file_extension: str = 'cr2', connect: bool = True,
+        self, readout_time: float = 1.0, file_extension: str = 'cr2', setup_properties: bool = False,
         *args, **kwargs
     ):
         """Create a camera object for a Canon EOS DSLR.
@@ -18,30 +18,13 @@ class Camera(AbstractGPhotoCamera):
             readout (float): The time it takes to read out the file from the
                 camera, default 1.0 second.
             file_extension (str): The file extension to use, default `cr2`.
-            connect (bool): Connect to camera on startup, default True.
+            setup_properties (bool): If True, will call `setup_camera()` to set
+                properties on the camera.
         """
         kwargs['readout_time'] = readout_time
         kwargs['file_extension'] = file_extension
         super().__init__(*args, **kwargs)
         self.logger.debug("Creating Canon DSLR GPhoto2 camera")
-
-        if connect:
-            self.connect()
-
-    @property
-    def bit_depth(self):
-        return 12 * u.bit
-
-    @property
-    def egain(self):
-        return 1.5 * (u.electron / u.adu)
-
-    def connect(self):
-        """Connect to Canon DSLR.
-
-        Gets the serial number from the camera and sets various settings.
-        """
-        self.logger.debug('Connecting to Canon gphoto2 camera')
 
         # Get serial number
         _serial_number = self.get_property('serialnumber')
@@ -50,6 +33,17 @@ class Camera(AbstractGPhotoCamera):
 
         self._serial_number = _serial_number
         self._connected = True
+
+        if setup_properties:
+            self.setup_camera()
+
+    @property
+    def bit_depth(self):
+        return 12 * u.bit
+
+    @property
+    def egain(self):
+        return 1.5 * (u.electron / u.adu)
 
     def setup_camera(self):
         """Set up the camera.

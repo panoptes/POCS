@@ -248,9 +248,6 @@ def test_init(camera):
         # Successfully initialised SBIG cameras should also have a valid 'handle'
         assert camera._handle != INVALID_HANDLE_VALUE
 
-    if hasattr(camera, 'setup_camera'):
-        camera.setup_camera()
-
 
 def test_uid(camera):
     # Camera uid should be a string (or maybe an int?) of non-zero length. Assert True
