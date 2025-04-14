@@ -30,10 +30,18 @@ class Camera(AbstractCamera):
         if self._serial_number == 'XXXXXX':
             self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
-        self._connected = True
+        self.connect()
         self.logger.debug(f'{self.name} connected')
         self.setup_camera()
         self.logger.info(f"{self} initialised")
+
+    def connect(self):
+        """Connect to the camera simulator.
+
+        This is a no-op for the simulator.
+        """
+        self.logger.debug(f'Connecting to camera simulator {self.name}')
+        self._connected = True
 
     def setup_camera(self):
         """Set up the camera simulator.
