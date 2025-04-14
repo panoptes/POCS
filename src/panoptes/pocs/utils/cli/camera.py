@@ -7,6 +7,7 @@ from typing import Dict, List
 import typer
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.time import current_time
+from panoptes.utils.error import PanError
 from rich import print
 from tqdm import trange
 
@@ -59,10 +60,13 @@ def setup_cameras(
             asi_library_path = Path(
                 get_config('directories.base')
             ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.37'
-        print(f'Using ZWO library path: {asi_library_path}')
+        # print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
-        zwo_cameras = asi_driver.get_devices()
-        if zwo_cameras:
+        try:
+            zwo_cameras = asi_driver.get_devices()
+        except PanError:
+            print(f'No ZWO cameras detected')
+        else:
             print(f'Detected {len(zwo_cameras)} ZWO cameras.')
             for i, (serial_number, cam_id) in enumerate(zwo_cameras.items()):
                 cameras[f'zwo-{i:02d}'] = {
