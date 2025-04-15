@@ -353,7 +353,7 @@ def run_quick_alignment(
                 plate_solve=True,
                 compress_fits=True,
                 record_observations=False,
-                make_pretty_images=False,
+                make_pretty_images=True,
                 upload_image=True
             )
         )
