@@ -351,10 +351,10 @@ def run_quick_alignment(
         process_proc = Process(
             target=pocs.observatory.process_observation, kwargs=dict(
                 plate_solve=True,
-                compress_fits=False,
+                compress_fits=True,
                 record_observations=False,
                 make_pretty_images=False,
-                upload_image=False
+                upload_image=True
             )
         )
         process_proc.start()
