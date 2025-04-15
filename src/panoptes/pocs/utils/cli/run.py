@@ -417,7 +417,7 @@ def run_quick_alignment(
     now = current_time(flatten=True)
     with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         futures = [
-            executor.submit(analyze_camera_alignment, cam_id, files, observation, now, pocs)
+            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, pocs)
             for cam_id, files in fits_files.items()
         ]
         for future in concurrent.futures.as_completed(futures):
@@ -443,7 +443,7 @@ def run_quick_alignment(
 
 
 ### Extract the code into a function
-def analyze_camera_alignment(cam_id, files, observation, now, pocs):
+def analyze_camera_alignment(cam_id, files, observation_dir, now, pocs):
     """Analyzes alignment for a single camera."""
     try:
         print(f'Analyzing camera {cam_id} exposures')
@@ -455,12 +455,12 @@ def analyze_camera_alignment(cam_id, files, observation, now, pocs):
 
             # Plot.
             fig = plot_alignment_diff(cam_id, files, results)
-            alignment_plot_fn = Path(observation.directory) / f'{cam_id}/{now}/{now}.jpg'
+            alignment_plot_fn = Path(observation_dir) / f'{cam_id}/{now}/{now}.jpg'
             fig.savefig(alignment_plot_fn.absolute().as_posix())
             print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
 
             # Save deltas to CSV.
-            csv_path = Path(observation.directory) / f'alignment.csv'
+            csv_path = Path(observation_dir) / f'alignment.csv'
             with csv_path.open('a', encoding='utf-8') as csv_file:
                 csv_file.write(f'{now},{cam_id},{results.to_csv_line()}\n')
 
