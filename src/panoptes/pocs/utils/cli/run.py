@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 import time
 import warnings
@@ -416,16 +415,9 @@ def run_quick_alignment(
     # Get the results from the alignment analysis for each camera.
     now = current_time(flatten=True)
     unit_id = pocs.get_config('pan_id')
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, unit_id, pocs.logger)
-            for cam_id, files in fits_files.items()
-        ]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                print(f'[red]Error during parallel alignment analysis: {e}[/red]')
+    for cam_id, files in fits_files.items():
+        print(f'Analyzing camera {cam_id} exposures')
+        analyze_camera_alignment(cam_id, files, observation.directory, now, unit_id, pocs.logger)
 
     print('Done with quick alignment test')
     print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
@@ -447,18 +439,18 @@ def run_quick_alignment(
 def analyze_camera_alignment(cam_id, files, observation_dir, now, unit_id, logger):
     """Analyzes alignment for a single camera."""
     try:
-        logger.debug(f'Analyzing camera {cam_id} exposures')
+        print(f'Analyzing camera {cam_id} exposures')
         results = process_quick_alignment(files, logger=logger)
 
         if results:
-            logger.debug(f'Camera {cam_id} alignment results:')
-            logger.debug(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
+            print(f'Camera {cam_id} alignment results:')
+            print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
 
             # Plot.
             fig = plot_alignment_diff(cam_id, files, results)
             alignment_plot_fn = Path(observation_dir) / f'{cam_id}/{now}/{now}.jpg'
             fig.savefig(alignment_plot_fn.absolute().as_posix())
-            logger.debug(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
+            print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
 
             # Save deltas to CSV.
             csv_path = Path(observation_dir) / f'alignment.csv'
