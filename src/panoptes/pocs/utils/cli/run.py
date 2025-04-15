@@ -413,11 +413,10 @@ def run_quick_alignment(
 
     ### Parallelize the processing
     # Get the results from the alignment analysis for each camera.
-    now = current_time(flatten=True)
     unit_id = pocs.get_config('pan_id')
     for cam_id, files in fits_files.items():
         print(f'Analyzing camera {cam_id} exposures')
-        analyze_camera_alignment(cam_id, files, observation.directory, now, unit_id, pocs.logger)
+        analyze_camera_alignment(cam_id, files, observation.directory, observation.seq_time, unit_id, pocs.logger)
 
     print('Done with quick alignment test')
     print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
