@@ -1,3 +1,4 @@
+import concurrent
 import os
 import time
 import warnings
@@ -410,38 +411,19 @@ def run_quick_alignment(
             cam_uid = exposure.metadata['camera_uid']
             fits_files[cam_uid][position] = exposure.path.with_suffix('.fits').as_posix()
 
-    # Get the results form the alignment analysis for each camera.
+    ### Parallelize the processing
+    # Get the results from the alignment analysis for each camera.
     now = current_time(flatten=True)
-    csv_path = Path(observation.directory) / f'alignment.csv'
-    csv_file = csv_path.open('a', encoding='utf-8')
-    for cam_id, files in fits_files.items():
-        try:
-            print(f'Analyzing camera {cam_id} exposures')
-            results = process_quick_alignment(files, logger=pocs.logger)
-
-            if results:
-                print(f'Camera {cam_id} alignment results:')
-                print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
-
-                # Plot.
-                fig = plot_alignment_diff(cam_id, files, results)
-                alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
-                fig.savefig(alignment_plot_fn.absolute().as_posix())
-                print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
-
-                # Save deltas to CSV.
-                csv_file.write(f'{now},{cam_id},{results.to_csv_line()}\n')
-
-                # Remove everything in the path before 'images' for upload.
-                path_parts = alignment_plot_fn.parts
-                bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
-                upload_image(
-                    file_path=alignment_plot_fn,
-                    bucket_path=bucket_path,
-                )
-        except Exception as e:
-            print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
-            continue
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(analyze_camera_alignment, cam_id, files, observation, now, pocs)
+            for cam_id, files in fits_files.items()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f'[red]Error during parallel alignment analysis: {e}[/red]')
 
     print('Done with quick alignment test')
     print('[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]')
@@ -457,6 +439,39 @@ def run_quick_alignment(
     # elif option == 'Park':
     #     print('[green]Moving mount to the parking position [/green]')
     #     mount.home_and_park(blocking=True)
+
+
+### Extract the code into a function
+def analyze_camera_alignment(cam_id, files, observation, now, pocs):
+    """Analyzes alignment for a single camera."""
+    try:
+        print(f'Analyzing camera {cam_id} exposures')
+        results = process_quick_alignment(files, logger=pocs.logger)
+
+        if results:
+            print(f'Camera {cam_id} alignment results:')
+            print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
+
+            # Plot.
+            fig = plot_alignment_diff(cam_id, files, results)
+            alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
+            fig.savefig(alignment_plot_fn.absolute().as_posix())
+            print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
+
+            # Save deltas to CSV.
+            csv_path = Path(observation.directory) / f'alignment.csv'
+            with csv_path.open('a', encoding='utf-8') as csv_file:
+                csv_file.write(f'{now},{cam_id},{results.to_csv_line()}\n')
+
+            # Remove everything in the path before 'images' for upload.
+            path_parts = alignment_plot_fn.parts
+            bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
+            upload_image(
+                file_path=alignment_plot_fn,
+                bucket_path=bucket_path,
+            )
+    except Exception as e:
+        print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
