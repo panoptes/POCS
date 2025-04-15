@@ -409,7 +409,7 @@ def run_quick_alignment(
     for cam_id, exposures in pocs.observatory.current_observation.exposure_list.items():
         for position, exposure in zip(['home', 'east', 'west'], exposures):
             cam_uid = exposure.metadata['camera_uid']
-            fits_files[cam_uid][position] = exposure.path.with_suffix('.fits').as_posix()
+            fits_files[cam_uid][position] = exposure.path.with_suffix('.fits.fz').as_posix()
 
     ### Parallelize the processing
     # Get the results from the alignment analysis for each camera.
