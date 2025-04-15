@@ -466,10 +466,11 @@ def analyze_camera_alignment(cam_id, files, observation, now, pocs):
 
             # Remove everything in the path before 'images' for upload.
             path_parts = alignment_plot_fn.parts
+            unit_id = pocs.get_config('pan_id')
             bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
             upload_image(
                 file_path=alignment_plot_fn,
-                bucket_path=bucket_path,
+                bucket_path=f'{unit_id}/{bucket_path}',
             )
     except Exception as e:
         print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
