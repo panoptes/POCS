@@ -1,4 +1,4 @@
-import concurrent
+import concurrent.futures
 import os
 import time
 import warnings
@@ -415,7 +415,7 @@ def run_quick_alignment(
     ### Parallelize the processing
     # Get the results from the alignment analysis for each camera.
     now = current_time(flatten=True)
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(analyze_camera_alignment, cam_id, files, observation, now, pocs)
             for cam_id, files in fits_files.items()
