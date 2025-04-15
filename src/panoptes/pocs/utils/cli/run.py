@@ -455,7 +455,7 @@ def analyze_camera_alignment(cam_id, files, observation, now, pocs):
 
             # Plot.
             fig = plot_alignment_diff(cam_id, files, results)
-            alignment_plot_fn = Path(observation.directory) / f'{cam_id}-{now}-alignment_overlay.jpg'
+            alignment_plot_fn = Path(observation.directory) / f'{cam_id}/{now}/{now}.jpg'
             fig.savefig(alignment_plot_fn.absolute().as_posix())
             print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
 
