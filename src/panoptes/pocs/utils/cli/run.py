@@ -416,9 +416,9 @@ def run_quick_alignment(
     # Get the results from the alignment analysis for each camera.
     now = current_time(flatten=True)
     unit_id = pocs.get_config('pan_id')
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [
-            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, unit_id)
+            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, unit_id, pocs.logger)
             for cam_id, files in fits_files.items()
         ]
         for future in concurrent.futures.as_completed(futures):
@@ -444,21 +444,21 @@ def run_quick_alignment(
 
 
 ### Extract the code into a function
-def analyze_camera_alignment(cam_id, files, observation_dir, now, unit_id):
+def analyze_camera_alignment(cam_id, files, observation_dir, now, unit_id, logger):
     """Analyzes alignment for a single camera."""
     try:
-        print(f'Analyzing camera {cam_id} exposures')
-        results = process_quick_alignment(files)
+        logger.debug(f'Analyzing camera {cam_id} exposures')
+        results = process_quick_alignment(files, logger=logger)
 
         if results:
-            print(f'Camera {cam_id} alignment results:')
-            print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
+            logger.debug(f'Camera {cam_id} alignment results:')
+            logger.debug(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
 
             # Plot.
             fig = plot_alignment_diff(cam_id, files, results)
             alignment_plot_fn = Path(observation_dir) / f'{cam_id}/{now}/{now}.jpg'
             fig.savefig(alignment_plot_fn.absolute().as_posix())
-            print(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
+            logger.debug(f'\tPlot image: {alignment_plot_fn.absolute().as_posix()}')
 
             # Save deltas to CSV.
             csv_path = Path(observation_dir) / f'alignment.csv'
@@ -473,7 +473,7 @@ def analyze_camera_alignment(cam_id, files, observation_dir, now, unit_id):
                 bucket_path=f'{unit_id}/{bucket_path}',
             )
     except Exception as e:
-        print(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
+        logger.warning(f'[red]Error during alignment analysis for camera {cam_id}: {e}[/red]')
 
 
 def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
