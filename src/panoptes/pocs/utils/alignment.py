@@ -124,6 +124,13 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     Returns:
         tuple: Polar center coordinates, RA rotation center coordinates, dx, dy, pixel scale
     """
+
+    def _log(msg, level='debug'):
+        if logger is not None:
+            getattr(logger, level)(msg)
+        else:
+            print(msg)
+
     # Get coordinates for Polaris in each of the images.
     target = SkyCoord.from_name(target_name)
 
@@ -136,12 +143,12 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
             fits_fn = Path(fits_fn)
 
         if position == 'home':
-            logger.debug(f"Processing polar rotation image: {fits_fn}")
+            _log(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
             pole_center_pix = (float(pole_center_x), float(pole_center_y))
         else:
             try:
-                logger.debug(f"Processing RA rotation image: {fits_fn}")
+                _log(f"Processing RA rotation image: {fits_fn}")
                 # If it's not already solved it probably needs a longer timeout.
                 solve_info = get_solve_field(fits_fn.as_posix(), timeout=90)
             except PanError:
@@ -149,19 +156,19 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
                 continue
 
         # Get the pixel coordinates of Polaris in the image.
-        logger.debug(f"Finding Polaris in image: {fits_fn}")
+        _log(f"Finding Polaris in image: {fits_fn}")
         wcs = WCS(fits_fn.as_posix())
         x, y = wcs.all_world2pix(target.ra.deg, target.dec.deg, 1)
-        logger.debug(f"Polaris position in image: {x}, {y}")
+        _log(f"Polaris position in image: {x}, {y}")
         points[position] = (x, y)
 
     # Find the circle that best fits the points.
     h, k, R = find_circle_params(points)
-    logger.debug(f"Circle parameters: center=({h}, {k}), radius={R}")
+    _log(f"Circle parameters: center=({h}, {k}), radius={R}")
     rotate_center_pix = (h, k)
 
     if pole_center_pix is None or rotate_center_pix is None:
-        logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')
+        _log(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}', level='error')
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.

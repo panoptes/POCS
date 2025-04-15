@@ -415,9 +415,10 @@ def run_quick_alignment(
     ### Parallelize the processing
     # Get the results from the alignment analysis for each camera.
     now = current_time(flatten=True)
+    unit_id = pocs.get_config('pan_id')
     with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         futures = [
-            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, pocs)
+            executor.submit(analyze_camera_alignment, cam_id, files, observation.directory, now, unit_id)
             for cam_id, files in fits_files.items()
         ]
         for future in concurrent.futures.as_completed(futures):
@@ -443,11 +444,11 @@ def run_quick_alignment(
 
 
 ### Extract the code into a function
-def analyze_camera_alignment(cam_id, files, observation_dir, now, pocs):
+def analyze_camera_alignment(cam_id, files, observation_dir, now, unit_id):
     """Analyzes alignment for a single camera."""
     try:
         print(f'Analyzing camera {cam_id} exposures')
-        results = process_quick_alignment(files, logger=pocs.logger)
+        results = process_quick_alignment(files)
 
         if results:
             print(f'Camera {cam_id} alignment results:')
@@ -466,7 +467,6 @@ def analyze_camera_alignment(cam_id, files, observation_dir, now, pocs):
 
             # Remove everything in the path before 'images' for upload.
             path_parts = alignment_plot_fn.parts
-            unit_id = pocs.get_config('pan_id')
             bucket_path = '/'.join(path_parts[path_parts.index('images') + 1:])
             upload_image(
                 file_path=alignment_plot_fn,
