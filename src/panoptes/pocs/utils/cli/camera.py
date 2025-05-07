@@ -1,13 +1,17 @@
 import concurrent.futures
 import time
+from collections import defaultdict, deque
 from pathlib import Path
 from platform import uname
 from typing import Dict, List
 
 import typer
 from panoptes.utils.config.client import get_config, set_config
-from panoptes.utils.time import current_time
 from panoptes.utils.error import PanError
+from panoptes.utils.images import cr2_to_jpg
+from panoptes.utils.images.cr2 import cr2_to_fits
+from panoptes.utils.images.fits import fits_to_jpg, fpack, get_solve_field
+from panoptes.utils.time import current_time
 from rich import print
 from tqdm import trange
 
@@ -118,6 +122,10 @@ def take_pictures(
     exptime: float = 1.0,
     output_dir: str = '/home/panoptes/images',
     delay: float = 0.0,
+    convert_to_fits: bool = False,
+    convert_to_jpg: bool = False,
+    compress_fits: bool = False,
+    solve_fits: bool = False,
 ) -> Dict[str, List[Path]] | None:
     """Takes pictures with cameras.
 
@@ -132,20 +140,76 @@ def take_pictures(
     now = current_time(flatten=True)
     output_dir = Path(output_dir) / str(now)
 
+    processing_queue = deque()
+
     futures = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for cam_name, cam in cameras.items():
-            future = executor.submit(_take_pics, cam_name, cam, exptime, num_images, output_dir, delay)
+            future = executor.submit(
+                _take_pics, processing_queue, cam_name, cam, exptime, num_images, output_dir, delay
+            )
             futures[future] = cam_name
 
-    files = dict()
+    # Listen to the processing queue and print the files as they are processed.
+    while True:
+        try:
+            fn = processing_queue.popleft()
+        except IndexError:
+            # No more files to process, wait a bit and check again.
+            time.sleep(0.1)
+            continue
+
+        # Make sure we have a Path object.
+        if isinstance(fn, str):
+            fn = Path(fn)
+
+        # Check if the file exists.
+        if not fn.exists():
+            print(f'File {fn} does not exist, skipping.')
+            continue
+
+        # Get the file type by the extension, either CR2 or FITS.
+        file_type = fn.suffix[1:].lower()
+        is_cr2 = file_type == 'cr2'
+        is_fits = file_type == 'fits'
+
+        if is_cr2 and convert_to_fits:
+            fn = cr2_to_fits(fn)
+            is_fits = True
+
+        if is_fits and compress_fits:
+            fn = fpack(fn)
+            print(f'Compressed {fn}')
+
+        if convert_to_jpg:
+            pretty_fn = None
+            if is_cr2:
+                pretty_fn = cr2_to_jpg(fn)
+            elif is_fits:
+                pretty_fn = fits_to_jpg(fn)
+            print(f'Converted {fn} to {pretty_fn}')
+
+        if is_fits and solve_fits:
+            solve_info = get_solve_field(fn)
+            if solve_info is not None:
+                fn = solve_info['solved_fits_file']
+                print(f'Solved {fn}')
+            else:
+                print(f'Could not solve {fn}')
+
+        # Check if all the futures are done and if so break from processing loop.
+        if all(future.done() for future in futures):
+            break
+
+    files = defaultdict(list)
     for future in concurrent.futures.as_completed(futures):
         if future.exception():
             print(future.exception())
             continue
 
         cam_name = futures[future]
-        files[cam_name] = future.result()
+        file_list = future.result()
+        files[cam_name] = file_list
 
     print('Finished taking pictures.')
     for cam_name, file_list in files.items():
@@ -156,12 +220,15 @@ def take_pictures(
     return files
 
 
-def _take_pics(cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path, delay: float):
+def _take_pics(processing_queue: deque, cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path,
+               delay: float
+               ):
     files = list()
     for i in trange(num):
         fn = output_dir / f'{cam_name}-{i:04d}-{current_time(flatten=True)}.{cam.file_extension}'
         cam.take_exposure(seconds=exptime, filename=fn, blocking=True)
         files.append(fn)
+        processing_queue.append(fn)
 
         # Wait for delay.
         if delay and delay > 0.0:
