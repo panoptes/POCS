@@ -205,11 +205,11 @@ class BaseScheduler(PanBase):
         """
         try:
             obs = Observation.from_dict(observation_config, **kwargs)
-            self.logger.info(f"Observation created: {obs!r}")
+            self.logger.debug(f"Observation created: {obs!r}")
 
             # Add observation to scheduler.
             if obs.name in self._observations:
-                self.logger.info(f"Overriding existing entry for {obs.name=!r}")
+                self.logger.debug(f"Overriding existing entry for {obs.name=!r}")
             self._observations[obs.name] = obs
             self.logger.debug(f"{obs!r} added to {self}.")
 
