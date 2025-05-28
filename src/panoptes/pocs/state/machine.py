@@ -124,7 +124,7 @@ class PanStateMachine(Machine):
                 # If not safe, go to park
                 ignore_safety_items = []
                 # We ignore the dark safety reading if mount has not yet moved.
-                if self.state not in ['observing', 'analyzing']:
+                if self.state.is_always_safe is True:
                     ignore_safety_items.append('is_dark')
                 is_safe = self.is_safe(park_if_not_safe=True, ignore=ignore_safety_items)
 
