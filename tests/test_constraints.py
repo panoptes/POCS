@@ -8,6 +8,8 @@ from astropy.time import Time
 
 from collections import OrderedDict
 
+from panoptes.utils.error import PanError
+
 from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -17,7 +19,7 @@ from panoptes.pocs.scheduler.constraint import BaseConstraint
 from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 from panoptes.pocs.scheduler.constraint import AlreadyVisited
-from panoptes.pocs.scheduler.constraint import TimeBasedPriority
+from panoptes.pocs.scheduler.constraint import TimeWindow
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils
@@ -289,7 +291,7 @@ def test_already_visited(observer):
 
 def test_time_based_priority(observer):
     observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'), priority=100)
-    tbc = TimeBasedPriority(start_time='2016-08-13 10:00:', end_time='2016-08-13 12:00:00', priority=1000)
+    tbc = TimeWindow(start_time='2016-08-13 10:00', end_time='2016-08-13 12:00', weight=1000)
 
     # Test inside of time range
     time = Time('2016-08-13 10:30:00')
@@ -303,4 +305,15 @@ def test_time_based_priority(observer):
     veto1, score1 = tbc.get_score(time, observer, observation1)
 
     assert veto1 is False
-    assert score1 == 100
+    assert score1 == 0
+
+
+def test_bad_time(observer):
+    with pytest.raises(PanError):
+        TimeWindow(start_time='2016-08-13 10:00', end_time='2016-08-13 09:00')
+
+    with pytest.raises(PanError):
+        TimeWindow(start_time='not a time', end_time='2016-08-13 12:00')
+
+    with pytest.raises(PanError):
+        TimeWindow(start_time=Time('2016-08-13 10:00'), end_time='not a time')

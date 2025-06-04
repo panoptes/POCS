@@ -1,4 +1,4 @@
-from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import listify
 
@@ -39,41 +39,42 @@ class Scheduler(BaseScheduler):
 
         self.set_common_properties(time)
 
-        constraints = constraints or self.constraints
+        self.logger.info('Applying constraints to observations:')
+        for obs_name, observation in self.observations.items():
+            self.logger.info(f'{obs_name}')
+            # Get the global constraints.
+            all_constraints = constraints or self.constraints.copy()
 
-        for constraint in listify(constraints):
-            self.logger.info(f"Checking Constraint: {constraint}")
-            for obs_name, observation in self.observations.items():
+            # Add the observation specific constraints.
+            if observation.constraints is not None:
+                all_constraints += observation.constraints
+
+            for constraint in listify(all_constraints):
                 if obs_name in valid_obs:
                     # Add a special case where we skip the Moon Avoidance constraint if the observation name is "Moon".
                     if constraint.name == 'MoonAvoidance' and obs_name.lower() == 'moon':
                         self.logger.info(f"Skipping Moon Avoidance constraint for {obs_name}")
                         continue
 
-                    current_score = valid_obs[obs_name]
-                    self.logger.info(f"\t{obs_name}\tCurrent score: {current_score:.03f}")
-
                     veto, score = constraint.get_score(time,
                                                        self.observer,
                                                        observation,
                                                        **self.common_properties)
 
-                    self.logger.info(f"\t\tConstraint Score: {score:.03f}\tVeto: {veto}")
-
                     if veto:
-                        self.logger.info(f"\t\tVetoed by {constraint}")
+                        self.logger.info(f"\tVetoed by {constraint}")
                         del valid_obs[obs_name]
                         continue
 
                     valid_obs[obs_name] += score
-                    self.logger.info(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
+                    self.logger.info(f"\t{str(constraint):30s}Constraint score: {score:10.02f}\tTotal score: {valid_obs[obs_name]:10.02f}")
 
         if len(valid_obs) > 0:
-            self.logger.info(f'Multiplying final scores by priority')
+            self.logger.info(f'Multiplying final scores by observation priority')
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority
-                self.logger.info(f'{obs_name}: {priority:7.2f} *{score:7.2f} = {new_score:7.2f}')
+                self.logger.info(f'\t{obs_name:30s}Total score:      {score:10.02f}\tPriority:    {priority:10.3f} = {new_score:10.02f}')
                 valid_obs[obs_name] = new_score
 
             # Sort the list by highest score (reverse puts in correct order)

@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from astropy import units as u
+from astropy.units import s as Second
+from panoptes.utils import error
 from panoptes.utils.library import load_module
+from panoptes.utils.utils import get_quantity_value, listify
 from pydantic.dataclasses import dataclass
 
-from panoptes.utils.utils import get_quantity_value, listify
-from panoptes.utils import error
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 
 
@@ -24,8 +26,17 @@ class Exposure:
 
 class Observation(PanBase):
 
-    def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
-                 filter_name=None, dark=False, *args, **kwargs):
+    def __init__(self,
+                 field: Field,
+                 exptime: Second = 120 * u.second,
+                 min_nexp: int = 60,
+                 exp_set_size: int = 10,
+                 priority: int | float = 100,
+                 filter_name: str | None = None,
+                 dark: bool = False,
+                 constraints: List | None = None,
+                 *args, **kwargs
+                 ):
         """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -57,6 +68,8 @@ class Observation(PanBase):
                 will override the default filter name (default: {None}).
             dark (bool, optional): If True, exposures should be taken with the shutter closed.
                 Default: False.
+            constraints (list, optional): List of `Constraints` to apply to this observation.
+                These constraints will be applied in addition to any global constraints.
         """
         super().__init__(*args, **kwargs)
 
@@ -69,8 +82,10 @@ class Observation(PanBase):
             raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
         if not min_nexp % exp_set_size == 0:
-            raise ValueError(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
-                             f"a multiple of set size (exp_set_size={exp_set_size}).")
+            raise ValueError(
+                f"Minimum number of exposures (min_nexp={min_nexp}) must be "
+                f"a multiple of set size (exp_set_size={exp_set_size})."
+                )
 
         if not float(priority) > 0.0:
             raise ValueError("Priority must be larger than 0.")
@@ -97,6 +112,8 @@ class Observation(PanBase):
         self._seq_time = None
 
         self.merit = 0.0
+
+        self.constraints = constraints or []
 
         self.reset()
 
@@ -299,6 +316,14 @@ class Observation(PanBase):
                f"minimum {self.min_nexp}, " \
                f"priority {self.priority:.0f}"
 
+    def __repr__(self):
+        return f"<Observation: {self.name} " \
+               f"exptime={self.exptime}, " \
+               f"min_nexp={self.min_nexp}, " \
+               f"exp_set_size={self.exp_set_size}, " \
+               f"priority={self.priority}, " \
+               f"constraints={self.constraints}>"
+
     ################################################################################################
     # Class Methods
     ################################################################################################
@@ -307,7 +332,8 @@ class Observation(PanBase):
     def from_dict(cls,
                   observation_config: Dict,
                   field_class='panoptes.pocs.scheduler.field.Field',
-                  observation_class='panoptes.pocs.scheduler.observation.base.Observation'):
+                  observation_class='panoptes.pocs.scheduler.observation.base.Observation'
+                  ):
         """Creates an `Observation` object from config dict.
 
         Args:
@@ -323,17 +349,20 @@ class Observation(PanBase):
         """
         observation_config = observation_config.copy()
 
-        field_config = observation_config.get("field", {})
+        field_config = observation_config.get("field", {}).copy()
         field_type_name = field_config.pop("type", field_class)
 
-        obs_config = observation_config.get("observation", {})
+        obs_config = observation_config.get("observation", {}).copy()
         obs_type_name = obs_config.pop("type", observation_class)
 
         try:
             # Make the field
             field = load_module(field_type_name)(**field_config)
 
-            # Make the observation
+            # If the observation has constraints, make those first.
+            if 'constraints' in obs_config:
+                obs_config['constraints'] = create_constraints_from_config(obs_config)
+
             obs = load_module(obs_type_name)(field=field, **obs_config)
         except Exception as e:
             raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")
