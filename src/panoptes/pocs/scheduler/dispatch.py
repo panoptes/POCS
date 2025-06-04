@@ -37,6 +37,9 @@ class Scheduler(BaseScheduler):
         valid_obs = {obs: 0.0 for obs in self.observations}
         best_obs = []
 
+        # Reset the current observation
+        self.current_observation = None
+
         self.set_common_properties(time)
 
         self.logger.info('Applying constraints to observations:')
