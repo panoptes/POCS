@@ -1,6 +1,7 @@
 from contextlib import suppress
 
 from astropy import units as u
+from astropy.time import Time
 from panoptes.utils import error, horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
 
@@ -211,3 +212,49 @@ class AlreadyVisited(BaseConstraint):
             veto = True
 
         return veto, score * self.weight
+
+
+class TimeBasedPriority(BaseConstraint):
+
+    def __init__(self, start_time: str|Time, end_time: str|Time, priority: int|float = 5000, *args, **kwargs):
+        """Constraint that changes the priority of the field during a given time window.
+
+        Args:
+            start_time (str|Time): Start time of the observation window.
+            end_time (str|Time): End time of the observation window.
+            priority (int|float): Priority of the observation during the time window, default is 5000.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
+
+        super().__init__(*args, **kwargs)
+        self.logger.debug("Creating TimeBasedPriority constraint")
+        if isinstance(start_time, str):
+            start_time = Time(start_time)
+        if isinstance(end_time, str):
+            end_time = Time(end_time)
+        if not isinstance(start_time, Time) or not isinstance(end_time, Time):
+            raise error.PanError("start_time and end_time must be of type str or astropy Time")
+
+        self.start_time = start_time
+        self.end_time = end_time
+        self.priority = priority
+        self.logger.debug(f"TimeBasedPriority constraint: {priority=} from {self.start_time} to {self.end_time}")
+
+    def get_score(self, time, observer, observation, **kwargs):
+        score = self._score
+        target = observation.field
+        veto = False
+
+        # If the current time is outside the start and end time, do nothing.
+        if not (self.start_time <= time <= self.end_time):
+            self.logger.debug(f"Current time {time} is outside the TimeBasedPriority window, skipping constraint")
+        else:
+            # If we are within the time window, set the score to the priority.
+            score = self.priority
+            self.logger.debug(f"Setting score to priority {self.priority} for target {target} at time {time}")
+
+        return veto, score * self.weight
+
+    def __str__(self):
+        return f"Time Based Priority ({self.start_time} to {self.end_time}, priority={self.priority})"
