@@ -276,9 +276,15 @@ class Observatory(PanBase):
         self.logger.debug("Shutting down observatory")
 
         # Wait for the cameras to finish exposing.
+        wait_timer = CountdownTimer(120, name='FinishCameraExposureWait')
         while self.current_observation and any(cam.is_observing for cam in self.cameras.values()):
+            if wait_timer.expired():
+                self.logger.warning("Timeout waiting for cameras to finish observing, "
+                                    "proceeding with the parking of the mount.")
+                break
+
             self.logger.debug("Waiting for cameras to finish observing, please be patient...")
-            time.sleep(5)
+            wait_timer.sleep(max_sleep=5)
 
         if self.mount:
             self.mount.disconnect()
