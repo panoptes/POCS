@@ -48,7 +48,7 @@ def get_all_names(all_names=None, without=None):
     return sorted([v for v in all_names if v not in without])
 
 
-def get_simulator_names(simulator=None, kwargs=None):
+def get_simulator_names(simulator: str | list | None = None, kwargs=None):
     """Returns the names of the simulators to be used in lieu of hardware drivers.
 
     Note that returning a list containing 'X' doesn't mean that the config calls for a driver
@@ -76,7 +76,7 @@ def get_simulator_names(simulator=None, kwargs=None):
     ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
 
     Args:
-        simulator (list): An explicit list of names of hardware to be simulated
+        simulator (str|list|None): An explicit list of names of hardware to be simulated
             (i.e. hardware drivers to be replaced with simulators).
         kwargs: The kwargs passed in to the caller, which is inspected for an arg
             called 'simulator'.

@@ -9,6 +9,7 @@ from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_free_space
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.hardware import get_simulator_names
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
@@ -617,17 +618,32 @@ class POCS(PanStateMachine, PanBase):
                 simulator mode. Possible modules include: all, mount, camera, weather, night.
                 Defaults to an empty list.
         """
+        if simulators == 'all':
+            simulators = get_simulator_names('all')
+
         try:
             from panoptes.pocs.scheduler import create_scheduler_from_config
-            from panoptes.pocs.mount import create_mount_from_config
+            from panoptes.pocs.scheduler import create_location_from_config
+            from panoptes.pocs.mount import create_mount_from_config, create_mount_simulator
             from panoptes.pocs.camera import create_cameras_from_config
+            from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
         except ImportError:
             print(f'Cannot import helper modules.')
         else:
             try:
-                mount = create_mount_from_config()
-                cameras = create_cameras_from_config()
                 scheduler = create_scheduler_from_config()
+                location = create_location_from_config()
+
+                if 'mount' in simulators:
+                    mount = create_mount_simulator(earth_location=location.earth_location)
+                else:
+                    mount = create_mount_from_config()
+
+                if 'camera' in simulators:
+                    # Make two DSLR cameras in simulator mode.
+                    cameras = {f'Cam{i:02d}':SimCamera(name=f'Cam{i:02d}') for i in range(2)}
+                else:
+                    cameras = create_cameras_from_config()
 
                 observatory = Observatory(cameras=cameras, mount=mount, scheduler=scheduler)
                 pocs = cls(observatory, simulators=simulators or list())
