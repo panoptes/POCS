@@ -218,7 +218,7 @@ class AlreadyVisited(BaseConstraint):
 class TimeWindow(BaseConstraint):
 
     def __init__(self, start_time: str | Time, end_time: str | Time, *args, **kwargs):
-        """Constraint that changes the priority of the field during a given time window.
+        """Constraint that changes the weight of the field during a given time window.
 
         This constraint will set the score to 1 if the current time is within the
         specified time window (between `start_time` and `end_time`). The weight of
