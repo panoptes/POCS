@@ -263,11 +263,8 @@ class TimeWindow(BaseConstraint):
         score = self._score
         veto = False
 
-        # If the current time is outside the start and end time, do nothing.
-        if not (self.start_time <= time <= self.end_time):
-            self.logger.debug(f"Current time {time} is outside the TimeWindow, skipping constraint")
-        else:
-            # If we are within the time window, set the score to one.
+        # If we are within the time window, set the score to one.
+        if self.start_time <= time <= self.end_time:
             score = 1
 
         return veto, score * self.weight
