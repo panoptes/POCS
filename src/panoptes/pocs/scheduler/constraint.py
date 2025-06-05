@@ -1,6 +1,8 @@
 from contextlib import suppress
 
 from astropy import units as u
+from astropy.time import Time
+from dateutil.parser import parse as parse_date
 from panoptes.utils import error, horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
 
@@ -211,3 +213,64 @@ class AlreadyVisited(BaseConstraint):
             veto = True
 
         return veto, score * self.weight
+
+
+class TimeWindow(BaseConstraint):
+
+    def __init__(self, start_time: str | Time, end_time: str | Time, *args, **kwargs):
+        """Constraint that changes the weight of the field during a given time window.
+
+        This constraint will set the score to 1 if the current time is within the
+        specified time window (between `start_time` and `end_time`). The weight of
+        the constraint is set to a high value by default (100.0) to ensure it is
+        prioritized over other constraints. If the current time is outside the window,
+        the score remains at its default value (0.0) and the weight is unchanged.
+
+        This allows for prioritization of observations during specific times, such as
+        when a target is in transit or at a specific altitude.
+
+        Args:
+            start_time (str|Time): Start time of the observation window. If passed as a string,
+                it should be in a format that can be parsed by `dateutil.parser.parse`.
+            end_time (str|Time): End time of the observation window. If passed as a string,
+                it should be in a format that can be parsed by `dateutil.parser.parse`.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
+
+        # Set a high weight by default to ensure this constraint is prioritized.
+        kwargs.setdefault('weight', 100.0)
+
+        super().__init__(*args, **kwargs)
+        self.logger.debug("Creating TimeWindow constraint")
+        try:
+            if isinstance(start_time, str):
+                start_time = Time(parse_date(start_time))
+            if isinstance(end_time, str):
+                end_time = Time(parse_date(end_time))
+        except ValueError:
+            raise error.PanError(f"Invalid time format for start_time or end_time: {start_time}, {end_time}")
+
+        # Make sure end time is after start time
+        if end_time <= start_time:
+            raise error.PanError(f"End time {end_time} must be after start time {start_time}")
+
+        self.start_time = start_time
+        self.end_time = end_time
+        self.logger.debug(f"TimeWindow constraint: {self.start_time} to {self.end_time}")
+
+    def get_score(self, time, observer, observation, **kwargs):
+        score = self._score
+        veto = False
+
+        # If we are within the time window, set the score to one.
+        if self.start_time <= time <= self.end_time:
+            score = 1
+
+        return veto, score * self.weight
+
+    def __str__(self):
+        return f"TimeWindow"
+
+    def __repr__(self):
+        return f"TimeWindow(start_time={self.start_time.iso}, end_time={self.end_time.iso})"

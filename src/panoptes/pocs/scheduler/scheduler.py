@@ -17,7 +17,8 @@ from panoptes.pocs.scheduler.observation.base import Observation
 class BaseScheduler(PanBase):
 
     def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
-                 **kwargs):
+                 **kwargs
+                 ):
         """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
@@ -197,7 +198,7 @@ class BaseScheduler(PanBase):
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
-    def add_observation(self, observation_config, **kwargs):
+    def add_observation(self, observation_config: dict, **kwargs):
         """Adds an `Observation` to the scheduler.
 
         Args:

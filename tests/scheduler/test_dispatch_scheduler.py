@@ -46,7 +46,13 @@ def field_list():
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
       observation:
-        priority: 100
+        priority: 100      
+        constraints:
+          - name: panoptes.pocs.scheduler.constraint.TimeWindow
+            options:
+              start_time: "2016-08-13 10:10"  # Example start time
+              end_time: "2016-08-13 12:00"  # Example end time
+              priority: 1000  # Priority during this time
     -
       field:
         name: HD 209458
@@ -147,7 +153,7 @@ def test_get_observation_reread(field_list,
     with open(temp_file, 'a') as f:
         f.write(yaml.dump([{
             "field": {'name': 'New Name', 'position': '20h00m43.7135s +22d42m39.0645s'},
-            "observation": {'priority': 5000}}]))
+            "observation": {'priority': 50000}}]))
 
     # Get observation but reread file first
     best = scheduler.get_observation(time=time, read_file=True)
@@ -169,12 +175,12 @@ def test_no_valid_observation(scheduler):
 
 
 def test_continue_observation(scheduler):
-    time = Time('2016-08-13 11:00:00')
+    time = Time('2016-08-13 10:30:00')
     scheduler.get_observation(time=time)
     assert scheduler.current_observation is not None
     obs = scheduler.current_observation
 
-    time = Time('2016-08-13 13:00:00')
+    time = Time('2016-08-13 10:45:00')
     scheduler.get_observation(time=time)
     assert scheduler.current_observation == obs
 
@@ -264,3 +270,19 @@ def test_observed_list(scheduler):
 
     scheduler.reset_observed_list()
     assert len(scheduler.observed_list) == 0
+
+
+def test_timebased_priority(scheduler):
+    assert len(scheduler.observed_list) == 0
+
+    # During the window we should select the HD 189733 target with high priority.
+    time0 = Time('2016-08-13 10:30:00')
+    obs, score = scheduler.get_observation(time=time0)
+
+    assert scheduler.current_observation.name == 'HD 189733'
+    assert score > 0
+
+    time1 = Time('2016-08-13 12:01:00')
+    scheduler.get_observation(time=time1)
+
+    assert scheduler.current_observation.name != 'HD 189733'

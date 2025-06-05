@@ -4,7 +4,7 @@ import requests
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
-from panoptes.pocs.scheduler import BaseScheduler
+from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.utils.serializers import to_json
 

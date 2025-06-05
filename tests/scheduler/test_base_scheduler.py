@@ -7,7 +7,8 @@ from astroplan import Observer
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.config.client import set_config
-from panoptes.pocs.scheduler import BaseScheduler as Scheduler, create_constraints_from_config
+from panoptes.pocs.scheduler.scheduler import BaseScheduler as Scheduler
+from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.utils.serializers import from_yaml
 
 
