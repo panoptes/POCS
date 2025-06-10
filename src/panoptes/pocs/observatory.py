@@ -283,7 +283,7 @@ class Observatory(PanBase):
                                     "proceeding with the parking of the mount.")
                 break
 
-            self.logger.debug("Waiting for cameras to finish observing, please be patient...")
+            self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
             wait_timer.sleep(max_sleep=5)
 
         if self.mount:
