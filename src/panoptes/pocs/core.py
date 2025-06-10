@@ -618,6 +618,9 @@ class POCS(PanStateMachine, PanBase):
                 simulator mode. Possible modules include: all, mount, camera, weather, night.
                 Defaults to an empty list.
         """
+        if simulators is None:
+            simulators = list()
+            
         if simulators == 'all':
             simulators = get_simulator_names('all')
 
