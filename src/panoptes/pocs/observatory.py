@@ -1,4 +1,5 @@
 import os
+import time
 from collections import OrderedDict
 from contextlib import suppress
 from pathlib import Path
@@ -273,6 +274,18 @@ class Observatory(PanBase):
         """Power down the observatory. Currently just disconnects hardware.
         """
         self.logger.debug("Shutting down observatory")
+
+        # Wait for the cameras to finish exposing.
+        wait_timer = CountdownTimer(120, name='FinishCameraExposureWait')
+        while self.current_observation and any(cam.is_observing for cam in self.cameras.values()):
+            if wait_timer.expired():
+                self.logger.warning("Timeout waiting for cameras to finish observing, "
+                                    "proceeding with the parking of the mount.")
+                break
+
+            self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
+            wait_timer.sleep(max_sleep=5)
+
         if self.mount:
             self.mount.disconnect()
         if self.dome:

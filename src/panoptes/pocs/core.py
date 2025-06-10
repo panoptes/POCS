@@ -262,7 +262,7 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.info('Mount not parked, parking')
                 self.observatory.mount.park()
 
-            # Observatory shut down
+            # Observatory shut down; will wait for cameras to finish exposing.
             self.observatory.power_down()
 
             self.connected = False
