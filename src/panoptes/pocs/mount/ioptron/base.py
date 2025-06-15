@@ -233,12 +233,13 @@ class Mount(AbstractSerialMount):
         self.query('set_lat', lat)
 
         # Daylight savings and GMT offset.
-        is_dst = bool(time.localtime().tm_isdst)
-        self.logger.debug(f'Setting daylight savings to {is_dst}')
-        if is_dst:
-            self.query('enable_daylight_savings')
-        else:
-            self.query('disable_daylight_savings')
+        # is_dst = bool(time.localtime().tm_isdst)
+        # self.logger.debug(f'Setting daylight savings to {is_dst}')
+        # if is_dst:
+        #     self.query('enable_daylight_savings')
+        # else:
+        #     self.query('disable_daylight_savings')
+        self.query('disable_daylight_savings')
 
         gmt_offset = self.get_config('location.gmt_offset', default=0)
         self.logger.debug(f'Setting GMT offset to {gmt_offset:+04.0f}')
