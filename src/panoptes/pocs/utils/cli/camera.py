@@ -45,7 +45,7 @@ def setup_cameras(
                     'model': 'panoptes.pocs.camera.gphoto.canon.Camera',
                     'name': f'Cam{num_cameras:02d}',
                     'port': port,
-                    'readout_time': 5.0
+                    'readout_time': 15.0
                 }
                 num_cameras += 1
 
