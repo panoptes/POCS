@@ -77,7 +77,7 @@ def create_mount_from_config(mount_info=None,
     try:
         port = mount_info['serial']['port']
         logger.info(f'Looking for {driver} on {port}.')
-        if (port is None or len(glob(port)) == 0) and not port.startwsith('socket'):
+        if (port is None or len(glob(port)) == 0) and not port.startswith('socket'):
             if port == 'loop://':
                 logger.warning('Using loop:// for mount connection.')
             else:
