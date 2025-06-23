@@ -188,7 +188,7 @@ def test_is_weather_safe_no_simulator(pocs):
     os.environ['POCSTIME'] = '2020-01-01 18:00:00'
 
     # Insert a dummy weather record
-    pocs.db.insert_current('weather', {'safe': True})
+    pocs.db.insert_current('weather', {'safe': True, "timestamp": '2020-01-01 18:00:00'})
     assert pocs.is_weather_safe() is True
 
     # Set a time 181 seconds later
