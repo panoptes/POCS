@@ -468,7 +468,7 @@ class POCS(PanStateMachine, PanBase):
                 with suppress(KeyError):
                     is_safe = bool(record['data'][key])
 
-            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
+            timestamp = record['data']['timestamp'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
             self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp:%c}]")
