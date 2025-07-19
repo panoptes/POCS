@@ -426,7 +426,7 @@ class ASIDriver(AbstractSDKDriver):
 
     def get_camera_mode(self, camera_ID):
         """Get current trigger mode for camera with given integer ID."""
-        mode = ctypes.int()
+        mode = ctypes.c_int()
         self._call_function(
             'ASIGetCameraMode',
             camera_ID,
