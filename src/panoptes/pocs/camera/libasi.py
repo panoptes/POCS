@@ -36,7 +36,7 @@ class ASIDriver(AbstractSDKDriver):
             `~pocs.camera.libasi.ASIDriver`
 
         Raises:
-            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_library fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
@@ -232,7 +232,7 @@ class ASIDriver(AbstractSDKDriver):
         return nice_value, bool(is_auto)
 
     def set_control_value(self, camera_ID, control_type, value):
-        """ Sets the value of the control control_type on camera with given integet ID """
+        """ Sets the value of the control control_type on camera with given integer ID """
         if value == 'AUTO':
             # Apparently need to pass current value when turning auto on
             auto = True
@@ -605,9 +605,9 @@ class ASIDriver(AbstractSDKDriver):
     def _parse_formats(self, supported_formats):
         formats = []
         for supported_format in supported_formats:
-            format = ImgType(supported_format)
-            if format != ImgType.END:
-                formats.append(format.name)
+            imgtype_format = ImgType(supported_format)
+            if imgtype_format != ImgType.END:
+                formats.append(imgtype_format.name)
             else:
                 break
         return tuple(formats)
@@ -635,7 +635,7 @@ class ASIDriver(AbstractSDKDriver):
         return control_info
 
     def _parse_return_value(self, value, control_type):
-        """ Helper function to apply appropiate type conversion and/or units to value """
+        """ Helper function to apply appropriate type conversion and/or units to value """
         try:
             int_value = value.value  # If not done already extract Python int from ctypes.c_long
         except AttributeError:
@@ -761,7 +761,7 @@ class TrigOutput(enum.IntEnum):
     """External trigger output."""
 
     PINA = 0  # Only Pin A output
-    PINB = enum.auto()  # Only Pin B outoput
+    PINB = enum.auto()  # Only Pin B output
     NONE = -1
 
 
