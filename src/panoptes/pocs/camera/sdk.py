@@ -3,11 +3,11 @@ from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
 from astropy.io import fits
+from panoptes.utils import error
+from panoptes.utils.library import load_c_library
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera.camera import AbstractCamera
-from panoptes.utils import error
-from panoptes.utils.library import load_c_library
 from panoptes.pocs.utils.logger import get_logger
 
 # Would usually use self.logger but that won't exist until after calling super().__init__(),
@@ -30,10 +30,10 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
         Args:
             name (str): name of the library (without 'lib' prefix or any suffixes, e.g. 'fli').
-            library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'
 
         Raises:
-            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_library fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
@@ -74,7 +74,8 @@ class AbstractSDKCamera(AbstractCamera):
                  library_path=None,
                  filter_type=None,
                  target_temperature=None,
-                 *args, **kwargs):
+                 *args, **kwargs
+                 ):
 
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
         # which is some form of unique ID readable via the camera SDK.
@@ -102,11 +103,15 @@ class AbstractSDKCamera(AbstractCamera):
         logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with {serial_number=!r} "
-                         f"at {my_class._cameras[serial_number]}.")
+            logger.debug(
+                f"Found {name} with {serial_number=!r} "
+                f"at {my_class._cameras[serial_number]}."
+                )
         else:
-            raise error.InvalidConfig(f"No config information found for "
-                                      f"{name=!r} with {serial_number=!r} in {my_class._cameras}")
+            raise error.InvalidConfig(
+                f"No config information found for "
+                f"{name=!r} with {serial_number=!r} in {my_class._cameras}"
+                )
 
         if serial_number in my_class._assigned_cameras:
             raise error.PanError(f"{name} with UID serial_number={serial_number!r} already in use.")
