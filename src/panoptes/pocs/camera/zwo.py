@@ -22,7 +22,7 @@ class Camera(AbstractSDKCamera):
                  name='ZWO ASI Camera',
                  gain=100,
                  image_type=None,
-                 bandwidthoverload=None,
+                 bandwidthoverload=99,
                  *args, **kwargs
                  ):
         """
@@ -35,6 +35,7 @@ class Camera(AbstractSDKCamera):
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
+            bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
