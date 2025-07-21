@@ -211,7 +211,7 @@ class Camera(AbstractSDKCamera):
             target=self._video_readout,
             args=video_args,
             daemon=True
-            )
+        )
 
         self._driver.start_video_capture(self._handle)
         self._video_event.clear()
@@ -263,7 +263,7 @@ class Camera(AbstractSDKCamera):
                 height,
                 image_type,
                 timeout
-                )
+            )
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
@@ -312,7 +312,7 @@ class Camera(AbstractSDKCamera):
                     width,
                     height,
                     self.image_type
-                    )
+                )
             except RuntimeError as err:
                 raise error.PanError(f'Error getting image data from {self}: {err}')
             else:
@@ -326,7 +326,7 @@ class Camera(AbstractSDKCamera):
                     data=image_data,
                     header=header,
                     filename=filename
-                    )
+                )
         elif exposure_status == 'FAILED':
             raise error.PanError(f"Exposure failed on {self}")
         elif exposure_status == 'IDLE':
@@ -369,7 +369,7 @@ class Camera(AbstractSDKCamera):
                 self.logger.warning(
                     f"Cannot set {control_name} to {value}, clipping to max value:"
                     f" {max_value}."
-                    )
+                )
                 self._driver.set_control_value(self._handle, control_type, max_value)
                 return
 
@@ -378,7 +378,7 @@ class Camera(AbstractSDKCamera):
                 self.logger.warning(
                     f"Cannot set {control_name} to {value}, clipping to min value:"
                     f" {min_value}."
-                    )
+                )
                 self._driver.set_control_value(self._handle, control_type, min_value)
                 return
         else:
