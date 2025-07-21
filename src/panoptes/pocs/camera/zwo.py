@@ -6,11 +6,11 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
+from panoptes.utils import error
+from panoptes.utils.utils import get_quantity_value
+
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.utils import error
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
@@ -22,8 +22,9 @@ class Camera(AbstractSDKCamera):
                  name='ZWO ASI Camera',
                  gain=100,
                  image_type=None,
-                 bandwidthoverload=None,
-                 *args, **kwargs):
+                 bandwidthoverload=99,
+                 *args, **kwargs
+                 ):
         """
         ZWO ASI Camera class
 
@@ -34,6 +35,7 @@ class Camera(AbstractSDKCamera):
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
+            bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -205,9 +207,11 @@ class Camera(AbstractSDKCamera):
                       self.file_extension,
                       int(max_frames),
                       self._create_fits_header(seconds, dark=False))
-        video_thread = threading.Thread(target=self._video_readout,
-                                        args=video_args,
-                                        daemon=True)
+        video_thread = threading.Thread(
+            target=self._video_readout,
+            args=video_args,
+            daemon=True
+        )
 
         self._driver.start_video_capture(self._handle)
         self._video_event.clear()
@@ -236,7 +240,8 @@ class Camera(AbstractSDKCamera):
                        filename_root,
                        file_extension,
                        max_frames,
-                       header):
+                       header
+                       ):
 
         start_time = time.monotonic()
         good_frames = 0
@@ -252,11 +257,13 @@ class Camera(AbstractSDKCamera):
             if self._video_event.is_set():
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
-            video_data = self._driver.get_video_data(self._handle,
-                                                     width,
-                                                     height,
-                                                     image_type,
-                                                     timeout)
+            video_data = self._driver.get_video_data(
+                self._handle,
+                width,
+                height,
+                image_type,
+                timeout
+            )
             if video_data is not None:
                 now = Time.now()
                 header.set('DATE-OBS', now.fits, 'End of exposure + readout')
@@ -274,15 +281,19 @@ class Camera(AbstractSDKCamera):
             self.stop_video()
 
         elapsed_time = (time.monotonic() - start_time) * u.second
-        self.logger.debug("Captured {} of {} frames in {:.2f} ({:.2f} fps), {} frames lost".format(
-            good_frames,
-            max_frames,
-            elapsed_time,
-            get_quantity_value(good_frames / elapsed_time),
-            bad_frames))
+        self.logger.debug(
+            "Captured {} of {} frames in {:.2f} ({:.2f} fps), {} frames lost".format(
+                good_frames,
+                max_frames,
+                elapsed_time,
+                get_quantity_value(good_frames / elapsed_time),
+                bad_frames
+            )
+        )
 
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args,
-                        **kwargs):
+                        **kwargs
+                        ):
         self._control_setter('EXPOSURE', seconds)
         roi_format = self._driver.get_roi_format(self._handle)
         self._driver.start_exposure(self._handle)
@@ -296,10 +307,12 @@ class Camera(AbstractSDKCamera):
         exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == 'SUCCESS':
             try:
-                image_data = self._driver.get_exposure_data(self._handle,
-                                                            width,
-                                                            height,
-                                                            self.image_type)
+                image_data = self._driver.get_exposure_data(
+                    self._handle,
+                    width,
+                    height,
+                    self.image_type
+                )
             except RuntimeError as err:
                 raise error.PanError(f'Error getting image data from {self}: {err}')
             else:
@@ -309,9 +322,11 @@ class Camera(AbstractSDKCamera):
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
-                self.write_fits(data=image_data,
-                                header=header,
-                                filename=filename)
+                self.write_fits(
+                    data=image_data,
+                    header=header,
+                    filename=filename
+                )
         elif exposure_status == 'FAILED':
             raise error.PanError(f"Exposure failed on {self}")
         elif exposure_status == 'IDLE':
@@ -341,22 +356,29 @@ class Camera(AbstractSDKCamera):
 
         control_name = self._control_info[control_type]['name']
         if not self._control_info[control_type]['is_writable']:
-            raise error.NotSupported("{} cannot set {} parameter'".format(
-                self.model, control_name))
+            raise error.NotSupported(
+                "{} cannot set {} parameter'".format(
+                    self.model, control_name
+                )
+            )
 
         if value != 'AUTO':
             # Check limits.
             max_value = self._control_info[control_type]['max_value']
             if value > max_value:
-                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to max value:"
-                                    f" {max_value}.")
+                self.logger.warning(
+                    f"Cannot set {control_name} to {value}, clipping to max value:"
+                    f" {max_value}."
+                )
                 self._driver.set_control_value(self._handle, control_type, max_value)
                 return
 
             min_value = self._control_info[control_type]['min_value']
             if value < min_value:
-                self.logger.warning(f"Cannot set {control_name} to {value}, clipping to min value:"
-                                    f" {min_value}.")
+                self.logger.warning(
+                    f"Cannot set {control_name} to {value}, clipping to min value:"
+                    f" {min_value}."
+                )
                 self._driver.set_control_value(self._handle, control_type, min_value)
                 return
         else:
