@@ -1,12 +1,12 @@
+import human_readable
+import requests
 import subprocess
+import typer
 from dataclasses import dataclass
 from datetime import datetime, timezone
-
-import requests
-import typer
 from rich import print
-from rich.table import Table
 from rich.console import Console
+from rich.table import Table
 
 
 @dataclass
@@ -45,16 +45,16 @@ def format_timestamp(timestamp):
     except (ValueError, TypeError):
         # If parsing fails, return the original timestamp
         return str(timestamp)
-    
+
     now = datetime.now(tz=timezone.utc)
     diff = now - timestamp_dt
-    
+
     # Calculate the time difference in various units
     seconds = diff.total_seconds()
     minutes = seconds / 60
     hours = minutes / 60
     days = hours / 24
-    
+
     # Format the time difference as a human-friendly string
     if days >= 2:
         return f"Over {int(days)} days old"
@@ -73,24 +73,29 @@ def status(context: typer.Context, page='status'):
     """Get the status of the weather station."""
     url = context.obj.url
     data = get_page(page, url)
-    
+
     # Create a Rich table
     table = Table(title="Weather Station Status")
-    
+
+    value_color = {
+        True: 'green',
+        False: 'red',
+    }
+
     # Add columns for key and value
     table.add_column("Parameter", style="cyan")
     table.add_column("Value", style="green")
-    
+
     # Add rows for each key-value pair in the data
     for key, value in data.items():
         # Format timestamp if the key is 'timestamp' or contains 'time'
-        if key == 'timestamp' or 'time' in key.lower():
-            formatted_value = format_timestamp(value)
+        if key.lower() == 'timestamp':
+            formatted_value = human_readable.date_time(value)
         else:
             formatted_value = str(value)
-        
-        table.add_row(key, formatted_value)
-    
+
+        table.add_row(key, formatted_value, style=value_color[value])
+
     # Create a console and print the table
     console = Console()
     console.print(table)
@@ -101,27 +106,7 @@ def config(context: typer.Context, page='config'):
     """Get the configuration of the weather station."""
     url = context.obj.url
     data = get_page(page, url)
-    
-    # Create a Rich table
-    table = Table(title="Weather Station Configuration")
-    
-    # Add columns for key and value
-    table.add_column("Parameter", style="cyan")
-    table.add_column("Value", style="green")
-    
-    # Add rows for each key-value pair in the data
-    for key, value in data.items():
-        # Format timestamp if the key is 'timestamp' or contains 'time'
-        if key == 'timestamp' or 'time' in key.lower():
-            formatted_value = format_timestamp(value)
-        else:
-            formatted_value = str(value)
-        
-        table.add_row(key, formatted_value)
-    
-    # Create a console and print the table
-    console = Console()
-    console.print(table)
+    print(data)
 
 
 def get_page(page, base_url):
@@ -139,7 +124,7 @@ def get_page(page, base_url):
     """
     url = f'{base_url}/{page}'
     console = Console()
-    
+
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -151,7 +136,9 @@ def get_page(page, base_url):
         console.print("  • The host or port is incorrect")
         console.print("  • Network connectivity issues")
         console.print("\n[green]Try:[/green]")
-        console.print(f"  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running")
+        console.print(
+            f"  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
+            )
         console.print(f"  • Running [bold]weather restart[/bold] to restart the weather service")
         console.print(f"  • Checking your network connection")
         exit(1)
