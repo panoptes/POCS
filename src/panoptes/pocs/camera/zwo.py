@@ -23,6 +23,7 @@ class Camera(AbstractSDKCamera):
                  gain=100,
                  image_type=None,
                  bandwidthoverload=99,
+                 binning=1,
                  *args, **kwargs
                  ):
         """
@@ -36,6 +37,7 @@ class Camera(AbstractSDKCamera):
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
             bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
+            binning (int, optional): binning factor to use for the camera, default is 1, i.e. no binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -71,6 +73,9 @@ class Camera(AbstractSDKCamera):
             if 'RAW16' in self.properties['supported_video_format']:
                 self.image_type = 'RAW16'
 
+        if binning is not None:
+            self.binning = binning
+
         self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
@@ -97,6 +102,22 @@ class Camera(AbstractSDKCamera):
             raise ValueError(msg)
         roi_format = self._driver.get_roi_format(self._handle)
         roi_format['image_type'] = new_image_type
+        self._driver.set_roi_format(self._handle, **roi_format)
+
+    @property
+    def binning(self):
+        """ Current camera binning setting, one of '8', '16', '24' """
+        roi_format = self._driver.get_roi_format(self._handle)
+        return roi_format['binning']
+
+    @binning.setter
+    def binning(self, new_binning):
+        if new_binning not in self.properties['supported_bins']:
+            msg = "Binning '{}' not supported by {}".format(new_binning, self.model)
+            self.logger.error(msg)
+            raise ValueError(msg)
+        roi_format = self._driver.get_roi_format(self._handle)
+        roi_format['binning'] = new_binning
         self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
