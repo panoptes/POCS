@@ -95,7 +95,7 @@ def status(context: typer.Context, page='status'):
         else:
             formatted_value = str(value)
 
-        table.add_row(key, formatted_value, style=value_color[value])
+        table.add_row(key, formatted_value, style=value_color.get(value.lower(), None))
 
     # Create a console and print the table
     console = Console()
