@@ -93,9 +93,9 @@ def status(context: typer.Context, page='status'):
             t0 = datetime.fromisoformat(value)
             formatted_value = f"{value} - ({human_readable.date_time(datetime.now() - t0)})"
         else:
-            formatted_value = str(value)
+            formatted_value = f"{'[red]' if value is not None and value is True else ''}{value}"
 
-        table.add_row(key, formatted_value, style=value_color.get(value, None))
+        table.add_row(key, formatted_value)
 
     # Create a console and print the table
     console = Console()
