@@ -90,7 +90,8 @@ def status(context: typer.Context, page='status'):
     for key, value in data.items():
         # Format timestamp if the key is 'timestamp' or contains 'time'
         if key.lower() == 'timestamp':
-            formatted_value = human_readable.date_time(value)
+            t0 = datetime.fromisoformat(value)
+            formatted_value = f"{value} - ({human_readable.date_time(datetime.now() - t0)})"
         else:
             formatted_value = str(value)
 
