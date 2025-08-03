@@ -1,16 +1,15 @@
+import numpy as np
 import threading
 import time
-from contextlib import suppress
-
-import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from panoptes.utils import error
-from panoptes.utils.utils import get_quantity_value
+from contextlib import suppress
 
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
+from panoptes.utils import error
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
@@ -106,7 +105,7 @@ class Camera(AbstractSDKCamera):
 
     @property
     def binning(self):
-        """ Current camera binning setting, one of '8', '16', '24' """
+        """ Current camera binning setting, either `1` (no binning) or `2` (binning). """
         roi_format = self._driver.get_roi_format(self._handle)
         return roi_format['binning']
 
@@ -118,6 +117,9 @@ class Camera(AbstractSDKCamera):
             raise ValueError(msg)
         roi_format = self._driver.get_roi_format(self._handle)
         roi_format['binning'] = new_binning
+        roi_format['width'] = roi_format['width'] // new_binning
+        roi_format['height'] = roi_format['height'] // new_binning
+        self.logger.debug(f'Setting binning to {new_binning}')
         self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
