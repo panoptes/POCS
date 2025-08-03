@@ -69,7 +69,7 @@ def format_timestamp(timestamp):
 
 
 @app.command(name='status', help='Get the status of the weather station.')
-def status(context: typer.Context, page='status'):
+def status(context: typer.Context, page='status', show_raw_values: bool = False):
     """Get the status of the weather station.
 
     This command will read the lastest weather entry and generate a summary
@@ -86,7 +86,8 @@ def status(context: typer.Context, page='status'):
     """
     url = context.obj.url
     data = get_page(page, url)
-    display_weather_table(data)
+    if not show_raw_values:
+        display_weather_table(data)
 
 
 def display_weather_table(data: dict):
@@ -113,7 +114,6 @@ def display_weather_table(data: dict):
     table.add_row('Wind Speed', f'{wind_speed:>5.02f} m/s')
 
     # Get the cloud, wind, and rain conditions.
-
     for key in ['cloud', 'wind', 'rain']:
         condition = data.get(f"{key}_condition")
         condition_is_safe = data.get(f"{key}_safe")
