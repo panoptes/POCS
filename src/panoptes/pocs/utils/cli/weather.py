@@ -70,28 +70,64 @@ def format_timestamp(timestamp):
 
 @app.command(name='status', help='Get the status of the weather station.')
 def status(context: typer.Context, page='status'):
-    """Get the status of the weather station."""
+    """Get the status of the weather station.
+
+    This command will read the lastest weather entry and generate a summary
+    table for the command line.
+
+        "ambient_temp": 13.583,
+        "sky_temp": 8.957,
+        "wind_speed": 0.0,
+        "rain_frequency": 5225.0,
+        "pwm": 0.0,
+        "is_safe": False
+
+
+    """
     url = context.obj.url
     data = get_page(page, url)
+    display_weather_table(data)
 
+
+def display_weather_table(data: dict):
     # Create a Rich table
-    table = Table(title="Weather Station Status")
+    is_safe = data['is_safe']
+    table = Table(title="Weather Station Status", style='bold green' if is_safe else 'bold red')
 
     # Add columns for key and value
     table.add_column("Parameter", style="cyan")
     table.add_column("Value", style="green")
     table.add_column("Safety", style="green")
 
-    # Add rows for each key-value pair in the data
-    for key, value in data.items():
-        # Format timestamp if the key is 'timestamp' or contains 'time'
-        if key.lower() == 'timestamp':
-            t0 = datetime.fromisoformat(value)
-            formatted_value = f"{value} - ({human_readable.date_time(datetime.now() - t0)})"
-        else:
-            formatted_value = f"{'[red]' if value is not None and value is True else ''}{value}"
+    # Show the sky and ambient temperature
+    ambient_temp = data.get('ambient_temp')
+    table.add_row('Ambient Temperature', f"{ambient_temp:>5.02f} C")
 
-        table.add_row(key, formatted_value)
+    sky_temp = data.get('sky_temp')
+    table.add_row('Sky Temperature', f"{sky_temp:>5.02f} C")
+
+    temp_diff = sky_temp - ambient_temp
+    table.add_row("Sky - Ambient", f"{temp_diff:>5.02f} C")
+
+    wind_speed = data.get('wind_speed')
+    table.add_row('Wind Speed', f'{wind_speed:>5.02f} m/s')
+
+    # Get the cloud, wind, and rain conditions.
+
+    for key in ['cloud', 'wind', 'rain']:
+        condition = data.get(f"{key}_condition")
+        condition_is_safe = data.get(f"{key}_safe")
+        table.add_row(
+            key.title(), condition.title(), str(condition_is_safe),
+            style='green' if condition_is_safe else 'red'
+        )
+
+    # Get the timestamp and format so it's readable.
+    time0 = datetime.fromisoformat(data.get('timestamp'))
+    td0 = time0 - datetime.now()
+    formatted_time = f"{time0.isoformat(sep=' ', timespec='seconds')} - ({human_readable.date_time(td0)})"
+    is_time_safe = str(td0.total_seconds() < 180)
+    table.add_row('Time', formatted_time, is_time_safe)
 
     # Create a console and print the table
     console = Console()
@@ -135,7 +171,7 @@ def get_page(page, base_url):
         console.print("\n[green]Try:[/green]")
         console.print(
             f"  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
-            )
+        )
         console.print(f"  • Running [bold]weather restart[/bold] to restart the weather service")
         console.print(f"  • Checking your network connection")
         exit(1)
