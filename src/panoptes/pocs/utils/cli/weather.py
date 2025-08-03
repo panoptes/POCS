@@ -134,7 +134,7 @@ def display_weather_table(data: dict):
     time0 = datetime.fromisoformat(data.get('timestamp'))
     td0 = datetime.now() - time0
     formatted_time = f"{time0.isoformat(sep=' ', timespec='seconds')} - ({human_readable.date_time(td0)})"
-    is_time_safe = str(td0.total_seconds() > 180)
+    is_time_safe = str(td0.total_seconds() < 180)
     table.add_row('Time', formatted_time, is_time_safe, style='green' if is_time_safe else 'red')
 
     # Create a console and print the table
