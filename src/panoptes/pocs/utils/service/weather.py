@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
     # Try to connect to the weather station.
     for port in ports:
-        if 'ttyUSB' not in port:
+        if 'ttyUSB' not in port and 'weather' not in port:
             continue
 
         if port == ioptron_port:
