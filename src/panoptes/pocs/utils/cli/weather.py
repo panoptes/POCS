@@ -3,7 +3,7 @@ import requests
 import subprocess
 import typer
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from rich import print
 from rich.console import Console
 from rich.table import Table
@@ -11,11 +11,21 @@ from rich.table import Table
 
 @dataclass
 class HostInfo:
+    """Class to store and manage weather station host information.
+    
+    This class stores the host and port information for a weather station
+    and provides a property to generate the complete URL.
+    """
     host: str = 'localhost'
     port: str = '6566'
 
     @property
     def url(self):
+        """Generate the complete URL for the weather station.
+        
+        Returns:
+            str: The complete URL in the format 'http://{host}:{port}'
+        """
         return f'http://{self.host}:{self.port}'
 
 
@@ -27,62 +37,35 @@ def common(context: typer.Context,
            host: str = typer.Option('localhost', help='Weather station host address.'),
            port: str = typer.Option('6566', help='Weather station port.'),
            ):
-    context.obj = HostInfo(host=host, port=port)
-
-
-def format_timestamp(timestamp):
-    """Convert a timestamp to a human-friendly string.
+    """Common callback for all commands in the weather CLI.
+    
+    This function sets up the context object with host information that will be
+    available to all commands in the CLI application.
     
     Args:
-        timestamp: A timestamp string or number (assumed to be in seconds since epoch)
-        
-    Returns:
-        A human-friendly string representation of the time difference
+        context: The Typer context object
+        host: The hostname or IP address of the weather station
+        port: The port number the weather station is listening on
     """
-    try:
-        # Try to parse the timestamp as a float (seconds since epoch)
-        timestamp_dt = datetime.fromtimestamp(float(timestamp), tz=timezone.utc)
-    except (ValueError, TypeError):
-        # If parsing fails, return the original timestamp
-        return str(timestamp)
-
-    now = datetime.now(tz=timezone.utc)
-    diff = now - timestamp_dt
-
-    # Calculate the time difference in various units
-    seconds = diff.total_seconds()
-    minutes = seconds / 60
-    hours = minutes / 60
-    days = hours / 24
-
-    # Format the time difference as a human-friendly string
-    if days >= 2:
-        return f"Over {int(days)} days old"
-    elif days >= 1:
-        return f"About {int(days)} day old"
-    elif hours >= 1:
-        return f"About {int(hours)} hours old"
-    elif minutes >= 1:
-        return f"About {int(minutes)} minutes old"
-    else:
-        return "Less than a minute old"
+    context.obj = HostInfo(host=host, port=port)
 
 
 @app.command(name='status', help='Get the status of the weather station.')
 def status(context: typer.Context, page='status', show_raw_values: bool = False):
     """Get the status of the weather station.
 
-    This command will read the lastest weather entry and generate a summary
-    table for the command line.
-
-        "ambient_temp": 13.583,
-        "sky_temp": 8.957,
-        "wind_speed": 0.0,
-        "rain_frequency": 5225.0,
-        "pwm": 0.0,
-        "is_safe": False
-
-
+    This command retrieves the latest weather data from the weather station and
+    displays it in a formatted table on the command line. The table includes
+    information about temperature, wind speed, cloud/wind/rain conditions, and
+    their safety status.
+    
+    Args:
+        context: The Typer context object containing the host information
+        page: The API endpoint to query (defaults to 'status')
+        show_raw_values: If True, prints the raw JSON data instead of a formatted table
+        
+    Returns:
+        None: This function prints the weather data to the console
     """
     url = context.obj.url
     data = get_page(page, url)
@@ -91,6 +74,26 @@ def status(context: typer.Context, page='status', show_raw_values: bool = False)
 
 
 def display_weather_table(data: dict):
+    """Display weather data in a formatted table.
+    
+    This function takes weather data in dictionary format and displays it in a
+    nicely formatted table using the Rich library. The table includes information
+    about temperatures, wind speed, and various safety conditions (cloud, wind, rain).
+    The table is color-coded based on safety status (green for safe, red for unsafe).
+    
+    Args:
+        data: A dictionary containing weather data with keys such as 'is_safe',
+              'ambient_temp', 'sky_temp', 'wind_speed', 'cloud_condition',
+              'wind_condition', 'rain_condition', 'timestamp', etc.
+              
+    Returns:
+        None: This function prints the formatted table to the console
+        
+    Note:
+        The table's title color is determined by the 'is_safe' value in the data.
+        Individual rows for cloud, wind, and rain conditions are also color-coded
+        based on their respective safety status.
+    """
     # Create a Rich table
     is_safe = data['is_safe']
     table = Table(title="Weather Station Status", style='bold green' if is_safe else 'bold red')
@@ -136,7 +139,18 @@ def display_weather_table(data: dict):
 
 @app.command(name='config', help='Get the configuration of the weather station.')
 def config(context: typer.Context, page='config'):
-    """Get the configuration of the weather station."""
+    """Get the configuration of the weather station.
+    
+    This command retrieves the configuration settings from the weather station
+    and prints them to the console in their raw JSON format.
+    
+    Args:
+        context: The Typer context object containing the host information
+        page: The API endpoint to query (defaults to 'config')
+        
+    Returns:
+        None: This function prints the configuration data to the console
+    """
     url = context.obj.url
     data = get_page(page, url)
     print(data)
@@ -145,15 +159,25 @@ def config(context: typer.Context, page='config'):
 def get_page(page, base_url):
     """Get JSON data from the specified page on the weather station.
     
+    This function makes an HTTP request to the weather station API and returns
+    the JSON response. It handles various error conditions that might occur
+    during the request, providing helpful error messages and suggestions.
+    
     Args:
         page: The endpoint to access (e.g., 'status', 'config')
         base_url: The base URL of the weather station
         
     Returns:
-        The JSON data from the response
+        dict: The parsed JSON data from the response
         
     Raises:
-        SystemExit: If the request fails for any reason
+        SystemExit: If the request fails for any reason, with appropriate error
+                   messages printed to the console before exiting
+                   
+    Note:
+        This function has a timeout of 10 seconds for the HTTP request.
+        If the request times out or fails, it will print a helpful error
+        message with possible reasons and solutions before exiting.
     """
     url = f'{base_url}/{page}'
     console = Console()
@@ -204,7 +228,22 @@ def get_page(page, base_url):
 
 @app.command(help='Restart the weather station service via supervisorctl')
 def restart(service: str = 'pocs-weather-reader'):
-    """Restart the weather station service via supervisorctl"""
+    """Restart the weather station service via supervisorctl.
+    
+    This command uses the supervisorctl utility to restart the specified service.
+    It's useful when the weather station service is not responding or needs to be
+    refreshed after configuration changes.
+    
+    Args:
+        service: The name of the service to restart (defaults to 'pocs-weather-reader')
+        
+    Returns:
+        None: This function executes the restart command and prints the command being run
+        
+    Note:
+        This command requires that supervisor is installed and configured on the system,
+        and that the user has appropriate permissions to restart services.
+    """
     cmd = f'supervisorctl restart {service}'
     print(f'Running: {cmd}')
     subprocess.run(cmd, shell=True)
