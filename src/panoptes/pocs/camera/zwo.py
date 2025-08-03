@@ -18,11 +18,11 @@ class Camera(AbstractSDKCamera):
     _assigned_cameras = set()  # Camera string IDs already in use.
 
     def __init__(self,
-                 name='ZWO ASI Camera',
-                 gain=100,
-                 image_type=None,
-                 bandwidthoverload=99,
-                 binning=1,
+                 name: str = 'ZWO ASI Camera',
+                 gain: int | None = 100,
+                 image_type: str | None = None,
+                 bandwidthoverload: float = 99,
+                 binning: int = 2,
                  *args, **kwargs
                  ):
         """
@@ -36,7 +36,7 @@ class Camera(AbstractSDKCamera):
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
             bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 1, i.e. no binning.
+            binning (int, optional): binning factor to use for the camera, default is 2, which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
