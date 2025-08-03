@@ -86,12 +86,16 @@ class Camera(AbstractSDKCamera):
         super().__del__()
 
     # Properties
+    @property
+    def roi(self) -> dict:
+        """ Get the ROI of the camera, which includes the width, height, binning, and image_type."""
+        roi_format = self._driver.get_roi_format(self._handle)
+        return roi_format
 
     @property
     def image_type(self):
         """ Current camera image type, one of 'RAW8', 'RAW16', 'Y8', 'RGB24' """
-        roi_format = self._driver.get_roi_format(self._handle)
-        return roi_format['image_type']
+        return self.roi.get('image_type')
 
     @image_type.setter
     def image_type(self, new_image_type):
@@ -99,15 +103,14 @@ class Camera(AbstractSDKCamera):
             msg = "Image type '{} not supported by {}".format(new_image_type, self.model)
             self.logger.error(msg)
             raise ValueError(msg)
-        roi_format = self._driver.get_roi_format(self._handle)
+        roi_format = self.roi
         roi_format['image_type'] = new_image_type
         self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
     def binning(self):
         """ Current camera binning setting, either `1` (no binning) or `2` (binning). """
-        roi_format = self._driver.get_roi_format(self._handle)
-        return roi_format['binning']
+        return self.roi.get('binning')
 
     @binning.setter
     def binning(self, new_binning):
@@ -115,7 +118,7 @@ class Camera(AbstractSDKCamera):
             msg = "Binning '{}' not supported by {}".format(new_binning, self.model)
             self.logger.error(msg)
             raise ValueError(msg)
-        roi_format = self._driver.get_roi_format(self._handle)
+        roi_format = self.roi
         roi_format['binning'] = new_binning
         roi_format['width'] = roi_format['width'] // new_binning
         roi_format['height'] = roi_format['height'] // new_binning
