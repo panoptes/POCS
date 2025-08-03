@@ -110,16 +110,16 @@ def display_weather_table(data: dict):
 
     # Show the sky and ambient temperature
     ambient_temp = data.get('ambient_temp')
-    table.add_row('Ambient Temperature', f"{ambient_temp:>5.02f} C")
+    table.add_row('Ambient Temperature', f"{ambient_temp:>6.02f} C")
 
     sky_temp = data.get('sky_temp')
-    table.add_row('Sky Temperature', f"{sky_temp:>5.02f} C")
+    table.add_row('Sky Temperature', f"{sky_temp:>6.02f} C")
 
     temp_diff = sky_temp - ambient_temp
-    table.add_row("Sky - Ambient", f"{temp_diff:>5.02f} C")
+    table.add_row("Sky - Ambient", f"{temp_diff:>6.02f} C")
 
     wind_speed = data.get('wind_speed')
-    table.add_row('Wind Speed', f'{wind_speed:>5.02f} m/s')
+    table.add_row('Wind Speed', f'{wind_speed:>6.02f} m/s')
 
     # Get the cloud, wind, and rain conditions.
     for key in ['cloud', 'wind', 'rain']:
