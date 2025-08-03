@@ -69,6 +69,11 @@ def status(context: typer.Context, page='status', show_raw_values: bool = False)
     """
     url = context.obj.url
     data = get_page(page, url)
+
+    if data.startswith('No valid readings found'):
+        print(data)
+        return
+
     if not show_raw_values:
         display_weather_table(data)
 
