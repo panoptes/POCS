@@ -126,6 +126,24 @@ class Camera(AbstractSDKCamera):
         self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
+    def image_size(self):
+        """ Current camera image size, either `(width, height)`."""
+        width = self.roi.get('width', None)
+        height = self.roi.get('height', None)
+
+        return width, height
+
+    @property
+    def width(self):
+        """Current image width"""
+        return self.image_size[0]
+
+    @property
+    def height(self):
+        """Current image height"""
+        return self.image_size[1]
+
+    @property
     def bit_depth(self):
         """ADC bit depth"""
         return self.properties['bit_depth']
