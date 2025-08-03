@@ -132,7 +132,8 @@ environment:
         label: mount
         default_state: on
   weather:
-    auto_detect: True
+    auto_detect: False
+    serial_port: /dev/weather
     safety_delay: 15  # minutes from bad reading until safe again
     capture_delay: 60  # seconds between taking measurements
     num_readings: 5  # number of readings to average for each measurement
