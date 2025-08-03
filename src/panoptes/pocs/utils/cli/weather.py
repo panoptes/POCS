@@ -71,7 +71,7 @@ def status(context: typer.Context, page='status', show_raw_values: bool = False)
     data = get_page(page, url)
 
     if isinstance(data, str) and data.startswith('No valid readings found'):
-        print(data)
+        print(f"[bold yellow]{data}[/bold yellow]")
         return
 
     if not show_raw_values:
