@@ -77,14 +77,10 @@ def status(context: typer.Context, page='status'):
     # Create a Rich table
     table = Table(title="Weather Station Status")
 
-    value_color = {
-        True: 'green',
-        False: 'red',
-    }
-
     # Add columns for key and value
     table.add_column("Parameter", style="cyan")
     table.add_column("Value", style="green")
+    table.add_column("Safety", style="green")
 
     # Add rows for each key-value pair in the data
     for key, value in data.items():
