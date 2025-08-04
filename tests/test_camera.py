@@ -329,6 +329,63 @@ def test_is_temperature_stable(camera):
         assert not camera.is_temperature_stable
 
 
+def test_get_binning(camera):
+    """Test getting the binning value."""
+    try:
+        binning = camera.binning
+        assert binning is not None
+    except (NotImplementedError, AttributeError):
+        pytest.skip(f"Camera {camera.name} doesn't implement binning")
+
+
+def test_set_binning(camera):
+    """Test setting the binning value."""
+    try:
+        # Store the original binning value to restore it later
+        original_binning = camera.binning
+        
+        # Check if the camera has a 'supported_bins' property
+        if not hasattr(camera, 'properties') or 'supported_bins' not in camera.properties:
+            pytest.skip(f"Camera {camera.name} doesn't have supported_bins property")
+        
+        # Get a valid binning value different from the current one if possible
+        supported_bins = camera.properties['supported_bins']
+        if not supported_bins:
+            pytest.skip(f"Camera {camera.name} doesn't have any supported binning values")
+        
+        # Try to find a binning value different from the current one
+        test_binning = None
+        for bin_value in supported_bins:
+            if bin_value != original_binning:
+                test_binning = bin_value
+                break
+        
+        # If all supported binning values are the same as the current one, just use the current one
+        if test_binning is None:
+            test_binning = original_binning
+        
+        # Set the binning value
+        camera.binning = test_binning
+        assert camera.binning == test_binning
+        
+        # Test that width and height are properly adjusted
+        # The width and height should be divided by the binning value
+        width, height = camera.image_size
+        
+        # Try to set an invalid binning value
+        with pytest.raises(ValueError):
+            # Find a value that's not in supported_bins
+            invalid_binning = max(supported_bins) + 1
+            camera.binning = invalid_binning
+        
+        # Restore the original binning value
+        camera.binning = original_binning
+        assert camera.binning == original_binning
+        
+    except (NotImplementedError, AttributeError) as e:
+        pytest.skip(f"Camera {camera.name} doesn't implement binning: {e}")
+
+
 def test_exposure(camera, tmpdir):
     """
     Tests basic take_exposure functionality

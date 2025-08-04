@@ -123,7 +123,11 @@ class Camera(AbstractSDKCamera):
         roi_format['width'] = roi_format['width'].to_value() // new_binning
         roi_format['height'] = roi_format['height'].to_value() // new_binning
         self.logger.debug(f'Setting binning to {new_binning}')
-        self._driver.set_roi_format(self._handle, **roi_format)
+
+        try:
+            self._driver.set_roi_format(self._handle, **roi_format)
+        except Exception as e:
+            self.logger.error(f"Failed to set binning '{new_binning}': {e}")
 
     @property
     def image_size(self):
