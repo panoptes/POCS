@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
 from contextlib import suppress
+from typing import Tuple
 
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
@@ -93,14 +94,14 @@ class Camera(AbstractSDKCamera):
         return roi_format
 
     @property
-    def image_type(self):
+    def image_type(self) -> str:
         """ Current camera image type, one of 'RAW8', 'RAW16', 'Y8', 'RGB24' """
         return self.roi.get('image_type')
 
     @image_type.setter
-    def image_type(self, new_image_type):
+    def image_type(self, new_image_type: str):
         if new_image_type not in self.properties['supported_video_format']:
-            msg = "Image type '{} not supported by {}".format(new_image_type, self.model)
+            msg = f"Image type '{new_image_type} not supported by {self.model}"
             self.logger.error(msg)
             raise ValueError(msg)
         roi_format = self.roi
@@ -108,14 +109,14 @@ class Camera(AbstractSDKCamera):
         self._driver.set_roi_format(self._handle, **roi_format)
 
     @property
-    def binning(self):
+    def binning(self) -> int:
         """ Current camera binning setting, either `1` (no binning) or `2` (binning). """
         return self.roi.get('binning')
 
     @binning.setter
-    def binning(self, new_binning):
+    def binning(self, new_binning: int):
         if new_binning not in self.properties['supported_bins']:
-            msg = "Binning '{}' not supported by {}".format(new_binning, self.model)
+            msg = f"Binning '{new_binning}' not supported by {self.model}"
             self.logger.error(msg)
             raise ValueError(msg)
         roi_format = self.roi
@@ -130,20 +131,20 @@ class Camera(AbstractSDKCamera):
             self.logger.error(f"Failed to set binning '{new_binning}': {e}")
 
     @property
-    def image_size(self):
+    def image_size(self) -> Tuple[u.Quantity, u.Quantity]:
         """ Current camera image size, either `(width, height)`."""
-        width = self.roi.get('width', None)
-        height = self.roi.get('height', None)
+        width = self.roi.get('width')
+        height = self.roi.get('height')
 
         return width, height
 
     @property
-    def width(self):
+    def width(self) -> u.Quantity:
         """Current image width"""
         return self.image_size[0]
 
     @property
-    def height(self):
+    def height(self) -> u.Quantity:
         """Current image height"""
         return self.image_size[1]
 
