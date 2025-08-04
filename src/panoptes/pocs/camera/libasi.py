@@ -773,7 +773,7 @@ class ErrorCode(enum.IntEnum):
     INVALID_ID = enum.auto()
     INVALID_CONTROL_TYPE = enum.auto()
     CAMERA_CLOSED = enum.auto()  # Camera didn't open
-    CAMERA_REMOVED = enum.auto()  # Failed to fine the camera, maybe it was removed
+    CAMERA_REMOVED = enum.auto()  # Failed to find the camera, maybe it was removed
     INVALID_PATH = enum.auto()  # Cannot find the path of the file
     INVALID_FILEFORMAT = enum.auto()
     INVALID_SIZE = enum.auto()  # Wrong video format size

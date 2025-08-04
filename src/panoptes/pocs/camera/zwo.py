@@ -1,16 +1,16 @@
+import numpy as np
 import threading
 import time
-from contextlib import suppress
-
-import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from panoptes.utils import error
-from panoptes.utils.utils import get_quantity_value
+from contextlib import suppress
+from typing import Tuple
 
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
+from panoptes.utils import error
+from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
@@ -19,10 +19,11 @@ class Camera(AbstractSDKCamera):
     _assigned_cameras = set()  # Camera string IDs already in use.
 
     def __init__(self,
-                 name='ZWO ASI Camera',
-                 gain=100,
-                 image_type=None,
-                 bandwidthoverload=99,
+                 name: str = 'ZWO ASI Camera',
+                 gain: int | None = 100,
+                 image_type: str | None = None,
+                 bandwidthoverload: float = 99,
+                 binning: int = 2,
                  *args, **kwargs
                  ):
         """
@@ -36,6 +37,7 @@ class Camera(AbstractSDKCamera):
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
             bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
+            binning (int, optional): binning factor to use for the camera, default is 2, which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -71,6 +73,9 @@ class Camera(AbstractSDKCamera):
             if 'RAW16' in self.properties['supported_video_format']:
                 self.image_type = 'RAW16'
 
+        if binning is not None:
+            self.binning = binning
+
         self.logger.info('{} initialised'.format(self))
 
     def __del__(self):
@@ -82,22 +87,66 @@ class Camera(AbstractSDKCamera):
         super().__del__()
 
     # Properties
+    @property
+    def roi(self) -> dict:
+        """ Get the ROI of the camera, which includes the width, height, binning, and image_type."""
+        roi_format = self._driver.get_roi_format(self._handle)
+        return roi_format
 
     @property
-    def image_type(self):
+    def image_type(self) -> str:
         """ Current camera image type, one of 'RAW8', 'RAW16', 'Y8', 'RGB24' """
-        roi_format = self._driver.get_roi_format(self._handle)
-        return roi_format['image_type']
+        return self.roi.get('image_type')
 
     @image_type.setter
-    def image_type(self, new_image_type):
+    def image_type(self, new_image_type: str):
         if new_image_type not in self.properties['supported_video_format']:
-            msg = "Image type '{} not supported by {}".format(new_image_type, self.model)
+            msg = f"Image type '{new_image_type} not supported by {self.model}"
             self.logger.error(msg)
             raise ValueError(msg)
-        roi_format = self._driver.get_roi_format(self._handle)
+        roi_format = self.roi
         roi_format['image_type'] = new_image_type
         self._driver.set_roi_format(self._handle, **roi_format)
+
+    @property
+    def binning(self) -> int:
+        """ Current camera binning setting, either `1` (no binning) or `2` (binning). """
+        return self.roi.get('binning')
+
+    @binning.setter
+    def binning(self, new_binning: int):
+        if new_binning not in self.properties['supported_bins']:
+            msg = f"Binning '{new_binning}' not supported by {self.model}"
+            self.logger.error(msg)
+            raise ValueError(msg)
+        roi_format = self.roi
+        roi_format['binning'] = new_binning
+        roi_format['width'] = roi_format['width'].to_value() // new_binning
+        roi_format['height'] = roi_format['height'].to_value() // new_binning
+        self.logger.debug(f'Setting binning to {new_binning}')
+
+        try:
+            self._driver.set_roi_format(self._handle, **roi_format)
+        except Exception as e:
+            self.logger.error(f"Failed to set binning '{new_binning}': {e}")
+
+    @property
+    def image_size(self) -> Tuple[u.Quantity, u.Quantity]:
+        """ Current camera image size, either `(width, height)`."""
+        width = self.roi.get('width')
+        height = self.roi.get('height')
+
+        return width, height
+
+    @property
+    def width(self) -> u.Quantity:
+        """Current image width"""
+        return self.image_size[0]
+
+    @property
+    def height(self) -> u.Quantity:
+        """Current image height"""
+        return self.image_size[1]
 
     @property
     def bit_depth(self):
