@@ -115,5 +115,5 @@ class PanBase(object):
     def clear_config_cache(self):
         """Clear the config cache."""
         global PAN_CONFIG_CACHE
-        PAN_CONFIG_CACHE.clear()
+        PAN_CONFIG_CACHE = {}
         self.logger.debug('Cleared config cache')
