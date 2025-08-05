@@ -471,7 +471,7 @@ class POCS(PanStateMachine, PanBase):
                     is_safe = bool(record['data'][key])
 
 
-            tz = ZoneInfo(self.get_config('location.timezone', default='UTC', remember=True))
+            tz = ZoneInfo(self.get_config('location.timezone', default='UTC'))
 
             timestamp = Time(record['data']['timestamp'].replace(tzinfo=tz))
             age = (current_time().datetime - timestamp.datetime).total_seconds()
