@@ -44,7 +44,7 @@ class PanBase(object):
 
         self.db = PAN_DB_OBJ
 
-    def get_config(self, key: Any, default: Any | None = None, remember: bool = False, *args, **kwargs):
+    def get_config(self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs):
         """Thin-wrapper around client based get_config that sets default port.
 
         See `panoptes.utils.config.client.get_config` for more information.
