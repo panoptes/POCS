@@ -71,8 +71,7 @@ class PanBase(object):
             self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
         # Cache the value if requested.
-        if remember and config_value is not None and len(args) > 0:
-            key = args[0]
+        if remember:
             PAN_CONFIG_CACHE[key] = config_value
             self.logger.debug(f'Caching config key={key!r} value={config_value!r}')
 
