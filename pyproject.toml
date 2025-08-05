@@ -110,7 +110,6 @@ addopts = [
     "--no-cov-on-fail",
     "--doctest-modules",
     "--doctest-ignore-import-errors",
-    "--doctest-modules",
     "-x",
     "-vv",
 ]
