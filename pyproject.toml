@@ -27,7 +27,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "importlib-metadata; python_version<\"3.12\"",
     "astroplan",
     "astropy>=7.0",
     "astroquery",
