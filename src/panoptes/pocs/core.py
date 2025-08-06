@@ -1,7 +1,9 @@
 import os
+from astropy.time import Time
 from contextlib import suppress
 from multiprocessing import Process
 from typing import Optional, List
+from zoneinfo import ZoneInfo
 
 from astropy import units as u
 from panoptes.utils.time import CountdownTimer
@@ -468,10 +470,13 @@ class POCS(PanStateMachine, PanBase):
                 with suppress(KeyError):
                     is_safe = bool(record['data'][key])
 
-            timestamp = record['data']['timestamp'].replace(tzinfo=None)  # current_time is timezone naive
-            age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp:%c}]")
+            tz = ZoneInfo(self.get_config('location.timezone', default='UTC'))
+
+            timestamp = Time(record['data']['timestamp'].replace(tzinfo=tz))
+            age = (current_time().datetime - timestamp.datetime).total_seconds()
+
+            self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp}]")
 
         except Exception as e:  # pragma: no cover
             self.logger.error(f"No weather record in database: {e!r}")
