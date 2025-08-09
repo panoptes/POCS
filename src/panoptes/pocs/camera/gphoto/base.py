@@ -24,20 +24,19 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         self._properties = None
         self.logger.info(f'GPhoto2 camera {self.name} created on {self.port}')
 
-        if self.port:
-            self.logger.debug(f"Connecting to camera on port {self.port}")
-            try:
-                # Get a list of available ports
-                port_info_list = gp.check_result(gp.gp_port_info_list_new())
-                gp.check_result(gp.gp_port_info_list_load(port_info_list))
-                # Find the port index that matches the given port
-                port_index = gp.check_result(gp.gp_port_info_list_lookup_path(port_info_list, self.port))
-                # Get the port info
-                port_info = gp.check_result(gp.gp_port_info_list_get_info(port_info_list, port_index))
-                # Set the port info for the camera
-                gp.check_result(self.gphoto2.set_port_info(port_info))
-            except gp.GPhoto2Error as e:
-                raise error.CameraNotFound(f"Camera not found on port {self.port}: {e}")
+        self.logger.debug(f"Connecting to camera on port {self.port}")
+        try:
+            # Get a list of available ports
+            port_info_list = gp.check_result(gp.gp_port_info_list_new())
+            gp.check_result(gp.gp_port_info_list_load(port_info_list))
+            # Find the port index that matches the given port
+            port_index = gp.check_result(gp.gp_port_info_list_lookup_path(port_info_list, self.port))
+            # Get the port info
+            port_info = gp.check_result(gp.gp_port_info_list_get_info(port_info_list, port_index))
+            # Set the port info for the camera
+            gp.check_result(self.gphoto2.set_port_info(port_info))
+        except gp.GPhoto2Error as e:
+            raise error.CameraNotFound(f"Camera not found on port {self.port}: {e}")
 
     @property
     def temperature(self):
