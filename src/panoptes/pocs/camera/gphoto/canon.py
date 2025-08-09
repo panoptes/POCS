@@ -108,7 +108,6 @@ class Camera(AbstractGPhotoCamera):
 
             # Set shutter speed
             shutter_speed = self.get_shutter_speed(seconds)
-            self.set_property('shutterspeed', shutter_speed)
 
             if shutter_speed == 'bulb':
                 # Bulb setting.
@@ -116,6 +115,7 @@ class Camera(AbstractGPhotoCamera):
                 time.sleep(seconds)
                 self.set_property('eosremoterelease', 'Release')
             else:
+                self.set_property('shutterspeed', shutter_speed)
                 self.gphoto2.capture(gp.GP_CAPTURE_IMAGE)
 
         except error.InvalidCommand as e:
