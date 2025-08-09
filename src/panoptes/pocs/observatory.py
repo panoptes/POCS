@@ -527,7 +527,7 @@ class Observatory(PanBase):
                     metadata['filepath'] = compressed_file_path
                     self.logger.debug(f'Compressed {compressed_file_path}')
                 except (FileNotFoundError, AssertionError) as e:
-                    self.logger.warning(f'Problem compressing, file  not found {file_path=}: {e!r}')
+                    self.logger.warning(f'Problem compressing, file not found {file_path=}: {e!r}')
 
             bucket_name = self.get_config('panoptes_network.buckets.upload')
             # Get the images directory.
