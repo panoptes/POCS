@@ -130,14 +130,17 @@ class Camera(AbstractGPhotoCamera):
         is returned.
         """
         seconds = get_quantity_value(seconds, unit='second')
-        # TODO derive these from `load_properties`.
         shutter_speeds = self.load_properties().get('shutterspeed', {}).get('choices', [])
 
-        if seconds in shutter_speeds:
-            return seconds
-        else:
-            # Find the closest shutter speed
-            if len(shutter_speeds) > 0:
-                return min(shutter_speeds, key=lambda x: abs(float(x) - seconds))
+        try:
+            if str(seconds) in shutter_speeds:
+                return str(seconds)
             else:
-                return 'bulb'
+                # Find the closest shutter speed
+                if len(shutter_speeds) > 0:
+                    return min(shutter_speeds, key=lambda x: abs(eval(str(x)) - seconds))
+                else:
+                    return 'bulb'
+        except Exception:
+            # If eval(x) fails for 'bulb' or other reasons.
+            return 'bulb'
