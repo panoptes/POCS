@@ -618,8 +618,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self._is_observing_event.clear()
                 raise FileNotFoundError(f"Image {file_path=!r} not found, cannot process.")
         except (KeyError, FileNotFoundError) as e:
+            self.logger.error(f'Image {file_path!r} not found, cannot process.')
             self._is_observing_event.clear()
-            raise e
 
         # Do the camera specific processing.
         self.logger.debug(f'Starting FITS processing for {file_path}')
