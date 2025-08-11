@@ -2,14 +2,14 @@ import re
 import subprocess
 import time
 from abc import ABC
+from pathlib import Path
 from typing import Dict, List, Union
 
+from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
 from panoptes.utils import error
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
-
-from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
 
 file_save_re = re.compile(r'Saving file as (.*)')
 
@@ -270,11 +270,15 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     def _readout(self, filename, headers, *args, **kwargs):
         self.logger.debug(f'Reading Canon DSLR exposure for {filename=}')
+
         try:
-            self.logger.debug(f"Converting CR2 -> FITS: {filename}")
-            fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
-        except TimeoutError:
-            self.logger.error(f'Error processing exposure for {filename} on {self}')
+            if Path(filename).exists():
+                self.logger.debug(f"Converting CR2 -> FITS: {filename}")
+                fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
+            else:
+                self.logger.warning(f"File {filename!r} not found, cannot process.")
+        except Exception as err:
+            self.logger.error(f'Error processing exposure for {filename} on {self}: {err!r}')
         finally:
             self._readout_complete = True
 

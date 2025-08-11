@@ -1,4 +1,8 @@
+from functools import lru_cache
+
 from astropy import units as u
+from panoptes.utils.error import PanError
+
 from panoptes.utils import error
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
@@ -136,11 +140,13 @@ class Camera(AbstractGPhotoCamera):
             self.command(cmd_args, check_exposing=False)
         except error.InvalidCommand as e:
             self.logger.warning(e)
+            raise PanError(f'Problem taking picture with {self.name}: {e}')
         else:
             readout_args = (filename, header)
             return readout_args
 
     @classmethod
+    @lru_cache(maxsize=52)
     def get_shutterspeed_index(cls, seconds: float, return_minimum: bool = False):
         """Looks up the appropriate shutterspeed setting for the given seconds.
 

@@ -1,18 +1,13 @@
-import os
-import time
 from collections import OrderedDict
-from contextlib import suppress
-from pathlib import Path
-from typing import Dict, Optional
 
 import numpy as np
+import os
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
-from panoptes.utils import error, images as img_utils
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.time import CountdownTimer, current_time, flatten_time
-from panoptes.utils.utils import get_quantity_value
+from contextlib import suppress
+from pathlib import Path
+from typing import Dict, Optional
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -20,12 +15,16 @@ from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
-from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.compound import Observation as CompoundObservation
+from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.utils import error, images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.time import CountdownTimer, current_time, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class Observatory(PanBase):
@@ -279,8 +278,10 @@ class Observatory(PanBase):
         wait_timer = CountdownTimer(120, name='FinishCameraExposureWait')
         while self.current_observation and any(cam.is_observing for cam in self.cameras.values()):
             if wait_timer.expired():
-                self.logger.warning("Timeout waiting for cameras to finish observing, "
-                                    "proceeding with the parking of the mount.")
+                self.logger.warning(
+                    "Timeout waiting for cameras to finish observing, "
+                    "proceeding with the parking of the mount."
+                    )
                 break
 
             self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
@@ -404,7 +405,11 @@ class Observatory(PanBase):
         for cam_name, camera in self.cameras.items():
             self.logger.debug(f"Exposing for camera: {cam_name}")
             # Don't block in this call but handle blocking below.
-            camera.take_observation(self.current_observation, headers=headers, blocking=False)
+            try:
+                camera.take_observation(self.current_observation, headers=headers, blocking=False)
+            except Exception as e:
+                self.logger.warning(f"Can't take observation for camera {cam_name}. Removing the camera")
+                del self.cameras[cam_name]
 
         if blocking:
             cam = self.primary_camera
@@ -491,9 +496,14 @@ class Observatory(PanBase):
             # Check for a FITS file of whatever file_path we have.
             if Path(file_path).with_suffix('.fits').exists():
                 file_path = Path(file_path).with_suffix('.fits').as_posix()
+            else:
+                # Give a warning and skip processing.
+                self.logger.warning(f'No FITS file found for processing: {file_path=}')
+                return
 
-            if Path(file_path).exists() is False:
+            if not Path(file_path).exists():
                 self.logger.error(f'Trying to process observation but missing {file_path=}')
+                return
 
             if metadata.get('status') == 'complete':
                 self.logger.debug(f'{image_id} has already been processed, skipping')
@@ -517,10 +527,13 @@ class Observatory(PanBase):
 
             if compress_fits:
                 self.logger.debug(f'Compressing {file_path=!r}')
-                compressed_file_path = fits_utils.fpack(str(file_path))
-                exposure.path = Path(compressed_file_path)
-                metadata['filepath'] = compressed_file_path
-                self.logger.debug(f'Compressed {compressed_file_path}')
+                try:
+                    compressed_file_path = fits_utils.fpack(str(file_path))
+                    exposure.path = Path(compressed_file_path)
+                    metadata['filepath'] = compressed_file_path
+                    self.logger.debug(f'Compressed {compressed_file_path}')
+                except (FileNotFoundError, AssertionError) as e:
+                    self.logger.warning(f'Problem compressing, file not found {file_path=}: {e!r}')
 
             bucket_name = self.get_config('panoptes_network.buckets.upload')
             # Get the images directory.
