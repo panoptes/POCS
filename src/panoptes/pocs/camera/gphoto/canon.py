@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from astropy import units as u
 from panoptes.utils import error
 from panoptes.utils.time import current_time
@@ -141,6 +143,7 @@ class Camera(AbstractGPhotoCamera):
             return readout_args
 
     @classmethod
+    @lru_cache(maxsize=52)
     def get_shutterspeed_index(cls, seconds: float, return_minimum: bool = False):
         """Looks up the appropriate shutterspeed setting for the given seconds.
 
