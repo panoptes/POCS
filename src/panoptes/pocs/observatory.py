@@ -6,10 +6,6 @@ from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
 from contextlib import suppress
-from panoptes.utils import error, images as img_utils
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.time import CountdownTimer, current_time, flatten_time
-from panoptes.utils.utils import get_quantity_value
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -25,6 +21,10 @@ from panoptes.pocs.scheduler.observation.compound import Observation as Compound
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.utils import error, images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.time import CountdownTimer, current_time, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 
 class Observatory(PanBase):
@@ -278,8 +278,10 @@ class Observatory(PanBase):
         wait_timer = CountdownTimer(120, name='FinishCameraExposureWait')
         while self.current_observation and any(cam.is_observing for cam in self.cameras.values()):
             if wait_timer.expired():
-                self.logger.warning("Timeout waiting for cameras to finish observing, "
-                                    "proceeding with the parking of the mount.")
+                self.logger.warning(
+                    "Timeout waiting for cameras to finish observing, "
+                    "proceeding with the parking of the mount."
+                    )
                 break
 
             self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
@@ -403,7 +405,11 @@ class Observatory(PanBase):
         for cam_name, camera in self.cameras.items():
             self.logger.debug(f"Exposing for camera: {cam_name}")
             # Don't block in this call but handle blocking below.
-            camera.take_observation(self.current_observation, headers=headers, blocking=False)
+            try:
+                camera.take_observation(self.current_observation, headers=headers, blocking=False)
+            except Exception as e:
+                self.logger.warning(f"Can't take observation for camera {cam_name}. Removing the camera")
+                del self.cameras[cam_name]
 
         if blocking:
             cam = self.primary_camera
