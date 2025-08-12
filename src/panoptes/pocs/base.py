@@ -1,15 +1,17 @@
 import os
-
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
 from requests.exceptions import ConnectionError
+from typing import Any
 
-from panoptes.pocs import __version__
-from panoptes.pocs import hardware
+from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
 
 # Global database.
 PAN_DB_OBJ = None
+
+# Cache for config values that are `remember`ed.
+PAN_CONFIG_CACHE = {}
 
 
 class PanBase(object):
@@ -42,18 +44,28 @@ class PanBase(object):
 
         self.db = PAN_DB_OBJ
 
-    def get_config(self, *args, **kwargs):
+    def get_config(self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs) -> Any:
         """Thin-wrapper around client based get_config that sets default port.
 
         See `panoptes.utils.config.client.get_config` for more information.
 
         Args:
+            key (str): The key name to use, can be namespaced with dots.
+            default (any): The default value to return if the key is not found.
+            remember (bool): If True, cache the result for future calls.
             *args: Passed to get_config
             **kwargs: Passed to get_config
         """
+        # Try to use the cache if we have it.
+        if key in PAN_CONFIG_CACHE:
+            self.logger.debug(f'Using cached config key={key!r} value={PAN_CONFIG_CACHE[key]!r}')
+            return PAN_CONFIG_CACHE[key]
+
         config_value = None
         try:
             config_value = client.get_config(
+                key=key,
+                default=default,
                 host=self._config_host,
                 port=self._config_port,
                 verbose=False,
@@ -61,6 +73,12 @@ class PanBase(object):
             )
         except ConnectionError as e:  # pragma: no cover
             self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            return config_value
+
+        # Cache the value if requested.
+        if remember:
+            PAN_CONFIG_CACHE[key] = config_value
+            self.logger.debug(f'Caching config key={key!r} value={config_value!r}')
 
         return config_value
 
@@ -94,3 +112,9 @@ class PanBase(object):
             self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
 
         return config_value
+
+    def clear_config_cache(self):
+        """Clear the config cache."""
+        global PAN_CONFIG_CACHE
+        PAN_CONFIG_CACHE = {}
+        self.logger.debug('Cleared config cache')
