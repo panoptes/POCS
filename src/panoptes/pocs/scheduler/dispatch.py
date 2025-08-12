@@ -38,7 +38,11 @@ class Scheduler(BaseScheduler):
         best_obs = []
 
         # Reset the current observation
-        current_obs = self.observed_list[self.current_observation.seq_time]
+        if self.current_observation is not None:
+            current_obs = self.observed_list[self.current_observation.seq_time]
+        else:
+            current_obs = None
+
         self.current_observation = None
 
         self.set_common_properties(time)
