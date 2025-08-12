@@ -44,7 +44,7 @@ class PanBase(object):
 
         self.db = PAN_DB_OBJ
 
-    def get_config(self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs):
+    def get_config(self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs) -> Any:
         """Thin-wrapper around client based get_config that sets default port.
 
         See `panoptes.utils.config.client.get_config` for more information.
@@ -73,6 +73,7 @@ class PanBase(object):
             )
         except ConnectionError as e:  # pragma: no cover
             self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            return config_value
 
         # Cache the value if requested.
         if remember:
