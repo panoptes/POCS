@@ -197,7 +197,7 @@ def test_set_observation_then_reset(scheduler):
     original_seq_time = obs1.seq_time
 
     # Reset priority
-    scheduler.observations[obs1.name].priority = 1.0
+    scheduler.observations[obs1.name].priority = 0.0
 
     time = Time('2016-08-13 05:30:00')
     scheduler.get_observation(time=time)
