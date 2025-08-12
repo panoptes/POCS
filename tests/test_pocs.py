@@ -188,8 +188,8 @@ def test_is_weather_safe_no_simulator(pocs):
 
     t0 = current_time()
     t1 = current_time() + 185 * u.second
-    t0_str = t0.strftime('%Y/%m/%d %H:%M:%S')
-    t1_str = t1.strftime('%Y/%m/%d %H:%M:%S')
+    t0_str = t0.strftime('%Y-%m-%d %H:%M:%S')
+    t1_str = t1.strftime('%Y-%m-%d %H:%M:%S')
 
     # Set a specific time
     os.environ['POCSTIME'] = t0_str
