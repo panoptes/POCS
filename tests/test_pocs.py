@@ -5,6 +5,8 @@ import time
 import pytest
 import requests
 from astropy import units as u
+from panoptes.utils.time import current_time
+
 from panoptes.pocs import hardware
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
@@ -79,7 +81,7 @@ def dome():
     return create_dome_simulator()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function')®
 def pocs(observatory, config_host, config_port):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
@@ -184,15 +186,20 @@ def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
     pocs.set_config('simulator', hardware.get_all_names(without=['weather']))
 
+    t0 = current_time()
+    t1 = current_time() + 185 * u.second
+    t0_str = t0.strftime('%Y/%m/%d %H:%M:%S')
+    t1_str = t1.strftime('%Y/%m/%d %H:%M:%S')
+
     # Set a specific time
-    os.environ['POCSTIME'] = '2020-01-01 18:00:00'
+    os.environ['POCSTIME'] = t0_str
 
     # Insert a dummy weather record
-    pocs.db.insert_current('weather', {'safe': True, "timestamp": '2020-01-01 18:00:00'})
+    pocs.db.insert_current('weather', {'safe': True, "timestamp": t0_str})
     assert pocs.is_weather_safe() is True
 
-    # Set a time 181 seconds later
-    os.environ['POCSTIME'] = '2020-01-01 18:05:01'
+    # Set a time 185 seconds later
+    os.environ['POCSTIME'] = t1_str
     assert pocs.is_weather_safe() is False
 
 
