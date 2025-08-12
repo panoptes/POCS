@@ -38,6 +38,7 @@ class Scheduler(BaseScheduler):
         best_obs = []
 
         # Reset the current observation
+        current_obs = self.observed_list[self.current_observation.seq_time]
         self.current_observation = None
 
         self.set_common_properties(time)
@@ -59,10 +60,12 @@ class Scheduler(BaseScheduler):
                         self.logger.info(f"Skipping Moon Avoidance constraint for {obs_name}")
                         continue
 
-                    veto, score = constraint.get_score(time,
-                                                       self.observer,
-                                                       observation,
-                                                       **self.common_properties)
+                    veto, score = constraint.get_score(
+                        time,
+                        self.observer,
+                        observation,
+                        **self.common_properties
+                    )
 
                     if veto:
                         self.logger.info(f"\tVetoed by {constraint}")
@@ -70,14 +73,20 @@ class Scheduler(BaseScheduler):
                         continue
 
                     valid_obs[obs_name] += score
-                    self.logger.info(f"\t{str(constraint):30s}Constraint score: {score:10.02f}\tTotal score: {valid_obs[obs_name]:10.02f}")
+                    self.logger.info(
+                        f"\t{str(constraint):30s}Constraint score: {score:10.02f}\tTotal score: "
+                        f"{valid_obs[obs_name]:10.02f}"
+                    )
 
         if len(valid_obs) > 0:
             self.logger.info(f'Multiplying final scores by observation priority')
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority
-                self.logger.info(f'\t{obs_name:30s}Total score:      {score:10.02f}\tPriority:    {priority:10.3f} = {new_score:10.02f}')
+                self.logger.info(
+                    f'\t{obs_name:30s}Total score:      {score:10.02f}\tPriority:    {priority:10.3f} = '
+                    f'{new_score:10.02f}'
+                )
                 valid_obs[obs_name] = new_score
 
             # Sort the list by highest score (reverse puts in correct order)
@@ -87,33 +96,32 @@ class Scheduler(BaseScheduler):
             self.logger.info(f'Best observation: {top_obs_name}\tScore: {top_obs_score:.02f}')
 
             # Check new best against current_observation
-            if self.current_observation is not None and top_obs_name != self.current_observation.name:
-                self.logger.info(f'Checking if {self.current_observation} is still valid')
+            if current_obs is not None and top_obs_name != current_obs.name:
+                self.logger.info(f'Checking if {current_obs} is still valid')
 
                 # Favor the current observation if still available
-                end_of_next_set = time + self.current_observation.set_duration
-                if self.observation_available(self.current_observation, end_of_next_set):
+                end_of_next_set = time + current_obs.set_duration
+                if self.observation_available(current_obs, end_of_next_set):
                     # If current is better or equal to top, use it
-                    self.logger.debug(f'{self.current_observation.merit=}')
+                    self.logger.debug(f'{current_obs.merit=}')
                     self.logger.debug(f'{top_obs_score=}')
-                    if self.current_observation.merit >= top_obs_score:
-                        best_obs.insert(0, (self.current_observation, self.current_observation.merit))
+                    if current_obs.merit >= top_obs_score:
+                        best_obs.insert(0, (current_obs, current_obs.merit))
 
             # Set the current
-            self.current_observation = self.observations[top_obs_name]
+            self.current_observation = current_obs
             self.current_observation.merit = top_obs_score
         else:
-            if self.current_observation is not None:
+            if current_obs is not None:
                 # Favor the current observation if still available
-                end_of_next_set = time + self.current_observation.set_duration
+                end_of_next_set = time + current_obs.set_duration
                 if end_of_next_set < self.common_properties['end_of_night'] and \
-                        self.observation_available(self.current_observation, end_of_next_set):
+                    self.observation_available(current_obs, end_of_next_set):
 
-                    self.logger.info(f"Reusing {self.current_observation}")
-                    best_obs = [(self.current_observation.name, self.current_observation.merit)]
+                    self.logger.info(f"Reusing {current_obs}")
+                    best_obs = [(current_obs.name, current_obs.merit)]
                 else:
                     self.logger.warning("No valid observations found")
-                    self.current_observation = None
 
         if not show_all and len(best_obs) > 0:
             best_obs = best_obs[0]

@@ -84,7 +84,7 @@ class BaseScheduler(PanBase):
         return len(self._observations.keys()) > 0
 
     @property
-    def current_observation(self):
+    def current_observation(self) -> Observation:
         """The observation that is currently selected by the scheduler
 
         Upon setting a new observation the `seq_time` is set to the current time
@@ -97,7 +97,7 @@ class BaseScheduler(PanBase):
         return self._current_observation
 
     @current_observation.setter
-    def current_observation(self, new_observation):
+    def current_observation(self, new_observation: Observation | None) -> None:
 
         if self.current_observation is None:
             # If we have no current observation but do have a new one, set seq_time
