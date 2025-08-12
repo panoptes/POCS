@@ -186,7 +186,7 @@ def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
     pocs.set_config('simulator', hardware.get_all_names(without=['weather']))
 
-    more_than_wait_delay = 185 * u.second
+    more_than_wait_delay = 24 * u.hour
 
     t0 = current_time()
     t1 = t0 + more_than_wait_delay
