@@ -94,7 +94,7 @@ class Scheduler(BaseScheduler):
                     self.logger.debug(f'{self.current_observation.merit=}')
                     self.logger.debug(f'{top_obs_score=}')
                     if self.current_observation.merit >= top_obs_score:
-                        best_obs.insert(0, (self.current_observation, self.current_observation.merit))
+                        best_obs.insert(0, (self.current_observation.name, self.current_observation.merit))
                         top_obs_name, top_obs_score = best_obs[0]
 
             # Set the current
