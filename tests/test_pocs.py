@@ -189,7 +189,7 @@ def test_is_weather_safe_no_simulator(pocs):
     more_than_wait_delay = 185 * u.second
 
     t0 = current_time()
-    t1 = current_time() + more_than_wait_delay
+    t1 = t0 + more_than_wait_delay
     t0_str = t0.strftime('%Y-%m-%d %H:%M:%S')
     t1_str = t1.strftime('%Y-%m-%d %H:%M:%S')
 
