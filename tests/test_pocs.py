@@ -81,7 +81,7 @@ def dome():
     return create_dome_simulator()
 
 
-@pytest.fixture(scope='function')®
+@pytest.fixture(scope='function')
 def pocs(observatory, config_host, config_port):
     os.environ['POCSTIME'] = '2020-01-01 08:00:00'
 
