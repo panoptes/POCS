@@ -137,7 +137,6 @@ addopts = [
     "--cov-report",
     "xml:build/coverage.xml",
     "--no-cov-on-fail",
-    "--doctest-modules",
     "--doctest-ignore-import-errors",
     "--doctest-modules",
     "-x",
