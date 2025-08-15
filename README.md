@@ -120,14 +120,73 @@ For actually deploying a PANOPTES unit, refer to the [Operating Guider](https://
 
 See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
 
+### Development with Hatch
+
+This project uses the Hatch build system and environment management.
+
+Prerequisites:
+- Python 3.12+
+- Hatch: https://hatch.pypa.io (install via `pipx install hatch` or `pip install --user hatch`).
+
+Basic workflow:
+
+- Create and enter a dev environment with all testing tools:
+  ```bash
+  hatch env create
+  hatch shell
+  # or run commands without activating the shell using `hatch run ...`
+  ```
+
+- Install optional extras as needed (choose any):
+  ```bash
+  # Examples: google, focuser, sensors, weather
+  hatch run pip install -e ".[google,focuser,sensors,weather,testing]"
+  ```
+
+- Run tests:
+  ```bash
+  # All tests with coverage, using pytest options from pyproject.toml
+  hatch run pytest
+
+  # Single test file
+  hatch run pytest tests/test_mount.py
+  ```
+
+- Lint / style checks:
+  ```bash
+  # Lint (Ruff)
+  hatch run lint
+  # Format (Ruff)
+  hatch run fmt
+  # Check formatting without changes
+  hatch run fmt-check
+  ```
+
+- Build the package (wheel and sdist):
+  ```bash
+  hatch build
+  ```
+
+- Run the CLI locally (Typer app):
+  ```bash
+  hatch run pocs --help
+  ```
+
+- Versioning:
+  Version is derived from git tags via hatch-vcs. To produce a new version, create and push a tag (e.g., `v0.1.0`).
+
 #### [Testing]
 
-To test the software, you can use the standard `pytest` tool from the root of the directory.
- 
+To test the software, prefer running via Hatch so the right environment and options are used:
+
+```bash
+hatch run pytest
+```
+
 By default all tests will be run. If you want to run one specific test, give the specific filename as an argument to `pytest`:
 
 ```bash
-pytest tests/test_mount.py
+hatch run pytest tests/test_mount.py
 ```
 
 Links

@@ -1,9 +1,194 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
-requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = [
+    "hatchling>=1.25.0",
+    "hatch-vcs>=0.4",
+]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-# For smarter version schemes and other configuration options,
-# check out https://github.com/pypa/setuptools_scm
-version_scheme = "no-guess-dev"
+[project]
+name = "panoptes-pocs"
+description = "PANOPTES Observatory Control System"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE.txt" }
+authors = [
+    { name = "Project PANOPTES", email = "developers@projectpanoptes.org" },
+]
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "astroplan",
+    "astropy>=7.0",
+    "astroquery",
+    "certifi>=2023.7.22",
+    "fastapi<0.106.0",
+    "fastapi-utils",
+    "human-readable",
+    "numpy>=1.24",
+    "panoptes-utils[config]>=0.2.47",
+    "pandas",
+    "pick",
+    "Pillow>=10.0.1",
+    "pyserial",
+    "requests>=2.31.0",
+    "scipy>=1.10.0",
+    "scikit-image",
+    "sparklines",
+    "tqdm",
+    "transitions",
+    "typer",
+    "typing-inspect",
+    "urllib3>=1.26.18",
+    "uvicorn[standard]",
+    "watchdog",
+]
+
+[project.urls]
+Homepage = "https://github.com/panoptes/POCS"
+Documentation = "https://panoptes-pocs.readthedocs.org"
+Forum = "https://forum.projectpanoptes.org"
+
+[project.scripts]
+pocs = "panoptes.pocs.utils.cli.main:app"
+
+[project.optional-dependencies]
+focuser = [
+    "matplotlib",
+    "scipy>=1.10.0",
+]
+google = [
+    "google-cloud-firestore",
+    "google-cloud-logging",
+    "google-cloud-storage",
+    "gsutil",
+    "protobuf==4.23.0",
+    "rsa",
+]
+testing = [
+    "coverage",
+    "pycodestyle",
+    "pytest",
+    "pytest-cov",
+    "pytest-doctestplus",
+    "pytest-remotedata>=0.3.1",
+    "responses",
+]
+sensors = [
+    "streamz",
+]
+weather = [
+    "panoptes-aag",
+]
+all = [
+    "coverage",
+    "google-cloud-firestore",
+    "google-cloud-logging",
+    "google-cloud-storage",
+    "gsutil",
+    "matplotlib",
+    "panoptes-aag",
+    "protobuf==4.23.0",
+    "pycodestyle",
+    "pytest",
+    "pytest-cov",
+    "pytest-doctestplus",
+    "pytest-remotedata>=0.3.1",
+    "responses",
+    "rsa",
+    "scipy>=1.10.0",
+    "streamz",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/panoptes"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "ruff>=0.5.0"
+]
+[tool.hatch.envs.default.scripts]
+lint = "ruff check ."
+fmt = "ruff format ."
+fmt-check = "ruff format --check ."
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov",
+    "panoptes.pocs",
+    "--cov",
+    "tests",
+    "--cov-branch",
+    "--cov-report",
+    "term-missing:skip-covered",
+    "--cov-report",
+    "xml:build/coverage.xml",
+    "--no-cov-on-fail",
+    "--doctest-ignore-import-errors",
+    "--doctest-modules",
+    "-x",
+    "-vv",
+]
+norecursedirs = [
+    "docker",
+    "script",
+    "resources",
+    "dist",
+    "build",
+    ".tox",
+]
+testpaths = ["tests", "src"]
+doctest_optionflags = [
+    "ELLIPSIS",
+    "NORMALIZE_WHITESPACE",
+    "ALLOW_UNICODE",
+    "IGNORE_EXCEPTION_DETAIL",
+]
+filterwarnings = [
+    "ignore:elementwise == comparison failed:DeprecationWarning",
+    "ignore::pytest.PytestDeprecationWarning",
+]
+# pytest-doctestplus option
+#doctest_plus expects a string value "enabled"
+doctest_plus = "enabled"
+markers = [
+    "theskyx",
+    "without_camera",
+    "with_camera",
+    "without_mount",
+    "with_mount",
+    "without_sensors",
+    "with_sensors",
+    "plate_solve",
+]
+
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self\\.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+]
+ignore_errors = true
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
