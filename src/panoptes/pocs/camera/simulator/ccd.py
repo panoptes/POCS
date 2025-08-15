@@ -14,31 +14,34 @@ from panoptes.utils.config.client import get_config
 class SDKDriver(AbstractSDKDriver):
     def __init__(self, library_path=None, **kwargs):
         # Get library loader to load libc, which should usually be present...
-        super().__init__(name='c', library_path=library_path, **kwargs)
+        super().__init__(name="c", library_path=library_path, **kwargs)
 
     def get_SDK_version(self):
         return "Simulated SDK Driver v0.001"
 
     def get_devices(self):
-        self.logger.debug(f'Getting camera device connection config for {self}')
+        self.logger.debug(f"Getting camera device connection config for {self}")
         camera_devices = dict()
-        for cam_info in get_config('cameras.devices'):
-            name = cam_info.get('name') or cam_info.get('model')
-            port = cam_info.get('port') or cam_info.get('serial_number')
+        for cam_info in get_config("cameras.devices"):
+            name = cam_info.get("name") or cam_info.get("model")
+            port = cam_info.get("port") or cam_info.get("serial_number")
             camera_devices[name] = port
 
-        self.logger.trace(f'camera_devices={camera_devices!r}')
+        self.logger.trace(f"camera_devices={camera_devices!r}")
 
         return camera_devices
 
 
 class Camera(AbstractSDKCamera, SimCamera, ABC):
-    def __init__(self,
-                 name='Simulated SDK camera',
-                 driver=SDKDriver,
-                 target_temperature=0 * u.Celsius,
-                 *args, **kwargs):
-        kwargs.update({'target_temperature': target_temperature})
+    def __init__(
+        self,
+        name="Simulated SDK camera",
+        driver=SDKDriver,
+        target_temperature=0 * u.Celsius,
+        *args,
+        **kwargs,
+    ):
+        kwargs.update({"target_temperature": target_temperature})
         super().__init__(name, driver, *args, **kwargs)
 
     @AbstractSDKCamera.cooling_enabled.getter
@@ -70,8 +73,11 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
     @property
     def cooling_power(self):
         if self.cooling_enabled:
-            return 100.0 * float((self._max_temp - self.temperature) /
-                                 (self._max_temp - self._min_temp)) * u.percent
+            return (
+                100.0
+                * float((self._max_temp - self.temperature) / (self._max_temp - self._min_temp))
+                * u.percent
+            )
         else:
             return 0.0 * u.percent
 

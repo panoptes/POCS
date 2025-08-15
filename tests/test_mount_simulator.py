@@ -12,13 +12,13 @@ from panoptes.utils.utils import altaz_to_radec
 
 @pytest.fixture
 def location():
-    loc = get_config('location')
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    loc = get_config("location")
+    return EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
 
 
 @pytest.fixture
 def target(location):
-    return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
+    return altaz_to_radec(obstime="2016-08-13 21:03:01", location=location, alt=45, az=90)
 
 
 def test_no_location():
@@ -26,7 +26,7 @@ def test_no_location():
         Mount()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def mount(location):
     return Mount(location=location)
 
@@ -46,53 +46,47 @@ def test_initialize(mount):
 
 
 def test_target_coords(mount):
-    c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
+    c = SkyCoord("20h00m43.7135s +22d42m39.0645s")
 
     mount.set_target_coordinates(c)
 
-    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+    assert mount.get_target_coordinates().to_string() == "300.182 22.7109"
 
 
 def test_status(mount):
     status1 = mount.status
-    assert 'mount_target_ra' not in status1
+    assert "mount_target_ra" not in status1
 
-    c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
+    c = SkyCoord("20h00m43.7135s +22d42m39.0645s")
 
     mount.set_target_coordinates(c)
 
-    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+    assert mount.get_target_coordinates().to_string() == "300.182 22.7109"
 
     status2 = mount.status
-    assert 'mount_target_ra' in status2
+    assert "mount_target_ra" in status2
 
 
 def test_update_location_no_init(mount):
-    loc = get_config('location')
+    loc = get_config("location")
 
     location2 = EarthLocation(
-        lon=loc['longitude'],
-        lat=loc['latitude'],
-        height=loc['elevation'] -
-               1000 *
-               u.meter)
+        lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"] - 1000 * u.meter
+    )
 
     with pytest.raises(AssertionError):
         mount.location = location2
 
 
 def test_update_location(mount):
-    loc = get_config('location')
+    loc = get_config("location")
 
     mount.initialize()
 
     location1 = mount.location
     location2 = EarthLocation(
-        lon=loc['longitude'],
-        lat=loc['latitude'],
-        height=loc['elevation'] -
-               1000 *
-               u.meter)
+        lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"] - 1000 * u.meter
+    )
     mount.location = location2
 
     assert location1 != location2
@@ -104,7 +98,7 @@ def test_set_tracking_rate(mount):
 
     assert mount.tracking_rate == 1.0
 
-    mount.set_tracking_rate(delta=.005)
+    mount.set_tracking_rate(delta=0.005)
 
     assert mount.tracking_rate == 1.005
 
@@ -114,7 +108,7 @@ def test_set_tracking_rate(mount):
 
 
 def test_no_slew_without_unpark(mount):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+    os.environ["POCSTIME"] = "2016-08-13 20:03:01"
 
     mount.initialize()
 
@@ -123,7 +117,7 @@ def test_no_slew_without_unpark(mount):
 
 
 def test_no_slew_without_target(mount):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+    os.environ["POCSTIME"] = "2016-08-13 20:03:01"
 
     mount.initialize(unpark=True)
 
@@ -131,7 +125,7 @@ def test_no_slew_without_target(mount):
 
 
 def test_slew_to_target(mount, target):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+    os.environ["POCSTIME"] = "2016-08-13 20:03:01"
 
     assert mount.is_parked is True
 
@@ -152,7 +146,7 @@ def test_slew_to_target(mount, target):
 
 
 def test_slew_to_target_timeout(mount, target):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+    os.environ["POCSTIME"] = "2016-08-13 20:03:01"
 
     mount.initialize(unpark=True)
 

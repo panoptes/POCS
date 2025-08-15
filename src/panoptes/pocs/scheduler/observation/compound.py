@@ -11,21 +11,22 @@ class Observation(BaseObservation):
     def __init__(self, *args, **kwargs):
         """Accept a list of exptimes."""
         # Save all the exptimes.
-        self._exptimes = listify(kwargs['exptime'])
+        self._exptimes = listify(kwargs["exptime"])
 
         # Use the first exposure time to set up observation.
-        kwargs['exptime'] = self._exptimes[0]
+        kwargs["exptime"] = self._exptimes[0]
         super(Observation, self).__init__(*args, **kwargs)
 
         self._min_duration = np.sum(self._exptimes)
         self._set_duration = np.sum(
-            [self._exptimes[i % len(self._exptimes)] for i in range(self.exp_set_size)])
+            [self._exptimes[i % len(self._exptimes)] for i in range(self.exp_set_size)]
+        )
 
         self.is_compound = True
 
     @property
     def exptime(self):
-        """ Return current exposure time as a u.Quantity. """
+        """Return current exposure time as a u.Quantity."""
         current_exptime_index = self.current_exp_num % len(self._exptimes)
         exptime = self._exptimes[current_exptime_index]
         return get_quantity_value(exptime, u.second) * u.second
@@ -35,14 +36,16 @@ class Observation(BaseObservation):
         return self._exptimes
 
     def __str__(self):
-        return f"{self.field}: exptime={self.exptime} " \
-               f"exptime_set={self._exptimes!r} " \
-               f"in blocks of {self.exp_set_size}, " \
-               f"minimum {self.min_nexp}, " \
-               f"priority {self.priority:.0f}"
+        return (
+            f"{self.field}: exptime={self.exptime} "
+            f"exptime_set={self._exptimes!r} "
+            f"in blocks of {self.exp_set_size}, "
+            f"minimum {self.min_nexp}, "
+            f"priority {self.priority:.0f}"
+        )
 
     @classmethod
     def from_dict(cls, *args, **kwargs):
-        """Creates an `Observation` object from config dict. """
+        """Creates an `Observation` object from config dict."""
         class_name = cls.__mro__[0]
         return super().from_dict(observation_class=cls.__base__, *args, **kwargs)

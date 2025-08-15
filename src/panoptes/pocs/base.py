@@ -15,7 +15,7 @@ PAN_CONFIG_CACHE = {}
 
 
 class PanBase(object):
-    """ Base class for other classes within the PANOPTES ecosystem
+    """Base class for other classes within the PANOPTES ecosystem
 
     Defines common properties for each class (e.g. logger, config, db).
     """
@@ -23,28 +23,32 @@ class PanBase(object):
     def __init__(self, config_host=None, config_port=None, *args, **kwargs):
         self.__version__ = __version__
 
-        self._config_host = config_host or os.getenv('PANOPTES_CONFIG_HOST', 'localhost')
-        self._config_port = config_port or os.getenv('PANOPTES_CONFIG_PORT', 6563)
+        self._config_host = config_host or os.getenv("PANOPTES_CONFIG_HOST", "localhost")
+        self._config_port = config_port or os.getenv("PANOPTES_CONFIG_PORT", 6563)
 
-        log_dir = self.get_config('directories.base', default='.') + '/../logs'
+        log_dir = self.get_config("directories.base", default=".") + "/../logs"
         cloud_logging_level = kwargs.get(
-            'cloud_logging_level',
-            self.get_config('panoptes_network.cloud_logging_level', default=None)
+            "cloud_logging_level",
+            self.get_config("panoptes_network.cloud_logging_level", default=None),
         )
-        self.logger = get_logger(log_dir=kwargs.get('log_dir', log_dir), cloud_logging_level=cloud_logging_level)
+        self.logger = get_logger(
+            log_dir=kwargs.get("log_dir", log_dir), cloud_logging_level=cloud_logging_level
+        )
 
         global PAN_DB_OBJ
         if PAN_DB_OBJ is None:
             # If the user requests a db_type then update runtime config.
-            db_name = kwargs.get('db_name', self.get_config('db.name', default='panoptes'))
-            db_folder = kwargs.get('db_folder', self.get_config('db.folder', default='json_store'))
-            db_type = kwargs.get('db_type', self.get_config('db.type', default='file'))
+            db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
+            db_folder = kwargs.get("db_folder", self.get_config("db.folder", default="json_store"))
+            db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
 
             PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
 
         self.db = PAN_DB_OBJ
 
-    def get_config(self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs) -> Any:
+    def get_config(
+        self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs
+    ) -> Any:
         """Thin-wrapper around client based get_config that sets default port.
 
         See `panoptes.utils.config.client.get_config` for more information.
@@ -58,7 +62,7 @@ class PanBase(object):
         """
         # Try to use the cache if we have it.
         if key in PAN_CONFIG_CACHE:
-            self.logger.debug(f'Using cached config key={key!r} value={PAN_CONFIG_CACHE[key]!r}')
+            self.logger.debug(f"Using cached config key={key!r} value={PAN_CONFIG_CACHE[key]!r}")
             return PAN_CONFIG_CACHE[key]
 
         config_value = None
@@ -69,16 +73,17 @@ class PanBase(object):
                 host=self._config_host,
                 port=self._config_port,
                 verbose=False,
-                *args, **kwargs
+                *args,
+                **kwargs,
             )
         except ConnectionError as e:  # pragma: no cover
-            self.logger.warning(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.warning(f"Cannot connect to config_server from {self.__class__}: {e!r}")
             return config_value
 
         # Cache the value if requested.
         if remember:
             PAN_CONFIG_CACHE[key] = config_value
-            self.logger.debug(f'Caching config key={key!r} value={config_value!r}')
+            self.logger.debug(f"Caching config key={key!r} value={config_value!r}")
 
         return config_value
 
@@ -95,21 +100,18 @@ class PanBase(object):
         """
         config_value = None
 
-        if key == 'simulator' and new_value == 'all':
+        if key == "simulator" and new_value == "all":
             # Don't use hardware.get_simulator_names because it checks config.
             new_value = [h.name for h in hardware.HardwareName]
 
         try:
-            self.logger.trace(f'Setting config key={key!r} new_value={new_value!r}')
+            self.logger.trace(f"Setting config key={key!r} new_value={new_value!r}")
             config_value = client.set_config(
-                key, new_value,
-                host=self._config_host,
-                port=self._config_port,
-                *args, **kwargs
+                key, new_value, host=self._config_host, port=self._config_port, *args, **kwargs
             )
-            self.logger.trace(f'Config set config_value={config_value!r}')
+            self.logger.trace(f"Config set config_value={config_value!r}")
         except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f'Cannot connect to config_server from {self.__class__}: {e!r}')
+            self.logger.critical(f"Cannot connect to config_server from {self.__class__}: {e!r}")
 
         return config_value
 
@@ -117,4 +119,4 @@ class PanBase(object):
         """Clear the config cache."""
         global PAN_CONFIG_CACHE
         PAN_CONFIG_CACHE = {}
-        self.logger.debug('Cleared config cache')
+        self.logger.debug("Cleared config cache")

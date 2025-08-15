@@ -23,25 +23,24 @@ import requests
 
 
 def reset_conf(config_host, config_port):
-    url = f'http://{config_host}:{config_port}/reset-config'
-    response = requests.post(url,
-                             data=to_json({'reset': True}),
-                             headers={'Content-Type': 'application/json'}
-                             )
+    url = f"http://{config_host}:{config_port}/reset-config"
+    response = requests.post(
+        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
+    )
     assert response.ok
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def cameras():
     return create_cameras_from_config(recreate_existing=True)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def mount():
     return create_mount_simulator()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def observatory(mount, cameras, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
@@ -67,7 +66,7 @@ def test_remove_cameras(observatory, cameras):
 
 
 def test_bad_site(config_host, config_port):
-    set_config('location', {})
+    set_config("location", {})
     with pytest.raises(error.PanError):
         Observatory()
 
@@ -101,13 +100,13 @@ def test_cannot_observe(caplog):
 
 def test_camera_wrong_type():
     # Remove mount simulator
-    set_config('simulator', hardware.get_all_names(without='camera'))
+    set_config("simulator", hardware.get_all_names(without="camera"))
 
     with pytest.raises(AttributeError):
         Observatory(cameras=[Time.now()])
 
     with pytest.raises(AssertionError):
-        Observatory(cameras={'Cam00': Time.now()})
+        Observatory(cameras={"Cam00": Time.now()})
 
 
 def test_camera():
@@ -137,20 +136,23 @@ def test_set_scheduler(observatory, caplog):
     observatory.set_scheduler(scheduler=scheduler)
 
     assert observatory.scheduler is not None
-    err_msg = 'Scheduler is not an instance of .*BaseScheduler'
+    err_msg = "Scheduler is not an instance of .*BaseScheduler"
 
     with pytest.raises(TypeError, match=err_msg):
-        observatory.set_scheduler('scheduler')
+        observatory.set_scheduler("scheduler")
     err_msg = ".*missing 1 required positional argument.*"
     with pytest.raises(TypeError, match=err_msg):
         observatory.set_scheduler()
 
 
 def test_set_dome():
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    })
+    set_config(
+        "dome",
+        {
+            "brand": "Simulacrum",
+            "driver": "simulator",
+        },
+    )
     dome = create_dome_simulator()
 
     obs = Observatory(dome=dome)
@@ -159,9 +161,9 @@ def test_set_dome():
     assert obs.has_dome is False
     obs.set_dome(dome=dome)
     assert obs.has_dome is True
-    err_msg = 'Dome is not an instance of .*AbstractDome'
+    err_msg = "Dome is not an instance of .*AbstractDome"
     with pytest.raises(TypeError, match=err_msg):
-        obs.set_dome('dome')
+        obs.set_dome("dome")
     err_msg = ".*missing 1 required positional argument.*"
     with pytest.raises(TypeError, match=err_msg):
         obs.set_dome()
@@ -174,123 +176,127 @@ def test_set_mount():
     obs.set_mount(mount=None)
     assert obs.mount is None
 
-    set_config('mount', {
-        'brand': 'Simulacrum',
-        'driver': 'panoptes.pocs.mount.simulator',
-        'model': 'panoptes.pocs.camera.simulator.dslr',
-    })
+    set_config(
+        "mount",
+        {
+            "brand": "Simulacrum",
+            "driver": "panoptes.pocs.mount.simulator",
+            "model": "panoptes.pocs.camera.simulator.dslr",
+        },
+    )
     mount = create_mount_from_config()
     obs.set_mount(mount=mount)
     assert isinstance(obs.mount, AbstractMount) is True
 
-    err_msg = 'Mount is not an instance of .*AbstractMount'
+    err_msg = "Mount is not an instance of .*AbstractMount"
     with pytest.raises(TypeError, match=err_msg):
-        obs.set_mount(mount='mount')
+        obs.set_mount(mount="mount")
     err_msg = ".*missing 1 required positional argument.*"
     with pytest.raises(TypeError, match=err_msg):
         obs.set_mount()
 
 
 def test_status(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 15:00:00"
     status = observatory.status
-    assert 'mount' not in status
-    assert 'observation' not in status
-    assert 'observer' in status
+    assert "mount" not in status
+    assert "observation" not in status
+    assert "observer" in status
 
     observatory.mount.initialize(unpark=True)
     status2 = observatory.status
     assert status != status2
-    assert 'mount' in status2
+    assert "mount" in status2
 
     observatory.get_observation()
     status3 = observatory.status
     assert status3 != status
     assert status3 != status2
 
-    assert 'mount' in status3
-    assert 'observation' in status3
+    assert "mount" in status3
+    assert "observation" in status3
 
 
 def test_default_config(observatory):
-    """ Creates a default Observatory and tests some of the basic parameters """
+    """Creates a default Observatory and tests some of the basic parameters"""
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation').value == pytest.approx(
-        observatory.get_config('location.elevation').value, rel=1)
-    assert observatory.location.get('horizon') == observatory.get_config('location.horizon')
-    assert hasattr(observatory, 'scheduler')
+    assert observatory.location.get("elevation").value == pytest.approx(
+        observatory.get_config("location.elevation").value, rel=1
+    )
+    assert observatory.location.get("horizon") == observatory.get_config("location.horizon")
+    assert hasattr(observatory, "scheduler")
     assert isinstance(observatory.scheduler, Scheduler)
 
 
 def test_is_dark(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 10:00:00"
     assert observatory.is_dark() is True
 
-    os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 22:00:00"
     assert observatory.is_dark() is False
     assert observatory.is_dark() is False
-    assert observatory.is_dark(at_time=Time('2016-08-13 10:00:00')) is True
-    os.environ['POCSTIME'] = '2016-09-09 04:00:00'
-    assert observatory.is_dark(horizon='flat') is False
-    os.environ['POCSTIME'] = '2016-09-09 05:00:00'
-    assert observatory.is_dark(horizon='flat') is True
-    assert observatory.is_dark(horizon='observe') is False
-    assert observatory.is_dark(horizon='invalid-defaults-to-observe') is False
-    os.environ['POCSTIME'] = '2016-09-09 09:00:00'
-    assert observatory.is_dark(horizon='observe') is True
-    assert observatory.is_dark(horizon='invalid-defaults-to-observe') is True
+    assert observatory.is_dark(at_time=Time("2016-08-13 10:00:00")) is True
+    os.environ["POCSTIME"] = "2016-09-09 04:00:00"
+    assert observatory.is_dark(horizon="flat") is False
+    os.environ["POCSTIME"] = "2016-09-09 05:00:00"
+    assert observatory.is_dark(horizon="flat") is True
+    assert observatory.is_dark(horizon="observe") is False
+    assert observatory.is_dark(horizon="invalid-defaults-to-observe") is False
+    os.environ["POCSTIME"] = "2016-09-09 09:00:00"
+    assert observatory.is_dark(horizon="observe") is True
+    assert observatory.is_dark(horizon="invalid-defaults-to-observe") is True
 
 
 def test_standard_headers(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 22:00:00"
 
     observatory.scheduler.fields_file = None
     observatory.scheduler.fields_list = [
-        {"field": {
-            'name': 'HAT-P-20',
-            'position': '07h27m39.89s +24d20m14.7s'},
-            "observation": {'priority': '100'}}
+        {
+            "field": {"name": "HAT-P-20", "position": "07h27m39.89s +24d20m14.7s"},
+            "observation": {"priority": "100"},
+        }
     ]
 
     observatory.get_observation()
     headers = observatory.get_standard_headers()
 
     test_headers = {
-        'airmass': 1.091778,
-        'creator': 'POCSv{}'.format(__version__),
-        'elevation': 3400.0,
-        'ha_mnt': 1.6844671878927793,
-        'latitude': 19.54,
-        'longitude': -155.58,
-        'moon_fraction': 0.7880103086091879,
-        'moon_separation': 156.16,
-        'observer': 'Generic PANOPTES Unit',
-        'origin': 'Project PANOPTES'
+        "airmass": 1.091778,
+        "creator": "POCSv{}".format(__version__),
+        "elevation": 3400.0,
+        "ha_mnt": 1.6844671878927793,
+        "latitude": 19.54,
+        "longitude": -155.58,
+        "moon_fraction": 0.7880103086091879,
+        "moon_separation": 156.16,
+        "observer": "Generic PANOPTES Unit",
+        "origin": "Project PANOPTES",
     }
 
-    assert headers['airmass'] == pytest.approx(test_headers['airmass'], rel=1e-2)
-    assert headers['ha_mnt'] == pytest.approx(test_headers['ha_mnt'], rel=1e-2)
-    assert headers['moon_fraction'] == pytest.approx(test_headers['moon_fraction'], rel=1e-2)
-    assert headers['moon_separation'] == pytest.approx(test_headers['moon_separation'], rel=1e-2)
-    assert headers['creator'] == test_headers['creator']
-    assert headers['elevation'] == test_headers['elevation']
-    assert headers['latitude'] == test_headers['latitude']
-    assert headers['longitude'] == test_headers['longitude']
+    assert headers["airmass"] == pytest.approx(test_headers["airmass"], rel=1e-2)
+    assert headers["ha_mnt"] == pytest.approx(test_headers["ha_mnt"], rel=1e-2)
+    assert headers["moon_fraction"] == pytest.approx(test_headers["moon_fraction"], rel=1e-2)
+    assert headers["moon_separation"] == pytest.approx(test_headers["moon_separation"], rel=1e-2)
+    assert headers["creator"] == test_headers["creator"]
+    assert headers["elevation"] == test_headers["elevation"]
+    assert headers["latitude"] == test_headers["latitude"]
+    assert headers["longitude"] == test_headers["longitude"]
 
 
 def test_sidereal_time(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 10:00:00"
     st = observatory.sidereal_time
     assert abs(st.value - 21.11269263733713) < 1e-4
 
-    os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 22:00:00"
     st = observatory.sidereal_time
     assert abs(st.value - 9.145547849536634) < 1e-4
 
 
 def test_get_observation(observatory, caplog):
-    os.environ['POCSTIME'] = '2016-08-13 15:00:00'
+    os.environ["POCSTIME"] = "2016-08-13 15:00:00"
     observation = observatory.get_observation()
     assert isinstance(observation, Observation)
 
@@ -307,7 +313,7 @@ def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
 
-    t0 = '2016-08-13 15:00:00'
+    t0 = "2016-08-13 15:00:00"
 
     observatory.get_observation(time=t0)
     assert observatory.current_observation is not None
@@ -346,11 +352,11 @@ def test_autofocus_coarse(observatory):
 
 def test_autofocus_named(observatory):
     # Get the list of cameras with a focuser.
-    cam_names = [name
-                 for name, camera
-                 in observatory.cameras.items()
-                 if hasattr(camera, 'focuser') and camera.focuser is not None
-                 ]
+    cam_names = [
+        name
+        for name, camera in observatory.cameras.items()
+        if hasattr(camera, "focuser") and camera.focuser is not None
+    ]
     # Call autofocus on just one camera.
     events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
     assert len(events) == 1
@@ -360,14 +366,14 @@ def test_autofocus_named(observatory):
 
 
 def test_autofocus_bad_name(observatory):
-    events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
+    events = observatory.autofocus_cameras(camera_list=["NOTAREALCAMERA", "ALSONOTACAMERA"])
     # Will get a warning and a empty dictionary.
     assert events == {}
 
 
 def test_autofocus_focusers_disconnected(observatory):
     for camera in observatory.cameras.values():
-        if hasattr(camera, 'focuser') and camera.focuser is not None:
+        if hasattr(camera, "focuser") and camera.focuser is not None:
             camera.focuser._connected = False
     events = observatory.autofocus_cameras()
     assert events == {}
@@ -389,17 +395,23 @@ def test_no_dome(observatory):
 
 def test_operate_dome():
     # Remove dome and night simulator
-    set_config('simulator', hardware.get_all_names(without=['dome', 'night']))
+    set_config("simulator", hardware.get_all_names(without=["dome", "night"]))
 
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    })
+    set_config(
+        "dome",
+        {
+            "brand": "Simulacrum",
+            "driver": "simulator",
+        },
+    )
 
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    })
+    set_config(
+        "dome",
+        {
+            "brand": "Simulacrum",
+            "driver": "simulator",
+        },
+    )
     dome = create_dome_simulator()
     observatory = Observatory(dome=dome)
 
@@ -422,16 +434,16 @@ def test_operate_dome():
 
 
 def test_create_flat_field(observatory):
-    flat_time = Time('2016-09-09 22:00:00')
+    flat_time = Time("2016-09-09 22:00:00")
 
     flat0 = observatory._create_flat_field_observation(flat_time=flat_time)
 
-    sun_pos = observatory.observer.altaz(flat_time, target=get_body('sun', flat_time))
+    sun_pos = observatory.observer.altaz(flat_time, target=get_body("sun", flat_time))
     az = sun_pos.az.value - 180
 
     assert flat0.field.dec.value == pytest.approx(38.4, rel=1e-2)
 
-    os.environ['POCSTIME'] = '2016-09-09 22:00:00'
+    os.environ["POCSTIME"] = "2016-09-09 22:00:00"
     flat1 = observatory._create_flat_field_observation(az=az, flat_time=flat_time)
 
     assert flat1.field.ra.value == pytest.approx(flat0.field.ra.value, rel=1e-2)

@@ -45,25 +45,27 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             default False.
     """
 
-    def __init__(self,
-                 name='Generic Focuser',
-                 model='simulator',
-                 port=None,
-                 camera=None,
-                 timeout=5,
-                 initial_position=None,
-                 autofocus_range=None,
-                 autofocus_step=None,
-                 autofocus_seconds=None,
-                 autofocus_size=None,
-                 autofocus_keep_files=None,
-                 autofocus_take_dark=None,
-                 autofocus_merit_function=None,
-                 autofocus_merit_function_kwargs=None,
-                 autofocus_mask_dilations=None,
-                 autofocus_make_plots=False,
-                 *args, **kwargs):
-
+    def __init__(
+        self,
+        name="Generic Focuser",
+        model="simulator",
+        port=None,
+        camera=None,
+        timeout=5,
+        initial_position=None,
+        autofocus_range=None,
+        autofocus_step=None,
+        autofocus_seconds=None,
+        autofocus_size=None,
+        autofocus_keep_files=None,
+        autofocus_take_dark=None,
+        autofocus_merit_function=None,
+        autofocus_merit_function_kwargs=None,
+        autofocus_mask_dilations=None,
+        autofocus_make_plots=False,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         self.model = model
@@ -71,7 +73,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         self.name = name
 
         self._connected = False
-        self._serial_number = 'XXXXXX'
+        self._serial_number = "XXXXXX"
 
         self.timeout = timeout
 
@@ -80,21 +82,23 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         else:
             self._position = int(initial_position)
 
-        self._set_autofocus_parameters(autofocus_range,
-                                       autofocus_step,
-                                       autofocus_seconds,
-                                       autofocus_size,
-                                       autofocus_keep_files,
-                                       autofocus_take_dark,
-                                       autofocus_merit_function,
-                                       autofocus_merit_function_kwargs,
-                                       autofocus_mask_dilations,
-                                       autofocus_make_plots)
+        self._set_autofocus_parameters(
+            autofocus_range,
+            autofocus_step,
+            autofocus_seconds,
+            autofocus_size,
+            autofocus_keep_files,
+            autofocus_take_dark,
+            autofocus_merit_function,
+            autofocus_merit_function_kwargs,
+            autofocus_mask_dilations,
+            autofocus_make_plots,
+        )
         self._autofocus_error = None
 
         self._camera = camera
 
-        self.logger.debug('Focuser created: {} on {}'.format(self.name, self.port))
+        self.logger.debug("Focuser created: {} on {}".format(self.name, self.port))
 
     ##################################################################################################
     # Properties
@@ -102,22 +106,22 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @property
     def uid(self):
-        """ A serial number for the focuser """
+        """A serial number for the focuser"""
         return self._serial_number
 
     @property
     def is_connected(self):
-        """ Is the focuser available """
+        """Is the focuser available"""
         return self._connected
 
     @property
     def position(self):
-        """ Current encoder position of the focuser """
+        """Current encoder position of the focuser"""
         return self._position
 
     @position.setter
     def position(self, position):
-        """ Move focusser to new encoder position """
+        """Move focusser to new encoder position"""
         self.move_to(position)
 
     @property
@@ -132,24 +136,26 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
     def camera(self, camera):
         if self._camera:
             if self._camera != camera:
-                self.logger.warning(f"{self} already assigned to {self._camera}, "
-                                    f"skipping attempted assignment to {camera}!")
+                self.logger.warning(
+                    f"{self} already assigned to {self._camera}, "
+                    f"skipping attempted assignment to {camera}!"
+                )
         else:
             self._camera = camera
 
     @abstractmethod
     def min_position(self):
-        """ Get position of close limit of focus travel, in encoder units """
+        """Get position of close limit of focus travel, in encoder units"""
         raise NotImplementedError
 
     @abstractmethod
     def max_position(self):
-        """ Get position of far limit of focus travel, in encoder units """
+        """Get position of far limit of focus travel, in encoder units"""
         raise NotImplementedError
 
     @abstractmethod
     def is_moving(self):
-        """ True if the focuser is currently moving. """
+        """True if the focuser is currently moving."""
         raise NotImplementedError
 
     @property
@@ -159,7 +165,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @property
     def autofocus_error(self):
-        """ Error message from the most recent autofocus or None, if there was no error."""
+        """Error message from the most recent autofocus or None, if there was no error."""
         return self._autofocus_error
 
     ##################################################################################################
@@ -168,7 +174,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def move_to(self, position):
-        """ Move focuser to new encoder position.
+        """Move focuser to new encoder position.
 
         Args:
             position (int): new focuser position, in encoder units.
@@ -179,7 +185,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         raise NotImplementedError
 
     def move_by(self, increment):
-        """ Move focuser by a given amount.
+        """Move focuser by a given amount.
 
         Args:
             increment (int): distance to move the focuser, in encoder units.
@@ -189,20 +195,22 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         """
         return self.move_to(self.position + increment)
 
-    def autofocus(self,
-                  seconds=None,
-                  focus_range=None,
-                  focus_step=None,
-                  cutout_size=None,
-                  keep_files=None,
-                  take_dark=None,
-                  merit_function=None,
-                  merit_function_kwargs=None,
-                  mask_dilations=None,
-                  coarse=False,
-                  make_plots=None,
-                  filter_name=None,
-                  blocking=False):
+    def autofocus(
+        self,
+        seconds=None,
+        focus_range=None,
+        focus_step=None,
+        cutout_size=None,
+        keep_files=None,
+        take_dark=None,
+        merit_function=None,
+        merit_function_kwargs=None,
+        mask_dilations=None,
+        coarse=False,
+        make_plots=None,
+        filter_name=None,
+        blocking=False,
+    ):
         """
         Focuses the camera using the specified merit function. Optionally performs
         a coarse focus to find the approximate position of infinity focus, which
@@ -244,9 +252,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         Raises:
             ValueError: If invalid values are passed for any of the focus parameters.
         """
-        self.logger.debug('Starting autofocus')
+        self.logger.debug("Starting autofocus")
         assert self._camera.is_connected, self.logger.error(
-            "Camera must be connected for autofocus!")
+            "Camera must be connected for autofocus!"
+        )
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 
@@ -255,28 +264,32 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 focus_range = self.autofocus_range
             else:
                 raise ValueError(
-                    "No focus_range specified, aborting autofocus of {}!".format(self._camera))
+                    "No focus_range specified, aborting autofocus of {}!".format(self._camera)
+                )
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
                 raise ValueError(
-                    "No focus_step specified, aborting autofocus of {}!".format(self._camera))
+                    "No focus_step specified, aborting autofocus of {}!".format(self._camera)
+                )
 
         if not seconds:
             if self.autofocus_seconds:
                 seconds = self.autofocus_seconds
             else:
                 raise ValueError(
-                    "No focus exposure time specified, aborting autofocus of {}!", self._camera)
+                    "No focus exposure time specified, aborting autofocus of {}!", self._camera
+                )
 
         if not cutout_size:
             if self.autofocus_size:
                 cutout_size = self.autofocus_size
             else:
                 raise ValueError(
-                    "No focus thumbnail size specified, aborting autofocus of {}!", self._camera)
+                    "No focus thumbnail size specified, aborting autofocus of {}!", self._camera
+                )
 
         if keep_files is None:
             if self.autofocus_keep_files:
@@ -294,7 +307,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             if self.autofocus_merit_function:
                 merit_function = self.autofocus_merit_function
             else:
-                merit_function = 'vollath_F4'
+                merit_function = "vollath_F4"
 
         if not merit_function_kwargs:
             if self.autofocus_merit_function_kwargs:
@@ -314,35 +327,39 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         # Move filterwheel to the correct position
         if self.camera is not None:
             if self.camera.has_filterwheel:
-
                 if filter_name is None:
                     # NOTE: The camera will move the FW to the last light position automatically
-                    self.logger.warning(f"Filter name not provided for autofocus on {self}. Using"
-                                        " last light position.")
+                    self.logger.warning(
+                        f"Filter name not provided for autofocus on {self}. Using"
+                        " last light position."
+                    )
                 else:
-                    self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on"
-                                     f" {self}.")
+                    self.logger.info(
+                        f"Moving filterwheel to {filter_name} for autofocusing on {self}."
+                    )
                     self.camera.filterwheel.move_to(filter_name, blocking=True)
 
             elif filter_name is None:
-                self.logger.warning(f"Filter {filter_name} requiested for autofocus but"
-                                    f" {self.camera} has no filterwheel.")
+                self.logger.warning(
+                    f"Filter {filter_name} requiested for autofocus but"
+                    f" {self.camera} has no filterwheel."
+                )
 
         # Set up the focus parameters
         focus_event = Event()
         focus_params = {
-            'seconds': seconds,
-            'focus_range': focus_range,
-            'focus_step': focus_step,
-            'cutout_size': cutout_size,
-            'keep_files': keep_files,
-            'take_dark': take_dark,
-            'merit_function': merit_function,
-            'merit_function_kwargs': merit_function_kwargs,
-            'mask_dilations': mask_dilations,
-            'coarse': coarse,
-            'make_plots': make_plots,
-            'focus_event': focus_event,
+            "seconds": seconds,
+            "focus_range": focus_range,
+            "focus_step": focus_step,
+            "cutout_size": cutout_size,
+            "keep_files": keep_files,
+            "take_dark": take_dark,
+            "merit_function": merit_function,
+            "merit_function_kwargs": merit_function_kwargs,
+            "mask_dilations": mask_dilations,
+            "coarse": coarse,
+            "make_plots": make_plots,
+            "focus_event": focus_event,
         }
 
         focus_thread = Thread(target=self._autofocus, kwargs=focus_params)
@@ -353,54 +370,56 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         return focus_event
 
-    def _autofocus(self,
-                   seconds,
-                   focus_range,
-                   focus_step,
-                   cutout_size,
-                   keep_files,
-                   take_dark,
-                   merit_function,
-                   merit_function_kwargs,
-                   mask_dilations,
-                   make_plots,
-                   coarse,
-                   focus_event,
-                   *args,
-                   **kwargs):
+    def _autofocus(
+        self,
+        seconds,
+        focus_range,
+        focus_step,
+        cutout_size,
+        keep_files,
+        take_dark,
+        merit_function,
+        merit_function_kwargs,
+        mask_dilations,
+        make_plots,
+        coarse,
+        focus_event,
+        *args,
+        **kwargs,
+    ):
         """Private helper method for calling autofocus in a Thread.
 
         See public `autofocus` for information about the parameters.
         """
-        focus_type = 'fine'
+        focus_type = "fine"
         if coarse:
-            focus_type = 'coarse'
+            focus_type = "coarse"
 
         initial_focus = self.position
-        self.logger.debug(f"Beginning {focus_type} autofocus of {self._camera} - "
-                          f"initial position: {initial_focus}")
+        self.logger.debug(
+            f"Beginning {focus_type} autofocus of {self._camera} - "
+            f"initial position: {initial_focus}"
+        )
 
         # Set up paths for temporary focus files, and plots if requested.
-        image_dir = self.get_config('directories.images')
+        image_dir = self.get_config("directories.images")
         start_time = current_time(flatten=True)
-        file_path_root = os.path.join(image_dir, 'focus', self._camera.uid, start_time)
+        file_path_root = os.path.join(image_dir, "focus", self._camera.uid, start_time)
 
         self._autofocus_error = None
 
         dark_cutout = None
         if take_dark:
-            dark_path = os.path.join(file_path_root, f'dark.{self._camera.file_extension}')
-            self.logger.debug(f'Taking dark frame {dark_path} on camera {self._camera}')
+            dark_path = os.path.join(file_path_root, f"dark.{self._camera.file_extension}")
+            self.logger.debug(f"Taking dark frame {dark_path} on camera {self._camera}")
             try:
-                dark_cutout = self._camera.get_cutout(seconds,
-                                                      dark_path,
-                                                      cutout_size,
-                                                      keep_file=True,
-                                                      dark=True)
+                dark_cutout = self._camera.get_cutout(
+                    seconds, dark_path, cutout_size, keep_file=True, dark=True
+                )
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_cutout = mask_saturated(dark_cutout,
-                                             threshold=0.3,
-                                             bit_depth=self.camera.bit_depth)
+                dark_cutout = mask_saturated(
+                    dark_cutout, threshold=0.3, bit_depth=self.camera.bit_depth
+                )
             except Exception as err:
                 self.logger.error(f"Error taking dark frame: {err!r}")
                 self._autofocus_error = repr(err)
@@ -412,8 +431,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
-            initial_cutout = self._camera.get_cutout(seconds, initial_path, cutout_size,
-                                                     keep_file=True)
+            initial_cutout = self._camera.get_cutout(
+                seconds, initial_path, cutout_size, keep_file=True
+            )
             initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 initial_cutout = initial_cutout.astype(np.int32) - dark_cutout
@@ -433,9 +453,12 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             focus_step = focus_step[0]
 
         # Get focus steps.
-        focus_positions = np.arange(max(initial_focus - focus_range / 2, self.min_position),
-                                    min(initial_focus + focus_range / 2, self.max_position) + 1,
-                                    focus_step, dtype=int)
+        focus_positions = np.arange(
+            max(initial_focus - focus_range / 2, self.min_position),
+            min(initial_focus + focus_range / 2, self.max_position) + 1,
+            focus_step,
+            dtype=int,
+        )
         n_positions = len(focus_positions)
 
         # Set up empty array holders
@@ -453,8 +476,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             # Take exposure.
             try:
-                cutouts[i] = self._camera.get_cutout(seconds, file_path, cutout_size,
-                                                     keep_file=keep_files)
+                cutouts[i] = self._camera.get_cutout(
+                    seconds, file_path, cutout_size, keep_file=keep_files
+                )
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
@@ -463,18 +487,18 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             masks[i] = mask_saturated(cutouts[i], bit_depth=self.camera.bit_depth).mask
 
-        self.logger.debug(f'Making master mask with binary dilation for {self._camera}')
+        self.logger.debug(f"Making master mask with binary dilation for {self._camera}")
         master_mask = masks.any(axis=0)
         master_mask = binary_dilation(master_mask, iterations=mask_dilations)
 
         # Apply the master mask and then get metrics for each frame.
         for i, cutout in enumerate(cutouts):
-            self.logger.debug(f'Applying focus metric to cutout {i:02d}')
+            self.logger.debug(f"Applying focus metric to cutout {i:02d}")
             if dark_cutout is not None:
                 cutout = cutout.astype(np.float32) - dark_cutout
             cutout = np.ma.array(cutout, mask=np.ma.mask_or(master_mask, np.ma.getmask(cutout)))
             metrics[i] = focus_utils.focus_metric(cutout, merit_function, **merit_function_kwargs)
-            self.logger.debug(f'Focus metric for cutout {i:02d}: {metrics[i]}')
+            self.logger.debug(f"Focus metric for cutout {i:02d}: {metrics[i]}")
 
         # Only fit a fine focus.
         fitted = False
@@ -485,8 +509,9 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning(f"Best focus outside sweep range, stopping focus and using"
-                                f" {focus_positions[imax]}")
+            self.logger.warning(
+                f"Best focus outside sweep range, stopping focus and using {focus_positions[imax]}"
+            )
             best_focus = focus_positions[imax]
 
         elif not coarse:
@@ -494,8 +519,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             # Initialise models
             shift = models.Shift(offset=-focus_positions[imax])
             # Small initial coeffs with expected sign. Helps fitting start in the right direction.
-            poly = models.Polynomial1D(degree=4, c0=1, c1=0, c2=-1e-2, c3=0, c4=-1e-4,
-                                       fixed={'c0': True, 'c1': True, 'c3': True})
+            poly = models.Polynomial1D(
+                degree=4,
+                c0=1,
+                c1=0,
+                c2=-1e-2,
+                c3=0,
+                c4=-1e-4,
+                fixed={"c0": True, "c1": True, "c3": True},
+            )
             scale = models.Scale(factor=metrics[imax])
             # https://docs.astropy.org/en/stable/modeling/compound-models.html?#model-composition
             reparameterised_polynomial = shift | poly | scale
@@ -507,9 +539,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             fitting_indices = (max(imax - 2, 0), min(imax + 2, n_positions - 1))
 
             # Fit models to data
-            fit = fitter(reparameterised_polynomial,
-                         focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
-                         metrics[fitting_indices[0]:fitting_indices[1] + 1])
+            fit = fitter(
+                reparameterised_polynomial,
+                focus_positions[fitting_indices[0] : fitting_indices[1] + 1],
+                metrics[fitting_indices[0] : fitting_indices[1] + 1],
+            )
 
             # Get the encoder position of the best focus.
             best_focus = np.abs(fit.offset_0)
@@ -519,13 +553,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             min_focus = focus_positions[0]
             max_focus = focus_positions[-1]
             if best_focus < min_focus:
-                self.logger.warning(f"Fitting failure: best focus {best_focus} below sweep limit"
-                                    f" {min_focus}")
+                self.logger.warning(
+                    f"Fitting failure: best focus {best_focus} below sweep limit {min_focus}"
+                )
                 best_focus = focus_positions[1]
 
             if best_focus > max_focus:
-                self.logger.warning(f"Fitting failure: best focus {best_focus} above sweep limit"
-                                    f" {max_focus}")
+                self.logger.warning(
+                    f"Fitting failure: best focus {best_focus} above sweep limit {max_focus}"
+                )
                 best_focus = focus_positions[-2]
 
         else:
@@ -539,8 +575,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         final_fn = f"{final_focus}-{focus_type}-final.{self._camera.file_extension}"
         file_path = os.path.join(file_path_root, final_fn)
         try:
-            final_cutout = self._camera.get_cutout(seconds, file_path, cutout_size,
-                                                   keep_file=True)
+            final_cutout = self._camera.get_cutout(seconds, file_path, cutout_size, keep_file=True)
             final_cutout = mask_saturated(final_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 final_cutout = final_cutout.astype(np.int32) - dark_cutout
@@ -553,49 +588,55 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         if make_plots:
             line_fit = None
             if fitted:
-                focus_range = np.arange(focus_positions[fitting_indices[0]],
-                                        focus_positions[fitting_indices[1]] + 1)
+                focus_range = np.arange(
+                    focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1
+                )
                 fit_line = fit(focus_range)
                 line_fit = [focus_range, fit_line]
 
-            plot_title = f'{self._camera} {focus_type} focus at {start_time}'
+            plot_title = f"{self._camera} {focus_type} focus at {start_time}"
 
             # Make the plots
-            plot_path = os.path.join(file_path_root, f'{focus_type}-focus.png')
-            plot_path = make_autofocus_plot(plot_path,
-                                            initial_cutout,
-                                            final_cutout,
-                                            initial_focus,
-                                            final_focus,
-                                            focus_positions,
-                                            metrics,
-                                            merit_function,
-                                            plot_title=plot_title,
-                                            line_fit=line_fit
-                                            )
+            plot_path = os.path.join(file_path_root, f"{focus_type}-focus.png")
+            plot_path = make_autofocus_plot(
+                plot_path,
+                initial_cutout,
+                final_cutout,
+                initial_focus,
+                final_focus,
+                focus_positions,
+                metrics,
+                merit_function,
+                plot_title=plot_title,
+                line_fit=line_fit,
+            )
 
-            self.logger.info(f"{focus_type.capitalize()} focus plot for {self._camera} written to "
-                             f" {plot_path}")
+            self.logger.info(
+                f"{focus_type.capitalize()} focus plot for {self._camera} written to  {plot_path}"
+            )
 
-        self.logger.debug(f"Autofocus of {self._camera} complete - final focus"
-                          f" position: {final_focus}")
+        self.logger.debug(
+            f"Autofocus of {self._camera} complete - final focus position: {final_focus}"
+        )
 
         if focus_event:
             focus_event.set()
 
         return initial_focus, final_focus
 
-    def _set_autofocus_parameters(self,
-                                  autofocus_range,
-                                  autofocus_step,
-                                  autofocus_seconds,
-                                  autofocus_size,
-                                  autofocus_keep_files,
-                                  autofocus_take_dark,
-                                  autofocus_merit_function,
-                                  autofocus_merit_function_kwargs,
-                                  autofocus_mask_dilations,
-                                  autofocus_make_plots):
+    def _set_autofocus_parameters(
+        self,
+        autofocus_range,
+        autofocus_step,
+        autofocus_seconds,
+        autofocus_size,
+        autofocus_keep_files,
+        autofocus_take_dark,
+        autofocus_merit_function,
+        autofocus_merit_function_kwargs,
+        autofocus_mask_dilations,
+        autofocus_make_plots,
+    ):
         # Moved to a separate private method to make it possible to override.
         if autofocus_range:
             self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
@@ -617,10 +658,10 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         self.autofocus_make_plots = bool(autofocus_make_plots)
 
     def _add_fits_keywords(self, header):
-        header.set('FOC-NAME', self.name, 'Focuser name')
-        header.set('FOC-MOD', self.model, 'Focuser model')
-        header.set('FOC-ID', self.uid, 'Focuser serial number')
-        header.set('FOC-POS', self.position, 'Focuser position')
+        header.set("FOC-NAME", self.name, "Focuser name")
+        header.set("FOC-MOD", self.model, "Focuser model")
+        header.set("FOC-ID", self.uid, "Focuser serial number")
+        header.set("FOC-POS", self.position, "Focuser position")
         return header
 
     def __str__(self):

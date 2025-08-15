@@ -20,25 +20,25 @@ def constraints():
     return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def observer():
-    loc = get_config('location')
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    loc = get_config("location")
+    location = EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
+    return Observer(location=location, name="Test Observer", timezone=loc["timezone"])
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def field_file():
-    scheduler_config = get_config('scheduler', default={})
+    scheduler_config = get_config("scheduler", default={})
 
     # Read the targets from the file
-    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_path = os.path.join(get_config('directories.fields'), fields_file)
+    fields_file = scheduler_config.get("fields_file", "simple.yaml")
+    fields_path = os.path.join(get_config("directories.fields"), fields_file)
 
     return fields_path
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def field_list():
     return yaml.full_load("""
     -
@@ -104,64 +104,62 @@ def field_list():
     """)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def scheduler(field_list, observer, constraints):
     try:
-        del os.environ['POCSTIME']
+        del os.environ["POCSTIME"]
     except Exception:
         pass
-    return Scheduler(observer,
-                     fields_list=field_list,
-                     constraints=constraints)
+    return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
 @pytest.fixture
 def scheduler_from_file(field_file, observer, constraints):
-    return Scheduler(observer,
-                     fields_file=field_file,
-                     constraints=constraints)
+    return Scheduler(observer, fields_file=field_file, constraints=constraints)
 
 
 def test_get_observation(scheduler):
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
 
     best = scheduler.get_observation(time=time)
 
-    assert best[0] == 'HD 189733'
+    assert best[0] == "HD 189733"
     assert isinstance(best[1], float)
 
 
-def test_get_observation_reread(field_list,
-                                observer,
-                                temp_file,
-                                constraints):
-    time = Time('2016-08-13 10:00:00')
+def test_get_observation_reread(field_list, observer, temp_file, constraints):
+    time = Time("2016-08-13 10:00:00")
 
     # Write out the field list
-    with open(temp_file, 'w') as f:
+    with open(temp_file, "w") as f:
         f.write(yaml.dump(field_list))
 
-    scheduler = Scheduler(observer,
-                          fields_file=temp_file,
-                          constraints=constraints)
+    scheduler = Scheduler(observer, fields_file=temp_file, constraints=constraints)
 
     # Get observation as above
     best = scheduler.get_observation(time=time)
-    assert best[0] == 'HD 189733'
+    assert best[0] == "HD 189733"
 
     # Alter the field file - note same target but new name
-    with open(temp_file, 'a') as f:
-        f.write(yaml.dump([{
-            "field": {'name': 'New Name', 'position': '20h00m43.7135s +22d42m39.0645s'},
-            "observation": {'priority': 50000}}]))
+    with open(temp_file, "a") as f:
+        f.write(
+            yaml.dump(
+                [
+                    {
+                        "field": {"name": "New Name", "position": "20h00m43.7135s +22d42m39.0645s"},
+                        "observation": {"priority": 50000},
+                    }
+                ]
+            )
+        )
 
     # Get observation but reread file first
     best = scheduler.get_observation(time=time, read_file=True)
-    assert best[0] != 'HD 189733'
+    assert best[0] != "HD 189733"
 
 
 def test_observation_seq_time(scheduler):
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
 
     scheduler.get_observation(time=time)
 
@@ -169,28 +167,28 @@ def test_observation_seq_time(scheduler):
 
 
 def test_no_valid_observation(scheduler):
-    time = Time('2016-08-13 15:00:00')
+    time = Time("2016-08-13 15:00:00")
     scheduler.get_observation(time=time)
     assert scheduler.current_observation is None
 
 
 def test_continue_observation(scheduler):
-    time = Time('2016-08-13 10:30:00')
+    time = Time("2016-08-13 10:30:00")
     scheduler.get_observation(time=time)
     assert scheduler.current_observation is not None
     obs = scheduler.current_observation
 
-    time = Time('2016-08-13 10:45:00')
+    time = Time("2016-08-13 10:45:00")
     scheduler.get_observation(time=time)
     assert scheduler.current_observation == obs
 
-    time = Time('2016-08-13 14:30:00')
+    time = Time("2016-08-13 14:30:00")
     scheduler.get_observation(time=time)
     assert scheduler.current_observation is None
 
 
 def test_set_observation_then_reset(scheduler):
-    time = Time('2016-08-13 05:00:00')
+    time = Time("2016-08-13 05:00:00")
     scheduler.get_observation(time=time)
 
     obs1 = scheduler.current_observation
@@ -199,7 +197,7 @@ def test_set_observation_then_reset(scheduler):
     # Reset priority
     scheduler.observations[obs1.name].priority = 1.0
 
-    time = Time('2016-08-13 05:30:00')
+    time = Time("2016-08-13 05:30:00")
     scheduler.get_observation(time=time)
     obs2 = scheduler.current_observation
 
@@ -207,7 +205,7 @@ def test_set_observation_then_reset(scheduler):
 
     scheduler.observations[obs1.name].priority = 500.0
 
-    time = Time('2016-08-13 06:00:00')
+    time = Time("2016-08-13 06:00:00")
     scheduler.get_observation(time=time)
     obs3 = scheduler.current_observation
     obs3_seq_time = obs3.seq_time
@@ -221,7 +219,7 @@ def test_set_observation_then_reset(scheduler):
 
 
 def test_reset_observation(scheduler):
-    time = Time('2016-08-13 05:00:00')
+    time = Time("2016-08-13 05:00:00")
     scheduler.get_observation(time=time)
 
     # We have an observation so we have a seq_time
@@ -236,14 +234,14 @@ def test_reset_observation(scheduler):
 
 
 def test_new_observation_seq_time(scheduler):
-    time = Time('2016-09-11 07:08:00')
+    time = Time("2016-09-11 07:08:00")
     scheduler.get_observation(time=time)
 
     # We have an observation so we have a seq_time
     assert scheduler.current_observation.seq_time is not None
 
     # A few hours later
-    time = Time('2016-09-11 10:30:00')
+    time = Time("2016-09-11 10:30:00")
     scheduler.get_observation(time=time)
 
     assert scheduler.current_observation.seq_time is not None
@@ -252,19 +250,19 @@ def test_new_observation_seq_time(scheduler):
 def test_observed_list(scheduler):
     assert len(scheduler.observed_list) == 0
 
-    time0 = Time('2016-09-11 07:08:00')
+    time0 = Time("2016-09-11 07:08:00")
     scheduler.get_observation(time=time0)
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
     time.sleep(1)
-    time1 = Time('2016-09-11 10:08:00')
+    time1 = Time("2016-09-11 10:08:00")
     scheduler.get_observation(time=time1)
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
     time.sleep(1)
-    time2 = Time('2016-09-11 14:38:00')
+    time2 = Time("2016-09-11 14:38:00")
     scheduler.get_observation(time=time2)
     assert len(scheduler.observed_list) == 2
 
@@ -276,13 +274,13 @@ def test_timebased_priority(scheduler):
     assert len(scheduler.observed_list) == 0
 
     # During the window we should select the HD 189733 target with high priority.
-    time0 = Time('2016-08-13 10:30:00')
+    time0 = Time("2016-08-13 10:30:00")
     obs, score = scheduler.get_observation(time=time0)
 
-    assert scheduler.current_observation.name == 'HD 189733'
+    assert scheduler.current_observation.name == "HD 189733"
     assert score > 0
 
-    time1 = Time('2016-08-13 12:01:00')
+    time1 = Time("2016-08-13 12:01:00")
     scheduler.get_observation(time=time1)
 
-    assert scheduler.current_observation.name != 'HD 189733'
+    assert scheduler.current_observation.name != "HD 189733"

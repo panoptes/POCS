@@ -9,19 +9,16 @@ class Focuser(AbstractFocuser):
     Simple focuser simulator
     """
 
-    def __init__(self,
-                 name='Simulated Focuser',
-                 port='/dev/ttyFAKE',
-                 *args, **kwargs):
+    def __init__(self, name="Simulated Focuser", port="/dev/ttyFAKE", *args, **kwargs):
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")
         self._is_moving = False
         self.connect()
         self.logger.info("{} initialised".format(self))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @property
     def min_position(self):
@@ -41,9 +38,9 @@ class Focuser(AbstractFocuser):
     def is_moving(self):
         return self._is_moving
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def connect(self):
         """
@@ -51,7 +48,7 @@ class Focuser(AbstractFocuser):
         """
         time.sleep(0.1)
         self._connected = True
-        self._serial_number = 'SF{:04d}'.format(random.randint(0, 9999))
+        self._serial_number = "SF{:04d}".format(random.randint(0, 9999))
         self._min_position = 0
         self._max_position = 22200
         if self.position is None:
@@ -59,13 +56,13 @@ class Focuser(AbstractFocuser):
         self.logger.debug("Connected to focuser {}".format(self.uid))
 
     def move_to(self, position):
-        """ Move focuser to a new encorder position """
+        """Move focuser to a new encorder position"""
         self.move_by(position - self.position)
         return self.position
 
     def move_by(self, increment):
-        """ Move focuser by a given amount """
-        self.logger.debug(f'Moving focuser {self.uid} by {increment}')
+        """Move focuser by a given amount"""
+        self.logger.debug(f"Moving focuser {self.uid} by {increment}")
         self._is_moving = True
         time.sleep(1)
         previous_position = self._position

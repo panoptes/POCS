@@ -21,13 +21,13 @@ class AbstractSerialDome(dome.AbstractDome):
         # of the dome config in the YAML. That way we don't intermingle serial settings and
         # any other settings required.
         cfg = self._dome_config
-        self._port = cfg.get('port')
+        self._port = cfg.get("port")
         if not self._port:
-            msg = 'No port specified in the config for dome: {}'.format(cfg)
+            msg = "No port specified in the config for dome: {}".format(cfg)
             self.logger.error(msg)
             raise error.DomeNotFound(msg=msg)
 
-        baudrate = int(cfg.get('baudrate', 9600))
+        baudrate = int(cfg.get("baudrate", 9600))
 
         # Setup our serial connection to the given port.
         self.serial = None
@@ -57,17 +57,16 @@ class AbstractSerialDome(dome.AbstractDome):
             bool:   Returns True if connected, False otherwise.
         """
         if not self.is_connected:
-            self.logger.debug('Connecting to dome')
+            self.logger.debug("Connecting to dome")
             try:
                 self.serial.connect()
-                self.logger.info('Dome connected: {}'.format(self.is_connected))
+                self.logger.info("Dome connected: {}".format(self.is_connected))
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning(
-                    'Could not create serial connection to dome\n{}'.format(err))
+                self.logger.warning("Could not create serial connection to dome\n{}".format(err))
         else:
-            self.logger.debug('Already connected to dome')
+            self.logger.debug("Already connected to dome")
 
         return self.is_connected
 
@@ -79,4 +78,5 @@ class AbstractSerialDome(dome.AbstractDome):
         """Throw an exception if not connected."""
         if not self.is_connected:
             raise error.BadSerialConnection(
-                msg='Not connected to dome at port {}'.format(self._port))
+                msg="Not connected to dome at port {}".format(self._port)
+            )

@@ -11,7 +11,7 @@ from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
 class Camera(CanonCamera):
     """A remote gphoto2 camera class."""
 
-    def __init__(self, endpoint: AnyHttpUrl = 'http://localhost:6565', *args, **kwargs):
+    def __init__(self, endpoint: AnyHttpUrl = "http://localhost:6565", *args, **kwargs):
         """Control a remote gphoto2 camera via the pocs service.
 
         Interact with a camera via `panoptes.pocs.utils.service.camera`.
@@ -36,24 +36,24 @@ class Camera(CanonCamera):
         """
         endpoint = endpoint or self.endpoint
 
-        arguments = ' '.join(cmd)
+        arguments = " ".join(cmd)
         # Add the port
-        if '--port' not in arguments:
-            arguments = f'--port {self.port} {arguments}'
-        self.logger.debug(f'Running remote gphoto2 on {endpoint=} with {arguments=}')
+        if "--port" not in arguments:
+            arguments = f"--port {self.port} {arguments}"
+        self.logger.debug(f"Running remote gphoto2 on {endpoint=} with {arguments=}")
 
         def do_command():
             response = requests.post(endpoint, json=dict(arguments=arguments))
-            self.logger.debug(f'Remote gphoto2 {response=!r}')
+            self.logger.debug(f"Remote gphoto2 {response=!r}")
             if response.ok:
                 output = response.json()
-                self.logger.debug(f'Response {output=!r}')
+                self.logger.debug(f"Response {output=!r}")
                 self.response_queue.append(output)
                 self._is_exposing_event.clear()
             else:
-                self.logger.error(f'Error in remote camera service: {response.content}')
+                self.logger.error(f"Error in remote camera service: {response.content}")
 
-        self._command_proc = Thread(target=do_command, name='RemoteGphoto2Command')
+        self._command_proc = Thread(target=do_command, name="RemoteGphoto2Command")
         self._command_proc.start()
 
     def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
@@ -64,16 +64,16 @@ class Camera(CanonCamera):
             if self._command_proc.is_alive():
                 raise TimeoutError
         except TimeoutError:
-            self.logger.warning(f'Timeout on exposure process for {self.name}')
+            self.logger.warning(f"Timeout on exposure process for {self.name}")
         else:
             response = self.response_queue.pop()
-            if response['output'] > '':
-                output = response['output'].split('\n')
-                self.logger.debug(f'Remote gphoto2 output: {output!r}')
+            if response["output"] > "":
+                output = response["output"].split("\n")
+                self.logger.debug(f"Remote gphoto2 output: {output!r}")
 
-            if response['error'] > '':
-                error = response['error'].split('\n')
-                self.logger.debug(f'Remote gphoto2 error: {error!r}')
+            if response["error"] > "":
+                error = response["error"].split("\n")
+                self.logger.debug(f"Remote gphoto2 error: {error!r}")
 
         return output
 

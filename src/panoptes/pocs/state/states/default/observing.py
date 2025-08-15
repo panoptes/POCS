@@ -5,11 +5,11 @@ def on_enter(event_data):
     """Take an observation image.
 
     This state is responsible for taking the actual observation image.
-     """
+    """
     pocs = event_data.model
     current_obs = pocs.observatory.current_observation
     pocs.say(f"🔭🔭 I'm observing {current_obs.field.field_name}! 🔭🔭")
-    pocs.next_state = 'parking'
+    pocs.next_state = "parking"
 
     try:
         pocs.observe_target()
@@ -19,5 +19,5 @@ def on_enter(event_data):
         pocs.logger.warning(f"Problem with imaging: {e!r}")
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        pocs.next_state = 'analyzing'
-        pocs.logger.debug('Finished with observing, going to {pocs.next_state}')
+        pocs.next_state = "analyzing"
+        pocs.logger.debug("Finished with observing, going to {pocs.next_state}")

@@ -15,10 +15,9 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BaseScheduler(PanBase):
-
-    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
-                 **kwargs
-                 ):
+    def __init__(
+        self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs
+    ):
         """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
@@ -52,7 +51,7 @@ class BaseScheduler(PanBase):
         self.constraints = constraints or list()
         self.observed_list = OrderedDict()
 
-        if self.get_config('scheduler.check_file', default=True):
+        if self.get_config("scheduler.check_file", default=True):
             self.logger.debug("Reading fields list.")
             self.read_field_list()
 
@@ -62,8 +61,8 @@ class BaseScheduler(PanBase):
     @property
     def status(self):
         return {
-            'constraints': self.constraints,
-            'current_observation': self.current_observation,
+            "constraints": self.constraints,
+            "current_observation": self.current_observation,
         }
 
     @property
@@ -98,7 +97,6 @@ class BaseScheduler(PanBase):
 
     @current_observation.setter
     def current_observation(self, new_observation):
-
         if self.current_observation is None:
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
@@ -121,7 +119,7 @@ class BaseScheduler(PanBase):
                     # Add the new observation to the list
                     self.observed_list[new_observation.seq_time] = new_observation
 
-        self.logger.info(f'Setting new observation to {new_observation}')
+        self.logger.info(f"Setting new observation to {new_observation}")
         self._current_observation = new_observation
 
     @property
@@ -184,8 +182,8 @@ class BaseScheduler(PanBase):
         self._observations = dict()
 
     def reset_observed_list(self):
-        """Reset the observed list """
-        self.logger.debug('Resetting observed list')
+        """Reset the observed list"""
+        self.logger.debug("Resetting observed list")
         self.observed_list = OrderedDict()
 
     def observation_available(self, observation, time):
@@ -231,13 +229,12 @@ class BaseScheduler(PanBase):
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations`."""
-        self.logger.debug(f'Reading fields from file: {self.fields_file}')
+        self.logger.debug(f"Reading fields from file: {self.fields_file}")
         if self._fields_file is not None:
-
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
 
-            with open(self.fields_file, 'r') as f:
+            with open(self.fields_file, "r") as f:
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:
@@ -249,9 +246,9 @@ class BaseScheduler(PanBase):
 
     def set_common_properties(self, time):
         """Sets some properties common to all observations, such as end of night, moon, etc."""
-        horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
+        horizon_limit = self.get_config("location.observe_horizon", default=-18 * u.degree)
         self.common_properties = {
-            'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
-            'moon': get_body('moon', time, self.observer.location),
-            'observed_list': self.observed_list
+            "end_of_night": self.observer.tonight(time=time, horizon=horizon_limit)[-1],
+            "moon": get_body("moon", time, self.observer.location),
+            "observed_list": self.observed_list,
         }

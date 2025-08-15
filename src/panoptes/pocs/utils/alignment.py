@@ -19,7 +19,7 @@ from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
-warnings.simplefilter('ignore', category=FITSFixedWarning)
+warnings.simplefilter("ignore", category=FITSFixedWarning)
 
 
 def get_celestial_center(pole_fn: Path | str, **kwargs):
@@ -42,7 +42,7 @@ def get_celestial_center(pole_fn: Path | str, **kwargs):
     wcsinfo = get_wcsinfo(pole_fn)
     pixscale = None
     if wcsinfo is not None:
-        pixscale = wcsinfo['pixscale'].value
+        pixscale = wcsinfo["pixscale"].value
 
     return pole_cx, pole_cy, pixscale
 
@@ -94,26 +94,29 @@ class AlignmentResult:
         Returns:
             str: CSV line with the alignment result.
         """
-        return (f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
-                f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
-                f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
-                f"{self.az_deg:.02f},{self.alt_deg:.02f}"
-                )
+        return (
+            f"{self.pole_center[0]:.2f},{self.pole_center[1]:.2f},"
+            f"{self.rotate_center[0]:.2f},{self.rotate_center[1]:.2f},"
+            f"{self.rotate_radius:.02f},{self.pix_scale:.02f},"
+            f"{self.az_deg:.02f},{self.alt_deg:.02f}"
+        )
 
     def __str__(self):
         # Pretty print
-        return (f"Celestial Center: {self.pole_center[0]:.2f}, {self.pole_center[1]:.2f}\n"
-                f"Rotate Center: {self.rotate_center[0]:.2f}, {self.rotate_center[1]:.2f}\n"
-                f"Rotate Radius: {self.rotate_radius:.02f}\n"
-                f"Pixel Scale: {self.pix_scale:.02f}\n"
-                f"Target Name: {self.target_name}\n"
-                f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
-                f"Delta (degrees): {self.az_deg:.02f} {self.alt_deg:.02f}\n"
-                )
+        return (
+            f"Celestial Center: {self.pole_center[0]:.2f}, {self.pole_center[1]:.2f}\n"
+            f"Rotate Center: {self.rotate_center[0]:.2f}, {self.rotate_center[1]:.2f}\n"
+            f"Rotate Radius: {self.rotate_radius:.02f}\n"
+            f"Pixel Scale: {self.pix_scale:.02f}\n"
+            f"Target Name: {self.target_name}\n"
+            f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
+            f"Delta (degrees): {self.az_deg:.02f} {self.alt_deg:.02f}\n"
+        )
 
 
-def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris', logger: Logger | None = None
-                            ) -> AlignmentResult:
+def process_quick_alignment(
+    files: dict[str, Path], target_name: str = "Polaris", logger: Logger | None = None
+) -> AlignmentResult:
     """Process the quick alignment of polar rotation and RA rotation images.
 
     Args:
@@ -135,7 +138,7 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         if not isinstance(fits_fn, Path):
             fits_fn = Path(fits_fn)
 
-        if position == 'home':
+        if position == "home":
             logger.debug(f"Processing polar rotation image: {fits_fn}")
             pole_center_x, pole_center_y, pix_scale = get_celestial_center(fits_fn)
             pole_center_pix = (float(pole_center_x), float(pole_center_y))
@@ -161,7 +164,9 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
     rotate_center_pix = (h, k)
 
     if pole_center_pix is None or rotate_center_pix is None:
-        logger.warning(f'Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}')
+        logger.warning(
+            f"Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}"
+        )
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
@@ -181,12 +186,12 @@ def process_quick_alignment(files: dict[str, Path], target_name: str = 'Polaris'
         alt_deg=dy,
         pix_scale=pix_scale,
         target_points=points,
-        target_name=target_name
+        target_name=target_name,
     )
 
 
 def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
-    """ Overlay the celestial pole and RA rotation axis images.
+    """Overlay the celestial pole and RA rotation axis images.
 
     Args:
         pole_fn (str): FITS file of polar center
@@ -196,8 +201,8 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
     Returns:
         matplotlib.Figure: Plotted image
     """
-    d0 = getdata(pole_fn) - 0.  # Easy cast to float
-    d1 = getdata(rotate_fn) - 0.  # Easy cast to float
+    d0 = getdata(pole_fn) - 0.0  # Easy cast to float
+    d1 = getdata(rotate_fn) - 0.0  # Easy cast to float
 
     d0 /= d0.max()
     d1 /= d1.max()
@@ -211,14 +216,14 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(20, 14))
 
     # Show rotation center in red
-    ax.scatter(rotate_cx, rotate_cy, color='r', marker='x', lw=5)
+    ax.scatter(rotate_cx, rotate_cy, color="r", marker="x", lw=5)
 
     # Show polar center in green
-    ax.scatter(pole_cx, pole_cy, color='g', marker='x', lw=5)
+    ax.scatter(pole_cx, pole_cy, color="g", marker="x", lw=5)
 
     # Show both images in background
     norm = ImageNormalize(stretch=SqrtStretch())
-    ax.imshow(d0 + d1, cmap='Greys_r', norm=norm, origin='lower')
+    ax.imshow(d0 + d1, cmap="Greys_r", norm=norm, origin="lower")
 
     # Show an arrow
     delta_cy = pole_cy - rotate_cy
@@ -229,10 +234,10 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
             rotate_cy,
             delta_cx,
             delta_cy,
-            fc='r',
-            ec='r',
+            fc="r",
+            ec="r",
             width=20,
-            length_includes_head=True
+            length_includes_head=True,
         )
 
     ax.set_title(f"dx: {d_x:0.2f} pix   dy: {d_y:0.2f} pix")
@@ -264,14 +269,14 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
         [
             [x_coords[0], y_coords[0], 1],
             [x_coords[1], y_coords[1], 1],
-            [x_coords[2], y_coords[2], 1]
+            [x_coords[2], y_coords[2], 1],
         ]
     )
     b = np.array(
         [
             -(x_coords[0] ** 2 + y_coords[0] ** 2),
             -(x_coords[1] ** 2 + y_coords[1] ** 2),
-            -(x_coords[2] ** 2 + y_coords[2] ** 2)
+            -(x_coords[2] ** 2 + y_coords[2] ** 2),
         ]
     )
 
@@ -286,7 +291,7 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     # Calculate the center (h, k) and radius (R)
     h = -D / 2
     k = -E / 2
-    discriminant = h ** 2 + k ** 2 - F
+    discriminant = h**2 + k**2 - F
     if discriminant < 0:
         print("Error: Invalid circle parameters, negative value under square root.")
         return None, None, None
@@ -294,7 +299,9 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     return h, k, R
 
 
-def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult) -> Figure:
+def plot_alignment_diff(
+    cam_name: str, files: dict[str, str | Path], results: AlignmentResult
+) -> Figure:
     """Plot the difference between the celestial pole and RA rotation images.
 
     Args:
@@ -308,28 +315,28 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
     pole_cx, pole_cy = results.pole_center
     rotate_cx, rotate_cy = results.rotate_center
 
-    data0 = fits.getdata(files['home'])
-    wcs0 = fits.getwcs(files['home'])
+    data0 = fits.getdata(files["home"])
+    wcs0 = fits.getwcs(files["home"])
 
     # Create figure
-    fig = Figure(figsize=(20, 14), layout='constrained')
+    fig = Figure(figsize=(20, 14), layout="constrained")
     ax = fig.add_subplot(1, 1, 1, projection=wcs0)
 
     alpha = 0.3
     number_ticks = 9
 
-    ax.grid(True, color='blue', ls='-', alpha=alpha)
+    ax.grid(True, color="blue", ls="-", alpha=alpha)
 
-    ra_axis = ax.coords['ra']
-    ra_axis.set_axislabel('Right Ascension')
-    ra_axis.set_major_formatter('hh:mm')
-    ra_axis.set_ticks(number=number_ticks, color='cyan')
+    ra_axis = ax.coords["ra"]
+    ra_axis.set_axislabel("Right Ascension")
+    ra_axis.set_major_formatter("hh:mm")
+    ra_axis.set_ticks(number=number_ticks, color="cyan")
     # ra_axis.set_ticklabel(color='white', exclude_overlapping=True)
 
-    dec_axis = ax.coords['dec']
-    dec_axis.set_axislabel('Declination')
-    dec_axis.set_major_formatter('dd:mm')
-    dec_axis.set_ticks(number=number_ticks, color='cyan')
+    dec_axis = ax.coords["dec"]
+    dec_axis.set_axislabel("Declination")
+    dec_axis.set_major_formatter("dd:mm")
+    dec_axis.set_ticks(number=number_ticks, color="cyan")
     # dec_axis.set_ticklabel(color='white', exclude_overlapping=True)
 
     # Show both images in background
@@ -343,21 +350,30 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
     delta_cy = pole_cy - rotate_cy
 
     # Show the background
-    im = ax.imshow(data0, cmap='Greys_r', norm=norm)
+    im = ax.imshow(data0, cmap="Greys_r", norm=norm)
 
     # Show the detected points.
     for pos, (x, y) in results.target_points.items():
-        ax.scatter(x, y, marker='o', ec='coral', fc='none', lw=2, label=f"{results.target_name} {pos}")
-        ax.annotate(pos, (x, y), c='coral', xytext=(3, 3), textcoords='offset pixels')
+        ax.scatter(
+            x, y, marker="o", ec="coral", fc="none", lw=2, label=f"{results.target_name} {pos}"
+        )
+        ax.annotate(pos, (x, y), c="coral", xytext=(3, 3), textcoords="offset pixels")
 
     # Show the rotation center.
-    ax.scatter(rotate_cx, rotate_cy, marker='*', c='coral', zorder=200, label='Center of mount rotation')
+    ax.scatter(
+        rotate_cx, rotate_cy, marker="*", c="coral", zorder=200, label="Center of mount rotation"
+    )
 
     # Show the rotation circle
     ax.add_patch(
         Circle(
-            (results.rotate_center[0], results.rotate_center[1]), results.rotate_radius, color='coral', fill=False,
-            alpha=0.5, label='Circle of mount rotation', zorder=200
+            (results.rotate_center[0], results.rotate_center[1]),
+            results.rotate_radius,
+            color="coral",
+            fill=False,
+            alpha=0.5,
+            label="Circle of mount rotation",
+            zorder=200,
         )
     )
 
@@ -369,26 +385,38 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
             rotate_cy,
             delta_cx,
             delta_cy,
-            fc='r',
-            ec='r',
+            fc="r",
+            ec="r",
             width=10,
-            length_includes_head=True
+            length_includes_head=True,
         )
 
     # Arrow for rotation radius.
     ax.arrow(
-        results.rotate_center[0], results.rotate_center[1], -results.rotate_radius, 0, color='pink',
-        length_includes_head=True, width=10, alpha=0.25
+        results.rotate_center[0],
+        results.rotate_center[1],
+        -results.rotate_radius,
+        0,
+        color="pink",
+        length_includes_head=True,
+        width=10,
+        alpha=0.25,
     )
 
     # Arrow for required mount motion.
     ax.arrow(
-        results.rotate_center[0], results.rotate_center[1], delta_cx, delta_cy, color='red', length_includes_head=True,
-        width=10, zorder=101
+        results.rotate_center[0],
+        results.rotate_center[1],
+        delta_cx,
+        delta_cy,
+        color="red",
+        length_includes_head=True,
+        width=10,
+        zorder=101,
     )
 
     # Show the celestial center
-    ax.scatter(pole_cx, pole_cy, marker='*', c='blue', label='Center of celestial sphere')
+    ax.scatter(pole_cx, pole_cy, marker="*", c="blue", label="Center of celestial sphere")
 
     # Get the handles and labels from the existing legend
     handles, labels = ax.get_legend_handles_labels()
@@ -396,13 +424,15 @@ def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: Al
     # Add the new handle and label
     if move_arrow is not None:
         handles.append(move_arrow)
-        labels.append('Direction to move mount')
+        labels.append("Direction to move mount")
 
         # Call legend() again to update the legend
-        ax.legend(handles, labels, loc='upper right')
+        ax.legend(handles, labels, loc="upper right")
 
-    title0 = (f'{delta_cx=:10.01f} pix Az ={results.az_deg:10.02f} deg \n '
-              f'{delta_cy=:10.01f} pix Alt={results.alt_deg:10.02f} deg')
-    fig.suptitle(f'{cam_name}\n{title0}', y=0.93)
+    title0 = (
+        f"{delta_cx=:10.01f} pix Az ={results.az_deg:10.02f} deg \n "
+        f"{delta_cy=:10.01f} pix Alt={results.alt_deg:10.02f} deg"
+    )
+    fig.suptitle(f"{cam_name}\n{title0}", y=0.93)
 
     return fig

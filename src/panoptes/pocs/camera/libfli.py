@@ -3,6 +3,7 @@ Low level interface to the FLI library
 
 Reproduces in Python (using ctypes) the C interface provided by FLI's library.
 """
+
 import ctypes
 import os
 
@@ -13,22 +14,30 @@ from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
 
-valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
-                                   c.FLIDOMAIN_USB,
-                                   c.FLIDOMAIN_SERIAL,
-                                   c.FLIDOMAIN_INET,
-                                   c.FLIDOMAIN_SERIAL_1200,
-                                   c.FLIDOMAIN_SERIAL_19200),
-                'device type': (c.FLIDEVICE_CAMERA,
-                                c.FLIDEVICE_FILTERWHEEL,
-                                c.FLIDEVICE_FOCUSER,
-                                c.FLIDEVICE_HS_FILTERWHEEL,
-                                c.FLIDEVICE_RAW,
-                                c.FLIDEVICE_ENUMERATE_BY_CONNECTION),
-                'frame type': (c.FLI_FRAME_TYPE_NORMAL,
-                               c.FLI_FRAME_TYPE_DARK,
-                               c.FLI_FRAME_TYPE_FLOOD,
-                               c.FLI_FRAME_TYPE_RBI_FLUSH)}
+valid_values = {
+    "interface type": (
+        c.FLIDOMAIN_PARALLEL_PORT,
+        c.FLIDOMAIN_USB,
+        c.FLIDOMAIN_SERIAL,
+        c.FLIDOMAIN_INET,
+        c.FLIDOMAIN_SERIAL_1200,
+        c.FLIDOMAIN_SERIAL_19200,
+    ),
+    "device type": (
+        c.FLIDEVICE_CAMERA,
+        c.FLIDEVICE_FILTERWHEEL,
+        c.FLIDEVICE_FOCUSER,
+        c.FLIDEVICE_HS_FILTERWHEEL,
+        c.FLIDEVICE_RAW,
+        c.FLIDEVICE_ENUMERATE_BY_CONNECTION,
+    ),
+    "frame type": (
+        c.FLI_FRAME_TYPE_NORMAL,
+        c.FLI_FRAME_TYPE_DARK,
+        c.FLI_FRAME_TYPE_FLOOD,
+        c.FLI_FRAME_TYPE_RBI_FLUSH,
+    ),
+}
 
 
 ################################################################################
@@ -37,7 +46,6 @@ valid_values = {'interface type': (c.FLIDOMAIN_PARALLEL_PORT,
 
 
 class FLIDriver(AbstractSDKDriver):
-
     def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
@@ -62,7 +70,7 @@ class FLIDriver(AbstractSDKDriver):
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(name='fli', library_path=library_path, **kwargs)
+        super().__init__(name="fli", library_path=library_path, **kwargs)
 
     # Public methods
 
@@ -70,8 +78,8 @@ class FLIDriver(AbstractSDKDriver):
         # Get library version.
         version = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
-        self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
-        return version.value.decode('ascii')
+        self._call_function("getting library version", self._CDLL.FLIGetLibVersion, version, length)
+        return version.value.decode("ascii")
 
     def get_devices(self):
         """Gets currently connected camera info.
@@ -79,8 +87,7 @@ class FLIDriver(AbstractSDKDriver):
         Returns:
             dict: All currently connected camera serial numbers with corresponding device nodes.
         """
-        device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB,
-                                   device_type=c.FLIDEVICE_CAMERA)
+        device_list = self.FLIList(interface_type=c.FLIDOMAIN_USB, device_type=c.FLIDEVICE_CAMERA)
         if not device_list:
             raise error.PanError("No FLI camera devices found.")
 
@@ -95,8 +102,9 @@ class FLIDriver(AbstractSDKDriver):
                 try:
                     serial_number = self.FLIGetSerialString(handle)
                 except RuntimeError as err:
-                    self.logger.error("Couldn't get serial number from FLI camera at {}: {}".format(
-                        port, err))
+                    self.logger.error(
+                        "Couldn't get serial number from FLI camera at {}: {}".format(port, err)
+                    )
                 else:
                     cameras[serial_number] = port
             finally:
@@ -122,21 +130,22 @@ class FLIDriver(AbstractSDKDriver):
         Returns:
             list of tuples: (port, model name) for each available device
         """
-        domain = 0x0000 | self._check_valid(interface_type, 'interface type')
-        domain = domain | self._check_valid(device_type, 'device type')
+        domain = 0x0000 | self._check_valid(interface_type, "interface type")
+        domain = domain | self._check_valid(device_type, "device type")
 
         names = ctypes.POINTER(ctypes.c_char_p)()
-        self._call_function('getting device list', self._CDLL.FLIList,
-                            ctypes.c_long(domain), ctypes.byref(names))
+        self._call_function(
+            "getting device list", self._CDLL.FLIList, ctypes.c_long(domain), ctypes.byref(names)
+        )
 
         available_devices = []
         for name in names:
             if name is None:
                 break
-            available_devices.append(name.decode('ascii').split(';'))
+            available_devices.append(name.decode("ascii").split(";"))
 
         # Call FLIFreeList to clean up
-        self._call_function('freeing device list', self._CDLL.FLIFreeList, names)
+        self._call_function("freeing device list", self._CDLL.FLIFreeList, names)
 
         return available_devices
 
@@ -159,13 +168,18 @@ class FLIDriver(AbstractSDKDriver):
         Returns:
             ctypes.c_long: an opaque handle used by library functions to refer to FLI hardware
         """
-        domain = 0x0000 | self._check_valid(interface_type, 'interface type')
-        domain = domain | self._check_valid(device_type, 'device type')
+        domain = 0x0000 | self._check_valid(interface_type, "interface type")
+        domain = domain | self._check_valid(device_type, "device type")
 
         handle = ctypes.c_long()
 
-        self._call_function('getting handle', self._CDLL.FLIOpen,
-                            ctypes.byref(handle), port.encode('ascii'), ctypes.c_long(domain))
+        self._call_function(
+            "getting handle",
+            self._CDLL.FLIOpen,
+            ctypes.byref(handle),
+            port.encode("ascii"),
+            ctypes.c_long(domain),
+        )
 
         return handle
 
@@ -176,7 +190,7 @@ class FLIDriver(AbstractSDKDriver):
         Args:
             handle (ctypes.c_long): handle to close
         """
-        self._call_function('closing handle', self._CDLL.FLIClose, handle)
+        self._call_function("closing handle", self._CDLL.FLIClose, handle)
 
     def FLIGetModel(self, handle):
         """
@@ -190,9 +204,8 @@ class FLIDriver(AbstractSDKDriver):
         """
         model = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
-        self._call_function('getting model', self._CDLL.FLIGetModel, handle,
-                            model, length)
-        return model.value.decode('ascii')
+        self._call_function("getting model", self._CDLL.FLIGetModel, handle, model, length)
+        return model.value.decode("ascii")
 
     def FLIGetSerialString(self, handle):
         """
@@ -206,9 +219,10 @@ class FLIDriver(AbstractSDKDriver):
         """
         serial_string = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)
-        self._call_function('getting serial string', self._CDLL.FLIGetSerialString, handle,
-                            serial_string, length)
-        return serial_string.value.decode('ascii')
+        self._call_function(
+            "getting serial string", self._CDLL.FLIGetSerialString, handle, serial_string, length
+        )
+        return serial_string.value.decode("ascii")
 
     def FLIGetFWRevision(self, handle):
         """
@@ -221,8 +235,9 @@ class FLIDriver(AbstractSDKDriver):
             int: firmware revision of the camera
         """
         fwrev = ctypes.c_long()
-        self._call_function('getting firmware revision', self._CDLL.FLIGetFWRevision, handle,
-                            ctypes.byref(fwrev))
+        self._call_function(
+            "getting firmware revision", self._CDLL.FLIGetFWRevision, handle, ctypes.byref(fwrev)
+        )
         return fwrev.value
 
     def FLIGetHWRevision(self, handle):
@@ -236,8 +251,9 @@ class FLIDriver(AbstractSDKDriver):
             int: hardware revision of the cameras
         """
         hwrev = ctypes.c_long()
-        self._call_function('getting hardware revision', self._CDLL.FLIGetHWRevision, handle,
-                            ctypes.byref(hwrev))
+        self._call_function(
+            "getting hardware revision", self._CDLL.FLIGetHWRevision, handle, ctypes.byref(hwrev)
+        )
         return hwrev.value
 
     def FLIGetPixelSize(self, handle):
@@ -252,8 +268,13 @@ class FLIDriver(AbstractSDKDriver):
         """
         pixel_x = ctypes.c_double()
         pixel_y = ctypes.c_double()
-        self._call_function('getting pixel size', self._CDLL.FLIGetPixelSize, handle,
-                            ctypes.byref(pixel_x), ctypes.byref(pixel_y))
+        self._call_function(
+            "getting pixel size",
+            self._CDLL.FLIGetPixelSize,
+            handle,
+            ctypes.byref(pixel_x),
+            ctypes.byref(pixel_y),
+        )
         return ((pixel_x.value, pixel_y.value) * u.m).to(u.um)
 
     def FLIGetTemperature(self, handle):
@@ -267,8 +288,9 @@ class FLIDriver(AbstractSDKDriver):
             astropy.units.Quantity: temperature of the camera cold finger in degrees Celsius
         """
         temperature = ctypes.c_double()
-        self._call_function('getting temperature', self._CDLL.FLIGetTemperature,
-                            handle, ctypes.byref(temperature))
+        self._call_function(
+            "getting temperature", self._CDLL.FLIGetTemperature, handle, ctypes.byref(temperature)
+        )
         return temperature * u.Celsius
 
     def FLISetTemperature(self, handle, temperature):
@@ -284,8 +306,9 @@ class FLIDriver(AbstractSDKDriver):
         temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
-        self._call_function('setting temperature', self._CDLL.FLISetTemperature,
-                            handle, temperature)
+        self._call_function(
+            "setting temperature", self._CDLL.FLISetTemperature, handle, temperature
+        )
 
     def FLIGetCoolerPower(self, handle):
         """
@@ -298,8 +321,9 @@ class FLIDriver(AbstractSDKDriver):
             float: cooler power, in percent.
         """
         power = ctypes.c_double()
-        self._call_function('getting cooler power', self._CDLL.FLIGetCoolerPower,
-                            handle, ctypes.byref(power))
+        self._call_function(
+            "getting cooler power", self._CDLL.FLIGetCoolerPower, handle, ctypes.byref(power)
+        )
         return power.value * u.percent
 
     def FLISetExposureTime(self, handle, exposure_time):
@@ -314,8 +338,9 @@ class FLIDriver(AbstractSDKDriver):
         """
         exposure_time = get_quantity_value(exposure_time, unit=u.second)
         milliseconds = ctypes.c_long(int(exposure_time * 1000))
-        self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
-                            handle, milliseconds)
+        self._call_function(
+            "setting exposure time", self._CDLL.FLISetExposureTime, handle, milliseconds
+        )
 
     def FLISetFrameType(self, handle, frame_type):
         """
@@ -326,9 +351,10 @@ class FLIDriver(AbstractSDKDriver):
             frame_type (int): frame type. Valid values are libfli.FLI_FRAME_TYPE_NORMAL,
             FLI_FRAME_TYPE_DARK, FLI_FRAME_TYPE_FLOOD, FLI_FRAME_TYPE_RBI_FLUSH.
         """
-        frame_type = self._check_valid(frame_type, 'frame type')
-        self._call_function('setting frame type', self._CDLL.FLISetFrameType,
-                            handle, ctypes.c_long(frame_type))
+        frame_type = self._check_valid(frame_type, "frame type")
+        self._call_function(
+            "setting frame type", self._CDLL.FLISetFrameType, handle, ctypes.c_long(frame_type)
+        )
 
     def FLIGetArrayArea(self, handle):
         """
@@ -344,11 +370,19 @@ class FLIDriver(AbstractSDKDriver):
         upper_left_y = ctypes.c_long()
         lower_right_x = ctypes.c_long()
         lower_right_y = ctypes.c_long()
-        self._call_function('getting array area', self._CDLL.FLIGetArrayArea, handle,
-                            ctypes.byref(upper_left_x), ctypes.byref(upper_left_y),
-                            ctypes.byref(lower_right_x), ctypes.byref(lower_right_y))
-        return ((upper_left_x.value, upper_left_y.value),
-                (lower_right_x.value, lower_right_y.value))
+        self._call_function(
+            "getting array area",
+            self._CDLL.FLIGetArrayArea,
+            handle,
+            ctypes.byref(upper_left_x),
+            ctypes.byref(upper_left_y),
+            ctypes.byref(lower_right_x),
+            ctypes.byref(lower_right_y),
+        )
+        return (
+            (upper_left_x.value, upper_left_y.value),
+            (lower_right_x.value, lower_right_y.value),
+        )
 
     def FLIGetVisibleArea(self, handle):
         """
@@ -364,11 +398,19 @@ class FLIDriver(AbstractSDKDriver):
         upper_left_y = ctypes.c_long()
         lower_right_x = ctypes.c_long()
         lower_right_y = ctypes.c_long()
-        self._call_function('getting visible area', self._CDLL.FLIGetVisibleArea, handle,
-                            ctypes.byref(upper_left_x), ctypes.byref(upper_left_y),
-                            ctypes.byref(lower_right_x), ctypes.byref(lower_right_y))
-        return ((upper_left_x.value, upper_left_y.value),
-                (lower_right_x.value, lower_right_y.value))
+        self._call_function(
+            "getting visible area",
+            self._CDLL.FLIGetVisibleArea,
+            handle,
+            ctypes.byref(upper_left_x),
+            ctypes.byref(upper_left_y),
+            ctypes.byref(lower_right_x),
+            ctypes.byref(lower_right_y),
+        )
+        return (
+            (upper_left_x.value, upper_left_y.value),
+            (lower_right_x.value, lower_right_y.value),
+        )
 
     def FLISetImageArea(self, handle, upper_left, lower_right):
         """
@@ -384,9 +426,15 @@ class FLIDriver(AbstractSDKDriver):
             upper_left (int, int): (x, y) coordinate of upper left point
             lower_right (int, int): (x, y) coordinate of lower right point
         """
-        self._call_function('setting image area', self._CDLL.FLISetImageArea, handle,
-                            ctypes.c_long(upper_left[0]), ctypes.c_long(upper_left[1]),
-                            ctypes.c_long(lower_right[0]), ctypes.c_long(lower_right[1]))
+        self._call_function(
+            "setting image area",
+            self._CDLL.FLISetImageArea,
+            handle,
+            ctypes.c_long(upper_left[0]),
+            ctypes.c_long(upper_left[1]),
+            ctypes.c_long(lower_right[0]),
+            ctypes.c_long(lower_right[1]),
+        )
 
     def FLISetHBin(self, handle, bin_factor):
         """
@@ -398,8 +446,12 @@ class FLIDriver(AbstractSDKDriver):
         """
         if bin_factor < 1 or bin_factor > 16:
             raise ValueError("bin_factor must be in the range 1 to 16, got {}!".format(bin_factor))
-        self._call_function('setting horizontal bin factor', self._CDLL.FLISetHBin,
-                            handle, ctypes.c_long(bin_factor))
+        self._call_function(
+            "setting horizontal bin factor",
+            self._CDLL.FLISetHBin,
+            handle,
+            ctypes.c_long(bin_factor),
+        )
 
     def FLISetVBin(self, handle, bin_factor):
         """
@@ -411,8 +463,9 @@ class FLIDriver(AbstractSDKDriver):
         """
         if bin_factor < 1 or bin_factor > 16:
             raise ValueError("bin factor must be in the range 1 to 16, got {}!".format(bin_factor))
-        self._call_function('setting vertical bin factor', self._CDLL.FLISetVBin,
-                            handle, ctypes.c_long(bin_factor))
+        self._call_function(
+            "setting vertical bin factor", self._CDLL.FLISetVBin, handle, ctypes.c_long(bin_factor)
+        )
 
     def FLISetNFlushes(self, handle, n_flushes):
         """
@@ -429,8 +482,9 @@ class FLIDriver(AbstractSDKDriver):
         """
         if n_flushes < 0 or n_flushes > 16:
             raise ValueError("n_flishes must be in the range 0 to 16, got {}!".format(n_flushes))
-        self._call_function('setting number of flushes', self._CDLL.FLISetNFlushes,
-                            handle, ctypes.c_long(n_flushes))
+        self._call_function(
+            "setting number of flushes", self._CDLL.FLISetNFlushes, handle, ctypes.c_long(n_flushes)
+        )
 
     def FLIExposeFrame(self, handle):
         """
@@ -444,7 +498,7 @@ class FLIDriver(AbstractSDKDriver):
         Args:
             handle (ctypes.c_long): handle of the camera to start the exposure on.
         """
-        self._call_function('starting exposure', self._CDLL.FLIExposeFrame, handle)
+        self._call_function("starting exposure", self._CDLL.FLIExposeFrame, handle)
 
     def FLIGetExposureStatus(self, handle):
         """
@@ -457,8 +511,12 @@ class FLIDriver(AbstractSDKDriver):
             astropy.units.Quantity: remaining exposure time
         """
         time_left = ctypes.c_long()
-        self._call_function('getting exposure status', self._CDLL.FLIGetExposureStatus,
-                            handle, ctypes.byref(time_left))
+        self._call_function(
+            "getting exposure status",
+            self._CDLL.FLIGetExposureStatus,
+            handle,
+            ctypes.byref(time_left),
+        )
         return (time_left.value * u.ms).to(u.s)
 
     def FLIGrabRow(self, handle, width):
@@ -479,10 +537,13 @@ class FLIDriver(AbstractSDKDriver):
             numpy.ndarray: row of image data
         """
         row_data = np.zeros(width, dtype=np.uint16)
-        self._call_function('grabbing row', self._CDLL.FLIGrabRow,
-                            handle,
-                            row_data.ctypes.data_as(ctypes.c_void_p),
-                            ctypes.c_size_t(row_data.nbytes))
+        self._call_function(
+            "grabbing row",
+            self._CDLL.FLIGrabRow,
+            handle,
+            row_data.ctypes.data_as(ctypes.c_void_p),
+            ctypes.c_size_t(row_data.nbytes),
+        )
         return row_data
 
     def FLIGrabFrame(self, handle, width, height):
@@ -503,18 +564,23 @@ class FLIDriver(AbstractSDKDriver):
         Returns:
             numpy.ndarray: image from the camera
         """
-        image_data = np.zeros((height, width), dtype=np.uint16, order='C')
+        image_data = np.zeros((height, width), dtype=np.uint16, order="C")
         bytes_grabbed = ctypes.c_size_t()
-        self._call_function('grabbing frame', self._CDLL.FLIGrabFrame,
-                            handle,
-                            image_data.ctypes.data_as(ctypes.c_void_p),
-                            ctypes.c_size_t(image_data.nbytes),
-                            ctypes.byref(bytes_grabbed))
+        self._call_function(
+            "grabbing frame",
+            self._CDLL.FLIGrabFrame,
+            handle,
+            image_data.ctypes.data_as(ctypes.c_void_p),
+            ctypes.c_size_t(image_data.nbytes),
+            ctypes.byref(bytes_grabbed),
+        )
 
         if bytes_grabbed.value != image_data.nbytes:
-            self.logger.error('FLI camera readout error: expected {} bytes, got {}!'.format(
-                image_data.nbytes, bytes_grabbed.value
-            ))
+            self.logger.error(
+                "FLI camera readout error: expected {} bytes, got {}!".format(
+                    image_data.nbytes, bytes_grabbed.value
+                )
+            )
 
         return image_data
 
@@ -524,9 +590,9 @@ class FLIDriver(AbstractSDKDriver):
         error_code = function(*args, *kwargs)
         if error_code != 0:
             # FLI library functions return the negative of OS error codes.
-            raise RuntimeError("Error {}: '{}' (OS error {})".format(name,
-                                                                     os.strerror(-error_code),
-                                                                     -error_code))
+            raise RuntimeError(
+                "Error {}: '{}' (OS error {})".format(name, os.strerror(-error_code), -error_code)
+            )
 
     def _check_valid(self, value, name):
         if value not in valid_values[name]:
