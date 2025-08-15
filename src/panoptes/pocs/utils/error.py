@@ -1,4 +1,4 @@
-from panoptes.utils.error import *
+from panoptes.utils.error import PanError
 
 
 class PocsError(PanError):
