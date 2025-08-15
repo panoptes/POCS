@@ -112,7 +112,7 @@ class PanStateMachine(Machine):
         max_transition_attempts = self.get_config("max_transition_attempts", default=5)
         check_delay = self.get_config("wait_delay", default=120)
 
-        self.logger.debug(f"Starting run loop")
+        self.logger.debug("Starting run loop")
         while self.keep_running:
             # BEFORE TRANSITION TO STATE
             self.logger.info(f"Run loop: {self.state!r} -> {self.next_state!r}")
@@ -195,7 +195,7 @@ class PanStateMachine(Machine):
                     break
         else:
             if park_when_done:
-                self.logger.info(f"Run loop ended, parking mount")
+                self.logger.info("Run loop ended, parking mount")
                 self.observatory.mount.park()
 
     def goto_next_state(self):

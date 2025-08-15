@@ -73,6 +73,6 @@ def check_for_jupyter():
 @app.command()
 def restart():
     """Restart the jupyter server process via supervisorctl"""
-    cmd = f"supervisorctl restart pocs-jupyter-server"
+    cmd = "supervisorctl restart pocs-jupyter-server"
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True)

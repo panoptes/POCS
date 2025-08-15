@@ -82,7 +82,7 @@ def set_park_position(
         return typer.Exit()
 
     print(
-        f"The mount will first park at the default position and then ask you to confirm the new park position."
+        "The mount will first park at the default position and then ask you to confirm the new park position."
     )
     mount.unpark()
     mount.park()
@@ -178,13 +178,13 @@ def slew_to_target(
 
     coords = get_target_coords(target, location.location, is_comet=comet)
     if not coords:
-        print(f"[red]Could not find a suitable target by name or position.[/red]")
+        print("[red]Could not find a suitable target by name or position.[/red]")
         return typer.Abort()
 
     # Check that the target is observable.
     is_observable = location.observer.target_is_up(current_time(), coords, horizon=observe_horizon)
     if not is_observable:
-        print(f"[red]Target is not observable[/red]")
+        print("[red]Target is not observable[/red]")
         return typer.Abort()
 
     # Get AltAz for coordinates.
@@ -211,7 +211,7 @@ def slew_to_target(
         confirm = typer.confirm("Are you sure you want to slew to the target position?")
 
     if not confirm:
-        print(f"[red]Dry run, will not move the mount.[/red]")
+        print("[red]Dry run, will not move the mount.[/red]")
         return typer.Abort()
 
     # Initialize the mount and slew to the target.
@@ -354,7 +354,7 @@ def setup_mount(
                                 udev_str += f'ATTRS{{serial}}=="{port.serial_number}", '
 
                             # The name we want it known by.
-                            udev_str += f'SYMLINK+="ioptron"'
+                            udev_str += 'SYMLINK+="ioptron"'
 
                             udev_fn = Path("92-panoptes.rules")
                             udev_fn.write_text(udev_str)

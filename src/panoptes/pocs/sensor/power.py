@@ -174,7 +174,7 @@ class PowerBoard(PanBase):
 
         self._mean_interval = mean_interval
 
-        self.logger.info(f"Power board initialized")
+        self.logger.info("Power board initialized")
 
     @property
     def status(self):
@@ -318,7 +318,7 @@ class PowerBoard(PanBase):
             return
 
         if data[name_key] != self.arduino_board_name:
-            self.logger.warning(f"Not reading the power_board. Skipping data.")
+            self.logger.warning("Not reading the power_board. Skipping data.")
             return
 
         # Check we got a valid reading.

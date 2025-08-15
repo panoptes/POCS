@@ -164,7 +164,7 @@ class MoonAvoidance(BaseConstraint):
         try:
             moon = kwargs["moon"]
         except KeyError:
-            raise error.PanError(f"Moon must be set for MoonAvoidance constraint")
+            raise error.PanError("Moon must be set for MoonAvoidance constraint")
 
         moon_sep = get_quantity_value(
             moon.separation(observation.field.coord, origin_mismatch="ignore")
@@ -264,7 +264,7 @@ class TimeWindow(BaseConstraint):
         return veto, score * self.weight
 
     def __str__(self):
-        return f"TimeWindow"
+        return "TimeWindow"
 
     def __repr__(self):
         return f"TimeWindow(start_time={self.start_time.iso}, end_time={self.end_time.iso})"

@@ -33,7 +33,7 @@ class DarkObservation(Observation):
         self._directory = os.path.join(self._image_dir, "dark")
 
     def __str__(self):
-        return f"DarkObservation"
+        return "DarkObservation"
 
     @property
     def exptime(self):

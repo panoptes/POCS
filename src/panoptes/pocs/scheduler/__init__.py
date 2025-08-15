@@ -25,7 +25,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     download_iers_a_file(iers_url=iers_url)
 
     if not observer:
-        logger.debug(f"No Observer provided, creating location from config.")
+        logger.debug("No Observer provided, creating location from config.")
         site_details = create_location_from_config()
         observer = site_details.observer
 

@@ -1,4 +1,3 @@
-import os
 from contextlib import suppress
 from collections import namedtuple
 from pathlib import Path

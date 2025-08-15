@@ -63,8 +63,8 @@ def get_pocs(context: typer.Context):
 
     pocs = POCS.from_config(simulators=simulators)
 
-    pocs.logger.debug(f"POCS created from config")
-    pocs.logger.debug(f"Sending POCS config to cloud")
+    pocs.logger.debug("POCS created from config")
+    pocs.logger.debug("Sending POCS config to cloud")
     try:
         pocs.db.insert_current("config", pocs.get_config())
     except Exception as e:
@@ -92,7 +92,7 @@ def run_auto(context: typer.Context) -> None:
         print("[green]POCS finished, shutting down.[/green]")
     finally:
         print(
-            f"[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
         )
         pocs.power_down()
 
@@ -116,7 +116,7 @@ def run_alignment(
         -c 70,60 -c 70,120 -c 70,240 -c 70,300
     """
     pocs = get_pocs(context)
-    print(f"[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
+    print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
     pocs.update_status()
 
     alts = [55, 70]
@@ -202,7 +202,7 @@ def run_alignment(
         print("[green]POCS alignment finished, shutting down.[/green]")
     finally:
         print(
-            f"[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
         )
         pocs.observatory.mount.park()
 
@@ -221,7 +221,7 @@ def run_old_alignment(
 ) -> None:
     """Runs POCS in alignment mode."""
     pocs = get_pocs(context)
-    print(f"[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
+    print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
     start_time = current_time(flatten=True)
 
     images_dir = Path(pocs.get_config("directories.images"))
@@ -311,7 +311,7 @@ def run_old_alignment(
         print("[green]POCS alignment finished, shutting down.[/green]")
     finally:
         print(
-            f"[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
         )
         pocs.observatory.mount.park()
 
@@ -338,7 +338,7 @@ def run_quick_alignment(
     to the offset of the mount from the celestial pole.
     """
     pocs = get_pocs(context)
-    print(f"[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
+    print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
 
     # Create a dummy observation.
     observation = Observation(
@@ -419,7 +419,7 @@ def run_quick_alignment(
 
     # Get the results form the alignment analysis for each camera.
     now = current_time(flatten=True)
-    csv_path = Path(observation.directory) / f"alignment.csv"
+    csv_path = Path(observation.directory) / "alignment.csv"
     csv_file = csv_path.open("a", encoding="utf-8")
     for cam_id, files in fits_files.items():
         try:

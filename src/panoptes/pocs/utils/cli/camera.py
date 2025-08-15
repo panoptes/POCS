@@ -70,7 +70,7 @@ def setup_cameras(
         try:
             zwo_cameras = asi_driver.get_devices()
         except PanError:
-            print(f"No ZWO cameras detected")
+            print("No ZWO cameras detected")
         else:
             print(f"Detected {len(zwo_cameras)} ZWO cameras.")
             for i, (serial_number, cam_id) in enumerate(zwo_cameras.items()):

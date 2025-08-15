@@ -70,7 +70,7 @@ def create_mount_from_config(
 
     # Create simulator if requested
     if use_simulator or ("simulator" in driver):
-        logger.debug(f"Creating mount simulator")
+        logger.debug("Creating mount simulator")
         return create_mount_simulator(mount_info=mount_info, earth_location=earth_location)
 
     # See if we have a serial connection

@@ -87,7 +87,7 @@ def get_key_cmd(
             if response is None:
                 raise ValueError("No response from config server")
 
-            print(f"Service account key added to config and image uploading turned on.")
+            print("Service account key added to config and image uploading turned on.")
 
         except Exception as e:
             print(f"[red]Error updating config: {e}[/]")
@@ -154,7 +154,7 @@ def upload_metadata(
             time.sleep(1)
     except KeyboardInterrupt:
         if verbose:
-            print(f"Cleaning up file watcher")
+            print("Cleaning up file watcher")
         file_observer.stop()
     finally:
         file_observer.join()
@@ -214,7 +214,7 @@ def upload_directory(
                 file_path, bucket_path, bucket_name=bucket_name, storage_client=storage_client
             )
             public_urls.append(public_url)
-        except Exception as e:
+        except Exception:
             print(f"[red]Upload error on {file_path}. {continue_on_error=}")
             if continue_on_error:
                 continue

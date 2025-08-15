@@ -144,7 +144,7 @@ def get_logger(
             cloud_client = google.cloud.logging.Client()
             cloud_client.setup_logging()
         except ImportError:
-            print(f"Cloud logging library not installed: google-cloud-logging")
+            print("Cloud logging library not installed: google-cloud-logging")
         except Exception as e:
             print(f"Could not set up cloud logging: {e}")
         else:

@@ -119,7 +119,7 @@ def control(
 @app.command()
 def restart():
     """Restart the power server process via supervisorctl"""
-    cmd = f"supervisorctl restart pocs-power-monitor"
+    cmd = "supervisorctl restart pocs-power-monitor"
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True)
 

@@ -104,7 +104,7 @@ def pytest_addoption(parser):
         "--theskyx",
         action="store_true",
         default=False,
-        help=f"Test TheSkyX commands, default False -- CURRENTLY NOT WORKING!",
+        help="Test TheSkyX commands, default False -- CURRENTLY NOT WORKING!",
     )
 
 

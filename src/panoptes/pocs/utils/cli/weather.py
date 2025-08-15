@@ -207,10 +207,10 @@ def get_page(page, base_url):
         console.print("  • Network connectivity issues")
         console.print("\n[green]Try:[/green]")
         console.print(
-            f"  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
+            "  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
         )
-        console.print(f"  • Running [bold]weather restart[/bold] to restart the weather service")
-        console.print(f"  • Checking your network connection")
+        console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
+        console.print("  • Checking your network connection")
         exit(1)
     except requests.exceptions.Timeout:
         console.print(f"[bold red]Error:[/bold red] Request to [bold]{url}[/bold] timed out")
@@ -218,8 +218,8 @@ def get_page(page, base_url):
         console.print("  • The weather station service is overloaded")
         console.print("  • Network connectivity issues")
         console.print("\n[green]Try:[/green]")
-        console.print(f"  • Running [bold]weather restart[/bold] to restart the weather service")
-        console.print(f"  • Trying again later")
+        console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
+        console.print("  • Trying again later")
         exit(1)
     except requests.exceptions.HTTPError as e:
         console.print(f"[bold red]Error:[/bold red] HTTP error occurred: [bold]{e}[/bold]")
@@ -229,13 +229,13 @@ def get_page(page, base_url):
         console.print(f"[bold red]Error:[/bold red] An unexpected error occurred: [bold]{e}[/bold]")
         console.print(f"  URL: [bold]{url}[/bold]")
         exit(1)
-    except ValueError as e:
+    except ValueError:
         console.print(f"[bold red]Error:[/bold red] Invalid JSON response from [bold]{url}[/bold]")
         console.print("[yellow]Possible reasons:[/yellow]")
         console.print("  • The weather station service is not functioning correctly")
         console.print("  • The response format has changed")
         console.print("\n[green]Try:[/green]")
-        console.print(f"  • Running [bold]weather restart[/bold] to restart the weather service")
+        console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
         exit(1)
 
 

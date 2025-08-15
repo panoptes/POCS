@@ -29,7 +29,7 @@ def download_iers_a_file(iers_url: str = None):
     if iers_url is not None:
         logger.info(f"Getting IERS data at {iers_url=}")
         iers_conf.iers_auto_url.set(iers_url)
-        logger.debug(f'Setting auto_download to "scheduler.iers_auto" to False')
+        logger.debug('Setting auto_download to "scheduler.iers_auto" to False')
         iers_conf.auto_download.set(get_config("scheduler.iers_auto", False))
 
 

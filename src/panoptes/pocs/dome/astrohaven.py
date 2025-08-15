@@ -123,7 +123,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
         try:
             return_status["open"] = status_lookup[state]
-        except KeyError as e:
+        except KeyError:
             return_status["open"] = (
                 f"Unexpected response from Astrohaven Dome Controller: {state!r}"
             )

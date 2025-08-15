@@ -72,7 +72,7 @@ def camera(request) -> AbstractCamera:
 
     # Wait for cooled camera
     if camera.is_cooled_camera:
-        camera.logger.log("testing", f"Cooled camera needs to wait for cooling.")
+        camera.logger.log("testing", "Cooled camera needs to wait for cooling.")
         assert not camera.is_temperature_stable
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
@@ -582,7 +582,7 @@ def test_observation(camera, images_dir):
     observation.seq_time = "19991231T235959"
     camera.take_observation(observation)
     while camera.is_observing:
-        camera.logger.trace(f"Waiting for observation event from inside test.")
+        camera.logger.trace("Waiting for observation event from inside test.")
         time.sleep(1)
     observation_pattern = os.path.join(
         images_dir, "TestObservation", camera.uid, observation.seq_time, "*.fits*"
@@ -655,7 +655,7 @@ def test_observation_bias(camera, images_dir):
     observation.seq_time = "19991231T235959"
     camera.take_observation(observation)
     while camera.is_observing:
-        camera.logger.trace(f"Waiting for observation event from inside test.")
+        camera.logger.trace("Waiting for observation event from inside test.")
         time.sleep(1)
     observation_pattern = os.path.join(
         images_dir, "bias", camera.uid, observation.seq_time, "*.fits*"

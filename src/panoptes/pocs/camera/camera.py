@@ -468,7 +468,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         if blocking:
             while self.is_observing:
-                self.logger.trace(f"Waiting for observation event")
+                self.logger.trace("Waiting for observation event")
                 time.sleep(0.5)
 
         return metadata
@@ -602,7 +602,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             readout_thread.join()
             while self.is_exposing and not blocking_timer.expired():
                 time.sleep(0.5)
-            self.logger.trace(f"Exposure blocking complete, waiting for file to exist")
+            self.logger.trace("Exposure blocking complete, waiting for file to exist")
             while not os.path.exists(filename) and not blocking_timer.expired():
                 time.sleep(0.1)
             if blocking_timer.expired():
@@ -637,7 +637,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             if not os.path.exists(file_path):
                 self._is_observing_event.clear()
                 raise FileNotFoundError(f"Image {file_path=!r} not found, cannot process.")
-        except (KeyError, FileNotFoundError) as e:
+        except (KeyError, FileNotFoundError):
             self.logger.error(f"Image {file_path!r} not found, cannot process.")
             self._is_observing_event.clear()
 

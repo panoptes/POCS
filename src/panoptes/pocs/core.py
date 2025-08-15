@@ -101,7 +101,7 @@ class POCS(PanStateMachine, PanBase):
     def interrupted(self, new_value):
         self.set_config("pocs.INTERRUPTED", new_value)
         if new_value:
-            self.logger.critical(f"POCS has been interrupted")
+            self.logger.critical("POCS has been interrupted")
 
     @property
     def connected(self):
@@ -293,7 +293,7 @@ class POCS(PanStateMachine, PanBase):
                 break
 
             if not self.observatory.mount.is_tracking:
-                self.say(f"Mount is not tracking, stopping observations.")
+                self.say("Mount is not tracking, stopping observations.")
                 break
 
             # Do the observing, once per exptime (usually only one unless a compound observation).
@@ -542,7 +542,7 @@ class POCS(PanStateMachine, PanBase):
         try:
             record = self.db.get_current("power")
             if record is None:
-                self.logger.warning(f'No mains "power" reading found in database.')
+                self.logger.warning('No mains "power" reading found in database.')
 
             has_power = False  # Assume not.
             for power_key in ["main", "mains", "ac_ok"]:  # Legacy support.
@@ -623,7 +623,7 @@ class POCS(PanStateMachine, PanBase):
             from panoptes.pocs.camera import create_cameras_from_config
             from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
         except ImportError:
-            print(f"Cannot import helper modules.")
+            print("Cannot import helper modules.")
         else:
             try:
                 scheduler = create_scheduler_from_config()

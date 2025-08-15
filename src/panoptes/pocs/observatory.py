@@ -144,14 +144,14 @@ class Observatory(PanBase):
     @property
     def current_observation(self) -> Optional[Observation]:
         if self.scheduler is None:
-            self.logger.info(f"Scheduler not present, cannot get current observation.")
+            self.logger.info("Scheduler not present, cannot get current observation.")
             return None
         return self.scheduler.current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation: Observation):
         if self.scheduler is None:
-            self.logger.info(f"Scheduler not present, cannot set current observation.")
+            self.logger.info("Scheduler not present, cannot set current observation.")
         else:
             self.scheduler.current_observation = new_observation
 
@@ -368,7 +368,7 @@ class Observatory(PanBase):
         self.logger.debug("Getting observation for observatory")
 
         if not self.scheduler:
-            self.logger.info(f"Scheduler not present, cannot get the next observation.")
+            self.logger.info("Scheduler not present, cannot get the next observation.")
             return None
 
         # If observation list is empty or a reread is requested
@@ -413,7 +413,7 @@ class Observatory(PanBase):
             # Don't block in this call but handle blocking below.
             try:
                 camera.take_observation(self.current_observation, headers=headers, blocking=False)
-            except Exception as e:
+            except Exception:
                 self.logger.warning(
                     f"Can't take observation for camera {cam_name}. Removing the camera"
                 )
@@ -439,7 +439,7 @@ class Observatory(PanBase):
 
             # If timer expired check cameras and remove if stuck.
             if timer.expired():
-                self.logger.warning(f"Timer expired waiting for cameras to finish observing")
+                self.logger.warning("Timer expired waiting for cameras to finish observing")
                 not_done = [cam_id for cam_id, cam in self.cameras.items() if cam.is_observing]
                 for cam_id in not_done:
                     self.logger.warning(f"Removing {cam_id} from observatory")
@@ -931,12 +931,12 @@ class Observatory(PanBase):
 
         # Check to make sure we had a target.
         if not target_set:
-            self.logger.warning(f"No target set, cannot take flat fields")
+            self.logger.warning("No target set, cannot take flat fields")
             return
 
         self.mount.slew_to_target(blocking=True)
         if no_tracking:
-            self.logger.info(f"Stopping the mount tracking")
+            self.logger.info("Stopping the mount tracking")
             self.mount.query("stop_tracking")
         self.logger.info(f"At {flat_obs.field=} with tracking stopped, starting flats.")
 

@@ -107,7 +107,7 @@ def setup():
     if not server_running():
         raise typer.Exit()
 
-    print(f"Setting up configuration for your PANOPTES unit.")
+    print("Setting up configuration for your PANOPTES unit.")
     # Make sure they want to proceed.
     proceed = prompt.Confirm.ask(
         "This will overwrite any existing configuration. Proceed?", default=False
@@ -161,7 +161,7 @@ def setup():
     timezone = "UTC"
     try:
         timezone = subprocess.check_output("cat /etc/timezone", shell=True).decode().strip()
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         pass
 
     timezone = prompt.Prompt.ask("Enter the timezone for this unit", default=timezone)
@@ -182,7 +182,7 @@ def setup():
 @app.command()
 def restart():
     """Restart the config server process via supervisorctl"""
-    cmd = f"supervisorctl restart pocs-config-server"
+    cmd = "supervisorctl restart pocs-config-server"
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True)
 

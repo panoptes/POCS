@@ -247,7 +247,7 @@ class Observation(PanBase):
                     with suppress(IndexError):
                         exposure.append({cam_name: exposure_list[number]})
         except Exception:
-            self.logger.debug(f"No exposures available.")
+            self.logger.debug("No exposures available.")
         finally:
             return exposure
 

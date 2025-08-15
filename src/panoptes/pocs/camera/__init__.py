@@ -181,7 +181,7 @@ def create_cameras_from_config(
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f"No primary camera given, assigning the first camera")
+        logger.info("No primary camera given, assigning the first camera")
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 

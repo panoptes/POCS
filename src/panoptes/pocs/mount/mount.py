@@ -385,7 +385,7 @@ class AbstractMount(PanBase):
             # Skip short corrections
             if offset_ms <= min_tracking_threshold:
                 self.logger.debug(f"Min tracking threshold: {min_tracking_threshold} ms")
-                self.logger.debug(f"Requested tracking lower than threshold, skipping correction")
+                self.logger.debug("Requested tracking lower than threshold, skipping correction")
                 continue
 
             # Correct long offset
@@ -527,7 +527,7 @@ class AbstractMount(PanBase):
                         # Check the status, which updates the tracking status.
                         self.update_status()
 
-                    self.logger.debug(f"Done with slew_to_target block")
+                    self.logger.debug("Done with slew_to_target block")
             else:
                 self.logger.warning("Problem with slew_to_target")
 

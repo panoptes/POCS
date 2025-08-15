@@ -9,7 +9,6 @@ from astropy.coordinates import SkyCoord
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.utils import theskyx
 from panoptes.utils import error
-from panoptes.utils.serializers import from_yaml
 
 
 class Mount(AbstractMount):
@@ -353,7 +352,7 @@ class Mount(AbstractMount):
         try:
             response_obj = json.loads(response)
         except TypeError as e:
-            self.logger.warning("Error: {}".format(e, response))
+            self.logger.warning("Error: {}".format(e, ))
         except json.JSONDecodeError as e:
             response_obj = {"response": response, "success": False, "error": e}
 

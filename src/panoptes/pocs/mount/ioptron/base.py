@@ -1,5 +1,4 @@
 import re
-import time
 from contextlib import suppress
 
 from astropy import units as u
@@ -156,7 +155,7 @@ class Mount(AbstractSerialMount):
         self.unpark()
         self.query("set_button_moving_rate", 9)
 
-        self.logger.debug(f"Moving mount to home before parking.")
+        self.logger.debug("Moving mount to home before parking.")
         if self.slew_to_home(blocking=True):
             self.logger.debug(
                 f"Parking mount: RA: {ra_direction} {ra_seconds} seconds, "

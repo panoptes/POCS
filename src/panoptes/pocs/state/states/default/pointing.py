@@ -119,7 +119,7 @@ def on_enter(event_data):
 
                     if img_num == (max_attempts - 1):
                         pocs.logger.info(
-                            f"Separation outside threshold but at max corrections. "
+                            "Separation outside threshold but at max corrections. "
                             + "Will proceed to observations."
                         )
                 else:
@@ -130,4 +130,4 @@ def on_enter(event_data):
 
     except Exception as e:
         pocs.logger.warning(f"Error in pointing: {e!r}")
-        pocs.say(f"Hmm, I had a problem checking the pointing error. Going to park.")
+        pocs.say("Hmm, I had a problem checking the pointing error. Going to park.")

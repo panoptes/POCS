@@ -1,4 +1,3 @@
-import threading
 import math
 
 from astropy import units as u

@@ -29,4 +29,4 @@ class BiasObservation(Observation):
         self._directory = os.path.join(self._image_dir, "bias")
 
     def __str__(self):
-        return f"BiasObservation"
+        return "BiasObservation"

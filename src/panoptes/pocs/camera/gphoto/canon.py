@@ -109,32 +109,32 @@ class Camera(AbstractGPhotoCamera):
         shutterspeed_idx = self.get_shutterspeed_index(seconds=seconds, return_minimum=True)
 
         cmd_args = [
-            f"--set-config",
+            "--set-config",
             f"iso={iso}",
-            f"--filename",
+            "--filename",
             f"{filename}",
-            f"--set-config-index",
+            "--set-config-index",
             f"shutterspeed={shutterspeed_idx}",
-            f"--wait-event=1s",
+            "--wait-event=1s",
         ]
 
         if shutterspeed_idx == 0:
             # Bulb setting.
             cmd_args.extend(
                 [
-                    f"--set-config-index",
+                    "--set-config-index",
                     "eosremoterelease=2",
                     f"--wait-event={int(seconds):d}s",
-                    f"--set-config-index",
+                    "--set-config-index",
                     "eosremoterelease=4",
-                    f"--wait-event-and-download=CAPTURECOMPLETE",
+                    "--wait-event-and-download=CAPTURECOMPLETE",
                 ]
             )
         else:
             # Known shutterspeed value.
             cmd_args.extend(
                 [
-                    f"--capture-image-and-download",
+                    "--capture-image-and-download",
                 ]
             )
 

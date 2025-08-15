@@ -70,7 +70,7 @@ class Scheduler(BaseScheduler):
                     )
 
         if len(valid_obs) > 0:
-            self.logger.info(f"Multiplying final scores by observation priority")
+            self.logger.info("Multiplying final scores by observation priority")
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority
