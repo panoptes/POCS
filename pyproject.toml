@@ -122,6 +122,7 @@ dependencies = [
 ]
 [tool.hatch.envs.default.scripts]
 lint = "ruff check ."
+lint-fix = "ruff check --fix ."
 fmt = "ruff format ."
 fmt-check = "ruff format --check ."
 
@@ -187,7 +188,6 @@ exclude_lines = [
     "if __name__ == .__main__.:",
 ]
 ignore_errors = true
-
 
 [tool.ruff]
 line-length = 100
