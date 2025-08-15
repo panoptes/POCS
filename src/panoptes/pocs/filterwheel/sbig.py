@@ -115,7 +115,7 @@ class FilterWheel(AbstractFilterWheel):
         Reinitialises/recalibrates the filter wheel. It should not be necessary to call this as
         SBIG filter wheels initialise and calibrate themselves on power up.
         """
-        results = self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
+        self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
         self.logger.info("{} recalibrated".format(self))
 
     ##################################################################################################

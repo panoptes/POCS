@@ -47,5 +47,5 @@ class Observation(BaseObservation):
     @classmethod
     def from_dict(cls, *args, **kwargs):
         """Creates an `Observation` object from config dict."""
-        class_name = cls.__mro__[0]
+        cls.__mro__[0]
         return super().from_dict(observation_class=cls.__base__, *args, **kwargs)

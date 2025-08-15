@@ -163,7 +163,7 @@ def test_sim_bad_focuser():
 
 def test_sim_worse_focuser():
     with pytest.raises(NotFound):
-        sim_camera = SimCamera(focuser="NOTAFOCUSER")
+        SimCamera(focuser="NOTAFOCUSER")
 
 
 def test_sim_string():
@@ -539,7 +539,7 @@ def test_exposure_moving(camera, tmpdir):
     fits_path_1 = str(tmpdir.join("test_not_moving.fits"))
     fits_path_2 = str(tmpdir.join("test_moving.fits"))
     camera.filterwheel.position = 1
-    exp_event = camera.take_exposure(filename=fits_path_1, blocking=True)
+    camera.take_exposure(filename=fits_path_1, blocking=True)
     assert os.path.exists(fits_path_1)
     move_event = camera.filterwheel.move_to(2)
     with pytest.raises(error.PanError):

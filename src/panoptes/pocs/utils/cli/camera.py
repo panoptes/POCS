@@ -114,7 +114,7 @@ def setup_cameras(
                 print(f"Camera {cam_name} does not have a setup_camera method, skipping.")
 
     print("Now creating the cameras from the config and taking a test picture with each.")
-    images = take_pictures(num_images=1, exptime=1.0, output_dir="/home/panoptes/images/test")
+    take_pictures(num_images=1, exptime=1.0, output_dir="/home/panoptes/images/test")
 
 
 @app.command(name="take-pics")

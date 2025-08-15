@@ -275,7 +275,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         try:
             if Path(filename).exists():
                 self.logger.debug(f"Converting CR2 -> FITS: {filename}")
-                fits_path = cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
+                cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
             else:
                 self.logger.warning(f"File {filename!r} not found, cannot process.")
         except Exception as err:

@@ -124,7 +124,7 @@ class PanStateMachine(Machine):
                 # We ignore the dark safety reading if mount has not yet moved.
                 if self.get_state(self.state).is_always_safe is True:
                     ignore_safety_items.append("is_dark")
-                is_safe = self.is_safe(park_if_not_safe=True, ignore=ignore_safety_items)
+                self.is_safe(park_if_not_safe=True, ignore=ignore_safety_items)
 
                 # The state may have changed since the start of the while loop
                 # e.g. if self.park is called from self.is_safe

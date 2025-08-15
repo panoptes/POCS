@@ -59,7 +59,7 @@ def get_pocs(context: typer.Context):
     # If cloud logging is requested, set DEBUG level, otherwise the config
     # and regular set up will handle things.
     if cloud_logging:
-        logger = get_logger(cloud_logging_level="DEBUG")
+        get_logger(cloud_logging_level="DEBUG")
 
     pocs = POCS.from_config(simulators=simulators)
 

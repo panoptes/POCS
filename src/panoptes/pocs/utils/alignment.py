@@ -146,7 +146,7 @@ def process_quick_alignment(
             try:
                 logger.debug(f"Processing RA rotation image: {fits_fn}")
                 # If it's not already solved it probably needs a longer timeout.
-                solve_info = get_solve_field(fits_fn.as_posix(), timeout=90)
+                get_solve_field(fits_fn.as_posix(), timeout=90)
             except PanError:
                 logger.warning(f"Unable to solve image {fits_fn}")
                 continue
@@ -350,7 +350,7 @@ def plot_alignment_diff(
     delta_cy = pole_cy - rotate_cy
 
     # Show the background
-    im = ax.imshow(data0, cmap="Greys_r", norm=norm)
+    ax.imshow(data0, cmap="Greys_r", norm=norm)
 
     # Show the detected points.
     for pos, (x, y) in results.target_points.items():
