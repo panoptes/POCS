@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 import stat
@@ -6,7 +5,6 @@ import tempfile
 from contextlib import suppress
 
 import pytest
-from _pytest.logging import caplog as _caplog  # noqa
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.logger import get_logger
 from panoptes.pocs.utils.logger import PanLogger
@@ -262,15 +260,3 @@ def cr2_file(data_dir):  # noqa
         pytest.skip("No CR2 file found, skipping test.")
 
     return cr2_path
-
-
-@pytest.fixture()
-def caplog(_caplog):
-    class PropagatedHandler(logging.Handler):
-        def emit(self, record):
-            logging.getLogger(record.name).handle(record)
-
-    handler_id = logger.add(PropagatedHandler(), format="{message}")
-    yield _caplog
-    with suppress(ValueError):
-        logger.remove(handler_id)
