@@ -20,7 +20,7 @@ logger = get_logger()
 
 def get_gphoto2_cmd():
     """Finds the gphoto2 command on the system"""
-    return shutil.which('gphoto2') or shutil.which('gphoto2', path='/usr/local/bin')
+    return shutil.which("gphoto2") or shutil.which("gphoto2", path="/usr/local/bin")
 
 
 def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
@@ -33,23 +33,23 @@ def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
         list: A list of the ports with detected cameras.
     """
 
-    result = ''
+    result = ""
     if endpoint is not None:
-        response = requests.post(endpoint, json=dict(arguments='--auto-detect'))
+        response = requests.post(endpoint, json=dict(arguments="--auto-detect"))
         if response.ok:
-            result = response.json()['output']
+            result = response.json()["output"]
     else:
         gphoto2 = get_gphoto2_cmd()
         if not gphoto2:  # pragma: no cover
-            raise error.NotFound('gphoto2 is missing, please install or use the endpoint option.')
-        command = [gphoto2, '--auto-detect']
-        result = subprocess.check_output(command).decode('utf-8')
-    lines = result.split('\n')
+            raise error.NotFound("gphoto2 is missing, please install or use the endpoint option.")
+        command = [gphoto2, "--auto-detect"]
+        result = subprocess.check_output(command).decode("utf-8")
+    lines = result.split("\n")
 
     ports = []
 
     for line in lines:
-        camera_match = re.match(r'([\w\d\s_.]{30})\s(usb:\d{3},\d{3})', line)
+        camera_match = re.match(r"([\w\d\s_.]{30})\s(usb:\d{3},\d{3})", line)
         if camera_match:
             # camera_name = camera_match.group(1).strip()
             port = camera_match.group(2).strip()
@@ -58,12 +58,9 @@ def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
     return ports
 
 
-def create_cameras_from_config(config=None,
-                               cameras=None,
-                               auto_primary=True,
-                               recreate_existing=False,
-                               *args, **kwargs
-                               ):
+def create_cameras_from_config(
+    config=None, cameras=None, auto_primary=True, recreate_existing=False, *args, **kwargs
+):
     """Create camera object(s) based on the config.
 
     Creates a camera for each camera item listed in the config. Ensures the
@@ -95,21 +92,21 @@ def create_cameras_from_config(config=None,
             auto_detect=True and no cameras are found.
         error.PanError: Description
     """
-    camera_config = config or get_config('cameras', *args, **kwargs)
+    camera_config = config or get_config("cameras", *args, **kwargs)
 
     if not camera_config:
         # cameras section either missing or empty
-        logger.info('No camera information in config.')
+        logger.info("No camera information in config.")
         return None
 
     logger.debug(f"camera_config={camera_config!r}")
-    camera_defaults = camera_config.get('defaults', dict())
+    camera_defaults = camera_config.get("defaults", dict())
 
     cameras = cameras or OrderedDict()
     ports = list()
 
-    auto_detect = camera_defaults.get('auto_detect', False)
-    endpoint = camera_defaults.get('endpoint', None)
+    auto_detect = camera_defaults.get("auto_detect", False)
+    endpoint = camera_defaults.get("endpoint", None)
 
     # Lookup the connected ports
     if auto_detect:
@@ -126,32 +123,32 @@ def create_cameras_from_config(config=None,
 
     primary_camera = None
 
-    device_info = camera_config['devices']
+    device_info = camera_config["devices"]
     for cam_num, cfg in enumerate(device_info):
         # Get a copy of the camera defaults and update with device config.
         device_config = camera_defaults.copy()
         device_config.update(cfg)
 
-        cam_name = device_config.setdefault('name', f'Cam{cam_num:02d}')
+        cam_name = device_config.setdefault("name", f"Cam{cam_num:02d}")
 
         # Check for proper connection method.
-        model = device_config['model']
+        model = device_config["model"]
 
         # Assign an auto-detected port. If none are left, skip
-        if auto_detect and 'gphoto' in model:
+        if auto_detect and "gphoto" in model:
             try:
-                device_config['port'] = ports.pop()
+                device_config["port"] = ports.pop()
             except IndexError:
                 logger.warning(f"No ports left for {cam_name}, skipping.")
                 continue
-        elif model == 'simulator':
-            device_config['port'] = f'usb:999,{random.randint(0, 1000):03d}'
+        elif model == "simulator":
+            device_config["port"] = f"usb:999,{random.randint(0, 1000):03d}"
 
-        logger.debug(f'Creating camera: {model}')
+        logger.debug(f"Creating camera: {model}")
 
         try:
             module = load_module(model)
-            logger.debug(f'Camera module: module={module!r}')
+            logger.debug(f"Camera module: module={module!r}")
 
             if recreate_existing:
                 with suppress(AttributeError):
@@ -161,17 +158,17 @@ def create_cameras_from_config(config=None,
             if callable(module):
                 camera_obj = module(**device_config)
             else:
-                if hasattr(module, 'Camera'):
+                if hasattr(module, "Camera"):
                     camera_obj = module.Camera(**device_config)
                 else:
-                    raise error.NotFound(f'module={module!r} does not have a Camera object')
+                    raise error.NotFound(f"module={module!r} does not have a Camera object")
         except error.NotFound:
-            logger.error(f'Cannot find camera module with config: {device_config}')
+            logger.error(f"Cannot find camera module with config: {device_config}")
         except Exception as e:
-            logger.error(f'Cannot create camera type: {model} {e!r}')
+            logger.error(f"Cannot create camera type: {model} {e!r}")
         else:
             # Check if the config specified a primary camera and if it matches.
-            if camera_obj.uid == camera_config.get('primary'):
+            if camera_obj.uid == camera_config.get("primary"):
                 camera_obj.is_primary = True
                 primary_camera = camera_obj
 
@@ -184,7 +181,7 @@ def create_cameras_from_config(config=None,
 
     # If no camera was specified as primary use the first
     if primary_camera is None and auto_primary:
-        logger.info(f'No primary camera given, assigning the first camera')
+        logger.info("No primary camera given, assigning the first camera")
         primary_camera = list(cameras.values())[0]  # First camera
         primary_camera.is_primary = True
 

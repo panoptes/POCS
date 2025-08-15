@@ -81,6 +81,7 @@ testing = [
     "pytest",
     "pytest-cov",
     "pytest-doctestplus",
+    "pytest-loguru",
     "pytest-remotedata>=0.3.1",
     "responses",
 ]
@@ -103,6 +104,7 @@ all = [
     "pytest",
     "pytest-cov",
     "pytest-doctestplus",
+    "pytest-loguru",
     "pytest-remotedata>=0.3.1",
     "responses",
     "rsa",
@@ -122,6 +124,7 @@ dependencies = [
 ]
 [tool.hatch.envs.default.scripts]
 lint = "ruff check ."
+lint-fix = "ruff check --fix ."
 fmt = "ruff format ."
 fmt-check = "ruff format --check ."
 
@@ -188,7 +191,11 @@ exclude_lines = [
 ]
 ignore_errors = true
 
-
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [
+    "notebooks",
+    "resources",
+    "conf_files"
+]

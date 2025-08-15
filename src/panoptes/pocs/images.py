@@ -1,4 +1,3 @@
-import os
 from contextlib import suppress
 from collections import namedtuple
 from pathlib import Path
@@ -12,11 +11,10 @@ from astropy.time import Time
 from panoptes.utils.images import fits as fits_utils
 from panoptes.pocs.base import PanBase
 
-OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
+OffsetError = namedtuple("OffsetError", ["delta_ra", "delta_dec", "magnitude"])
 
 
 class Image(PanBase):
-
     def __init__(self, fits_file: Path, wcs_file=None, location=None, *args, **kwargs):
         """Object to represent a single image from a PANOPTES camera.
 
@@ -27,9 +25,9 @@ class Image(PanBase):
         super().__init__(*args, **kwargs)
         # Make sure we have a Path instance
         fits_file = Path(fits_file)
-        assert fits_file.exists(), self.logger.warning('File does not exist: {fits_file}')
+        assert fits_file.exists(), self.logger.warning("File does not exist: {fits_file}")
 
-        assert fits_file.suffix in ['.fits', '.fz'], self.logger.warning('File must end with .fits')
+        assert fits_file.suffix in [".fits", ".fz"], self.logger.warning("File must end with .fits")
 
         self.wcs = None
         self._wcs_file = None
@@ -41,29 +39,30 @@ class Image(PanBase):
             self.wcs_file = fits_file
 
         self.header_ext = 0
-        if fits_file.suffix == '.fz':
+        if fits_file.suffix == ".fz":
             self.header_ext = 1
 
-        with fits.open(str(self.fits_file.absolute()), 'readonly') as hdu:
+        with fits.open(str(self.fits_file.absolute()), "readonly") as hdu:
             self.header = hdu[self.header_ext].header
 
-        required_headers = ['DATE-OBS', 'EXPTIME']
+        required_headers = ["DATE-OBS", "EXPTIME"]
         for key in required_headers:
             if key not in self.header:
                 raise KeyError(f"Missing required FITS header: {key}")
 
         # Location Information
         if location is None:
-            cfg_loc = self.get_config('location')
-            location = EarthLocation(lat=cfg_loc['latitude'],
-                                     lon=cfg_loc['longitude'],
-                                     height=cfg_loc['elevation'],
-                                     )
+            cfg_loc = self.get_config("location")
+            location = EarthLocation(
+                lat=cfg_loc["latitude"],
+                lon=cfg_loc["longitude"],
+                height=cfg_loc["elevation"],
+            )
         # Time Information
-        self.starttime = Time(self.header['DATE-OBS'], location=location)
-        self.exptime = float(self.header['EXPTIME']) * u.second
+        self.starttime = Time(self.header["DATE-OBS"], location=location)
+        self.exptime = float(self.header["EXPTIME"]) * u.second
         self.midtime = self.starttime + (self.exptime / 2.0)
-        self.sidereal = self.midtime.sidereal_time('apparent')
+        self.sidereal = self.midtime.sidereal_time("apparent")
         self.FK5_Jnow = FK5(equinox=self.midtime)
 
         # Coordinates from header keywords
@@ -117,7 +116,8 @@ class Image(PanBase):
         """
         if self._pointing_error is None:
             assert self.pointing is not None, self.logger.warning(
-                "No world coordinate system (WCS), can't get pointing_error")
+                "No world coordinate system (WCS), can't get pointing_error"
+            )
             assert self.header_pointing is not None
 
             if self.wcs is None:
@@ -128,9 +128,7 @@ class Image(PanBase):
             d_ra = self.pointing.ra - self.header_pointing.ra
 
             self._pointing_error = OffsetError(
-                d_ra.to(u.arcsec),
-                d_dec.to(u.arcsec),
-                mag.to(u.arcsec)
+                d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec)
             )
 
         return self._pointing_error
@@ -142,25 +140,29 @@ class Image(PanBase):
         the header pointing coordinates are built.
         """
         try:
-            self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
-                                            dec=float(self.header['DEC-MNT']) * u.degree)
+            self.header_pointing = SkyCoord(
+                ra=float(self.header["RA-MNT"]) * u.degree,
+                dec=float(self.header["DEC-MNT"]) * u.degree,
+            )
 
             self.header_ra = self.header_pointing.ra.to(u.degree)
             self.header_dec = self.header_pointing.dec.to(u.degree)
 
             try:
-                self.header_ha = float(self.header['HA-MNT']) * u.hourangle
+                self.header_ha = float(self.header["HA-MNT"]) * u.hourangle
             except KeyError:
                 # Compute the HA from the RA and sidereal time.
                 # Precess to the current equinox otherwise the
                 # RA - LST method will be off.
                 # TODO(wtgee): This conversion doesn't seem to be correct.
                 # wtgee: I'm not sure what I meant by the above. May 2020.
-                self.header_ha = self.header_pointing.transform_to(
-                    self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+                self.header_ha = (
+                    self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle)
+                    - self.sidereal
+                )
 
         except Exception as e:
-            self.logger.warning('Cannot get header pointing information: {}'.format(e))
+            self.logger.warning("Cannot get header pointing information: {}".format(e))
 
     def get_wcs_pointing(self):
         """Get the pointing information from the WCS
@@ -181,23 +183,25 @@ class Image(PanBase):
             self.ha = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.degree) - self.sidereal
 
     def solve_field(self, radius=15, **kwargs):
-        """ Solve field and populate WCS information.
+        """Solve field and populate WCS information.
 
         Args:
             radius (scalar): The radius (in degrees) to search near RA-Dec. Defaults to 15°.
             **kwargs: Options to be passed to `get_solve_field`.
         """
-        solve_info = fits_utils.get_solve_field(str(self.fits_file),
-                                                ra=self.header_pointing.ra.value,
-                                                dec=self.header_pointing.dec.value,
-                                                radius=radius,
-                                                **kwargs)
+        solve_info = fits_utils.get_solve_field(
+            str(self.fits_file),
+            ra=self.header_pointing.ra.value,
+            dec=self.header_pointing.dec.value,
+            radius=radius,
+            **kwargs,
+        )
 
-        self.wcs_file = solve_info['solved_fits_file']
+        self.wcs_file = solve_info["solved_fits_file"]
         self.get_wcs_pointing()
 
         # Remove some fields
-        for header in ['COMMENT', 'HISTORY']:
+        for header in ["COMMENT", "HISTORY"]:
             with suppress(KeyError):
                 del solve_info[header]
 
@@ -205,7 +209,8 @@ class Image(PanBase):
 
     def compute_offset(self, ref_image):
         assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference")
+            "Must pass an Image class for reference"
+        )
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

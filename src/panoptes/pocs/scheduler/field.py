@@ -7,9 +7,8 @@ from panoptes.pocs.base import PanBase
 
 
 class Field(FixedTarget, PanBase):
-
-    def __init__(self, name, position, equinox='J2000', *args, **kwargs):
-        """ An object representing an area to be observed
+    def __init__(self, name, position, equinox="J2000", *args, **kwargs):
+        """An object representing an area to be observed
 
         A `Field` corresponds to an `~astroplan.ObservingBlock` and contains information
         about the center of the field (represented by an `astroplan.FixedTarget`).
@@ -26,17 +25,17 @@ class Field(FixedTarget, PanBase):
         PanBase.__init__(self, *args, **kwargs)
 
         # Force an equinox if they pass None (legacy).
-        equinox = equinox or 'J2000'
+        equinox = equinox or "J2000"
 
-        super().__init__(SkyCoord(position, equinox=equinox, frame='icrs'), name=name, **kwargs)
+        super().__init__(SkyCoord(position, equinox=equinox, frame="icrs"), name=name, **kwargs)
 
-        self._field_name = self.name.title().replace(' ', '').replace('-', '')
+        self._field_name = self.name.title().replace(" ", "").replace("-", "")
         if not self._field_name:
-            raise ValueError('Name is empty')
+            raise ValueError("Name is empty")
 
     @property
     def field_name(self):
-        """ Flattened field name appropriate for paths """
+        """Flattened field name appropriate for paths"""
         return self._field_name
 
     def __str__(self):

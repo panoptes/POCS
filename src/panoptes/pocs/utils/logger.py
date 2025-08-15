@@ -21,11 +21,13 @@ class PanLogger:
     def __init__(self):
         self.padding = 0
         # Level Time_UTC Time_Local dynamic_padding Message
-        self.fmt = "<lvl>{level:.1s}</lvl> " \
-                   "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>" \
-                   " <blue>({time:HH:mm:ss zz})</> " \
-                   "| <c>{name} {function}:{line}{extra[padding]}</c> | " \
-                   "<lvl>{message}</lvl>\n"
+        self.fmt = (
+            "<lvl>{level:.1s}</lvl> "
+            "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</>"
+            " <blue>({time:HH:mm:ss zz})</> "
+            "| <c>{name} {function}:{line}{extra[padding]}</c> | "
+            "<lvl>{message}</lvl>\n"
+        )
         self.handlers = dict()
 
     def format(self, record):
@@ -39,14 +41,15 @@ class PanLogger:
 LOGGER_INFO = PanLogger()
 
 
-def get_logger(console_log_file='panoptes.log',
-               full_log_file='panoptes_{time:YYYYMMDD!UTC}.log',
-               serialize_full_log=False,
-               log_dir=None,
-               console_log_level='DEBUG',
-               stderr_log_level='INFO',
-               cloud_logging_level=None,
-               ):
+def get_logger(
+    console_log_file="panoptes.log",
+    full_log_file="panoptes_{time:YYYYMMDD!UTC}.log",
+    serialize_full_log=False,
+    log_dir=None,
+    console_log_level="DEBUG",
+    stderr_log_level="INFO",
+    cloud_logging_level=None,
+):
     """Creates a root logger for PANOPTES used by the PanBase object.
 
     Two log files are created, one suitable for viewing on the console (via `tail`)
@@ -77,61 +80,63 @@ def get_logger(console_log_file='panoptes.log',
     Returns:
         `loguru.logger`: A configured instance of the logger.
     """
-    if 'stderr' not in LOGGER_INFO.handlers:
+    if "stderr" not in LOGGER_INFO.handlers:
         # Remove default and add in custom stderr.
         with suppress(ValueError):
             loguru_logger.remove(0)
 
-        stderr_format = "<lvl>{level:.1s}</lvl> " \
-                        "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> " \
-                        "<lvl>{message}</lvl>"
-
-        stderr_id = loguru_logger.add(
-            sys.stdout,
-            format=stderr_format,
-            level=stderr_log_level
+        stderr_format = (
+            "<lvl>{level:.1s}</lvl> "
+            "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> "
+            "<lvl>{message}</lvl>"
         )
-        LOGGER_INFO.handlers['stderr'] = stderr_id
+
+        stderr_id = loguru_logger.add(sys.stdout, format=stderr_format, level=stderr_log_level)
+        LOGGER_INFO.handlers["stderr"] = stderr_id
 
     # Log file for tailing on the console.
     if log_dir and Path(log_dir).exists():
-        if 'console' not in LOGGER_INFO.handlers:
+        if "console" not in LOGGER_INFO.handlers:
             console_log_path = os.path.normpath(os.path.join(log_dir, console_log_file))
             console_id = loguru_logger.add(
                 console_log_path,
-                rotation='11:30',
-                retention='7 days',
-                compression='gz',
+                rotation="11:30",
+                retention="7 days",
+                compression="gz",
                 format=LOGGER_INFO.format,
                 enqueue=True,  # multiprocessing
                 colorize=True,
                 backtrace=True,
                 diagnose=True,
                 catch=True,
-                level=console_log_level
+                level=console_log_level,
             )
-            LOGGER_INFO.handlers['console'] = console_id
+            LOGGER_INFO.handlers["console"] = console_id
 
         # Log file for ingesting into log file service.
-        if full_log_file and 'archive' not in LOGGER_INFO.handlers:
+        if full_log_file and "archive" not in LOGGER_INFO.handlers:
             full_log_path = os.path.normpath(os.path.join(log_dir, full_log_file))
             archive_id = loguru_logger.add(
                 full_log_path,
-                rotation='11:31',
-                retention='7 days',
-                compression='gz',
+                rotation="11:31",
+                retention="7 days",
+                compression="gz",
                 format=LOGGER_INFO.format,
                 enqueue=True,  # multiprocessing
                 serialize=serialize_full_log,
                 backtrace=True,
                 diagnose=True,
-                level='TRACE'
+                level="TRACE",
             )
-            LOGGER_INFO.handlers['archive'] = archive_id
+            LOGGER_INFO.handlers["archive"] = archive_id
 
     global cloud_client
-    if cloud_logging_level is not None and cloud_client is None and 'cloud' not in LOGGER_INFO.handlers:
-        print(f'Setting up cloud logging at {cloud_logging_level=}')
+    if (
+        cloud_logging_level is not None
+        and cloud_client is None
+        and "cloud" not in LOGGER_INFO.handlers
+    ):
+        print(f"Setting up cloud logging at {cloud_logging_level=}")
         try:
             import google.cloud.logging
             from google.cloud.logging_v2.handlers import CloudLoggingHandler
@@ -139,31 +144,33 @@ def get_logger(console_log_file='panoptes.log',
             cloud_client = google.cloud.logging.Client()
             cloud_client.setup_logging()
         except ImportError:
-            print(f'Cloud logging library not installed: google-cloud-logging')
+            print("Cloud logging library not installed: google-cloud-logging")
         except Exception as e:
-            print(f'Could not set up cloud logging: {e}')
+            print(f"Could not set up cloud logging: {e}")
         else:
-            unit_id = os.getenv('UNIT_ID', os.environ['USER'])
+            unit_id = os.getenv("UNIT_ID", os.environ["USER"])
 
             log_level = cloud_logging_level.upper()
-            if log_level == 'INFO':
+            if log_level == "INFO":
                 fmt = "{message}"
             else:
                 fmt = "{name} {function}:{line} {message}"
 
-            fmt = f'{unit_id} | {fmt}'
+            fmt = f"{unit_id} | {fmt}"
 
-            cloud_handler = CloudLoggingHandler(cloud_client, name='panoptes-units', labels={'unit_id': unit_id})
+            cloud_handler = CloudLoggingHandler(
+                cloud_client, name="panoptes-units", labels={"unit_id": unit_id}
+            )
             cloud_id = loguru_logger.add(cloud_handler, level=log_level, format=fmt)
-            LOGGER_INFO.handlers['cloud'] = cloud_id
+            LOGGER_INFO.handlers["cloud"] = cloud_id
 
     # Customize colors.
-    loguru_logger.level('TRACE', color='<cyan>')
-    loguru_logger.level('DEBUG', color='<white>')
-    loguru_logger.level('INFO', color='<light-blue><bold>')
-    loguru_logger.level('SUCCESS', color='<cyan><bold>')
+    loguru_logger.level("TRACE", color="<cyan>")
+    loguru_logger.level("DEBUG", color="<white>")
+    loguru_logger.level("INFO", color="<light-blue><bold>")
+    loguru_logger.level("SUCCESS", color="<cyan><bold>")
 
     # Enable the logging.
-    loguru_logger.enable('panoptes')
+    loguru_logger.enable("panoptes")
 
     return loguru_logger

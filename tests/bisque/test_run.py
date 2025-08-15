@@ -15,8 +15,8 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX
 @pytest.fixture
 def location():
     config = get_config()
-    loc = config['location']
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    loc = config["location"]
+    return EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
 
 
 @pytest.fixture
@@ -32,23 +32,28 @@ def target_down(location):
 @pytest.fixture
 def pocs(target):
     try:
-        del os.environ['POCSTIME']
+        del os.environ["POCSTIME"]
     except KeyError:
         pass
 
     config = get_config()
 
-    pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True, config=config,
-                db='panoptes_testing')
+    pocs = POCS(
+        simulator=["weather", "night", "camera"],
+        run_once=True,
+        config=config,
+        db="panoptes_testing",
+    )
 
     pocs.observatory.scheduler.fields_list = [
-        {'name': 'Testing Target',
-         'position': target.to_string(style='hmsdms'),
-         'priority': '100',
-         'exptime': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
+        {
+            "name": "Testing Target",
+            "position": target.to_string(style="hmsdms"),
+            "priority": "100",
+            "exptime": 2,
+            "min_nexp": 2,
+            "exp_set_size": 2,
+        },
     ]
 
     yield pocs
@@ -59,7 +64,7 @@ def pocs(target):
 @pytest.fixture(scope="function")
 def dome():
     try:
-        del os.environ['POCSTIME']
+        del os.environ["POCSTIME"]
     except KeyError:
         pass
 
@@ -72,14 +77,14 @@ def test_pocs_run(pocs, dome):
     dome.open_slit()
     assert dome.is_open is True
 
-    pocs.state = 'sleeping'
+    pocs.state = "sleeping"
     pocs._do_states = True
 
     pocs.initialize()
     assert pocs.is_initialized is True
 
     pocs.run(exit_when_done=True, run_once=True)
-    assert pocs.state == 'sleeping'
+    assert pocs.state == "sleeping"
 
     dome.close_slit()
     dome.disconnect()

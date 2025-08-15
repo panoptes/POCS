@@ -8,10 +8,13 @@ from panoptes.utils.config.client import set_config
 
 @pytest.fixture(scope="function")
 def dome():
-    set_config('dome', {
-        'brand': 'Simulacrum',
-        'driver': 'simulator',
-    })
+    set_config(
+        "dome",
+        {
+            "brand": "Simulacrum",
+            "driver": "simulator",
+        },
+    )
 
     the_dome = create_dome_simulator()
 
@@ -47,11 +50,11 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert 'open' in dome.status['open']
+    assert "open" in dome.status["open"]
     assert dome.is_open is True
 
     assert dome.close() is True
-    assert 'closed' in dome.status['open']
+    assert "closed" in dome.status["open"]
     assert dome.is_closed is True
 
     assert dome.disconnect() is True

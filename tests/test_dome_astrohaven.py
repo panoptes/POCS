@@ -11,18 +11,21 @@ from panoptes.pocs.dome import create_dome_simulator
 from panoptes.utils.config.client import set_config
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def dome():
     # Install our test handlers for the duration.
-    serial.protocol_handler_packages.append('panoptes.pocs.dome')
+    serial.protocol_handler_packages.append("panoptes.pocs.dome")
 
     # Modify the config so that the dome uses the right controller and port.
-    set_config('simulator', hardware.get_all_names(without=['dome']))
-    set_config('dome', {
-        'brand': 'Astrohaven',
-        'driver': 'astrohaven',
-        'port': 'loop://',
-    })
+    set_config("simulator", hardware.get_all_names(without=["dome"]))
+    set_config(
+        "dome",
+        {
+            "brand": "Astrohaven",
+            "driver": "astrohaven",
+            "port": "loop://",
+        },
+    )
     the_dome = create_dome_simulator()
 
     yield the_dome
@@ -30,7 +33,7 @@ def dome():
         the_dome.disconnect()
 
     # Remove our test handlers.
-    serial.protocol_handler_packages.remove('panoptes.pocs.dome')
+    serial.protocol_handler_packages.remove("panoptes.pocs.dome")
 
 
 def test_create(dome):
@@ -60,19 +63,19 @@ def test_disconnect(dome):
     assert dome.is_connected is False
 
 
-@pytest.mark.skip(reason='No astrohaven_simulator protocol anymore')
+@pytest.mark.skip(reason="No astrohaven_simulator protocol anymore")
 def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.status['open'] == 'open_both'
+    assert dome.status["open"] == "open_both"
     assert dome.is_open is True
 
     # Try to open shutter
     assert dome.open() is True
 
     assert dome.close() is True
-    assert dome.status['open'] == 'closed_both'
+    assert dome.status["open"] == "closed_both"
     assert dome.is_closed is True
 
     # Try to close again

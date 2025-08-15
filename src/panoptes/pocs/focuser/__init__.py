@@ -1,1 +1,1 @@
-from panoptes.pocs.focuser.focuser import AbstractFocuser  # pragma: no flakes
+from panoptes.pocs.focuser.focuser import AbstractFocuser as AbstractFocuser

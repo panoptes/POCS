@@ -11,13 +11,17 @@ from panoptes.utils.error import PanError
 from rich import print
 from tqdm import trange
 
-from panoptes.pocs.camera import AbstractCamera, create_cameras_from_config, list_connected_gphoto2_cameras
+from panoptes.pocs.camera import (
+    AbstractCamera,
+    create_cameras_from_config,
+    list_connected_gphoto2_cameras,
+)
 from panoptes.pocs.camera.libasi import ASIDriver
 
 app = typer.Typer()
 
 
-@app.command(name='setup')
+@app.command(name="setup")
 def setup_cameras(
     detect_dslr: bool = True,
     detect_zwo: bool = True,
@@ -36,98 +40,97 @@ def setup_cameras(
     cameras = dict()
     num_cameras = 0
     if detect_dslr:
-        print('Detecting DSLRs...')
+        print("Detecting DSLRs...")
         gphoto2_ports = list_connected_gphoto2_cameras()
         if gphoto2_ports:
-            print(f'Detected {len(gphoto2_ports)} DSLR cameras.')
+            print(f"Detected {len(gphoto2_ports)} DSLR cameras.")
             for i, port in enumerate(gphoto2_ports):
-                cameras[f'dslr-{i:02d}'] = {
-                    'model': 'panoptes.pocs.camera.gphoto.canon.Camera',
-                    'name': f'Cam{num_cameras:02d}',
-                    'port': port,
-                    'readout_time': 15.0
+                cameras[f"dslr-{i:02d}"] = {
+                    "model": "panoptes.pocs.camera.gphoto.canon.Camera",
+                    "name": f"Cam{num_cameras:02d}",
+                    "port": port,
+                    "readout_time": 15.0,
                 }
                 num_cameras += 1
 
     if detect_zwo:
-        print('Detecting ZWO cameras...')
+        print("Detecting ZWO cameras...")
         if asi_library_path is None:
             platform = uname().machine
-            if platform == 'x86_64':
-                platform = 'x64'
-            elif platform == 'aarch64':
-                platform = 'armv8'
-            asi_library_path = Path(
-                get_config('directories.base')
-            ) / f'resources/cameras/zwo/{platform}/libASICamera2.so.1.38'
+            if platform == "x86_64":
+                platform = "x64"
+            elif platform == "aarch64":
+                platform = "armv8"
+            asi_library_path = (
+                Path(get_config("directories.base"))
+                / f"resources/cameras/zwo/{platform}/libASICamera2.so.1.38"
+            )
         # print(f'Using ZWO library path: {asi_library_path}')
         asi_driver = ASIDriver(library_path=asi_library_path)
         try:
             zwo_cameras = asi_driver.get_devices()
         except PanError:
-            print(f'No ZWO cameras detected')
+            print("No ZWO cameras detected")
         else:
-            print(f'Detected {len(zwo_cameras)} ZWO cameras.')
+            print(f"Detected {len(zwo_cameras)} ZWO cameras.")
             for i, (serial_number, cam_id) in enumerate(zwo_cameras.items()):
-                cameras[f'zwo-{i:02d}'] = {
-                    'model': 'panoptes.pocs.camera.zwo.Camera',
-                    'name': f'Cam{num_cameras:02d}',
-                    'serial_number': serial_number,
-                    'file_extension': 'fits',
-                    'readout_time': 1.0,
-                    'uid': serial_number,
-                    'library_path': asi_library_path.absolute().as_posix(),
+                cameras[f"zwo-{i:02d}"] = {
+                    "model": "panoptes.pocs.camera.zwo.Camera",
+                    "name": f"Cam{num_cameras:02d}",
+                    "serial_number": serial_number,
+                    "file_extension": "fits",
+                    "readout_time": 1.0,
+                    "uid": serial_number,
+                    "library_path": asi_library_path.absolute().as_posix(),
                 }
                 num_cameras += 1
                 # Close the camera by id.
                 asi_driver.close_camera(cam_id)
 
     if not cameras:
-        print('No cameras detected, exiting.')
+        print("No cameras detected, exiting.")
         return
 
-    print(f'Found {num_cameras} cameras to set up.')
-    print('Updating camera config...')
-    set_config('cameras.devices', list(cameras.values()))
+    print(f"Found {num_cameras} cameras to set up.")
+    print("Updating camera config...")
+    set_config("cameras.devices", list(cameras.values()))
 
     # Turn off the autodetect
-    set_config('cameras.defaults.auto_detect', False)
+    set_config("cameras.defaults.auto_detect", False)
 
     # Now create the cameras from the config, calling the `setup_camera` method if available.
-    print('Now creating the cameras from the config and setting them up.')
+    print("Now creating the cameras from the config and setting them up.")
     cameras = create_cameras_from_config()
     if len(cameras) == 0:
-        print('No cameras found after setup, exiting.')
+        print("No cameras found after setup, exiting.")
         return
     else:
         # Call setup_properties on each of the cameras
         for cam_name, cam in cameras.items():
             try:
-                print(f'Setting up camera: {cam_name}')
+                print(f"Setting up camera: {cam_name}")
                 cam.setup_camera()
             except AttributeError:
-                print(f'Camera {cam_name} does not have a setup_camera method, skipping.')
+                print(f"Camera {cam_name} does not have a setup_camera method, skipping.")
 
-    print('Now creating the cameras from the config and taking a test picture with each.')
-    images = take_pictures(num_images=1, exptime=1.0, output_dir='/home/panoptes/images/test')
+    print("Now creating the cameras from the config and taking a test picture with each.")
+    take_pictures(num_images=1, exptime=1.0, output_dir="/home/panoptes/images/test")
 
 
-@app.command(name='take-pics')
+@app.command(name="take-pics")
 def take_pictures(
     num_images: int = 1,
     exptime: float = 1.0,
-    output_dir: str = '/home/panoptes/images',
+    output_dir: str = "/home/panoptes/images",
     delay: float = 0.0,
 ) -> Dict[str, List[Path]] | None:
-    """Takes pictures with cameras.
-
-    """
+    """Takes pictures with cameras."""
     cameras = create_cameras_from_config()
     if len(cameras) == 0:
-        print('No cameras found, exiting.')
+        print("No cameras found, exiting.")
         return None
 
-    print(f'Taking {num_images} images with {len(cameras)} cameras.')
+    print(f"Taking {num_images} images with {len(cameras)} cameras.")
 
     now = current_time(flatten=True)
     output_dir = Path(output_dir) / str(now)
@@ -135,7 +138,9 @@ def take_pictures(
     futures = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for cam_name, cam in cameras.items():
-            future = executor.submit(_take_pics, cam_name, cam, exptime, num_images, output_dir, delay)
+            future = executor.submit(
+                _take_pics, cam_name, cam, exptime, num_images, output_dir, delay
+            )
             futures[future] = cam_name
 
     files = dict()
@@ -147,25 +152,27 @@ def take_pictures(
         cam_name = futures[future]
         files[cam_name] = future.result()
 
-    print('Finished taking pictures.')
+    print("Finished taking pictures.")
     for cam_name, file_list in files.items():
-        print(f'Camera {cam_name} took pictures:')
+        print(f"Camera {cam_name} took pictures:")
         for file in file_list:
-            print(f'  - {file}')
+            print(f"  - {file}")
 
     return files
 
 
-def _take_pics(cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path, delay: float):
+def _take_pics(
+    cam_name: str, cam: AbstractCamera, exptime: float, num: int, output_dir: Path, delay: float
+):
     files = list()
     for i in trange(num):
-        fn = output_dir / f'{cam_name}-{i:04d}-{current_time(flatten=True)}.{cam.file_extension}'
+        fn = output_dir / f"{cam_name}-{i:04d}-{current_time(flatten=True)}.{cam.file_extension}"
         cam.take_exposure(seconds=exptime, filename=fn, blocking=True)
         files.append(fn)
 
         # Wait for delay.
         if delay and delay > 0.0:
-            print(f'Waiting {delay} seconds on {cam_name}')
+            print(f"Waiting {delay} seconds on {cam_name}")
             time.sleep(delay)
 
     return files

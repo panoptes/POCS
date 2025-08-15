@@ -12,21 +12,21 @@ from panoptes.utils.config.client import get_config
 
 @pytest.fixture
 def location():
-    loc = get_config('location')
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    loc = get_config("location")
+    return EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
 
 
 @pytest.fixture(scope="function")
 def mount(location):
     with suppress(KeyError):
-        del os.environ['POCSTIME']
+        del os.environ["POCSTIME"]
 
     return Mount(location=location)
 
 
 @pytest.mark.with_mount
 def test_loading_without_config():
-    """ Tests the basic loading of a mount """
+    """Tests the basic loading of a mount"""
     with pytest.raises(TypeError):
         mount = Mount()
         assert isinstance(mount, Mount)
@@ -34,7 +34,7 @@ def test_loading_without_config():
 
 @pytest.mark.with_mount
 class TestMount(object):
-    """ Test the mount """
+    """Test the mount"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -50,12 +50,12 @@ class TestMount(object):
         self.mount = mount
 
         with pytest.raises(AssertionError):
-            assert self.mount.query('version') == 'V1.00'
+            assert self.mount.query("version") == "V1.00"
         assert self.mount.is_initialized is False
         assert self.mount.initialize() is True
 
     def test_version(self):
-        assert self.mount.query('version') == 'V1.00'
+        assert self.mount.query("version") == "V1.00"
 
     def test_unpark_park(self):
         assert self.mount.is_parked is True
@@ -83,29 +83,25 @@ def test_get_tracking_correction(mount):
     ]
 
     corrections = [
-        (103.49, 'south', 966.84, 'east'),
-        (103.49, 'north', 966.84, 'east'),
-        (103.49, 'south', 966.84, 'west'),
-        (103.49, 'north', 966.84, 'east'),
-        (103.49, 'north', 966.84, 'west'),
+        (103.49, "south", 966.84, "east"),
+        (103.49, "north", 966.84, "east"),
+        (103.49, "south", 966.84, "west"),
+        (103.49, "north", 966.84, "east"),
+        (103.49, "north", 966.84, "west"),
         # Too small
-        (None, 'south', 966.84, 'east'),
-        (103.49, 'south', None, 'east'),
+        (None, "south", 966.84, "east"),
+        (103.49, "south", None, "east"),
         # Too big
-        (99999.0, 'south', 966.84, 'east'),
-        (103.49, 'south', 99999.0, 'east'),
+        (99999.0, "south", 966.84, "east"),
+        (103.49, "south", 99999.0, "east"),
     ]
 
     for offset, correction in zip(offsets, corrections):
         pointing_ha = offset[0]
-        offset_info = OffsetError(
-            offset[1] * u.arcsec,
-            offset[2] * u.arcsec,
-            offset[3] * u.arcsec
-        )
+        offset_info = OffsetError(offset[1] * u.arcsec, offset[2] * u.arcsec, offset[3] * u.arcsec)
         correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
 
-        dec_info = correction_info['dec']
+        dec_info = correction_info["dec"]
         expected_correction = correction[0]
         if expected_correction is not None:
             assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
@@ -113,7 +109,7 @@ def test_get_tracking_correction(mount):
         else:
             assert dec_info == expected_correction
 
-        ra_info = correction_info['ra']
+        ra_info = correction_info["ra"]
         expected_correction = correction[2]
         if expected_correction is not None:
             assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)
@@ -133,23 +129,21 @@ def test_get_tracking_correction_custom(mount):
     ]
 
     corrections = [
-        (None, 'south', 950.0, 'east'),
-        (None, 'north', 950.0, 'east'),
+        (None, "south", 950.0, "east"),
+        (None, "north", 950.0, "east"),
     ]
 
     for offset, correction in zip(offsets, corrections):
         pointing_ha = offset[0]
-        offset_info = OffsetError(
-            offset[1] * u.arcsec,
-            offset[2] * u.arcsec,
-            offset[3] * u.arcsec
+        offset_info = OffsetError(offset[1] * u.arcsec, offset[2] * u.arcsec, offset[3] * u.arcsec)
+        correction_info = mount.get_tracking_correction(
+            offset_info,
+            pointing_ha,
+            min_tracking_threshold=min_tracking,
+            max_tracking_threshold=max_tracking,
         )
-        correction_info = mount.get_tracking_correction(offset_info,
-                                                        pointing_ha,
-                                                        min_tracking_threshold=min_tracking,
-                                                        max_tracking_threshold=max_tracking)
 
-        dec_info = correction_info['dec']
+        dec_info = correction_info["dec"]
         expected_correction = correction[0]
         if expected_correction is not None:
             assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
@@ -157,7 +151,7 @@ def test_get_tracking_correction_custom(mount):
         else:
             assert dec_info == expected_correction
 
-        ra_info = correction_info['ra']
+        ra_info = correction_info["ra"]
         expected_correction = correction[2]
         if expected_correction is not None:
             assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)

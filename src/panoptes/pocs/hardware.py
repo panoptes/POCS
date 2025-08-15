@@ -1,18 +1,19 @@
 """Information about hardware supported by Panoptes."""
+
 from enum import Enum
 
 from panoptes.utils.config.client import get_config
 
 
 class HardwareName(Enum):
-    camera = 'camera'
-    dome = 'dome'
-    mount = 'mount'
-    night = 'night'
-    power = 'power'
-    sensors = 'sensors'
-    theskyx = 'theskyx'
-    weather = 'weather'
+    camera = "camera"
+    dome = "dome"
+    mount = "mount"
+    night = "night"
+    power = "power"
+    sensors = "sensors"
+    theskyx = "theskyx"
+    weather = "weather"
 
 
 def get_all_names(all_names=None, without=None):
@@ -87,14 +88,14 @@ def get_simulator_names(simulator: str | list | None = None, kwargs=None):
     empty = dict()
 
     def extract_simulator(d):
-        return (d or empty).get('simulator')
+        return (d or empty).get("simulator")
 
     for v in [simulator, extract_simulator(kwargs), extract_simulator(get_config())]:
         if not v:
             continue
         if isinstance(v, str):
             v = [v]
-        if 'all' in v:
+        if "all" in v:
             return [h.name for h in HardwareName]
         else:
             return sorted(v)

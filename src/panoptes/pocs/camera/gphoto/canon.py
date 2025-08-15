@@ -11,10 +11,13 @@ from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
-
     def __init__(
-        self, readout_time: float = 1.0, file_extension: str = 'cr2', setup_properties: bool = False,
-        *args, **kwargs
+        self,
+        readout_time: float = 1.0,
+        file_extension: str = "cr2",
+        setup_properties: bool = False,
+        *args,
+        **kwargs,
     ):
         """Create a camera object for a Canon EOS DSLR.
 
@@ -25,8 +28,8 @@ class Camera(AbstractGPhotoCamera):
             setup_properties (bool): If True, will call `setup_camera()` to set
                 properties on the camera.
         """
-        kwargs['readout_time'] = readout_time
-        kwargs['file_extension'] = file_extension
+        kwargs["readout_time"] = readout_time
+        kwargs["file_extension"] = file_extension
         super().__init__(*args, **kwargs)
         self.logger.debug("Creating Canon DSLR GPhoto2 camera")
 
@@ -49,7 +52,7 @@ class Camera(AbstractGPhotoCamera):
         This will attempt to connect to the camera using gphoto2.
         """
         # Get serial number
-        _serial_number = self.get_property('serialnumber')
+        _serial_number = self.get_property("serialnumber")
         if not _serial_number:
             raise error.CameraNotFound(f"Camera not responding: {self}")
 
@@ -63,37 +66,31 @@ class Camera(AbstractGPhotoCamera):
         on the canon cameras that should persist across power cycles.
         """
         # Properties to be set upon init.
-        owner_name = 'PANOPTES'
-        artist_name = self.get_config('pan_id', default=owner_name)
-        copy_right = f'{owner_name}_{current_time().datetime:%Y}'
+        owner_name = "PANOPTES"
+        artist_name = self.get_config("pan_id", default=owner_name)
+        copy_right = f"{owner_name}_{current_time().datetime:%Y}"
 
         prop2value = {
-            'drivemode': 'Single',
-            'focusmode': 'Manual',
-            'imageformat': 'RAW',
+            "drivemode": "Single",
+            "focusmode": "Manual",
+            "imageformat": "RAW",
             # 'autoexposuremode': 'Manual',  # Need physical toggle.
             # 'imageformatsd': 'RAW',  # We shouldn't need to set this.
-            'capturetarget': 'Internal RAM',
-            'reviewtime': 'None',
-            'iso': 100,
-            'shutterspeed': 'bulb',
-            'artist': artist_name,
-            'copyright': copy_right,
-            'ownername': owner_name,
+            "capturetarget": "Internal RAM",
+            "reviewtime": "None",
+            "iso": 100,
+            "shutterspeed": "bulb",
+            "artist": artist_name,
+            "copyright": copy_right,
+            "ownername": owner_name,
         }
 
         self.set_properties(prop2value=prop2value)
 
-        self.model = self.get_property('model')
+        self.model = self.get_property("model")
 
     def _start_exposure(
-        self,
-        seconds=None,
-        filename=None,
-        dark=False,
-        header=None,
-        iso=100,
-        *args, **kwargs
+        self, seconds=None, filename=None, dark=False, header=None, iso=100, *args, **kwargs
     ):
         """Start the exposure.
 
@@ -112,27 +109,32 @@ class Camera(AbstractGPhotoCamera):
         shutterspeed_idx = self.get_shutterspeed_index(seconds=seconds, return_minimum=True)
 
         cmd_args = [
-            f'--set-config', f'iso={iso}',
-            f'--filename', f'{filename}',
-            f'--set-config-index', f'shutterspeed={shutterspeed_idx}',
-            f'--wait-event=1s',
+            "--set-config",
+            f"iso={iso}",
+            "--filename",
+            f"{filename}",
+            "--set-config-index",
+            f"shutterspeed={shutterspeed_idx}",
+            "--wait-event=1s",
         ]
 
         if shutterspeed_idx == 0:
             # Bulb setting.
             cmd_args.extend(
                 [
-                    f'--set-config-index', 'eosremoterelease=2',
-                    f'--wait-event={int(seconds):d}s',
-                    f'--set-config-index', 'eosremoterelease=4',
-                    f'--wait-event-and-download=CAPTURECOMPLETE',
+                    "--set-config-index",
+                    "eosremoterelease=2",
+                    f"--wait-event={int(seconds):d}s",
+                    "--set-config-index",
+                    "eosremoterelease=4",
+                    "--wait-event-and-download=CAPTURECOMPLETE",
                 ]
             )
         else:
             # Known shutterspeed value.
             cmd_args.extend(
                 [
-                    f'--capture-image-and-download',
+                    "--capture-image-and-download",
                 ]
             )
 
@@ -140,7 +142,7 @@ class Camera(AbstractGPhotoCamera):
             self.command(cmd_args, check_exposing=False)
         except error.InvalidCommand as e:
             self.logger.warning(e)
-            raise PanError(f'Problem taking picture with {self.name}: {e}')
+            raise PanError(f"Problem taking picture with {self.name}: {e}")
         else:
             readout_args = (filename, header)
             return readout_args
@@ -153,7 +155,7 @@ class Camera(AbstractGPhotoCamera):
         If the given seconds does not match a set shutterspeed, the 'bulb' setting
         is returned.
         """
-        seconds = get_quantity_value(seconds, unit='second')
+        seconds = get_quantity_value(seconds, unit="second")
         # TODO derive these from `load_properties`.
         # The index corresponds to what gphoto2 expects.
         shutter_speeds = {

@@ -36,29 +36,35 @@ class FilterWheel(AbstractFilterWheel):
     _filter_wheels = {}
     _assigned_filterwheels = set()
 
-    def __init__(self,
-                 name='ZWO Filter Wheel',
-                 model='zwo',
-                 camera=None,
-                 filter_names=None,
-                 timeout=10 * u.second,
-                 serial_number=None,
-                 library_path=None,
-                 unidirectional=True,
-                 device_name=None,
-                 initial_filter=None,
-                 *args, **kwargs):
+    def __init__(
+        self,
+        name="ZWO Filter Wheel",
+        model="zwo",
+        camera=None,
+        filter_names=None,
+        timeout=10 * u.second,
+        serial_number=None,
+        library_path=None,
+        unidirectional=True,
+        device_name=None,
+        initial_filter=None,
+        *args,
+        **kwargs,
+    ):
         if camera and not isinstance(camera, AbstractCamera):
             msg = f"Camera must be an instance of pocs.camera.camera.AbstractCamera, got {camera}."
             self.logger.error(msg)
             raise ValueError(msg)
-        super().__init__(name=name,
-                         model=model,
-                         camera=camera,
-                         filter_names=filter_names,
-                         timeout=timeout,
-                         serial_number=serial_number,
-                         *args, **kwargs)
+        super().__init__(
+            name=name,
+            model=model,
+            camera=camera,
+            filter_names=filter_names,
+            timeout=timeout,
+            serial_number=serial_number,
+            *args,
+            **kwargs,
+        )
 
         if FilterWheel._driver is None:
             # Initialise the driver if it hasn't already been done
@@ -75,20 +81,20 @@ class FilterWheel(AbstractFilterWheel):
         with suppress(AttributeError):
             device_name = self._device_name
             FilterWheel._assigned_filterwheels.discard(device_name)
-            self.logger.debug('Removed {} from assigned filterwheels list'.format(device_name))
+            self.logger.debug("Removed {} from assigned filterwheels list".format(device_name))
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @AbstractFilterWheel.position.getter
     def position(self):
-        """ Current integer position of the filter wheel """
+        """Current integer position of the filter wheel"""
         return self._driver.get_position(self._handle) + 1  # 1-based numbering
 
     @property
     def is_moving(self):
-        """ Is the filterwheel currently moving """
+        """Is the filterwheel currently moving"""
         return not self._move_event.is_set()
 
     @property
@@ -100,9 +106,9 @@ class FilterWheel(AbstractFilterWheel):
     def is_unidirectional(self, unidirectional):
         self._driver.set_direction(self._handle, bool(unidirectional))
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def connect(self):
         """Connect to filter wheel."""
@@ -145,12 +151,13 @@ class FilterWheel(AbstractFilterWheel):
         self._handle = FilterWheel._filterwheels[self._device_name]
         self._driver.open(self._handle)
         info = self._driver.get_property(self._handle)
-        self._model = info['name']
-        self._n_positions = info['slot_num']
+        self._model = info["name"]
+        self._n_positions = info["slot_num"]
 
         if len(self.filter_names) != self.n_positions:
-            msg = "Number of names in filter_names ({}) doesn't".format(len(self.filter_names)) + \
-                " match number of positions in filter wheel ({})".format(self.n_positions)
+            msg = "Number of names in filter_names ({}) doesn't".format(
+                len(self.filter_names)
+            ) + " match number of positions in filter wheel ({})".format(self.n_positions)
             self.logger.error(msg)
             raise ValueError(msg)
 
@@ -164,14 +171,16 @@ class FilterWheel(AbstractFilterWheel):
         self._driver.calibrate(self._handle)
         self.logger.info("{} recalibrated".format(self))
 
-##################################################################################################
-# Private methods
-##################################################################################################
+    ##################################################################################################
+    # Private methods
+    ##################################################################################################
 
     def _move_to(self, position):
         # Filterwheel class used 1 based position numbering,
         # ZWO EFW driver uses 0 based position numbering.
-        self._driver.set_position(filterwheel_ID=self._handle,
-                                  position=self._parse_position(position) - 1,
-                                  move_event=self._move_event,
-                                  timeout=self._timeout)
+        self._driver.set_position(
+            filterwheel_ID=self._handle,
+            position=self._parse_position(position) - 1,
+            move_event=self._move_event,
+            timeout=self._timeout,
+        )
