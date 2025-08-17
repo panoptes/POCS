@@ -7,7 +7,7 @@ Welcome to POCS documentation!
 <br>
 
 [![GHA Status](https://github.com/panoptes/POCS/actions/workflows/pythontest.yaml/badge.svg?branch=develop)](https://github.com/panoptes/POCS/actions/workflows/pythontest.yaml)
-[![codecov](https://codecov.io/gh/panoptes/POCS/branch/develop/graph/badge.svg)](https://codecov.io/gh/panoptes/POCS) 
+[![codecov](https://codecov.io/gh/panoptes/POCS/graph/badge.svg?token=0FGBB0iVy6)](https://codecov.io/gh/panoptes/POCS)
 [![Documentation Status](https://readthedocs.org/projects/pocs/badge/?version=latest)](https://pocs.readthedocs.io/en/latest/?badge=latest) 
 [![PyPI version](https://badge.fury.io/py/panoptes-pocs.svg)](https://badge.fury.io/py/panoptes-pocs)
 
