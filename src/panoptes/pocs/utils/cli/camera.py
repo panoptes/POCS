@@ -2,7 +2,6 @@ import concurrent.futures
 import queue
 import threading
 import time
-from collections import defaultdict
 from pathlib import Path
 from platform import uname
 from typing import Dict, List
@@ -16,7 +15,7 @@ from panoptes.utils.images import cr2 as cr2_utils, make_pretty_image
 from panoptes.utils.images.fits import fpack, get_solve_field
 from panoptes.utils.time import current_time
 from rich import print
-from rich.columns import Columns
+from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -28,6 +27,8 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
+from rich.text import Text
+from rich.table import Table
 
 from panoptes.pocs.camera import (
     AbstractCamera,
@@ -37,6 +38,29 @@ from panoptes.pocs.camera import (
 from panoptes.pocs.camera.libasi import ASIDriver
 
 app = typer.Typer()
+
+
+class RecentFilesRenderable:
+    """Renderable that displays the 5 most recent completed file paths for a camera.
+
+    This reads directly from a shared list reference so that Rich's Live
+    re-render will always show the latest content without reconstructing
+    the layout.
+    """
+
+    def __init__(self, recent_files_ref: list[str], show_max: int = 5):
+        self._recent_files = recent_files_ref
+        self.show_max = show_max
+
+    def __rich_console__(self, console, options):
+        yield Text(f"Recent files (max {self.show_max}):", style="bold cyan")
+        if not self._recent_files:
+            yield Text("  (none yet)", style="dim")
+            return
+        # Show the last `show_max` entries so the most recent appears at the bottom
+        for name in self._recent_files[-self.show_max :]:
+            # Fold long paths so they wrap within the panel instead of forcing wide columns
+            yield Text(f"  - {name}", overflow="fold", no_wrap=False)
 
 
 @app.command(name="setup")
@@ -181,8 +205,18 @@ def take_pictures(
         if pretty:
             tasks["pretty"] = prog.add_task("Pretty", total=num_images)
 
-        per_cam_progress[cam_name] = {"progress": prog, "tasks": tasks}
-        panels.append(Panel(prog, title=f"{cam_name}", border_style="cyan"))
+        # Maintain per-camera list of recent files (full paths)
+        recent_files: list[str] = []
+        per_cam_progress[cam_name] = {
+            "progress": prog,
+            "tasks": tasks,
+            "recent_files": recent_files,
+        }
+
+        # Group the progress with the recent files renderable so it shows under the bars
+        recent_renderable = RecentFilesRenderable(recent_files)
+        group = Group(prog, Text(""), recent_renderable)  # blank line spacer
+        panels.append(Panel(group, title=f"{cam_name}", border_style="cyan"))
 
     # Set up queues and processing thread. Pass per-camera progress so it can update from the worker thread.
     process_queue = queue.Queue()
@@ -203,7 +237,12 @@ def take_pictures(
     )
     t.start()
 
-    layout = Columns(panels)
+    # Build a single-row grid with equal-width columns so panels render side-by-side
+    grid = Table.grid(expand=True, padding=(0, 1))
+    for _ in panels:
+        grid.add_column(ratio=1)
+    grid.add_row(*panels)
+    layout = grid
 
     # Submit all the images for exposure and render live progress while running.
     futures = dict()
@@ -238,19 +277,7 @@ def take_pictures(
         process_queue.join()
         t.join()
 
-    # Get the complete files.
-    files = defaultdict(list)
-    while not complete_queue.empty():
-        cam_name, file = complete_queue.get()
-        files[cam_name].append(file)
-
-    # Print the files for each camera.
-    for cam_name, file_list in files.items():
-        print(f"Camera {cam_name} took pictures:")
-        for file in file_list:
-            print(f"  - {file}")
-
-    return files
+    return None
 
 
 def _take_pics(
@@ -383,6 +410,20 @@ def process_image(
                         cam_progress.update(cam_tasks["pretty"], advance=1)
                     except Exception:
                         pass
+
+        # Update recent files list for this camera (keep only last 5)
+        if cam_prog_entry:
+            recent_list = cam_prog_entry.get("recent_files")
+            if isinstance(recent_list, list):
+                # Store the full path as a string
+                try:
+                    path_str = Path(file_path).as_posix()
+                except Exception:
+                    path_str = str(file_path)
+                recent_list.append(path_str)
+                # Trim to keep only the last 5 (oldest removed from the front)
+                while len(recent_list) > 5:
+                    recent_list.pop(0)
 
         complete_queue.put((cam_name, file_path))
 
