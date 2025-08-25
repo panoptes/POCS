@@ -3,15 +3,14 @@ from contextlib import suppress
 from dataclasses import dataclass
 from enum import IntEnum
 from functools import partial
-from typing import Optional, Dict, List, Callable
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 from astropy import units as u
 from panoptes.utils import error
-from panoptes.utils.serial.device import find_serial_port, SerialDevice
-from panoptes.utils.serializers import to_json, from_json
+from panoptes.utils.serial.device import SerialDevice, find_serial_port
+from panoptes.utils.serializers import from_json, to_json
 from panoptes.utils.time import current_time
-from streamz.dataframe import PeriodicDataFrame
 
 from panoptes.pocs.base import PanBase
 
@@ -104,7 +103,6 @@ class PowerBoard(PanBase):
         name: str = "Power Board",
         relays: Dict[str, dict] = None,
         reader_callback: Callable[[dict], dict] = None,
-        dataframe_period: int = 1,
         mean_interval: Optional[int] = 5,
         arduino_board_name: str = "power_board",
         *args,
@@ -127,8 +125,6 @@ class PowerBoard(PanBase):
             reader_callback (Callable): A callback for the serial readings. The
                 default callback will update the pin values and record data in a
                 json format, which is then made into a dataframe with the `to_dataframe`.
-            dataframe_period (int): The period to use for creating the
-                `PeriodicDataFrame`, default `2` (seconds).
             mean_interval (int): When taking a rolling mean, use this many seconds,
                 default 5.
             arduino_board_name (str): The name of the arduino board to match in
@@ -165,12 +161,6 @@ class PowerBoard(PanBase):
         for relay in self.relays:
             self.logger.info(f"Setting {relay.label} to {relay.default_state.name}")
             self.change_relay_state(relay, TruckerBoardCommands(relay.default_state))
-
-        self.dataframe = None
-        if dataframe_period is not None:
-            self.dataframe = PeriodicDataFrame(
-                interval=f"{dataframe_period}s", datafn=self.to_dataframe
-            )
 
         self._mean_interval = mean_interval
 
