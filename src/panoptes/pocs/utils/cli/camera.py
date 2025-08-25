@@ -216,7 +216,7 @@ def take_pictures(
         # Group the progress with the recent files renderable so it shows under the bars
         recent_renderable = RecentFilesRenderable(recent_files)
         group = Group(prog, Text(""), recent_renderable)  # blank line spacer
-        panels.append(Panel(group, title=f"{cam_name}", border_style="cyan"))
+        panels.append(Panel(group, title=f"{cam_name} {exptime=}s", border_style="cyan"))
 
     # Set up queues and processing thread. Pass per-camera progress so it can update from the worker thread.
     process_queue = queue.Queue()
@@ -329,7 +329,6 @@ def process_image(
     while True:
         item = process_queue.get()
         if item is None:
-            print("No pictures received, exiting.")
             process_queue.task_done()
             break
 
