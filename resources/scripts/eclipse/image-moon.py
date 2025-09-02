@@ -133,10 +133,10 @@ def take_pic(port, cr2_fn, settings):
 
     # If shutter_index is zero (bulb), use regular script, otherwise the bias.
     if shutter_index == "0":
-        script_path = base_script_path / 'scripts' / 'take-pic.sh'
+        script_path = base_script_path / 'scripts/eclipse/take-pic.sh'
         cmd = [str(script_path), port, exptime, str(cr2_fn), iso]
     else:
-        script_path = base_script_path / 'scripts' / 'take-bias.sh'
+        script_path = base_script_path / 'scripts/eclipse/take-bias.sh'
         cmd = [str(script_path), port, str(cr2_fn), shutter_index, iso]
 
     # print(f'Running cmd={cmd}')

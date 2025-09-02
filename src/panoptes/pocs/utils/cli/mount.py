@@ -426,7 +426,7 @@ def get_target_coords(
         eph = obj.ephemerides()
         coords = SkyCoord(eph[0]["RA"], eph[0]["DEC"], unit=(u.deg, u.deg))
     elif is_solar_system_body and location is not None:
-        coords = get_body(target, time=obstime, location=location)
+        coords = get_body(target, time=obstime)
     else:
         try:
             coords = SkyCoord(target)
