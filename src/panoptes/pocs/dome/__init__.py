@@ -17,34 +17,34 @@ def create_dome_from_config(*args, **kwargs):
     by a single dome driver class.
     """
 
-    dome_config = get_config('dome')
+    dome_config = get_config("dome")
 
     if dome_config is None:
-        logger.info('No dome in config.')
+        logger.info("No dome in config.")
         return None
 
-    brand = dome_config['brand']
-    driver = dome_config['driver']
+    brand = dome_config["brand"]
+    driver = dome_config["driver"]
 
-    logger.debug(f'Creating dome: brand={brand!r}, driver={driver!r}')
-    module = load_module(f'panoptes.pocs.dome.{driver}')
+    logger.debug(f"Creating dome: brand={brand!r}, driver={driver!r}")
+    module = load_module(f"panoptes.pocs.dome.{driver}")
     dome = module.Dome(*args, **kwargs)
-    logger.info(f'Created dome driver: brand={brand}, driver={driver}')
+    logger.info(f"Created dome driver: brand={brand}, driver={driver}")
 
     return dome
 
 
 def create_dome_simulator(*args, **kwargs):
-    dome_config = get_config('dome')
+    dome_config = get_config("dome")
 
-    brand = dome_config['brand']
-    driver = dome_config['driver']
+    brand = dome_config["brand"]
+    driver = dome_config["driver"]
 
-    logger.debug(f'Creating dome simulator: brand={brand!r}, driver={driver!r}')
+    logger.debug(f"Creating dome simulator: brand={brand!r}, driver={driver!r}")
 
-    module = load_module(f'panoptes.pocs.dome.{driver}')
+    module = load_module(f"panoptes.pocs.dome.{driver}")
     dome = module.Dome(*args, **kwargs)
-    logger.info(f'Created dome driver: brand={brand!r}, driver={driver!r}')
+    logger.info(f"Created dome driver: brand={brand!r}, driver={driver!r}")
 
     return dome
 
@@ -60,6 +60,7 @@ class AbstractDome(PanBase):
     Adding support for a rotating dome would require coordination during
     observing to make sure that the opening tracks the field being observed.
     """
+
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
@@ -70,7 +71,7 @@ class AbstractDome(PanBase):
         dome interface class.
         """
         super().__init__(*args, **kwargs)
-        self._dome_config = self.get_config('dome')
+        self._dome_config = self.get_config("dome")
 
         # Sub-class directly modifies this property to record changes.
         self._is_connected = False

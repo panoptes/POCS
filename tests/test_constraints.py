@@ -8,6 +8,8 @@ from astropy.time import Time
 
 from collections import OrderedDict
 
+from panoptes.utils.error import PanError
+
 from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -17,32 +19,32 @@ from panoptes.pocs.scheduler.constraint import BaseConstraint
 from panoptes.pocs.scheduler.constraint import Duration
 from panoptes.pocs.scheduler.constraint import MoonAvoidance
 from panoptes.pocs.scheduler.constraint import AlreadyVisited
+from panoptes.pocs.scheduler.constraint import TimeWindow
 
 from panoptes.utils.config.client import get_config
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.serializers import from_yaml
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def observer():
-    loc = get_config('location')
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    loc = get_config("location")
+    location = EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
+    return Observer(location=location, name="Test Observer", timezone=loc["timezone"])
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def horizon_line() -> horizon_utils.Horizon:
-    obstruction_list = get_config('location.obstructions', default=list())
-    default_horizon = get_config('location.horizon')
+    obstruction_list = get_config("location.obstructions", default=list())
+    default_horizon = get_config("location.horizon")
 
     horizon_line = horizon_utils.Horizon(
-        obstructions=obstruction_list,
-        default_horizon=default_horizon
+        obstructions=obstruction_list, default_horizon=default_horizon
     )
     return horizon_line
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def field_list():
     return from_yaml("""
 -
@@ -84,12 +86,12 @@ def field_list():
 """)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def field():
-    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    return Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def observation(field):
     return Observation(field)
 
@@ -101,7 +103,7 @@ def test_config_creator():
 
 
 def test_config_creator_bad():
-    constraints = create_constraints_from_config(config=dict(constraints=[{'name': 'FooBar'}]))
+    constraints = create_constraints_from_config(config=dict(constraints=[{"name": "FooBar"}]))
     for c in constraints:
         assert isinstance(c, BaseConstraint)
 
@@ -127,7 +129,7 @@ def test_altitude_no_minimum(horizon_line):
 
 def test_basic_altitude(observer, field_list, horizon_line):
     # Target is at ~34 degrees altitude and 79 degrees azimuth
-    time = Time('2018-01-19 07:10:00')
+    time = Time("2018-01-19 07:10:00")
     m44 = field_list[-1]
 
     # First check out with default horizon
@@ -160,14 +162,12 @@ def test_basic_altitude(observer, field_list, horizon_line):
 
 
 def test_custom_altitude(observer, field_list):
-    time = Time('2018-01-19 07:10:00')
+    time = Time("2018-01-19 07:10:00")
     m44 = field_list[-1]
 
     # Then check veto with block
     horizon_line = horizon_utils.Horizon(
-        obstructions=[
-            [[40, 70], [40, 80]]
-        ],
+        obstructions=[[[40, 70], [40, 80]]],
     )
     ac = Altitude(horizon_line)
     observation = Observation(Field(**m44), **m44)
@@ -177,11 +177,9 @@ def test_custom_altitude(observer, field_list):
 
 
 def test_big_wall(observer, field_list):
-    time = Time('2018-01-19 07:10:00')
+    time = Time("2018-01-19 07:10:00")
     horizon_line = horizon_utils.Horizon(
-        obstructions=[
-            [[90, 0], [90, 359]]
-        ],
+        obstructions=[[[90, 0], [90, 359]]],
     )
 
     vetoes = list()
@@ -198,7 +196,7 @@ def test_big_wall(observer, field_list):
 def test_duration_veto(observer, field_list):
     dc = Duration(30 * u.degree)
 
-    time = Time('2016-08-13 17:42:00.034059')
+    time = Time("2016-08-13 17:42:00.034059")
     sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
 
     hd189733 = field_list[0]
@@ -215,11 +213,11 @@ def test_duration_veto(observer, field_list):
 def test_duration_score(observer):
     dc = Duration(30 * u.degree)
 
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
     sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
 
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
+    observation1 = Observation(Field("HD189733", "20h00m43.7135s +22d42m39.0645s"))  # HD189733
+    observation2 = Observation(Field("Hat-P-16", "00h38m17.59s +42d27m47.2s"))  # Hat-P-16
 
     veto1, score1 = dc.get_score(time, observer, observation1, sunrise=sunrise)
     veto2, score2 = dc.get_score(time, observer, observation2, sunrise=sunrise)
@@ -231,11 +229,11 @@ def test_duration_score(observer):
 def test_moon_veto(observer):
     mac = MoonAvoidance()
 
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
 
-    moon = get_body('moon', time, observer.location)
+    moon = get_body("moon", time, observer.location)
 
-    observation1 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
+    observation1 = Observation(Field("Sabik", "17h10m23s -15d43m30s"))  # Sabik
 
     veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
 
@@ -245,12 +243,12 @@ def test_moon_veto(observer):
 def test_moon_avoidance(observer):
     mac = MoonAvoidance()
 
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
 
-    moon = get_body('moon', time, observer.location)
+    moon = get_body("moon", time, observer.location)
 
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
+    observation1 = Observation(Field("HD189733", "20h00m43.7135s +22d42m39.0645s"))  # HD189733
+    observation2 = Observation(Field("Hat-P-16", "00h38m17.59s +42d27m47.2s"))  # Hat-P-16
 
     veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
     veto2, score2 = mac.get_score(time, observer, observation2, moon=moon)
@@ -262,20 +260,20 @@ def test_moon_avoidance(observer):
 def test_already_visited(observer):
     avc = AlreadyVisited()
 
-    time = Time('2016-08-13 10:00:00')
+    time = Time("2016-08-13 10:00:00")
 
     # HD189733
-    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))
+    observation1 = Observation(Field("HD189733", "20h00m43.7135s +22d42m39.0645s"))
     # Hat-P-16
-    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))
+    observation2 = Observation(Field("Hat-P-16", "00h38m17.59s +42d27m47.2s"))
     # Sabik
-    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))
+    observation3 = Observation(Field("Sabik", "17h10m23s -15d43m30s"))
 
     observed_list = OrderedDict()
 
-    observation1.seq_time = '01:00'
-    observation2.seq_time = '02:00'
-    observation3.seq_time = '03:00'
+    observation1.seq_time = "01:00"
+    observation2.seq_time = "02:00"
+    observation3.seq_time = "03:00"
 
     observed_list[observation1.seq_time] = observation1
     observed_list[observation2.seq_time] = observation2
@@ -285,3 +283,33 @@ def test_already_visited(observer):
 
     assert veto1 is True
     assert veto2 is False
+
+
+def test_time_based_priority(observer):
+    observation1 = Observation(Field("HD189733", "20h00m43.7135s +22d42m39.0645s"), priority=100)
+    tbc = TimeWindow(start_time="2016-08-13 10:00", end_time="2016-08-13 12:00", weight=1000)
+
+    # Test inside of time range
+    time = Time("2016-08-13 10:30:00")
+    veto1, score1 = tbc.get_score(time, observer, observation1)
+
+    assert veto1 is False
+    assert score1 == 1000
+
+    # Test outside of time range
+    time = Time("2016-08-13 09:30:00")
+    veto1, score1 = tbc.get_score(time, observer, observation1)
+
+    assert veto1 is False
+    assert score1 == 0
+
+
+def test_bad_time(observer):
+    with pytest.raises(PanError):
+        TimeWindow(start_time="2016-08-13 10:00", end_time="2016-08-13 09:00")
+
+    with pytest.raises(PanError):
+        TimeWindow(start_time="not a time", end_time="2016-08-13 12:00")
+
+    with pytest.raises(PanError):
+        TimeWindow(start_time=Time("2016-08-13 10:00"), end_time="not a time")

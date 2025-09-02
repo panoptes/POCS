@@ -1,58 +1,57 @@
+import glob
 import os
 import time
-import glob
-from ctypes.util import find_library
 from contextlib import suppress
+from ctypes.util import find_library
 
-import pytest
 import astropy.units as u
-from astropy.io import fits
+import pytest
 import requests
+from astropy.io import fits
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.error import NotFound
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.serializers import to_json
+from panoptes.utils.time import CountdownTimer
 
-from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
-from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from panoptes.pocs.camera import AbstractCamera, create_cameras_from_config
+from panoptes.pocs.camera.fli import Camera as FLICamera
 from panoptes.pocs.camera.sbig import Camera as SBIGCamera
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
-from panoptes.pocs.camera.fli import Camera as FLICamera
+from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
-from panoptes.pocs.camera import AbstractCamera
-
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.scheduler.observation.bias import BiasObservation
 from panoptes.pocs.scheduler.observation.dark import DarkObservation
 
-from panoptes.utils.error import NotFound
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
 
-from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.utils.serializers import to_json
-from panoptes.utils.time import CountdownTimer
-
-
-@pytest.fixture(scope='module', params=[
-    pytest.param([SimCamera, dict()]),
-    pytest.param([SimCamera, get_config('cameras.devices[0]')]),
-    pytest.param([SimCamera, get_config('cameras.devices[1]')]),
-    pytest.param([SimCamera, get_config('cameras.devices[2]')]),
-    pytest.param([SimSDKCamera, get_config('cameras.devices[3]')]),
-    pytest.param([SBIGCamera, 'sbig'], marks=[pytest.mark.with_camera]),
-    pytest.param([FLICamera, 'fli'], marks=[pytest.mark.with_camera]),
-    pytest.param([ZWOCamera, 'zwo'], marks=[pytest.mark.with_camera]),
-], ids=[
-    'dslr',
-    'dslr.00',
-    'dslr.focuser.cooling.00',
-    'dslr.filterwheel.cooling.00',
-    'ccd.filterwheel.cooling.00',
-    'sbig',
-    'fli',
-    'zwo'
-])
+@pytest.fixture(
+    scope="module",
+    params=[
+        pytest.param([SimCamera, dict()]),
+        pytest.param([SimCamera, get_config("cameras.devices[0]")]),
+        pytest.param([SimCamera, get_config("cameras.devices[1]")]),
+        pytest.param([SimCamera, get_config("cameras.devices[2]")]),
+        pytest.param([SimSDKCamera, get_config("cameras.devices[3]")]),
+        pytest.param([SBIGCamera, "sbig"], marks=[pytest.mark.with_camera]),
+        pytest.param([FLICamera, "fli"], marks=[pytest.mark.with_camera]),
+        pytest.param([ZWOCamera, "zwo"], marks=[pytest.mark.with_camera]),
+    ],
+    ids=[
+        "dslr",
+        "dslr.00",
+        "dslr.focuser.cooling.00",
+        "dslr.filterwheel.cooling.00",
+        "ccd.filterwheel.cooling.00",
+        "sbig",
+        "fli",
+        "zwo",
+    ],
+)
 def camera(request) -> AbstractCamera:
     CamClass = request.param[0]
     cam_params = request.param[1]
@@ -64,27 +63,28 @@ def camera(request) -> AbstractCamera:
         camera = CamClass(**cam_params)
     else:
         # Lookup real hardware device name in real life config server.
-        for cam_config in get_config('cameras.devices'):
-            if cam_config['model'] == cam_params:
+        for cam_config in get_config("cameras.devices"):
+            if cam_config["model"] == cam_params:
                 camera = CamClass(**cam_config)
                 break
 
-    camera.logger.log('testing', f'Camera created: {camera!r}')
+    camera.logger.log("testing", f"Camera created: {camera!r}")
 
     # Wait for cooled camera
     if camera.is_cooled_camera:
-        camera.logger.log('testing', f'Cooled camera needs to wait for cooling.')
+        camera.logger.log("testing", "Cooled camera needs to wait for cooling.")
         assert not camera.is_temperature_stable
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
         while not camera.is_temperature_stable and not cooling_timeout.expired():
-            camera.logger.log('testing',
-                              f'Still waiting for cooling: {cooling_timeout.time_left()}')
+            camera.logger.log(
+                "testing", f"Still waiting for cooling: {cooling_timeout.time_left()}"
+            )
             cooling_timeout.sleep(max_sleep=2)
         assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
     assert camera.is_ready
-    camera.logger.debug(f'Yielding camera {camera}')
+    camera.logger.debug(f"Yielding camera {camera}")
     yield camera
 
     # simulator_sdk needs this explicitly removed for some reason.
@@ -93,37 +93,39 @@ def camera(request) -> AbstractCamera:
         type(camera)._assigned_cameras.discard(camera.uid)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def counter(camera):
-    return {'value': 0}
+    return {"value": 0}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def patterns(camera, images_dir):
-    base_dir = os.path.join(images_dir, 'focus', camera.uid, '*')
+    base_dir = os.path.join(images_dir, "focus", camera.uid, "*")
     patterns = {
-        'final': os.path.join(base_dir, ('*-final.' + camera.file_extension)),
-        'fine_plot': os.path.join(base_dir, 'fine-focus.png'),
-        'coarse_plot': os.path.join(base_dir, 'coarse-focus.png')
+        "final": os.path.join(base_dir, ("*-final." + camera.file_extension)),
+        "fine_plot": os.path.join(base_dir, "fine-focus.png"),
+        "coarse_plot": os.path.join(base_dir, "coarse-focus.png"),
     }
     return patterns
 
 
 def reset_conf(config_host, config_port):
-    url = f'http://{config_host}:{config_port}/reset-config'
-    response = requests.post(url,
-                             data=to_json({'reset': True}),
-                             headers={'Content-Type': 'application/json'}
-                             )
+    url = f"http://{config_host}:{config_port}/reset-config"
+    response = requests.post(
+        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
+    )
     assert response.ok
 
 
 def test_create_cameras_from_config_no_autodetect(config_host, config_port):
-    set_config('cameras.auto_detect', False)
-    set_config('cameras.devices', [
-        dict(model='canon_gphoto2', port='/dev/fake01'),
-        dict(model='canon_gphoto2', port='/dev/fake02'),
-    ])
+    set_config("cameras.auto_detect", False)
+    set_config(
+        "cameras.devices",
+        [
+            dict(model="canon_gphoto2", port="/dev/fake01"),
+            dict(model="canon_gphoto2", port="/dev/fake02"),
+        ],
+    )
 
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
@@ -132,7 +134,7 @@ def test_create_cameras_from_config_no_autodetect(config_host, config_port):
 
 
 def test_create_cameras_from_config_autodetect(config_host, config_port):
-    set_config('cameras.defaults.auto_detect', True)
+    set_config("cameras.defaults.auto_detect", True)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
     reset_conf(config_host, config_port)
@@ -140,40 +142,42 @@ def test_create_cameras_from_config_autodetect(config_host, config_port):
 
 # Hardware independent tests, mostly use simulator:
 
+
 def test_sim_create_focuser():
-    sim_camera = SimCamera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
-                                    'focus_port': '/dev/ttyFAKE'})
+    sim_camera = SimCamera(
+        focuser={"model": "panoptes.pocs.focuser.simulator.Focuser", "focus_port": "/dev/ttyFAKE"}
+    )
     assert isinstance(sim_camera.focuser, Focuser)
 
 
 def test_sim_passed_focuser():
-    sim_focuser = Focuser(port='/dev/ttyFAKE')
+    sim_focuser = Focuser(port="/dev/ttyFAKE")
     sim_camera = SimCamera(focuser=sim_focuser)
     assert sim_camera.focuser is sim_focuser
 
 
 def test_sim_bad_focuser():
     with pytest.raises(NotFound):
-        SimCamera(focuser={'model': 'NOTAFOCUSER'})
+        SimCamera(focuser={"model": "NOTAFOCUSER"})
 
 
 def test_sim_worse_focuser():
     with pytest.raises(NotFound):
-        sim_camera = SimCamera(focuser='NOTAFOCUSER')
+        SimCamera(focuser="NOTAFOCUSER")
 
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == f'Simulated Camera ({sim_camera.uid})'
-    sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
-    assert str(sim_camera) == f'Sim ({sim_camera.uid}) port=/dev/ttyFAKE'
+    assert str(sim_camera) == f"Simulated Camera ({sim_camera.uid})"
+    sim_camera = SimCamera(name="Sim", port="/dev/ttyFAKE")
+    assert str(sim_camera) == f"Sim ({sim_camera.uid}) port=/dev/ttyFAKE"
 
 
 def test_sim_file_extension():
     sim_camera = SimCamera()
-    assert sim_camera.file_extension == 'fits'
-    sim_camera = SimCamera(file_extension='FIT')
-    assert sim_camera.file_extension == 'FIT'
+    assert sim_camera.file_extension == "fits"
+    sim_camera = SimCamera(file_extension="FIT")
+    assert sim_camera.file_extension == "FIT"
 
 
 def test_sim_readout_time():
@@ -189,7 +193,7 @@ def test_sdk_no_serial_number():
 
 
 def test_sdk_already_in_use():
-    serial_number = get_config('cameras.devices[-1].serial_number')
+    serial_number = get_config("cameras.devices[-1].serial_number")
     sim_camera = SimSDKCamera(serial_number=serial_number)
     assert sim_camera
     with pytest.raises(error.PanError):
@@ -201,7 +205,7 @@ def test_sdk_already_in_use():
 
 def test_sdk_camera_not_found():
     with pytest.raises(error.InvalidConfig):
-        SimSDKCamera(serial_number='SSC404')
+        SimSDKCamera(serial_number="SSC404")
 
 
 # Hardware independent tests for SBIG camera
@@ -215,20 +219,20 @@ def test_sbig_driver_bad_path():
     CDLL unload problem.
     """
     with pytest.raises(OSError):
-        SBIGDriver(library_path='no_library_here')
+        SBIGDriver(library_path="no_library_here")
 
 
-@pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
+@pytest.mark.filterwarnings("ignore:Could not connect to SBIG Camera")
 def test_sbig_bad_serial():
     """
     Attempt to create an SBIG camera instance for a specific non-existent
     camera. No actual cameras are required to run this test but the SBIG
     driver does need to be installed.
     """
-    if find_library('sbigudrv') is None:
+    if find_library("sbigudrv") is None:
         pytest.skip("Test requires SBIG camera driver to be installed")
     with pytest.raises(error.PanError):
-        SBIGCamera(serial_number='NOTAREALSERIALNUMBER')
+        SBIGCamera(serial_number="NOTAREALSERIALNUMBER")
 
 
 # *Potentially* hardware dependant tests:
@@ -273,9 +277,9 @@ def test_set_target_temperature(camera):
 
 
 def test_cooling_enabled(camera):
-    print('Some test output')
+    print("Some test output")
     assert camera.cooling_enabled == camera.is_cooled_camera
-    print('Some other output')
+    print("Some other output")
 
 
 def test_enable_cooling(camera):
@@ -325,11 +329,68 @@ def test_is_temperature_stable(camera):
         assert not camera.is_temperature_stable
 
 
+def test_get_binning(camera):
+    """Test getting the binning value."""
+    try:
+        binning = camera.binning
+        assert binning is not None
+    except (NotImplementedError, AttributeError):
+        pytest.skip(f"Camera {camera.name} doesn't implement binning")
+
+
+def test_set_binning(camera):
+    """Test setting the binning value."""
+    try:
+        # Store the original binning value to restore it later
+        original_binning = camera.binning
+
+        # Check if the camera has a 'supported_bins' property
+        if not hasattr(camera, "properties") or "supported_bins" not in camera.properties:
+            pytest.skip(f"Camera {camera.name} doesn't have supported_bins property")
+
+        # Get a valid binning value different from the current one if possible
+        supported_bins = camera.properties["supported_bins"]
+        if not supported_bins:
+            pytest.skip(f"Camera {camera.name} doesn't have any supported binning values")
+
+        # Try to find a binning value different from the current one
+        test_binning = None
+        for bin_value in supported_bins:
+            if bin_value != original_binning:
+                test_binning = bin_value
+                break
+
+        # If all supported binning values are the same as the current one, just use the current one
+        if test_binning is None:
+            test_binning = original_binning
+
+        # Set the binning value
+        camera.binning = test_binning
+        assert camera.binning == test_binning
+
+        # Test that width and height are properly adjusted
+        # The width and height should be divided by the binning value
+        width, height = camera.image_size
+
+        # Try to set an invalid binning value
+        with pytest.raises(ValueError):
+            # Find a value that's not in supported_bins
+            invalid_binning = max(supported_bins) + 1
+            camera.binning = invalid_binning
+
+        # Restore the original binning value
+        camera.binning = original_binning
+        assert camera.binning == original_binning
+
+    except (NotImplementedError, AttributeError) as e:
+        pytest.skip(f"Camera {camera.name} doesn't implement binning: {e}")
+
+
 def test_exposure(camera, tmpdir):
     """
     Tests basic take_exposure functionality
     """
-    fits_path = str(tmpdir.join('test_exposure.fits'))
+    fits_path = str(tmpdir.join("test_exposure.fits"))
 
     assert not camera.is_exposing
     assert camera.is_ready
@@ -348,30 +409,30 @@ def test_exposure(camera, tmpdir):
     assert camera.is_ready
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
-    assert header['IMAGETYP'] == 'Light Frame'
+    assert header["EXPTIME"] == 1.0
+    assert header["IMAGETYP"] == "Light Frame"
 
 
 def test_exposure_blocking(camera, tmpdir):
     """
     Tests blocking take_exposure functionality. At least for now only SBIG cameras do this.
     """
-    fits_path = str(tmpdir.join('test_exposure_blocking.fits'))
+    fits_path = str(tmpdir.join("test_exposure_blocking.fits"))
     # A one second exposure, command should block until complete so FITS
     # should exist immediately afterwards
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
-    assert header['IMAGETYP'] == 'Light Frame'
+    assert header["EXPTIME"] == 1.0
+    assert header["IMAGETYP"] == "Light Frame"
 
 
 def test_long_exposure_blocking(camera, tmpdir):
     """
     Tests basic take_exposure functionality
     """
-    fits_path = str(tmpdir.join('test_long_exposure_blocking.fits'))
+    fits_path = str(tmpdir.join("test_long_exposure_blocking.fits"))
     original_timeout = camera.timeout
     original_readout = camera._readout_time
     try:
@@ -394,22 +455,22 @@ def test_exposure_dark(camera, tmpdir):
     """
     Tests taking a dark.
     """
-    fits_path = str(tmpdir.join('test_exposure_dark.fits'))
+    fits_path = str(tmpdir.join("test_exposure_dark.fits"))
     # A 1 second dark exposure
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits_utils.getheader(fits_path)
-    assert header['EXPTIME'] == 1.0
-    assert header['IMAGETYP'] == 'Dark Frame'
+    assert header["EXPTIME"] == 1.0
+    assert header["IMAGETYP"] == "Dark Frame"
     with suppress(AttributeError):
         if not camera.can_take_internal_darks and camera.filterwheel._dark_position:
             # Filterwheel should have moved to 'blank' position due to dark exposure.
-            assert camera.filterwheel.current_filter == 'blank'
-            fits_path2 = str(tmpdir.join('test_exposure_dark_light.fits'))
+            assert camera.filterwheel.current_filter == "blank"
+            fits_path2 = str(tmpdir.join("test_exposure_dark_light.fits"))
             camera.take_exposure(filename=fits_path2, blocking=True)
             # Filterwheel should have moved back to most recent non opaque filter now.
-            assert camera.filterwheel.current_filter == 'one'
+            assert camera.filterwheel.current_filter == "one"
 
 
 def test_exposure_collision(camera, tmpdir):
@@ -422,13 +483,13 @@ def test_exposure_collision(camera, tmpdir):
         while camera.is_temperature_stable is False:
             time.sleep(0.5)
 
-    fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
-    fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
+    fits_path_1 = str(tmpdir.join("test_exposure_collision1.fits"))
+    fits_path_2 = str(tmpdir.join("test_exposure_collision2.fits"))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
-    camera.logger.log('testing', 'Exposure 1 started')
+    camera.logger.log("testing", "Exposure 1 started")
     with pytest.raises(error.PanError):
         camera.take_exposure(1 * u.second, filename=fits_path_2)
-    camera.logger.log('testing', 'Exposure 2 collided')
+    camera.logger.log("testing", "Exposure 2 collided")
     # Wait for exposure.
     while camera.is_exposing:
         time.sleep(0.5)
@@ -439,7 +500,7 @@ def test_exposure_collision(camera, tmpdir):
 
     assert os.path.exists(fits_path_1)
     assert not os.path.exists(fits_path_2)
-    assert fits_utils.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits_utils.getval(fits_path_1, "EXPTIME") == 2.0
 
 
 def test_exposure_scaling(camera, tmpdir):
@@ -452,12 +513,12 @@ def test_exposure_scaling(camera, tmpdir):
     except NotImplementedError:
         pytest.skip("Camera does not have bit_depth attribute")
     else:
-        fits_path = str(tmpdir.join('test_exposure_scaling.fits'))
+        fits_path = str(tmpdir.join("test_exposure_scaling.fits"))
         camera.take_exposure(filename=fits_path, dark=True, blocking=True)
         image_data, image_header = fits.getdata(fits_path, header=True)
-        assert bit_depth == image_header['BITDEPTH'] * u.bit
-        pad_bits = image_header['BITPIX'] - image_header['BITDEPTH']
-        assert (image_data % 2 ** pad_bits).any()
+        assert bit_depth == image_header["BITDEPTH"] * u.bit
+        pad_bits = image_header["BITPIX"] - image_header["BITDEPTH"]
+        assert (image_data % 2**pad_bits).any()
 
 
 def test_exposure_no_filename(camera):
@@ -475,10 +536,10 @@ def test_exposure_not_connected(camera):
 def test_exposure_moving(camera, tmpdir):
     if camera.filterwheel is None:
         pytest.skip("Camera does not have a filterwheel")
-    fits_path_1 = str(tmpdir.join('test_not_moving.fits'))
-    fits_path_2 = str(tmpdir.join('test_moving.fits'))
+    fits_path_1 = str(tmpdir.join("test_not_moving.fits"))
+    fits_path_2 = str(tmpdir.join("test_moving.fits"))
     camera.filterwheel.position = 1
-    exp_event = camera.take_exposure(filename=fits_path_1, blocking=True)
+    camera.take_exposure(filename=fits_path_1, blocking=True)
     assert os.path.exists(fits_path_1)
     move_event = camera.filterwheel.move_to(2)
     with pytest.raises(error.PanError):
@@ -491,12 +552,14 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     """
     Tests response to an exposure timeout
     """
-    fits_path = str(tmpdir.join('test_exposure_timeout.fits'))
+    fits_path = str(tmpdir.join("test_exposure_timeout.fits"))
 
     # We set short exptime, readout, and timeout durations, but pass the `simulator_exptime` to our
     # camera. This should cause the camera to timeout during the exposure.
     camera._readout_time = 0.2 * u.second
-    readout_thread = camera.take_exposure(seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03)
+    readout_thread = camera.take_exposure(
+        seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03
+    )
 
     # Wait for it all to be over.
     time.sleep(5)
@@ -514,15 +577,16 @@ def test_observation(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    field = Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
     observation = Observation(field, exptime=1.5 * u.second)
-    observation.seq_time = '19991231T235959'
+    observation.seq_time = "19991231T235959"
     camera.take_observation(observation)
     while camera.is_observing:
-        camera.logger.trace(f'Waiting for observation event from inside test.')
+        camera.logger.trace("Waiting for observation event from inside test.")
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, "TestObservation", camera.uid, observation.seq_time, "*.fits*"
+    )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -530,30 +594,32 @@ def test_observation_headers_and_blocking(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    field = Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
     observation = Observation(field, exptime=1.5 * u.second)
-    observation.seq_time = '19991231T235559'
-    camera.take_observation(observation, headers={'field_name': 'TESTVALUE'}, blocking=True)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation.seq_time = "19991231T235559"
+    camera.take_observation(observation, headers={"field_name": "TESTVALUE"}, blocking=True)
+    observation_pattern = os.path.join(
+        images_dir, "TestObservation", camera.uid, observation.seq_time, "*.fits*"
+    )
     image_files = glob.glob(observation_pattern)
     assert len(image_files) == 1
-    camera.logger.debug(f'{image_files=}')
+    camera.logger.debug(f"{image_files=}")
     headers = fits_utils.getheader(image_files[0])
-    camera.logger.debug(f'{headers=!r}')
-    assert headers['FIELD'] == 'TESTVALUE'
+    camera.logger.debug(f"{headers=!r}")
+    assert headers["FIELD"] == "TESTVALUE"
 
 
 def test_observation_nofilter(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
+    field = Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
     observation = Observation(field, exptime=1.5 * u.second, filter_name=None)
-    observation.seq_time = '19991231T235159'
+    observation.seq_time = "19991231T235159"
     camera.take_observation(observation, blocking=True)
-    observation_pattern = os.path.join(images_dir, 'TestObservation',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, "TestObservation", camera.uid, observation.seq_time, "*.fits*"
+    )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -561,17 +627,20 @@ def test_observation_dark(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    position = '20h00m43.7135s +22d42m39.0645s'
+    position = "20h00m43.7135s +22d42m39.0645s"
     observation = DarkObservation(position, exptimes=[1])
     assert observation.dark
 
-    observation.seq_time = '19991231T235959'
+    observation.seq_time = "19991231T235959"
     camera.take_observation(observation, blocking=True)
     while camera.is_observing:
-        camera.logger.trace(f'Waiting for observation event from inside test. {camera.is_observing}')
+        camera.logger.trace(
+            f"Waiting for observation event from inside test. {camera.is_observing}"
+        )
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'dark',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, "dark", camera.uid, observation.seq_time, "*.fits*"
+    )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -579,17 +648,18 @@ def test_observation_bias(camera, images_dir):
     """
     Tests functionality of take_observation()
     """
-    position = '20h00m43.7135s +22d42m39.0645s'
+    position = "20h00m43.7135s +22d42m39.0645s"
     observation = BiasObservation(position)
     assert observation.dark
 
-    observation.seq_time = '19991231T235959'
+    observation.seq_time = "19991231T235959"
     camera.take_observation(observation)
     while camera.is_observing:
-        camera.logger.trace(f'Waiting for observation event from inside test.')
+        camera.logger.trace("Waiting for observation event from inside test.")
         time.sleep(1)
-    observation_pattern = os.path.join(images_dir, 'bias',
-                                       camera.uid, observation.seq_time, '*.fits*')
+    observation_pattern = os.path.join(
+        images_dir, "bias", camera.uid, observation.seq_time, "*.fits*"
+    )
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -606,8 +676,8 @@ def test_autofocus_coarse(camera, patterns, counter):
     if camera.has_filterwheel:
         assert camera.filterwheel.current_filter == "deux"
 
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
 
 
 def test_autofocus_fine(camera, patterns, counter):
@@ -615,8 +685,8 @@ def test_autofocus_fine(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus()
     autofocus_event.wait()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
 
 
 def test_autofocus_fine_blocking(camera, patterns, counter):
@@ -624,8 +694,8 @@ def test_autofocus_fine_blocking(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
 
 
 def test_autofocus_with_plots(camera, patterns, counter):
@@ -633,9 +703,9 @@ def test_autofocus_with_plots(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(make_plots=True)
     autofocus_event.wait()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
-    assert len(glob.glob(patterns['fine_plot'])) == 1
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
+    assert len(glob.glob(patterns["fine_plot"])) == 1
 
 
 def test_autofocus_coarse_with_plots(camera, patterns, counter):
@@ -643,9 +713,9 @@ def test_autofocus_coarse_with_plots(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(coarse=True, make_plots=True)
     autofocus_event.wait()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
-    assert len(glob.glob(patterns['coarse_plot'])) == 1
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
+    assert len(glob.glob(patterns["coarse_plot"])) == 1
 
 
 def test_autofocus_keep_files(camera, patterns, counter):
@@ -653,8 +723,8 @@ def test_autofocus_keep_files(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
 
 
 def test_autofocus_no_darks(camera, patterns, counter):
@@ -662,8 +732,8 @@ def test_autofocus_no_darks(camera, patterns, counter):
         pytest.skip("Camera does not have a focuser")
     autofocus_event = camera.autofocus(keep_files=True, take_dark=False)
     autofocus_event.wait()
-    counter['value'] += 1
-    assert len(glob.glob(patterns['final'])) == counter['value']
+    counter["value"] += 1
+    assert len(glob.glob(patterns["final"])) == counter["value"]
 
 
 def test_autofocus_no_size(camera):
@@ -776,7 +846,6 @@ def test_move_filterwheel_focus_offset(camera):
     camera.filterwheel.move_to("one", blocking=True)
 
     for filter_name in camera.filterwheel.filter_names:
-
         offset = offsets.get(filter_name, 0) - offsets.get(camera.filterwheel.current_filter, 0)
         initial_position = camera.focuser.position
         camera.filterwheel.move_to(filter_name, blocking=True)

@@ -9,35 +9,35 @@ from panoptes.pocs.dome import abstract_serial_dome
 class Protocol:
     # Status codes, produced when not responding to an input. They are oriented towards
     # reporting whether the two shutters are fully closed.
-    BOTH_CLOSED = '0'  # Both A and B shutters are fully closed.
+    BOTH_CLOSED = "0"  # Both A and B shutters are fully closed.
 
-    A_IS_CLOSED = '1'  # Only shutter A is fully closed.
-    B_IS_CLOSED = '2'  # Only shutter B is fully closed.
+    A_IS_CLOSED = "1"  # Only shutter A is fully closed.
+    B_IS_CLOSED = "2"  # Only shutter B is fully closed.
 
-    BOTH_OPEN = '3'  # Really means both NOT fully closed.
+    BOTH_OPEN = "3"  # Really means both NOT fully closed.
 
     # Status codes produced by the dome when not responding to a movement command.
     STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)
 
     # Limit responses, when the limit has been reached on a direction of movement.
-    A_OPEN_LIMIT = 'x'  # Response to asking for A to open, and being at open limit
-    A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit
+    A_OPEN_LIMIT = "x"  # Response to asking for A to open, and being at open limit
+    A_CLOSE_LIMIT = "X"  # Response to asking for A to close, and being at close limit
 
-    B_OPEN_LIMIT = 'y'  # Response to asking for B to open, and being at open limit
-    B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit
+    B_OPEN_LIMIT = "y"  # Response to asking for B to open, and being at open limit
+    B_CLOSE_LIMIT = "Y"  # Response to asking for B to close, and being at close limit
 
     # Command codes, echoed while happening
-    CLOSE_A = 'A'
-    OPEN_A = 'a'
+    CLOSE_A = "A"
+    OPEN_A = "a"
 
-    CLOSE_B = 'B'
-    OPEN_B = 'b'
+    CLOSE_B = "B"
+    OPEN_B = "b"
 
     # These codes are documented for an 18' dome, but appear not to work with the 7' domes
     # we have access to.
-    OPEN_BOTH = 'O'
-    CLOSE_BOTH = 'C'
-    RESET = 'R'
+    OPEN_BOTH = "O"
+    CLOSE_BOTH = "C"
+    RESET = "R"
 
 
 class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
@@ -46,6 +46,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     Experience shows that it emits a status byte about once a second, with the codes
     as described in the Protocol class.
     """
+
     # TODO(jamessynge): Get these from the config file (i.e. per instance), with these values
     # as defaults, though LISTEN_TIMEOUT can just be the timeout config for SerialData.
     LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response.
@@ -78,7 +79,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_OPEN:
             return True
-        self.logger.warning(f'AstrohavenDome.open wrong final state: {v!r}')
+        self.logger.warning(f"AstrohavenDome.open wrong final state: {v!r}")
         return False
 
     @property
@@ -87,14 +88,20 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
-        self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT,
-                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
-        self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT,
-                        feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS)
+        self._full_move(
+            Protocol.CLOSE_A,
+            Protocol.A_CLOSE_LIMIT,
+            feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS,
+        )
+        self._full_move(
+            Protocol.CLOSE_B,
+            Protocol.B_CLOSE_LIMIT,
+            feedback_countdown=AstrohavenDome.NUM_CLOSE_FEEDBACKS,
+        )
         v = self._read_state_until_stable()
         if v == Protocol.BOTH_CLOSED:
             return True
-        self.logger.warning(f'AstrohavenDome.close wrong final state: {v!r}')
+        self.logger.warning(f"AstrohavenDome.close wrong final state: {v!r}")
         return False
 
     @property
@@ -102,10 +109,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         """Return a dict with dome's current status."""
 
         status_lookup = {
-            Protocol.BOTH_CLOSED: 'closed_both',
-            Protocol.A_IS_CLOSED: 'closed_a',
-            Protocol.B_IS_CLOSED: 'closed_b',
-            Protocol.BOTH_OPEN: 'open_both',
+            Protocol.BOTH_CLOSED: "closed_both",
+            Protocol.A_IS_CLOSED: "closed_a",
+            Protocol.B_IS_CLOSED: "closed_b",
+            Protocol.BOTH_OPEN: "open_both",
         }
 
         state = self._read_latest_state()
@@ -115,16 +122,18 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         )
 
         try:
-            return_status['open'] = status_lookup[state]
-        except KeyError as e:
-            return_status['open'] = f'Unexpected response from Astrohaven Dome Controller: {state!r}'
+            return_status["open"] = status_lookup[state]
+        except KeyError:
+            return_status["open"] = (
+                f"Unexpected response from Astrohaven Dome Controller: {state!r}"
+            )
 
         return return_status
 
     def __str__(self):
         if self.is_connected:
             return self.status
-        return 'Disconnected'
+        return "Disconnected"
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -143,14 +152,14 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     def _read_state_until_stable(self):
         """Read the status until it reaches one of the stable values."""
         end_by = time.time() + AstrohavenDome.LISTEN_TIMEOUT
-        c = ''
+        c = ""
         while True:
             data = self.serial.read_bytes(size=1)
             if data:
                 c = chr(data[-1])
                 if c in Protocol.STABLE_STATES:
                     return c
-                self.logger.debug(f'_read_state_until_stable not yet stable: data={data!r}')
+                self.logger.debug(f"_read_state_until_stable not yet stable: data={data!r}")
             if time.time() < end_by:
                 continue
             pass
@@ -188,7 +197,9 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                     c = chr(data[-1])
                     if c == target_feedback:
                         feedback_countdown -= 1
-                        self.logger.debug(f'Got target_feedback, feedback_countdown={feedback_countdown!r}')
+                        self.logger.debug(
+                            f"Got target_feedback, feedback_countdown={feedback_countdown!r}"
+                        )
                         if feedback_countdown <= 0:
                             # Woot! Moved the dome and got the desired response.
                             return True
@@ -199,12 +210,15 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         # we start seeing the echo of `send`.
                         pass
                     else:  # pragma: no cover
-                        self.logger.warning(f'Unexpected value from dome! send={send!r} target_feedback={target_feedback!r} data={data!r}')
+                        self.logger.warning(
+                            f"Unexpected value from dome! send={send!r} target_feedback={target_feedback!r} data={data!r}"
+                        )
                 if time.time() < end_by:
                     continue
                 self.logger.error(
-                    f'Timed out moving the dome. Check for hardware or communications problem. '
-                    f'send={send!r} target_feedback={target_feedback!r} data={data!r}')
+                    f"Timed out moving the dome. Check for hardware or communications problem. "
+                    f"send={send!r} target_feedback={target_feedback!r} data={data!r}"
+                )
                 return False
         finally:
             self.serial.ser.timeout = saved_timeout

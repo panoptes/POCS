@@ -9,7 +9,6 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class DarkObservation(Observation):
-
     def __init__(self, position, exptimes=None):
         """
         Args:
@@ -27,17 +26,17 @@ class DarkObservation(Observation):
         # Create the observation
         min_nexp = len(self._exptimes)
         exp_set_size = min_nexp
-        field = Field('Dark', position=position)
+        field = Field("Dark", position=position)
         super().__init__(field=field, min_nexp=min_nexp, exp_set_size=exp_set_size, dark=True)
 
         # Specify directory root for file storage
-        self._directory = os.path.join(self._image_dir, 'dark')
+        self._directory = os.path.join(self._image_dir, "dark")
 
     def __str__(self):
-        return f"DarkObservation"
+        return "DarkObservation"
 
     @property
     def exptime(self):
-        """ Return current exposure time as a u.Quantity. """
+        """Return current exposure time as a u.Quantity."""
         exptime = self._exptimes[self.current_exp_num]
         return get_quantity_value(exptime, u.second) * u.second

@@ -7,7 +7,7 @@ def on_enter(event_data):
         pocs.stop_states()
     else:
         # Note: Unit will "sleep" before transition until it is safe to observe again.
-        pocs.next_state = 'ready'
+        pocs.next_state = "ready"
         pocs.reset_observing_run()
 
     pocs.say("Another successful night!")

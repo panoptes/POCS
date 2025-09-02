@@ -19,73 +19,73 @@ async def lifespan(app: FastAPI):
     This will connect to the weather station and record
     readings at a regular interval.
     """
-    conf = get_config('environment.weather', {})
-    app_objects['conf'] = conf
+    conf = get_config("environment.weather", {})
+    app_objects["conf"] = conf
 
     # Get list of possible ports for auto-detect or use the configured port.
-    if conf.get('auto_detect', False) is True:
+    if conf.get("auto_detect", False) is True:
         ports = [p.device for p in get_comports()]
     else:
-        ports = [conf['serial_port']]
+        ports = [conf["serial_port"]]
 
     # Check the ioptron symlink and skip that port if it exists.
     ioptron_port = None
     with suppress(FileNotFoundError):
-        ioptron_port = os.readlink('/dev/ioptron')
+        ioptron_port = os.readlink("/dev/ioptron")
 
     weather_thread: Thread = None
 
     # Try to connect to the weather station.
     for port in ports:
-        if 'ttyUSB' not in port:
+        if "ttyUSB" not in port and "weather" not in port:
             continue
 
         if port == ioptron_port:
             continue
 
-        conf['serial_port'] = port
+        conf["serial_port"] = port
         try:
             weather_station = WeatherStation(**conf)
-            weather_station.logger.info(f'Weather station setup: {weather_station}')
+            weather_station.logger.info(f"Weather station setup: {weather_station}")
 
             def record_readings():
                 """Record the current readings in the db."""
-                record_interval = conf.get('record_interval', 60)
-                weather_station.logger.info(f'Setting up weather recording {record_interval=}')
+                record_interval = conf.get("record_interval", 60)
+                weather_station.logger.info(f"Setting up weather recording {record_interval=}")
                 while True:
                     time.sleep(record_interval)
                     try:
                         weather_station.record()
                     except Exception as e:
-                        weather_station.logger.warning(f'Could not get weather record: {e}')
+                        weather_station.logger.warning(f"Could not get weather record: {e}")
 
             # Create a thread to record the readings at an interval
             weather_thread = Thread(target=record_readings)
             weather_thread.daemon = True
             weather_thread.start()
 
-            app_objects['weather_station'] = weather_station
+            app_objects["weather_station"] = weather_station
             break
         except Exception as e:
-            print(f'Could not connect to weather station on {port}: {e}')
+            print(f"Could not connect to weather station on {port}: {e}")
     else:
-        raise RuntimeError('Could not connect to weather station.')
+        raise RuntimeError("Could not connect to weather station.")
 
     yield
-    weather_station.logger.info('Shutting down weather station, please wait')
+    weather_station.logger.info("Shutting down weather station, please wait")
     weather_thread.join()
 
 
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get('/status')
+@app.get("/status")
 async def status():
     """Returns the power board status."""
-    return app_objects['weather_station'].status
+    return app_objects["weather_station"].status
 
 
-@app.get('/config')
+@app.get("/config")
 async def get_ws_config():
     """Returns the power board status."""
-    return app_objects['weather_station']
+    return app_objects["weather_station"]

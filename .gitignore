@@ -52,3 +52,5 @@ MANIFEST
 
 logs
 conf_files/*_local.yaml
+
+temp*

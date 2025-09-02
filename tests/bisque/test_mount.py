@@ -15,20 +15,20 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False, reason="TheSkyX
 @pytest.fixture
 def location():
     config = get_config()
-    loc = config['location']
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    loc = config["location"]
+    return EarthLocation(lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"])
 
 
 @pytest.fixture(scope="function")
 def mount(config, location):
     try:
-        del os.environ['POCSTIME']
+        del os.environ["POCSTIME"]
     except KeyError:
         pass
 
-    config['mount'] = {
-        'brand': 'bisque',
-        'template_dir': 'resources/bisque',
+    config["mount"] = {
+        "brand": "bisque",
+        "template_dir": "resources/bisque",
     }
     return Mount(location=location, config=config)
 
@@ -68,7 +68,7 @@ def test_unpark_park(mount):
 def test_status(mount, target):
     mount.initialize(unpark=True)
     status1 = mount.status
-    assert 'mount_target_ra' not in status1
+    assert "mount_target_ra" not in status1
 
     mount.set_target_coordinates(target)
     assert mount.has_target is True
@@ -76,21 +76,18 @@ def test_status(mount, target):
     assert mount.get_target_coordinates() == target
 
     status2 = mount.status
-    assert 'mount_target_ra' in status2
+    assert "mount_target_ra" in status2
 
 
 def test_update_location(mount, config):
-    loc = config['location']
+    loc = config["location"]
 
     mount.initialize(unpark=True)
 
     location1 = mount.location
     location2 = EarthLocation(
-        lon=loc['longitude'],
-        lat=loc['latitude'],
-        height=loc['elevation'] -
-               1000 *
-               u.meter)
+        lon=loc["longitude"], lat=loc["latitude"], height=loc["elevation"] - 1000 * u.meter
+    )
     mount.location = location2
 
     assert location1 != location2

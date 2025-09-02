@@ -2,7 +2,7 @@ from panoptes.pocs.utils import error
 
 
 def on_enter(event_data):
-    """ Once inside the slewing state, set the mount slewing. """
+    """Once inside the slewing state, set the mount slewing."""
     pocs = event_data.model
     try:
         if pocs.observatory.mount.is_parked:
@@ -16,7 +16,7 @@ def on_enter(event_data):
             raise error.PocsError("Mount did not successfully slew to target.")
 
         pocs.say("I'm at the target, checking pointing.")
-        pocs.next_state = 'pointing'
+        pocs.next_state = "pointing"
 
     except Exception as e:
-        pocs.say(f'Wait a minute, there was a problem slewing. Sending to parking. {e}')
+        pocs.say(f"Wait a minute, there was a problem slewing. Sending to parking. {e}")
