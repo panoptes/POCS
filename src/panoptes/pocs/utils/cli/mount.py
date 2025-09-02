@@ -178,7 +178,10 @@ def slew_to_target(
     location = create_location_from_config()
     observe_horizon = location.location.get("horizon", 30 * u.deg)
 
-    coords = get_target_coords(target, location.location, is_comet=comet)
+    try:
+        coords = get_target_coords(target, location.location, is_comet=comet)
+    except RuntimeError as e:
+        print(f'[red]{e}[/red]')
     if not coords:
         print("[red]Could not find a suitable target by name or position.[/red]")
         return typer.Abort()
@@ -393,7 +396,6 @@ def get_target_coords(
     target: str,
     location: EarthLocation | None = None,
     obstime: datetime | Time | None = None,
-    is_body: bool = False,
     is_comet: bool = False
 ) -> SkyCoord:
     """Get the coordinates of the target.
@@ -402,7 +404,6 @@ def get_target_coords(
         target (str): The target to look for.
         location (dict, optional): The location of the observer. Defaults to None.
         obstime (datetime, Time, optional): The time of the observation. Defaults to None.
-        is_body (bool, optional): Is the target a solar system body? Defaults to False.
         is_comet (bool, optional): Is the target a comet? Defaults to False.
 
     Returns:
@@ -411,11 +412,20 @@ def get_target_coords(
     obstime = obstime or current_time()
     print(f'Looking for coordinates for {target} at {obstime}.')
 
+    # If the object is a solar system body, mark accordingly.
+    is_solar_system_body = False
+    solar_system_bodies = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'moon']
+    if target.lower() in solar_system_bodies:
+        is_solar_system_body = True
+
+    if target.lower() == 'sun':
+        raise RuntimeError('Refusing to go to the sun')
+
     if is_comet and location is not None:
         obj = Horizons(id=target, id_type='smallbody', epochs=obstime.jd1, location=location)
         eph = obj.ephemerides()
         coords = SkyCoord(eph[0]["RA"], eph[0]["DEC"], unit=(u.deg, u.deg))
-    elif is_body and location is not None:
+    elif is_solar_system_body and location is not None:
         coords = get_body(target, time=obstime, location=location)
     else:
         try:
