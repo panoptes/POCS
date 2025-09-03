@@ -1,14 +1,10 @@
 import re
-from datetime import datetime
 from pathlib import Path
 
 import serial
 import typer
 from astropy import units as u
-from astropy.coordinates import AltAz, EarthLocation, SkyCoord, get_body
-from astropy.coordinates.name_resolve import NameResolveError
-from astropy.time import Time
-from astroquery.jplhorizons import Horizons
+from astropy.coordinates import AltAz
 from human_readable import time_delta as friendly_time_delta
 from panoptes.utils.config.client import set_config
 from panoptes.utils.rs232 import SerialData
@@ -20,6 +16,7 @@ from typing_extensions import Annotated
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
+from panoptes.pocs.utils.coords import get_target_coords
 from panoptes.pocs.utils.location import create_location_from_config
 
 app = typer.Typer()
@@ -178,13 +175,15 @@ def slew_to_target(
     location = create_location_from_config()
     observe_horizon = location.location.get("horizon", 30 * u.deg)
 
+    coords = None
     try:
-        coords = get_target_coords(target, location.location, is_comet=comet)
+        coords = get_target_coords(target, is_comet=comet)
     except RuntimeError as e:
-        print(f'[red]{e}[/red]')
-    if not coords:
-        print("[red]Could not find a suitable target by name or position.[/red]")
-        return typer.Abort()
+        print(f"[red]{e}[/red]")
+    finally:
+        if not coords:
+            print("[red]Could not find a suitable target by name or position.[/red]")
+            return typer.Abort()
 
     # Check that the target is observable.
     is_observable = location.observer.target_is_up(current_time(), coords, horizon=observe_horizon)
@@ -390,50 +389,3 @@ def setup_mount(
                     return typer.Exit()
             except serial.SerialTimeoutException:
                 pass
-
-
-def get_target_coords(
-    target: str,
-    location: EarthLocation | None = None,
-    obstime: datetime | Time | None = None,
-    is_comet: bool = False
-) -> SkyCoord:
-    """Get the coordinates of the target.
-
-    Args:
-        target (str): The target to look for.
-        location (dict, optional): The location of the observer. Defaults to None.
-        obstime (datetime, Time, optional): The time of the observation. Defaults to None.
-        is_comet (bool, optional): Is the target a comet? Defaults to False.
-
-    Returns:
-        SkyCoord: The coordinates of the target.
-    """
-    obstime = obstime or current_time()
-    print(f'Looking for coordinates for {target} at {obstime}.')
-
-    # If the object is a solar system body, mark accordingly.
-    is_solar_system_body = False
-    solar_system_bodies = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'moon']
-    if target.lower() in solar_system_bodies:
-        is_solar_system_body = True
-
-    if target.lower() == 'sun':
-        raise RuntimeError('Refusing to go to the sun')
-
-    if is_comet and location is not None:
-        obj = Horizons(id=target, id_type='smallbody', epochs=obstime.jd1, location=location)
-        eph = obj.ephemerides()
-        coords = SkyCoord(eph[0]["RA"], eph[0]["DEC"], unit=(u.deg, u.deg))
-    elif is_solar_system_body and location is not None:
-        coords = get_body(target, time=obstime)
-    else:
-        try:
-            coords = SkyCoord(target)
-        except ValueError:
-            try:
-                coords = SkyCoord.from_name(target)
-            except NameResolveError:
-                raise ValueError(f'Could not resolve target {target}')
-
-    return coords
