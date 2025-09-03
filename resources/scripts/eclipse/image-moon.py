@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import threading
 import time
 from collections import deque
 from pathlib import Path
@@ -42,6 +43,9 @@ except RuntimeError:
     storage_client = None
 
 
+stop_event = threading.Event()
+
+
 def main(*args, **kwargs):
     unit_id = get_config('pan_id', '').upper()
     output_dir = OUTPUT_DIRECTORY / unit_id
@@ -69,6 +73,9 @@ def main(*args, **kwargs):
             unit_id=unit_id,
             upload=upload,
         )
+    except KeyboardInterrupt:
+        stop_event.set()
+        print('Stopping script, please wait for current image to finish.')
     except Exception as e:
         print(f'Error in pictures: {e!r}')
 
@@ -76,7 +83,7 @@ def main(*args, **kwargs):
 def start_pictures(cameras, exposure_settings, output_dir, unit_id=None, upload=True):
     thread_deque = deque(maxlen=25)
     try:
-        while True:
+        while not stop_event.is_set():
             # Loop through exposure settings.
             for settings in exposure_settings:
                 shutter_index = settings['shutter_index']
