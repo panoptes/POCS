@@ -47,7 +47,7 @@ def main(*args, **kwargs):
     output_dir = OUTPUT_DIRECTORY / unit_id
     output_dir.mkdir(exist_ok=True)
 
-    print(storage_client)
+    upload = kwargs.get('upload', False)
 
     print(f'Initializing cameras')
     cameras = create_cameras_from_config()
@@ -66,13 +66,14 @@ def main(*args, **kwargs):
             cameras,
             exposure_settings['settings'],
             output_dir,
-            unit_id=unit_id
+            unit_id=unit_id,
+            upload=upload,
         )
     except Exception as e:
         print(f'Error in pictures: {e!r}')
 
 
-def start_pictures(cameras, exposure_settings, output_dir, unit_id=None):
+def start_pictures(cameras, exposure_settings, output_dir, unit_id=None, upload=True):
     thread_deque = deque(maxlen=25)
     try:
         while True:
@@ -85,11 +86,12 @@ def start_pictures(cameras, exposure_settings, output_dir, unit_id=None):
                 print(f'Image settings: {shutter_index=} {exptime=} {iso=}')
                 cr2_files = take_pics(cameras, output_dir, settings=settings, unit_id=unit_id)
 
-                print(f'Processing files')
-                for cr2_fn in cr2_files:
-                    t = Thread(target=upload_blob, args=(cr2_fn,))
-                    t.start()
-                    thread_deque.append(t)
+                if upload:
+                    print(f'Processing files')
+                    for cr2_fn in cr2_files:
+                        t = Thread(target=upload_blob, args=(cr2_fn,))
+                        t.start()
+                        thread_deque.append(t)
     except KeyboardInterrupt:
         print(f'Cancelling images')
 
@@ -129,17 +131,16 @@ def take_pic(port, cr2_fn, settings):
     exptime = str(settings['exptime'])
     iso = str(settings['iso'])
 
-    base_script_path = Path(os.getenv('PANDIR', '/'))
+    base_script_path = Path(os.getenv('PANDIR', '/')) / 'resources/scripts/eclipse/'
 
     # If shutter_index is zero (bulb), use regular script, otherwise the bias.
     if shutter_index == "0":
-        script_path = base_script_path / 'scripts/eclipse/take-pic.sh'
+        script_path = base_script_path / 'take-pic.sh'
         cmd = [str(script_path), port, exptime, str(cr2_fn), iso]
     else:
-        script_path = base_script_path / 'scripts/eclipse/take-bias.sh'
+        script_path = base_script_path / 'take-bias.sh'
         cmd = [str(script_path), port, str(cr2_fn), shutter_index, iso]
 
-    # print(f'Running cmd={cmd}')
     p = subprocess.Popen(
         cmd,
         stdin=subprocess.PIPE,
