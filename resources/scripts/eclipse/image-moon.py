@@ -31,8 +31,8 @@ VERSION = '2025-03-12'
 ################################################################
 
 PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
-BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
-OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
+BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
+OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
 OUTPUT_DIRECTORY = Path('/home/panoptes/images/')
 SETTINGS_FILE = Path('/home/panoptes/POCS/resources/scripts/eclipse/lunar-exposure-times.yaml')
 
