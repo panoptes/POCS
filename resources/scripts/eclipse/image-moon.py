@@ -169,7 +169,7 @@ def upload_blob(image_path):
         jpg_fn = make_pretty_image(image_path)
 
         images_dir = (Path('/home/panoptes/images/').expanduser().as_posix())
-        bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
+        bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir) + 1:])
 
         # print(f'Uploading {image_path} to {bucket_path}')
 
