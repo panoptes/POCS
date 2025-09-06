@@ -163,7 +163,7 @@ def take_pic(port, cr2_fn, settings):
     return p
 
 
-def upload_blob(image_path, jpg_local_path):
+def upload_blob(image_path):
     """Uploads a file to the bucket."""
     try:
         jpg_fn = make_pretty_image(image_path)
