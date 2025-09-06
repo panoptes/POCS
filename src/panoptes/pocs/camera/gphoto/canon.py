@@ -76,13 +76,15 @@ class Camera(AbstractGPhotoCamera):
             "imageformat": "RAW",
             # 'autoexposuremode': 'Manual',  # Need physical toggle.
             # 'imageformatsd': 'RAW',  # We shouldn't need to set this.
-            "capturetarget": "Internal RAM",
+            "capturetarget": "Memory Card",
             "reviewtime": "None",
             "iso": 100,
             "shutterspeed": "bulb",
             "artist": artist_name,
             "copyright": copy_right,
             "ownername": owner_name,
+            "datetime": "now",
+            "datetimeutc": "now",
         }
 
         self.set_properties(prop2value=prop2value)

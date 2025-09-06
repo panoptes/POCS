@@ -10,10 +10,13 @@ from threading import Thread
 
 from google.cloud import storage
 from panoptes.utils.config.client import get_config
+from panoptes.utils.images import make_pretty_image
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time, flatten_time
+from rich import print
 
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.utils.cloud import upload_image
 
 VERSION = '2025-03-12'
 
@@ -31,8 +34,8 @@ VERSION = '2025-03-12'
 ################################################################
 
 PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
-BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
-OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
+BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
+OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
 OUTPUT_DIRECTORY = Path('/home/panoptes/images/')
 SETTINGS_FILE = Path('/home/panoptes/POCS/resources/scripts/eclipse/lunar-exposure-times.yaml')
 
@@ -42,8 +45,9 @@ except RuntimeError:
     print(f"Can't load Google credentials, won't be able to upload")
     storage_client = None
 
-
 stop_event = threading.Event()
+
+upload_queue = deque(maxlen=25)
 
 
 def main(*args, **kwargs):
@@ -51,9 +55,6 @@ def main(*args, **kwargs):
     output_dir = OUTPUT_DIRECTORY / unit_id
     output_dir.mkdir(exist_ok=True)
 
-    upload = os.getenv('UPLOAD', False)
-
-    print(f'Initializing cameras')
     cameras = create_cameras_from_config()
 
     if not cameras:
@@ -61,9 +62,14 @@ def main(*args, **kwargs):
         return
 
     # Load exposure settings
+    exptimes = list()
     with SETTINGS_FILE.open() as f:
         exposure_settings = from_yaml(f.read())
-        print(f'Exposure settings: {exposure_settings!r}')
+        for setting in exposure_settings['settings']:
+            exptimes.append(setting['exptime'])
+
+    print("[bold yellow]🌑  🌒  🌓  🌔  🌕   Starting POCS for Moon shots  🌕  🌖  🌗  🌘  🌑[/bold yellow]")
+    print(f"[bold yellow]Using exposure times: {exptimes}[/bold yellow]")
 
     try:
         start_pictures(
@@ -71,36 +77,33 @@ def main(*args, **kwargs):
             exposure_settings['settings'],
             output_dir,
             unit_id=unit_id,
-            upload=upload,
         )
     except KeyboardInterrupt:
-        stop_event.set()
         print('Stopping script, please wait for current image to finish.')
+        stop_event.set()
+        for t in upload_queue:
+            t.join()
     except Exception as e:
         print(f'Error in pictures: {e!r}')
 
 
 def start_pictures(cameras, exposure_settings, output_dir, unit_id=None, upload=True):
-    thread_deque = deque(maxlen=25)
-    try:
-        while not stop_event.is_set():
-            # Loop through exposure settings.
-            for settings in exposure_settings:
-                shutter_index = settings['shutter_index']
-                exptime = settings['exptime']
-                iso = settings['iso']
+    while not stop_event.is_set():
+        # Loop through exposure settings.
+        for settings in exposure_settings:
+            shutter_index = settings['shutter_index']
+            exptime = settings['exptime']
+            iso = settings['iso']
 
-                print(f'Image settings: {shutter_index=} {exptime=} {iso=}')
-                cr2_files = take_pics(cameras, output_dir, settings=settings, unit_id=unit_id)
+            cr2_files = take_pics(cameras, output_dir, settings=settings, unit_id=unit_id)
 
-                if upload:
-                    print(f'Processing files')
-                    for cr2_fn in cr2_files:
-                        t = Thread(target=upload_blob, args=(cr2_fn,))
-                        t.start()
-                        thread_deque.append(t)
-    except KeyboardInterrupt:
-        print(f'Cancelling images')
+            if upload:
+                print(f'Processing files')
+                for cr2_fn in cr2_files:
+                    jpg_fn = make_pretty_image(cr2_fn)
+                    t = Thread(target=upload_blob, args=(cr2_fn.as_posix(), jpg_fn, unit_id,))
+                    t.start()
+                    upload_queue.append(t)
 
 
 def take_pics(cameras, obs_dir, settings, unit_id=None, cr2_fn='LunarEclipse/{}-{}-{}-{}.cr2'):
@@ -112,7 +115,7 @@ def take_pics(cameras, obs_dir, settings, unit_id=None, cr2_fn='LunarEclipse/{}-
     for cam_name, cam in cameras.items():
         # Setup filename.
         fn = obs_dir / cr2_fn.format(unit_id, cam_name.upper(), exptime, flatten_time(image_time))
-        print(f'Taking image on {fn}')
+        print(f'Taking {exptime} second image on {fn}')
         fns.append(fn)
 
         exposure_event = take_pic(cam.port, fn, settings)
@@ -125,9 +128,14 @@ def take_pics(cameras, obs_dir, settings, unit_id=None, cr2_fn='LunarEclipse/{}-
         time.sleep(1)
 
     # Wait for file to appear on hard drive.
+    max_wait = 10
+    t0 = time.perf_counter()
     while not all([os.path.exists(f) for f in fns]):
         print(f'Waiting for files to exist: {fns!r}')
         time.sleep(1)
+        t1 = time.perf_counter()
+        if t1 - t0 > max_wait:
+            break
 
     return fns
 
@@ -157,31 +165,38 @@ def take_pic(port, cr2_fn, settings):
     return p
 
 
-def upload_blob(local_path, bucket_path=None):
+def upload_blob(image_path, jpg_local_path, unit_id, bucket_path=None):
     """Uploads a file to the bucket."""
     try:
-        bucket_name = OUTPUT_BUCKET_NAME
-        if storage_client is None:
-            return None
+        images_dir = (Path('/home/panoptes/images').expanduser().as_posix())
 
-        if bucket_path is None:
-            bucket_path = 'LunarEclipse/' + os.path.basename(local_path)
+        bucket_path = Path(image_path[image_path.find(images_dir) + len(images_dir):])
+        bucket_path = Path(unit_id) / bucket_path.relative_to("/")
 
-        bucket = storage_client.get_bucket(bucket_name)
+        print(f'Uploading {image_path} to {bucket_path}')
 
-        # Create blob object
-        blob = bucket.blob(bucket_path)
+        # Upload CR2.
+        public_url = upload_image(
+            file_path=image_path,
+            bucket_path=bucket_path.as_posix(),
+            bucket_name=OUTPUT_BUCKET_NAME,
+        )
 
-        # Upload file to blob
-        blob.upload_from_filename(local_path)
+        print(f'Public url: {public_url}')
 
-        bucket_uri = f'https://storage.googleapis.com/{bucket_name}/{bucket_path}'
-        print(f'Uploaded: {bucket_uri}')
+        pretty_image_url = upload_image(
+            file_path=jpg_local_path,
+            bucket_path=bucket_path.with_suffix(".jpg")
+            .as_posix()
+            .replace(".cr2", ""),
+            bucket_name=OUTPUT_BUCKET_NAME,
+        )
+        print(f'Pretty image url: {pretty_image_url}')
     except Exception as e:
         print(f'Upload fail: {e!r}')
         return None
 
-    return bucket_uri
+    return None
 
 
 if __name__ == '__main__':

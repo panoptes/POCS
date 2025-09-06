@@ -203,7 +203,7 @@ def take_pictures_cmd(
 def take_pictures(
     cameras: dict[str, AbstractCamera],
     num_images: int = 1,
-    exptime: float = 1.0,
+    exptime: float | str = 1.0,
     output_dir: str = "/home/panoptes/images",
     delay: float = 0.0,
     convert: bool = False,
