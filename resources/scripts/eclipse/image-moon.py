@@ -51,7 +51,7 @@ def main(*args, **kwargs):
     output_dir = OUTPUT_DIRECTORY / unit_id
     output_dir.mkdir(exist_ok=True)
 
-    upload = os.getenv('UPLOAD', True)
+    upload = os.getenv('UPLOAD', False)
 
     print(f'Initializing cameras')
     cameras = create_cameras_from_config()
