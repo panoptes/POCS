@@ -176,7 +176,7 @@ def upload_blob(image_path, jpg_local_path, unit_id, bucket_path=None):
         # Upload CR2.
         public_url = upload_image(
             file_path=image_path,
-            bucket_path=bucket_path.as_posix(),
+            bucket_path=bucket_path,
             bucket_name=OUTPUT_BUCKET_NAME,
         )
 
@@ -184,7 +184,7 @@ def upload_blob(image_path, jpg_local_path, unit_id, bucket_path=None):
 
         pretty_image_url = upload_image(
             file_path=jpg_local_path,
-            bucket_path=bucket_path.with_suffix(".jpg").as_posix().replace(".cr2", ""),
+            bucket_path=bucket_path.with_suffix(".jpg"),
             bucket_name=OUTPUT_BUCKET_NAME,
         )
         print(f'Pretty image url: {pretty_image_url}')
