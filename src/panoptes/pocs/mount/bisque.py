@@ -352,7 +352,11 @@ class Mount(AbstractMount):
         try:
             response_obj = json.loads(response)
         except TypeError as e:
-            self.logger.warning("Error: {}".format(e, ))
+            self.logger.warning(
+                "Error: {}".format(
+                    e,
+                )
+            )
         except json.JSONDecodeError as e:
             response_obj = {"response": response, "success": False, "error": e}
 

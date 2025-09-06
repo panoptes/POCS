@@ -9,7 +9,6 @@ from typing import Dict, List
 import typer
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import PanError
-
 # Import panoptes-utils image processing
 from panoptes.utils.images import cr2 as cr2_utils, make_pretty_image
 from panoptes.utils.images.fits import fpack, get_solve_field
@@ -27,8 +26,8 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from rich.text import Text
 from rich.table import Table
+from rich.text import Text
 
 from panoptes.pocs.camera import (
     AbstractCamera,
@@ -58,7 +57,7 @@ class RecentFilesRenderable:
             yield Text("  (none yet)", style="dim")
             return
         # Show the last `show_max` entries so the most recent appears at the bottom
-        for name in self._recent_files[-self.show_max :]:
+        for name in self._recent_files[-self.show_max:]:
             # Fold long paths so they wrap within the panel instead of forcing wide columns
             yield Text(f"  - {name}", overflow="fold", no_wrap=False)
 
@@ -68,6 +67,7 @@ def setup_cameras(
     detect_dslr: bool = True,
     detect_zwo: bool = True,
     asi_library_path: Path = None,
+    test_image: bool = True,
 ) -> None:
     """Set up the config for the cameras.
 
@@ -76,7 +76,7 @@ def setup_cameras(
         a). Look for filterwheel.
     3. Update config options for camera.
     4. Update camera with any initialization settings.
-    5. Take a test picture with each camera.
+    5. Take a test picture with each camera if `test_image` is True.
 
     """
     cameras = dict()
@@ -155,20 +155,20 @@ def setup_cameras(
             except AttributeError:
                 print(f"Camera {cam_name} does not have a setup_camera method, skipping.")
 
-    print("Now creating the cameras from the config and taking a test picture with each.")
-    take_pictures(
-        num_images=1, 
-        exptime=1.0, 
-        output_dir="/home/panoptes/images/test",
-        convert=True,
-        compress=True,
-        solve=False,
-        pretty=False,
-    )
+    if test_image:
+        print("Now creating the cameras from the config and taking a test picture with each.")
+        take_pictures(
+            cameras=cameras,
+            num_images=1,
+            exptime=1.0,
+            output_dir="/home/panoptes/images/test",
+            convert=True,
+            compress=True,
+        )
 
 
 @app.command(name="take-pics")
-def take_pictures(
+def take_pictures_cmd(
     num_images: int = 1,
     exptime: float = 1.0,
     output_dir: str = "/home/panoptes/images",
@@ -181,14 +181,39 @@ def take_pictures(
 ) -> Dict[str, List[Path]] | None:
     """Takes pictures with cameras and optionally processes them."""
     cameras = create_cameras_from_config()
+
     if len(cameras) == 0:
-        print("No cameras found, exiting.")
-        return None
+        typer.Abort("No cameras found, exiting.")
 
     print(f"Taking {num_images} images with {len(cameras)} cameras.")
+    return take_pictures(
+        cameras=cameras,
+        num_images=num_images,
+        exptime=exptime,
+        output_dir=output_dir,
+        delay=delay,
+        convert=convert,
+        compress=compress,
+        solve=solve,
+        pretty=pretty,
+        verbose=verbose,
+    )
 
-    now = current_time(flatten=True)
-    output_dir = Path(output_dir) / str(now)
+
+def take_pictures(
+    cameras: dict[str, AbstractCamera],
+    num_images: int = 1,
+    exptime: float | str = 1.0,
+    output_dir: str = "/home/panoptes/images",
+    delay: float = 0.0,
+    convert: bool = False,
+    compress: bool = False,
+    solve: bool = False,
+    pretty: bool = False,
+    verbose: bool = False,
+) -> Dict[str, List[Path]] | None:
+    observation_start_time = current_time(flatten=True)
+    output_dir = Path(output_dir) / str(observation_start_time)
 
     # Build per-camera progress panels
     per_cam_progress = {}

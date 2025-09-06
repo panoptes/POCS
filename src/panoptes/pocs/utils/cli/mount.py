@@ -4,9 +4,7 @@ from pathlib import Path
 import serial
 import typer
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.name_resolve import NameResolveError
-from astroquery.jplhorizons import Horizons
+from astropy.coordinates import AltAz
 from human_readable import time_delta as friendly_time_delta
 from panoptes.utils.config.client import set_config
 from panoptes.utils.rs232 import SerialData
@@ -18,6 +16,7 @@ from typing_extensions import Annotated
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
+from panoptes.pocs.utils.coords import get_target_coords
 from panoptes.pocs.utils.location import create_location_from_config
 
 app = typer.Typer()
@@ -176,10 +175,15 @@ def slew_to_target(
     location = create_location_from_config()
     observe_horizon = location.location.get("horizon", 30 * u.deg)
 
-    coords = get_target_coords(target, location.location, is_comet=comet)
-    if not coords:
-        print("[red]Could not find a suitable target by name or position.[/red]")
-        return typer.Abort()
+    coords = None
+    try:
+        coords = get_target_coords(target, is_comet=comet)
+    except RuntimeError as e:
+        print(f"[red]{e}[/red]")
+    finally:
+        if not coords:
+            print("[red]Could not find a suitable target by name or position.[/red]")
+            return typer.Abort()
 
     # Check that the target is observable.
     is_observable = location.observer.target_is_up(current_time(), coords, horizon=observe_horizon)
@@ -385,26 +389,3 @@ def setup_mount(
                     return typer.Exit()
             except serial.SerialTimeoutException:
                 pass
-
-
-def get_target_coords(target: str, location: dict, is_comet: bool = False):
-    """Get the coordinates of the target."""
-    print(f"Looking for coordinates for {target}.")
-    coords = None
-
-    if is_comet:
-        location["lat"] = location["latitude"]
-        location["lon"] = location["longitude"]
-        obj = Horizons(id=target, id_type="smallbody", epochs=current_time().jd1, location=location)
-        eph = obj.ephemerides()
-        coords = SkyCoord(eph[0]["RA"], eph[0]["DEC"], unit=(u.deg, u.deg))
-    else:
-        try:
-            coords = SkyCoord(target)
-        except ValueError:
-            try:
-                coords = SkyCoord.from_name(target)
-            except NameResolveError:
-                pass
-
-    return coords
