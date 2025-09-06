@@ -183,7 +183,7 @@ def upload_blob(image_path):
         # print(f'Public url: {public_url}')
 
         pretty_image_url = upload_image(
-            file_path=jpg_local_path,
+            file_path=jpg_fn,
             bucket_path=bucket_path.with_suffix(".jpg").as_posix().replace(".cr2", ""),
             bucket_name=OUTPUT_BUCKET_NAME,
         )
