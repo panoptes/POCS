@@ -101,7 +101,7 @@ def start_pictures(cameras, exposure_settings, output_dir, unit_id=None, upload=
                 print(f'Processing files')
                 for cr2_fn in cr2_files:
                     jpg_fn = make_pretty_image(cr2_fn)
-                    t = Thread(target=upload_blob, args=(cr2_fn, jpg_fn, unit_id,))
+                    t = Thread(target=upload_blob, args=(cr2_fn, jpg_fn, ))
                     t.start()
                     upload_queue.append(t)
 
@@ -165,18 +165,18 @@ def take_pic(port, cr2_fn, settings):
     return p
 
 
-def upload_blob(image_path, jpg_local_path, unit_id, bucket_path=None):
+def upload_blob(image_path, jpg_local_path):
     """Uploads a file to the bucket."""
     try:
         images_dir = (Path('/home/panoptes/images').expanduser().as_posix())
-        bucket_path = Path(image_path[image_path.find(images_dir) + len(images_dir):])
+        bucket_path = Path(image_path[image_path.as_posix().find(images_dir) + len(images_dir):])
 
         print(f'Uploading {image_path} to {bucket_path}')
 
         # Upload CR2.
         public_url = upload_image(
             file_path=image_path,
-            bucket_path=bucket_path,
+            bucket_path=bucket_path.as_posix(),
             bucket_name=OUTPUT_BUCKET_NAME,
         )
 
@@ -184,7 +184,7 @@ def upload_blob(image_path, jpg_local_path, unit_id, bucket_path=None):
 
         pretty_image_url = upload_image(
             file_path=jpg_local_path,
-            bucket_path=bucket_path.with_suffix(".jpg"),
+            bucket_path=bucket_path.with_suffix(".jpg").as_posix().replace(".cr2", ""),
             bucket_name=OUTPUT_BUCKET_NAME,
         )
         print(f'Pretty image url: {pretty_image_url}')
