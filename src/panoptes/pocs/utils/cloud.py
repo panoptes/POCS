@@ -20,6 +20,6 @@ def upload_image(
     blob = bucket.blob(bucket_path)
     logger.debug(f"Uploading {file_path} to {bucket_name}/{bucket_path}")
     blob.upload_from_filename(file_path.as_posix(), timeout=timeout)
-    logger.info(f"File successfully uploaded to {blob.public_url}")
+    logger.debug(f"File successfully uploaded to {blob.public_url}")
 
     return blob.public_url

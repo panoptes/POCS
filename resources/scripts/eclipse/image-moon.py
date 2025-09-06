@@ -34,8 +34,8 @@ VERSION = '2025-03-12'
 ################################################################
 
 PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
-BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
-OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-images-incoming')
+BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
+OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
 OUTPUT_DIRECTORY = Path('/home/panoptes/images/')
 SETTINGS_FILE = Path('/home/panoptes/POCS/resources/scripts/eclipse/lunar-exposure-times.yaml')
 
@@ -98,10 +98,8 @@ def start_pictures(cameras, exposure_settings, output_dir, unit_id=None, upload=
             cr2_files = take_pics(cameras, output_dir, settings=settings, unit_id=unit_id)
 
             if upload:
-                print(f'Processing files')
                 for cr2_fn in cr2_files:
-                    jpg_fn = make_pretty_image(cr2_fn)
-                    t = Thread(target=upload_blob, args=(cr2_fn, jpg_fn, ))
+                    t = Thread(target=upload_blob, args=(cr2_fn, ))
                     t.start()
                     upload_queue.append(t)
 
@@ -168,10 +166,12 @@ def take_pic(port, cr2_fn, settings):
 def upload_blob(image_path, jpg_local_path):
     """Uploads a file to the bucket."""
     try:
-        images_dir = (Path('/home/panoptes/images').expanduser().as_posix())
+        jpg_fn = make_pretty_image(image_path)
+
+        images_dir = (Path('/home/panoptes/images/').expanduser().as_posix())
         bucket_path = Path(image_path.as_posix()[image_path.as_posix().find(images_dir) + len(images_dir):])
 
-        print(f'Uploading {image_path} to {bucket_path}')
+        # print(f'Uploading {image_path} to {bucket_path}')
 
         # Upload CR2.
         public_url = upload_image(
@@ -180,7 +180,7 @@ def upload_blob(image_path, jpg_local_path):
             bucket_name=OUTPUT_BUCKET_NAME,
         )
 
-        print(f'Public url: {public_url}')
+        # print(f'Public url: {public_url}')
 
         pretty_image_url = upload_image(
             file_path=jpg_local_path,
