@@ -34,7 +34,7 @@ PROJECT_ID = os.getenv('PROJECT_ID', 'panoptes-project-01')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
 OUTPUT_BUCKET_NAME = os.getenv('BUCKET_NAME', 'panoptes-special-events')
 OUTPUT_DIRECTORY = Path('/home/panoptes/images/')
-SETTINGS_FILE = Path('/home/panoptes/pocs/resources/scripts/eclipse/lunar-exposure-times.yaml')
+SETTINGS_FILE = Path('/home/panoptes/POCS/resources/scripts/eclipse/lunar-exposure-times.yaml')
 
 try:
     storage_client = storage.Client(project=PROJECT_ID)
