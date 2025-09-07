@@ -1,9 +1,6 @@
 settings:
-  - shutter_index: 0
-    exptime: '90'
-    iso: 100
-  - shutter_index: 0
-    exptime: '45'
+  - shutter_index: 30
+    exptime: '30'
     iso: 100
   - shutter_index: 4
     exptime: '15'

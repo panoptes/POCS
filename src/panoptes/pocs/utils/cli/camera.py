@@ -9,6 +9,7 @@ from typing import Dict, List
 import typer
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import PanError
+
 # Import panoptes-utils image processing
 from panoptes.utils.images import cr2 as cr2_utils, make_pretty_image
 from panoptes.utils.images.fits import fpack, get_solve_field
@@ -57,7 +58,7 @@ class RecentFilesRenderable:
             yield Text("  (none yet)", style="dim")
             return
         # Show the last `show_max` entries so the most recent appears at the bottom
-        for name in self._recent_files[-self.show_max:]:
+        for name in self._recent_files[-self.show_max :]:
             # Fold long paths so they wrap within the panel instead of forcing wide columns
             yield Text(f"  - {name}", overflow="fold", no_wrap=False)
 

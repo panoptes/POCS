@@ -1,12 +1,11 @@
 from datetime import datetime
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation, SkyCoord, get_body, solar_system_ephemeris
+from astropy.coordinates import SkyCoord, get_body, solar_system_ephemeris
 from astropy.coordinates.name_resolve import NameResolveError
 from astropy.time import Time
 from astroquery.jplhorizons import Horizons
 from panoptes.utils.time import current_time
-from rich import print
 
 
 def get_target_coords(
@@ -79,7 +78,7 @@ def get_target_coords(
     if target.lower() == "sun":
         raise RuntimeError("Refusing to go to the sun.")
 
-    if target.lower() == 'earth':
+    if target.lower() == "earth":
         raise RuntimeError("It's hard for me to take a picture of earth.")
 
     if is_comet:
