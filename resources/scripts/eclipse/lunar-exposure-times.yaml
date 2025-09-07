@@ -1,5 +1,5 @@
 settings:
-  - shutter_index: 30
+  - shutter_index: 1
     exptime: '30'
     iso: 100
   - shutter_index: 4
