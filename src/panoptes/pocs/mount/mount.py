@@ -629,19 +629,21 @@ class AbstractMount(PanBase):
         seconds = float(seconds)
         assert direction in ["north", "south", "east", "west"]
 
-        move_command = f"move_{direction}"
-        self.logger.debug(f"Move command: {move_command}")
+        short_direction = direction[0].lower()
+
+        # Use low-level commands without a lookup to make timing exact.
+        move_command = f":m{short_direction}#"
+        stop_command = ':Q#'
 
         try:
-            now = current_time()
             self.logger.debug(f"Moving {direction} for {seconds} seconds. ")
-            self.query(move_command)
-
+            t0 = time.perf_counter()
+            self.write(move_command)
             time.sleep(seconds)
+            self.write(stop_command)
+            t1 = time.perf_counter()
 
-            self.logger.debug(f"{(current_time() - now).sec} seconds passed before stop")
-            self.query("stop_moving")
-            self.logger.debug(f"{(current_time() - now).sec} seconds passed total")
+            self.logger.debug(f"{(t1 - t0):.02f} seconds passed total")
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
