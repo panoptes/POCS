@@ -4,9 +4,20 @@ import sys
 
 import typer
 from git import GitCommandError, Repo
+from panoptes.pocs.utils.cli import (
+    camera,
+    config,
+    mount,
+    network,
+    notebook,
+    power,
+    run,
+    sensor,
+    weather,
+)
 from rich import print
-
-from panoptes.pocs.utils.cli import camera, config, mount, network, notebook, power, run, sensor, weather
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 app = typer.Typer()
 state = {"verbose": False}
@@ -43,9 +54,7 @@ def main(
 
 
 @app.command(name='update')
-def update_repo(
-    update_messages_dir: str = 'updates'
-):
+def update_repo():
     """Update POCS.
 
     This will pull the latest changes from github and show any relevant messages.
@@ -53,64 +62,91 @@ def update_repo(
     new_commits = None
 
     project_root = find_project_root()
-    print(f"Updating {project_root}")
-    repo = Repo(project_root)
 
-    try:
-        origin = repo.remotes.origin
-        origin.fetch()
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+    ) as progress:
+        # Start update task
+        t_update = progress.add_task(f"Updating {project_root}", total=1)
+        repo = Repo(project_root)
 
-        # If local dir is dirty, stash changes.
-        if repo.is_dirty():
-            print("Stashing local changes...")
-            repo.git.stash("push")
+        try:
+            origin = repo.remotes.origin
+            origin.fetch()
 
-        # Get the current commit and the latest remote commit
-        current_commit = repo.head.commit
-        latest_remote_commit = repo.active_branch.tracking_branch().commit
+            # If local dir is dirty, stash changes.
+            if repo.is_dirty():
+                progress.update(t_update, description="Stashing local changes...", advance=1)
+                repo.git.stash("push")
 
-        print(f"Current commit {current_commit}")
-        print(f"Latest commit {latest_remote_commit}")
+            # Get the current commit and the latest remote commit
+            current_commit = repo.head.commit
+            latest_remote_commit = repo.active_branch.tracking_branch().commit
 
-        if current_commit == latest_remote_commit:
-            print("Project is already up to date. No action needed.")
-            return
+            if current_commit == latest_remote_commit:
+                progress.update(t_update, description="Project is already up to date. No action needed.", advance=1)
+                return
 
-        # Find the commits between the current state and the remote
-        new_commits = list(repo.iter_commits(f'{current_commit}...{latest_remote_commit}'))
-        print(f"New commit {new_commits}")
+            # Find the commits between the current state and the remote
+            new_commits = list(repo.iter_commits(f'{current_commit}...{latest_remote_commit}'))
 
-        print("Updates found. Pulling latest changes...")
-        origin.pull()
-        print("Successfully pulled the latest changes.")
+            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
+            origin.pull()
 
-        if new_commits:
-            print(f"Updating new commits...{new_commits}")
+            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
+        except GitCommandError as e:
+            progress.update(t_update, description=f"[red]Failed to pull the latest changes: {e}[/red]", advance=1)
+            typer.Abort(e)
+        except Exception as e:
+            progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
+            typer.Abort(e)
+        else:
+            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
 
-    except GitCommandError as e:
-        print(f"Failed to pull the latest changes: {e}")
-        typer.Abort(e)
-    except Exception as e:
-        print(f"Error: {e}")
-        typer.Abort(e)
-    finally:
-        # Apply stashed changes
-        if repo.git.stash("list"):
-            repo.git.stash("pop")
+            # After pulling, show any update messages and sync dependencies
+            show_messages(start_commit=new_commits[0].hexsha, end_commit=new_commits[-1].hexsha)
+        finally:
+            # Apply stashed changes
+            if repo.git.stash("list"):
+                repo.git.stash("pop")
 
-    # Sync dependencies with the new pyproject.toml
-    print("Syncing dependencies with hatch...")
-    run_hatch_command(['run', 'pocs', 'show-messages'])
-
-    print("\n[green]Update process complete![/green]")
+        # Sync dependencies with the new pyproject.toml by showing message updates.
+        run_hatch_command(['run', 'pocs', 'update-deps'])
 
 
 @app.command(name="show-messages")
 def show_messages(
-    last_commit: str = None
+    start_commit: str = None,
+    end_commit: str = None,
 ):
     """Shows any important update messages."""
-    print("Important messages:")
+    if start_commit is not None and end_commit is not None:
+        project_root = find_project_root()
+        repo = Repo(project_root)
+
+        start_commit = start_commit or repo.active_branch.commit
+        end_commit = end_commit or repo.active_branch.commit
+
+        commits = list(repo.iter_commits(f'{start_commit}...{end_commit}'))
+
+        notices = []
+        for commit in commits:
+            notice_location = commit.message.find("NOTICE: ")
+            if notice_location != -1:
+                notices.append(f"* [green]{commit.message[notice_location + 8:]}[/]")
+
+        if notices:
+            print(Panel.fit(f"\n{', '.join(notices)}", title='[bold magenta]Notices[/]', border_style='yellow'))
+
+
+@app.command(name="update-deps")
+def update_dependencies(context: typer.Context):
+    """A simple to force dependency updates."""
+    context.params.update(context.parent.params)
+    verbose = context.params["verbose"]
+    if verbose:
+        print("Dependencies updated")
 
 
 def run_hatch_command(command: list):
