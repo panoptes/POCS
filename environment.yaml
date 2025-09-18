@@ -18,7 +18,6 @@ dependencies:
   - pip
   - pynacl
   - pyrsistent
-  - streamz
   - typer[all]
   - uvicorn[standard]
   - pip:

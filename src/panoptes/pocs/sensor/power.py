@@ -89,10 +89,6 @@ class PowerBoard(PanBase):
     be controlled. A custom callback can be passed that should accept a single
     string parameter and return a dictionary.
 
-    It also creates a `dataframe` attribute which is a
-    `streamz.dataframe.PeriodicDataFrame` with a default call of
-    `dataframe_period='50ms'`. If `None` then no dataframe is created.
-
     Pin names specified above correspond to Infineon terminology. See manual:
     https://bit.ly/2IGgWLQ.
     """
@@ -220,11 +216,7 @@ class PowerBoard(PanBase):
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
     def to_dataframe(self, **kwargs):
-        """Make a dataframe from the latest readings.
-
-        This method is called by a `streamz.dataframe.PeriodicDataFrame`.
-
-        """
+        """Make a dataframe from the latest readings."""
         try:
             columns = ["time", "ac_ok", "battery_low"] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
