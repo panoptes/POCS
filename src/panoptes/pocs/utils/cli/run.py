@@ -20,7 +20,6 @@ from rich import print
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.utils import alignment as polar_alignment
 from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_alignment
 from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.logger import get_logger
@@ -214,110 +213,6 @@ def run_alignment(
         pocs.power_down()
 
 
-@app.command(name="old-alignment")
-def run_old_alignment(
-    context: typer.Context,
-    exp_time: float = typer.Option(30.0, "--exptime", "-e", help="Exposure time in seconds."),
-) -> None:
-    """Runs POCS in alignment mode."""
-    pocs = get_pocs(context)
-    print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
-    start_time = current_time(flatten=True)
-
-    images_dir = Path(pocs.get_config("directories.images"))
-    base_dir = images_dir / "drift_align" / str(start_time)
-
-    plot_fn = f"{base_dir}/{start_time}_center_overlay.jpg"
-
-    mount = pocs.observatory.mount
-
-    try:
-        mount.unpark()
-        pocs.say("Moving to home position")
-        mount.slew_to_home()
-
-        # Polar Rotation
-        pole_fn = polar_rotation(pocs, base_dir=base_dir, exp_time=exp_time)
-        pole_fn = pole_fn.with_suffix(".fits")
-
-        # Mount Rotation
-        rotate_fn = mount_rotation(pocs, base_dir=base_dir)
-        rotate_fn = rotate_fn.with_suffix(".fits")
-
-        pocs.say("Moving back to home")
-        mount.slew_to_home()
-
-        pocs.say("Solving celestial pole image")
-        try:
-            pole_center = polar_alignment.get_celestial_center(pole_fn, timeout=exp_time + 15)
-        except Exception as e:
-            print("[bold red]Unable to solve pole image.[/bold red]")
-            print(
-                "[bold yellow]Will proceed with rotation image but analysis not possible[/bold yellow]"
-            )
-            print(f"{e!r}")
-            pole_center = None
-        else:
-            pole_center = (float(pole_center[0]), float(pole_center[1]))
-
-        pocs.say("Starting analysis of rotation image")
-        try:
-            rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
-        except Exception:
-            print("Unable to process rotation image")
-            rotate_center = None
-
-        if pole_center is not None and rotate_center is not None:
-            pocs.say("Plotting centers")
-
-            pocs.say(f"Pole ({pole_fn}) : {pole_center[0]:0.2f} x {pole_center[1]:0.2f}")
-
-            pocs.say(f"Rotate: {rotate_center} {rotate_fn}")
-            pocs.say(f"Rotate: {rotate_center[0]:0.2f} x {rotate_center[1]:0.2f}")
-
-            dx = pole_center[0] - rotate_center[0]
-            dy = pole_center[1] - rotate_center[1]
-
-            pocs.say(f"dx: {dx:0.2f}")
-            pocs.say(f"dy: {dy:0.2f}")
-
-            fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
-
-            print(f"Plot image: {plot_fn}")
-            fig.tight_layout()
-            fig.savefig(plot_fn)
-
-            latest_fn = images_dir / "latest.jpg"
-            if latest_fn.exists():
-                latest_fn.unlink()
-
-            latest_fn.symlink_to(plot_fn)
-
-            with Path(images_dir / "drift_align" / "center.txt").open("a") as f:
-                f.write(
-                    f"{start_time},{pole_center[0]},{pole_center[1]},{rotate_center[0]},{rotate_center[1]},{dx},{dy}\n"
-                )
-
-            pocs.say("Done with polar alignment test")
-    except KeyboardInterrupt:
-        print("[red]POCS alignment interrupted by user, shutting down.[/red]")
-    except PanError as e:
-        print("[bold red]POCS encountered an error.[/bold red]")
-        print(e)
-    except Exception as e:
-        print("[bold red]POCS encountered an error.[/bold red]")
-        print(e)
-    else:
-        print("[green]POCS alignment finished, shutting down.[/green]")
-    finally:
-        print(
-            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
-        )
-        pocs.observatory.mount.park()
-
-        pocs.power_down()
-
-
 @app.command(name="alignment")
 @app.command(name="quick-alignment")
 def run_quick_alignment(
@@ -446,7 +341,7 @@ def run_quick_alignment(
 
                 # Remove everything in the path before 'images' for upload.
                 path_parts = alignment_plot_fn.parts
-                bucket_path = "/".join(path_parts[path_parts.index("images") + 1 :])
+                bucket_path = "/".join(path_parts[path_parts.index("images") + 1:])
                 upload_image(
                     file_path=alignment_plot_fn,
                     bucket_path=bucket_path,
