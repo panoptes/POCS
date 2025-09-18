@@ -216,7 +216,7 @@ class PowerBoard(PanBase):
         self.change_relay_state(self.relay_labels[label], TruckerBoardCommands.CYCLE_DELAY)
 
     def to_dataframe(self, **kwargs):
-        """Make a dataframe from the latest readings. """
+        """Make a dataframe from the latest readings."""
         try:
             columns = ["time", "ac_ok", "battery_low"] + list(self.relay_labels.keys())
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
