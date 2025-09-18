@@ -97,7 +97,7 @@ def run_auto(context: typer.Context) -> None:
         pocs.power_down()
 
 
-@app.command(name="alignment")
+@app.command(name="long-alignment")
 def run_alignment(
     context: typer.Context,
     coords: List[str] = typer.Option(
@@ -318,6 +318,7 @@ def run_old_alignment(
         pocs.power_down()
 
 
+@app.command(name="alignment")
 @app.command(name="quick-alignment")
 def run_quick_alignment(
     context: typer.Context,
