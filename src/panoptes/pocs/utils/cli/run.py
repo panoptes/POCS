@@ -1,18 +1,14 @@
 import os
-import time
 import warnings
 from collections import defaultdict
 from itertools import product
 from multiprocessing import Process
-from numbers import Number
 from pathlib import Path
 from typing import List
 
 import typer
 from astropy.coordinates import SkyCoord
 from panoptes.utils.error import PanError
-from panoptes.utils.images import make_pretty_image
-from panoptes.utils.images.cr2 import cr2_to_fits
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
 from rich import print
@@ -36,11 +32,28 @@ def common(
     simulator: List[str] = typer.Option(None, "--simulator", "-s", help="Simulators to load"),
     cloud_logging: bool = typer.Option(False, "--cloud-logging", "-c", help="Enable cloud logging"),
 ):
+    """Shared options for all commands.
+
+    Args:
+        context: Typer context object used to share state across commands.
+        simulator: Optional list of simulators to load. Multiple values allowed.
+        cloud_logging: If True, enables cloud logging at DEBUG level.
+    """
     context.obj = [simulator, cloud_logging]
 
 
 def get_pocs(context: typer.Context):
-    """Helper to get pocs after confirming with user."""
+    """Helper to get POCS after confirming with user.
+
+    Prompts the user for confirmation, prepares logging, constructs POCS from
+    the config, initializes it, and returns the instance.
+
+    Args:
+        context: Typer context containing shared options from the callback.
+
+    Returns:
+        POCS: An initialized POCS instance ready to run.
+    """
     simulators, cloud_logging = context.obj
     confirm = typer.prompt("Are you sure you want to run POCS automatically?", default="n")
     if confirm.lower() not in ["y", "yes"]:
@@ -76,7 +89,14 @@ def get_pocs(context: typer.Context):
 
 @app.command(name="auto")
 def run_auto(context: typer.Context) -> None:
-    """Runs POCS automatically, like it's meant to be run."""
+    """Runs POCS automatically, like it's meant to be run.
+
+    Args:
+        context: Typer context carrying shared options.
+
+    Returns:
+        None
+    """
 
     pocs = get_pocs(context)
 
@@ -97,7 +117,7 @@ def run_auto(context: typer.Context) -> None:
 
 
 @app.command(name="long-alignment")
-def run_alignment(
+def run_long_alignment(
     context: typer.Context,
     coords: List[str] = typer.Option(
         None, "--coords", "-c", help="Alt/Az coordinates to use, e.g. 40,120"
@@ -108,11 +128,22 @@ def run_alignment(
     ),
     field_name: str = typer.Option("PolarAlignment", "--field-name", "-f", help="Name of field."),
 ) -> None:
-    """Runs POCS in alignment mode.
+    """Runs POCS in long alignment mode by sampling coordinates across the sky.
 
-    Not specifying coordinates is the same as the following:
+    If coordinates are not specified, defaults to a grid like:
         -c 55,60 -c 55,120 -c 55,240 -c 55,300
         -c 70,60 -c 70,120 -c 70,240 -c 70,300
+
+    Args:
+        context: Typer context carrying shared options.
+        coords: List of "alt,az" strings or pairs used for alignment sampling. If None,
+            a default grid is used.
+        exptime: Exposure time in seconds for each image.
+        num_exposures: Number of exposures to take at each coordinate.
+        field_name: Name to use for the temporary alignment field.
+
+    Returns:
+        None
     """
     pocs = get_pocs(context)
     print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
@@ -222,8 +253,7 @@ def run_quick_alignment(
         3.0, "--move-time", "-m", help="Time to move to each side of the axis."
     ),
 ):
-    """
-    Runs a quick alignment analysis.
+    """Run a quick alignment analysis using three exposures.
 
     This function will take three exposures, one while at the "home" position,
     which is the celestial pole, and one on each side of the axis. It will then
@@ -232,6 +262,14 @@ def run_quick_alignment(
     A plot will be created showing the celestial pole and the RA rotation axis as
     well as an arrow indicating the difference between the two, which corresponds
     to the offset of the mount from the celestial pole.
+
+    Args:
+        context: Typer context carrying shared options.
+        exp_time: Exposure time in seconds for each image.
+        move_time: Time in seconds to move to each side of the RA axis before taking exposures.
+
+    Returns:
+        None
     """
     pocs = get_pocs(context)
     print("[bold yellow]Starting POCS in alignment mode.[/bold yellow]")
@@ -352,135 +390,3 @@ def run_quick_alignment(
 
     print("Done with quick alignment test")
     print("[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]")
-    # option, index = pick(
-    #     ['Home', 'Park', 'Nothing'],
-    #     'What would you like to do next?',
-    #     clear_screen=False
-    # )
-    # if option == 'Home':
-    #     print("[green]Moving mount to the home position (don't forget to park!)[/green]")
-    #     mount.slew_to_home(blocking=True)
-    #
-    # elif option == 'Park':
-    #     print('[green]Moving mount to the parking position [/green]')
-    #     mount.home_and_park(blocking=True)
-
-
-def polar_rotation(pocs: POCS, base_dir: Path | str, exp_time: Number = 30, **kwargs):
-    assert base_dir is not None, print("base_dir cannot be empty")
-
-    # Make sure base_dir is a Path and valid.
-    base_dir = Path(base_dir)
-
-    mount = pocs.observatory.mount
-
-    print("Performing polar rotation test")
-    pocs.say("Performing polar rotation test")
-    mount.slew_to_home()
-
-    while not mount.is_home:
-        time.sleep(2)
-
-    analyze_fn = None
-
-    print(f"At home position, taking {exp_time} sec exposure")
-    pocs.say(f"At home position, taking {exp_time} sec exposure")
-    procs = dict()
-    for cam_name, cam in pocs.observatory.cameras.items():
-        if cam.is_primary:
-            fn = base_dir / f"pole_{cam_name.lower()}.cr2"
-            proc = cam.take_exposure(seconds=exp_time, filename=fn.as_posix(), blocking=True)
-            procs[fn] = proc
-            analyze_fn = fn
-
-    for fn, proc in procs.items():
-        try:
-            outs, errs = proc.communicate(timeout=(exp_time + 15))
-        except AttributeError:
-            continue
-        except KeyboardInterrupt:
-            print("Pole test interrupted")
-            proc.kill()
-            outs, errs = proc.communicate()
-            break
-        except Exception:
-            proc.kill()
-            outs, errs = proc.communicate()
-            break
-
-        time.sleep(2)
-        try:
-            make_pretty_image(fn, title="Alignment Test - Celestial Pole", primary=True)
-            cr2_to_fits(fn, remove_cr2=True)
-        except AssertionError:
-            print(f"Can't make image for {fn}")
-            pocs.say(f"Can't make image for {fn}")
-
-    return analyze_fn
-
-
-def mount_rotation(
-    pocs: POCS,
-    base_dir: Path | str,
-    include_west: bool = False,
-    west_time: Number = 11,
-    east_time: Number = 21,
-    **kwargs,
-):
-    mount = pocs.observatory.mount
-
-    assert base_dir is not None, print("base_dir cannot be empty")
-    base_dir = Path(base_dir)
-
-    print("Doing rotation test")
-    pocs.say("Doing rotation test")
-    mount.slew_to_home()
-    exp_time = 25
-    mount.move_direction(direction="west", seconds=west_time)
-
-    rotate_fn = None
-
-    # Start exposing on cameras
-    for direction in ["east", "west"]:
-        if include_west is False and direction == "west":
-            continue
-
-        print(f"Rotating to {direction}")
-        pocs.say(f"Rotating to {direction}")
-        procs = dict()
-        for cam_name, cam in pocs.observatory.cameras.items():
-            if cam.is_primary:
-                fn = base_dir / f"rotation_{direction}_{cam_name.lower()}.cr2"
-                proc = cam.take_exposure(seconds=exp_time, filename=fn.as_posix(), blocking=False)
-                procs[fn] = proc
-                rotate_fn = fn
-
-        # Move mount
-        mount.move_direction(direction=direction, seconds=east_time)
-
-        # Get exposures
-        for fn, proc in procs.items():
-            try:
-                outs, errs = proc.communicate(timeout=(exp_time + 15))
-            except AttributeError:
-                continue
-            except KeyboardInterrupt:
-                print("Pole test interrupted")
-                pocs.say("Pole test interrupted")
-                proc.kill()
-                outs, errs = proc.communicate()
-                break
-            except Exception:
-                proc.kill()
-                outs, errs = proc.communicate()
-                break
-
-            time.sleep(2)
-            try:
-                make_pretty_image(fn, title=f"Alignment Test - Rotate {direction}", primary=True)
-                cr2_to_fits(fn, remove_cr2=True)
-            except AssertionError:
-                print(f"Can't make image for {fn}")
-                pocs.say(f"Can't make image for {fn}")
-
-    return rotate_fn

@@ -29,10 +29,32 @@ from panoptes.utils.utils import get_quantity_value
 
 class Observatory(PanBase):
     def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
-        """Main Observatory class
+        """Main Observatory class.
 
-        Starts up the observatory. Reads config file, sets up location,
-        dates and weather station. Adds cameras, scheduler, dome and mount.
+        Initializes the observatory by reading configuration, creating the site location
+        objects, and wiring up optional hardware components (cameras, scheduler, dome, mount).
+
+        Args:
+            cameras (dict[str, AbstractCamera] | None): Optional mapping of camera names to
+                camera instances to add on initialization. Defaults to None.
+            scheduler (BaseScheduler | None): Optional scheduler instance to assign to the
+                observatory. Defaults to None.
+            dome (AbstractDome | None): Optional dome controller instance. Defaults to None.
+            mount (AbstractMount | None): Optional mount controller instance. Defaults to None.
+            *args: Additional positional arguments passed to PanBase.
+            **kwargs: Additional keyword arguments passed to PanBase.
+
+        Attributes:
+            scheduler (BaseScheduler | None): The assigned scheduler if set.
+            dome (AbstractDome | None): The dome controller if set.
+            mount (AbstractMount | None): The mount controller if set.
+            location: The astropy EarthLocation wrapper for the site.
+            earth_location: The astropy EarthLocation for the site.
+            observer: The astroplan Observer for the site.
+            cameras (dict[str, AbstractCamera]): Mapping of camera names to camera instances.
+            primary_camera (AbstractCamera | None): The designated primary camera if set.
+            current_observation (Observation | None): The current observation, if any.
+
         """
         super().__init__(*args, **kwargs)
         self.scheduler = None
@@ -122,14 +144,13 @@ class Observatory(PanBase):
 
     @property
     def primary_camera(self) -> panoptes.pocs.camera.camera.AbstractCamera:
-        """Return primary camera.
+        """Return the primary camera for the observatory.
 
-        Note:
-            If no camera has been marked as primary this will return the first
-            camera in the OrderedDict as primary.
+        If no camera has been explicitly marked as primary, this returns the first camera
+        in the internal cameras mapping (OrderedDict) as the implicit primary.
 
         Returns:
-            `pocs.camera.Camera`: The primary camera.
+            AbstractCamera | None: The primary camera instance, or None if no cameras are present.
         """
         if not self._primary_camera and self.has_cameras:
             return self.cameras[list(self.cameras.keys())[0]]
@@ -818,8 +839,8 @@ class Observatory(PanBase):
     def open_dome(self):
         """Open the dome, if there is one.
 
-        Returns: False if there is a problem opening the dome,
-                 else True if open (or if not exists).
+        Returns:
+            bool: False if there is a problem opening the dome; True if opened (or if no dome).
         """
         if not self.dome:
             return True
@@ -832,8 +853,8 @@ class Observatory(PanBase):
     def close_dome(self):
         """Close the dome, if there is one.
 
-        Returns: False if there is a problem closing the dome,
-                 else True if closed (or if not exists).
+        Returns:
+            bool: False if there is a problem closing the dome; True if closed (or if no dome).
         """
         if not self.dome:
             return True
@@ -868,20 +889,22 @@ class Observatory(PanBase):
         time is adjusted to try to keep the counts close to `target_adu_percentage`
         of the `(max_counts + min_counts) - bias`.
         The next exposure time is calculated as:
-        .. code-block:: python
+
+        Examples:
             # Get the sun direction multiplier used to determine if exposure
             # times are increasing or decreasing.
             if which == 'evening':
                 sun_direction = 1
             else:
                 sun_direction = -1
-            exptime = previous_exptime * (target_adu / counts) *
-                          (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5
-        Under - and over-exposed images are rejected. If image is saturated with
-        a short exposure the method will wait 60 seconds before beginning next
-        exposure.
-        Optionally, the method can also take dark exposures of equal exposure
+            exptime = previous_exptime * (target_adu / counts) * \
+                      (2.0 ** (sun_direction * (elapsed_time / 180.0))) + 0.5
+
+        Under- and over-exposed images are rejected. If an image is saturated with
+        a short exposure the method will wait 60 seconds before beginning the next
+        exposure. Optionally, the method can also take dark exposures of equal exposure
         time to each flat-field image.
+
         Args:
             which (str, optional): Specify either 'evening' or 'morning' to lookup coordinates
                 in config, default 'evening'.

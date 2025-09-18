@@ -5,6 +5,14 @@ from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
 
 class Mount(BaseMount):
     def __init__(self, location, mount_version="0040", *args, **kwargs):
+        """Initialize the iOptron CEM40 mount wrapper.
+
+        Args:
+            location: The Earth location or site information required by the base mount.
+            mount_version: The mount firmware/model version string, default is "0040".
+            *args: Positional arguments forwarded to the BaseMount initializer.
+            **kwargs: Keyword arguments forwarded to the BaseMount initializer.
+        """
         self._mount_version = mount_version
         super(Mount, self).__init__(location, *args, **kwargs)
         self.logger.success("iOptron mount created")
@@ -27,6 +35,15 @@ class Mount(BaseMount):
         The newer mounts can determine if there are 0, 1, or 2 possible positions
         for the given RA/Dec, with the latter being the case for the meridian
         flip.
+
+        Args:
+            *args: Positional arguments passed through to BaseMount.set_target_coordinates,
+                typically the target SkyCoord.
+            **kwargs: Keyword arguments passed through to BaseMount.set_target_coordinates.
+
+        Returns:
+            bool: True if the target coordinates are set successfully and at least one
+            valid position exists; False otherwise.
         """
         target_set = super().set_target_coordinates(*args, **kwargs)
         self.logger.debug(f"Checking number of possible positions for {self._target_coordinates}")

@@ -41,6 +41,17 @@ def main(
     config_port: int = 6563,
     verbose: bool = False,
 ):
+    """Top-level CLI callback to set shared options for subcommands.
+
+    Args:
+        context: Typer context object.
+        config_host: Hostname or IP address of the config server.
+        config_port: Port number for the config server.
+        verbose: If True, enables verbose output.
+
+    Returns:
+        None
+    """
     state.update(
         {
             "config_host": config_host,
@@ -134,7 +145,15 @@ def show_messages(
     start_commit: str = None,
     end_commit: str = None,
 ):
-    """Shows any important update messages."""
+    """Show any important update messages between two commits.
+
+    Args:
+        start_commit: The starting commit SHA or ref. If None, uses the active branch head.
+        end_commit: The ending commit SHA or ref. If None, uses the active branch head.
+
+    Returns:
+        None
+    """
     project_root = find_project_root()
     repo = Repo(project_root)
 
@@ -147,7 +166,8 @@ def show_messages(
     for commit in commits:
         notice_location = commit.message.find("NOTICE: ")
         if notice_location != -1:
-            notices.append(f"* [green]{commit.message[notice_location + 8:].replace('\n', ' ')}[/]")
+            notice_msg = commit.message[notice_location + 8 :].replace("\n", " ")
+            notices.append(f"* [green]{notice_msg}[/]")
 
     if notices:
         print(
@@ -161,7 +181,14 @@ def show_messages(
 
 @app.command(name="update-deps")
 def update_dependencies(context: typer.Context):
-    """A simple way to force dependency updates."""
+    """A simple way to force dependency updates.
+
+    Args:
+        context: Typer context allowing propagation of parent parameters.
+
+    Returns:
+        None
+    """
     context.params.update(context.parent.params)
     verbose = context.params["verbose"]
     if verbose:
@@ -169,8 +196,18 @@ def update_dependencies(context: typer.Context):
 
 
 def run_hatch_command(command: list):
-    """
-    Runs a hatch command using subprocess and handles potential errors.
+    """Run a hatch command using subprocess and handle potential errors.
+
+    Args:
+        command: The list of arguments to pass to the hatch executable, e.g.,
+            ["run", "pocs", "update-deps"].
+
+    Returns:
+        None
+
+    Raises:
+        subprocess.CalledProcessError: If the hatch command exits with a non-zero status.
+        FileNotFoundError: If hatch is not installed or not found in PATH.
     """
     try:
         process = subprocess.run(

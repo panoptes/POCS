@@ -330,9 +330,9 @@ class AbstractMount(PanBase):
                 than this are set to this value. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
-            dict: Offset corrections for each axis as needed ::
+            dict: Offset corrections for each axis as needed. Example:
 
-                dict: {
+                {
                     # axis: (arcsec, millisecond, direction)
                     'ra': (float, float, str),
                     'dec': (float, float, str),
@@ -625,7 +625,19 @@ class AbstractMount(PanBase):
         return response
 
     def move_direction(self, direction="north", seconds=1.0):
-        """Move mount in specified `direction` for given amount of `seconds`"""
+        """Move the mount in a specified direction for a duration.
+
+        Args:
+            direction (str): One of {"north", "south", "east", "west"} indicating
+                the direction to move.
+            seconds (float): Duration in seconds to move in the given direction.
+
+        Raises:
+            AssertionError: If the provided direction is not valid.
+            Exception: Propagates any low-level I/O exceptions encountered while
+                issuing movement commands to the mount; movement is stopped in
+                the finally block regardless.
+        """
         seconds = float(seconds)
         assert direction in ["north", "south", "east", "west"]
 
@@ -674,30 +686,30 @@ class AbstractMount(PanBase):
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None, **kwargs):
-        """Sends a query to the mount and returns response.
+        """Send a command to the mount and return the response.
 
-        Sends cmd  and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. Accepts an additional args that is passed
-        along with the command. Checks for and only accepts one args param.
+        The command key is translated to a mount-specific serial command (using the loaded
+        commands YAML), written to the connection, and the response is read back.
 
         Args:
-            cmd (str): A command to send to the mount. This should be one of the
-                commands listed in the mount commands yaml file.
-            params (str, optional): Params to pass to serial connection
-
-        Examples:
-            >>> from panoptes.pocs.mount import create_mount_from_config
-            >>> mount = create_mount_from_config()       #doctest: +SKIP
-            >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
-            '1'
-            >>> mount.query('get_local_time')            #doctest: +SKIP
-            '101503'
+            cmd (str): Logical command name defined in the mount commands YAML file.
+            params (str | None): Optional parameter string to include with the command.
+            **kwargs: Additional keyword arguments forwarded to the low-level `read()` call.
 
         Returns:
-            str: The response from the mount.
+            str: The raw response from the mount.
 
-        Deleted Parameters:
-            *args: Parameters to be sent with command if required.
+        Raises:
+            AssertionError: If the mount has not been initialized.
+            error.InvalidMountCommand: If the command key is not known.
+
+        Examples:
+            >>> from panoptes.pocs.mount import create_mount_from_config  # doctest: +SKIP
+            >>> mount = create_mount_from_config()                        # doctest: +SKIP
+            >>> mount.query('set_local_time', '101503')                   # doctest: +SKIP
+            '1'
+            >>> mount.query('get_local_time')                             # doctest: +SKIP
+            '101503'
         """
         assert self.is_initialized, self.logger.warning("Mount has not been initialized")
 

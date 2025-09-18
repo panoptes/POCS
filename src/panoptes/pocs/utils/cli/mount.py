@@ -38,6 +38,12 @@ def park_mount(
 
     Warning: This will move the mount to the park position but will not do any safety
     checking. Please make sure the mount is safe to park before running this command.
+
+    Args:
+        confirm: Set to True to skip the interactive confirmation prompt.
+
+    Returns:
+        None
     """
     if not confirm:
         print("[red]Cancelled.[/red]")
@@ -61,10 +67,16 @@ def set_park_position(
         ),
     ] = False,
 ):
-    """Sets the park position.
+    """Set the current position as the park position.
 
     Warning: This will move the mount to the park position but will not do any safety
     checking. Please make sure the mount is safe to move before running this command.
+
+    Args:
+        confirm: Set to True to skip the interactive confirmation prompt.
+
+    Returns:
+        None
     """
     if not confirm:
         print("[red]Cancelled.[/red]")
@@ -134,10 +146,16 @@ def slew_to_home(
         ),
     ] = False,
 ):
-    """Slews the mount home position.
+    """Slew the mount to the home position.
 
     Warning: This will move the mount to the home position but will not do any safety
     checking. Please make sure the mount is safe to move before running this command.
+
+    Args:
+        confirm: Set to True to skip the interactive confirmation prompt.
+
+    Returns:
+        None
     """
     if not confirm:
         print("[red]Cancelled.[/red]")
@@ -170,7 +188,16 @@ def slew_to_target(
         typer.Option(..., "--comet", help="Include if you want to search for comet named `target`"),
     ] = False,
 ):
-    """Slews the mount target position."""
+    """Slew the mount to a target by name and begin tracking.
+
+    Args:
+        confirm: Set to True to skip the interactive confirmation prompt.
+        target: The name or coordinate string of the target to slew to.
+        comet: If True, search comet catalog for the given target name.
+
+    Returns:
+        None
+    """
     # Get the observer location
     location = create_location_from_config()
     observe_horizon = location.location.get("horizon", 30 * u.deg)
@@ -262,10 +289,16 @@ def search_for_home(
         ),
     ] = False,
 ):
-    """Searches for the mount home position.
+    """Search for the mount home position.
 
     Warning: This will move the mount to the home position but will not do any safety
     checking. Please make sure the mount is safe to move before running this command.
+
+    Args:
+        confirm: Set to True to skip the interactive confirmation prompt.
+
+    Returns:
+        None
     """
     if not confirm:
         print("[red]Cancelled.[/red]")

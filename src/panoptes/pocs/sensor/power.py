@@ -107,7 +107,7 @@ class PowerBoard(PanBase):
         """Initialize the power board.
 
         The `relays` should be a dictionary with the relay name as key and a
-        dict with `label` and `initial_state` entries::
+        dict with `label` and `initial_state` entries. Example:
 
             RELAY_0:
                 label: mount
