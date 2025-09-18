@@ -33,8 +33,6 @@ app.add_typer(run.app, name="run", help="Run POCS!")
 app.add_typer(sensor.app, name="sensor", help="Interact with system sensors.")
 app.add_typer(weather.app, name="weather", help="Interact with weather station service.")
 
-REPO_PATH = os.path.dirname(os.path.abspath(__file__))
-
 
 @app.callback()
 def main(
@@ -60,7 +58,7 @@ def update_repo():
 
     This will pull the latest changes from github and show any relevant messages.
     """
-    new_commits = None
+    new_commits = []
 
     project_root = find_project_root()
 
@@ -98,15 +96,16 @@ def update_repo():
             progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
         except GitCommandError as e:
             progress.update(t_update, description=f"[red]Failed to pull the latest changes: {e}[/red]", advance=1)
-            typer.Abort(e)
+            raise typer.Abort()
         except Exception as e:
             progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
-            typer.Abort(e)
+            raise typer.Abort()
         else:
             progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
 
             # After pulling, show any update messages and sync dependencies
-            show_messages(start_commit=new_commits[0].hexsha, end_commit=new_commits[-1].hexsha)
+            if len(new_commits):
+                show_messages(start_commit=new_commits[0].hexsha, end_commit=new_commits[-1].hexsha)
         finally:
             # Apply stashed changes
             if repo.git.stash("list"):
@@ -143,7 +142,7 @@ def show_messages(
 
 @app.command(name="update-deps")
 def update_dependencies(context: typer.Context):
-    """A simple to force dependency updates."""
+    """A simple way to force dependency updates."""
     context.params.update(context.parent.params)
     verbose = context.params["verbose"]
     if verbose:
