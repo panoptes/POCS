@@ -4,6 +4,10 @@ import sys
 
 import typer
 from git import GitCommandError, Repo
+from rich import print
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
 from panoptes.pocs.utils.cli import (
     camera,
     config,
@@ -15,9 +19,6 @@ from panoptes.pocs.utils.cli import (
     sensor,
     weather,
 )
-from rich import print
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 app = typer.Typer()
 state = {"verbose": False}
