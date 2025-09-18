@@ -85,9 +85,6 @@ testing = [
     "pytest-remotedata>=0.3.1",
     "responses",
 ]
-sensors = [
-    "streamz",
-]
 weather = [
     "panoptes-aag",
 ]
@@ -109,7 +106,6 @@ all = [
     "responses",
     "rsa",
     "scipy>=1.10.0",
-    "streamz",
 ]
 
 [tool.hatch.version]
