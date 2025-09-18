@@ -52,7 +52,7 @@ def main(
         print(f"Command options from main: {context.params!r}")
 
 
-@app.command(name='update')
+@app.command(name="update")
 def update_repo():
     """Update POCS.
 
@@ -84,24 +84,38 @@ def update_repo():
             latest_remote_commit = repo.active_branch.tracking_branch().commit
 
             if current_commit == latest_remote_commit:
-                progress.update(t_update, description="Project is already up to date. No action needed.", advance=1)
+                progress.update(
+                    t_update,
+                    description="Project is already up to date. No action needed.",
+                    advance=1,
+                )
                 return
 
             # Find the commits between the current state and the remote
-            new_commits = list(repo.iter_commits(f'{current_commit}...{latest_remote_commit}'))
+            new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
 
-            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
+            progress.update(
+                t_update, description="Updates found. Pulling latest changes...", advance=1
+            )
             origin.pull()
 
-            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
+            progress.update(
+                t_update, description="Successfully pulled the latest changes.", advance=1
+            )
         except GitCommandError as e:
-            progress.update(t_update, description=f"[red]Failed to pull the latest changes: {e}[/red]", advance=1)
+            progress.update(
+                t_update,
+                description=f"[red]Failed to pull the latest changes: {e}[/red]",
+                advance=1,
+            )
             raise typer.Abort()
         except Exception as e:
             progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
             raise typer.Abort()
         else:
-            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
+            progress.update(
+                t_update, description="[green]Update process complete![/green]", advance=1
+            )
 
             # After pulling, show any update messages and sync dependencies
             if len(new_commits):
@@ -112,7 +126,7 @@ def update_repo():
                 repo.git.stash("pop")
 
         # Sync dependencies with the new pyproject.toml by showing message updates.
-        run_hatch_command(['run', 'pocs', 'update-deps'])
+        run_hatch_command(["run", "pocs", "update-deps"])
 
 
 @app.command(name="show-messages")
@@ -128,16 +142,22 @@ def show_messages(
         start_commit = start_commit or repo.active_branch.commit
         end_commit = end_commit or repo.active_branch.commit
 
-        commits = list(repo.iter_commits(f'{start_commit}...{end_commit}'))
+        commits = list(repo.iter_commits(f"{start_commit}...{end_commit}"))
 
         notices = []
         for commit in commits:
             notice_location = commit.message.find("NOTICE: ")
             if notice_location != -1:
-                notices.append(f"* [green]{commit.message[notice_location + 8:]}[/]")
+                notices.append(f"* [green]{commit.message[notice_location + 8 :]}[/]")
 
         if notices:
-            print(Panel.fit(f"\n{', '.join(notices)}", title='[bold magenta]Notices[/]', border_style='yellow'))
+            print(
+                Panel.fit(
+                    f"\n{', '.join(notices)}",
+                    title="[bold magenta]Notices[/]",
+                    border_style="yellow",
+                )
+            )
 
 
 @app.command(name="update-deps")
@@ -155,11 +175,7 @@ def run_hatch_command(command: list):
     """
     try:
         process = subprocess.run(
-            ['hatch'] + command,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=120
+            ["hatch"] + command, capture_output=True, text=True, check=True, timeout=120
         )
         print(process.stdout)
     except subprocess.CalledProcessError as e:
@@ -190,7 +206,10 @@ def find_project_root(start_path=None):
 
     while True:
         # Check for common project root markers
-        if any(os.path.exists(os.path.join(current_path, marker)) for marker in ['pyproject.toml', '.git', 'setup.py']):
+        if any(
+            os.path.exists(os.path.join(current_path, marker))
+            for marker in ["pyproject.toml", ".git", "setup.py"]
+        ):
             return current_path
 
         parent_path = os.path.dirname(current_path)

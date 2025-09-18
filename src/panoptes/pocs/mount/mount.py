@@ -633,7 +633,7 @@ class AbstractMount(PanBase):
 
         # Use low-level commands without a lookup to make timing exact.
         move_command = f":m{short_direction}#"
-        stop_command = ':Q#'
+        stop_command = ":Q#"
 
         try:
             self.logger.debug(f"Moving {direction} for {seconds} seconds. ")
