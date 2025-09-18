@@ -135,29 +135,28 @@ def show_messages(
     end_commit: str = None,
 ):
     """Shows any important update messages."""
-    if start_commit is not None and end_commit is not None:
-        project_root = find_project_root()
-        repo = Repo(project_root)
+    project_root = find_project_root()
+    repo = Repo(project_root)
 
-        start_commit = start_commit or repo.active_branch.commit
-        end_commit = end_commit or repo.active_branch.commit
+    start_commit = start_commit or repo.active_branch.commit
+    end_commit = end_commit or repo.active_branch.commit
 
-        commits = list(repo.iter_commits(f"{start_commit}...{end_commit}"))
+    commits = list(repo.iter_commits(f"{start_commit}...{end_commit}"))
 
-        notices = []
-        for commit in commits:
-            notice_location = commit.message.find("NOTICE: ")
-            if notice_location != -1:
-                notices.append(f"* [green]{commit.message[notice_location + 8 :]}[/]")
+    notices = []
+    for commit in commits:
+        notice_location = commit.message.find("NOTICE: ")
+        if notice_location != -1:
+            notices.append(f"* [green]{commit.message[notice_location + 8:].replace('\n', ' ')}[/]")
 
-        if notices:
-            print(
-                Panel.fit(
-                    f"\n{', '.join(notices)}",
-                    title="[bold magenta]Notices[/]",
-                    border_style="yellow",
-                )
+    if notices:
+        print(
+            Panel.fit(
+                f"\n{'\n'.join(notices)}",
+                title="[bold magenta]Notices[/]",
+                border_style="yellow",
             )
+        )
 
 
 @app.command(name="update-deps")
