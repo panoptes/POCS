@@ -34,6 +34,7 @@ dependencies = [
     "certifi>=2023.7.22",
     "fastapi<0.106.0",
     "fastapi-utils",
+    "GitPython",
     "human-readable",
     "numpy>=2",
     "panoptes-utils[config]>=0.2.47",
@@ -72,7 +73,7 @@ google = [
     "google-cloud-logging",
     "google-cloud-storage",
     "gsutil",
-    "protobuf==4.23.0",
+    "protobuf",
     "rsa",
 ]
 testing = [
@@ -89,23 +90,7 @@ weather = [
     "panoptes-aag",
 ]
 all = [
-    "coverage",
-    "google-cloud-firestore",
-    "google-cloud-logging",
-    "google-cloud-storage",
-    "gsutil",
-    "matplotlib",
-    "panoptes-aag",
-    "protobuf==4.23.0",
-    "pycodestyle",
-    "pytest",
-    "pytest-cov",
-    "pytest-doctestplus",
-    "pytest-loguru",
-    "pytest-remotedata>=0.3.1",
-    "responses",
-    "rsa",
-    "scipy>=1.10.0",
+    "panoptes-pocs[focuser,google,testing,weather]"
 ]
 
 [tool.hatch.version]
