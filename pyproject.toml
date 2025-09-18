@@ -73,7 +73,7 @@ google = [
     "google-cloud-logging",
     "google-cloud-storage",
     "gsutil",
-    "protobuf==4.23.0",
+    "protobuf",
     "rsa",
 ]
 testing = [
