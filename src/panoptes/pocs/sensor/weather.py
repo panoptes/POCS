@@ -1,3 +1,4 @@
+"""AAG CloudWatcher weather station integration for PANOPTES."""
 from aag.weather import CloudSensor
 
 from panoptes.pocs.base import PanBase

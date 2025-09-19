@@ -1,3 +1,10 @@
+"""Power board sensor interface for relays and current/voltage readings.
+
+Provides PowerBoard, a serial-connected reader/controller for the PANOPTES
+power relay board (Arduino + relay shield), and a small Relay data class for
+labels/states. Includes helpers to toggle relays and to parse/aggregate
+telemetry into rolling means and status dictionaries.
+"""
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -57,15 +64,19 @@ class Relay:
     default_state: Optional[PinState] = PinState.OFF
 
     def turn_on(self):
+        """Turn this relay ON (helper bound by PowerBoard.setup_relays)."""
         pass
 
     def turn_off(self):
+        """Turn this relay OFF (helper bound by PowerBoard.setup_relays)."""
         pass
 
     def toggle_relay(self):
+        """Toggle this relay from OFF to ON or vice versa."""
         pass
 
     def cycle_relay(self):
+        """Cycle this relay (toggle with a small delay), as supported by firmware."""
         pass
 
     def __str__(self):
@@ -164,6 +175,12 @@ class PowerBoard(PanBase):
 
     @property
     def status(self):
+        """Summarize relay states and latest readings.
+
+        Returns:
+            dict: Mapping of relay name to a dict with label, state, and reading,
+                plus top-level 'ac_ok' and 'battery_low' booleans if available.
+        """
         readings = self.readings
         if not readings:
             self.logger.warning(
@@ -282,6 +299,17 @@ class PowerBoard(PanBase):
         self.arduino_board.write(f"{write_command}")
 
     def default_reader_callback(self, data):
+        """Parse a JSON line from the Arduino into a list for DataFrame append.
+
+        Args:
+            data (str): JSON string produced by the Arduino firmware, containing
+                keys for relay states and readings along with ac_ok/battery_low.
+
+        Returns:
+            list | None: A list of values in the order [timestamp, ac_ok, battery_low,
+                <relay readings...>] suitable for constructing/appending to a pandas
+                DataFrame, or None if the reading is ignored/invalid.
+        """
         name_key = "name"
         relay_key = "relays"
         values_key = "readings"

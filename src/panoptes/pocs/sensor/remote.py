@@ -1,3 +1,8 @@
+"""HTTP-based remote sensor reader for PANOPTES.
+
+Provides RemoteMonitor to poll a JSON endpoint and optionally store the latest
+reading in the local PANOPTES database.
+"""
 import requests
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
@@ -29,6 +34,10 @@ class RemoteMonitor(PanBase):
         self.endpoint_url = endpoint_url
 
     def disconnect(self):
+        """Placeholder to stop polling/cleanup for a remote sensor.
+
+        Currently this only logs; provided for symmetry with other drivers.
+        """
         self.logger.debug("Stop listening on {self.endpoint_url}")
 
     def capture(self, store_result: bool = True) -> dict:
