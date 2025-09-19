@@ -89,7 +89,6 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
         with a small random jitter added.
 
         Returns:
-        
             astropy.units.Quantity: Simulated temperature in degrees Celsius.
         """
         now = time.monotonic()
