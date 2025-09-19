@@ -1,3 +1,10 @@
+"""Base scheduler primitives and common helpers.
+
+Defines BaseScheduler, an abstract class that loads field definitions
+and manages the list of Observation objects, current selection, and common
+properties used during scheduling. Concrete schedulers subclass this and
+implement get_observation().
+"""
 import os
 from abc import abstractmethod
 from collections import OrderedDict
@@ -15,9 +22,14 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BaseScheduler(PanBase):
+    """Abstract base class for schedulers.
+
+    Loads fields and constraints, manages observations and the current
+    selection, and provides helpers used by concrete schedulers.
+    """
     def __init__(
         self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs
-    ):
+    ): 
         """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
@@ -60,6 +72,7 @@ class BaseScheduler(PanBase):
 
     @property
     def status(self):
+        """dict: Summary of constraints and current observation."""
         return {
             "constraints": self.constraints,
             "current_observation": self.current_observation,
@@ -80,6 +93,7 @@ class BaseScheduler(PanBase):
 
     @property
     def has_valid_observations(self):
+        """bool: True if one or more observations are currently available."""
         return len(self._observations.keys()) > 0
 
     @property
@@ -97,6 +111,12 @@ class BaseScheduler(PanBase):
 
     @current_observation.setter
     def current_observation(self, new_observation):
+        """Update the current observation and record sequencing metadata.
+
+        Args:
+            new_observation (Observation | None): New observation to select, or
+                None to clear and reset the prior current observation.
+        """
         if self.current_observation is None:
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
@@ -141,6 +161,12 @@ class BaseScheduler(PanBase):
 
     @fields_file.setter
     def fields_file(self, new_file):
+        """Set the path to the fields YAML and reload observations.
+
+        Args:
+            new_file (str | os.PathLike | None): Path to a YAML file describing
+                fields; if None, keeps the in-memory fields_list.
+        """
         self.clear_available_observations()
 
         self._fields_file = new_file
@@ -165,6 +191,11 @@ class BaseScheduler(PanBase):
 
     @fields_list.setter
     def fields_list(self, new_list):
+        """Replace the in-memory list of field configs and rebuild observations.
+
+        Args:
+            new_list (list[dict] | None): Sequence of field configuration dicts.
+        """
         self.clear_available_observations()
 
         self._fields_list = new_list

@@ -1,3 +1,8 @@
+"""Field utilities used by the scheduler.
+
+Defines the Field class, a thin wrapper around astroplan.FixedTarget with
+additional conveniences for naming and construction from AltAz coordinates.
+"""
 from astroplan import FixedTarget
 from astropy.coordinates import SkyCoord
 from panoptes.utils.time import current_time
@@ -7,6 +12,7 @@ from panoptes.pocs.base import PanBase
 
 
 class Field(FixedTarget, PanBase):
+    """Represents the center of an observing field (target) for scheduling."""
     def __init__(self, name, position, equinox="J2000", *args, **kwargs):
         """An object representing an area to be observed
 

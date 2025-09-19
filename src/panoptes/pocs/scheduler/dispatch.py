@@ -1,11 +1,19 @@
+"""Dispatch-style scheduler implementation.
+
+Implements a simple greedy/dispatch scheduler that evaluates all configured
+observations against the active constraints and selects the best candidate by
+weighted score. Favors the current observation when still viable to reduce
+excessive switching.
+"""
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import listify
 
 
 class Scheduler(BaseScheduler):
+    """Greedy scheduler that ranks observations by constraint scores."""
     def __init__(self, *args, **kwargs):
-        """Inherit from the `BaseScheduler`"""
+        """Initialize the Scheduler, delegating to BaseScheduler."""
         BaseScheduler.__init__(self, *args, **kwargs)
 
     def get_observation(self, time=None, show_all=False, constraints=None, read_file=False):
