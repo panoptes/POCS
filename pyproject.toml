@@ -32,6 +32,7 @@ dependencies = [
     "astropy>=7.0",
     "astroquery",
     "certifi>=2023.7.22",
+    "click==8.2.1",
     "fastapi<0.106.0",
     "fastapi-utils",
     "GitPython",
