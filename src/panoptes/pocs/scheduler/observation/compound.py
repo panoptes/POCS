@@ -1,3 +1,4 @@
+"""Compound observation that cycles through a set of exposure times."""
 import numpy as np
 from astropy import units as u
 
@@ -33,6 +34,7 @@ class Observation(BaseObservation):
 
     @property
     def exptimes(self):
+        """List[Quantity | float]: The sequence of exposure times to cycle through."""
         return self._exptimes
 
     def __str__(self):
