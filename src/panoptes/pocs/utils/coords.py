@@ -30,7 +30,7 @@ def get_target_coords(
 
     >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)
     <SkyCoord (ICRS): (ra, dec) in deg
-        (10.6847083, 41.26875)>
+        (10.68470833, 41.26875)>
 
     >>> m = get_target_coords("Moon", obstime=Time("2020-01-01"))
     >>> isinstance(m, SkyCoord)
