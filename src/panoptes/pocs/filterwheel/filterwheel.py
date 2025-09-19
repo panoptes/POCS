@@ -1,3 +1,8 @@
+"""Abstract base and helpers for camera filter wheels.
+
+Defines AbstractFilterWheel with common properties (position, current_filter,
+ready state) and movement helpers shared by concrete wheel drivers.
+"""
 import threading
 from collections import abc
 from abc import ABCMeta
@@ -112,6 +117,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @property
     def is_ready(self):
+        """Whether the wheel is connected and not currently moving."""
         # A filterwheel is 'ready' if it is connected and isn't currently moving.
         return self.is_connected and not self.is_moving
 
@@ -125,6 +131,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @camera.setter
     def camera(self, camera):
+        """Attach this filter wheel to a camera.
+
+        Args:
+            camera (AbstractCamera): The associated camera instance.
+        """
         if self._camera and self._camera.uid != camera.uid:
             self.logger.warning(
                 f"{self} assigned to {self.camera.name}, "
@@ -151,6 +162,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @position.setter
     def position(self, position):
+        """Set the filter wheel position.
+
+        Args:
+            position (int | str): New position (1-based index) or a filter name/prefix.
+        """
         self.move_to(position, blocking=True)
 
     @property
@@ -165,10 +181,20 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @current_filter.setter
     def current_filter(self, filter_name):
+        """Move to the specified filter.
+
+        Args:
+            filter_name (str | int): Filter name or 1-based position.
+        """
         self.move_to(filter_name, blocking=True)
 
     @property
     def is_unidirectional(self):
+        """Whether the filter wheel enforces one-way rotation.
+
+        Returns:
+            bool: True if the wheel only rotates in a single direction.
+        """
         raise NotImplementedError
 
     ##################################################################################################
