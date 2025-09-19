@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Hatch
-        run: pipx install hatch
+        run: pipx install click==8.2.1 hatch
       - name: Lint with Hatch (ruff)
         run: hatch run lint
   test:
@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Hatch
-        run: pipx install hatch pytest
+        run: pipx install click==8.2.1 hatch pytest
       - name: Install POCS with Hatch
         run: hatch run pip install -e ".[all]"
       - name: Test with Hatch
