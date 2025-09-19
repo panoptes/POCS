@@ -1,3 +1,9 @@
+"""FastAPI service exposing power board status, readings, and control endpoints.
+
+This module initializes a PowerBoard instance during application lifespan and
+periodically records telemetry to the database. It exposes simple REST endpoints
+for querying current status/readings and for toggling relays via POST/GET.
+"""
 import time
 from contextlib import asynccontextmanager
 from enum import auto
@@ -13,11 +19,20 @@ from panoptes.pocs.sensor.power import PowerBoard
 
 
 class RelayAction(StrEnum):
+    """Enumeration of supported relay actions."""
+
     turn_on = auto()
     turn_off = auto()
 
 
 class RelayCommand(BaseModel):
+    """Command payload for controlling a relay.
+
+    Attributes:
+        relay (str | int): Relay label or index.
+        command (RelayAction): Action to perform on the relay.
+    """
+
     relay: Union[str, int]
     command: RelayAction
 
@@ -27,9 +42,16 @@ app_objects = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Context manager for the lifespan of the app.
+    """Context manager for the FastAPI application's lifespan.
 
-    This will connect to the power board and record readings at a regular interval.
+    This will connect to the power board and start a background thread that
+    periodically records readings at a configured interval.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Yields:
+        None: Control to FastAPI while the app is running.
     """
     conf: dict = get_config("environment.power", {})
     power_board = PowerBoard(**conf)
@@ -78,13 +100,28 @@ async def readings():
 
 @app.post("/control")
 def control_relay(relay_command: RelayCommand):
-    """Control a relay via a POST request."""
+    """Control a relay via a POST request.
+
+    Args:
+        relay_command (RelayCommand): The relay identifier and action to perform.
+
+    Returns:
+        RelayCommand: Echo of the command that was executed upon success.
+    """
     return do_command(relay_command)
 
 
 @app.get("/relay/{relay}/control/{command}")
 def control_relay_url(relay: Union[int, str], command: str = "turn_on"):
-    """Control a relay via a GET request"""
+    """Control a relay via a GET request.
+
+    Args:
+        relay (int | str): The relay index or label to control.
+        command (str): The action to perform, e.g. "turn_on" or "turn_off".
+
+    Returns:
+        RelayCommand: Echo of the command that was executed upon success.
+    """
     return do_command(RelayCommand(relay=relay, command=RelayAction(command)))
 
 
@@ -93,6 +130,12 @@ def do_command(relay_command: RelayCommand):
 
     This function performs the actual relay control and is used by both request
     types.
+
+    Args:
+        relay_command (RelayCommand): The relay identifier and action to execute.
+
+    Returns:
+        RelayCommand: Echo of the command that was executed.
     """
     power_board = app_objects["power_board"]
     relay_id = relay_command.relay
