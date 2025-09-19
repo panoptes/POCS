@@ -1,3 +1,9 @@
+"""Observatory orchestration and high-level hardware coordination.
+
+Defines the Observatory class, which wires together the mount, cameras, dome,
+location/observer objects, and scheduler, and exposes convenience helpers for
+status, darkness checks, and common operations.
+"""
 from collections import OrderedDict
 
 import numpy as np
@@ -28,6 +34,7 @@ from panoptes.utils.utils import get_quantity_value
 
 
 class Observatory(PanBase):
+    """High-level container coordinating site, hardware, and scheduling."""
     def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class.
 
@@ -136,10 +143,20 @@ class Observatory(PanBase):
 
     @property
     def sidereal_time(self):
+        """Local sidereal time at the observatory site.
+
+        Returns:
+            astropy.time.Angle: The current local sidereal time.
+        """
         return self.observer.local_sidereal_time(current_time())
 
     @property
     def has_cameras(self):
+        """Whether any cameras are attached to the observatory.
+
+        Returns:
+            bool: True if at least one camera is registered.
+        """
         return len(self.cameras) > 0
 
     @property
@@ -159,11 +176,21 @@ class Observatory(PanBase):
 
     @primary_camera.setter
     def primary_camera(self, cam):
+        """Designate the given camera as the primary camera.
+
+        Args:
+            cam (AbstractCamera): Camera instance to mark as primary.
+        """
         cam.is_primary = True
         self._primary_camera = cam
 
     @property
     def current_observation(self) -> Optional[Observation]:
+        """The currently active observation from the scheduler, if any.
+
+        Returns:
+            Observation | None: The current observation or None if not available.
+        """
         if self.scheduler is None:
             self.logger.info("Scheduler not present, cannot get current observation.")
             return None
@@ -171,6 +198,11 @@ class Observatory(PanBase):
 
     @current_observation.setter
     def current_observation(self, new_observation: Observation):
+        """Set the current observation on the scheduler.
+
+        Args:
+            new_observation (Observation): Observation to set as current.
+        """
         if self.scheduler is None:
             self.logger.info("Scheduler not present, cannot set current observation.")
         else:
@@ -178,6 +210,11 @@ class Observatory(PanBase):
 
     @property
     def has_dome(self):
+        """Whether a dome controller is configured and attached.
+
+        Returns:
+            bool: True if a dome is present.
+        """
         return self.dome is not None
 
     @property
@@ -267,6 +304,16 @@ class Observatory(PanBase):
         self._set_hardware(mount, "mount", AbstractMount)
 
     def _set_hardware(self, new_hardware, hw_type, hw_class):
+        """Attach or detach a hardware component.
+
+        Args:
+            new_hardware: The hardware instance or None to remove.
+            hw_type (str): Attribute name on the observatory (e.g., 'mount').
+            hw_class (type): Expected class type for validation.
+
+        Raises:
+            TypeError: If new_hardware is not None and not an instance of hw_class.
+        """
         # Lookup the set method for the hardware type.
         hw_attr = getattr(self, hw_type)
 

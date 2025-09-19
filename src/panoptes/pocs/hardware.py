@@ -6,6 +6,11 @@ from panoptes.utils.config.client import get_config
 
 
 class HardwareName(Enum):
+    """Enumeration of top-level hardware categories supported by POCS.
+
+    Members correspond to hardware subsystems that may have real drivers or
+    simulators enabled via configuration (see get_simulator_names).
+    """
     camera = "camera"
     dome = "dome"
     mount = "mount"
