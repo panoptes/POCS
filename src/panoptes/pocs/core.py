@@ -1,3 +1,8 @@
+"""Core orchestration for running a PANOPTES unit.
+
+Defines the POCS state machine class, which coordinates an Observatory instance
+and manages the high-level observing loop, safety checks, and lifecycle.
+"""
 import os
 from astropy.time import Time
 from contextlib import suppress
@@ -86,6 +91,11 @@ class POCS(PanStateMachine, PanBase):
 
     @is_initialized.setter
     def is_initialized(self, new_value):
+        """Set initialization flag.
+
+        Args:
+            new_value (bool): True if POCS has finished initialization.
+        """
         self.set_config("pocs.INITIALIZED", new_value)
 
     @property
@@ -99,6 +109,11 @@ class POCS(PanStateMachine, PanBase):
 
     @interrupted.setter
     def interrupted(self, new_value):
+        """Mark POCS as interrupted.
+
+        Args:
+            new_value (bool): True if an interrupt signal has been received.
+        """
         self.set_config("pocs.INTERRUPTED", new_value)
         if new_value:
             self.logger.critical("POCS has been interrupted")
@@ -110,14 +125,29 @@ class POCS(PanStateMachine, PanBase):
 
     @connected.setter
     def connected(self, new_value):
+        """Set connection status flag.
+
+        Args:
+            new_value (bool): True if POCS is connected to required services.
+        """
         self.set_config("pocs.CONNECTED", new_value)
 
     @property
     def do_states(self):
+        """Whether the state machine should currently process states.
+
+        Returns:
+            bool: True if state transitions should be executed.
+        """
         return self.get_config("pocs.DO_STATES", default=True)
 
     @do_states.setter
     def do_states(self, new_value):
+        """Enable or disable state-machine processing.
+
+        Args:
+            new_value (bool): True to process state transitions; False to pause.
+        """
         self.set_config("pocs.DO_STATES", new_value)
 
     @property
@@ -148,14 +178,30 @@ class POCS(PanStateMachine, PanBase):
 
     @run_once.setter
     def run_once(self, new_value):
+        """Set whether to exit the run loop after a single iteration.
+
+        Args:
+            new_value (bool): True to perform only one run loop iteration.
+        """
         self.set_config("pocs.RUN_ONCE", new_value)
 
     @property
     def should_retry(self):
+        """Whether the observing loop should attempt another iteration.
+
+        Returns:
+            bool: True if remaining retry attempts are available; otherwise False.
+        """
         return self._obs_run_retries >= 0
 
     @property
     def status(self) -> dict:
+        """Assemble a nested status dictionary for the running system.
+
+        Returns:
+            dict: A JSON-serializable mapping containing current state, next state,
+                coarse system metrics (e.g., free space), and the observatory status.
+        """
         try:
             status = {
                 "state": self.state,

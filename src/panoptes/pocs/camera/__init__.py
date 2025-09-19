@@ -29,6 +29,10 @@ def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
     Uses gphoto2 to try and detect which cameras are connected. Cameras should
     be known and placed in config but this is a useful utility.
 
+    Args:
+        endpoint (AnyHttpUrl | None): Optional HTTP endpoint for a remote gphoto2 service.
+            If provided, the detection command will be executed remotely.
+
     Returns:
         list: A list of the ports with detected cameras.
     """

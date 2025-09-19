@@ -1,3 +1,9 @@
+"""Filter wheel simulator used for development and tests.
+
+Implements a simple timing-based filter wheel that moves between indexed
+positions and optionally enforces unidirectional motion, matching the
+AbstractFilterWheel protocol without requiring hardware.
+"""
 import math
 import random
 import threading
@@ -77,6 +83,11 @@ class FilterWheel(AbstractFilterWheel):
 
     @property
     def is_unidirectional(self):
+        """Whether the simulator constrains motion to a single direction.
+
+        Returns:
+            bool: True if only forward rotation is allowed.
+        """
         return self._unidirectional
 
     ##################################################################################################

@@ -46,6 +46,11 @@ valid_values = {
 
 
 class FLIDriver(AbstractSDKDriver):
+    """ctypes-based wrapper for the FLI libfli SDK used by cooled FLI cameras.
+
+    Exposes a subset of the FLIDriver C API to Python with simple argument and
+    return value handling, suitable for use by higher-level camera classes.
+    """
     def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
@@ -75,6 +80,7 @@ class FLIDriver(AbstractSDKDriver):
     # Public methods
 
     def get_SDK_version(self):
+        """Return the libfli SDK version string as reported by the driver."""
         # Get library version.
         version = ctypes.create_string_buffer(64)
         length = ctypes.c_size_t(64)

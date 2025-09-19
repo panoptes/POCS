@@ -1,3 +1,9 @@
+"""Top-level Typer application entry point for POCS CLI.
+
+Aggregates feature subcommands (camera, mount, config, network, etc.) and
+provides a shared callback to set common options like config server host/port
+and verbosity.
+"""
 import os
 import subprocess
 import sys
@@ -41,6 +47,17 @@ def main(
     config_port: int = 6563,
     verbose: bool = False,
 ):
+    """Top-level CLI callback to set shared options for subcommands.
+
+    Args:
+        context: Typer context object.
+        config_host: Hostname or IP address of the config server.
+        config_port: Port number for the config server.
+        verbose: If True, enables verbose output.
+
+    Returns:
+        None
+    """
     state.update(
         {
             "config_host": config_host,
@@ -52,7 +69,7 @@ def main(
         print(f"Command options from main: {context.params!r}")
 
 
-@app.command(name='update')
+@app.command(name="update")
 def update_repo():
     """Update POCS.
 
@@ -84,24 +101,38 @@ def update_repo():
             latest_remote_commit = repo.active_branch.tracking_branch().commit
 
             if current_commit == latest_remote_commit:
-                progress.update(t_update, description="Project is already up to date. No action needed.", advance=1)
+                progress.update(
+                    t_update,
+                    description="Project is already up to date. No action needed.",
+                    advance=1,
+                )
                 return
 
             # Find the commits between the current state and the remote
-            new_commits = list(repo.iter_commits(f'{current_commit}...{latest_remote_commit}'))
+            new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
 
-            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
+            progress.update(
+                t_update, description="Updates found. Pulling latest changes...", advance=1
+            )
             origin.pull()
 
-            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
+            progress.update(
+                t_update, description="Successfully pulled the latest changes.", advance=1
+            )
         except GitCommandError as e:
-            progress.update(t_update, description=f"[red]Failed to pull the latest changes: {e}[/red]", advance=1)
+            progress.update(
+                t_update,
+                description=f"[red]Failed to pull the latest changes: {e}[/red]",
+                advance=1,
+            )
             raise typer.Abort()
         except Exception as e:
             progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
             raise typer.Abort()
         else:
-            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
+            progress.update(
+                t_update, description="[green]Update process complete![/green]", advance=1
+            )
 
             # After pulling, show any update messages and sync dependencies
             if len(new_commits):
@@ -112,7 +143,7 @@ def update_repo():
                 repo.git.stash("pop")
 
         # Sync dependencies with the new pyproject.toml by showing message updates.
-        run_hatch_command(['run', 'pocs', 'update-deps'])
+        run_hatch_command(["run", "pocs", "update-deps"])
 
 
 @app.command(name="show-messages")
@@ -120,29 +151,50 @@ def show_messages(
     start_commit: str = None,
     end_commit: str = None,
 ):
-    """Shows any important update messages."""
-    if start_commit is not None and end_commit is not None:
-        project_root = find_project_root()
-        repo = Repo(project_root)
+    """Show any important update messages between two commits.
 
-        start_commit = start_commit or repo.active_branch.commit
-        end_commit = end_commit or repo.active_branch.commit
+    Args:
+        start_commit: The starting commit SHA or ref. If None, uses the active branch head.
+        end_commit: The ending commit SHA or ref. If None, uses the active branch head.
 
-        commits = list(repo.iter_commits(f'{start_commit}...{end_commit}'))
+    Returns:
+        None
+    """
+    project_root = find_project_root()
+    repo = Repo(project_root)
 
-        notices = []
-        for commit in commits:
-            notice_location = commit.message.find("NOTICE: ")
-            if notice_location != -1:
-                notices.append(f"* [green]{commit.message[notice_location + 8:]}[/]")
+    start_commit = start_commit or repo.active_branch.commit
+    end_commit = end_commit or repo.active_branch.commit
 
-        if notices:
-            print(Panel.fit(f"\n{', '.join(notices)}", title='[bold magenta]Notices[/]', border_style='yellow'))
+    commits = list(repo.iter_commits(f"{start_commit}...{end_commit}"))
+
+    notices = []
+    for commit in commits:
+        notice_location = commit.message.find("NOTICE: ")
+        if notice_location != -1:
+            notice_msg = commit.message[notice_location + 8 :].replace("\n", " ")
+            notices.append(f"* [green]{notice_msg}[/]")
+
+    if notices:
+        print(
+            Panel.fit(
+                f"\n{'\n'.join(notices)}",
+                title="[bold magenta]Notices[/]",
+                border_style="yellow",
+            )
+        )
 
 
 @app.command(name="update-deps")
 def update_dependencies(context: typer.Context):
-    """A simple way to force dependency updates."""
+    """A simple way to force dependency updates.
+
+    Args:
+        context: Typer context allowing propagation of parent parameters.
+
+    Returns:
+        None
+    """
     context.params.update(context.parent.params)
     verbose = context.params["verbose"]
     if verbose:
@@ -150,16 +202,22 @@ def update_dependencies(context: typer.Context):
 
 
 def run_hatch_command(command: list):
-    """
-    Runs a hatch command using subprocess and handles potential errors.
+    """Run a hatch command using subprocess and handle potential errors.
+
+    Args:
+        command: The list of arguments to pass to the hatch executable, e.g.,
+            ["run", "pocs", "update-deps"].
+
+    Returns:
+        None
+
+    Raises:
+        subprocess.CalledProcessError: If the hatch command exits with a non-zero status.
+        FileNotFoundError: If hatch is not installed or not found in PATH.
     """
     try:
         process = subprocess.run(
-            ['hatch'] + command,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=120
+            ["hatch"] + command, capture_output=True, text=True, check=True, timeout=120
         )
         print(process.stdout)
     except subprocess.CalledProcessError as e:
@@ -190,7 +248,10 @@ def find_project_root(start_path=None):
 
     while True:
         # Check for common project root markers
-        if any(os.path.exists(os.path.join(current_path, marker)) for marker in ['pyproject.toml', '.git', 'setup.py']):
+        if any(
+            os.path.exists(os.path.join(current_path, marker))
+            for marker in ["pyproject.toml", ".git", "setup.py"]
+        ):
             return current_path
 
         parent_path = os.path.dirname(current_path)

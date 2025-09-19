@@ -1,3 +1,9 @@
+"""ZWO EFW filter wheel SDK wrapper.
+
+Provides EFWDriver, a thin ctypes-based interface around libEFWFilter used by
+ZWO electronic filter wheels. Exposes helpers to enumerate devices, open/close,
+read properties/position, move, and set unidirectional mode.
+"""
 import ctypes
 import enum
 import threading
@@ -10,6 +16,13 @@ from panoptes.utils.time import CountdownTimer
 
 
 class EFWDriver(AbstractSDKDriver):
+    """ctypes-based driver wrapper for ZWO EFW filter wheels.
+
+    Loads the vendor library, enumerates connected wheels, and exposes simple
+    helpers for opening/closing, reading properties/position, moving to a slot,
+    and toggling unidirectional mode. Intended for use by higher-level
+    AbstractFilterWheel implementations.
+    """
     # Because ZWO EFW library isn't linked properly have to manually load libudev
     # in global mode first, otherwise get undefined symbol errors.
     _libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
@@ -269,6 +282,7 @@ class EFWInfo(ctypes.Structure):
 
 @enum.unique
 class ErrorCode(enum.IntEnum):
+    """Return codes from the ZWO EFW SDK functions."""
     SUCCESS = 0
     INVALID_INDEX = enum.auto()
     INVALID_ID = enum.auto()

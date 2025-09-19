@@ -1,3 +1,8 @@
+"""Simple focuser simulator for development and tests.
+
+Implements a minimal AbstractFocuser that fakes connection and movement timing
+without requiring hardware.
+"""
 from panoptes.pocs.focuser import AbstractFocuser
 
 import time
@@ -36,6 +41,11 @@ class Focuser(AbstractFocuser):
 
     @property
     def is_moving(self):
+        """Whether the simulated focuser is moving.
+
+        Returns:
+            bool: True if a simulated move is in progress.
+        """
         return self._is_moving
 
     ##################################################################################################

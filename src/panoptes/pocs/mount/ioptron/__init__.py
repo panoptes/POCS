@@ -27,12 +27,14 @@ class MountInfo(IntEnum):
 
 
 class MountGPS(IntEnum):
+    """GPS power/lock state reported by iOptron controllers."""
     OFF = 0
     ON = 1
     EXTRACTED = 2
 
 
 class MountState(IntEnum):
+    """High-level motion/operational state of the mount."""
     STOPPED = 0
     TRACKING = 1
     SLEWING = 2
@@ -45,6 +47,7 @@ class MountState(IntEnum):
 
 
 class MountTrackingState(IntEnum):
+    """Tracking rate/mode selections supported by iOptron."""
     SIDEREAL = 0
     LUNAR = 1
     SOLAR = 2
@@ -53,6 +56,7 @@ class MountTrackingState(IntEnum):
 
 
 class MountMovementSpeed(IntEnum):
+    """Hand-controller move rates expressed as multiples of sidereal."""
     SIDEREAL_1 = 1
     SIDEREAL_2 = 2
     SIDEREAL_8 = 3
@@ -65,11 +69,13 @@ class MountMovementSpeed(IntEnum):
 
 
 class MountTimeSource(IntEnum):
+    """Source from which the mount obtains its clock/time."""
     RS232 = 1
     HAND_CONTROLLER = 2
     GPS = 3
 
 
 class MountHemisphere(IntEnum):
+    """Hemisphere setting for tracking calculations."""
     SOUTHERN = 0
     NORTHERN = 1

@@ -1,3 +1,9 @@
+"""Simulator for the Astrohaven dome PLC protocol over a faux serial link.
+
+Provides a simple, thread-driven model of the clamshell shutters and the
+periodic one-character status output used by the real controller. Useful for
+offline testing of the Astrohaven dome driver.
+"""
 import datetime
 import queue
 import threading
@@ -37,6 +43,13 @@ class Shutter(object):
         self.max_position = max(CLOSED_POSITION, OPEN_POSITION)
 
     def handle_input(self, input_char):
+        """Process a single-character command for this shutter.
+
+        Returns:
+            tuple[bool, str | None]: (acted, response_code) where `acted` indicates
+            if movement occurred and `response_code` is an immediate echo/limit code
+            to emit, or None.
+        """
         if input_char in self.open_commands:
             if self.is_open:
                 return False, self.is_open_char
@@ -59,15 +72,18 @@ class Shutter(object):
             return False, None
 
     def adjust_position(self, nudge_by):
+        """Increment the shutter position by a small step within bounds."""
         new_position = self.position + nudge_by
         self.position = min(self.max_position, max(self.min_position, new_position))
 
     @property
     def is_open(self):
+        """Whether this shutter has reached its fully open position."""
         return self.position == OPEN_POSITION
 
     @property
     def is_closed(self):
+        """Whether this shutter has reached its fully closed position."""
         return self.position == CLOSED_POSITION
 
 
@@ -120,6 +136,11 @@ class AstrohavenPLCSimulator:
             self.logger.critical("AstrohavenPLCSimulator.__del__ stop is NOT set")
 
     def run(self):
+        """Main loop for the PLC simulator thread.
+
+        Continuously emits periodic status bytes and handles incoming one-byte
+        commands until the provided stop event is set.
+        """
         self.logger.info("AstrohavenPLCSimulator.run ENTER")
         self.next_output_time = datetime.datetime.now()
         while True:
@@ -148,6 +169,7 @@ class AstrohavenPLCSimulator:
                 self.do_output()
 
     def do_output(self):
+        """Emit the next status/response code to the status queue and schedule the next tick."""
         c = self.next_output_code
         if not c:
             c = self.compute_state()
@@ -159,6 +181,7 @@ class AstrohavenPLCSimulator:
             self.next_output_time = datetime.datetime.now() + self.delta
 
     def handle_input(self, c):
+        """Handle a single input command byte, updating shutters and pending output."""
         self.logger.debug(f"AstrohavenPLCSimulator.handle_input {c!r}")
         (a_acted, a_resp) = self.shutter_a.handle_input(c)
         (b_acted, b_resp) = self.shutter_b.handle_input(c)
@@ -177,6 +200,7 @@ class AstrohavenPLCSimulator:
             return True
 
     def compute_state(self):
+        """Compute the aggregate status code based on individual shutter positions."""
         # TODO(jamessynge): Validate that this is correct. In particular, if we start with both
         # shutters closed, then nudge A open a bit, what is reported? Ditto with B only, and with
         # both nudged open (but not fully open).
@@ -192,6 +216,7 @@ class AstrohavenPLCSimulator:
 
 
 class AstrohavenSerialSimulator(NoOpSerial):
+    """A minimal serial port simulation that drives the Astrohaven PLC model."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = get_logger()
@@ -327,6 +352,7 @@ class AstrohavenSerialSimulator(NoOpSerial):
 
     @property
     def is_config_ok(self):
+        """Whether the simulated serial configuration matches the expected PLC settings."""
         return (
             self.baudrate == 9600
             and self.bytesize == serialutil.EIGHTBITS

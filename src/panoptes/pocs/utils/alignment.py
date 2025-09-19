@@ -1,3 +1,8 @@
+"""Polar alignment helpers for PANOPTES images.
+
+Utilities to estimate celestial pole center and RA rotation center from FITS
+images, compute misalignment, and generate diagnostic plots for alignment.
+"""
 import warnings
 from dataclasses import dataclass
 from logging import Logger
@@ -78,6 +83,7 @@ def analyze_ra_rotation(rotate_fn: Path | str):
 
 @dataclass
 class AlignmentResult:
+    """Container for alignment results including centers, radius, and offsets."""
     pole_center: tuple[float, float]
     rotate_center: tuple[float, float]
     rotate_radius: float
@@ -86,7 +92,6 @@ class AlignmentResult:
     target_name: str
     az_deg: float
     alt_deg: float
-    """Class to store the results of the alignment process."""
 
     def to_csv_line(self):
         """Convert the alignment result to a CSV line.

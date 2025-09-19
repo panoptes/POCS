@@ -1,3 +1,8 @@
+"""Typer CLI for managing a Jupyter server on a PANOPTES unit.
+
+Provides commands to start Jupyter Lab/Notebook, set a password, and restart the
+supervised service.
+"""
 import subprocess
 import shutil
 from pathlib import Path
@@ -19,7 +24,17 @@ def start(
     port: int = typer.Option(8888, help="The port to start the server on."),
     notebook_dir: Path = typer.Option(None, envvar="HOME", help="The notebook directory."),
 ):
-    """Start a Jupyter notebook server"""
+    """Start a Jupyter server (Lab or classic Notebook).
+
+    Args:
+        environment (str): Which frontend to start: 'lab' or 'notebook'. Defaults to 'lab'.
+        public (bool): If True, bind to 0.0.0.0 for remote access; otherwise localhost only.
+        port (int): TCP port to listen on. Defaults to 8888.
+        notebook_dir (Path): Directory to serve notebooks from. Defaults to $HOME.
+
+    Returns:
+        None
+    """
     check_for_jupyter()
 
     print(f"Starting {environment} server.")
@@ -45,7 +60,14 @@ def set_password(
         "lab", help='The environment to set password for, either "lab" or "notebook".'
     ),
 ):
-    """Set a password for the notebook server"""
+    """Set a password for the Jupyter server.
+
+    Args:
+        environment (str): Which frontend to configure: 'lab' or 'notebook'. Defaults to 'lab'.
+
+    Returns:
+        None
+    """
     check_for_jupyter()
     print(f"Setting {environment} password.")
     cmd = ["jupyter", environment, "password"]

@@ -1,3 +1,9 @@
+"""ZWO ASI camera implementation using the ASICamera2 SDK.
+
+Exposes a Camera class that wraps the ASIDriver to control cooled ZWO cameras,
+including ROI/image type, binning, gain, bandwidth, cooling, single exposures,
+and basic video capture.
+"""
 import numpy as np
 import threading
 import time
@@ -14,6 +20,11 @@ from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
+    """ZWO ASI camera controlled via the ASICamera2 SDK.
+
+    Provides convenience properties for ROI, binning, image type, gain, and
+    bandwidth settings, and supports single exposures and basic video capture.
+    """
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
@@ -102,6 +113,14 @@ class Camera(AbstractSDKCamera):
 
     @image_type.setter
     def image_type(self, new_image_type: str):
+        """Set the camera image type.
+
+        Args:
+            new_image_type (str): One of 'RAW8', 'RAW16', 'RGB24', or 'Y8'.
+
+        Raises:
+            ValueError: If the requested type is not supported by this camera.
+        """
         if new_image_type not in self.properties["supported_video_format"]:
             msg = f"Image type '{new_image_type} not supported by {self.model}"
             self.logger.error(msg)
@@ -117,6 +136,14 @@ class Camera(AbstractSDKCamera):
 
     @binning.setter
     def binning(self, new_binning: int):
+        """Set camera binning (1 or 2) and adjust ROI accordingly.
+
+        Args:
+            new_binning (int): Desired binning factor. Must be supported by the camera.
+
+        Raises:
+            ValueError: If the requested binning is not supported.
+        """
         if new_binning not in self.properties["supported_bins"]:
             msg = f"Binning '{new_binning}' not supported by {self.model}"
             self.logger.error(msg)
@@ -188,6 +215,11 @@ class Camera(AbstractSDKCamera):
 
     @gain.setter
     def gain(self, gain):
+        """Set the camera's internal gain value and refresh derived properties.
+
+        Args:
+            gain (int): Gain value in the camera's native units.
+        """
         self._control_setter("GAIN", gain)
         self._refresh_info()  # This will update egain value in self.properties
 
@@ -203,10 +235,21 @@ class Camera(AbstractSDKCamera):
 
     @property
     def bandwidthoverload(self):
+        """USB bandwidth usage limit as a percentage.
+
+        Returns:
+            int | float: The current bandwidth overload percentage.
+        """
         return self._control_getter("BANDWIDTHOVERLOAD")[0]
 
     @bandwidthoverload.setter
     def bandwidthoverload(self, value):
+        """Set the USB bandwidth overload percentage.
+
+        Args:
+            value (int | float | Quantity): Percentage (0–100). Quantities
+                with units of percent are accepted.
+        """
         value = get_quantity_value(value, u.percent) * u.percent
         self._control_setter("BANDWIDTHOVERLOAD", value)
 
@@ -237,6 +280,14 @@ class Camera(AbstractSDKCamera):
         self._connected = True
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
+        """Start video capture and write frames to FITS files.
+
+        Args:
+            seconds (float | Quantity): Exposure time per frame.
+            filename_root (str): Prefix for output filenames (frame number appended).
+            max_frames (int): Maximum number of frames to capture before stopping.
+            image_type (str | None): Optional image type override (e.g., 'RAW16').
+        """
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
         self._control_setter("EXPOSURE", seconds)
@@ -268,6 +319,7 @@ class Camera(AbstractSDKCamera):
         self.logger.debug("Video capture started on {}".format(self))
 
     def stop_video(self):
+        """Stop video capture and signal the reader thread to finish."""
         self._video_event.set()
         self._driver.stop_video_capture(self._handle)
         self.logger.debug("Video capture stopped on {}".format(self))

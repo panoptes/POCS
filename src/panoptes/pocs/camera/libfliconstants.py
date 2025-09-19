@@ -1,3 +1,8 @@
+"""Numeric constants and bit flags from the FLI libfli C header.
+
+These values mirror the enums and defines provided by libfli and are used by
+our ctypes-based FLIDriver wrapper to configure devices and interpret status.
+"""
 # c_long flidev_t
 # An opaque handle used by library functions to refer to FLI hardware.
 FLI_INVALID_DEVICE = -1

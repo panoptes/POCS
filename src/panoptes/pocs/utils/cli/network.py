@@ -1,3 +1,8 @@
+"""Typer CLI commands for PANOPTES networking and uploads.
+
+Includes helpers to retrieve a service account key, watch and upload JSON metadata
+to Firestore, and upload images or directories to Google Cloud Storage.
+"""
 import json
 import os
 import stat
@@ -30,9 +35,24 @@ def get_key_cmd(
     enable_image_upload: bool = True,
     url: str = "https://us-central1-project-panoptes-01.cloudfunctions.net/get-upload-key",
 ):
-    """Get a service account key for image uploading.
+    """Retrieve and install a service account key for image uploads.
 
-    Note: You must know the `secret_password` to get the key.
+    Args:
+        unit_id (str): The PANOPTES unit identifier to associate with the key.
+        secret_password (str): Shared secret required by the key service.
+        save_dir (Path): Directory to save the JSON key file. Defaults to ~/keys.
+        key_name (str): Filename for the key JSON. Defaults to 'panoptes-upload-key.json'.
+        enable_image_upload (bool): If True, update config to enable image upload and
+            set the key path. Defaults to True.
+        url (str): HTTPS endpoint that returns the key when provided unit_id and password.
+
+    Returns:
+        None
+
+    Notes:
+        Also appends environment exports to ~/.zshrc and ~/.bashrc for
+        GOOGLE_APPLICATION_CREDENTIALS, PANID, and UNIT_ID, and sets key file
+        permissions to owner read/write only.
     """
     # Check if a key already exists at location.
     save_path = save_dir / key_name
@@ -99,7 +119,23 @@ def upload_metadata(
     unit_id: str = None,
     verbose: bool = False,
 ):
-    """Send json files in directory to firestore."""
+    """Watch a directory and upload JSON metadata files to Firestore.
+
+    Args:
+        dir_path (Path): Directory containing JSON envelopes to watch. Defaults to
+            '/home/panoptes/json_store/panoptes'.
+        unit_id (str | None): Unit identifier to attach to records; if None uses
+            environment/config via _get_unit_id().
+        verbose (bool): If True, echo progress and debug information.
+
+    Returns:
+        None
+
+    Notes:
+        Expects files named with 'current' under dir_path that contain envelopes of
+        the form {'type': <record_type>, 'data': {...}, 'date': ...}. Records are
+        added under units/{unit_id}/metadata and the unit document is updated.
+    """
     unit_id = unit_id or _get_unit_id()
 
     if verbose:
@@ -168,7 +204,18 @@ def upload_image_cmd(
     timeout: float = 180.0,
     storage_client=None,
 ) -> str:
-    """Uploads an image to google storage bucket."""
+    """Upload a single image file to a Google Cloud Storage bucket.
+
+    Args:
+        file_path (Path): Local path to the image file to upload.
+        bucket_path (str): Object name (path) within the bucket to store the file.
+        bucket_name (str): Destination bucket name. Defaults to 'panoptes-images-incoming'.
+        timeout (float): Request timeout in seconds. Defaults to 180.0.
+        storage_client: Optional pre-configured storage client instance.
+
+    Returns:
+        str: The public URL of the uploaded object.
+    """
     public_url = upload_image(
         file_path,
         bucket_path,
@@ -177,6 +224,7 @@ def upload_image_cmd(
         storage_client=storage_client,
     )
     print(f"[green]File successfully uploaded to {public_url}[/]")
+    return public_url
 
 
 @upload_app.command("directory")
@@ -188,14 +236,24 @@ def upload_directory(
     continue_on_error: bool = False,
     storage_client=None,
 ) -> List[str]:
-    """Uploads all the contents of a directory.
+    """Upload all files in a directory to a Google Cloud Storage bucket.
 
     This removes the directory path itself from the absolute path and appends the
-    optional `prefix`. Any file that matches the string `exclude` will be excluded.
-    Regexp support not currently provided.
+    optional `prefix`. Any file that contains the substring `exclude` will be skipped.
 
-    Note: It would be more efficient to use the `gsutil`. This function is offered
-    merely as a convenience.
+    Args:
+        directory_path (Path): The directory whose files will be uploaded.
+        exclude (str): Substring filter; skip files whose path contains this value.
+        prefix (str): Path prefix to prepend to each object's bucket path.
+        bucket_name (str): Destination bucket name. Defaults to 'panoptes-images-incoming'.
+        continue_on_error (bool): If True, continue uploading other files if an error occurs.
+        storage_client: Optional pre-configured storage client instance.
+
+    Returns:
+        list[str]: Public URLs of successfully uploaded files.
+
+    Notes:
+        For bulk transfers, using 'gsutil -m rsync' is typically faster and more robust.
     """
     assert directory_path.is_dir() and directory_path.exists(), print(
         "[red]Need a directory that exists"

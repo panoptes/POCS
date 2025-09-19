@@ -1,3 +1,10 @@
+"""Abstract focuser base and autofocus helpers.
+
+Defines AbstractFocuser, a hardware-agnostic base with common movement and
+autofocus utilities shared by concrete focuser drivers (serial, FocusLynx,
+astromechanics, simulator). Includes methods to sweep focus positions,
+measure sharpness, and optionally generate diagnostic plots.
+"""
 import os
 from abc import ABCMeta
 from abc import abstractmethod
@@ -134,6 +141,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @camera.setter
     def camera(self, camera):
+        """Assign the focuser to a camera.
+
+        Args:
+            camera (AbstractCamera): The camera instance to associate with this focuser.
+        """
         if self._camera:
             if self._camera != camera:
                 self.logger.warning(
@@ -160,6 +172,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     @property
     def is_ready(self):
+        """Whether the focuser is ready for a new move.
+
+        Returns:
+            bool: True if the focuser is not currently moving.
+        """
         # A focuser is 'ready' if it is not currently moving.
         return not self.is_moving
 

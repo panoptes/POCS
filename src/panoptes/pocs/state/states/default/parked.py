@@ -1,5 +1,12 @@
+"""State: parked.
+
+Indicates the mount is parked. Based on run_once, retry policy, scheduler
+state, safety, and darkness, decides whether to proceed to housekeeping,
+wait and retry, or return to ready.
+"""
+
 def on_enter(event_data):
-    """ """
+    """Handle transition into the parked state."""
     pocs = event_data.model
     pocs.say("I'm parked now.")
 

@@ -1,3 +1,8 @@
+"""Logging utilities and factory for PANOPTES using loguru.
+
+Provides get_logger() to configure project-wide logging and a PanLogger helper
+for dynamic formatting and handler tracking.
+"""
 import os
 import sys
 from contextlib import suppress
@@ -31,6 +36,14 @@ class PanLogger:
         self.handlers = dict()
 
     def format(self, record):
+        """Return a loguru format string with dynamic padding for caller info.
+
+        Args:
+            record (dict): Log record dictionary provided by loguru.
+
+        Returns:
+            str: The format string to use for this record.
+        """
         length = len("{name}:{function}:{line}".format(**record))
         self.padding = max(self.padding, length)
         record["extra"]["padding"] = " " * (self.padding - length)

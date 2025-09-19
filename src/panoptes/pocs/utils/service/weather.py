@@ -1,3 +1,9 @@
+"""FastAPI service exposing weather station status and configuration.
+
+This module wires up a FastAPI app with a lifespan hook that connects to the
+weather station and periodically records readings. Two simple endpoints expose
+current status and the active configuration.
+"""
 import os
 import time
 from contextlib import asynccontextmanager, suppress
@@ -18,6 +24,9 @@ async def lifespan(app: FastAPI):
 
     This will connect to the weather station and record
     readings at a regular interval.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
     """
     conf = get_config("environment.weather", {})
     app_objects["conf"] = conf

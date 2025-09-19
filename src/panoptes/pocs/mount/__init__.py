@@ -105,6 +105,25 @@ def create_mount_from_config(
 
 
 def create_mount_simulator(mount_info=None, earth_location=None, db_type="memory", *args, **kwargs):
+    """Create and return a simulator-backed Mount instance.
+
+    Updates the config to point the 'mount' section at the simulator driver and
+    constructs a Mount object from panoptes.pocs.mount.simulator using the
+    provided EarthLocation (or one derived from configuration).
+
+    Args:
+        mount_info (dict | None): Optional dict to write to the 'mount' config. If None,
+            uses a default simulator config pointing at panoptes.pocs.mount.simulator.
+        earth_location (astropy.coordinates.EarthLocation | None): Site location to pass to the
+            Mount constructor. If None, it is created from configuration via
+            create_location_from_config().
+        db_type (str): Database backend type for the PanBase used by the Mount (default 'memory').
+        *args: Additional positional args forwarded to the simulator Mount constructor.
+        **kwargs: Additional keyword args forwarded to the simulator Mount constructor.
+
+    Returns:
+        AbstractMount: A newly constructed simulator Mount instance.
+    """
     # Remove mount simulator
     current_simulators = get_config("simulator", default=[])
     logger.warning(f"Current simulators: {current_simulators}")

@@ -1,3 +1,9 @@
+"""Image helpers for FITS headers, WCS solving, and pointing comparisons.
+
+Provides the Image class, a lightweight utility that loads FITS headers, lazily
+solves for WCS (via panoptes-utils), and offers helpers to compute the pointing
+and pointing error between images.
+"""
 from contextlib import suppress
 from collections import namedtuple
 from pathlib import Path
@@ -15,6 +21,12 @@ OffsetError = namedtuple("OffsetError", ["delta_ra", "delta_dec", "magnitude"])
 
 
 class Image(PanBase):
+    """Represents a single FITS image and associated pointing metadata.
+
+    Loads core header values (DATE-OBS, EXPTIME), optionally reads/solves WCS,
+    and exposes convenience properties for header pointing vs. WCS pointing and
+    their differences.
+    """
     def __init__(self, fits_file: Path, wcs_file=None, location=None, *args, **kwargs):
         """Object to represent a single image from a PANOPTES camera.
 
@@ -95,6 +107,15 @@ class Image(PanBase):
 
     @wcs_file.setter
     def wcs_file(self, filename):
+        """Set the path to the FITS file containing WCS information.
+
+        Assigning this property will attempt to read WCS from the given file
+        and update the `wcs` attribute if a celestial WCS is present.
+
+        Args:
+            filename (str | Path | None): Path to a FITS/FITS.fz file whose header
+                contains a valid celestial WCS. If None, no change is made.
+        """
         if filename is not None:
             with suppress(AssertionError):
                 w = fits_utils.getwcs(str(filename))
@@ -208,6 +229,14 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
+        """Compute pointing offset relative to a reference Image.
+
+        Args:
+            ref_image (Image): The reference image to compare against.
+
+        Returns:
+            OffsetError: Named tuple of (delta_ra, delta_dec, magnitude) in arcseconds.
+        """
         assert isinstance(ref_image, Image), self.logger.warning(
             "Must pass an Image class for reference"
         )
@@ -219,4 +248,5 @@ class Image(PanBase):
         return OffsetError(d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
 
     def __str__(self):
+        """Human-readable identifier including file path and header pointing."""
         return f"{self.fits_file}: {self.header_pointing}"

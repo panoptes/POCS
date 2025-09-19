@@ -1,3 +1,9 @@
+"""Base classes and helpers for DSLR cameras controlled via gphoto2.
+
+Provides AbstractGPhotoCamera, a concrete AbstractCamera subclass that shells out
+to the system gphoto2 binary for exposure control and property management. This
+module is used by gphoto-based DSLR drivers.
+"""
 import re
 import subprocess
 import time
@@ -31,33 +37,73 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     @property
     def temperature(self):
+        """Current sensor temperature if available (not typical for DSLRs).
+
+        Returns:
+            None: gphoto2-controlled DSLRs generally do not report sensor temperature.
+        """
         return None
 
     @property
     def target_temperature(self):
+        """Target temperature for DSLR sensors (not applicable).
+
+        Returns:
+            None: DSLRs controlled via gphoto2 generally lack regulated cooling.
+        """
         return None
 
     @property
     def cooling_power(self):
+        """Cooling power level for the camera, if available.
+
+        Returns:
+            None: DSLRs via gphoto2 typically do not expose cooling power metrics.
+        """
         return None
 
     @AbstractCamera.uid.getter
     def uid(self) -> str:
-        """A six-digit serial number for the camera"""
+        """A six-digit serial number for the camera.
+
+        Returns:
+            str: The first six characters of the camera's serial number.
+        """
         return self._serial_number[0:6]
 
     def connect(self):
+        """Connect to the DSLR via gphoto2.
+
+        Implementations should validate communication to the camera (e.g., by
+        listing capabilities) and set internal flags required by AbstractCamera.
+
+        Raises:
+            NotImplementedError: This base class does not implement device-specific logic.
+        """
         raise NotImplementedError
 
     @property
     def is_exposing(self):
+        """Whether a gphoto2 command (exposure) is still running.
+
+        Returns:
+            bool: True if the current exposure subprocess is active.
+        """
         if self._command_proc is not None and self._command_proc.poll() is not None:
             self._is_exposing_event.clear()
 
         return self._is_exposing_event.is_set()
 
     def process_exposure(self, metadata, **kwargs):
-        """Converts the CR2 to FITS then processes image."""
+        """Convert the CR2 to FITS and pass to common processing.
+
+        Args:
+            metadata (dict): Header metadata saved for the image.
+            **kwargs: Forwarded to AbstractCamera.process_exposure.
+
+        Returns:
+            None
+        """
         # Wait for exposure to complete. Timeout handled by exposure thread.
         while self.is_exposing:
             time.sleep(0.5)
@@ -67,7 +113,22 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         self._command_proc = None
 
     def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
-        """Run gphoto2 command."""
+        """Run a gphoto2 command and start tracking the subprocess.
+
+        Args:
+            cmd (list[str] | str): The gphoto2 arguments to run, e.g.,
+                ["--capture-image-and-download"] or a single string.
+            check_exposing (bool): If True, prevent starting a new command while an
+                exposure command is still running. Defaults to True.
+
+        Raises:
+            panoptes.utils.error.InvalidCommand: If a command is already in progress or
+                parameters are invalid for gphoto2.
+            panoptes.utils.error.PanError: For unexpected errors starting the subprocess.
+
+        Returns:
+            None
+        """
 
         # Test to see if there is a running command already
         if self.is_exposing and check_exposing:
@@ -97,12 +158,15 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                 raise error.PanError(e)
 
     def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
-        """Get the output from the command.
+        """Retrieve stdout lines from the last gphoto2 subprocess.
 
-        Accepts a `timeout` param for communicating with the process.
+        Args:
+            timeout (float): Seconds to wait for the subprocess to finish before
+                killing it and collecting output. Defaults to 10.
 
-        Returns a list of strings corresponding to the output from the gphoto2
-        camera or `None` if no command has been specified.
+        Returns:
+            list[str] | None: Lines of stdout from gphoto2, or None if no command
+                has been initiated.
         """
         if self._command_proc is None:
             return None
@@ -178,7 +242,14 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                     self.logger.debug(f"Skipping {prop=} {val=}")
 
     def get_property(self, prop: str) -> str:
-        """Gets a property from the camera"""
+        """Get a configuration property value from the camera.
+
+        Args:
+            prop (str): The gphoto2 property identifier or label to query.
+
+        Returns:
+            str: The current value of the requested property (as reported by gphoto2).
+        """
         set_cmd = ["--get-config", f"{prop}"]
 
         self.command(set_cmd)
@@ -197,6 +268,10 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         Reads all the configuration properties available via gphoto2 and returns
         as dictionary.
+
+        Returns:
+            dict: A mapping of property labels to their detailed descriptors as
+                parsed from gphoto2 output.
         """
         self.logger.debug("Getting all properties for gphoto2 camera")
         self.command(["--list-all-config"])
@@ -291,7 +366,16 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     @classmethod
     def start_tether(cls, port, filename_pattern: str = "%Y%m%dT%H%M%S.%C"):
-        """Start a tether for gphoto2 auto-download on given port using filename pattern."""
+        """Start a gphoto2 tethering session for auto-download.
+
+        Args:
+            port (str): The gphoto2 port identifier, e.g., "usb:001,005".
+            filename_pattern (str): The gphoto2 filename pattern to use when saving files
+                (e.g., "%Y%m%dT%H%M%S.%C"). Defaults to that timestamp-based pattern.
+
+        Returns:
+            None
+        """
         print(f"Starting gphoto2 tether for {port=} using {filename_pattern=}")
 
         full_command = [
@@ -314,7 +398,16 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
     @classmethod
     def gphoto_file_download(cls, port: str, filename_pattern: str, only_new: bool = True):
-        """Downloads (newer) files from the camera on the given port using the filename pattern."""
+        """Download files from the camera using gphoto2.
+
+        Args:
+            port (str): The gphoto2 port identifier (e.g., "usb:001,005").
+            filename_pattern (str): Pattern for naming downloaded files.
+            only_new (bool): If True, only fetch files not previously downloaded. Defaults to True.
+
+        Returns:
+            list[str]: The list of file paths reported as saved by gphoto2.
+        """
         print(f"Starting gphoto2 download for {port=} using {filename_pattern=}")
         command = [
             get_gphoto2_cmd(),

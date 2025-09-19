@@ -1,3 +1,8 @@
+"""Astromechanics Canon EF/EF-S electronic focuser driver.
+
+Controls Canon EF/EF-S lenses via the Astromechanics adapter over a serial
+connection, implementing the AbstractSerialFocuser interface.
+"""
 from panoptes.utils.serial.device import find_serial_port
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 
@@ -56,6 +61,11 @@ class Focuser(AbstractSerialFocuser):
 
     @AbstractSerialFocuser.position.getter
     def position(self):
+        """Current encoder position of the focuser (cached).
+
+        Returns:
+            int | None: The last commanded position, or None if unknown.
+        """
         return self._position
 
     @property

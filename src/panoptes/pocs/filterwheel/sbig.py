@@ -1,3 +1,8 @@
+"""SBIG filter wheel integration via the SBIG camera SDK.
+
+Provides a FilterWheel implementation that controls SBIG wheels attached to an
+SBIG camera (via I2C) using the existing SBIG camera driver.
+"""
 import math
 
 from astropy import units as u
@@ -78,6 +83,11 @@ class FilterWheel(AbstractFilterWheel):
 
     @property
     def is_unidirectional(self):
+        """Whether the wheel enforces one-way rotation.
+
+        Returns:
+            bool: Always True for SBIG filter wheels.
+        """
         # All SBIG filterwheels unidirectional?
         return True
 

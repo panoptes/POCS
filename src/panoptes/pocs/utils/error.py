@@ -1,3 +1,8 @@
+"""POCS-specific error types extending panoptes.utils.error.PanError.
+
+Defines light wrappers for domain-specific conditions such as camera busy,
+image saturation, twilight constraints, and safety violations.
+"""
 from panoptes.utils.error import PanError
 
 

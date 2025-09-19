@@ -1,3 +1,8 @@
+"""FLI camera driver implementation for POCS.
+
+Provides a Camera class backed by the libfli SDK via FLIDriver, implementing the
+AbstractSDKCamera interface for cooled FLI CCD/CMOS cameras.
+"""
 from contextlib import suppress
 
 import numpy as np
@@ -12,6 +17,11 @@ from panoptes.utils import error
 
 
 class Camera(AbstractSDKCamera):
+    """FLI camera implementation backed by the libfli SDK.
+
+    This class wraps FLIDriver calls to provide cooling, exposure, and readout
+    control consistent with the AbstractSDKCamera interface.
+    """
     _driver = None
     _cameras = {}
     _assigned_cameras = set()
@@ -48,18 +58,26 @@ class Camera(AbstractSDKCamera):
 
     @property
     def cooling_enabled(self):
-        """
-        Current status of the camera's image sensor cooling system (enabled/disabled).
+        """Whether the camera's cooling is enabled.
 
-        Note: For FLI cameras this is always True, and cannot be set.
+        Returns:
+            bool: Always True for FLI cameras; cooling cannot be disabled.
         """
         return True
 
     @cooling_enabled.setter
     def cooling_enabled(self, enable):
+        """Attempt to enable/disable cooling (not supported).
+
+        Args:
+            enable (bool): Desired cooling state. Only True is supported for FLI.
+
+        Raises:
+            panoptes.utils.error.NotSupported: If attempting to disable cooling.
+        """
         # Cooling is always enabled on FLI cameras
         if not enable:
-            raise error.NotSupported("Cannot disable cooling on {}".format(self.name))
+            raise error.NotSupported(f"Cannot disable cooling on {self.name}")
 
     @property
     def cooling_power(self):
@@ -100,7 +118,15 @@ class Camera(AbstractSDKCamera):
         # Check for success?
         self._target_temperature = target
 
-    def _set_cooling_enabled():
+    def _set_cooling_enabled(self, enable):
+        """Enable or disable cooling (not supported).
+
+        Args:
+            enable (bool): Desired state; FLI cameras always have cooling enabled.
+
+        Raises:
+            NotImplementedError: Cooling state cannot be changed for FLI cameras.
+        """
         raise NotImplementedError
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):

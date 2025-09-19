@@ -1,3 +1,8 @@
+"""Typer CLI helpers for interacting with the PANOPTES config server.
+
+Provides commands to query and update configuration values via the running
+panoptes-utils config server, along with a status check and restart helper.
+"""
 import subprocess
 from typing import Optional, Dict
 
@@ -21,6 +26,11 @@ class HostInfo(BaseModel):
 
     @property
     def url(self):
+        """Base URL of the config server.
+
+        Returns:
+            str: Host and port combined as 'host:port'.
+        """
         return f"{self.host}:{self.port}"
 
 
@@ -41,6 +51,14 @@ def server_running():
 
 @app.callback()
 def main(context: typer.Context):
+    """Set up shared options and host info for the config CLI commands.
+
+    Args:
+        context: Typer context used to access parent parameters (e.g., config host/port).
+
+    Returns:
+        None
+    """
     context.params.update(context.parent.params)
     verbose = context.params["verbose"]
     host_info["config_server"] = HostInfo(
@@ -52,6 +70,11 @@ def main(context: typer.Context):
 
 @app.command()
 def status():
+    """Print whether the config server is running.
+
+    Returns:
+        None
+    """
     server_running()
 
 
@@ -65,7 +88,15 @@ def get_value(
     ),
     parse: bool = typer.Option(True, help="Parse the item."),
 ):
-    """Get an item from the config"""
+    """Get an item from the config.
+
+    Args:
+        key: The dotted-key of the config item to retrieve. If None, returns the full config.
+        parse: If True, parse the item into a native Python type when possible.
+
+    Returns:
+        None
+    """
     if server_running():
         metadata = host_info["config_server"]
         item = get_config(key, parse=parse, host=metadata.host, port=metadata.port)
@@ -81,7 +112,15 @@ def set_value(
     ),
     value: str = typer.Argument(..., help="The new value."),
 ):
-    """Get an item from the config"""
+    """Set an item in the config.
+
+    Args:
+        key: The dotted-key of the config item to set.
+        value: The new value to set. Will be coerced to int/float if possible, otherwise kept as str.
+
+    Returns:
+        None
+    """
     if server_running():
         metadata = host_info["config_server"]
         if value.startswith(r"\-"):
@@ -100,7 +139,11 @@ def set_value(
 
 @app.command()
 def setup():
-    """Do initial setup of the config server"""
+    """Do initial setup of the config server.
+
+    Returns:
+        None
+    """
     # Clear the screen.
     console = Console()
     console.clear()
@@ -181,7 +224,11 @@ def setup():
 
 @app.command()
 def restart():
-    """Restart the config server process via supervisorctl"""
+    """Restart the config server process via supervisorctl.
+
+    Returns:
+        None
+    """
     cmd = "supervisorctl restart pocs-config-server"
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True)

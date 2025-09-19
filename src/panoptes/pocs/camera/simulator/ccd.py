@@ -1,3 +1,9 @@
+"""Simulated cooled CCD camera using the SDK camera interfaces.
+
+Provides a minimal SDKDriver shim (loading libc) and a Camera implementation
+that simulates cooling behavior (temperature, cooling power) and connects like
+an SDK-backed device for use in tests and simulations.
+"""
 import math
 import random
 import time
@@ -12,14 +18,22 @@ from panoptes.utils.config.client import get_config
 
 
 class SDKDriver(AbstractSDKDriver):
+    """Lightweight simulated SDK driver used for the simulator camera."""
     def __init__(self, library_path=None, **kwargs):
         # Get library loader to load libc, which should usually be present...
         super().__init__(name="c", library_path=library_path, **kwargs)
 
     def get_SDK_version(self):
+        """Return a human-readable version string for the simulated SDK."""
         return "Simulated SDK Driver v0.001"
 
     def get_devices(self):
+        """Return simulated device mapping from the main configuration.
+
+        Returns:
+            dict: Mapping of simulated camera names to their ports/IDs as
+                configured under 'cameras.devices'.
+        """
         self.logger.debug(f"Getting camera device connection config for {self}")
         camera_devices = dict()
         for cam_info in get_config("cameras.devices"):
@@ -33,6 +47,11 @@ class SDKDriver(AbstractSDKDriver):
 
 
 class Camera(AbstractSDKCamera, SimCamera, ABC):
+    """Simulated cooled camera that follows the AbstractSDKCamera contract.
+
+    Combines the DSLR simulator behavior with SDK-style cooling controls to
+    emulate a cooled scientific camera for testing pipeline behavior.
+    """
     def __init__(
         self,
         name="Simulated SDK camera",
@@ -46,14 +65,32 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
 
     @AbstractSDKCamera.cooling_enabled.getter
     def cooling_enabled(self):
+        """Whether simulated cooling is currently enabled.
+
+        Returns:
+            bool: True if cooling is enabled.
+        """
         return self._cooling_enabled
 
     @AbstractSDKCamera.target_temperature.getter
     def target_temperature(self):
+        """Simulated target temperature for the sensor.
+
+        Returns:
+            astropy.units.Quantity: Target temperature in degrees Celsius.
+        """
         return self._target_temperature
 
     @property
     def temperature(self):
+        """Current simulated sensor temperature.
+
+        The temperature drifts exponentially toward a limit set by cooling state
+        with a small random jitter added.
+
+        Returns:
+            astropy.units.Quantity: Simulated temperature in degrees Celsius.
+        """
         now = time.monotonic()
         delta_time = (now - self._last_time) / self._time_constant
 
@@ -72,6 +109,11 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
 
     @property
     def cooling_power(self):
+        """Simulated cooling power level.
+
+        Returns:
+            astropy.units.Quantity: Cooling duty cycle as a percentage.
+        """
         if self.cooling_enabled:
             return (
                 100.0
@@ -82,6 +124,7 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
             return 0.0 * u.percent
 
     def connect(self):
+        """Initialize the simulated camera and cooling parameters."""
         self._is_cooled_camera = True
         self._cooling_enabled = False
         self._temperature = 5 * u.Celsius
@@ -94,6 +137,11 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
         self._connected = True
 
     def _set_target_temperature(self, target):
+        """Set the simulated target temperature.
+
+        Args:
+            target (astropy.units.Quantity | float): Desired sensor setpoint in C.
+        """
         # Upon init the camera won't have an existing temperature.
         with suppress(AttributeError):
             self._last_temp = self.temperature
@@ -103,6 +151,11 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
         self._target_temperature = target.to(u.Celsius)
 
     def _set_cooling_enabled(self, enable):
+        """Enable or disable simulated cooling.
+
+        Args:
+            enable (bool): True to enable, False to disable.
+        """
         self._last_temp = self.temperature
         self._last_time = time.monotonic()
         self._cooling_enabled = bool(enable)

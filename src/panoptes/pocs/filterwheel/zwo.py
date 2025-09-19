@@ -1,3 +1,8 @@
+"""ZWO EFW-based filter wheel integration.
+
+Provides a FilterWheel implementation that uses the libEFW SDK via EFWDriver to
+control ZWO electronic filter wheels.
+"""
 from contextlib import suppress
 
 from astropy import units as u
@@ -99,11 +104,21 @@ class FilterWheel(AbstractFilterWheel):
 
     @property
     def is_unidirectional(self):
+        """Whether the hardware is configured for one-way rotation.
+
+        Returns:
+            bool: True if only forward rotation is allowed.
+        """
         return self._driver.get_direction(self._handle)
 
     # ZWO filterwheels can be set to be unidirectional or bidirectional.
     @is_unidirectional.setter
     def is_unidirectional(self, unidirectional):
+        """Set unidirectional/bidirectional motion mode on the hardware.
+
+        Args:
+            unidirectional (bool): True to force one-way rotation, False to allow bidirectional moves.
+        """
         self._driver.set_direction(self._handle, bool(unidirectional))
 
     ##################################################################################################

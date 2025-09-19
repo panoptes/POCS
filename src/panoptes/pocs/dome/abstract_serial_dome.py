@@ -1,3 +1,9 @@
+"""Abstract serial-backed dome base class.
+
+Provides AbstractSerialDome, which wires up a serial connection based on
+configuration and implements common connect/disconnect helpers reused by
+concrete serial dome drivers.
+"""
 from panoptes.pocs import dome
 from panoptes.utils import error
 from panoptes.utils import rs232
@@ -71,6 +77,11 @@ class AbstractSerialDome(dome.AbstractDome):
         return self.is_connected
 
     def disconnect(self):
+        """Disconnect from the serial-connected dome controller.
+
+        Returns:
+            None
+        """
         self.logger.debug("Closing serial port for dome")
         self.serial.disconnect()
 

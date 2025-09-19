@@ -1,3 +1,10 @@
+"""Abstract camera base implementation used by POCS camera drivers.
+
+Defines the AbstractCamera class providing common behavior and interfaces for
+camera drivers (simulator and hardware). Subclasses implement hardware-specific
+connect/readout logic while reusing orchestration, FITS header creation, and
+exposure management provided here.
+"""
 import copy
 import os
 import threading
@@ -192,22 +199,28 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     @property
     def target_temperature(self):
-        """
-        Get current value of the target temperature for the camera's image sensor cooling control.
+        """Target temperature for the camera's image sensor cooling control.
 
-        Note: this only needs to be implemented for cameras which have cooled image sensors,
-        not for those that don't (e.g. DSLRs).
+        Returns:
+            astropy.units.Quantity: The target temperature.
+
+        Note:
+            This only needs to be implemented for cameras which have cooled image sensors,
+            not for those that don't (e.g. DSLRs).
         """
         raise NotImplementedError  # pragma: no cover
 
     @target_temperature.setter
     def target_temperature(self, target):
-        """
-        Set value of the CCD set point, the target temperature for the camera's image sensor
-        cooling control.
+        """Set the target temperature for the camera's cooling system.
 
-        Note: this only needs to be implemented for cameras which have cooled image sensors,
-        not for those that don't (e.g. DSLRs).
+        Args:
+            target (astropy.units.Quantity | float): Desired sensor temperature; if a float
+                is provided it is interpreted as degrees Celsius.
+
+        Note:
+            This only needs to be implemented for cameras which have cooled image sensors,
+            not for those that don't (e.g. DSLRs).
         """
         if not isinstance(target, u.Quantity):
             target = target * u.Celsius
@@ -217,39 +230,52 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     @property
     def temperature_tolerance(self):
-        """
-        Get current value of the image sensor temperature tolerance.
+        """Tolerance for image sensor temperature stability.
 
         If the image sensor temperature differs from the target temperature by more than the
         temperature tolerance then the temperature is not considered stable (by
         is_temperature_stable) and, for cooled cameras, is_ready will report False.
+
+        Returns:
+            astropy.units.Quantity: Allowed deviation from target temperature.
         """
         return self._temperature_tolerance
 
     @temperature_tolerance.setter
     def temperature_tolerance(self, temperature_tolerance):
-        """Set the value of the image sensor temperature tolerance."""
+        """Set the allowed deviation from target temperature.
+
+        Args:
+            temperature_tolerance (astropy.units.Quantity | float): Temperature tolerance; if a
+                float is provided it is interpreted as degrees Celsius.
+        """
         if not isinstance(temperature_tolerance, u.Quantity):
             temperature_tolerance = temperature_tolerance * u.Celsius
         self._temperature_tolerance = temperature_tolerance
 
     @property
     def cooling_enabled(self):
-        """
-        Get current status of the camera's image sensor cooling system (enabled/disabled).
+        """Whether the camera's sensor cooling is currently enabled.
 
-        Note: this only needs to be implemented for cameras which have cooled image sensors,
-        not for those that don't (e.g. DSLRs).
+        Returns:
+            bool: True if cooling is enabled.
+
+        Note:
+            This only needs to be implemented for cameras which have cooled image sensors,
+            not for those that don't (e.g. DSLRs).
         """
         return False
 
     @cooling_enabled.setter
     def cooling_enabled(self, enable):
-        """
-        Set status of the camera's image sensor cooling system (enabled/disabled).
+        """Enable or disable the camera's sensor cooling.
 
-        Note: this only needs to be implemented for cameras which have cooled image sensors,
-        and allow cooling to be enabled/disabled (e.g. SBIG cameras).
+        Args:
+            enable (bool): True to enable cooling, False to disable.
+
+        Note:
+            This only needs to be implemented for cameras which have cooled image sensors,
+            and allow cooling to be enabled/disabled (e.g. SBIG cameras).
         """
         self.logger.debug(f"Setting {self.name} cooling enabled to {enable}")
         self._set_cooling_enabled(enable)
@@ -275,12 +301,20 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     @property
     def is_cooled_camera(self):
-        """True if camera has image sensor cooling capability"""
+        """Whether the camera has sensor cooling capability.
+
+        Returns:
+            bool: True if the camera supports cooling.
+        """
         return self._is_cooled_camera
 
     @is_cooled_camera.setter
     def is_cooled_camera(self, value):
-        """Set whether camera has image sensor cooling capability"""
+        """Set whether the camera has sensor cooling capability.
+
+        Args:
+            value (bool): True if the camera supports cooling.
+        """
         self._is_cooled_camera = bool(value)
 
     @property
@@ -399,6 +433,15 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def connect(self):
+        """Connect to the underlying camera hardware.
+
+        Implementations should establish any required SDK/driver connections and
+        populate camera capabilities (e.g., cooling availability) without starting
+        an exposure.
+
+        Returns:
+            None
+        """
         raise NotImplementedError  # pragma: no cover
 
     def take_observation(
@@ -655,6 +698,14 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
 
         This is a thin-wrapper around the `fits_utils.write_fits` method that marks
         the readout as complete.
+
+        Args:
+            data: Numpy array-like image data to write to disk.
+            header: FITS header object or dict-like metadata.
+            filename (str | os.PathLike): Destination file path for the FITS file.
+
+        Returns:
+            None
         """
         self.logger.debug(f"Writing {filename=}")
         fits_utils.write_fits(data, header, filename)

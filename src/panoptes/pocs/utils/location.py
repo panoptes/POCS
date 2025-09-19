@@ -1,3 +1,9 @@
+"""Location helpers for creating and configuring site/observer objects.
+
+This module provides utilities to construct an astroplan Observer and related
+astropy EarthLocation from PANOPTES configuration, and to configure IERS table
+fetching used by astropy/astroplan for accurate time/earth orientation.
+"""
 from dataclasses import dataclass
 from astroplan import Observer
 from astropy import units as u
@@ -14,16 +20,34 @@ logger = get_logger()
 
 @dataclass
 class SiteDetails:
+    """Container for site-specific objects and metadata.
+
+    Attributes:
+        observer (astroplan.Observer): The astroplan Observer for the site.
+        earth_location (astropy.coordinates.EarthLocation): The underlying EarthLocation.
+        location (dict): Raw location configuration values used to construct the above.
+    """
     observer: Observer
     earth_location: EarthLocation
     location: dict
 
 
 def download_iers_a_file(iers_url: str = None):
-    """Download the IERS A file.
+    """Download and configure the IERS A table URL.
 
-    This will download the IERS from the PANOPTES mirror and then set the
-    auto download to False.
+    This points astropy's IERS auto URL at a PANOPTES mirror (if configured)
+    and sets the auto-download behavior based on config.
+
+    Args:
+        iers_url (str | None): Optional override URL for the IERS A file. If not
+            provided, uses the value from configuration key 'scheduler.iers_url'.
+
+    Returns:
+        None
+
+    Notes:
+        Also sets astropy's iers_conf.auto_download to the value of
+        'scheduler.iers_auto' (default False).
     """
     iers_url = iers_url or get_config("scheduler.iers_url")
     if iers_url is not None:
@@ -34,18 +58,21 @@ def download_iers_a_file(iers_url: str = None):
 
 
 def create_location_from_config() -> SiteDetails:
-    """
-    Sets up the site and location details.
+    """Construct site objects (Observer, EarthLocation) from configuration.
 
-    These items are read from the 'site' config directive and include:
-        * name
-        * latitude
-        * longitude
-        * timezone
-        * pressure
-        * elevation
-        * horizon
+    Reads the 'location' section from the PANOPTES configuration and constructs a
+    dictionary of location parameters as well as the corresponding astropy EarthLocation
+    and astroplan Observer.
 
+    Returns:
+        SiteDetails: Container with observer, earth_location, and the raw location dict.
+
+    Raises:
+        panoptes.utils.error.PanError: If the location information is missing or invalid.
+
+    Notes:
+        Expected location keys include: name, latitude, longitude, timezone, pressure,
+        elevation, and horizon values (horizon, flat_horizon, focus_horizon, observe_horizon).
     """
 
     logger.debug("Setting up site details")

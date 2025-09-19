@@ -1,3 +1,8 @@
+"""Bisque/TheSkyX-based mount driver.
+
+Implements a mount driver that communicates with Software Bisque's TheSkyX via
+its TCP scripting interface, using small JavaScript templates for commands.
+"""
 import json
 import os
 import time
@@ -12,8 +17,13 @@ from panoptes.utils import error
 
 
 class Mount(AbstractMount):
+    """Mount driver that proxies motions and queries to TheSkyX.
+
+    Uses small JavaScript template files to issue commands over TheSkyX's TCP
+    interface and parses JSON-like responses to update status and execute slews.
+    """
     def __init__(self, *args, **kwargs):
-        """"""
+        """Initialize the Bisque mount driver and connect to TheSkyX client."""
         super().__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
@@ -88,6 +98,11 @@ class Mount(AbstractMount):
         return self.is_connected
 
     def disconnect(self):
+        """Disconnect from TheSkyX and mark connection closed.
+
+        Returns:
+            bool: True if now disconnected.
+        """
         self.logger.debug("Disconnecting mount from TheSkyX")
         self.query("disconnect")
         self._is_connected = False
@@ -132,7 +147,11 @@ class Mount(AbstractMount):
             return super().query(*args, **kwargs)
 
     def _update_status(self):
-        """ """
+        """Fetch current status from TheSkyX and cache key flags.
+
+        Returns:
+            dict: The merged status dictionary including coordinates.
+        """
         status = self.query("get_status")
 
         try:
@@ -193,6 +212,7 @@ class Mount(AbstractMount):
         return target_set
 
     def set_park_position(self):
+        """Send command to set current position as park in TheSkyX."""
         self.query("set_park_position")
         self.logger.info("Mount park position set: {}".format(self._park_coordinates))
 
@@ -340,9 +360,25 @@ class Mount(AbstractMount):
     ##########################################################################
 
     def write(self, value):
+        """Send a JavaScript command string to TheSkyX.
+
+        Args:
+            value (str): JavaScript to execute on TheSkyX.
+
+        Returns:
+            None
+        """
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
+        """Read and parse a JSON-like response from TheSkyX.
+
+        Args:
+            timeout (int): Seconds to wait for a response before giving up.
+
+        Returns:
+            dict: A best-effort parsed object with 'response' and 'success' keys.
+        """
         response_obj = {"success": False}
 
         response = self.theskyx.read(timeout=timeout)

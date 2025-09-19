@@ -1,3 +1,8 @@
+"""Common base utilities for POCS classes.
+
+Provides PanBase, which centralizes access to configuration, logging, and the
+shared lightweight database handle used throughout the project.
+"""
 import os
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
@@ -59,6 +64,10 @@ class PanBase(object):
             remember (bool): If True, cache the result for future calls.
             *args: Passed to get_config
             **kwargs: Passed to get_config
+
+        Returns:
+            Any: The retrieved configuration value, or the provided default if not found
+                or if the config server is unavailable.
         """
         # Try to use the cache if we have it.
         if key in PAN_CONFIG_CACHE:
@@ -97,6 +106,10 @@ class PanBase(object):
             new_value (any): The value to store.
             *args: Passed to set_config
             **kwargs: Passed to set_config
+
+        Returns:
+            Any | None: The value returned by the config client after setting, or None
+                if the config server is unavailable.
         """
         config_value = None
 

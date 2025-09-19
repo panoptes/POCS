@@ -1,3 +1,9 @@
+"""Remote gphoto2 camera wrapper.
+
+Exposes a Camera subclass that delegates gphoto2 commands to a remote HTTP
+service (panoptes.pocs.utils.service.camera), enabling DSLR control on another
+host while keeping POCS orchestration local.
+"""
 from collections import deque
 from threading import Thread
 from typing import List, Union
@@ -23,16 +29,27 @@ class Camera(CanonCamera):
 
     @property
     def is_exposing(self):
+        """Whether a remote exposure command is currently in progress.
+
+        Returns:
+            bool: True if the last remote command is still running.
+        """
         if self._command_proc is not None and self._command_proc.is_alive() is False:
             self._is_exposing_event.clear()
 
         return self._is_exposing_event.is_set()
 
     def command(self, cmd, endpoint: AnyHttpUrl = None):
-        """Run the gphoto2 command remotely.
+        """Run a gphoto2 command on the remote camera service.
 
-        This assumes the remote camera service is running at the endpoint specified
-        on the camera object or passed to the method.
+        Args:
+            cmd (list[str] | str): gphoto2 arguments to execute remotely. If a list is
+                provided it will be joined with spaces for transmission.
+            endpoint (AnyHttpUrl | None): Optional override for the remote service URL.
+                Defaults to the Camera.endpoint value.
+
+        Returns:
+            None
         """
         endpoint = endpoint or self.endpoint
 
@@ -57,7 +74,16 @@ class Camera(CanonCamera):
         self._command_proc.start()
 
     def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
-        """Get the output from the remote camera service."""
+        """Wait for the remote command to finish and return its output.
+
+        Args:
+            timeout (float): Seconds to wait for the remote command to finish before
+                treating it as a timeout. Defaults to 10.
+
+        Returns:
+            list[str] | None: Lines of stdout from the remote gphoto2 call, or None if
+                there was no output.
+        """
         output = None
         try:
             self._command_proc.join(timeout=self.timeout)

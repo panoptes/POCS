@@ -1,3 +1,11 @@
+"""Scheduler constraints used to score candidate observations.
+
+Defines a small set of scoring constraints (Altitude, Duration, MoonAvoidance,
+AlreadyVisited, TimeWindow) implementing a common BaseConstraint interface.
+Each constraint returns a (veto, score) tuple where veto indicates the target
+should be excluded and score is a normalized [0–1] value multiplied by the
+constraint weight.
+"""
 from contextlib import suppress
 
 from astropy import units as u
@@ -10,6 +18,13 @@ from panoptes.pocs.base import PanBase
 
 
 class BaseConstraint(PanBase):
+    """Abstract base class for scheduler constraints.
+
+    Subclasses must implement get_score() and return a (veto, score) tuple where
+    veto is a boolean indicating the target should be rejected outright and
+    score is a float typically in [0, 1] that will be multiplied by this
+    constraint's weight.
+    """
     def __init__(self, weight=1.0, default_score=0.0, *args, **kwargs):
         """Base constraint
 
@@ -38,6 +53,17 @@ class BaseConstraint(PanBase):
         self._score = default_score
 
     def get_score(self, time, observer, target, **kwargs):
+        """Compute veto/score for the given target at a specific time.
+
+        Args:
+            time (astropy.time.Time): Evaluation time.
+            observer: Observer instance providing transforms/utilities.
+            target: The candidate target/field or observation.
+            **kwargs: Constraint-specific options.
+
+        Returns:
+            tuple[bool, float]: (veto, score) pair prior to applying weight.
+        """
         raise NotImplementedError
 
     def __str__(self):
@@ -70,6 +96,17 @@ class Altitude(BaseConstraint):
             self.horizon_line = horizon_obj.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
+        """Score whether the target altitude clears the horizon model.
+
+        Args:
+            time (astropy.time.Time): Evaluation time.
+            observer: Observer used to compute AltAz for the target.
+            observation: Observation whose field to evaluate.
+
+        Returns:
+            tuple[bool, float]: (veto, score) where veto=True if below horizon;
+            score=1 when above horizon otherwise default_score.
+        """
         veto = False
         score = self._score
 
@@ -96,6 +133,7 @@ class Altitude(BaseConstraint):
 
 
 class Duration(BaseConstraint):
+    """Constraint that favors targets with longer remaining observing time."""
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -105,6 +143,20 @@ class Duration(BaseConstraint):
         self.horizon = horizon
 
     def get_score(self, time, observer, observation, **kwargs):
+        """Score available observing time until set/flip/end-of-night.
+
+        Computes a normalized fraction of remaining time the target can be
+        observed (subject to horizon, meridian flip, and end-of-night). Vetoes
+        if the minimum observation duration cannot be met.
+
+        Args:
+            time (astropy.time.Time): Evaluation time.
+            observer: Observer for rise/set and meridian computations.
+            observation: Observation containing field and minimum_duration.
+
+        Returns:
+            tuple[bool, float]: (veto, score) prior to weighting.
+        """
         score = self._score
         target = observation.field
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
@@ -151,6 +203,7 @@ class Duration(BaseConstraint):
 
 
 class MoonAvoidance(BaseConstraint):
+    """Constraint that vetoes/penalizes fields too close to the Moon."""
     def __init__(self, separation=15 * u.degree, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(separation, u.Unit):
@@ -158,6 +211,19 @@ class MoonAvoidance(BaseConstraint):
         self.separation = separation
 
     def get_score(self, time, observer, observation, **kwargs):
+        """Score angular separation from the Moon.
+
+        Args:
+            time (astropy.time.Time): Evaluation time (unused here).
+            observer: Unused for this constraint.
+            observation: Observation whose field is evaluated.
+            **kwargs: Must include 'moon' (SkyCoord) giving current Moon position.
+
+        Returns:
+            tuple[bool, float]: (veto, score) where veto=True if separation is
+            below the configured threshold; otherwise score increases with
+            separation and is roughly scaled by 180 degrees.
+        """
         veto = False
         score = self._score
 
@@ -195,6 +261,18 @@ class AlreadyVisited(BaseConstraint):
         super().__init__(*args, **kwargs)
 
     def get_score(self, time, observer, observation, **kwargs):
+        """Veto fields that have already been observed in this run.
+
+        Args:
+            time (astropy.time.Time): Evaluation time (unused).
+            observer: Unused for this constraint.
+            observation: Candidate observation to check.
+            **kwargs: Should include 'observed_list' mapping camera->list of exposures.
+
+        Returns:
+            tuple[bool, float]: (veto, score) where veto=True if the observation's
+            field appears in the observed_list; score remains default otherwise.
+        """
         veto = False
         score = self._score
 
@@ -209,6 +287,7 @@ class AlreadyVisited(BaseConstraint):
 
 
 class TimeWindow(BaseConstraint):
+    """Constraint that boosts observations within a specific time interval."""
     def __init__(self, start_time: str | Time, end_time: str | Time, *args, **kwargs):
         """Constraint that changes the weight of the field during a given time window.
 
@@ -254,6 +333,16 @@ class TimeWindow(BaseConstraint):
         self.logger.debug(f"TimeWindow constraint: {self.start_time} to {self.end_time}")
 
     def get_score(self, time, observer, observation, **kwargs):
+        """Score to 1 inside the configured time window, else default.
+
+        Args:
+            time (astropy.time.Time): Current time.
+            observer: Unused for this constraint.
+            observation: Unused except for consistency.
+
+        Returns:
+            tuple[bool, float]: (False, score) where score is 1 if start_time <= time <= end_time.
+        """
         score = self._score
         veto = False
 

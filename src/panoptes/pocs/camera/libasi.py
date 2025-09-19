@@ -1,3 +1,9 @@
+"""ZWO ASI camera SDK bindings used by POCS.
+
+This module provides a thin ctypes-based wrapper (ASIDriver) around the
+ASICamera2 shared library, exposing the subset of functions required by POCS
+for camera discovery, configuration, exposures, and readout.
+"""
 import ctypes
 import enum
 
@@ -20,6 +26,12 @@ from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 
 class ASIDriver(AbstractSDKDriver):
+    """ctypes-based wrapper around the ZWO ASICamera2 SDK.
+
+    Provides convenience helpers to enumerate devices, open/close cameras,
+    control settings, and perform exposures/video readout in a Pythonic way for
+    use by higher-level POCS camera classes.
+    """
     def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO ASI library interface.
 
@@ -816,6 +828,7 @@ class ExposureStatus(enum.IntEnum):
 
 
 class ID(ctypes.Structure):
+    """Fixed-length (8-byte) string identifier structure used by the SDK."""
     _fields_ = [("id", ctypes.c_ubyte * 8)]
 
 

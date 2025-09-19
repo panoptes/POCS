@@ -1,3 +1,11 @@
+"""Abstract base class and helpers for telescope mounts.
+
+Provides AbstractMount, a hardware-agnostic base with common properties
+(status, tracking, parking, slewing) and orchestration helpers (target
+handling, coordinate conversion, command table mapping). Concrete mount
+implementations (iOptron, Bisque, simulator, etc.) subclass this and
+implement device-specific read/write/query and motion control.
+"""
 import time
 from abc import abstractmethod
 from pathlib import Path
@@ -109,9 +117,20 @@ class AbstractMount(PanBase):
 
     @abstractmethod
     def initialize(self, *arg, **kwargs):
+        """Initialize the mount hardware and prepare for use.
+
+        Subclasses should perform device-specific setup such as establishing
+        communications, homing, and applying any required configuration so the
+        mount is ready to slew and track.
+        """
         raise NotImplementedError
 
     def disconnect(self):
+        """Disconnect from the mount, parking if necessary.
+
+        If the mount is not currently parked this will issue a park command
+        before closing the connection, then mark the connection as closed.
+        """
         self.logger.info("Disconnecting mount")
         if not self.is_parked:
             self.park()
@@ -124,6 +143,13 @@ class AbstractMount(PanBase):
 
     @property
     def status(self):
+        """Return a snapshot of current mount parameters and positions.
+
+        Returns:
+            dict: Mapping of basic rates, movement speed, current coordinates
+                (if available), and target coordinates (if set), augmented by
+                subclass-specific fields from _update_status().
+        """
         self.logger.trace("Getting mount status")
         status = {}
         try:
@@ -165,6 +191,11 @@ class AbstractMount(PanBase):
 
     @location.setter
     def location(self, location):
+        """Update the mount location and propagate to the hardware.
+
+        Args:
+            location (astropy.coordinates.EarthLocation): New EarthLocation to use.
+        """
         self._location = location
         # If the location changes we need to update the mount
         self._setup_location_for_mount()
@@ -216,6 +247,11 @@ class AbstractMount(PanBase):
 
     @property
     def has_target(self):
+        """Whether a target coordinate has been set for the mount.
+
+        Returns:
+            bool: True if set_target_coordinates has been called successfully.
+        """
         return self._target_coordinates is not None
 
     @property
@@ -330,9 +366,9 @@ class AbstractMount(PanBase):
                 than this are set to this value. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
-            dict: Offset corrections for each axis as needed ::
+            dict: Offset corrections for each axis as needed. Example:
 
-                dict: {
+                {
                     # axis: (arcsec, millisecond, direction)
                     'ra': (float, float, str),
                     'dec': (float, float, str),
@@ -625,7 +661,19 @@ class AbstractMount(PanBase):
         return response
 
     def move_direction(self, direction="north", seconds=1.0):
-        """Move mount in specified `direction` for given amount of `seconds`"""
+        """Move the mount in a specified direction for a duration.
+
+        Args:
+            direction (str): One of {"north", "south", "east", "west"} indicating
+                the direction to move.
+            seconds (float): Duration in seconds to move in the given direction.
+
+        Raises:
+            AssertionError: If the provided direction is not valid.
+            Exception: Propagates any low-level I/O exceptions encountered while
+                issuing movement commands to the mount; movement is stopped in
+                the finally block regardless.
+        """
         seconds = float(seconds)
         assert direction in ["north", "south", "east", "west"]
 
@@ -633,7 +681,7 @@ class AbstractMount(PanBase):
 
         # Use low-level commands without a lookup to make timing exact.
         move_command = f":m{short_direction}#"
-        stop_command = ':Q#'
+        stop_command = ":Q#"
 
         try:
             self.logger.debug(f"Moving {direction} for {seconds} seconds. ")
@@ -674,30 +722,30 @@ class AbstractMount(PanBase):
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None, **kwargs):
-        """Sends a query to the mount and returns response.
+        """Send a command to the mount and return the response.
 
-        Sends cmd  and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. Accepts an additional args that is passed
-        along with the command. Checks for and only accepts one args param.
+        The command key is translated to a mount-specific serial command (using the loaded
+        commands YAML), written to the connection, and the response is read back.
 
         Args:
-            cmd (str): A command to send to the mount. This should be one of the
-                commands listed in the mount commands yaml file.
-            params (str, optional): Params to pass to serial connection
-
-        Examples:
-            >>> from panoptes.pocs.mount import create_mount_from_config
-            >>> mount = create_mount_from_config()       #doctest: +SKIP
-            >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
-            '1'
-            >>> mount.query('get_local_time')            #doctest: +SKIP
-            '101503'
+            cmd (str): Logical command name defined in the mount commands YAML file.
+            params (str | None): Optional parameter string to include with the command.
+            **kwargs: Additional keyword arguments forwarded to the low-level `read()` call.
 
         Returns:
-            str: The response from the mount.
+            str: The raw response from the mount.
 
-        Deleted Parameters:
-            *args: Parameters to be sent with command if required.
+        Raises:
+            AssertionError: If the mount has not been initialized.
+            error.InvalidMountCommand: If the command key is not known.
+
+        Examples:
+            >>> from panoptes.pocs.mount import create_mount_from_config  # doctest: +SKIP
+            >>> mount = create_mount_from_config()                        # doctest: +SKIP
+            >>> mount.query('set_local_time', '101503')                   # doctest: +SKIP
+            '1'
+            >>> mount.query('get_local_time')                             # doctest: +SKIP
+            '101503'
         """
         assert self.is_initialized, self.logger.warning("Mount has not been initialized")
 
@@ -767,10 +815,24 @@ class AbstractMount(PanBase):
 
     @abstractmethod
     def write(self, cmd):
+        """Low-level write to the mount connection.
+
+        Args:
+            cmd (str): Fully formatted command string to send to the device.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def read(self, *args, **kwargs):
+        """Low-level read from the mount connection.
+
+        Args:
+            *args: Transport-specific positional options (e.g., size).
+            **kwargs: Transport-specific keyword options (e.g., timeout).
+
+        Returns:
+            str: Raw response string from the device.
+        """
         raise NotImplementedError
 
     @abstractmethod
