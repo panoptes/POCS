@@ -1,3 +1,8 @@
+"""State: scheduling.
+
+Selects the next observable target from the scheduler and transitions to the
+proper next state (slewing, tracking, or parking) based on availability.
+"""
 from panoptes.utils import error
 
 

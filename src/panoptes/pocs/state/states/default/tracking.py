@@ -1,3 +1,9 @@
+"""State: tracking.
+
+Fine-tune tracking (if configured) after slewing/pointing, then transition to
+'observing'. If tracking update is disabled, proceed directly to observing.
+"""
+
 def on_enter(event_data):
     """The unit is tracking the target. Proceed to observations."""
     pocs = event_data.model

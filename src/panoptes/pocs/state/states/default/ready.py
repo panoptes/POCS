@@ -1,3 +1,9 @@
+"""State: ready.
+
+System has initialized successfully; wait for safe/dark conditions and then
+transition to 'scheduling' (or to 'parking' if dome open fails).
+"""
+
 def on_enter(event_data):
     """
     Once in the `ready` state our unit has been initialized successfully. The next step is to

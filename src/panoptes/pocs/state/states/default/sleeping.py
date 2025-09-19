@@ -1,5 +1,12 @@
+"""State: sleeping.
+
+Terminal state after a night of observing. If safe conditions persist but
+retry attempts are exhausted, stop the state loop; otherwise transition to
+ready and reset the observing run.
+"""
+
 def on_enter(event_data):
-    """ """
+    """Handle transition into the sleeping state."""
     pocs = event_data.model
 
     if pocs.is_safe() and pocs.should_retry is False:

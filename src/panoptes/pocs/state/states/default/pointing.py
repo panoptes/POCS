@@ -1,3 +1,8 @@
+"""State: pointing.
+
+Capture a short exposure, solve it, measure pointing error, optionally correct,
+then proceed to 'tracking'.
+"""
 import numpy as np
 from panoptes.pocs.images import Image
 from panoptes.utils.time import wait_for_events
