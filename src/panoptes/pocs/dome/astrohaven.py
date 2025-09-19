@@ -1,3 +1,9 @@
+"""Astrohaven clamshell dome driver using a simple RS-232 protocol.
+
+Implements control for Astrohaven domes driven by a Vision 130 PLC. Provides
+open/close helpers and simple status polling based on one-character protocol
+codes emitted by the controller.
+"""
 # Based loosely on the code written by folks at Wheaton College, including:
 # https://github.com/goodmanj/domecontrol
 
@@ -7,6 +13,11 @@ from panoptes.pocs.dome import abstract_serial_dome
 
 
 class Protocol:
+    """ASCII protocol constants emitted/accepted by the Astrohaven PLC.
+
+    Encodes status bytes for slit positions and single-character commands used
+    to open/close each shutter and query limits.
+    """
     # Status codes, produced when not responding to an input. They are oriented towards
     # reporting whether the two shutters are fully closed.
     BOTH_CLOSED = "0"  # Both A and B shutters are fully closed.
@@ -70,10 +81,16 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     @property
     def is_open(self):
+        """Whether both clamshell shutters are reported open by the controller."""
         v = self._read_latest_state()
         return v == Protocol.BOTH_OPEN
 
     def open(self):
+        """Open both clamshell shutters to their limits.
+
+        Returns:
+            bool: True if the stable state after motion reports BOTH_OPEN.
+        """
         self._full_move(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
         self._full_move(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
         v = self._read_state_until_stable()
@@ -84,10 +101,16 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     @property
     def is_closed(self):
+        """Whether both clamshell shutters are reported fully closed."""
         v = self._read_latest_state()
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
+        """Close both clamshell shutters to their fully closed positions.
+
+        Returns:
+            bool: True if the stable state after motion reports BOTH_CLOSED.
+        """
         self._full_move(
             Protocol.CLOSE_A,
             Protocol.A_CLOSE_LIMIT,

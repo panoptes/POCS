@@ -35,6 +35,20 @@ def create_dome_from_config(*args, **kwargs):
 
 
 def create_dome_simulator(*args, **kwargs):
+    """Create and return a dome instance from the configured simulator driver.
+
+    Reads the 'dome' section from the PANOPTES configuration, loads the driver
+    specified by the 'driver' key under panoptes.pocs.dome.<driver>, and
+    constructs a Dome instance with any provided args/kwargs. This is primarily
+    used in tests or simulated environments.
+
+    Args:
+        *args: Positional arguments forwarded to the Dome constructor.
+        **kwargs: Keyword arguments forwarded to the Dome constructor.
+
+    Returns:
+        AbstractDome: An instance of the configured dome simulator driver.
+    """
     dome_config = get_config("dome")
 
     brand = dome_config["brand"]
