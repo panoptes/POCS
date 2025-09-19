@@ -1,3 +1,8 @@
+"""Lightweight socket client for TheSkyX scripting interface.
+
+Provides a minimal wrapper (TheSkyX) to connect, write commands, and read
+responses from a running TheSkyX instance over TCP.
+"""
 import socket
 
 from panoptes.utils import error
@@ -5,7 +10,7 @@ from panoptes.pocs.utils.logger import get_logger
 
 
 class TheSkyX(object):
-    """A socket connection for communicating with TheSkyX"""
+    """A socket connection for communicating with TheSkyX."""
 
     def __init__(self, host="localhost", port=3040, connect=True, *args, **kwargs):
         self.logger = get_logger()
@@ -21,10 +26,15 @@ class TheSkyX(object):
 
     @property
     def is_connected(self):
+        """Whether the socket is currently connected.
+
+        Returns:
+            bool: True if a TCP connection is established.
+        """
         return self._is_connected
 
     def connect(self):
-        """Sets up serial connection"""
+        """Establish a TCP connection to TheSkyX."""
         self.logger.debug("Making TheSkyX connection at {}:{}".format(self._host, self._port))
         if not self.is_connected:
             try:
@@ -37,6 +47,14 @@ class TheSkyX(object):
                 self.logger.info("Connected to TheSkyX via {}:{}".format(self._host, self._port))
 
     def write(self, value):
+        """Send a command string to TheSkyX.
+
+        Args:
+            value (str): The command to send.
+
+        Raises:
+            panoptes.utils.error.BadConnection: If not connected.
+        """
         try:
             assert isinstance(value, str)
             self.socket.sendall(value.encode())
@@ -44,6 +62,20 @@ class TheSkyX(object):
             raise error.BadConnection("Not connected to TheSkyX")
 
     def read(self, timeout=5):
+        """Read a response from TheSkyX.
+
+        Args:
+            timeout (int | float): Seconds to wait before timing out. Defaults to 5.
+
+        Returns:
+            str | None: The response string, or None if empty.
+
+        Raises:
+            panoptes.utils.error.BadConnection: If not connected.
+            panoptes.utils.error.TheSkyXTimeout: If a socket timeout occurs.
+            panoptes.utils.error.TheSkyXKeyError: If a key-related error is reported.
+            panoptes.utils.error.TheSkyXError: For other error responses from TheSkyX.
+        """
         try:
             self.socket.settimeout(timeout)
             response = None
