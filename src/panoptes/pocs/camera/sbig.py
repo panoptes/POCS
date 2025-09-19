@@ -1,3 +1,8 @@
+"""SBIG camera driver implementation backed by the SBIG Universal Driver.
+
+Provides a Camera class that uses the ctypes-based SBIGDriver to control cooled
+SBIG CCD/CMOS cameras and integrate with the AbstractSDKCamera interface.
+"""
 from contextlib import suppress
 
 from astropy.io import fits
@@ -9,6 +14,11 @@ from panoptes.utils import error
 
 
 class Camera(AbstractSDKCamera):
+    """SBIG camera implementation using the SBIG Universal Driver (sbigudrv).
+
+    Wraps SBIGDriver calls to provide cooling, exposure, and readout control
+    consistent with AbstractSDKCamera.
+    """
     _driver = None
     _cameras = {}
     _assigned_cameras = set()

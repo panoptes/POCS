@@ -29,6 +29,11 @@ from panoptes.utils.utils import get_quantity_value
 
 
 class SBIGDriver(AbstractSDKDriver):
+    """ctypes-based wrapper around the SBIG Universal Driver/Library.
+
+    Provides helpers for listing/connecting devices, temperature control,
+    exposures, filter wheel control, and low-level command marshaling.
+    """
     def __init__(self, library_path=None, retries=1, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
@@ -62,10 +67,16 @@ class SBIGDriver(AbstractSDKDriver):
 
     @property
     def retries(self):
+        """Number of times to retry sending a command to the camera."""
         return self._retries
 
     @retries.setter
     def retries(self, retries):
+        """Set the retry count for driver commands.
+
+        Args:
+            retries (int): Minimum of 1.
+        """
         retries = int(retries)
         if retries < 1:
             raise ValueError("retries should be 1 or greater, got {}!".format(retries))
@@ -74,6 +85,14 @@ class SBIGDriver(AbstractSDKDriver):
     # Methods
 
     def get_SDK_version(self, request_type="DRIVER_STD"):
+        """Return the SBIG driver/library version string.
+
+        Args:
+            request_type (str): One of the driver request codes, typically 'DRIVER_STD'.
+
+        Returns:
+            str: Human-readable version string, e.g., 'SBIGUDRV, 2.65'.
+        """
         driver_info_params = GetDriverInfoParams(driver_request_codes[request_type])
         driver_info_results = GetDriverInfoResults0()
         self.open_driver()  # Make sure driver is open
@@ -106,21 +125,34 @@ class SBIGDriver(AbstractSDKDriver):
         return cameras
 
     def open_driver(self):
+        """Open the SBIG driver if not already open."""
         with self._command_lock:
             self._send_command("CC_OPEN_DRIVER")
 
     def open_device(self, device_type):
+        """Open a specific SBIG device by device type code.
+
+        Args:
+            device_type (str): One of the supported device type strings (e.g., 'DEV_USB1').
+        """
         odp = OpenDeviceParams(device_type_codes[device_type], 0, 0)
         with self._command_lock:
             self._send_command("CC_OPEN_DEVICE", params=odp)
 
     def establish_link(self):
+        """Establish the communications link to the currently opened device."""
         elp = EstablishLinkParams()
         elr = EstablishLinkResults()
         with self._command_lock:
             self._send_command("CC_ESTABLISH_LINK", params=elp, results=elr)
 
     def get_link_status(self):
+        """Return link status information for the current device.
+
+        Returns:
+            dict: Connection details including 'established', 'camera_type',
+                and communication counters.
+        """
         lsr = GetLinkStatusResults()
         with self._command_lock:
             self._send_command("CC_GET_LINK_STATUS", results=lsr)
@@ -134,12 +166,14 @@ class SBIGDriver(AbstractSDKDriver):
         return link_status
 
     def get_driver_handle(self):
+        """Return the current low-level driver handle (opaque integer)."""
         ghr = GetDriverHandleResults()
         with self._command_lock:
             self._send_command("CC_GET_DRIVER_HANDLE", results=ghr)
         return ghr.handle
 
     def set_handle(self, handle):
+        """Set the low-level driver handle used for subsequent commands."""
         set_handle_params = SetDriverHandleParams(handle)
         self._send_command("CC_SET_DRIVER_HANDLE", params=set_handle_params)
 
@@ -238,6 +272,14 @@ class SBIGDriver(AbstractSDKDriver):
             self._send_command("CC_SET_DRIVER_CONTROL", params=set_driver_control_params)
 
     def query_temp_status(self, handle):
+        """Query the camera for current temperatures and cooler state.
+
+        Args:
+            handle: Driver handle for the target device.
+
+        Returns:
+            dict: Temperatures, power levels, and flags such as 'cooling_enabled'.
+        """
         qtp = QueryTemperatureStatusParams(temp_status_request_codes["TEMP_STATUS_ADVANCED2"])
         qtr = QueryTemperatureStatusResults2()
         with self._command_lock:
@@ -264,6 +306,13 @@ class SBIGDriver(AbstractSDKDriver):
         return temp_status
 
     def set_temp_regulation(self, handle, target_temperature, enabled):
+        """Enable/disable cooling and set the target sensor temperature.
+
+        Args:
+            handle: Driver handle for the device.
+            target_temperature: Desired CCD temperature (Quantity or float in C).
+            enabled (bool): True to enable regulation, False to disable.
+        """
         target_temperature = get_quantity_value(target_temperature, unit=u.Celsius)
 
         if enabled:
@@ -298,6 +347,16 @@ class SBIGDriver(AbstractSDKDriver):
     def start_exposure(
         self, handle, seconds, dark, antiblooming, readout_mode, top, left, height, width
     ):
+        """Start an exposure on the imaging CCD.
+
+        Args:
+            handle: Driver handle for the device.
+            seconds: Exposure duration (Quantity or float in seconds).
+            dark (bool): If True keep shutter closed for a dark frame.
+            antiblooming (bool): Whether to enable ABG if supported.
+            readout_mode (str): Readout mode key (e.g., 'RM_1X1').
+            top, left, height, width: Subframe window parameters in pixels.
+        """
         # SBIG driver expects exposure time in 100ths of a second.
         centiseconds = int(get_quantity_value(seconds, unit=u.second) * 100)
 
@@ -334,6 +393,16 @@ class SBIGDriver(AbstractSDKDriver):
             self._send_command("CC_START_EXPOSURE2", params=start_exposure_params)
 
     def readout(self, handle, readout_mode, top, left, height, width):
+        """Read out the imaging CCD and return the image data array.
+
+        Args:
+            handle: Driver handle for the device.
+            readout_mode (str): Readout mode key (e.g., 'RM_1X1').
+            top, left, height, width: Subframe window parameters in pixels.
+
+        Returns:
+            numpy.ndarray: 2D uint16 array of image data.
+        """
         # Set up all the parameter and result Structures that will be needed.
         readout_mode_code = readout_mode_codes[readout_mode]
         top = int(get_quantity_value(top, unit=u.pixel))

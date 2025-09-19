@@ -1,3 +1,8 @@
+"""Base classes for SDK-backed camera drivers and cameras.
+
+Provides AbstractSDKDriver (ctypes loader + common helpers) and
+AbstractSDKCamera (shared orchestration for cameras controlled via SDKs).
+"""
 import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
@@ -19,6 +24,17 @@ logger = get_logger()
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
+    """Abstract base for vendor SDK driver wrappers.
+
+    Loads the vendor's shared library and provides a common interface for
+    listing devices and retrieving SDK version information. Concrete driver
+    implementations should subclass this and implement get_SDK_version() and
+    get_devices().
+
+    Notes:
+        Instances of this class are typically used by AbstractSDKCamera
+        subclasses to manage a shared driver handle across multiple cameras.
+    """
     def __init__(self, name, library_path=None, *args, **kwargs):
         """Base class for all camera SDK interfaces.
 
@@ -48,6 +64,11 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
     @property
     def version(self):
+        """Version string of the loaded SDK library.
+
+        Returns:
+            str: Human-readable SDK version, as reported by the vendor library.
+        """
         return self._version
 
     # Methods
@@ -64,6 +85,12 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
 
 class AbstractSDKCamera(AbstractCamera):
+    """Common base for cameras controlled via a vendor SDK.
+
+    Handles driver lifetime, device discovery by serial_number, connection,
+    and common cooling/temperature settling behavior reused by concrete SDK
+    camera implementations (e.g., FLI, SBIG).
+    """
     _driver = None
     _cameras = dict()
     _assigned_cameras = set()

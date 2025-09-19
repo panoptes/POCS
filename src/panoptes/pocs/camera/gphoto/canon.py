@@ -1,3 +1,9 @@
+"""Canon DSLR camera driver using gphoto2.
+
+Provides a concrete Camera subclass for Canon EOS models controlled via gphoto2.
+Implements exposure sequencing, property setup, and a shutterspeed index helper
+compatible with the CLI-driven gphoto2 interface.
+"""
 from functools import lru_cache
 
 from astropy import units as u
@@ -11,6 +17,11 @@ from panoptes.pocs.camera.gphoto.base import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
+    """Canon EOS DSLR implementation using gphoto2.
+
+    Provides Canon-specific property defaults and exposure sequencing on top of
+    AbstractGPhotoCamera.
+    """
     def __init__(
         self,
         readout_time: float = 1.0,
@@ -40,10 +51,20 @@ class Camera(AbstractGPhotoCamera):
 
     @property
     def bit_depth(self):
+        """ADC bit depth reported by the camera.
+
+        Returns:
+            astropy.units.Quantity: The analog-to-digital converter resolution in bits.
+        """
         return 12 * u.bit
 
     @property
     def egain(self):
+        """Estimated sensor gain (e-/ADU).
+
+        Returns:
+            astropy.units.Quantity: Electrons per ADU, used for photometric calibration.
+        """
         return 1.5 * (u.electron / u.adu)
 
     def connect(self):
@@ -152,10 +173,19 @@ class Camera(AbstractGPhotoCamera):
     @classmethod
     @lru_cache(maxsize=52)
     def get_shutterspeed_index(cls, seconds: float, return_minimum: bool = False):
-        """Looks up the appropriate shutterspeed setting for the given seconds.
+        """Look up the gphoto2 shutterspeed index for a given exposure time.
 
-        If the given seconds does not match a set shutterspeed, the 'bulb' setting
-        is returned.
+        Args:
+            seconds (float): Desired exposure length in seconds.
+            return_minimum (bool): If True and the requested time is shorter than
+                the minimum supported shutterspeed, return the index of the
+                shortest available speed instead of 0 (bulb). Defaults to False.
+
+        Returns:
+            int: The index expected by gphoto2 for the nearest matching shutter
+                speed. Returns 0 to indicate 'bulb' when no direct match is found,
+                unless return_minimum is True and the time is below the minimum
+                discrete setting.
         """
         seconds = get_quantity_value(seconds, unit="second")
         # TODO derive these from `load_properties`.

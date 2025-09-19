@@ -1,3 +1,8 @@
+"""DSLR-style simulated camera driver.
+
+Provides a lightweight Camera implementation that mimics a DSLR controlled via
+simple timers and sample FITS data, suitable for tests and demos.
+"""
 import os
 import random
 from threading import Timer
@@ -13,15 +18,34 @@ from panoptes.pocs.camera import AbstractCamera
 
 
 class Camera(AbstractCamera):
+    """Simulated DSLR-like camera using timers and canned FITS data."""
+
     @property
     def egain(self):
+        """Estimated sensor gain (e-/ADU) used for testing.
+
+        Returns:
+            int | float: Constant gain value for the simulator (unitless).
+        """
         return 1
 
     @property
     def bit_depth(self):
+        """ADC bit depth for the simulated sensor.
+
+        Returns:
+            astropy.units.Quantity: Bit depth in bits.
+        """
         return 12 * u.bit
 
     def __init__(self, name="Simulated Camera", *args, **kwargs):
+        """Create the simulated camera and connect immediately.
+
+        Args:
+            name (str): Friendly name for the simulated camera.
+            *args: Forwarded to AbstractCamera.
+            **kwargs: Forwarded to AbstractCamera; supports timeout and readout_time.
+        """
         kwargs["timeout"] = kwargs.get("timeout", 1.5 * u.second)
         kwargs["readout_time"] = kwargs.get("readout_time", 1.0 * u.second)
         super().__init__(name=name, *args, **kwargs)
@@ -51,6 +75,21 @@ class Camera(AbstractCamera):
         pass
 
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+        """Start a simulated observation, trimming long exposures.
+
+        For the simulator, any requested exposure longer than 1 second is
+        reduced to 1 second to keep tests fast.
+
+        Args:
+            observation: The Observation describing the target/sequence.
+            headers: Optional FITS header metadata to include.
+            filename: Optional filename stem to use for the output.
+            *args: Forwarded to AbstractCamera.take_observation.
+            **kwargs: May include 'exptime' to set the exposure duration.
+
+        Returns:
+            dict: The metadata returned by AbstractCamera.take_observation.
+        """
         exptime = kwargs.get("exptime", observation.exptime.value)
         if exptime > 1:
             kwargs["exptime"] = 1
