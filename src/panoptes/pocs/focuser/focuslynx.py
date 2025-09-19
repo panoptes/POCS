@@ -1,3 +1,8 @@
+"""Optec FocusLynx focuser driver.
+
+Implements control for Optec FocusLynx-compatible focusers (including Focus Boss II)
+via a serial connection, following the AbstractFocuser interface used by POCS.
+"""
 import serial
 import time
 from warnings import warn
@@ -104,6 +109,11 @@ class Focuser(AbstractFocuser):
 
     @uid.setter
     def uid(self, nickname):
+        """Set the user-defined nickname for this focuser.
+
+        Args:
+            nickname (str): Nickname string (<= 16 characters).
+        """
         if len(nickname) > 16:
             self.logger.warning(
                 "Truncated nickname {} to {} (must be <= 16 characters)", nickname, nickname[:16]
@@ -180,6 +190,11 @@ class Focuser(AbstractFocuser):
     ##################################################################################################
 
     def connect(self):
+        """Open the serial connection to the FocusLynx controller.
+
+        Establishes a 115200 8N1 serial connection to the configured port and
+        assigns the handle to self._serial_port. Raises SerialException on failure.
+        """
         try:
             # Configure serial port.
             self._serial_port = serial.Serial(
