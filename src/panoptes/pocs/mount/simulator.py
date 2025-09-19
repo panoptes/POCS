@@ -1,3 +1,8 @@
+"""Simple in-memory mount simulator for development and tests.
+
+Implements the AbstractMount interface with timed state changes and canned
+responses so higher-level logic can be exercised without hardware.
+"""
 import time
 from threading import Timer
 
@@ -48,11 +53,13 @@ class Mount(AbstractMount):
         return self._is_initialized
 
     def connect(self):
+        """Connect to the simulated mount (instant success)."""
         self.logger.debug("Connecting to mount simulator")
         self._is_connected = True
         return True
 
     def disconnect(self):
+        """Disconnect from the simulated mount (instant success)."""
         self.logger.debug("Disconnecting mount simulator")
         self._is_connected = False
         return True
@@ -88,6 +95,15 @@ class Mount(AbstractMount):
         return super().get_ms_offset(offset, axis=axis)
 
     def slew_to_target(self, slew_delay=0.5, *args, **kwargs):
+        """Simulate slewing to the current target, then begin tracking.
+
+        Args:
+            slew_delay (float): Seconds to wait before setting tracking True.
+            *args, **kwargs: Forwarded to AbstractMount.slew_to_target.
+
+        Returns:
+            bool: True if the superclass slew_to_target reports success.
+        """
         self._is_tracking = False
 
         # Set up a timer to trigger the `is_tracking` property.
@@ -110,9 +126,16 @@ class Mount(AbstractMount):
         return success
 
     def get_current_coordinates(self):
+        """Return the simulator's current coordinates (SkyCoord or None)."""
         return self._current_coordinates
 
     def stop_slew(self, next_position="is_tracking"):
+        """Stop slewing and set the next simulated state flag.
+
+        Args:
+            next_position (str): One of 'is_tracking', 'is_home', etc.; the
+                corresponding private flag will be set to True.
+        """
         self.logger.debug("Stopping slewing")
 
         # Set all to false then switch one below
@@ -154,12 +177,22 @@ class Mount(AbstractMount):
         self._is_parked = True
 
     def unpark(self):
+        """Unpark the simulated mount (sets connected and clears parked)."""
         self.logger.debug("Unparking mount")
         self._is_connected = True
         self._is_parked = False
         return True
 
     def query(self, cmd, params=None, **kwargs):
+        """Simulate a mount command query.
+
+        Args:
+            cmd (str): Logical command name.
+            params (str | dict | None): Optional parameters for the command.
+
+        Returns:
+            bool: Always True for the simulator; may sleep briefly for actions.
+        """
         self.logger.debug(f"Query cmd: {cmd} params: {params!r}")
         if cmd == "slew_to_target":
             time.sleep(self._loop_delay)
@@ -167,12 +200,20 @@ class Mount(AbstractMount):
         return True
 
     def write(self, cmd):
+        """Simulate writing a command to the mount (logs only)."""
         self.logger.debug(f"Write: {cmd}")
 
     def read(self, *args):
+        """Simulate reading a response from the mount (logs only)."""
         self.logger.debug("Read")
 
     def set_tracking_rate(self, direction="ra", delta=0.0):
+        """Set a simulated custom tracking rate.
+
+        Args:
+            direction (str): Axis label ('ra' or 'dec').
+            delta (float): Offset multiple of sidereal rate.
+        """
         self.logger.debug(f"Setting tracking rate delta: {direction} {delta}")
         self.tracking = "Custom"
         self.tracking_rate = 1.0 + delta

@@ -1,3 +1,8 @@
+"""Serial-backed mount base class and helpers.
+
+Provides AbstractSerialMount, which opens a configured RS-232 connection and
+implements common read/write/query helpers reused by concrete serial mounts.
+"""
 import re
 from abc import ABC
 
@@ -7,6 +12,11 @@ from panoptes.pocs.mount import AbstractMount
 
 
 class AbstractSerialMount(AbstractMount, ABC):
+    """Abstract base for mounts controlled via a serial connection.
+
+    Handles creating the SerialData connection from configuration and provides
+    default implementations for common connect/read/write helpers.
+    """
     def __init__(self, location, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
 
@@ -58,6 +68,11 @@ class AbstractSerialMount(AbstractMount, ABC):
         return self.is_connected
 
     def disconnect(self):
+        """Disconnect from the serial-connected mount controller.
+
+        Closes the underlying serial connection (if open) and updates the
+        connection flag accordingly.
+        """
         self.logger.debug("Closing serial port for mount")
         if self.serial:
             self.serial.disconnect()

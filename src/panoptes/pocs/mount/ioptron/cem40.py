@@ -1,3 +1,8 @@
+"""iOptron CEM40 mount driver wrapper.
+
+Specializes the ioptron.base Mount with CEM40-specific homing and target
+coordinate behaviors.
+"""
 import time
 
 from panoptes.pocs.mount.ioptron.base import Mount as BaseMount
