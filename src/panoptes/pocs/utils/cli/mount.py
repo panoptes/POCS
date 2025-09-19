@@ -1,3 +1,9 @@
+"""Typer CLI helpers for common mount operations (park, home, slew, setup).
+
+Provides small interactive commands that call into the configured mount driver
+for safe parking, homing, slewing to a named target, and setting the park
+position. These commands are intended for manual use during setup or recovery.
+"""
 import re
 from pathlib import Path
 

@@ -1,3 +1,7 @@
+"""Typer-based CLI commands for running PANOPTES workflows.
+
+Provides commands for automatic observing sessions and polar alignment helpers.
+"""
 import os
 import warnings
 from collections import defaultdict
@@ -379,7 +383,7 @@ def run_quick_alignment(
 
                 # Remove everything in the path before 'images' for upload.
                 path_parts = alignment_plot_fn.parts
-                bucket_path = "/".join(path_parts[path_parts.index("images") + 1:])
+                bucket_path = "/".join(path_parts[path_parts.index("images") + 1 :])
                 upload_image(
                     file_path=alignment_plot_fn,
                     bucket_path=bucket_path,

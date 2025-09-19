@@ -1,3 +1,7 @@
+"""Typer CLI for interacting with the PANOPTES weather station service.
+
+Provides commands to query status/config and to restart the service.
+"""
 import human_readable
 import requests
 import subprocess

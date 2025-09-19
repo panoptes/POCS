@@ -1,3 +1,8 @@
+"""Typer CLI for interacting with the power monitoring/control service.
+
+Provides commands to query relay status and readings, and to toggle relays via
+HTTP calls to the FastAPI service implemented in panoptes.pocs.utils.service.power.
+"""
 import os
 import subprocess
 from dataclasses import dataclass
@@ -15,11 +20,22 @@ from panoptes.pocs.utils.service.power import RelayCommand
 
 @dataclass
 class HostInfo:
+    """Simple host/port holder for the power service.
+
+    Attributes:
+        host (str): Hostname or IP address of the power service.
+        port (str): TCP port for the service (string for simple concatenation).
+    """
     host: str = "localhost"
     port: str = "6564"
 
     @property
     def url(self):
+        """Assemble the base URL for the power service.
+
+        Returns:
+            str: The base http URL including host and port.
+        """
         return f"http://{self.host}:{self.port}"
 
 
@@ -32,12 +48,29 @@ def common(
     host: str = typer.Option("localhost", help="Power monitor host address."),
     port: str = typer.Option("6564", help="Power monitor port."),
 ):
+    """Shared options setup for all power CLI commands.
+
+    Args:
+        context: Typer context used to share HostInfo across commands.
+        host: Power service host address.
+        port: Power service TCP port.
+
+    Returns:
+        None
+    """
     context.obj = HostInfo(host=host, port=port)
 
 
 @app.command()
 def status(context: typer.Context):
-    """Get the status of the power monitor."""
+    """Get and display the status of the power monitor relays.
+
+    Args:
+        context: Typer context containing HostInfo with the server URL.
+
+    Returns:
+        None
+    """
     url = context.obj.url
     try:
         res = requests.get(url)
@@ -61,7 +94,14 @@ def status(context: typer.Context):
 
 @app.command()
 def readings(context: typer.Context):
-    """Get the readings of the relays."""
+    """Fetch and display recent readings for each relay.
+
+    Args:
+        context: Typer context containing HostInfo with base URL.
+
+    Returns:
+        None
+    """
     url = context.obj.url + "/readings"
     try:
         res = requests.get(url)
@@ -83,7 +123,15 @@ def on(
     context: typer.Context,
     relay: str = typer.Argument(..., help="The label or index of the relay to turn on."),
 ):
-    """Turns a relay on."""
+    """Turn a relay on by label or index.
+
+    Args:
+        context: Typer context carrying HostInfo state.
+        relay: Relay label or index to control.
+
+    Returns:
+        None
+    """
     control(context, relay=relay, command="turn_on")
 
 
@@ -92,7 +140,15 @@ def off(
     context: typer.Context,
     relay: str = typer.Argument(..., help="The label or index of the relay to turn off."),
 ):
-    """Turns a relay off."""
+    """Turn a relay off by label or index.
+
+    Args:
+        context: Typer context carrying HostInfo state.
+        relay: Relay label or index to control.
+
+    Returns:
+        None
+    """
     control(context, relay=relay, command="turn_off")
 
 
@@ -104,7 +160,16 @@ def control(
         ..., help='The control action to perform, either "turn_on" or "turn_off"'
     ),
 ):
-    """Control a relay by label or relay index."""
+    """Control a relay by label or relay index.
+
+    Args:
+        context: Typer context with HostInfo state.
+        relay: Relay label or index to control.
+        command: Action to perform, either "turn_on" or "turn_off".
+
+    Returns:
+        None
+    """
     url = context.obj.url + "/control"
 
     try:
@@ -148,7 +213,16 @@ def setup_power(
         "resources/arduino/install-power-board.sh", help="Path to the power monitor script."
     ),
 ):
-    """Sets up the power board port and labels."""
+    """Set up the power board port and labels; optionally install Arduino sketch.
+
+    Args:
+        confirm: Confirmation flag to proceed with setup.
+        do_install: If True, run the Arduino install script before setup.
+        install_script: Path to the Arduino install script.
+
+    Returns:
+        None
+    """
     if not confirm:
         print("[red]Cancelled.[/red]")
         return typer.Abort()

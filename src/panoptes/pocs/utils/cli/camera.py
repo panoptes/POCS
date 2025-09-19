@@ -1,3 +1,9 @@
+"""Typer CLI commands for camera setup and quick image capture.
+
+Provides helpers to detect connected cameras (DSLR via gphoto2 and ZWO via SDK),
+populate the configuration, and take one-off test images with optional
+post-processing (convert/compress/solve/pretty).
+"""
 import concurrent.futures
 import queue
 import threading
@@ -213,6 +219,31 @@ def take_pictures(
     pretty: bool = False,
     verbose: bool = False,
 ) -> Dict[str, List[Path]] | None:
+    """Capture images concurrently from one or more cameras with optional processing.
+
+    Spawns a thread pool to trigger exposures across all cameras and a background
+    worker thread to perform post-processing steps (convert, compress, solve,
+    pretty) as files are produced. A Rich Live layout displays per-camera
+    progress and a list of the most recent files.
+
+    Args:
+        cameras (dict[str, AbstractCamera]): Mapping of camera names to instances.
+        num_images (int): Number of images to take per camera. Defaults to 1.
+        exptime (float | str): Exposure time in seconds (or string parsable to float).
+        output_dir (str): Base directory where images will be written. A timestamped
+            subdirectory is created automatically. Defaults to '/home/panoptes/images'.
+        delay (float): Optional delay in seconds between exposures. Defaults to 0.0.
+        convert (bool): If True, convert proprietary formats (e.g., CR2) to FITS.
+        compress (bool): If True, compress FITS files to .fz via fpack.
+        solve (bool): If True, run astrometric solving on FITS outputs.
+        pretty (bool): If True, generate a PNG preview image.
+        verbose (bool): If True, print additional processing details.
+
+    Returns:
+        dict[str, list[Path]] | None: Optional mapping of camera name to list of
+            produced files. Currently returns None; printed progress indicates
+            completion.
+    """
     observation_start_time = current_time(flatten=True)
     output_dir = Path(output_dir) / str(observation_start_time)
 

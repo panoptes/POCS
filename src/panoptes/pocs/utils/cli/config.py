@@ -1,3 +1,8 @@
+"""Typer CLI helpers for interacting with the PANOPTES config server.
+
+Provides commands to query and update configuration values via the running
+panoptes-utils config server, along with a status check and restart helper.
+"""
 import subprocess
 from typing import Optional, Dict
 
@@ -21,6 +26,11 @@ class HostInfo(BaseModel):
 
     @property
     def url(self):
+        """Base URL of the config server.
+
+        Returns:
+            str: Host and port combined as 'host:port'.
+        """
         return f"{self.host}:{self.port}"
 
 
