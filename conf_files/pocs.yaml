@@ -42,7 +42,7 @@ wait_delay: 180 # time in seconds before checking safety/etc while waiting.
 max_transition_attempts: 5  # number of transitions attempts.
 status_check_interval: 60 # periodic status check.
 
-state_machine: simple
+state_machine: panoptes
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
