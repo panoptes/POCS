@@ -8,11 +8,10 @@ sudo apt-get update --fix-missing -y
 # Upgrade.
 sudo apt-get -y full-upgrade
 
-sudo apt-get -y install \
+sudo apt-get -y install --no-install-recommends \
   ack \
   astrometry.net \
   astrometry-data-tycho2-10-19 \
-  byobu \
   curl \
   dcraw \
   exiftool \
@@ -27,6 +26,7 @@ sudo apt-get -y install \
   libcfitsio-bin \
   make \
   nano \
+  sudo \
   supervisor \
   vim-nox \
   wget \
