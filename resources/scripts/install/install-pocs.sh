@@ -3,12 +3,6 @@
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
-echo "Installing hatch."
-wget -q https://github.com/pypa/hatch/releases/latest/download/hatch-x86_64-unknown-linux-gnu.tar.gz -O hatch.tgz
-tar zxvf hatch.tgz && rm hatch.tgz
-mv hatch "${HOME}/bin/hatch"
-chmod +x "${HOME}/bin/hatch"
-
 # Check if PANDIR exists and if not, clone.
 if [ -d "${PANDIR}" ]; then
   echo "POCS repo already exists."
@@ -23,7 +17,7 @@ fi
 
 echo "Installing POCS"
 cd "$PANDIR"
-${HOME}/bin/hatch run pip install -e ".[all]"
+~/micromamba/bin/hatch run pip install -e ".[all]"
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
