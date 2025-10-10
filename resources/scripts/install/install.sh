@@ -21,6 +21,8 @@ source ./install-hatch.sh >> install.log 2>&1
 echo "Installing POCS software."
 source ./install-pocs.sh >> install.log 2>&1
 
+sleep 2
+
 echo "Installing services so things run at startup."
 source ./install-services.sh >> install.log 2>&1
 
