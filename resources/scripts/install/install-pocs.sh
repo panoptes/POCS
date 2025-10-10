@@ -17,6 +17,7 @@ fi
 
 echo "Installing POCS"
 cd "$PANDIR"
+source ~/.bashrc
 hatch run pip install -e ".[all]"
 
 echo "Creating POCS directories."
