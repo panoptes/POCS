@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Store the current directory
+INSTALL_DIR=$(pwd)
+
 echo "Installing POCS"
 
 echo "Setting up user."
@@ -20,8 +23,7 @@ source ./install-hatch.sh >> install.log 2>&1
 
 echo "Installing POCS software."
 source ./install-pocs.sh >> install.log 2>&1
-
-sleep 2
+cd "${INSTALL_DIR}"
 
 echo "Installing services so things run at startup."
 source ./install-services.sh >> install.log 2>&1
