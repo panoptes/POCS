@@ -30,6 +30,7 @@ ln -s "${PANDIR}/conf_files" "${HOME}"
 ln -s "${PANDIR}/resources" "${HOME}"
 ln -s "${PANDIR}/notebooks" "${HOME}"
 
-# Set the hatch environment as the default shell.
+# Create a symlink to the bin dir for our hatch environment.
 cd "$PANDIR"
-echo "$(/home/panoptes/.local/bin/hatch env find default)/bin/activate" >> "${HOME}/.zshrc"
+ln -s "$(/home/panoptes/.local/bin/hatch env find default)/bin/" "${HOME}/bin/"
+echo "source ${HOME}/bin/activate" >> "${HOME}/.zshrc"
