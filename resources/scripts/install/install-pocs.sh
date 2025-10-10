@@ -17,8 +17,7 @@ fi
 
 echo "Installing POCS"
 cd "$PANDIR"
-source ~/.bashrc
-hatch run pip install -e ".[all]"
+/home/panoptes/.local/bin/hatch run pip install -e ".[all]"
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
@@ -33,4 +32,4 @@ ln -s "${PANDIR}/notebooks" "${HOME}"
 
 # Set the hatch environment as the default shell.
 cd "$PANDIR"
-echo "$(hatch env find default)/bin/activate" >> "${HOME}/.zshrc"
+echo "$(/home/panoptes/.local/bin/hatch env find default)/bin/activate" >> "${HOME}/.zshrc"
