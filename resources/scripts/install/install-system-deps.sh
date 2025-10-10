@@ -27,6 +27,7 @@ sudo apt-get -y install --no-install-recommends \
   make \
   nano \
   pipx \
+  python3-dev \
   sudo \
   supervisor \
   vim-nox \
