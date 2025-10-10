@@ -26,6 +26,7 @@ sudo apt-get -y install --no-install-recommends \
   libcfitsio-bin \
   make \
   nano \
+  pipx \
   sudo \
   supervisor \
   vim-nox \

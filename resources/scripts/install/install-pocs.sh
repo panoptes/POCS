@@ -17,7 +17,7 @@ fi
 
 echo "Installing POCS"
 cd "$PANDIR"
-~/micromamba/bin/hatch run pip install -e ".[all]"
+hatch run pip install -e ".[all]"
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
@@ -29,3 +29,7 @@ mkdir -p "${HOME}/keys"
 ln -s "${PANDIR}/conf_files" "${HOME}"
 ln -s "${PANDIR}/resources" "${HOME}"
 ln -s "${PANDIR}/notebooks" "${HOME}"
+
+# Set the hatch environment as the default shell.
+cd "$PANDIR"
+echo "$(hatch env find default)/bin/activate" >> "${HOME}/.zshrc"

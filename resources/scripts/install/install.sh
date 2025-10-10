@@ -15,8 +15,8 @@ source ./install-system-deps.sh >> install.log 2>&1
 echo "Installing ZSH for a better shell."
 source ./install-zsh.sh >> install.log 2>&1
 
-echo "Installing conda python."
-source ./install-conda.sh >> install.log 2>&1
+echo "Installing hatch for python management."
+pipx install hatch >> install.log 2>&1
 
 echo "Installing POCS software."
 source ./install-pocs.sh >> install.log 2>&1
