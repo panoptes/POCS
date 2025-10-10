@@ -9,7 +9,7 @@ if [ -d "${PANDIR}" ]; then
 else
   echo "Cloning POCS repo."
   cd
-  git clone --depth 1 https://github.com/panoptes/POCS "${PANDIR}"
+  git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "${CODE_BRANCH}"
   cd
