@@ -32,5 +32,6 @@ ln -s "${PANDIR}/notebooks" "${HOME}"
 
 # Create a symlink to the bin dir for our hatch environment.
 cd "$PANDIR"
-ln -s "$(/home/panoptes/.local/bin/hatch env find default)/bin/" "${HOME}/bin/"
+ln -s "$(/home/panoptes/.local/bin/hatch env find default)/bin/" "${HOME}/"
+echo "source ${HOME}/bin/activate" >> "${HOME}/.bashrc"
 echo "source ${HOME}/bin/activate" >> "${HOME}/.zshrc"

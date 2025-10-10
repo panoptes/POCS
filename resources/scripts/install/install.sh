@@ -23,3 +23,5 @@ source ./install-pocs.sh >> install.log 2>&1
 
 echo "Installing services so things run at startup."
 source ./install-services.sh >> install.log 2>&1
+
+"${HOME}/bin/pocs" config setup
