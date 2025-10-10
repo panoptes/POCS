@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 CODE_BRANCH=${CODE_BRANCH:-"develop"}
-CONDA_ENV_NAME=conda-pocs
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 # Check if PANDIR exists and if not, clone.
@@ -9,14 +8,16 @@ if [ -d "${PANDIR}" ]; then
   echo "POCS repo already exists."
 else
   echo "Cloning POCS repo."
+  cd
   git clone https://github.com/panoptes/POCS "${PANDIR}"
   cd "${PANDIR}"
   git checkout "${CODE_BRANCH}"
   cd
 fi
 
-echo "Installing POCS into ${CONDA_ENV_NAME} environment."
-"${HOME}/conda/bin/conda" env update -p "${HOME}/conda/envs/${CONDA_ENV_NAME}" -f "${PANDIR}/environment.yaml"
+echo "Installing POCS"
+cd "$PANDIR"
+"${HOME}/.local/bin/hatch" run pip install -e ".[all]"
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
@@ -28,3 +29,8 @@ mkdir -p "${HOME}/keys"
 ln -s "${PANDIR}/conf_files" "${HOME}"
 ln -s "${PANDIR}/resources" "${HOME}"
 ln -s "${PANDIR}/notebooks" "${HOME}"
+
+# Create a symlink to the bin dir for our hatch environment.
+ln -s "$($HOME/.local/bin/hatch env find default)/bin/" "${HOME}/"
+echo "source ${HOME}/bin/activate" >> "${HOME}/.bashrc"
+echo "source ${HOME}/bin/activate" >> "${HOME}/.zshrc"

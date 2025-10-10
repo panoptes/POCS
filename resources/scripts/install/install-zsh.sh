@@ -31,7 +31,7 @@ export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
 export ZSH="/home/${PANUSER}/.oh-my-zsh"
 export PANDIR="${PANDIR}"
 
-ZSH_THEME="agnoster"
+ZSH_THEME="ys"
 
 plugins=(git sudo zsh-autosuggestions docker docker-compose python)
 source \$ZSH/oh-my-zsh.sh
