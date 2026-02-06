@@ -1,5 +1,17 @@
 # Changelog
 
+# Unreleased
+
+## Added
+
+- Beginner documentation: conceptual overview, architecture guide, glossary, and CLI examples
+- Beginner Resources section in main README (top-level)
+
+## Changed
+
+- `examples/beginner_simulation.py`: use local config, display devices, fix simulators parameter
+- Documentation: clickable links, CLI-first approach, plain language
+
 # 0.7.8
 
 ## Generic
