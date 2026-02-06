@@ -29,6 +29,17 @@ PANOPTES unit, responsible for high-level control of the unit.
 
 For more information, see the full documentation at: https://pocs.readthedocs.io.
 
+## Beginner Resources
+
+New to POCS? Start here:
+
+- **CLI Guide:** See [docs/cli-guide.md](docs/cli-guide.md) for complete command line reference
+- **Command Line Examples:** Quick start at [examples/README.md](examples/README.md)
+- **Conceptual Overview:** Read [docs/conceptual-overview.md](docs/conceptual-overview.md) to understand POCS without installing
+- **Architecture Guide:** Read [docs/architecture-for-beginners.md](docs/architecture-for-beginners.md) to understand how POCS works  
+- **Glossary:** Check [docs/glossary.md](docs/glossary.md) for definitions of all terms
+- **Python Examples:** Run [examples/beginner_simulation.py](examples/beginner_simulation.py) for API tutorial (advanced)
+
 ## Install
 
 ### POCS Environment
@@ -117,7 +128,33 @@ Out[10]: False
 
 For a more realistic usage, see the full documentation at: [https://pocs.readthedocs.io](https://pocs.readthedocs.io).
 
-For actually deploying a PANOPTES unit, refer to the [Operating Guider](https://projectpanoptes.gitbook.io/pocs-user-guide/operation/operating-guides).
+For actually deploying a PANOPTES unit, refer to the [Operating Guide](https://projectpanoptes.gitbook.io/pocs-user-guide/operation/operating-guides).
+
+#### Using POCS
+
+POCS provides a command line interface for all operations. After installation:
+
+**1. Configure your unit (required first step):**
+```bash
+pocs config setup
+```
+
+**2. Run automated observing:**
+```bash
+pocs run auto
+```
+
+**3. Manual hardware control:**
+```bash
+# Mount control
+pocs mount slew-to-target --target M42
+pocs mount park
+
+# Camera testing
+pocs camera take-pics --num-images 5 --exptime 2.0
+```
+
+For more CLI commands, run `pocs --help` or see the beginner documentation above.
 
 #### Developing POCS
 
