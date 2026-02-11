@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 
 echo "Installing system dependencies."
+PANUSER="${PANUSER:-panoptes}"
 
 # Clean up problems.
-sudo apt-get update --fix-missing -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing -y
 
 # Upgrade.
-sudo apt-get -y full-upgrade
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y \
+  -o Dpkg::Options::="--force-confdef" \
+  -o Dpkg::Options::="--force-confold" \
+  full-upgrade
 
-sudo apt-get -y install --no-install-recommends \
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
   ack \
   astrometry.net \
   astrometry-data-tycho2-10-19 \
@@ -28,10 +32,14 @@ sudo apt-get -y install --no-install-recommends \
   nano \
   pipx \
   python3-dev \
+  starship \
   sudo \
   supervisor \
   vim-nox \
   wget \
   zsh
 
-sudo apt-get -y autoremove
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove
+
+# Set zsh as the default shell for the panoptes user.
+sudo chsh --shell /usr/bin/zsh "${PANUSER}"

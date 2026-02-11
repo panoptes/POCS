@@ -162,34 +162,43 @@ See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTE
 
 ### Development with Hatch
 
-This project uses the Hatch build system and environment management.
+This project uses UV for fast Python package and environment management.
 
 Prerequisites:
 - Python 3.12+
-- Hatch: https://hatch.pypa.io (install via `pipx install hatch` or `pip install --user hatch`).
+- UV: https://docs.astral.sh/uv/ (install via `curl -LsSf https://astral.sh/uv/install.sh | sh` or `pipx install uv`).
 
 Basic workflow:
 
-- Create and enter a dev environment with all testing tools:
+- Create and sync a dev environment with all dependencies:
   ```bash
-  hatch env create
-  hatch shell
-  # or run commands without activating the shell using `hatch run ...`
+  # Install all optional extras (recommended for development)
+  uv sync --all-extras
+  
+  # Or install only base dependencies
+  uv sync
+  
+  # Activate the virtual environment
+  source .venv/bin/activate
+  # or run commands without activating using `uv run ...`
   ```
 
-- Install optional extras as needed (choose any):
+- Install specific optional extras as needed (choose any):
   ```bash
-  # Examples: google, focuser, sensors, weather
-  hatch run pip install -e ".[google,focuser,sensors,weather,testing]"
+  # Examples: google, focuser, weather, testing
+  uv sync --extra google --extra focuser --extra weather --extra testing
+  
+  # Or install the 'all' extra which includes everything
+  uv sync --extra all
   ```
 
 - Run tests:
   ```bash
   # All tests with coverage, using pytest options from pyproject.toml
-  hatch run pytest
+  uv run pytest
 
   # Single test file
-  hatch run pytest tests/test_mount.py
+  uv run pytest tests/test_mount.py
   ```
 
 - Lint / style checks:

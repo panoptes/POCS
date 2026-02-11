@@ -23,6 +23,7 @@ classifiers = [
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Topic :: Scientific/Engineering :: Physics",
@@ -31,7 +32,7 @@ dependencies = [
     "astroplan",
     "astropy>=7.0",
     "astroquery",
-    "certifi>=2023.7.22",
+    "certifi>=2024.2.2",
     "click>=8.2.1",
     "fastapi<0.106.0",
     "fastapi-utils",
@@ -43,7 +44,7 @@ dependencies = [
     "pick",
     "Pillow>=10.0.1",
     "pyserial",
-    "requests>=2.31.0",
+    "requests>=2.32.0",
     "scipy>=1.10.0",
     "scikit-image",
     "sparklines",
@@ -51,7 +52,7 @@ dependencies = [
     "transitions",
     "typer",
     "typing-inspect",
-    "urllib3>=1.26.18",
+    "urllib3>=2.0.7",
     "uvicorn[standard]",
     "watchdog",
 ]
@@ -67,7 +68,6 @@ pocs = "panoptes.pocs.utils.cli.main:app"
 [project.optional-dependencies]
 focuser = [
     "matplotlib",
-    "scipy>=1.10.0",
 ]
 google = [
     "google-cloud-firestore",
@@ -77,6 +77,14 @@ google = [
     "protobuf",
     "rsa",
 ]
+weather = [
+    "panoptes-aag",
+]
+all = [
+    "panoptes-pocs[focuser,google,weather]"
+]
+
+[dependency-groups]
 testing = [
     "coverage",
     "pycodestyle",
@@ -87,44 +95,48 @@ testing = [
     "pytest-remotedata>=0.3.1",
     "responses",
 ]
-weather = [
-    "panoptes-aag",
+lint = [
+    "ruff",
 ]
-all = [
-    "panoptes-pocs[focuser,google,testing,weather]"
+dev = [
+    { include-group = "testing" },
+    { include-group = "lint" },
 ]
 
 [tool.hatch.version]
 source = "vcs"
 
-[tool.setuptools.packages.find]
-where = ["src/"]
-include = ["panoptes", "panoptes.*"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/panoptes"]
-
 [tool.hatch.envs.default]
+features = ["all"]
 dependencies = [
-    "ruff>=0.5.0"
+    { include-group = "testing" },
+    { include-group = "lint" },
 ]
+installer = "uv"
+
 [tool.hatch.envs.default.scripts]
 lint = "ruff check ."
 lint-fix = "ruff check --fix ."
 fmt = "ruff format ."
 fmt-check = "ruff format --check ."
 
+[tool.hatch.envs.hatch-test]
+features = ["testing"]
+installer = "uv"
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12", "3.13"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/panoptes"]
+
 [tool.pytest.ini_options]
 addopts = [
-    "--cov",
-    "panoptes.pocs",
-    "--cov",
-    "tests",
+    "--cov=panoptes.pocs",
+    "--cov=tests",
     "--cov-branch",
-    "--cov-report",
-    "term-missing:skip-covered",
-    "--cov-report",
-    "xml:build/coverage.xml",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=xml:build/coverage.xml",
     "--no-cov-on-fail",
     "--doctest-ignore-import-errors",
     "--doctest-modules",

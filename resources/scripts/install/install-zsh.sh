@@ -4,37 +4,49 @@ PANUSER="${PANUSER:-panoptes}"
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function install_zsh() {
-  if [ ! -d "${HOME}/.oh-my-zsh" ]; then
+  if [ ! -d "${HOME}/.antidote" ]; then
     echo "Using zsh for a better shell experience."
 
-    sudo chsh --shell /usr/bin/zsh "${PANUSER}"
+    # Install Antidote plugin manager
+    git clone --depth=1 https://github.com/mattmc3/antidote.git "${HOME}/.antidote"
 
-    # Oh my zsh
-    wget -q https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O /tmp/install-ohmyzsh.sh
-    bash /tmp/install-ohmyzsh.sh --unattended
-
-    export ZSH_CUSTOM="$HOME/.oh-my-zsh"
-
-    # Autosuggestions plugin
-    git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
-
+    write_zsh_plugins
     write_zshrc
+
+    starship preset plain-text-symbols -o ~/.config/starship.toml
   fi
+}
+
+function write_zsh_plugins() {
+  cat >"${HOME}/.zsh_plugins.txt" <<EOT
+# oh-my-zsh plugins
+ohmyzsh/ohmyzsh path:plugins/git
+ohmyzsh/ohmyzsh path:plugins/sudo
+ohmyzsh/ohmyzsh path:plugins/docker
+ohmyzsh/ohmyzsh path:plugins/docker-compose
+ohmyzsh/ohmyzsh path:plugins/python
+
+# zsh-users plugins
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-syntax-highlighting
+
+EOT
 }
 
 function write_zshrc() {
   cat >"${HOME}/.zshrc" <<EOT
 
-zstyle ':omz:update' mode disabled
-
 export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
-export ZSH="/home/${PANUSER}/.oh-my-zsh"
 export PANDIR="${PANDIR}"
 
-ZSH_THEME="ys"
+# Antidote plugin manager
+source "\${HOME}/.antidote/antidote.zsh"
+antidote load "\${HOME}/.zsh_plugins.txt"
 
-plugins=(git sudo zsh-autosuggestions docker docker-compose python)
-source \$ZSH/oh-my-zsh.sh
+# Starship prompt
+eval "\$(starship init zsh)"
+
+# Disable share_history
 unsetopt share_history
 
 EOT
