@@ -7,7 +7,6 @@ constraints using panoptes.utils.library.load_module.
 """
 
 from pathlib import Path
-from typing import List
 
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config

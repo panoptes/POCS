@@ -118,7 +118,8 @@ class FilterWheel(AbstractFilterWheel):
         """Set unidirectional/bidirectional motion mode on the hardware.
 
         Args:
-            unidirectional (bool): True to force one-way rotation, False to allow bidirectional moves.
+            unidirectional (bool): True to force one-way rotation, False to allow
+                bidirectional moves.
         """
         self._driver.set_direction(self._handle, bool(unidirectional))
 

@@ -29,7 +29,8 @@ def get_target_coords(
     >>> type(c).__name__
     'SkyCoord'
 
-    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)  # doctest: +ELLIPSIS
+    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)
+    ... # doctest: +ELLIPSIS
     <SkyCoord (ICRS): (ra, dec) in deg
         (10.6847..., 41.26875)>
 

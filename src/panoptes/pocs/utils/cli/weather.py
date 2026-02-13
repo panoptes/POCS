@@ -205,7 +205,8 @@ def get_page(page, base_url):
         return response.json()
     except requests.exceptions.ConnectionError:
         console.print(
-            f"[bold red]Error:[/bold red] Could not connect to the weather station at [bold]{url}[/bold]"
+            f"[bold red]Error:[/bold red] Could not connect to the weather station at "
+            f"[bold]{url}[/bold]"
         )
         console.print("[yellow]Possible reasons:[/yellow]")
         console.print("  • The weather station service is not running")
@@ -213,7 +214,8 @@ def get_page(page, base_url):
         console.print("  • Network connectivity issues")
         console.print("\n[green]Try:[/green]")
         console.print(
-            "  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
+            "  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check "
+            "if the service is running"
         )
         console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
         console.print("  • Checking your network connection")

@@ -338,7 +338,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                         int_position = i + 1  # 1 based numbering for filter wheel positions
                     else:
                         # Already matched at least once
-                        msg = f"More than one filter name matches '{position}', using '{self.filter_names[int_position - 1]}'"
+                        msg = (
+                            f"More than one filter name matches '{position}', "
+                            f"using '{self.filter_names[int_position - 1]}'"
+                        )
                         self.logger.warning(msg)
                         break
 

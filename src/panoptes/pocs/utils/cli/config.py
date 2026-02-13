@@ -116,7 +116,8 @@ def set_value(
 
     Args:
         key: The dotted-key of the config item to set.
-        value: The new value to set. Will be coerced to int/float if possible, otherwise kept as str.
+        value: The new value to set. Will be coerced to int/float if possible, otherwise
+            kept as str.
 
     Returns:
         None

@@ -22,9 +22,11 @@ class WeatherStation(PanBase):
         """Initialize the weather station.
 
         Args:
-            serial_port (str, optional): The dev port for the mount, usually the usb-serial converter.
+            serial_port (str, optional): The dev port for the mount, usually the
+                usb-serial converter.
             name (str): The user-friendly name for the weather station.
-            db_collection (str): Which collection (i.e. table) to store the values in, default 'weather'.
+            db_collection (str): Which collection (i.e. table) to store the values in,
+                default 'weather'.
         """
         super().__init__(*args, **kwargs)
 

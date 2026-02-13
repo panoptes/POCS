@@ -90,7 +90,8 @@ def get_key_cmd(
     # Change file permissions so only the owner can read/write.
     os.chmod(save_path, stat.S_IRUSR | stat.S_IWUSR)
     print(
-        f"Key saved to env var [green]GOOGLE_APPLICATION_CREDENTIALS=[/][blue]{save_path.absolute().as_posix()}[/]"
+        f"Key saved to env var [green]GOOGLE_APPLICATION_CREDENTIALS=[/]"
+        f"[blue]{save_path.absolute().as_posix()}[/]"
     )
 
     # Update the config entries.

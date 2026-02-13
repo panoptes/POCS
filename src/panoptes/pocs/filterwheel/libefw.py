@@ -46,8 +46,8 @@ class EFWDriver(AbstractSDKDriver):
             `~pocs.filter.libefw.EFWDriver`
 
         Raises:
-            `panoptes.utils.error.NotFound`: raised if library_path not given & find_library fails to
-                locate the library.
+            `panoptes.utils.error.NotFound`: raised if library_path not given &
+                find_library fails to locate the library.
             `OSError`: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(name="EFWFilter", library_path=library_path, **kwargs)
@@ -158,7 +158,8 @@ class EFWDriver(AbstractSDKDriver):
                 assumed.
 
         Raises:
-            `panoptes.utils.error.PanError`: raised if the driver returns an error starting the move.
+            `panoptes.utils.error.PanError`: raised if the driver returns an error
+                starting the move.
         """
         self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
         # This will raise errors if the filterwheel is already moving, or position is not valid.
@@ -210,10 +211,10 @@ class EFWDriver(AbstractSDKDriver):
                 will be assumed.
 
             Raises:
-                `panoptes.utils.error.PanError`: raised if the driver returns an error or if the final
-                    position is not as expected.
-                `panoptes.utils.error.Timeout`: raised if the move does not end within the period of
-                    time specified by the timeout argument.
+                `panoptes.utils.error.PanError`: raised if the driver returns an error
+                    or if the final position is not as expected.
+                `panoptes.utils.error.Timeout`: raised if the move does not end within
+                    the period of time specified by the timeout argument.
         """
         if timeout is not None:
             timer = CountdownTimer(duration=timeout)
@@ -236,13 +237,19 @@ class EFWDriver(AbstractSDKDriver):
 
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
-                msg = f"Error while moving filterwheel {filterwheel_ID} to {position}: {ErrorCode(error_code).name}"
+                msg = (
+                    f"Error while moving filterwheel {filterwheel_ID} to {position}: "
+                    f"{ErrorCode(error_code).name}"
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
             final_position = self.get_position(filterwheel_ID)
             if final_position != position:
-                msg = f"Tried to move filterwheel {filterwheel_ID} to {position}, but ended up at {final_position}."
+                msg = (
+                    f"Tried to move filterwheel {filterwheel_ID} to {position}, "
+                    f"but ended up at {final_position}."
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 

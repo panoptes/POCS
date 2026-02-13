@@ -61,7 +61,8 @@ class Scheduler(BaseScheduler):
 
             for constraint in listify(all_constraints):
                 if obs_name in valid_obs:
-                    # Add a special case where we skip the Moon Avoidance constraint if the observation name is "Moon".
+                    # Add a special case where we skip the Moon Avoidance constraint if the
+                    # observation name is "Moon".
                     if constraint.name == "MoonAvoidance" and obs_name.lower() == "moon":
                         self.logger.info(f"Skipping Moon Avoidance constraint for {obs_name}")
                         continue
@@ -77,7 +78,8 @@ class Scheduler(BaseScheduler):
 
                     valid_obs[obs_name] += score
                     self.logger.info(
-                        f"\t{str(constraint):30s}Constraint score: {score:10.02f}\tTotal score: {valid_obs[obs_name]:10.02f}"
+                        f"\t{str(constraint):30s}Constraint score: {score:10.02f}\t"
+                        f"Total score: {valid_obs[obs_name]:10.02f}"
                     )
 
         if len(valid_obs) > 0:
@@ -86,7 +88,8 @@ class Scheduler(BaseScheduler):
                 priority = self.observations[obs_name].priority
                 new_score = score * priority
                 self.logger.info(
-                    f"\t{obs_name:30s}Total score:      {score:10.02f}\tPriority:    {priority:10.3f} = {new_score:10.02f}"
+                    f"\t{obs_name:30s}Total score:      {score:10.02f}\t"
+                    f"Priority:    {priority:10.3f} = {new_score:10.02f}"
                 )
                 valid_obs[obs_name] = new_score
 

@@ -115,7 +115,8 @@ def run_auto(context: typer.Context) -> None:
         print("[green]POCS finished, shutting down.[/green]")
     finally:
         print(
-            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount parks "
+            "itself.[/bold yellow]"
         )
         pocs.power_down()
 
@@ -236,7 +237,8 @@ def run_long_alignment(
         print("[green]POCS alignment finished, shutting down.[/green]")
     finally:
         print(
-            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount parks "
+            "itself.[/bold yellow]"
         )
         pocs.observatory.mount.park()
 
@@ -367,7 +369,8 @@ def run_quick_alignment(
             if results:
                 print(f"Camera {cam_id} alignment results:")
                 print(
-                    f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}"
+                    f"\tDelta (degrees): azimuth={results.az_deg:.02f} "
+                    f"altitude={results.alt_deg:.02f}"
                 )
 
                 # Plot.
