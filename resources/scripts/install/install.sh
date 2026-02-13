@@ -92,7 +92,7 @@ source ./install-zsh.sh >> install.log 2>&1
 print_success "ZSH installed"
 
 print_step 5 $TOTAL_STEPS "Installing uv for python management"
-source install-uv.sh >> install.log 2>&1
+source ./install-uv.sh >> install.log 2>&1
 print_success "uv installed"
 
 print_step 6 $TOTAL_STEPS "Installing POCS software"

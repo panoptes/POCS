@@ -110,9 +110,6 @@ package-dir = {"" = "src"}
 where = ["src"]
 namespaces = false
 
-[tool.setuptools.dynamic]
-version = {attr = "panoptes.pocs._version.__version__"}
-
 [tool.setuptools_scm]
 version_file = "src/panoptes/pocs/_version.py"
 
