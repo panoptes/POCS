@@ -14,8 +14,7 @@ function install_zsh() {
 
     # Generate the static plugin file so plugins are actually downloaded
     echo "Downloading zsh plugins..."
-    source "${HOME}/.antidote/antidote.zsh"
-    antidote bundle <"${HOME}/.zsh_plugins.txt" >"${HOME}/.zsh_plugins.zsh"
+    zsh -c "source '${HOME}/.antidote/antidote.zsh' && antidote bundle <'${HOME}/.zsh_plugins.txt' >'${HOME}/.zsh_plugins.zsh'"
 
     # Configure starship if available
     if command -v starship &>/dev/null; then
