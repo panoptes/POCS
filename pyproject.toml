@@ -178,7 +178,8 @@ target-version = "py312"
 extend-exclude = [
     "notebooks",
     "resources",
-    "conf_files"
+    "conf_files",
+    "src/panoptes/pocs/_version.py"
 ]
 
 [tool.ruff.lint]
