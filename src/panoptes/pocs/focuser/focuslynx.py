@@ -283,9 +283,7 @@ class Focuser(AbstractFocuser):
         """
         Causes the focuser to immediately stop any movements
         """
-        self._send_command(
-            command_str=f"<F{self._focuser_number:1d}HALT>", expected_reply="HALTED"
-        )
+        self._send_command(command_str=f"<F{self._focuser_number:1d}HALT>", expected_reply="HALTED")
         message = f"Focuser {self.uid} halted"
         self.logger.warning(message)
         warn(message)

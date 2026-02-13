@@ -112,7 +112,10 @@ class FilterWheel(AbstractFilterWheel):
         self._firmware_version = info["firmware_version"]
         self._n_positions = info["n_positions"]
         if len(self.filter_names) != self.n_positions:
-            msg = f"Number of names in filter_names ({len(self.filter_names)}) doesn't" + f" match number of positions in filter wheel ({self.n_positions})"
+            msg = (
+                f"Number of names in filter_names ({len(self.filter_names)}) doesn't"
+                + f" match number of positions in filter wheel ({self.n_positions})"
+            )
             self.logger.error(msg)
             raise ValueError(msg)
 

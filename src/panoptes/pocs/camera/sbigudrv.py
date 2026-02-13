@@ -634,9 +634,7 @@ class SBIGDriver(AbstractSDKDriver):
                 query = self.cfw_query(handle, model)
         except RuntimeError as err:
             # Error returned by driver at some point while polling
-            self.logger.error(
-                f"Error while moving filter wheel on {handle} to {position}: {err}"
-            )
+            self.logger.error(f"Error while moving filter wheel on {handle} to {position}: {err}")
             raise err
         else:
             # No driver errors, but still check status and position

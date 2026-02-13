@@ -350,9 +350,7 @@ class Mount(AbstractMount):
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning(
-                f"Problem moving command!! Make sure mount has stopped moving: {e}"
-            )
+            self.logger.warning(f"Problem moving command!! Make sure mount has stopped moving: {e}")
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -391,9 +389,7 @@ class Mount(AbstractMount):
         try:
             response_obj = json.loads(response)
         except TypeError as e:
-            self.logger.warning(
-                f"Error: {e}"
-            )
+            self.logger.warning(f"Error: {e}")
         except json.JSONDecodeError as e:
             response_obj = {"response": response, "success": False, "error": e}
 

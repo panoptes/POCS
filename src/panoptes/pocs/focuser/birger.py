@@ -319,9 +319,7 @@ class Focuser(AbstractSerialFocuser):
             hit_limit = bool(int(response[-1]))
             assert reply == "DONE"
         except (IndexError, AssertionError):
-            raise error.PanError(
-                f"{self} got response '{response}', expected 'DONENNNNN,N'!"
-            )
+            raise error.PanError(f"{self} got response '{response}', expected 'DONENNNNN,N'!")
         if hit_limit:
             self.logger.warning(f"{self} reported hitting a focus stop")
 
@@ -349,9 +347,7 @@ class Focuser(AbstractSerialFocuser):
     def _get_lens_info(self):
         response = self._send_command("id", response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug(
-            f"Got lens info '{self._lens_info}' for {self.name} on {self.port}"
-        )
+        self.logger.debug(f"Got lens info '{self._lens_info}' for {self.name} on {self.port}")
 
     def _initialise_aperture(self):
         self.logger.debug("Initialising aperture motor")

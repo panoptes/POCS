@@ -279,17 +279,13 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             if self.autofocus_range:
                 focus_range = self.autofocus_range
             else:
-                raise ValueError(
-                    f"No focus_range specified, aborting autofocus of {self._camera}!"
-                )
+                raise ValueError(f"No focus_range specified, aborting autofocus of {self._camera}!")
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
-                raise ValueError(
-                    f"No focus_step specified, aborting autofocus of {self._camera}!"
-                )
+                raise ValueError(f"No focus_step specified, aborting autofocus of {self._camera}!")
 
         if not seconds:
             if self.autofocus_seconds:

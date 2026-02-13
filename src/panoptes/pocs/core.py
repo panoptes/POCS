@@ -315,9 +315,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config("pocs.RETRY_ATTEMPTS", default=3)
 
-    def observe_target(
-        self, observation: Observation | None = None, park_if_unsafe: bool = True
-    ):
+    def observe_target(self, observation: Observation | None = None, park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
 
         Note: This is a long-running blocking method.

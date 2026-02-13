@@ -319,9 +319,7 @@ class ASIDriver(AbstractSDKDriver):
         self._call_function(
             "ASISetStartPos", camera_ID, ctypes.c_int(start_x), ctypes.c_int(start_y)
         )
-        self.logger.debug(
-            f"Set ROI start position of camera {camera_ID} to ({start_x}, {start_y})"
-        )
+        self.logger.debug(f"Set ROI start position of camera {camera_ID} to ({start_x}, {start_y})")
 
     def get_dropped_frames(self, camera_ID):
         """Get the number of dropped frames during video capture."""

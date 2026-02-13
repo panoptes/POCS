@@ -89,6 +89,4 @@ class AbstractSerialDome(dome.AbstractDome):
     def verify_connected(self):
         """Throw an exception if not connected."""
         if not self.is_connected:
-            raise error.BadSerialConnection(
-                msg=f"Not connected to dome at port {self._port}"
-            )
+            raise error.BadSerialConnection(msg=f"Not connected to dome at port {self._port}")
