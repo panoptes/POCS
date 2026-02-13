@@ -3,6 +3,7 @@
 Implements control for Optec FocusLynx-compatible focusers (including Focus Boss II)
 via a serial connection, following the AbstractFocuser interface used by POCS.
 """
+
 import serial
 import time
 from warnings import warn

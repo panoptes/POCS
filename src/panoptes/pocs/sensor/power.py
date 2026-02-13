@@ -5,6 +5,7 @@ power relay board (Arduino + relay shield), and a small Relay data class for
 labels/states. Includes helpers to toggle relays and to parse/aggregate
 telemetry into rolling means and status dictionaries.
 """
+
 import time
 from contextlib import suppress
 from dataclasses import dataclass

@@ -6,6 +6,7 @@ handling, coordinate conversion, command table mapping). Concrete mount
 implementations (iOptron, Bisque, simulator, etc.) subclass this and
 implement device-specific read/write/query and motion control.
 """
+
 import time
 from abc import abstractmethod
 from pathlib import Path

@@ -3,6 +3,7 @@
 Command the mount to slew to the target coordinates and transition to
 'pointing' when complete. If slewing fails, transition toward parking.
 """
+
 from panoptes.pocs.utils import error
 
 

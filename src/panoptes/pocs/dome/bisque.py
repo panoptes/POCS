@@ -4,6 +4,7 @@ Provides a Dome implementation that communicates with TheSkyX over TCP using
 script templates to perform operations such as connect, open/close slit, park,
 unpark, and query status/position.
 """
+
 import os
 import time
 

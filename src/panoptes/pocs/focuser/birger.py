@@ -4,6 +4,7 @@ Provides a Focuser implementation that controls Canon EF/EF-S lenses via the
 Birger EF-232 adapter over a serial connection, implementing the
 AbstractSerialFocuser protocol used by POCS.
 """
+
 import re
 import serial
 import glob

@@ -51,6 +51,7 @@ class FLIDriver(AbstractSDKDriver):
     Exposes a subset of the FLIDriver C API to Python with simple argument and
     return value handling, suitable for use by higher-level camera classes.
     """
+
     def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads

@@ -3,6 +3,7 @@
 Provides a FilterWheel implementation that controls SBIG wheels attached to an
 SBIG camera (via I2C) using the existing SBIG camera driver.
 """
+
 import math
 
 from astropy import units as u

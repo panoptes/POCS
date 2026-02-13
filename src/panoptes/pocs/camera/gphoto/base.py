@@ -4,6 +4,7 @@ Provides AbstractGPhotoCamera, a concrete AbstractCamera subclass that shells ou
 to the system gphoto2 binary for exposure control and property management. This
 module is used by gphoto-based DSLR drivers.
 """
+
 import re
 import subprocess
 import time

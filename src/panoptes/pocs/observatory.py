@@ -4,6 +4,7 @@ Defines the Observatory class, which wires together the mount, cameras, dome,
 location/observer objects, and scheduler, and exposes convenience helpers for
 status, darkness checks, and common operations.
 """
+
 from collections import OrderedDict
 
 import numpy as np
@@ -35,6 +36,7 @@ from panoptes.utils.utils import get_quantity_value
 
 class Observatory(PanBase):
     """High-level container coordinating site, hardware, and scheduling."""
+
     def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class.
 

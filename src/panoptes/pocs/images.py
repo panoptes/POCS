@@ -4,6 +4,7 @@ Provides the Image class, a lightweight utility that loads FITS headers, lazily
 solves for WCS (via panoptes-utils), and offers helpers to compute the pointing
 and pointing error between images.
 """
+
 from contextlib import suppress
 from collections import namedtuple
 from pathlib import Path
@@ -27,6 +28,7 @@ class Image(PanBase):
     and exposes convenience properties for header pointing vs. WCS pointing and
     their differences.
     """
+
     def __init__(self, fits_file: Path, wcs_file=None, location=None, *args, **kwargs):
         """Object to represent a single image from a PANOPTES camera.
 

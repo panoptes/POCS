@@ -4,6 +4,7 @@ Provides a simple, thread-driven model of the clamshell shutters and the
 periodic one-character status output used by the real controller. Useful for
 offline testing of the Astrohaven dome driver.
 """
+
 import datetime
 import queue
 import threading
@@ -217,6 +218,7 @@ class AstrohavenPLCSimulator:
 
 class AstrohavenSerialSimulator(NoOpSerial):
     """A minimal serial port simulation that drives the Astrohaven PLC model."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = get_logger()

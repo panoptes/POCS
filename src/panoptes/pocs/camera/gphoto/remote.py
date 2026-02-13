@@ -4,6 +4,7 @@ Exposes a Camera subclass that delegates gphoto2 commands to a remote HTTP
 service (panoptes.pocs.utils.service.camera), enabling DSLR control on another
 host while keeping POCS orchestration local.
 """
+
 from collections import deque
 from threading import Thread
 from typing import List, Union

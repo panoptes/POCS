@@ -4,6 +4,7 @@ This module provides utilities to construct an astroplan Observer and related
 astropy EarthLocation from PANOPTES configuration, and to configure IERS table
 fetching used by astropy/astroplan for accurate time/earth orientation.
 """
+
 from dataclasses import dataclass
 from astroplan import Observer
 from astropy import units as u
@@ -27,6 +28,7 @@ class SiteDetails:
         earth_location (astropy.coordinates.EarthLocation): The underlying EarthLocation.
         location (dict): Raw location configuration values used to construct the above.
     """
+
     observer: Observer
     earth_location: EarthLocation
     location: dict

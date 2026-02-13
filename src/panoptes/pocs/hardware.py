@@ -11,6 +11,7 @@ class HardwareName(Enum):
     Members correspond to hardware subsystems that may have real drivers or
     simulators enabled via configuration (see get_simulator_names).
     """
+
     camera = "camera"
     dome = "dome"
     mount = "mount"

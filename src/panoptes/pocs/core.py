@@ -3,6 +3,7 @@
 Defines the POCS state machine class, which coordinates an Observatory instance
 and manages the high-level observing loop, safety checks, and lifecycle.
 """
+
 import os
 from astropy.time import Time
 from contextlib import suppress

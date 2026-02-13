@@ -3,6 +3,7 @@
 Implements a minimal AbstractFocuser that fakes connection and movement timing
 without requiring hardware.
 """
+
 from panoptes.pocs.focuser import AbstractFocuser
 
 import time

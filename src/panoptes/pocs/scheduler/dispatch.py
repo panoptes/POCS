@@ -5,6 +5,7 @@ observations against the active constraints and selects the best candidate by
 weighted score. Favors the current observation when still viable to reduce
 excessive switching.
 """
+
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import listify
@@ -12,6 +13,7 @@ from panoptes.utils.utils import listify
 
 class Scheduler(BaseScheduler):
     """Greedy scheduler that ranks observations by constraint scores."""
+
     def __init__(self, *args, **kwargs):
         """Initialize the Scheduler, delegating to BaseScheduler."""
         BaseScheduler.__init__(self, *args, **kwargs)

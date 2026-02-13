@@ -3,6 +3,7 @@
 Includes helpers to retrieve a service account key, watch and upload JSON metadata
 to Firestore, and upload images or directories to Google Cloud Storage.
 """
+
 import json
 import os
 import stat

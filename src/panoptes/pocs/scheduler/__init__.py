@@ -5,6 +5,7 @@ constraints from PANOPTES configuration. The module avoids importing concrete
 classes directly; instead it dynamically loads the configured scheduler and
 constraints using panoptes.utils.library.load_module.
 """
+
 from pathlib import Path
 from typing import List
 

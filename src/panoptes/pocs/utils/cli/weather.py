@@ -2,6 +2,7 @@
 
 Provides commands to query status/config and to restart the service.
 """
+
 import human_readable
 import requests
 import subprocess

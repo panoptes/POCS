@@ -4,6 +4,7 @@ Provides EFWDriver, a thin ctypes-based interface around libEFWFilter used by
 ZWO electronic filter wheels. Exposes helpers to enumerate devices, open/close,
 read properties/position, move, and set unidirectional mode.
 """
+
 import ctypes
 import enum
 import threading
@@ -23,6 +24,7 @@ class EFWDriver(AbstractSDKDriver):
     and toggling unidirectional mode. Intended for use by higher-level
     AbstractFilterWheel implementations.
     """
+
     # Because ZWO EFW library isn't linked properly have to manually load libudev
     # in global mode first, otherwise get undefined symbol errors.
     _libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
@@ -283,6 +285,7 @@ class EFWInfo(ctypes.Structure):
 @enum.unique
 class ErrorCode(enum.IntEnum):
     """Return codes from the ZWO EFW SDK functions."""
+
     SUCCESS = 0
     INVALID_INDEX = enum.auto()
     INVALID_ID = enum.auto()

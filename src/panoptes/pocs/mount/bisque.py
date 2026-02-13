@@ -3,6 +3,7 @@
 Implements a mount driver that communicates with Software Bisque's TheSkyX via
 its TCP scripting interface, using small JavaScript templates for commands.
 """
+
 import json
 import os
 import time
@@ -22,6 +23,7 @@ class Mount(AbstractMount):
     Uses small JavaScript template files to issue commands over TheSkyX's TCP
     interface and parses JSON-like responses to update status and execute slews.
     """
+
     def __init__(self, *args, **kwargs):
         """Initialize the Bisque mount driver and connect to TheSkyX client."""
         super().__init__(*args, **kwargs)

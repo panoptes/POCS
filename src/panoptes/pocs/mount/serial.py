@@ -3,6 +3,7 @@
 Provides AbstractSerialMount, which opens a configured RS-232 connection and
 implements common read/write/query helpers reused by concrete serial mounts.
 """
+
 import re
 from abc import ABC
 
@@ -17,6 +18,7 @@ class AbstractSerialMount(AbstractMount, ABC):
     Handles creating the SerialData connection from configuration and provides
     default implementations for common connect/read/write helpers.
     """
+
     def __init__(self, location, *args, **kwargs):
         """Initialize an AbstractSerialMount for the port defined in the config.
 

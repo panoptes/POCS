@@ -2,6 +2,7 @@
 
 Provides commands for automatic observing sessions and polar alignment helpers.
 """
+
 import os
 import warnings
 from collections import defaultdict

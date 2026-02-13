@@ -4,6 +4,7 @@ Aggregates feature subcommands (camera, mount, config, network, etc.) and
 provides a shared callback to set common options like config server host/port
 and verbosity.
 """
+
 import os
 import subprocess
 import sys

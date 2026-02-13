@@ -4,6 +4,7 @@ Implements a simple timing-based filter wheel that moves between indexed
 positions and optionally enforces unidirectional motion, matching the
 AbstractFilterWheel protocol without requiring hardware.
 """
+
 import math
 import random
 import threading

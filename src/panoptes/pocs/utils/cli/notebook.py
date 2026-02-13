@@ -3,6 +3,7 @@
 Provides commands to start Jupyter Lab/Notebook, set a password, and restart the
 supervised service.
 """
+
 import subprocess
 import shutil
 from pathlib import Path

@@ -5,6 +5,7 @@ autofocus utilities shared by concrete focuser drivers (serial, FocusLynx,
 astromechanics, simulator). Includes methods to sweep focus positions,
 measure sharpness, and optionally generate diagnostic plots.
 """
+
 import os
 from abc import ABCMeta
 from abc import abstractmethod

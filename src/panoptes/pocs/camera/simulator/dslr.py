@@ -3,6 +3,7 @@
 Provides a lightweight Camera implementation that mimics a DSLR controlled via
 simple timers and sample FITS data, suitable for tests and demos.
 """
+
 import os
 import random
 from threading import Timer

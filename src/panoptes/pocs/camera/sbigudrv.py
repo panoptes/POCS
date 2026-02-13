@@ -34,6 +34,7 @@ class SBIGDriver(AbstractSDKDriver):
     Provides helpers for listing/connecting devices, temperature control,
     exposures, filter wheel control, and low-level command marshaling.
     """
+
     def __init__(self, library_path=None, retries=1, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.

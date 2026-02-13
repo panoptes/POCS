@@ -4,6 +4,7 @@ This module initializes a PowerBoard instance during application lifespan and
 periodically records telemetry to the database. It exposes simple REST endpoints
 for querying current status/readings and for toggling relays via POST/GET.
 """
+
 import time
 from contextlib import asynccontextmanager
 from enum import auto

@@ -18,6 +18,7 @@ class Protocol:
     Encodes status bytes for slit positions and single-character commands used
     to open/close each shutter and query limits.
     """
+
     # Status codes, produced when not responding to an input. They are oriented towards
     # reporting whether the two shutters are fully closed.
     BOTH_CLOSED = "0"  # Both A and B shutters are fully closed.

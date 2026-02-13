@@ -3,6 +3,7 @@
 Provides commands to query and update configuration values via the running
 panoptes-utils config server, along with a status check and restart helper.
 """
+
 import os
 import subprocess
 from typing import Optional, Dict
@@ -161,7 +162,9 @@ def setup():
         return
 
     # Set the base directory.
-    base_dir = prompt.Prompt.ask("Enter the base directory for POCS", default=f"{os.path.expanduser('~')}/POCS")
+    base_dir = prompt.Prompt.ask(
+        "Enter the base directory for POCS", default=f"{os.path.expanduser('~')}/POCS"
+    )
     set_config("directories.base", base_dir)
 
     # Get the user-friendly name for the unit.

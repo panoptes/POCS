@@ -3,6 +3,7 @@
 Provides a Camera class backed by the libfli SDK via FLIDriver, implementing the
 AbstractSDKCamera interface for cooled FLI CCD/CMOS cameras.
 """
+
 from contextlib import suppress
 
 import numpy as np
@@ -22,6 +23,7 @@ class Camera(AbstractSDKCamera):
     This class wraps FLIDriver calls to provide cooling, exposure, and readout
     control consistent with the AbstractSDKCamera interface.
     """
+
     _driver = None
     _cameras = {}
     _assigned_cameras = set()

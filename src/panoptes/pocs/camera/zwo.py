@@ -4,6 +4,7 @@ Exposes a Camera class that wraps the ASIDriver to control cooled ZWO cameras,
 including ROI/image type, binning, gain, bandwidth, cooling, single exposures,
 and basic video capture.
 """
+
 import numpy as np
 import threading
 import time
@@ -25,6 +26,7 @@ class Camera(AbstractSDKCamera):
     Provides convenience properties for ROI, binning, image type, gain, and
     bandwidth settings, and supports single exposures and basic video capture.
     """
+
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.

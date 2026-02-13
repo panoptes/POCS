@@ -3,6 +3,7 @@
 Provides a Camera class that uses the ctypes-based SBIGDriver to control cooled
 SBIG CCD/CMOS cameras and integrate with the AbstractSDKCamera interface.
 """
+
 from contextlib import suppress
 
 from astropy.io import fits
@@ -19,6 +20,7 @@ class Camera(AbstractSDKCamera):
     Wraps SBIGDriver calls to provide cooling, exposure, and readout control
     consistent with AbstractSDKCamera.
     """
+
     _driver = None
     _cameras = {}
     _assigned_cameras = set()

@@ -4,6 +4,7 @@ Provides AbstractSerialDome, which wires up a serial connection based on
 configuration and implements common connect/disconnect helpers reused by
 concrete serial dome drivers.
 """
+
 from panoptes.pocs import dome
 from panoptes.utils import error
 from panoptes.utils import rs232

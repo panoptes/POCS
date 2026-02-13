@@ -3,6 +3,7 @@
 Implements the AbstractMount interface with timed state changes and canned
 responses so higher-level logic can be exercised without hardware.
 """
+
 import time
 from threading import Timer
 

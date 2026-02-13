@@ -3,6 +3,7 @@
 Provides PanBase, which centralizes access to configuration, logging, and the
 shared lightweight database handle used throughout the project.
 """
+
 import os
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB

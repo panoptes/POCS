@@ -4,6 +4,7 @@ Provides helpers to detect connected cameras (DSLR via gphoto2 and ZWO via SDK),
 populate the configuration, and take one-off test images with optional
 post-processing (convert/compress/solve/pretty).
 """
+
 import concurrent.futures
 import queue
 import threading

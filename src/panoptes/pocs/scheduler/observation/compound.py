@@ -1,4 +1,5 @@
 """Compound observation that cycles through a set of exposure times."""
+
 import numpy as np
 from astropy import units as u
 

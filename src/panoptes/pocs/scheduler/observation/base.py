@@ -3,6 +3,7 @@
 Defines the Exposure record and the Observation class used by the scheduler to
 represent an observing block (target field, exposure timing/sets, and progress).
 """
+
 import os
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
@@ -24,6 +25,7 @@ from panoptes.pocs.scheduler.field import Field
 @dataclass
 class Exposure:
     """Metadata for a single exposure produced during an observation."""
+
     image_id: str
     path: Path
     metadata: dict
@@ -37,6 +39,7 @@ class Observation(PanBase):
     metadata such as priority and filter. Provides helpers for status, paths,
     and serialization used by the scheduler and cameras.
     """
+
     def __init__(
         self,
         field: Field,

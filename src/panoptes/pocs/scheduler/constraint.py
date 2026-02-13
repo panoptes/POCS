@@ -6,6 +6,7 @@ Each constraint returns a (veto, score) tuple where veto indicates the target
 should be excluded and score is a normalized [0–1] value multiplied by the
 constraint weight.
 """
+
 from contextlib import suppress
 
 from astropy import units as u
@@ -25,6 +26,7 @@ class BaseConstraint(PanBase):
     score is a float typically in [0, 1] that will be multiplied by this
     constraint's weight.
     """
+
     def __init__(self, weight=1.0, default_score=0.0, *args, **kwargs):
         """Base constraint
 
@@ -134,6 +136,7 @@ class Altitude(BaseConstraint):
 
 class Duration(BaseConstraint):
     """Constraint that favors targets with longer remaining observing time."""
+
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -204,6 +207,7 @@ class Duration(BaseConstraint):
 
 class MoonAvoidance(BaseConstraint):
     """Constraint that vetoes/penalizes fields too close to the Moon."""
+
     def __init__(self, separation=15 * u.degree, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(separation, u.Unit):
@@ -288,6 +292,7 @@ class AlreadyVisited(BaseConstraint):
 
 class TimeWindow(BaseConstraint):
     """Constraint that boosts observations within a specific time interval."""
+
     def __init__(self, start_time: str | Time, end_time: str | Time, *args, **kwargs):
         """Constraint that changes the weight of the field during a given time window.
 

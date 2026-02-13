@@ -3,6 +3,7 @@
 Provides a FilterWheel implementation that uses the libEFW SDK via EFWDriver to
 control ZWO electronic filter wheels.
 """
+
 from contextlib import suppress
 
 from astropy import units as u

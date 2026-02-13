@@ -1,4 +1,5 @@
 """Coordinate utilities for resolving targets to astropy SkyCoord objects."""
+
 from datetime import datetime
 
 from astropy import units as u

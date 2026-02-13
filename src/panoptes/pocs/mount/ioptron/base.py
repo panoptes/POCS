@@ -3,6 +3,7 @@
 Provides common parsing, initialization, parking, and coordinate conversion
 used by specific iOptron models (e.g., CEM40, HAE16, iEQ30Pro).
 """
+
 import re
 from contextlib import suppress
 

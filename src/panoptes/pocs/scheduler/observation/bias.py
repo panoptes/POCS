@@ -3,6 +3,7 @@
 Constructs a zero-exposure (bias) observation block with configuration-driven
 counts and set size, storing results under an images/bias subdirectory.
 """
+
 import os
 from astropy import units as u
 
@@ -14,6 +15,7 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 class BiasObservation(Observation):
     """Observation subclass for taking a set of bias frames."""
+
     def __init__(self, position, min_nexp=None, exp_set_size=None):
         # Use get_config to get config before initialising the class
         if min_nexp is None:

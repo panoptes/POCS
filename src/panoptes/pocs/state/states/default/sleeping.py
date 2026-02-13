@@ -5,6 +5,7 @@ retry attempts are exhausted, stop the state loop; otherwise transition to
 ready and reset the observing run.
 """
 
+
 def on_enter(event_data):
     """Handle transition into the sleeping state."""
     pocs = event_data.model

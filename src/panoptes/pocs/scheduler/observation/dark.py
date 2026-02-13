@@ -3,6 +3,7 @@
 Constructs a dark observation consisting of a sequence of configured exposure
 lengths, saving outputs under an images/dark subdirectory.
 """
+
 import os
 from astropy import units as u
 
@@ -15,6 +16,7 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 class DarkObservation(Observation):
     """Observation subclass for taking a set of dark frames."""
+
     def __init__(self, position, exptimes=None):
         """
         Args:

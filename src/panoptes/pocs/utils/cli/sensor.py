@@ -1,4 +1,5 @@
 """Typer CLI for monitoring remote sensors exposed via HTTP endpoints."""
+
 import time
 from typing import Optional
 
