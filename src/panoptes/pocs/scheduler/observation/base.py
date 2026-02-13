@@ -47,6 +47,7 @@ class Observation(PanBase):
         filter_name: str | None = None,
         dark: bool = False,
         constraints: List | None = None,
+        tags: List[str] | None = None,
         *args,
         **kwargs,
     ):
@@ -83,6 +84,8 @@ class Observation(PanBase):
                 Default: False.
             constraints (list, optional): List of `Constraints` to apply to this observation.
                 These constraints will be applied in addition to any global constraints.
+            tags (list[str], optional): List of string tags to associate with this observation
+                for metadata and searching purposes (default: None).
         """
         super().__init__(*args, **kwargs)
 
@@ -127,6 +130,7 @@ class Observation(PanBase):
         self.merit = 0.0
 
         self.constraints = constraints or []
+        self.tags = tags or []
 
         self.reset()
 
@@ -158,6 +162,7 @@ class Observation(PanBase):
             "seq_time": self.seq_time,
             "set_duration": get_quantity_value(self.set_duration),
             "dark": self.dark,
+            "tags": self.tags,
         }
 
         return status
@@ -320,6 +325,7 @@ class Observation(PanBase):
             priority=self.priority,
             filter_name=self.filter_name,
             dark=self.dark,
+            tags=self.tags,
         )
 
     ################################################################################################
