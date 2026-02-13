@@ -12,9 +12,7 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
-def create_mount_from_config(
-    mount_info=None, earth_location=None, *args, **kwargs
-) -> AbstractMount:
+def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwargs) -> AbstractMount:
     """Create a mount instance based on the provided config.
 
     Creates an instance of the AbstractMount sub-class in the module specified in the config.

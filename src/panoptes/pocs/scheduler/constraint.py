@@ -48,9 +48,7 @@ class BaseConstraint(PanBase):
         assert isinstance(weight, float), self.logger.error(
             "Constraint weight must be a float greater than 0.0"
         )
-        assert weight >= 0.0, self.logger.error(
-            "Constraint weight must be a float greater than 0.0"
-        )
+        assert weight >= 0.0, self.logger.error("Constraint weight must be a float greater than 0.0")
 
         self.weight = weight
         self._score = default_score
@@ -183,9 +181,7 @@ class Duration(BaseConstraint):
 
             # else:
             # Get the next set time
-            target_end_time = observer.target_set_time(
-                time, target, which="next", horizon=self.horizon
-            )
+            target_end_time = observer.target_set_time(time, target, which="next", horizon=self.horizon)
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
@@ -237,9 +233,7 @@ class MoonAvoidance(BaseConstraint):
         except KeyError:
             raise error.PanError("Moon must be set for MoonAvoidance constraint")
 
-        moon_sep = get_quantity_value(
-            moon.separation(observation.field.coord, origin_mismatch="ignore")
-        )
+        moon_sep = get_quantity_value(moon.separation(observation.field.coord, origin_mismatch="ignore"))
 
         # Check we are a certain number of degrees from moon.
         if moon_sep < get_quantity_value(self.separation):
@@ -326,9 +320,7 @@ class TimeWindow(BaseConstraint):
             if isinstance(end_time, str):
                 end_time = Time(parse_date(end_time))
         except ValueError:
-            raise error.PanError(
-                f"Invalid time format for start_time or end_time: {start_time}, {end_time}"
-            )
+            raise error.PanError(f"Invalid time format for start_time or end_time: {start_time}, {end_time}")
 
         # Make sure end time is after start time
         if end_time <= start_time:

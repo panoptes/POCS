@@ -101,9 +101,7 @@ def on_enter(event_data):
 
                     # Tell the mount we are at the field, which is the center
                     pocs.say("Syncing with the latest image...")
-                    has_field = pocs.observatory.mount.set_target_coordinates(
-                        pointing_image.pointing
-                    )
+                    has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
                     pocs.logger.debug("Coords set, calibrating")
 
                     # Calibrate the mount - Sync the mount's known position
@@ -114,9 +112,7 @@ def on_enter(event_data):
                     if has_field:
                         if observation.field is not None:
                             pocs.logger.debug("Slewing back to target")
-                            target_set = pocs.observatory.mount.set_target_coordinates(
-                                observation.field
-                            )
+                            target_set = pocs.observatory.mount.set_target_coordinates(observation.field)
 
                             # Check if target was set.
                             if target_set is False:

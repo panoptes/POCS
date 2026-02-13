@@ -101,9 +101,7 @@ class Camera(AbstractCamera):
     def _end_exposure(self):
         self._is_exposing_event.clear()
 
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         self._is_exposing_event.set()
         seconds = kwargs.get("simulator_exptime", seconds)
         exposure_thread = Timer(
@@ -122,9 +120,7 @@ class Camera(AbstractCamera):
 
         if header.get("IMAGETYP") == "Dark Frame":
             # Replace example data with a bunch of random numbers
-            fake_data = np.random.randint(
-                low=975, high=1026, size=fake_data.shape, dtype=fake_data.dtype
-            )
+            fake_data = np.random.randint(low=975, high=1026, size=fake_data.shape, dtype=fake_data.dtype)
         self.logger.debug(f"Writing filename={filename!r} for {self}")
         self.write_fits(fake_data, header, filename)
         self.logger.debug(f"Finished writing {filename=}")

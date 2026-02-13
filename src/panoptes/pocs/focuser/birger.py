@@ -333,16 +333,12 @@ class Focuser(AbstractSerialFocuser):
     def _get_library_version(self):
         response = self._send_command("lv", response_length=1)
         self._library_version = response[0].rstrip()
-        self.logger.debug(
-            f"Got library version '{self._library_version}' for {self.name} on {self.port}"
-        )
+        self.logger.debug(f"Got library version '{self._library_version}' for {self.name} on {self.port}")
 
     def _get_hardware_version(self):
         response = self._send_command("hv", response_length=1)
         self._hardware_version = response[0].rstrip()
-        self.logger.debug(
-            f"Got hardware version {self._hardware_version} for {self.name} on {self.port}"
-        )
+        self.logger.debug(f"Got hardware version {self._hardware_version} for {self.name} on {self.port}")
 
     def _get_lens_info(self):
         response = self._send_command("id", response_length=1)

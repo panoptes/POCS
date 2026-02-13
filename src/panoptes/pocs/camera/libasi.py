@@ -190,9 +190,7 @@ class ASIDriver(AbstractSDKDriver):
         bytes_ID = string_ID.encode()  # Convert string to bytes
         if len(bytes_ID) > 8:
             bytes_ID = bytes_ID[:8]  # This may chop out part of a UTF-8 multibyte character
-            self.logger.warning(
-                f"New ID longer than 8 bytes, truncating {string_ID} to {bytes_ID.decode()}"
-            )
+            self.logger.warning(f"New ID longer than 8 bytes, truncating {string_ID} to {bytes_ID.decode()}")
         else:
             bytes_ID = bytes_ID.ljust(8)  # Pad to 8 bytes with spaces, if necessary
         uchar_ID = (ctypes.c_ubyte * 8).from_buffer_copy(bytes_ID)
@@ -213,9 +211,7 @@ class ASIDriver(AbstractSDKDriver):
         controls = {}
         for i in range(n_controls):
             control_caps = ControlCaps()
-            self._call_function(
-                "ASIGetControlCaps", camera_ID, ctypes.c_int(i), ctypes.byref(control_caps)
-            )
+            self._call_function("ASIGetControlCaps", camera_ID, ctypes.c_int(i), ctypes.byref(control_caps))
             control = self._parse_caps(control_caps)
             controls[control["control_type"]] = control
         self.logger.debug(f"Got details of {n_controls} controls from camera {camera_ID}")
@@ -305,9 +301,7 @@ class ASIDriver(AbstractSDKDriver):
         """
         start_x = ctypes.c_int()
         start_y = ctypes.c_int()
-        self._call_function(
-            "ASIGetStartPos", camera_ID, ctypes.byref(start_x), ctypes.byref(start_y)
-        )
+        self._call_function("ASIGetStartPos", camera_ID, ctypes.byref(start_x), ctypes.byref(start_y))
         start_x = start_x.value * u.pixel
         start_y = start_y.value * u.pixel
         return start_x, start_y
@@ -316,9 +310,7 @@ class ASIDriver(AbstractSDKDriver):
         """Set position of the upper left corner of the ROI for camera with given integer ID"""
         start_x = int(get_quantity_value(start_x, unit=u.pixel))
         start_y = int(get_quantity_value(start_y, unit=u.pixel))
-        self._call_function(
-            "ASISetStartPos", camera_ID, ctypes.c_int(start_x), ctypes.c_int(start_y)
-        )
+        self._call_function("ASISetStartPos", camera_ID, ctypes.c_int(start_x), ctypes.c_int(start_y))
         self.logger.debug(f"Set ROI start position of camera {camera_ID} to ({start_x}, {start_y})")
 
     def get_dropped_frames(self, camera_ID):

@@ -16,9 +16,7 @@ iers_conf.iers_degraded_accuracy.set_temp("warn")
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 
@@ -68,10 +66,7 @@ def test_create_mount_with_earth_location(config_host, config_port):
     # Set config to not have a location.
     set_config("location", None)
     set_config("simulator", hardware.get_all_names())
-    assert (
-        isinstance(create_mount_from_config(earth_location=loc.earth_location), AbstractMount)
-        is True
-    )
+    assert isinstance(create_mount_from_config(earth_location=loc.earth_location), AbstractMount) is True
 
     reset_conf(config_host, config_port)
 

@@ -16,9 +16,7 @@ app = typer.Typer()
 
 @app.command()
 def start(
-    environment: str = typer.Option(
-        "lab", help='The environment to start, either "lab" or "notebook".'
-    ),
+    environment: str = typer.Option("lab", help='The environment to start, either "lab" or "notebook".'),
     public: bool = typer.Option(
         True, help="If True, start the server on all interfaces. If False, only start on localhost."
     ),

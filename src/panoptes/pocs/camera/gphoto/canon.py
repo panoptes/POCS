@@ -113,9 +113,7 @@ class Camera(AbstractGPhotoCamera):
 
         self.model = self.get_property("model")
 
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, iso=100, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, iso=100, *args, **kwargs):
         """Start the exposure.
 
         Tested With:

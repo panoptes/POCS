@@ -11,9 +11,7 @@ from panoptes.pocs.utils.location import create_location_from_config
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 

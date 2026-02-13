@@ -126,9 +126,7 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_solve)
 
     # without_hardware is a list of hardware names whose tests we don't want to run.
-    without_hardware = hardware.get_simulator_names(
-        simulator=config.getoption("--without-hardware")
-    )
+    without_hardware = hardware.get_simulator_names(simulator=config.getoption("--without-hardware"))
 
     # with_hardware is a list of hardware names for which we have that hardware attached.
     with_hardware = hardware.get_simulator_names(simulator=config.getoption("--with-hardware"))

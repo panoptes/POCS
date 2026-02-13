@@ -51,8 +51,10 @@ class Camera(AbstractSDKCamera):
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
-            bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 2, which is quad binning.
+            bandwidthoverload (int, optional): bandwidth overload setting in percent,
+                default is 99.
+            binning (int, optional): binning factor to use for the camera, default is 2,
+                which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -352,9 +354,7 @@ class Camera(AbstractSDKCamera):
             if self._video_event.is_set():
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
-            video_data = self._driver.get_video_data(
-                self._handle, width, height, image_type, timeout
-            )
+            video_data = self._driver.get_video_data(self._handle, width, height, image_type, timeout)
             if video_data is not None:
                 now = Time.now()
                 header.set("DATE-OBS", now.fits, "End of exposure + readout")
@@ -373,12 +373,12 @@ class Camera(AbstractSDKCamera):
 
         elapsed_time = (time.monotonic() - start_time) * u.second
         self.logger.debug(
-            f"Captured {good_frames} of {max_frames} frames in {elapsed_time:.2f} ({get_quantity_value(good_frames / elapsed_time):.2f} fps), {bad_frames} frames lost"
+            f"Captured {good_frames} of {max_frames} frames in {elapsed_time:.2f} "
+            f"({get_quantity_value(good_frames / elapsed_time):.2f} fps), "
+            f"{bad_frames} frames lost"
         )
 
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         self._control_setter("EXPOSURE", seconds)
         roi_format = self._driver.get_roi_format(self._handle)
         self._driver.start_exposure(self._handle)
@@ -389,9 +389,7 @@ class Camera(AbstractSDKCamera):
         exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == "SUCCESS":
             try:
-                image_data = self._driver.get_exposure_data(
-                    self._handle, width, height, self.image_type
-                )
+                image_data = self._driver.get_exposure_data(self._handle, width, height, self.image_type)
             except RuntimeError as err:
                 raise error.PanError(f"Error getting image data from {self}: {err}")
             else:

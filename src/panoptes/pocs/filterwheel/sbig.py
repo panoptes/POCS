@@ -101,9 +101,7 @@ class FilterWheel(AbstractFilterWheel):
         Connect to filter wheel. Not called by __init__ because we need the camera to be connected
         first. The SBIG camera connect() method will call this once it's OK to do so.
         """
-        assert self.camera.is_connected, self.logger.error(
-            f"Can't connect {self}, camera not connected"
-        )
+        assert self.camera.is_connected, self.logger.error(f"Can't connect {self}, camera not connected")
         self._driver = self.camera._driver
         self._handle = self.camera._handle
 

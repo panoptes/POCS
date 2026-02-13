@@ -520,9 +520,7 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(
-        self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5
-    ):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:

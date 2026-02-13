@@ -68,9 +68,7 @@ def get_pocs(context: typer.Context):
 
     simulators = listify(simulators)
 
-    print(
-        "[green]Running POCS automatically![/green]\n[bold green]Press Ctrl-c to quit.[/bold green]"
-    )
+    print("[green]Running POCS automatically![/green]\n[bold green]Press Ctrl-c to quit.[/bold green]")
 
     # If cloud logging is requested, set DEBUG level, otherwise the config
     # and regular set up will handle things.
@@ -115,7 +113,8 @@ def run_auto(context: typer.Context) -> None:
         print("[green]POCS finished, shutting down.[/green]")
     finally:
         print(
-            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount "
+            "parks itself.[/bold yellow]"
         )
         pocs.power_down()
 
@@ -123,13 +122,9 @@ def run_auto(context: typer.Context) -> None:
 @app.command(name="long-alignment")
 def run_long_alignment(
     context: typer.Context,
-    coords: list[str] = typer.Option(
-        None, "--coords", "-c", help="Alt/Az coordinates to use, e.g. 40,120"
-    ),
+    coords: list[str] = typer.Option(None, "--coords", "-c", help="Alt/Az coordinates to use, e.g. 40,120"),
     exptime: float = typer.Option(30.0, "--exptime", "-e", help="Exposure time in seconds."),
-    num_exposures: int = typer.Option(
-        5, "--num-exposures", "-n", help="Number of exposures per coordinate."
-    ),
+    num_exposures: int = typer.Option(5, "--num-exposures", "-n", help="Number of exposures per coordinate."),
     field_name: str = typer.Option("PolarAlignment", "--field-name", "-f", help="Name of field."),
 ) -> None:
     """Runs POCS in long alignment mode by sampling coordinates across the sky.
@@ -236,7 +231,8 @@ def run_long_alignment(
         print("[green]POCS alignment finished, shutting down.[/green]")
     finally:
         print(
-            "[bold yellow]Please be patient, this may take a moment while the mount parks itself.[/bold yellow]"
+            "[bold yellow]Please be patient, this may take a moment while the mount "
+            "parks itself.[/bold yellow]"
         )
         pocs.observatory.mount.park()
 
@@ -253,9 +249,7 @@ def run_long_alignment(
 def run_quick_alignment(
     context: typer.Context,
     exp_time: float = typer.Option(20.0, "--exptime", "-e", help="Exposure time in seconds."),
-    move_time: float = typer.Option(
-        3.0, "--move-time", "-m", help="Time to move to each side of the axis."
-    ),
+    move_time: float = typer.Option(3.0, "--move-time", "-m", help="Time to move to each side of the axis."),
 ):
     """Run a quick alignment analysis using three exposures.
 
@@ -366,15 +360,11 @@ def run_quick_alignment(
 
             if results:
                 print(f"Camera {cam_id} alignment results:")
-                print(
-                    f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}"
-                )
+                print(f"\tDelta (degrees): azimuth={results.az_deg:.02f} altitude={results.alt_deg:.02f}")
 
                 # Plot.
                 fig = plot_alignment_diff(cam_id, files, results)
-                alignment_plot_fn = (
-                    Path(observation.directory) / f"{cam_id}-{now}-alignment_overlay.jpg"
-                )
+                alignment_plot_fn = Path(observation.directory) / f"{cam_id}-{now}-alignment_overlay.jpg"
                 fig.savefig(alignment_plot_fn.absolute().as_posix())
                 print(f"\tPlot image: {alignment_plot_fn.absolute().as_posix()}")
 

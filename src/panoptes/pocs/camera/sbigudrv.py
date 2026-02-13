@@ -204,18 +204,10 @@ class SBIGDriver(AbstractSDKDriver):
 
         with self._command_lock:
             self.set_handle(handle)
-            self._send_command(
-                "CC_GET_CCD_INFO", params=ccd_info_params0, results=ccd_info_results0
-            )
-            self._send_command(
-                "CC_GET_CCD_INFO", params=ccd_info_params2, results=ccd_info_results2
-            )
-            self._send_command(
-                "CC_GET_CCD_INFO", params=ccd_info_params4, results=ccd_info_results4
-            )
-            self._send_command(
-                "CC_GET_CCD_INFO", params=ccd_info_params6, results=ccd_info_results6
-            )
+            self._send_command("CC_GET_CCD_INFO", params=ccd_info_params0, results=ccd_info_results0)
+            self._send_command("CC_GET_CCD_INFO", params=ccd_info_params2, results=ccd_info_results2)
+            self._send_command("CC_GET_CCD_INFO", params=ccd_info_params4, results=ccd_info_results4)
+            self._send_command("CC_GET_CCD_INFO", params=ccd_info_params6, results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
         ccd_info = {
@@ -264,9 +256,7 @@ class SBIGDriver(AbstractSDKDriver):
         could cause systematic errors in bias frames, dark current measurements, etc. It's probably
         not worth it.
         """
-        set_driver_control_params = SetDriverControlParams(
-            driver_control_codes["DCP_VDD_OPTIMIZED"], 0
-        )
+        set_driver_control_params = SetDriverControlParams(driver_control_codes["DCP_VDD_OPTIMIZED"], 0)
         self.logger.debug(f"Disabling DCP_VDD_OPTIMIZE on {handle}")
         with self._command_lock:
             self.set_handle(handle)
@@ -345,9 +335,7 @@ class SBIGDriver(AbstractSDKDriver):
 
         return statuses[query_status_results.status]
 
-    def start_exposure(
-        self, handle, seconds, dark, antiblooming, readout_mode, top, left, height, width
-    ):
+    def start_exposure(self, handle, seconds, dark, antiblooming, readout_mode, top, left, height, width):
         """Start an exposure on the imaging CCD.
 
         Args:
@@ -417,9 +405,7 @@ class SBIGDriver(AbstractSDKDriver):
             ccd_codes["CCD_IMAGING"], readout_mode_code, top, left, height, width
         )
 
-        readout_line_params = ReadoutLineParams(
-            ccd_codes["CCD_IMAGING"], readout_mode_code, left, width
-        )
+        readout_line_params = ReadoutLineParams(ccd_codes["CCD_IMAGING"], readout_mode_code, left, width)
 
         end_readout_params = EndReadoutParams(ccd_codes["CCD_IMAGING"])
 
@@ -530,9 +516,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error
         """
-        cfw_info = self._cfw_command(
-            handle, model, CFWCommand.GET_INFO, CFWGetInfoSelect.FIRMWARE_VERSION
-        )
+        cfw_info = self._cfw_command(handle, model, CFWCommand.GET_INFO, CFWGetInfoSelect.FIRMWARE_VERSION)
         results = {
             "model": CFWModelSelect(cfw_info.cfwModel).name,
             "firmware_version": int(cfw_info.cfwResults1),
@@ -639,9 +623,7 @@ class SBIGDriver(AbstractSDKDriver):
         else:
             # No driver errors, but still check status and position
             if query["status"] == "IDLE" and query["position"] == position:
-                self.logger.debug(
-                    "Filter wheel on {} moved to position {}".format(handle, query["position"])
-                )
+                self.logger.debug("Filter wheel on {} moved to position {}".format(handle, query["position"]))
             else:
                 msg = "Problem moving filter wheel on {} to {} - status: {}, position: {}".format(
                     handle, position, query["status"], query["position"]
@@ -1200,9 +1182,7 @@ temperature_regulations = {
     6: "REGULATION_DISABLE_AUTOFREEZE",
 }
 
-temperature_regulation_codes = {
-    regulation: code for code, regulation in temperature_regulations.items()
-}
+temperature_regulation_codes = {regulation: code for code, regulation in temperature_regulations.items()}
 
 
 class SetTemperatureRegulationParams(ctypes.Structure):

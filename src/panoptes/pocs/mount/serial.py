@@ -158,9 +158,7 @@ class AbstractSerialMount(AbstractMount, ABC):
         try:
             self.serial.connect()
         except Exception:
-            raise error.BadSerialConnection(
-                f"Cannot create serial connect for mount at port {self._port}"
-            )
+            raise error.BadSerialConnection(f"Cannot create serial connect for mount at port {self._port}")
 
         self.logger.debug("Mount connected via serial")
 
@@ -175,9 +173,7 @@ class AbstractSerialMount(AbstractMount, ABC):
             # Check if this command needs params
             if "params" in cmd_info:
                 if params is None:
-                    raise error.InvalidMountCommand(
-                        f"{cmd} expects params: {cmd_info.get('params')}"
-                    )
+                    raise error.InvalidMountCommand(f"{cmd} expects params: {cmd_info.get('params')}")
                 full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{params}{self._post_cmd}"
             else:
                 full_command = f"{self._pre_cmd}{cmd_info.get('cmd')}{self._post_cmd}"

@@ -122,9 +122,7 @@ class FilterWheel(AbstractFilterWheel):
             move_distance = abs(move_distance)
         move_duration = move_distance * self._move_time
 
-        move = threading.Timer(
-            interval=move_duration, function=self._complete_move, args=(position,)
-        )
+        move = threading.Timer(interval=move_duration, function=self._complete_move, args=(position,))
         self._position = float("nan")
         self._moving = True
         move.start()

@@ -66,9 +66,7 @@ class AbstractMount(PanBase):
         self._location = location
 
         # Get mount settings from config.
-        self.non_sidereal_available = self.mount_settings.setdefault(
-            "non_sidereal_available", False
-        )
+        self.non_sidereal_available = self.mount_settings.setdefault("non_sidereal_available", False)
         self.PEC_available = self.mount_settings.setdefault("PEC_available", False)
 
         # Initial states
@@ -87,12 +85,8 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = "Sidereal"
-        self.min_tracking_threshold = self.mount_settings.setdefault(
-            "min_tracking_threshold", 100
-        )  # ms
-        self.max_tracking_threshold = self.mount_settings.setdefault(
-            "max_tracking_threshold", 99999
-        )  # ms
+        self.min_tracking_threshold = self.mount_settings.setdefault("min_tracking_threshold", 100)  # ms
+        self.max_tracking_threshold = self.mount_settings.setdefault("max_tracking_threshold", 99999)  # ms
 
         self._movement_speed = ""
 
@@ -456,9 +450,7 @@ class AbstractMount(PanBase):
             offset_ms = corrections[1]
             delta_direction = corrections[2]
 
-            self.logger.info(
-                f"Adjusting {axis}: {delta_direction} {offset_ms:0.2f} ms {offset:0.2f}"
-            )
+            self.logger.info(f"Adjusting {axis}: {delta_direction} {offset_ms:0.2f} ms {offset:0.2f}")
 
             self.query(f"move_ms_{delta_direction}", f"{offset_ms:05.0f}")
 

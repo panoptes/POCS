@@ -148,9 +148,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         try:
             return_status["open"] = status_lookup[state]
         except KeyError:
-            return_status["open"] = (
-                f"Unexpected response from Astrohaven Dome Controller: {state!r}"
-            )
+            return_status["open"] = f"Unexpected response from Astrohaven Dome Controller: {state!r}"
 
         return return_status
 
@@ -221,9 +219,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                     c = chr(data[-1])
                     if c == target_feedback:
                         feedback_countdown -= 1
-                        self.logger.debug(
-                            f"Got target_feedback, feedback_countdown={feedback_countdown!r}"
-                        )
+                        self.logger.debug(f"Got target_feedback, feedback_countdown={feedback_countdown!r}")
                         if feedback_countdown <= 0:
                             # Woot! Moved the dome and got the desired response.
                             return True
@@ -235,7 +231,8 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         pass
                     else:  # pragma: no cover
                         self.logger.warning(
-                            f"Unexpected value from dome! send={send!r} target_feedback={target_feedback!r} data={data!r}"
+                            f"Unexpected value from dome! send={send!r} "
+                            f"target_feedback={target_feedback!r} data={data!r}"
                         )
                 if time.time() < end_by:
                     continue

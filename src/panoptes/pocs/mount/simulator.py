@@ -224,9 +224,7 @@ class Mount(AbstractMount):
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first."""
         assert self.is_initialized, self.logger.warning("Mount has not been initialized")
-        assert self.location is not None, self.logger.warning(
-            "Please set a location before attempting setup"
-        )
+        assert self.location is not None, self.logger.warning("Please set a location before attempting setup")
 
         self.logger.debug("Setting up mount for location")
 

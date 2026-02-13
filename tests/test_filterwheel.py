@@ -55,9 +55,7 @@ def test_camera_no_filterwheel():
 
 def test_camera_association_on_init():
     sim_camera = SimCamera()
-    sim_filterwheel = SimFilterWheel(
-        filter_names=["one", "deux", "drei", "quattro"], camera=sim_camera
-    )
+    sim_filterwheel = SimFilterWheel(filter_names=["one", "deux", "drei", "quattro"], camera=sim_camera)
     assert sim_filterwheel.camera is sim_camera
 
 
@@ -172,9 +170,7 @@ def test_move_times(name, unidirectional, expected):
         timeout=0.5 * u.second,
     )
     sim_filterwheel.position = 1
-    assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == pytest.approx(
-        0.1, rel=1e-1
-    )
+    assert timeit("sim_filterwheel.position = 2", number=1, globals=locals()) == pytest.approx(0.1, rel=1e-1)
     assert timeit("sim_filterwheel.position = 4", number=1, globals=locals()) == pytest.approx(
         0.2, rel=1.5e-1
     )

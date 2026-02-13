@@ -80,9 +80,7 @@ class Observatory(PanBase):
 
         # Do some one-time calculations
         now = current_time()
-        self._local_sun_pos = self.observer.altaz(
-            now, target=get_body("sun", now)
-        ).alt  # Re-calculated
+        self._local_sun_pos = self.observer.altaz(now, target=get_body("sun", now)).alt  # Re-calculated
         self._local_sunrise = self.observer.sun_rise_time(now)
         self._local_sunset = self.observer.sun_set_time(now)
         self._evening_astro_time = self.observer.twilight_evening_astronomical(now, which="next")
@@ -354,9 +352,7 @@ class Observatory(PanBase):
                 )
                 break
 
-            self.logger.debug(
-                f"Waiting for cameras to finish observing, please be patient...{wait_timer}"
-            )
+            self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
             wait_timer.sleep(max_sleep=5)
 
         if self.mount:
@@ -383,9 +379,7 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
                     target_ha = self.observer.target_hour_angle(now, target_coords)
-                    status["mount"]["mount_target_ha"] = get_quantity_value(
-                        target_ha, unit="degree"
-                    )
+                    status["mount"]["mount_target_ha"] = get_quantity_value(target_ha, unit="degree")
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -412,9 +406,7 @@ class Observatory(PanBase):
                 "local_sun_set_time": self._local_sunset,
                 "local_sun_rise_time": self._local_sunrise,
                 "local_sun_position": get_quantity_value(self._local_sun_pos, unit="degree"),
-                "local_moon_alt": get_quantity_value(
-                    self.observer.moon_altaz(now).alt, unit="degree"
-                ),
+                "local_moon_alt": get_quantity_value(self.observer.moon_altaz(now).alt, unit="degree"),
                 "local_moon_illumination": self.observer.moon_illumination(now),
                 "local_moon_phase": get_quantity_value(self.observer.moon_phase(now)) / np.pi,
             }
@@ -484,9 +476,7 @@ class Observatory(PanBase):
             try:
                 camera.take_observation(self.current_observation, headers=headers, blocking=False)
             except Exception:
-                self.logger.warning(
-                    f"Can't take observation for camera {cam_name}. Removing the camera"
-                )
+                self.logger.warning(f"Can't take observation for camera {cam_name}. Removing the camera")
                 del self.cameras[cam_name]
 
         if blocking:
@@ -616,16 +606,12 @@ class Observatory(PanBase):
             bucket_name = self.get_config("panoptes_network.buckets.upload")
             # Get the images directory.
             images_dir = (
-                Path(self.get_config("directories.images", default=Path("~/images")))
-                .expanduser()
-                .as_posix()
+                Path(self.get_config("directories.images", default=Path("~/images"))).expanduser().as_posix()
             )
 
             pretty_image_path = None
             if make_pretty_images is None:
-                make_pretty_images = self.get_config(
-                    "observations.make_pretty_images", default=False
-                )
+                make_pretty_images = self.get_config("observations.make_pretty_images", default=False)
 
             if make_pretty_images:
                 try:
@@ -671,18 +657,14 @@ class Observatory(PanBase):
                     if pretty_image_path:
                         metadata["pretty_image_url"] = image_uploader(
                             file_path=pretty_image_path,
-                            bucket_path=bucket_path.with_suffix(".jpg")
-                            .as_posix()
-                            .replace(".fits", ""),
+                            bucket_path=bucket_path.with_suffix(".jpg").as_posix().replace(".fits", ""),
                             bucket_name=bucket_name,
                         )
                 except Exception as e:
                     self.logger.warning(f"Problem uploading exposure: {e!r}")
 
             if record_observations is None:
-                record_observations = self.get_config(
-                    "observations.record_observations", default=False
-                )
+                record_observations = self.get_config("observations.record_observations", default=False)
             if record_observations:
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
@@ -1038,11 +1020,7 @@ class Observatory(PanBase):
             # Block until done exposing on all cameras.
             flat_field_timer = CountdownTimer(exptime + readout, name="Flat Field Images")
             while any(
-                [
-                    cam.is_observing
-                    for cam_name, cam in self.cameras.items()
-                    if cam_name in camera_list
-                ]
+                [cam.is_observing for cam_name, cam in self.cameras.items() if cam_name in camera_list]
             ):
                 if flat_field_timer.expired():
                     self.logger.warning(f"{flat_field_timer} expired while waiting for flat fields")
@@ -1109,8 +1087,7 @@ class Observatory(PanBase):
                 self.logger.debug(f"Checking for long exposures on {cam_name}")
                 if suggested_exptime >= max_exptime:
                     self.logger.info(
-                        f"Suggested exposure time greater than max, "
-                        f"stopping flat fields for {cam_name}"
+                        f"Suggested exposure time greater than max, stopping flat fields for {cam_name}"
                     )
                     camera_list.remove(cam_name)
 

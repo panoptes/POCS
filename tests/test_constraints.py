@@ -35,9 +35,7 @@ def horizon_line() -> horizon_utils.Horizon:
     obstruction_list = get_config("location.obstructions", default=list())
     default_horizon = get_config("location.horizon")
 
-    horizon_line = horizon_utils.Horizon(
-        obstructions=obstruction_list, default_horizon=default_horizon
-    )
+    horizon_line = horizon_utils.Horizon(obstructions=obstruction_list, default_horizon=default_horizon)
     return horizon_line
 
 

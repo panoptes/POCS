@@ -77,9 +77,7 @@ def camera(request) -> AbstractCamera:
         # Wait for cooling
         cooling_timeout = CountdownTimer(60)  # Should never have to wait this long.
         while not camera.is_temperature_stable and not cooling_timeout.expired():
-            camera.logger.log(
-                "testing", f"Still waiting for cooling: {cooling_timeout.time_left()}"
-            )
+            camera.logger.log("testing", f"Still waiting for cooling: {cooling_timeout.time_left()}")
             cooling_timeout.sleep(max_sleep=2)
         assert camera.is_temperature_stable and cooling_timeout.expired() is False
 
@@ -111,9 +109,7 @@ def patterns(camera, images_dir):
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 
@@ -557,9 +553,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     # We set short exptime, readout, and timeout durations, but pass the `simulator_exptime` to our
     # camera. This should cause the camera to timeout during the exposure.
     camera._readout_time = 0.2 * u.second
-    readout_thread = camera.take_exposure(
-        seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03
-    )
+    readout_thread = camera.take_exposure(seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03)
 
     # Wait for it all to be over.
     time.sleep(5)
@@ -634,13 +628,9 @@ def test_observation_dark(camera, images_dir):
     observation.seq_time = "19991231T235959"
     camera.take_observation(observation, blocking=True)
     while camera.is_observing:
-        camera.logger.trace(
-            f"Waiting for observation event from inside test. {camera.is_observing}"
-        )
+        camera.logger.trace(f"Waiting for observation event from inside test. {camera.is_observing}")
         time.sleep(1)
-    observation_pattern = os.path.join(
-        images_dir, "dark", camera.uid, observation.seq_time, "*.fits*"
-    )
+    observation_pattern = os.path.join(images_dir, "dark", camera.uid, observation.seq_time, "*.fits*")
     assert len(glob.glob(observation_pattern)) == 1
 
 
@@ -657,9 +647,7 @@ def test_observation_bias(camera, images_dir):
     while camera.is_observing:
         camera.logger.trace("Waiting for observation event from inside test.")
         time.sleep(1)
-    observation_pattern = os.path.join(
-        images_dir, "bias", camera.uid, observation.seq_time, "*.fits*"
-    )
+    observation_pattern = os.path.join(images_dir, "bias", camera.uid, observation.seq_time, "*.fits*")
     assert len(glob.glob(observation_pattern)) == 1
 
 

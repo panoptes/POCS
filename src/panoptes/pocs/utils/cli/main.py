@@ -112,14 +112,10 @@ def update_repo():
             # Find the commits between the current state and the remote
             new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
 
-            progress.update(
-                t_update, description="Updates found. Pulling latest changes...", advance=1
-            )
+            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
             origin.pull()
 
-            progress.update(
-                t_update, description="Successfully pulled the latest changes.", advance=1
-            )
+            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
         except GitCommandError as e:
             progress.update(
                 t_update,
@@ -131,9 +127,7 @@ def update_repo():
             progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
             raise typer.Abort()
         else:
-            progress.update(
-                t_update, description="[green]Update process complete![/green]", advance=1
-            )
+            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
 
             # After pulling, show any update messages and sync dependencies
             if len(new_commits):
@@ -217,9 +211,7 @@ def run_uv_command(command: list):
         FileNotFoundError: If uv is not installed or not found in PATH.
     """
     try:
-        process = subprocess.run(
-            ["uv"] + command, capture_output=True, text=True, check=True, timeout=120
-        )
+        process = subprocess.run(["uv"] + command, capture_output=True, text=True, check=True, timeout=120)
         print(process.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error executing uv command: {e.stderr}", file=sys.stderr)

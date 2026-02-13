@@ -152,9 +152,7 @@ def setup():
 
     print("Setting up configuration for your PANOPTES unit.")
     # Make sure they want to proceed.
-    proceed = prompt.Confirm.ask(
-        "This will overwrite any existing configuration. Proceed?", default=False
-    )
+    proceed = prompt.Confirm.ask("This will overwrite any existing configuration. Proceed?", default=False)
     if not proceed:
         print("Exiting.")
         return
@@ -166,9 +164,7 @@ def setup():
     set_config("directories.base", base_dir)
 
     # Get the user-friendly name for the unit.
-    unit_name = prompt.Prompt.ask(
-        "Enter the user-friendly name for this unit", default=get_config("name")
-    )
+    unit_name = prompt.Prompt.ask("Enter the user-friendly name for this unit", default=get_config("name"))
     set_config("name", unit_name)
 
     # Get the pan_id for the unit.
@@ -192,8 +188,7 @@ def setup():
     set_config("location.longitude", str(u.Unit(longitude)))
     # Elevation
     elevation = prompt.Prompt.ask(
-        "Enter the elevation for this unit. "
-        'Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft":',
+        'Enter the elevation for this unit. Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft":',
         default=str(get_config("location.elevation")),
     )
     if " ft" in elevation:
@@ -217,8 +212,7 @@ def setup():
     # Convert GMT offset to minutes.
     gmt_offset = int(gmt_offset[:3]) * 60 + int(gmt_offset[-2:])
     gmt_offset = prompt.Prompt.ask(
-        "Enter the GMT offset for this unit in minutes, "
-        "e.g. 60 for 1 hour ahead, -120 for 2 hours behind:",
+        "Enter the GMT offset for this unit in minutes, e.g. 60 for 1 hour ahead, -120 for 2 hours behind:",
         default=str(gmt_offset),
     )
     set_config("location.gmt_offset", int(gmt_offset))

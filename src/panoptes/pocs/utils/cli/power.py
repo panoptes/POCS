@@ -158,9 +158,7 @@ def off(
 def control(
     context: typer.Context,
     relay: str = typer.Option(..., help="The label or index of the relay to control."),
-    command: str = typer.Option(
-        ..., help='The control action to perform, either "turn_on" or "turn_off"'
-    ),
+    command: str = typer.Option(..., help='The control action to perform, either "turn_on" or "turn_off"'),
 ):
     """Control a relay by label or relay index.
 

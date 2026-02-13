@@ -96,7 +96,8 @@ def set_park_position(
     # Confirm that they have previously set the home position.
     if not typer.confirm("Have you previously set the home position?"):
         print(
-            'Please set the home position before setting the park position by running "pocs mount search-home".'
+            "Please set the home position before setting the park position by running "
+            '"pocs mount search-home".'
         )
         return typer.Exit()
 
@@ -136,9 +137,10 @@ def set_park_position(
         print("[red]Sorry! Please try again or ask the PANOPTES team.[/red]")
     else:
         print(
-            "Park position set. If the directions are correct but the mount is not parked in the correct position, "
-            "then you may need to adjust the number of seconds the mount moves in each direction. If you are unsure, "
-            "please ask the PANOPTES team for help."
+            "Park position set. If the directions are correct but the mount is not "
+            "parked in the correct position, then you may need to adjust the number of "
+            "seconds the mount moves in each direction. If you are unsure, please ask "
+            "the PANOPTES team for help."
         )
 
 
@@ -178,9 +180,7 @@ def slew_to_home(
 
 @app.command(name="slew-to-target")
 def slew_to_target(
-    confirm: Annotated[
-        bool, typer.Option(..., "--confirm", help="Confirm slew to target.")
-    ] = False,
+    confirm: Annotated[bool, typer.Option(..., "--confirm", help="Confirm slew to target.")] = False,
     target: Annotated[
         str,
         typer.Option(
@@ -266,9 +266,7 @@ def slew_to_target(
         timer = CountdownTimer(30)
         while mount.is_tracking:
             if timer.expired():
-                print(
-                    f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}"
-                )
+                print(f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}")
                 timer.restart()
             timer.sleep(1)
     except KeyboardInterrupt:
@@ -416,14 +414,13 @@ def setup_mount(
                                 stderr=subprocess.PIPE,
                             )
 
-                            print(
-                                f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green]."
-                            )
+                            print(f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green].")
 
                             # Reload the udev rules.
                             subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
                             print(
-                                "Reloaded udev rules. Please unplug and replug the mount to use the new udev entry."
+                                "Reloaded udev rules. Please unplug and replug the mount to use "
+                                "the new udev entry."
                             )
 
                         except Exception:
@@ -436,9 +433,7 @@ def setup_mount(
                         set_config("mount.serial.port", write_port)
                         set_config("mount.serial.baudrate", baudrate)
                         set_config("mount.model", mount_type.name.lower())
-                        set_config(
-                            "mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}"
-                        )
+                        set_config("mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}")
                         set_config("mount.commands_file", f"ioptron/{command_set}")
 
                     return typer.Exit()

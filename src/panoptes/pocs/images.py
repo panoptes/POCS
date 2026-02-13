@@ -149,9 +149,7 @@ class Image(PanBase):
             d_dec = self.pointing.dec - self.header_pointing.dec
             d_ra = self.pointing.ra - self.header_pointing.ra
 
-            self._pointing_error = OffsetError(
-                d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec)
-            )
+            self._pointing_error = OffsetError(d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
 
         return self._pointing_error
 
@@ -179,8 +177,7 @@ class Image(PanBase):
                 # TODO(wtgee): This conversion doesn't seem to be correct.
                 # wtgee: I'm not sure what I meant by the above. May 2020.
                 self.header_ha = (
-                    self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle)
-                    - self.sidereal
+                    self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
                 )
 
         except Exception as e:
@@ -238,9 +235,7 @@ class Image(PanBase):
         Returns:
             OffsetError: Named tuple of (delta_ra, delta_dec, magnitude) in arcseconds.
         """
-        assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference"
-        )
+        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

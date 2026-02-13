@@ -105,12 +105,8 @@ def create_location_from_config() -> SiteDetails:
 
         horizon = get_config_with_unit("horizon", default_value=30, default_unit=u.degree)
         flat_horizon = get_config_with_unit("flat_horizon", default_value=-6, default_unit=u.degree)
-        focus_horizon = get_config_with_unit(
-            "focus_horizon", default_value=-12, default_unit=u.degree
-        )
-        observe_horizon = get_config_with_unit(
-            "observe_horizon", default_value=-18, default_unit=u.degree
-        )
+        focus_horizon = get_config_with_unit("focus_horizon", default_value=-12, default_unit=u.degree)
+        observe_horizon = get_config_with_unit("observe_horizon", default_value=-18, default_unit=u.degree)
 
         location = {
             "name": name,
@@ -130,9 +126,7 @@ def create_location_from_config() -> SiteDetails:
         earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
         observer = Observer(location=earth_location, name=name, timezone=timezone)
 
-        site_details = SiteDetails(
-            location=location, earth_location=earth_location, observer=observer
-        )
+        site_details = SiteDetails(location=location, earth_location=earth_location, observer=observer)
 
         return site_details
 

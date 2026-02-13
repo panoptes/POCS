@@ -171,9 +171,7 @@ def process_quick_alignment(
     rotate_center_pix = (h, k)
 
     if pole_center_pix is None or rotate_center_pix is None:
-        logger.warning(
-            f"Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}"
-        )
+        logger.warning(f"Unable to determine centers for alignment. {pole_center_pix=} {rotate_center_pix=}")
         raise PanError("Unable to determine centers for alignment.")
 
     # Get the distance from the center of the circle to the center of celestial pole.
@@ -306,9 +304,7 @@ def find_circle_params(points: dict[str, tuple[float, float]]) -> tuple[float, f
     return h, k, R
 
 
-def plot_alignment_diff(
-    cam_name: str, files: dict[str, str | Path], results: AlignmentResult
-) -> Figure:
+def plot_alignment_diff(cam_name: str, files: dict[str, str | Path], results: AlignmentResult) -> Figure:
     """Plot the difference between the celestial pole and RA rotation images.
 
     Args:
@@ -361,15 +357,11 @@ def plot_alignment_diff(
 
     # Show the detected points.
     for pos, (x, y) in results.target_points.items():
-        ax.scatter(
-            x, y, marker="o", ec="coral", fc="none", lw=2, label=f"{results.target_name} {pos}"
-        )
+        ax.scatter(x, y, marker="o", ec="coral", fc="none", lw=2, label=f"{results.target_name} {pos}")
         ax.annotate(pos, (x, y), c="coral", xytext=(3, 3), textcoords="offset pixels")
 
     # Show the rotation center.
-    ax.scatter(
-        rotate_cx, rotate_cy, marker="*", c="coral", zorder=200, label="Center of mount rotation"
-    )
+    ax.scatter(rotate_cx, rotate_cy, marker="*", c="coral", zorder=200, label="Center of mount rotation")
 
     # Show the rotation circle
     ax.add_patch(

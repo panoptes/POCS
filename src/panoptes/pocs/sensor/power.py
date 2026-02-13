@@ -184,13 +184,10 @@ class PowerBoard(PanBase):
         """
         readings = self.readings
         if not readings:
-            self.logger.warning(
-                "No readings available. If system just started please wait a moment."
-            )
+            self.logger.warning("No readings available. If system just started please wait a moment.")
             return {}
         status = {
-            r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label])
-            for r in self.relays
+            r.name: dict(label=r.label, state=r.state.name, reading=readings[r.label]) for r in self.relays
         }
         status["ac_ok"] = readings["ac_ok"]
         status["battery_low"] = readings["battery_low"]
@@ -333,9 +330,7 @@ class PowerBoard(PanBase):
             return
 
         # Check we got a valid reading.
-        if len(data[relay_key]) != len(TruckerRelayIndex) and len(data[values_key]) != len(
-            TruckerRelayIndex
-        ):
+        if len(data[relay_key]) != len(TruckerRelayIndex) and len(data[values_key]) != len(TruckerRelayIndex):
             self.logger.debug("Did not get a full valid reading")
             return
 
@@ -362,9 +357,7 @@ class PowerBoard(PanBase):
             {
                 "name": self.name,
                 "port": self.port,
-                "relays": [
-                    dict(name=r.name, label=r.label, state=r.state.name) for r in self.relays
-                ],
+                "relays": [dict(name=r.name, label=r.label, state=r.state.name) for r in self.relays],
             }
         )
 

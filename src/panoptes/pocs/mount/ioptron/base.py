@@ -87,16 +87,12 @@ class Mount(AbstractSerialMount):
                 actual_version_info = self.query("version")
                 expected_version_info = self.commands.get("version").get("response")
                 if actual_version_info != expected_version_info:
-                    raise error.MountNotFound(
-                        "Problem initializing mount - version numbers do not match"
-                    )
+                    raise error.MountNotFound("Problem initializing mount - version numbers do not match")
 
             actual_mount_info = self.query("mount_info")
 
             # Use the expected mount info if provided otherwise the command set default.
-            expected_mount_info = self.mount_version or self.commands.get("mount_info").get(
-                "response"
-            )
+            expected_mount_info = self.mount_version or self.commands.get("mount_info").get("response")
 
             self._is_initialized = False
 
@@ -153,9 +149,7 @@ class Mount(AbstractSerialMount):
         # Get the direction and timing
         ra_direction = ra_direction or self.get_config("mount.settings.park.ra_direction", "west")
         ra_seconds = ra_seconds or self.get_config("mount.settings.park.ra_seconds", 15)
-        dec_direction = dec_direction or self.get_config(
-            "mount.settings.park.dec_direction", "north"
-        )
+        dec_direction = dec_direction or self.get_config("mount.settings.park.dec_direction", "north")
         dec_seconds = dec_seconds or self.get_config("mount.settings.park.dec_seconds", 15)
 
         self.unpark()
@@ -367,9 +361,7 @@ class Mount(AbstractSerialMount):
             self._state = MountState(int(status_dict["state"]))
             self._at_mount_park = self.state == MountState.PARKED
             self._is_home = self.state == MountState.AT_HOME
-            self._is_tracking = (
-                self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
-            )
+            self._is_tracking = self.state == MountState.TRACKING or self.state == MountState.TRACKING_PEC
             self._is_slewing = self.state == MountState.SLEWING
 
             status["state"] = self.state.name
@@ -377,9 +369,7 @@ class Mount(AbstractSerialMount):
             status["at_mount_park"] = self._at_mount_park
 
             coords_unit = getattr(u, self._location_units)
-            status["longitude"] = Longitude(
-                (float(status_dict["longitude"]) * coords_unit).to(u.degree)
-            )
+            status["longitude"] = Longitude((float(status_dict["longitude"]) * coords_unit).to(u.degree))
             # Longitude adds +90° to avoid negative numbers, so subtract for original.
             status["latitude"] = Latitude(
                 (float(status_dict["latitude"]) * coords_unit).to(u.degree) - (90 * u.degree)

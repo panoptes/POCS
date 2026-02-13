@@ -42,9 +42,7 @@ class WeatherStation(PanBase):
         self.name = name
         self.collection_name = db_collection
 
-        self.logger.debug(
-            f"Setting up weather station connection for {name=} on {self.serial_port}"
-        )
+        self.logger.debug(f"Setting up weather station connection for {name=} on {self.serial_port}")
         self.weather_station = CloudSensor(serial_port=self.serial_port, **conf)
 
         self.logger.debug(f"Weather station config: {self.weather_station.config}")
@@ -53,9 +51,7 @@ class WeatherStation(PanBase):
     @property
     def status(self):
         """Returns the most recent weather reading."""
-        reading = (
-            "No valid readings found. If the system just started, wait a few seconds and try again."
-        )
+        reading = "No valid readings found. If the system just started, wait a few seconds and try again."
         try:
             reading = self.weather_station.readings[-1]
         except Exception as e:

@@ -19,14 +19,10 @@ class PanStateMachine(Machine):
     def __init__(self, state_machine_table, **kwargs):
         if isinstance(state_machine_table, str):
             self.logger.info(f"Loading state table: {state_machine_table}")
-            state_machine_table = PanStateMachine.load_state_table(
-                state_table_name=state_machine_table
-            )
+            state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
 
         assert "states" in state_machine_table, self.logger.warning("states keyword required.")
-        assert "transitions" in state_machine_table, self.logger.warning(
-            "transitions keyword required."
-        )
+        assert "transitions" in state_machine_table, self.logger.warning("transitions keyword required.")
 
         self._state_table_name = state_machine_table.get("name", "default")
         self._states_location = state_machine_table.get("location", "panoptes.pocs.state.states")
@@ -82,9 +78,7 @@ class PanStateMachine(Machine):
     # Methods
     ################################################################################################
 
-    def run(
-        self, exit_when_done=False, run_once=False, park_when_done=True, initial_next_state="ready"
-    ):
+    def run(self, exit_when_done=False, run_once=False, park_when_done=True, initial_next_state="ready"):
         """Runs the state machine loop.
 
         This runs the state machine in a loop. Setting the machine property
@@ -148,8 +142,7 @@ class PanStateMachine(Machine):
                 state_changed = self.goto_next_state()
             except Exception as e:
                 self.logger.critical(
-                    f"Problem going from {self.state!r} to {self.next_state!r}, "
-                    f"exiting loop [{e!r}]"
+                    f"Problem going from {self.state!r} to {self.next_state!r}, exiting loop [{e!r}]"
                 )
                 # TODO should we automatically park here?
                 self.stop_states()
@@ -161,20 +154,15 @@ class PanStateMachine(Machine):
             if not state_changed:
                 self.logger.warning(f"Failed to move from {self.state!r} to {self.next_state!r}")
                 if self.is_safe() is False:
-                    self.logger.warning(
-                        "Conditions have become unsafe; setting next state to 'parking'"
-                    )
+                    self.logger.warning("Conditions have become unsafe; setting next state to 'parking'")
                     self.next_state = "parking"
                 elif _transition_iteration > max_transition_attempts:
-                    self.logger.warning(
-                        f"Stuck in current state for {max_transition_attempts=!r}, parking"
-                    )
+                    self.logger.warning(f"Stuck in current state for {max_transition_attempts=!r}, parking")
                     self.next_state = "parking"
                 else:
                     _transition_iteration = _transition_iteration + 1
                     self.logger.warning(
-                        f"Sleeping before trying again ({_transition_iteration}/"
-                        f"{max_transition_attempts})"
+                        f"Sleeping before trying again ({_transition_iteration}/{max_transition_attempts})"
                     )
                     self.wait(delay=7)  # wait 7 seconds (no good reason)
             else:
@@ -307,9 +295,7 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains information about the event
         """
 
-        self.logger.debug(
-            f"After {event_data.event.name} transition. In {event_data.state.name} state"
-        )
+        self.logger.debug(f"After {event_data.event.name} transition. In {event_data.state.name} state")
 
     ################################################################################################
     # Class Methods
@@ -336,9 +322,7 @@ class PanStateMachine(Machine):
             with state_table_file.open("r") as f:
                 state_table = from_yaml(f.read())
         except Exception as err:
-            raise error.InvalidConfig(
-                f"Problem loading state table yaml file: {err!r} {state_table_file}"
-            )
+            raise error.InvalidConfig(f"Problem loading state table yaml file: {err!r} {state_table_file}")
 
         return state_table
 

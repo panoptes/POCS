@@ -200,13 +200,9 @@ def test_scheduler_add_duplicate_field(scheduler):
 def test_scheduler_add_duplicate_field_different_name(scheduler):
     orig_length = len(scheduler.observations)
 
-    scheduler.add_observation(
-        {"field": dict(name="Duplicate Field", position="12h30m01s +08d08m08s")}
-    )
+    scheduler.add_observation({"field": dict(name="Duplicate Field", position="12h30m01s +08d08m08s")})
 
-    scheduler.add_observation(
-        {"field": dict(name="Duplicate Field 2", position="12h30m01s +08d08m08s")}
-    )
+    scheduler.add_observation({"field": dict(name="Duplicate Field 2", position="12h30m01s +08d08m08s")})
 
     assert len(scheduler.observations) == orig_length + 2
 

@@ -21,9 +21,7 @@ from panoptes.pocs.utils.location import create_location_from_config
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 
@@ -503,9 +501,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     pocs_thread.start()
 
     while pocs.next_state != "slewing":
-        pocs.logger.debug(
-            f"Waiting to get to slewing state. Currently next_state={pocs.next_state}"
-        )
+        pocs.logger.debug(f"Waiting to get to slewing state. Currently next_state={pocs.next_state}")
         time.sleep(1)
 
     pocs.logger.warning("Stopping states via pocs.DO_STATES")

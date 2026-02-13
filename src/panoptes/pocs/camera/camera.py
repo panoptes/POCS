@@ -83,9 +83,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         "filterwheel": "panoptes.pocs.filterwheel.filterwheel.AbstractFilterWheel",
     }
 
-    def __init__(
-        self, name="Generic Camera", model="simulator", port=None, primary=False, *args, **kwargs
-    ):
+    def __init__(self, name="Generic Camera", model="simulator", port=None, primary=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.model = model
@@ -134,9 +132,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 self.logger.debug(f"Found subcomponent={subcomponent!r}, creating instance")
 
                 subcomponent = self._create_subcomponent(class_path, subcomponent)
-                self.logger.debug(
-                    f"Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}"
-                )
+                self.logger.debug(f"Assigning subcomponent={subcomponent!r} to attr_name={attr_name!r}")
                 setattr(self, attr_name, subcomponent)
                 # Keep a list of active subcomponents
                 self.subcomponents[attr_name] = subcomponent
@@ -443,9 +439,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         raise NotImplementedError  # pragma: no cover
 
-    def take_observation(
-        self, observation, headers=None, filename=None, blocking=False, **kwargs
-    ) -> dict:
+    def take_observation(self, observation, headers=None, filename=None, blocking=False, **kwargs) -> dict:
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -597,9 +591,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self.logger.debug(f"Taking {seconds=!r} exposure on {self.name}: {filename=!r}")
 
         if self.is_exposing:
-            err = error.PanError(
-                f"Attempt to take exposure on {self} while one already in progress."
-            )
+            err = error.PanError(f"Attempt to take exposure on {self} while one already in progress.")
             self._exposure_error = repr(err)
             raise err
 
@@ -843,9 +835,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         self._cooling_enabled = enable
 
     @abstractmethod
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         """Responsible for the camera-specific process that start an exposure.
 
         This method is called from the `take_exposure` method and is used to handle
@@ -888,9 +878,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
-            timer_duration = (
-                self.timeout + self.readout_time + get_quantity_value(exposure_time, u.second)
-            )
+            timer_duration = self.timeout + self.readout_time + get_quantity_value(exposure_time, u.second)
         else:
             timer_duration = timeout
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
@@ -942,9 +930,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             # Some non cooled cameras can still report the image sensor temperature
             header.set("CCD-TEMP", get_quantity_value(self.temperature, u.Celsius), "Degrees C")
         if self.is_cooled_camera:
-            header.set(
-                "SET-TEMP", get_quantity_value(self.target_temperature, u.Celsius), "Degrees C"
-            )
+            header.set("SET-TEMP", get_quantity_value(self.target_temperature, u.Celsius), "Degrees C")
             header.set("COOL-POW", get_quantity_value(self.cooling_power, u.percent), "Percentage")
         header.set("CAM-ID", self.uid, "Camera serial number")
         header.set("CAM-NAME", self.name, "Camera name")
@@ -976,9 +962,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                     self.logger.debug(f"Moving {self.filterwheel=} to {observation.filter_name=}")
                     self.filterwheel.move_to(observation.filter_name, blocking=True)
                 except Exception as e:
-                    self.logger.error(
-                        f"Error moving {self} filterwheel to {observation.filter_name}: {e!r}"
-                    )
+                    self.logger.error(f"Error moving {self} filterwheel to {observation.filter_name}: {e!r}")
                     raise e
 
             elif not observation.dark:
@@ -998,9 +982,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             observation.seq_time = start_time
 
         # Get the filename
-        image_dir = os.path.abspath(
-            os.path.join(observation.directory, self.uid, observation.seq_time)
-        )
+        image_dir = os.path.abspath(os.path.join(observation.directory, self.uid, observation.seq_time))
         self.logger.debug(f"Setting {image_dir=}")
 
         # Get full file path

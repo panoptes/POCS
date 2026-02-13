@@ -78,9 +78,7 @@ def get_key_cmd(
                 continue
 
             with rc_file.open("a") as f:
-                f.write(
-                    f'\nexport GOOGLE_APPLICATION_CREDENTIALS="{save_path.absolute().as_posix()}"\n'
-                )
+                f.write(f'\nexport GOOGLE_APPLICATION_CREDENTIALS="{save_path.absolute().as_posix()}"\n')
                 f.write(f'\nexport PANID="{unit_id}"\n')
                 f.write(f'\nexport UNIT_ID="{unit_id}"\n')
 
@@ -90,15 +88,14 @@ def get_key_cmd(
     # Change file permissions so only the owner can read/write.
     os.chmod(save_path, stat.S_IRUSR | stat.S_IWUSR)
     print(
-        f"Key saved to env var [green]GOOGLE_APPLICATION_CREDENTIALS=[/][blue]{save_path.absolute().as_posix()}[/]"
+        f"Key saved to env var [green]GOOGLE_APPLICATION_CREDENTIALS=[/]"
+        f"[blue]{save_path.absolute().as_posix()}[/]"
     )
 
     # Update the config entries.
     if enable_image_upload:
         try:
-            response = set_config(
-                "panoptes_network.service_account_key", save_path.absolute().as_posix()
-            )
+            response = set_config("panoptes_network.service_account_key", save_path.absolute().as_posix())
             if response is None:
                 raise ValueError("No response from config server")
 
@@ -254,9 +251,7 @@ def upload_directory(
     Notes:
         For bulk transfers, using 'gsutil -m rsync' is typically faster and more robust.
     """
-    assert directory_path.is_dir() and directory_path.exists(), print(
-        "[red]Need a directory that exists"
-    )
+    assert directory_path.is_dir() and directory_path.exists(), print("[red]Need a directory that exists")
 
     storage_client = storage_client or storage.Client()
 

@@ -192,9 +192,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return outs
 
-    def set_property(
-        self, prop: str, val: str | int, is_value: bool = False, is_index: bool = False
-    ):
+    def set_property(self, prop: str, val: str | int, is_value: bool = False, is_index: bool = False):
         """Set a property on the camera.
 
         Args:

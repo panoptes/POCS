@@ -164,9 +164,7 @@ class Camera(AbstractSDKCamera):
         exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == "CS_INTEGRATION_COMPLETE":
             try:
-                image_data = self._driver.readout(
-                    self._handle, readout_mode, top, left, height, width
-                )
+                image_data = self._driver.readout(self._handle, readout_mode, top, left, height, width)
             except RuntimeError as err:
                 raise error.PanError(f"Readout error on {self}, {err}")
             else:
@@ -184,9 +182,7 @@ class Camera(AbstractSDKCamera):
         readout_mode = "RM_1X1"
 
         header.set("CAM-FW", self.properties["firmware version"], "Camera firmware version")
-        header.set(
-            "XPIXSZ", self.properties["readout modes"][readout_mode]["pixel width"].value, "Microns"
-        )
+        header.set("XPIXSZ", self.properties["readout modes"][readout_mode]["pixel width"].value, "Microns")
         header.set(
             "YPIXSZ",
             self.properties["readout modes"][readout_mode]["pixel height"].value,

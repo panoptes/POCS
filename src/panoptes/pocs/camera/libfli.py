@@ -110,9 +110,7 @@ class FLIDriver(AbstractSDKDriver):
                 try:
                     serial_number = self.FLIGetSerialString(handle)
                 except RuntimeError as err:
-                    self.logger.error(
-                        f"Couldn't get serial number from FLI camera at {port}: {err}"
-                    )
+                    self.logger.error(f"Couldn't get serial number from FLI camera at {port}: {err}")
                 else:
                     cameras[serial_number] = port
             finally:
@@ -314,9 +312,7 @@ class FLIDriver(AbstractSDKDriver):
         temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
-        self._call_function(
-            "setting temperature", self._CDLL.FLISetTemperature, handle, temperature
-        )
+        self._call_function("setting temperature", self._CDLL.FLISetTemperature, handle, temperature)
 
     def FLIGetCoolerPower(self, handle):
         """
@@ -329,9 +325,7 @@ class FLIDriver(AbstractSDKDriver):
             float: cooler power, in percent.
         """
         power = ctypes.c_double()
-        self._call_function(
-            "getting cooler power", self._CDLL.FLIGetCoolerPower, handle, ctypes.byref(power)
-        )
+        self._call_function("getting cooler power", self._CDLL.FLIGetCoolerPower, handle, ctypes.byref(power))
         return power.value * u.percent
 
     def FLISetExposureTime(self, handle, exposure_time):
@@ -346,9 +340,7 @@ class FLIDriver(AbstractSDKDriver):
         """
         exposure_time = get_quantity_value(exposure_time, unit=u.second)
         milliseconds = ctypes.c_long(int(exposure_time * 1000))
-        self._call_function(
-            "setting exposure time", self._CDLL.FLISetExposureTime, handle, milliseconds
-        )
+        self._call_function("setting exposure time", self._CDLL.FLISetExposureTime, handle, milliseconds)
 
     def FLISetFrameType(self, handle, frame_type):
         """
@@ -596,9 +588,7 @@ class FLIDriver(AbstractSDKDriver):
         error_code = function(*args, *kwargs)
         if error_code != 0:
             # FLI library functions return the negative of OS error codes.
-            raise RuntimeError(
-                f"Error {name}: '{os.strerror(-error_code)}' (OS error {-error_code})"
-            )
+            raise RuntimeError(f"Error {name}: '{os.strerror(-error_code)}' (OS error {-error_code})")
 
     def _check_valid(self, value, name):
         if value not in valid_values[name]:

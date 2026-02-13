@@ -222,27 +222,29 @@ class EFWDriver(AbstractSDKDriver):
             # No status query function in the SDK. Only way to check on progress of move
             # is to keep issuing the same move command until we stop getting the MOVING
             # error code back.
-            error_code = self._CDLL.EFWSetPosition(
-                ctypes.c_int(filterwheel_ID), ctypes.c_int(position)
-            )
+            error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
             while error_code == ErrorCode.MOVING:
                 if timeout is not None and timer.expired():
                     msg = f"Timeout waiting for filterwheel {filterwheel_ID} to move to {position}"
                     raise error.Timeout(msg)
                 time.sleep(0.1)
-                error_code = self._CDLL.EFWSetPosition(
-                    ctypes.c_int(filterwheel_ID), ctypes.c_int(position)
-                )
+                error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
 
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
-                msg = f"Error while moving filterwheel {filterwheel_ID} to {position}: {ErrorCode(error_code).name}"
+                msg = (
+                    f"Error while moving filterwheel {filterwheel_ID} to {position}: "
+                    f"{ErrorCode(error_code).name}"
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
             final_position = self.get_position(filterwheel_ID)
             if final_position != position:
-                msg = f"Tried to move filterwheel {filterwheel_ID} to {position}, but ended up at {final_position}."
+                msg = (
+                    f"Tried to move filterwheel {filterwheel_ID} to {position}, "
+                    f"but ended up at {final_position}."
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 

@@ -228,9 +228,7 @@ class AstrohavenSerialSimulator(NoOpSerial):
         self.status_queue = queue.Queue(maxsize=1000)
         self.stop = threading.Event()
         self.stop.set()
-        self.plc = AstrohavenPLCSimulator(
-            self.command_queue, self.status_queue, self.stop, self.logger
-        )
+        self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop, self.logger)
 
     def __del__(self):
         if self.plc_thread:
