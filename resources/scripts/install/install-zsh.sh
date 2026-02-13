@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-PANUSER="${PANUSER:-panoptes}"
 PANDIR="${PANDIR:-${HOME}/POCS}"
 
 function install_zsh() {

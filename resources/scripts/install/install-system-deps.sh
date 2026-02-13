@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 echo "Installing system dependencies."
-PANUSER="${PANUSER:-panoptes}"
 
 # Clean up problems.
 sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing -y
@@ -41,5 +40,5 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
 
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove
 
-# Set zsh as the default shell for the panoptes user.
-sudo chsh --shell /usr/bin/zsh "${PANUSER}"
+# Set zsh as the default shell for the current user.
+sudo chsh --shell /usr/bin/zsh "${USER}"
