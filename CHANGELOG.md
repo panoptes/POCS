@@ -8,6 +8,7 @@
 - Beginner Resources section in main README (top-level) #173
 - Enhanced installation script with visual progress indicators, spinner animations, and colored output
 - Automated udev rule creation and installation for iOptron mounts in `pocs mount setup` #1320
+- `uv.lock` file for reproducible dependency installations
 
 ## Changed
 
@@ -22,6 +23,10 @@
   - Removed Hatch environment configurations in favor of UV's dependency group system
 - Reorganized `pyproject.toml` to use modern setuptools automatic package discovery
 - Updated dependency versions: `certifi>=2024.2.2`, `requests>=2.32.0`, `urllib3>=2.0.7`
+- Updated GitHub Actions workflows to use `uv` for faster CI/CD:
+  - Test workflow now uses `uv sync` with dependency groups and caching
+  - Release workflow uses `uv build` and `uv publish` for PyPI publishing
+  - Updated to modern action versions (actions/checkout@v4, actions/setup-python@v5)
 - Improved installation scripts with better error handling and user feedback
 - Enhanced `install.sh` with step-by-step progress tracking and live log tailing
 - Improved ZSH installation script with better shell switching logic
