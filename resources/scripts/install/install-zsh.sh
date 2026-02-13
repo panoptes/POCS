@@ -12,7 +12,15 @@ function install_zsh() {
     write_zsh_plugins
     write_zshrc
 
-    starship preset plain-text-symbols -o ~/.config/starship.toml
+    # Generate the static plugin file so plugins are actually downloaded
+    echo "Downloading zsh plugins..."
+    source "${HOME}/.antidote/antidote.zsh"
+    antidote bundle <"${HOME}/.zsh_plugins.txt" >"${HOME}/.zsh_plugins.zsh"
+
+    # Configure starship if available
+    if command -v starship &>/dev/null; then
+      starship preset plain-text-symbols -o ~/.config/starship.toml
+    fi
   fi
 }
 
@@ -40,10 +48,29 @@ export PANDIR="${PANDIR}"
 
 # Antidote plugin manager
 source "\${HOME}/.antidote/antidote.zsh"
-antidote load "\${HOME}/.zsh_plugins.txt"
+
+# Set the name of the static .zsh plugins file antidote will generate.
+zsh_plugins="\${HOME}/.zsh_plugins.zsh"
+
+# Ensure you have a .zsh_plugins.txt file where you can add plugins.
+zsh_plugins_txt="\${HOME}/.zsh_plugins.txt"
+
+# Lazy-load antidote from its functions directory.
+fpath=("\${HOME}/.antidote/functions" \$fpath)
+autoload -Uz antidote
+
+# Generate a new static plugins file if it doesn't exist or is outdated.
+if [[ ! \$zsh_plugins -nt \$zsh_plugins_txt ]]; then
+  antidote bundle <\$zsh_plugins_txt >\$zsh_plugins
+fi
+
+# Source the plugins file.
+source \$zsh_plugins
 
 # Starship prompt
-eval "\$(starship init zsh)"
+if command -v starship &>/dev/null; then
+  eval "\$(starship init zsh)"
+fi
 
 # Disable share_history
 unsetopt share_history
