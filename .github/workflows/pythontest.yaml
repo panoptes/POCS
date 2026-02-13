@@ -22,10 +22,14 @@ jobs:
         uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Hatch
-        run: pipx install hatch --pip-args "click==8.2.1"
-      - name: Lint with Hatch (ruff)
-        run: hatch run lint
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --group lint
+      - name: Lint with ruff
+        run: uv run ruff check .
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -38,12 +42,14 @@ jobs:
         uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Hatch
-        run: pipx install hatch pytest --pip-args "click==8.2.1"
-      - name: Install POCS with Hatch
-        run: hatch run pip install -e ".[all]"
-      - name: Test with Hatch
-        run: hatch run pytest
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Install POCS with all extras and testing dependencies
+        run: uv sync --all-extras --group testing
+      - name: Test with pytest
+        run: uv run pytest
       - uses: codecov/codecov-action@v4
         with:
           name: Upload to codecov.io
