@@ -171,7 +171,7 @@ class NightlyReport(PanBase):
                 if not safety_data.get("good_weather", True):
                     failure_reasons.append("  - Unsafe weather conditions")
                 if not safety_data.get("is_dark", True):
-                    failure_reasons.append("  - Not dark enough (sun above horizon)")
+                    failure_reasons.append("  - Not dark enough for observations")
                 if not safety_data.get("ac_power", True):
                     failure_reasons.append("  - AC power disconnected")
                 if not safety_data.get("free_space_root", True):

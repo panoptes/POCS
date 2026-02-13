@@ -161,7 +161,7 @@ def test_summarize_safety_with_failures(report_generator, db):
     assert "WARNING: Some safety checks failed" in summary_text
     assert "✗ FAIL" in summary_text
     assert "Unsafe weather conditions" in summary_text
-    assert "Not dark enough" in summary_text
+    assert "Not dark enough for observations" in summary_text
 
 
 def test_report_date_format(report_generator):
