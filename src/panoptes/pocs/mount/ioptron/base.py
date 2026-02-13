@@ -30,7 +30,7 @@ class Mount(AbstractSerialMount):
 
     def __init__(self, location, mount_version=None, *args, **kwargs):
         self._mount_version = mount_version or self._mount_version
-        super(Mount, self).__init__(location, *args, **kwargs)
+        super().__init__(location, *args, **kwargs)
 
         self._raw_status = None
 

@@ -8,7 +8,6 @@ import os
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from astropy import units as u
 from astropy.units import s as Second
@@ -49,7 +48,7 @@ class Observation(PanBase):
         priority: int | float = 100,
         filter_name: str | None = None,
         dark: bool = False,
-        constraints: List | None = None,
+        constraints: list | None = None,
         *args,
         **kwargs,
     ):
@@ -113,8 +112,8 @@ class Observation(PanBase):
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
 
-        self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
-        self.pointing_images: Dict[str, Path] = OrderedDict()
+        self.exposure_list: dict[str, list[Exposure]] = defaultdict(list)
+        self.pointing_images: dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
 
@@ -140,7 +139,7 @@ class Observation(PanBase):
     ################################################################################################
 
     @property
-    def status(self) -> Dict:
+    def status(self) -> dict:
         """Observation status.
 
         Returns:
@@ -239,7 +238,7 @@ class Observation(PanBase):
             return 0
 
     @property
-    def first_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+    def first_exposure(self) -> list[dict[str, Exposure]] | None:
         """Return the first exposure information.
 
         Returns:
@@ -248,7 +247,7 @@ class Observation(PanBase):
         return self.get_exposure(0)
 
     @property
-    def last_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
+    def last_exposure(self) -> list[dict[str, Exposure]] | None:
         """Return the latest exposure information.
 
         Returns:
@@ -256,7 +255,7 @@ class Observation(PanBase):
         """
         return self.get_exposure(number=-1)
 
-    def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
+    def get_exposure(self, number: int = 0) -> list[dict[str, Exposure]] | None:
         """Returns the given exposure number."""
         exposure = list()
         try:
@@ -354,7 +353,7 @@ class Observation(PanBase):
     @classmethod
     def from_dict(
         cls,
-        observation_config: Dict,
+        observation_config: dict,
         field_class="panoptes.pocs.scheduler.field.Field",
         observation_class="panoptes.pocs.scheduler.observation.base.Observation",
     ):

@@ -7,11 +7,10 @@ SBIG CCD/CMOS cameras and integrate with the AbstractSDKCamera interface.
 from contextlib import suppress
 
 from astropy.io import fits
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
-from panoptes.pocs.camera.sbigudrv import SBIGDriver
 from panoptes.utils import error
+
+from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 
 
 class Camera(AbstractSDKCamera):
@@ -27,7 +26,7 @@ class Camera(AbstractSDKCamera):
 
     def __init__(self, name="SBIG Camera", *args, **kwargs):
         super().__init__(name, SBIGDriver, *args, **kwargs)
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     def __del__(self):
         with suppress(AttributeError):
@@ -92,7 +91,7 @@ class Camera(AbstractSDKCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug("Connecting to {}".format(self))
+        self.logger.debug(f"Connecting to {self}")
         # This will close device and driver, ensuring it is ready to access a new camera
         self._driver.set_handle(handle=INVALID_HANDLE_VALUE)
         self._driver.open_driver()
@@ -100,10 +99,10 @@ class Camera(AbstractSDKCamera):
         self._driver.establish_link()
         link_status = self._driver.get_link_status()
         if not link_status["established"]:
-            raise error.PanError("Could not establish link to {}.".format(self))
+            raise error.PanError(f"Could not establish link to {self}.")
         self._handle = self._driver.get_driver_handle()
         if self._handle == INVALID_HANDLE_VALUE:
-            raise error.PanError("Could not connect to {}.".format(self))
+            raise error.PanError(f"Could not connect to {self}.")
 
         self._info = self._driver.get_ccd_info(self._handle)
         self.model = self.properties["camera name"]

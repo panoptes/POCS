@@ -5,10 +5,9 @@ import tempfile
 import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from panoptes.pocs.images import Image
-from panoptes.pocs.images import OffsetError
-from panoptes.utils.error import SolveError
-from panoptes.utils.error import Timeout
+from panoptes.utils.error import SolveError, Timeout
+
+from panoptes.pocs.images import Image, OffsetError
 
 
 def copy_file_to_dir(to_dir, file):

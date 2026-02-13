@@ -2,8 +2,8 @@
 
 import numpy as np
 from astropy import units as u
-
 from panoptes.utils.utils import get_quantity_value, listify
+
 from panoptes.pocs.scheduler.observation.base import Observation as BaseObservation
 
 
@@ -17,7 +17,7 @@ class Observation(BaseObservation):
 
         # Use the first exposure time to set up observation.
         kwargs["exptime"] = self._exptimes[0]
-        super(Observation, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._min_duration = np.sum(self._exptimes)
         self._set_duration = np.sum(

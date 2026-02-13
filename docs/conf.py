@@ -8,8 +8,8 @@
 # serve to show the default.
 
 import os
-import sys
 import shutil
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
@@ -52,7 +52,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration ---------------------------------------------------
 

@@ -6,9 +6,10 @@ weighted score. Favors the current observation when still viable to reduce
 excessive switching.
 """
 
-from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import listify
+
+from panoptes.pocs.scheduler.scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):

@@ -5,15 +5,15 @@ ready state) and movement helpers shared by concrete wheel drivers.
 """
 
 import threading
+from abc import ABCMeta, abstractmethod
 from collections import abc
-from abc import ABCMeta
-from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils.utils import listify
+
+from panoptes.pocs.base import PanBase
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -84,7 +84,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         self._move_event = threading.Event()
         self._move_event.set()
 
-        self.logger.debug("Filter wheel created: {}".format(self))
+        self.logger.debug(f"Filter wheel created: {self}")
 
     ##################################################################################################
     # Properties
@@ -282,9 +282,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self._last_light_position = new_position
 
         self.logger.info(
-            "Moving {} to position {} ({})".format(
-                self, new_position, self.filter_name(new_position)
-            )
+            f"Moving {self} to position {new_position} ({self.filter_name(new_position)})"
         )
         self._move_event.clear()
         self._move_to(new_position)  # Private method to actually perform the move.
@@ -340,9 +338,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                         int_position = i + 1  # 1 based numbering for filter wheel positions
                     else:
                         # Already matched at least once
-                        msg = "More than one filter name matches '{}', using '{}'".format(
-                            position, self.filter_names[int_position - 1]
-                        )
+                        msg = f"More than one filter name matches '{position}', using '{self.filter_names[int_position - 1]}'"
                         self.logger.warning(msg)
                         break
 

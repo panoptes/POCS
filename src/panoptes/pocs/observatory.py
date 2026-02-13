@@ -5,16 +5,20 @@ location/observer objects, and scheduler, and exposes convenience helpers for
 status, darkness checks, and common operations.
 """
 
+import os
 from collections import OrderedDict
+from contextlib import suppress
+from pathlib import Path
 
 import numpy as np
-import os
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
-from contextlib import suppress
-from pathlib import Path
-from typing import Dict, Optional
+from panoptes.utils import error
+from panoptes.utils import images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.time import CountdownTimer, current_time, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -28,10 +32,6 @@ from panoptes.pocs.scheduler.observation.compound import Observation as Compound
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils import error, images as img_utils
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.time import CountdownTimer, current_time, flatten_time
-from panoptes.utils.utils import get_quantity_value
 
 
 class Observatory(PanBase):
@@ -90,8 +90,8 @@ class Observatory(PanBase):
 
         # Set up some of the hardware.
         self.set_mount(mount)
-        self.cameras: Dict[str, AbstractCamera] = OrderedDict()
-        self._primary_camera: Optional[AbstractCamera] = None
+        self.cameras: dict[str, AbstractCamera] = OrderedDict()
+        self._primary_camera: AbstractCamera | None = None
 
         if cameras:
             self.logger.info(f"Adding cameras to the observatory: {cameras}")
@@ -187,7 +187,7 @@ class Observatory(PanBase):
         self._primary_camera = cam
 
     @property
-    def current_observation(self) -> Optional[Observation]:
+    def current_observation(self) -> Observation | None:
         """The currently active observation from the scheduler, if any.
 
         Returns:
@@ -518,11 +518,11 @@ class Observatory(PanBase):
 
     def process_observation(
         self,
-        compress_fits: Optional[bool] = None,
-        record_observations: Optional[bool] = None,
-        make_pretty_images: Optional[bool] = None,
-        plate_solve: Optional[bool] = None,
-        upload_image: Optional[bool] = None,
+        compress_fits: bool | None = None,
+        record_observations: bool | None = None,
+        make_pretty_images: bool | None = None,
+        plate_solve: bool | None = None,
+        upload_image: bool | None = None,
     ):
         """Process an individual observation.
 
@@ -773,7 +773,7 @@ class Observatory(PanBase):
             except AttributeError:
                 pass
 
-            self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
+            self.logger.debug(f"Pointing HA: {pointing_ha:.02f}")
             correction_info = self.mount.get_tracking_correction(
                 self.current_offset_info, pointing_ha, **kwargs
             )
@@ -809,7 +809,7 @@ class Observatory(PanBase):
 
         headers = {
             "airmass": self.observer.altaz(t0, field).secz.value,
-            "creator": "POCSv{}".format(self.__version__),
+            "creator": f"POCSv{self.__version__}",
             "elevation": self.location.get("elevation").value,
             "ha_mnt": self.observer.target_hour_angle(t0, field).value,
             "latitude": self.location.get("latitude").value,

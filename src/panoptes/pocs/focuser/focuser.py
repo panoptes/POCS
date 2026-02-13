@@ -7,19 +7,17 @@ measure sharpness, and optionally generate diagnostic plots.
 """
 
 import os
-from abc import ABCMeta
-from abc import abstractmethod
-from threading import Event
-from threading import Thread
+from abc import ABCMeta, abstractmethod
+from threading import Event, Thread
 
 import numpy as np
-from scipy.ndimage import binary_dilation
-from astropy.modeling import models
-from astropy.modeling import fitting
-from panoptes.pocs.base import PanBase
-from panoptes.utils.time import current_time
+from astropy.modeling import fitting, models
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images.misc import mask_saturated
+from panoptes.utils.time import current_time
+from scipy.ndimage import binary_dilation
+
+from panoptes.pocs.base import PanBase
 from panoptes.pocs.utils.plotting import make_autofocus_plot
 
 
@@ -106,7 +104,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self._camera = camera
 
-        self.logger.debug("Focuser created: {} on {}".format(self.name, self.port))
+        self.logger.debug(f"Focuser created: {self.name} on {self.port}")
 
     ##################################################################################################
     # Properties
@@ -282,7 +280,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 focus_range = self.autofocus_range
             else:
                 raise ValueError(
-                    "No focus_range specified, aborting autofocus of {}!".format(self._camera)
+                    f"No focus_range specified, aborting autofocus of {self._camera}!"
                 )
 
         if not focus_step:
@@ -290,7 +288,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 focus_step = self.autofocus_step
             else:
                 raise ValueError(
-                    "No focus_step specified, aborting autofocus of {}!".format(self._camera)
+                    f"No focus_step specified, aborting autofocus of {self._camera}!"
                 )
 
         if not seconds:
@@ -684,7 +682,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     def __str__(self):
         try:
-            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+            s = f"{self.name} ({self.uid}) on {self.port}"
         except Exception:
             s = str(__class__)
 

@@ -22,6 +22,6 @@ def on_enter(event_data):
             pocs.say("Done with tracking adjustment, going to observe")
             pocs.next_state = "observing"
         except Exception as e:
-            pocs.logger.warning("Problem adjusting tracking: {}".format(e))
+            pocs.logger.warning(f"Problem adjusting tracking: {e}")
     else:
         pocs.next_state = "observing"

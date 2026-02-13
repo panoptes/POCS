@@ -52,7 +52,7 @@ class Camera(AbstractCamera):
         super().__init__(name=name, *args, **kwargs)
         # Create a random serial number if one hasn't been specified
         if self._serial_number == "XXXXXX":
-            self._serial_number = "SC{:04d}".format(random.randint(0, 9999))
+            self._serial_number = f"SC{random.randint(0, 9999):04d}"
 
         self.connect()
         self.logger.debug(f"{self.name} connected")

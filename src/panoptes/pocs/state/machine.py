@@ -48,7 +48,7 @@ class PanStateMachine(Machine):
         self.logger.debug(f"Horizon limits: {self._horizon_lookup!r}")
 
         # Create state machine.
-        super(PanStateMachine, self).__init__(
+        super().__init__(
             states=states,
             transitions=_transitions,
             initial=state_machine_table.get("initial"),

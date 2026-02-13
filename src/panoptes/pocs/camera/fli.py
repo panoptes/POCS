@@ -7,14 +7,13 @@ AbstractSDKCamera interface for cooled FLI CCD/CMOS cameras.
 from contextlib import suppress
 
 import numpy as np
-
 from astropy import units as u
 from astropy.io import fits
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.pocs.camera.libfli import FLIDriver
-from panoptes.pocs.camera import libfliconstants as c
 from panoptes.utils import error
+
+from panoptes.pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.libfli import FLIDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 
 
 class Camera(AbstractSDKCamera):
@@ -31,13 +30,13 @@ class Camera(AbstractSDKCamera):
     def __init__(self, name="FLI Camera", target_temperature=25 * u.Celsius, *args, **kwargs):
         kwargs["target_temperature"] = target_temperature
         super().__init__(name, FLIDriver, *args, **kwargs)
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     def __del__(self):
         with suppress(AttributeError):
             handle = self._handle
             self._driver.FLIClose(handle)
-            self.logger.debug("Closed FLI camera handle {}".format(handle.value))
+            self.logger.debug(f"Closed FLI camera handle {handle.value}")
         super().__del__()
 
     # Properties
@@ -102,10 +101,10 @@ class Camera(AbstractSDKCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug("Connecting to {}".format(self))
+        self.logger.debug(f"Connecting to {self}")
         self._handle = self._driver.FLIOpen(port=self._address)
         if self._handle == c.FLI_INVALID_DEVICE:
-            message = "Could not connect to {} on {}!".format(self.name, self._camera_address)
+            message = f"Could not connect to {self.name} on {self._camera_address}!"
             raise error.PanError(message)
         self._get_camera_info()
         self.model = self.properties["camera model"]
@@ -178,9 +177,7 @@ class Camera(AbstractSDKCamera):
                 image_data[i] = self._driver.FLIGrabRow(self._handle, image_data.shape[1])
                 rows_got += 1
         except RuntimeError as err:
-            message = "Readout error on {}, expected {} rows, got {}: {}".format(
-                self, image_data.shape[0], rows_got, err
-            )
+            message = f"Readout error on {self}, expected {image_data.shape[0]} rows, got {rows_got}: {err}"
             raise error.PanError(message)
         else:
             self.write_fits(data=image_data, header=header, filename=filename)

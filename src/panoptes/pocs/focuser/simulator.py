@@ -4,10 +4,10 @@ Implements a minimal AbstractFocuser that fakes connection and movement timing
 without requiring hardware.
 """
 
-from panoptes.pocs.focuser import AbstractFocuser
-
-import time
 import random
+import time
+
+from panoptes.pocs.focuser import AbstractFocuser
 
 
 class Focuser(AbstractFocuser):
@@ -20,7 +20,7 @@ class Focuser(AbstractFocuser):
         self.logger.debug("Initialising simulator focuser")
         self._is_moving = False
         self.connect()
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     ##################################################################################################
     # Properties
@@ -59,12 +59,12 @@ class Focuser(AbstractFocuser):
         """
         time.sleep(0.1)
         self._connected = True
-        self._serial_number = "SF{:04d}".format(random.randint(0, 9999))
+        self._serial_number = f"SF{random.randint(0, 9999):04d}"
         self._min_position = 0
         self._max_position = 22200
         if self.position is None:
             self._position = random.randint(0, self._max_position)
-        self.logger.debug("Connected to focuser {}".format(self.uid))
+        self.logger.debug(f"Connected to focuser {self.uid}")
 
     def move_to(self, position):
         """Move focuser to a new encorder position"""

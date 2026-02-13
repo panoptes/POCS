@@ -1,6 +1,7 @@
 """Google Cloud Storage helper functions for PANOPTES."""
 
 from pathlib import Path
+
 from google.cloud import storage
 
 from panoptes.pocs.utils.logger import get_logger

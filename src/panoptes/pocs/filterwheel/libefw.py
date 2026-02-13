@@ -10,10 +10,11 @@ import enum
 import threading
 import time
 
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.utils.time import CountdownTimer
+
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 
 class EFWDriver(AbstractSDKDriver):
@@ -226,9 +227,7 @@ class EFWDriver(AbstractSDKDriver):
             )
             while error_code == ErrorCode.MOVING:
                 if timeout is not None and timer.expired():
-                    msg = "Timeout waiting for filterwheel {} to move to {}".format(
-                        filterwheel_ID, position
-                    )
+                    msg = f"Timeout waiting for filterwheel {filterwheel_ID} to move to {position}"
                     raise error.Timeout(msg)
                 time.sleep(0.1)
                 error_code = self._CDLL.EFWSetPosition(
@@ -237,17 +236,13 @@ class EFWDriver(AbstractSDKDriver):
 
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
-                msg = "Error while moving filterwheel {} to {}: {}".format(
-                    filterwheel_ID, position, ErrorCode(error_code).name
-                )
+                msg = f"Error while moving filterwheel {filterwheel_ID} to {position}: {ErrorCode(error_code).name}"
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
             final_position = self.get_position(filterwheel_ID)
             if final_position != position:
-                msg = "Tried to move filterwheel {} to {}, but ended up at {}.".format(
-                    filterwheel_ID, position, final_position
-                )
+                msg = f"Tried to move filterwheel {filterwheel_ID} to {position}, but ended up at {final_position}."
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
@@ -262,7 +257,7 @@ class EFWDriver(AbstractSDKDriver):
         function = getattr(self._CDLL, function_name)
         error_code = function(ctypes.c_int(filterwheel_ID), *args)
         if error_code != ErrorCode.SUCCESS:
-            msg = "Error calling {}: {}".format(function_name, ErrorCode(error_code).name)
+            msg = f"Error calling {function_name}: {ErrorCode(error_code).name}"
             self.logger.error(msg)
             raise error.PanError(msg)
 

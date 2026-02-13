@@ -5,12 +5,12 @@ import tempfile
 from contextlib import suppress
 
 import pytest
-from panoptes.pocs import hardware
-from panoptes.pocs.utils.logger import get_logger
-from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
+
+from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
+from panoptes.pocs.utils.logger import PanLogger, get_logger
 
 _all_databases = ["file", "memory"]
 

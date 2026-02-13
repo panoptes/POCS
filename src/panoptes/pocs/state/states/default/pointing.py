@@ -5,8 +5,9 @@ then proceed to 'tracking'.
 """
 
 import numpy as np
-from panoptes.pocs.images import Image
 from panoptes.utils.time import wait_for_events
+
+from panoptes.pocs.images import Image
 
 MAX_EXTRA_TIME = 60  # second
 

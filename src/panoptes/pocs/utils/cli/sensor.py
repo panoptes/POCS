@@ -1,7 +1,6 @@
 """Typer CLI for monitoring remote sensors exposed via HTTP endpoints."""
 
 import time
-from typing import Optional
 
 import typer
 from rich import print
@@ -32,7 +31,7 @@ def main(context: typer.Context):
 @app.command()
 def monitor(
     sensor_name: str,
-    endpoint: Optional[str] = typer.Option(
+    endpoint: str | None = typer.Option(
         None,
         help="The remote endpoint to read. "
         "If not provided, use the config key "

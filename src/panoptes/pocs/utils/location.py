@@ -6,15 +6,16 @@ fetching used by astropy/astroplan for accurate time/earth orientation.
 """
 
 from dataclasses import dataclass
+
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.utils.iers import Conf as iers_conf
-
 from panoptes.utils import error
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
 

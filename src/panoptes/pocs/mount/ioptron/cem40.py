@@ -20,7 +20,7 @@ class Mount(BaseMount):
             **kwargs: Keyword arguments forwarded to the BaseMount initializer.
         """
         self._mount_version = mount_version
-        super(Mount, self).__init__(location, *args, **kwargs)
+        super().__init__(location, *args, **kwargs)
         self.logger.success("iOptron mount created")
 
     def search_for_home(self):

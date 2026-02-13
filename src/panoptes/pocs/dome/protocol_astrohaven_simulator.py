@@ -9,10 +9,11 @@ import datetime
 import queue
 import threading
 import time
+
+from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 from serial import serialutil
 
 from panoptes.pocs.dome import astrohaven
-from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 from panoptes.pocs.utils.logger import get_logger
 
 Protocol = astrohaven.Protocol
@@ -29,7 +30,7 @@ def _drain_queue(q):
     return cmd  # Present just for debugging.
 
 
-class Shutter(object):
+class Shutter:
     """Represents one side of the clamshell dome."""
 
     def __init__(self, side, open_command, close_command, is_open_char, is_closed_char, logger):

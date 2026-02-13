@@ -1,12 +1,12 @@
-import pytest
 import math
 from timeit import timeit
 
+import pytest
 from astropy import units as u
-
-from panoptes.pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
-from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.utils import error
+
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
+from panoptes.pocs.filterwheel.simulator import FilterWheel as SimFilterWheel
 
 
 @pytest.fixture(scope="function")

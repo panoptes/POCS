@@ -10,22 +10,20 @@ import copy
 import os
 import threading
 import time
-from abc import ABCMeta
-from abc import abstractmethod
+import warnings
+from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 from pathlib import Path
-import warnings
 
 import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
 from panoptes.utils import error
+from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images.misc import crop_data
 from panoptes.utils.library import load_module
-from panoptes.utils.time import CountdownTimer
-from panoptes.utils.time import current_time
+from panoptes.utils.time import CountdownTimer, current_time
 from panoptes.utils.utils import get_quantity_value
-from panoptes.utils.images import fits as fits_utils
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.observation.base import Exposure, Observation

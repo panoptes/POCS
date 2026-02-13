@@ -2,24 +2,22 @@ import os
 import time
 
 import pytest
+import requests
 from astropy.coordinates import get_body
 from astropy.time import Time
-from panoptes.pocs import __version__
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json
-from panoptes.pocs import hardware
-from panoptes.pocs.mount import AbstractMount
+
+from panoptes.pocs import __version__, hardware
+from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.dome import create_dome_simulator
+from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
 from panoptes.pocs.observatory import Observatory
+from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.scheduler.dispatch import Scheduler
 from panoptes.pocs.scheduler.observation.base import Observation
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.dome import create_dome_simulator
-from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
-import requests
 
 
 def reset_conf(config_host, config_port):
@@ -264,7 +262,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         "airmass": 1.091778,
-        "creator": "POCSv{}".format(__version__),
+        "creator": f"POCSv{__version__}",
         "elevation": 3400.0,
         "ha_mnt": 1.6844671878927793,
         "latitude": 19.54,

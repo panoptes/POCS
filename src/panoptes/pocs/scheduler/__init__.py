@@ -85,7 +85,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     return pocs_scheduler
 
 
-def create_constraints_from_config(config=None) -> List[BaseConstraint]:
+def create_constraints_from_config(config=None) -> list[BaseConstraint]:
     """Build a list of constraint instances from scheduler configuration.
 
     Reads the 'scheduler.constraints' list from the provided config (or global

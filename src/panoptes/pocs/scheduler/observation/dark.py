@@ -5,10 +5,9 @@ lengths, saving outputs under an images/dark subdirectory.
 """
 
 import os
-from astropy import units as u
 
-from panoptes.utils.utils import get_quantity_value
-from panoptes.utils.utils import listify
+from astropy import units as u
+from panoptes.utils.utils import get_quantity_value, listify
 
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation

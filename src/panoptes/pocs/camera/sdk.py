@@ -60,7 +60,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         super().__init__(**kwargs)
         self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()
-        self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
+        self.logger.debug(f"{name} driver ({self._version}) initialised.")
 
     # Properties
 
@@ -174,7 +174,7 @@ class AbstractSDKCamera(AbstractCamera):
                 msg = f"Set target temperature {target_temperature} & enabled cooling on {self}."
                 self.logger.debug(msg)
             else:
-                msg = "Setting a target temperature on uncooled camera {}".format(self)
+                msg = f"Setting a target temperature on uncooled camera {self}"
                 self.logger.warning(msg)
 
     def __del__(self):

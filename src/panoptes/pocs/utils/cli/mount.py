@@ -8,6 +8,7 @@ position. These commands are intended for manual use during setup or recovery.
 import re
 import subprocess
 from pathlib import Path
+from typing import Annotated
 
 import serial
 import typer
@@ -20,7 +21,6 @@ from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.utils.time import CountdownTimer, current_time
 from pick import pick
 from rich import print
-from typing_extensions import Annotated
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo

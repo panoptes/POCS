@@ -7,7 +7,6 @@ host while keeping POCS orchestration local.
 
 from collections import deque
 from threading import Thread
-from typing import List, Union
 
 import requests
 from pydantic import AnyHttpUrl
@@ -74,7 +73,7 @@ class Camera(CanonCamera):
         self._command_proc = Thread(target=do_command, name="RemoteGphoto2Command")
         self._command_proc.start()
 
-    def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
+    def get_command_result(self, timeout: float = 10) -> list[str] | None:
         """Wait for the remote command to finish and return its output.
 
         Args:
@@ -105,5 +104,5 @@ class Camera(CanonCamera):
         return output
 
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> dict:
-        fits_header = super(Camera, self)._create_fits_header(seconds, dark=dark, metadata=metadata)
+        fits_header = super()._create_fits_header(seconds, dark=dark, metadata=metadata)
         return {k.lower(): v for k, v in dict(fits_header).items()}

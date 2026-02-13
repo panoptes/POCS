@@ -9,13 +9,13 @@ import math
 import random
 import time
 from abc import ABC
-
 from contextlib import suppress
-import astropy.units as u
 
-from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
-from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+import astropy.units as u
 from panoptes.utils.config.client import get_config
+
+from panoptes.pocs.camera.sdk import AbstractSDKCamera, AbstractSDKDriver
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 
 
 class SDKDriver(AbstractSDKDriver):

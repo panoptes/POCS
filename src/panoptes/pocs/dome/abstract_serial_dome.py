@@ -5,9 +5,9 @@ configuration and implements common connect/disconnect helpers reused by
 concrete serial dome drivers.
 """
 
+from panoptes.utils import error, rs232
+
 from panoptes.pocs import dome
-from panoptes.utils import error
-from panoptes.utils import rs232
 
 
 class AbstractSerialDome(dome.AbstractDome):
@@ -30,7 +30,7 @@ class AbstractSerialDome(dome.AbstractDome):
         cfg = self._dome_config
         self._port = cfg.get("port")
         if not self._port:
-            msg = "No port specified in the config for dome: {}".format(cfg)
+            msg = f"No port specified in the config for dome: {cfg}"
             self.logger.error(msg)
             raise error.DomeNotFound(msg=msg)
 
@@ -67,11 +67,11 @@ class AbstractSerialDome(dome.AbstractDome):
             self.logger.debug("Connecting to dome")
             try:
                 self.serial.connect()
-                self.logger.info("Dome connected: {}".format(self.is_connected))
+                self.logger.info(f"Dome connected: {self.is_connected}")
             except OSError as err:
-                self.logger.error("OS error: {0}".format(err))
+                self.logger.error(f"OS error: {err}")
             except error.BadSerialConnection as err:
-                self.logger.warning("Could not create serial connection to dome\n{}".format(err))
+                self.logger.warning(f"Could not create serial connection to dome\n{err}")
         else:
             self.logger.debug("Already connected to dome")
 
@@ -90,5 +90,5 @@ class AbstractSerialDome(dome.AbstractDome):
         """Throw an exception if not connected."""
         if not self.is_connected:
             raise error.BadSerialConnection(
-                msg="Not connected to dome at port {}".format(self._port)
+                msg=f"Not connected to dome at port {self._port}"
             )

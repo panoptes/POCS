@@ -3,12 +3,13 @@
 Provides commands to query status/config and to restart the service.
 """
 
-import human_readable
-import requests
 import subprocess
-import typer
 from dataclasses import dataclass
 from datetime import datetime
+
+import human_readable
+import requests
+import typer
 from rich import print
 from rich.console import Console
 from rich.table import Table

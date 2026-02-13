@@ -47,7 +47,7 @@ class AbstractMount(PanBase):
     """
 
     def __init__(self, location, commands=None, *args, **kwargs):
-        super(AbstractMount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
@@ -334,7 +334,7 @@ class AbstractMount(PanBase):
         target = self.get_target_coordinates().coord
         separation = self.get_current_coordinates().separation(target, origin_mismatch="ignore")
 
-        self.logger.debug("Current separation from target: {}".format(separation))
+        self.logger.debug(f"Current separation from target: {separation}")
 
         return separation
 
@@ -457,20 +457,18 @@ class AbstractMount(PanBase):
             delta_direction = corrections[2]
 
             self.logger.info(
-                "Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
-                    axis, delta_direction, offset_ms, offset
-                )
+                f"Adjusting {axis}: {delta_direction} {offset_ms:0.2f} ms {offset:0.2f}"
             )
 
-            self.query("move_ms_{}".format(delta_direction), "{:05.0f}".format(offset_ms))
+            self.query(f"move_ms_{delta_direction}", f"{offset_ms:05.0f}")
 
             # Adjust tracking for `axis_timeout` seconds then fail if not done.
             start_tracking_time = current_time()
             while self.is_tracking is False:
                 if (current_time() - start_tracking_time).sec > axis_timeout:
-                    raise error.Timeout("Tracking adjustment timeout: {}".format(axis))
+                    raise error.Timeout(f"Tracking adjustment timeout: {axis}")
 
-                self.logger.debug("Waiting for {} tracking adjustment".format(axis))
+                self.logger.debug(f"Waiting for {axis} tracking adjustment")
                 time.sleep(0.5)
 
     def slew_to_coordinates(self, coords, *args, **kwargs):

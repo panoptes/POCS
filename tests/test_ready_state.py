@@ -1,7 +1,8 @@
 """Tests for the ready state, particularly the smart day sleep timer."""
 
-from astropy.time import Time
 from unittest.mock import MagicMock, patch
+
+from astropy.time import Time
 
 from panoptes.pocs.state.states.default.ready import _calculate_wait_until_dark
 

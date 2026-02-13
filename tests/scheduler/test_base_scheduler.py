@@ -1,15 +1,13 @@
 import pytest
-
+from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
-from astroplan import Observer
-
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
-from panoptes.pocs.scheduler.scheduler import BaseScheduler as Scheduler
-from panoptes.pocs.scheduler import create_constraints_from_config
+from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.serializers import from_yaml
+
+from panoptes.pocs.scheduler import create_constraints_from_config
+from panoptes.pocs.scheduler.scheduler import BaseScheduler as Scheduler
 
 
 @pytest.fixture(scope="module")

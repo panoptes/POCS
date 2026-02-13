@@ -7,8 +7,8 @@ implements common read/write/query helpers reused by concrete serial mounts.
 import re
 from abc import ABC
 
-from panoptes.utils import error
-from panoptes.utils import rs232
+from panoptes.utils import error, rs232
+
 from panoptes.pocs.mount import AbstractMount
 
 

@@ -12,7 +12,8 @@ from contextlib import suppress
 from astropy import units as u
 from astropy.time import Time
 from dateutil.parser import parse as parse_date
-from panoptes.utils import error, horizon as horizon_utils
+from panoptes.utils import error
+from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase

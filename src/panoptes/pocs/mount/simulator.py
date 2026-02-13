@@ -8,9 +8,10 @@ import time
 from threading import Timer
 
 from astropy import units as u
-from panoptes.pocs.mount import AbstractMount
 from panoptes.utils import error
 from panoptes.utils.time import current_time
+
+from panoptes.pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):

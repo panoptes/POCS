@@ -7,11 +7,11 @@ telemetry into rolling means and status dictionaries.
 """
 
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import IntEnum
 from functools import partial
-from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 from astropy import units as u
@@ -60,9 +60,9 @@ class Relay:
 
     name: str
     relay_index: TruckerRelayIndex
-    label: Optional[str]
-    state: Optional[PinState] = PinState.OFF
-    default_state: Optional[PinState] = PinState.OFF
+    label: str | None
+    state: PinState | None = PinState.OFF
+    default_state: PinState | None = PinState.OFF
 
     def turn_on(self):
         """Turn this relay ON (helper bound by PowerBoard.setup_relays)."""
@@ -109,9 +109,9 @@ class PowerBoard(PanBase):
         self,
         port: str = None,
         name: str = "Power Board",
-        relays: Dict[str, dict] = None,
+        relays: dict[str, dict] = None,
         reader_callback: Callable[[dict], dict] = None,
-        mean_interval: Optional[int] = 5,
+        mean_interval: int | None = 5,
         arduino_board_name: str = "power_board",
         *args,
         **kwargs,
@@ -160,8 +160,8 @@ class PowerBoard(PanBase):
             name=arduino_board_name,
         )
 
-        self.relays: List[Relay] = list()
-        self.relay_labels: Dict[str, Relay] = dict()
+        self.relays: list[Relay] = list()
+        self.relay_labels: dict[str, Relay] = dict()
         self.setup_relays(relays)
         time.sleep(2)
 
@@ -259,7 +259,7 @@ class PowerBoard(PanBase):
 
         return recent_values
 
-    def setup_relays(self, relays: Dict[str, dict]):
+    def setup_relays(self, relays: dict[str, dict]):
         """Setup the relays."""
         for relay_name, relay_config in relays.items():
             relay_index = TruckerRelayIndex[relay_name]

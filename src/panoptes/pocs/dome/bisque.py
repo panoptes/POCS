@@ -7,13 +7,13 @@ unpark, and query status/position.
 
 import os
 import time
-
 from string import Template
 
-from panoptes.pocs import dome
 from panoptes.utils import error
-from panoptes.pocs.utils import theskyx
 from panoptes.utils.serializers import from_json
+
+from panoptes.pocs import dome
+from panoptes.pocs.utils import theskyx
 
 
 class Dome(dome.AbstractDome):
@@ -284,10 +284,10 @@ class Dome(dome.AbstractDome):
 
         template = ""
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(f"Problem reading TheSkyX template {filename}: {e}")
 
         if params is None:
             params = {}

@@ -1,17 +1,15 @@
 from contextlib import suppress
 
 import pytest
-from astropy.utils.iers import Conf as iers_conf
-from panoptes.pocs import hardware
-from panoptes.pocs.mount import AbstractMount
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json
 import requests
+from astropy.utils.iers import Conf as iers_conf
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.serializers import to_json
+
+from panoptes.pocs import hardware
+from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
+from panoptes.pocs.utils.location import create_location_from_config
 
 iers_conf.iers_degraded_accuracy.set_temp("warn")
 

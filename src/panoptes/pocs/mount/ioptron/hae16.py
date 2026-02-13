@@ -11,4 +11,4 @@ class Mount(BaseMount):
     """
 
     def __init__(self, location, mount_version="0012", *args, **kwargs):
-        super(Mount, self).__init__(location, mount_version=mount_version, *args, **kwargs)
+        super().__init__(location, mount_version=mount_version, *args, **kwargs)

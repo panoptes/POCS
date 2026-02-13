@@ -267,7 +267,7 @@ class BaseScheduler(PanBase):
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
 
-            with open(self.fields_file, "r") as f:
+            with open(self.fields_file) as f:
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:

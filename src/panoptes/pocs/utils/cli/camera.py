@@ -11,14 +11,14 @@ import threading
 import time
 from pathlib import Path
 from platform import uname
-from typing import Dict, List
 
 import typer
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import PanError
 
 # Import panoptes-utils image processing
-from panoptes.utils.images import cr2 as cr2_utils, make_pretty_image
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.fits import fpack, get_solve_field
 from panoptes.utils.time import current_time
 from rich import print
@@ -186,7 +186,7 @@ def take_pictures_cmd(
     solve: bool = typer.Option(False, help="Solve FITS with astrometry."),
     pretty: bool = typer.Option(False, help="Create pretty PNG image."),
     verbose: bool = typer.Option(False, help="Print detailed processing output."),
-) -> Dict[str, List[Path]] | None:
+) -> dict[str, list[Path]] | None:
     """Takes pictures with cameras and optionally processes them."""
     cameras = create_cameras_from_config()
 
@@ -219,7 +219,7 @@ def take_pictures(
     solve: bool = False,
     pretty: bool = False,
     verbose: bool = False,
-) -> Dict[str, List[Path]] | None:
+) -> dict[str, list[Path]] | None:
     """Capture images concurrently from one or more cameras with optional processing.
 
     Spawns a thread pool to trigger exposures across all cameras and a background

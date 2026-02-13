@@ -17,11 +17,11 @@ import time
 import numpy as np
 from astropy import units as u
 from numpy.ctypeslib import as_ctypes
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import get_quantity_value
 
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 ################################################################################
 # Main SBIGDriver class
@@ -80,7 +80,7 @@ class SBIGDriver(AbstractSDKDriver):
         """
         retries = int(retries)
         if retries < 1:
-            raise ValueError("retries should be 1 or greater, got {}!".format(retries))
+            raise ValueError(f"retries should be 1 or greater, got {retries}!")
         self._retries = retries
 
     # Methods
@@ -120,7 +120,7 @@ class SBIGDriver(AbstractSDKDriver):
         cameras = {}
         for i in range(camera_info.camerasFound):
             serial_number = camera_info.usbInfo[i].serialNumber.decode("ascii")
-            device_type = "DEV_USB{}".format(i + 1)
+            device_type = f"DEV_USB{i + 1}"
             cameras[serial_number] = device_type
 
         return cameras
@@ -267,7 +267,7 @@ class SBIGDriver(AbstractSDKDriver):
         set_driver_control_params = SetDriverControlParams(
             driver_control_codes["DCP_VDD_OPTIMIZED"], 0
         )
-        self.logger.debug("Disabling DCP_VDD_OPTIMIZE on {}".format(handle))
+        self.logger.debug(f"Disabling DCP_VDD_OPTIMIZE on {handle}")
         with self._command_lock:
             self.set_handle(handle)
             self._send_command("CC_SET_DRIVER_CONTROL", params=set_driver_control_params)
@@ -441,13 +441,13 @@ class SBIGDriver(AbstractSDKDriver):
                     )
                     rows_got += 1
             except RuntimeError as err:
-                message = "expected {} rows, got {}: {}".format(height, rows_got, err)
+                message = f"expected {height} rows, got {rows_got}: {err}"
                 raise RuntimeError(message)
 
             try:
                 self._send_command("CC_END_READOUT", params=end_readout_params)
             except RuntimeError as err:
-                message = "error ending readout: {}".format(err)
+                message = f"error ending readout: {err}"
                 raise RuntimeError(message)
 
         return image_data
@@ -475,7 +475,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error
         """
-        self.logger.debug("Initialising filter wheel on {}".format(handle))
+        self.logger.debug(f"Initialising filter wheel on {handle}")
         cfw_init = self._cfw_params(handle, model, CFWCommand.INIT)
         # The filterwheel init command does not block until complete, but this method should.
         # Need to poll.
@@ -571,7 +571,7 @@ class SBIGDriver(AbstractSDKDriver):
         Raises:
             RuntimeError: raised if the driver returns an error
         """
-        self.logger.debug("Moving filter wheel on {} to position {}".format(handle, position))
+        self.logger.debug(f"Moving filter wheel on {handle} to position {position}")
         # First check that the filter wheel isn't currently moving, and that the requested
         # position is valid.
         info = self.cfw_get_info(handle, model)
@@ -628,16 +628,14 @@ class SBIGDriver(AbstractSDKDriver):
             query = self.cfw_query(handle, model)
             while query["status"] == "BUSY":
                 if timeout is not None and timer.expired():
-                    msg = "Timeout waiting for filter wheel {} to move to {}".format(
-                        handle, position
-                    )
+                    msg = f"Timeout waiting for filter wheel {handle} to move to {position}"
                     raise error.Timeout(msg)
                 time.sleep(0.1)
                 query = self.cfw_query(handle, model)
         except RuntimeError as err:
             # Error returned by driver at some point while polling
             self.logger.error(
-                "Error while moving filter wheel on {} to {}: {}".format(handle, position, err)
+                f"Error while moving filter wheel on {handle} to {position}: {err}"
             )
             raise err
         else:
@@ -706,7 +704,7 @@ class SBIGDriver(AbstractSDKDriver):
         elif int_type == "ulong":
             bcd = bcd.to_bytes(ctypes.sizeof(ctypes.c_ulong), byteorder="big")
         else:
-            self.logger.error("Unknown integer type {}!".format(int_type))
+            self.logger.error(f"Unknown integer type {int_type}!")
             return
 
         # Convert bytes sequence to hexadecimal string representation, which will also be the
@@ -721,7 +719,7 @@ class SBIGDriver(AbstractSDKDriver):
     def _bcd_to_string(self, bcd, int_type="ushort"):
         # Includes conversion to intended numerical value, i.e. division by 100
         s = str(self._bcd_to_int(bcd, int_type))
-        return "{}.{}".format(s[:-2], s[-2:])
+        return f"{s[:-2]}.{s[-2:]}"
 
     def _parse_readout_info(self, infos):
         readout_mode_info = {}
@@ -766,7 +764,7 @@ class SBIGDriver(AbstractSDKDriver):
         try:
             command_code = command_codes[command]
         except KeyError:
-            msg = "Invalid SBIG command '{}'!".format(command)
+            msg = f"Invalid SBIG command '{command}'!"
             self.logger.error(msg)
             raise KeyError(msg)
 
@@ -789,7 +787,7 @@ class SBIGDriver(AbstractSDKDriver):
             try:
                 error = errors[return_code]
             except KeyError:
-                msg = "SBIG Driver returned unknown error code '{}'".format(return_code)
+                msg = f"SBIG Driver returned unknown error code '{return_code}'"
                 self.logger.error(msg)
                 raise RuntimeError(msg)
 
@@ -806,13 +804,13 @@ class SBIGDriver(AbstractSDKDriver):
             if error == "CE_CFW_ERROR":
                 cfw_error_code = results.cfwError
                 try:
-                    error = "CFW {}".format(CFWError(cfw_error_code).name)
+                    error = f"CFW {CFWError(cfw_error_code).name}"
                 except ValueError:
-                    msg = "SBIG Driver return unknown CFW error code '{}'".format(cfw_error_code)
+                    msg = f"SBIG Driver return unknown CFW error code '{cfw_error_code}'"
                     self.logger.error(msg)
                     raise RuntimeError(msg)
 
-            msg = "SBIG Driver returned error '{}'!".format(error)
+            msg = f"SBIG Driver returned error '{error}'!"
             self.logger.error(msg)
             raise RuntimeError(msg)
 

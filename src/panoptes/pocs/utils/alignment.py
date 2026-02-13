@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from astropy.visualization import LogStretch, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.wcs import FITSFixedWarning, WCS
+from astropy.wcs import WCS, FITSFixedWarning
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle

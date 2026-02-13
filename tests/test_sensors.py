@@ -2,10 +2,9 @@
 
 import pytest
 import responses
-
-from panoptes.pocs.sensor import remote
-from panoptes.pocs.sensor import power
 from panoptes.utils import error
+
+from panoptes.pocs.sensor import power, remote
 
 
 @pytest.fixture

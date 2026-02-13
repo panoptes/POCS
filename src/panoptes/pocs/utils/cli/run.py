@@ -9,7 +9,6 @@ from collections import defaultdict
 from itertools import product
 from multiprocessing import Process
 from pathlib import Path
-from typing import List
 
 import typer
 from astropy.coordinates import SkyCoord
@@ -34,7 +33,7 @@ warnings.filterwarnings(action="ignore", message="datfix")
 @app.callback()
 def common(
     context: typer.Context,
-    simulator: List[str] = typer.Option(None, "--simulator", "-s", help="Simulators to load"),
+    simulator: list[str] = typer.Option(None, "--simulator", "-s", help="Simulators to load"),
     cloud_logging: bool = typer.Option(False, "--cloud-logging", "-c", help="Enable cloud logging"),
 ):
     """Shared options for all commands.
@@ -124,7 +123,7 @@ def run_auto(context: typer.Context) -> None:
 @app.command(name="long-alignment")
 def run_long_alignment(
     context: typer.Context,
-    coords: List[str] = typer.Option(
+    coords: list[str] = typer.Option(
         None, "--coords", "-c", help="Alt/Az coordinates to use, e.g. 40,120"
     ),
     exptime: float = typer.Option(30.0, "--exptime", "-e", help="Exposure time in seconds."),

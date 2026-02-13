@@ -8,8 +8,8 @@ import math
 
 from astropy import units as u
 
-from panoptes.pocs.filterwheel import AbstractFilterWheel
 from panoptes.pocs.camera.sbig import Camera as SBIGCamera
+from panoptes.pocs.filterwheel import AbstractFilterWheel
 
 
 class FilterWheel(AbstractFilterWheel):
@@ -43,7 +43,7 @@ class FilterWheel(AbstractFilterWheel):
             self.logger.error(msg)
             raise ValueError(msg)
         if not isinstance(camera, SBIGCamera):
-            msg = "Camera must be an instance of pocs.camera.sbig.Camera, got {}".format(camera)
+            msg = f"Camera must be an instance of pocs.camera.sbig.Camera, got {camera}"
             self.logger.error(msg)
             raise ValueError(msg)
         super().__init__(
@@ -79,7 +79,7 @@ class FilterWheel(AbstractFilterWheel):
         """Is the filterwheel currently moving"""
         status = self._driver.cfw_query(self._handle)
         if status["status"] == "UNKNOWN":
-            self.logger.warning("{} returned 'UNKNOWN' status".format(self))
+            self.logger.warning(f"{self} returned 'UNKNOWN' status")
         return bool(status["status"] == "BUSY")
 
     @property
@@ -102,7 +102,7 @@ class FilterWheel(AbstractFilterWheel):
         first. The SBIG camera connect() method will call this once it's OK to do so.
         """
         assert self.camera.is_connected, self.logger.error(
-            "Can't connect {}, camera not connected".format(self)
+            f"Can't connect {self}, camera not connected"
         )
         self._driver = self.camera._driver
         self._handle = self.camera._handle
@@ -112,13 +112,11 @@ class FilterWheel(AbstractFilterWheel):
         self._firmware_version = info["firmware_version"]
         self._n_positions = info["n_positions"]
         if len(self.filter_names) != self.n_positions:
-            msg = "Number of names in filter_names ({}) doesn't".format(
-                len(self.filter_names)
-            ) + " match number of positions in filter wheel ({})".format(self.n_positions)
+            msg = f"Number of names in filter_names ({len(self.filter_names)}) doesn't" + f" match number of positions in filter wheel ({self.n_positions})"
             self.logger.error(msg)
             raise ValueError(msg)
 
-        self.logger.info("Filter wheel {} initialised".format(self))
+        self.logger.info(f"Filter wheel {self} initialised")
         self._connected = True
 
     def recalibrate(self):
@@ -127,7 +125,7 @@ class FilterWheel(AbstractFilterWheel):
         SBIG filter wheels initialise and calibrate themselves on power up.
         """
         self._driver.cfw_init(handle=self._handle, timeout=self._timeout)
-        self.logger.info("{} recalibrated".format(self))
+        self.logger.info(f"{self} recalibrated")
 
     ##################################################################################################
     # Private methods

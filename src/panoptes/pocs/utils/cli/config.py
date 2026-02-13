@@ -6,17 +6,15 @@ panoptes-utils config server, along with a status check and restart helper.
 
 import os
 import subprocess
-from typing import Optional, Dict
 
 import typer
 from astropy import units as u
+from panoptes.utils.config.client import get_config, server_is_running, set_config
 from pydantic import BaseModel
-from rich import print
-from rich import prompt
+from rich import print, prompt
 from rich.console import Console
 
 from panoptes.pocs.utils.logger import get_logger
-from panoptes.utils.config.client import get_config, set_config, server_is_running
 
 
 class HostInfo(BaseModel):
@@ -37,7 +35,7 @@ class HostInfo(BaseModel):
 
 
 app = typer.Typer()
-host_info: Dict[str, Optional[HostInfo]] = {"config_server": None}
+host_info: dict[str, HostInfo | None] = {"config_server": None}
 logger = get_logger(stderr_log_level="ERROR")
 
 
@@ -82,7 +80,7 @@ def status():
 
 @app.command(name="get")
 def get_value(
-    key: Optional[str] = typer.Argument(
+    key: str | None = typer.Argument(
         None,
         help="The key of the config item to get. "
         "Can be specified in dotted-key notation "

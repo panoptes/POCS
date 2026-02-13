@@ -5,17 +5,16 @@ solves for WCS (via panoptes-utils), and offers helpers to compute the pointing
 and pointing error between images.
 """
 
-from contextlib import suppress
 from collections import namedtuple
+from contextlib import suppress
 from pathlib import Path
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import FK5
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import FK5, EarthLocation, SkyCoord
 from astropy.io import fits
 from astropy.time import Time
 from panoptes.utils.images import fits as fits_utils
+
 from panoptes.pocs.base import PanBase
 
 OffsetError = namedtuple("OffsetError", ["delta_ra", "delta_dec", "magnitude"])
@@ -185,7 +184,7 @@ class Image(PanBase):
                 )
 
         except Exception as e:
-            self.logger.warning("Cannot get header pointing information: {}".format(e))
+            self.logger.warning(f"Cannot get header pointing information: {e}")
 
     def get_wcs_pointing(self):
         """Get the pointing information from the WCS

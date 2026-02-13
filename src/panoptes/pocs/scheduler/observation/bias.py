@@ -5,8 +5,8 @@ counts and set size, storing results under an images/bias subdirectory.
 """
 
 import os
-from astropy import units as u
 
+from astropy import units as u
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.scheduler.field import Field

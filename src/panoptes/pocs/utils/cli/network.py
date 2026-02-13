@@ -9,13 +9,11 @@ import os
 import stat
 import time
 from pathlib import Path
-from typing import List
 
 import requests
 import typer
-from google.cloud import firestore
-from google.cloud import storage
-from panoptes.utils.config.client import set_config, get_config
+from google.cloud import firestore, storage
+from panoptes.utils.config.client import get_config, set_config
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -236,7 +234,7 @@ def upload_directory(
     bucket_name: str = "panoptes-images-incoming",
     continue_on_error: bool = False,
     storage_client=None,
-) -> List[str]:
+) -> list[str]:
     """Upload all files in a directory to a Google Cloud Storage bucket.
 
     This removes the directory path itself from the absolute path and appends the
