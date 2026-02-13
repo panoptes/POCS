@@ -44,6 +44,13 @@ class Field(FixedTarget, PanBase):
         """Flattened field name appropriate for paths"""
         return self._field_name
 
+    def to_dict(self):
+        """Serialize the field to a dict."""
+        return {
+            "name": self.name,
+            "position": self.coord.to_string('hmsdms'),
+        }
+
     def __str__(self):
         return self.name
 
