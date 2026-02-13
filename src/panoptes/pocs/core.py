@@ -3,16 +3,15 @@
 Defines the POCS state machine class, which coordinates an Observatory instance
 and manages the high-level observing loop, safety checks, and lifecycle.
 """
+
 import os
-from astropy.time import Time
 from contextlib import suppress
 from multiprocessing import Process
-from typing import Optional, List
 from zoneinfo import ZoneInfo
 
 from astropy import units as u
-from panoptes.utils.time import CountdownTimer
-from panoptes.utils.time import current_time
+from astropy.time import Time
+from panoptes.utils.time import CountdownTimer, current_time
 from panoptes.utils.utils import get_free_space
 
 from panoptes.pocs.base import PanBase
@@ -316,9 +315,7 @@ class POCS(PanStateMachine, PanBase):
         self.logger.debug("Resetting observing run attempts")
         self._obs_run_retries = self.get_config("pocs.RETRY_ATTEMPTS", default=3)
 
-    def observe_target(
-        self, observation: Optional[Observation] = None, park_if_unsafe: bool = True
-    ):
+    def observe_target(self, observation: Observation | None = None, park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
 
         Note: This is a long-running blocking method.
@@ -523,9 +520,7 @@ class POCS(PanStateMachine, PanBase):
 
         return is_safe
 
-    def has_free_space(
-        self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5
-    ):
+    def has_free_space(self, directory=None, required_space=0.25 * u.gigabyte, low_space_percent=1.5):
         """Does hard drive have disk space (>= 0.5 GB).
 
         Args:
@@ -648,7 +643,7 @@ class POCS(PanStateMachine, PanBase):
     ################################################################################################
 
     @classmethod
-    def from_config(cls, simulators: List[str] = None):
+    def from_config(cls, simulators: list[str] = None):
         """Create a new POCS instance using the config system.
 
         Args:
@@ -663,11 +658,13 @@ class POCS(PanStateMachine, PanBase):
             simulators = get_simulator_names("all")
 
         try:
-            from panoptes.pocs.scheduler import create_scheduler_from_config
-            from panoptes.pocs.scheduler import create_location_from_config
-            from panoptes.pocs.mount import create_mount_from_config, create_mount_simulator
             from panoptes.pocs.camera import create_cameras_from_config
             from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
+            from panoptes.pocs.mount import create_mount_from_config, create_mount_simulator
+            from panoptes.pocs.scheduler import (
+                create_location_from_config,
+                create_scheduler_from_config,
+            )
         except ImportError:
             print("Cannot import helper modules.")
         else:

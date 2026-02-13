@@ -1,9 +1,7 @@
 import pytest
-
-from panoptes.pocs.dome import simulator
-from panoptes.pocs.dome import create_dome_simulator
-
 from panoptes.utils.config.client import set_config
+
+from panoptes.pocs.dome import create_dome_simulator, simulator
 
 
 @pytest.fixture(scope="function")

@@ -6,6 +6,7 @@ handling, coordinate conversion, command table mapping). Concrete mount
 implementations (iOptron, Bisque, simulator, etc.) subclass this and
 implement device-specific read/write/query and motion control.
 """
+
 import time
 from abc import abstractmethod
 from pathlib import Path
@@ -46,7 +47,7 @@ class AbstractMount(PanBase):
     """
 
     def __init__(self, location, commands=None, *args, **kwargs):
-        super(AbstractMount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
@@ -65,9 +66,7 @@ class AbstractMount(PanBase):
         self._location = location
 
         # Get mount settings from config.
-        self.non_sidereal_available = self.mount_settings.setdefault(
-            "non_sidereal_available", False
-        )
+        self.non_sidereal_available = self.mount_settings.setdefault("non_sidereal_available", False)
         self.PEC_available = self.mount_settings.setdefault("PEC_available", False)
 
         # Initial states
@@ -86,12 +85,8 @@ class AbstractMount(PanBase):
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = "Sidereal"
-        self.min_tracking_threshold = self.mount_settings.setdefault(
-            "min_tracking_threshold", 100
-        )  # ms
-        self.max_tracking_threshold = self.mount_settings.setdefault(
-            "max_tracking_threshold", 99999
-        )  # ms
+        self.min_tracking_threshold = self.mount_settings.setdefault("min_tracking_threshold", 100)  # ms
+        self.max_tracking_threshold = self.mount_settings.setdefault("max_tracking_threshold", 99999)  # ms
 
         self._movement_speed = ""
 
@@ -333,7 +328,7 @@ class AbstractMount(PanBase):
         target = self.get_target_coordinates().coord
         separation = self.get_current_coordinates().separation(target, origin_mismatch="ignore")
 
-        self.logger.debug("Current separation from target: {}".format(separation))
+        self.logger.debug(f"Current separation from target: {separation}")
 
         return separation
 
@@ -455,21 +450,17 @@ class AbstractMount(PanBase):
             offset_ms = corrections[1]
             delta_direction = corrections[2]
 
-            self.logger.info(
-                "Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
-                    axis, delta_direction, offset_ms, offset
-                )
-            )
+            self.logger.info(f"Adjusting {axis}: {delta_direction} {offset_ms:0.2f} ms {offset:0.2f}")
 
-            self.query("move_ms_{}".format(delta_direction), "{:05.0f}".format(offset_ms))
+            self.query(f"move_ms_{delta_direction}", f"{offset_ms:05.0f}")
 
             # Adjust tracking for `axis_timeout` seconds then fail if not done.
             start_tracking_time = current_time()
             while self.is_tracking is False:
                 if (current_time() - start_tracking_time).sec > axis_timeout:
-                    raise error.Timeout("Tracking adjustment timeout: {}".format(axis))
+                    raise error.Timeout(f"Tracking adjustment timeout: {axis}")
 
-                self.logger.debug("Waiting for {} tracking adjustment".format(axis))
+                self.logger.debug(f"Waiting for {axis} tracking adjustment")
                 time.sleep(0.5)
 
     def slew_to_coordinates(self, coords, *args, **kwargs):

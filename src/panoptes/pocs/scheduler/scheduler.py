@@ -5,6 +5,7 @@ and manages the list of Observation objects, current selection, and common
 properties used during scheduling. Concrete schedulers subclass this and
 implement get_observation().
 """
+
 import os
 from abc import abstractmethod
 from collections import OrderedDict
@@ -27,9 +28,8 @@ class BaseScheduler(PanBase):
     Loads fields and constraints, manages observations and the current
     selection, and provides helpers used by concrete schedulers.
     """
-    def __init__(
-        self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs
-    ): 
+
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
@@ -265,7 +265,7 @@ class BaseScheduler(PanBase):
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
 
-            with open(self.fields_file, "r") as f:
+            with open(self.fields_file) as f:
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:

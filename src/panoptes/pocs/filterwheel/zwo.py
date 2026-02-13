@@ -3,14 +3,15 @@
 Provides a FilterWheel implementation that uses the libEFW SDK via EFWDriver to
 control ZWO electronic filter wheels.
 """
+
 from contextlib import suppress
 
 from astropy import units as u
+from panoptes.utils import error
 
+from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.pocs.filterwheel import AbstractFilterWheel
 from panoptes.pocs.filterwheel.libefw import EFWDriver
-from panoptes.pocs.camera.camera import AbstractCamera
-from panoptes.utils import error
 
 
 class FilterWheel(AbstractFilterWheel):
@@ -86,7 +87,7 @@ class FilterWheel(AbstractFilterWheel):
         with suppress(AttributeError):
             device_name = self._device_name
             FilterWheel._assigned_filterwheels.discard(device_name)
-            self.logger.debug("Removed {} from assigned filterwheels list".format(device_name))
+            self.logger.debug(f"Removed {device_name} from assigned filterwheels list")
 
     ##################################################################################################
     # Properties
@@ -170,13 +171,14 @@ class FilterWheel(AbstractFilterWheel):
         self._n_positions = info["slot_num"]
 
         if len(self.filter_names) != self.n_positions:
-            msg = "Number of names in filter_names ({}) doesn't".format(
-                len(self.filter_names)
-            ) + " match number of positions in filter wheel ({})".format(self.n_positions)
+            msg = (
+                f"Number of names in filter_names ({len(self.filter_names)}) doesn't"
+                + f" match number of positions in filter wheel ({self.n_positions})"
+            )
             self.logger.error(msg)
             raise ValueError(msg)
 
-        self.logger.info("Filter wheel {} initialised".format(self))
+        self.logger.info(f"Filter wheel {self} initialised")
         self._connected = True
 
     def recalibrate(self):
@@ -184,7 +186,7 @@ class FilterWheel(AbstractFilterWheel):
         Reinitialises/recalibrates the filter wheel.
         """
         self._driver.calibrate(self._handle)
-        self.logger.info("{} recalibrated".format(self))
+        self.logger.info(f"{self} recalibrated")
 
     ##################################################################################################
     # Private methods

@@ -1,17 +1,16 @@
 import time
 from contextlib import suppress
-
-import pytest
 from threading import Thread
 
-from panoptes.utils.config.helpers import load_config
+import pytest
 from panoptes.utils import error
+from panoptes.utils.config.helpers import load_config
 
-from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
-from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
-from panoptes.pocs.focuser.astromechanics import Focuser as AstroMechanicsFocuser
-from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from panoptes.pocs.camera.simulator.dslr import Camera
+from panoptes.pocs.focuser.astromechanics import Focuser as AstroMechanicsFocuser
+from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
+from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
+from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser, AstroMechanicsFocuser]
 ids = ["simulator", "birger", "focuslynx", "astromechanics"]

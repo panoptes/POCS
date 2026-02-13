@@ -5,12 +5,12 @@ import tempfile
 from contextlib import suppress
 
 import pytest
-from panoptes.pocs import hardware
-from panoptes.pocs.utils.logger import get_logger
-from panoptes.pocs.utils.logger import PanLogger
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
+
+from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
+from panoptes.pocs.utils.logger import PanLogger, get_logger
 
 _all_databases = ["file", "memory"]
 
@@ -126,9 +126,7 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_solve)
 
     # without_hardware is a list of hardware names whose tests we don't want to run.
-    without_hardware = hardware.get_simulator_names(
-        simulator=config.getoption("--without-hardware")
-    )
+    without_hardware = hardware.get_simulator_names(simulator=config.getoption("--without-hardware"))
 
     # with_hardware is a list of hardware names for which we have that hardware attached.
     with_hardware = hardware.get_simulator_names(simulator=config.getoption("--with-hardware"))

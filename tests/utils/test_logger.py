@@ -1,4 +1,5 @@
 import time
+
 import pytest
 
 from panoptes.pocs.utils.logger import get_logger

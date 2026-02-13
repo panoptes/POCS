@@ -3,6 +3,7 @@
 Provides get_logger() to configure project-wide logging and a PanLogger helper
 for dynamic formatting and handler tracking.
 """
+
 import os
 import sys
 from contextlib import suppress
@@ -99,9 +100,7 @@ def get_logger(
             loguru_logger.remove(0)
 
         stderr_format = (
-            "<lvl>{level:.1s}</lvl> "
-            "<light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> "
-            "<lvl>{message}</lvl>"
+            "<lvl>{level:.1s}</lvl> <light-blue>{time:MM-DD HH:mm:ss.SSS!UTC}</> <lvl>{message}</lvl>"
         )
 
         stderr_id = loguru_logger.add(sys.stdout, format=stderr_format, level=stderr_log_level)
@@ -144,11 +143,7 @@ def get_logger(
             LOGGER_INFO.handlers["archive"] = archive_id
 
     global cloud_client
-    if (
-        cloud_logging_level is not None
-        and cloud_client is None
-        and "cloud" not in LOGGER_INFO.handlers
-    ):
+    if cloud_logging_level is not None and cloud_client is None and "cloud" not in LOGGER_INFO.handlers:
         print(f"Setting up cloud logging at {cloud_logging_level=}")
         try:
             import google.cloud.logging

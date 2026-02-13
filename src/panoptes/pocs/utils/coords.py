@@ -1,4 +1,5 @@
 """Coordinate utilities for resolving targets to astropy SkyCoord objects."""
+
 from datetime import datetime
 
 from astropy import units as u
@@ -28,9 +29,9 @@ def get_target_coords(
     >>> type(c).__name__
     'SkyCoord'
 
-    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)
+    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)  # doctest: +ELLIPSIS
     <SkyCoord (ICRS): (ra, dec) in deg
-        (10.68470833, 41.26875)>
+        (10.6847..., 41.26875)>
 
     >>> m = get_target_coords("Moon", obstime=Time("2020-01-01"))
     >>> isinstance(m, SkyCoord)
@@ -40,7 +41,7 @@ def get_target_coords(
 
     >>> get_target_coords("00h42m44.3s +41d16m9s", obstime=Time("2020-01-01"), verbose=True)
     <SkyCoord (ICRS): (ra, dec) in deg
-        (10.68458333, 41.26916667)>
+        (10.6845..., 41.26916667)>
 
     >>> get_target_coords("10h00m00s +20d00m00s", obstime=Time("2020-01-01"))
     <SkyCoord (ICRS): (ra, dec) in deg

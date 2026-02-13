@@ -3,6 +3,7 @@
 System has initialized successfully; wait for safe/dark conditions and then
 transition to 'scheduling' (or to 'parking' if dome open fails).
 """
+
 from astropy import units as u
 from panoptes.utils.time import current_time
 
@@ -38,41 +39,41 @@ def on_enter(event_data):
 
 def _calculate_wait_until_dark(pocs):
     """Calculate how long to wait until evening astronomical twilight.
-    
+
     During daytime, instead of waiting just 10 minutes, calculate the time until
     the next evening astronomical twilight and sleep for most of that duration
     (with a safety buffer to avoid overshooting).
-    
+
     Args:
         pocs: The POCS instance with observatory information.
-        
+
     Returns:
         float: Number of seconds to wait.
     """
     now = current_time()
     observer = pocs.observatory.observer
-    
+
     # Get the next evening astronomical twilight time (when observing can start)
     next_twilight = observer.twilight_evening_astronomical(now, which="next")
-    
+
     # Calculate time until twilight in seconds
     time_until_twilight = (next_twilight - now).to(u.second).value
-    
+
     # Use a safety buffer to avoid sleeping right up to twilight
     # We wake up 10 minutes before to ensure we're ready
     safety_buffer = 10 * 60  # 10 minutes
-    
+
     # Minimum wait time to avoid too-frequent checks
     min_wait = 5 * 60  # 5 minutes
-    
+
     # Calculate actual wait time: sleep until shortly before twilight
     wait_time = max(min_wait, time_until_twilight - safety_buffer)
-    
+
     # Log the calculated wait time for visibility
     hours = wait_time / 3600
     pocs.logger.info(
         f"Daytime sleep: waiting {wait_time:.0f}s ({hours:.1f}h) until "
         f"evening twilight at {next_twilight.iso}"
     )
-    
+
     return wait_time

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-CAMERA_DIR="../cameras/zwo/"
-FILTERWHEEL_DIR="../filterwheel/zwo/"
+CAMERA_DIR="../../cameras/zwo/"
+FILTERWHEEL_DIR="../../filterwheel/zwo/"
 
 # Link the ZWO drivers
 set -e

@@ -3,6 +3,7 @@
 Provides RemoteMonitor to poll a JSON endpoint and optionally store the latest
 reading in the local PANOPTES database.
 """
+
 import requests
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config

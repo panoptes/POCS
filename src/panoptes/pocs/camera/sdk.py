@@ -3,6 +3,7 @@
 Provides AbstractSDKDriver (ctypes loader + common helpers) and
 AbstractSDKCamera (shared orchestration for cameras controlled via SDKs).
 """
+
 import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
@@ -35,6 +36,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         Instances of this class are typically used by AbstractSDKCamera
         subclasses to manage a shared driver handle across multiple cameras.
     """
+
     def __init__(self, name, library_path=None, *args, **kwargs):
         """Base class for all camera SDK interfaces.
 
@@ -58,7 +60,7 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
         super().__init__(**kwargs)
         self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()
-        self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
+        self.logger.debug(f"{name} driver ({self._version}) initialised.")
 
     # Properties
 
@@ -91,6 +93,7 @@ class AbstractSDKCamera(AbstractCamera):
     and common cooling/temperature settling behavior reused by concrete SDK
     camera implementations (e.g., FLI, SBIG).
     """
+
     _driver = None
     _cameras = dict()
     _assigned_cameras = set()
@@ -131,13 +134,10 @@ class AbstractSDKCamera(AbstractCamera):
         logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(
-                f"Found {name} with {serial_number=!r} at {my_class._cameras[serial_number]}."
-            )
+            logger.debug(f"Found {name} with {serial_number=!r} at {my_class._cameras[serial_number]}.")
         else:
             raise error.InvalidConfig(
-                f"No config information found for "
-                f"{name=!r} with {serial_number=!r} in {my_class._cameras}"
+                f"No config information found for {name=!r} with {serial_number=!r} in {my_class._cameras}"
             )
 
         if serial_number in my_class._assigned_cameras:
@@ -171,7 +171,7 @@ class AbstractSDKCamera(AbstractCamera):
                 msg = f"Set target temperature {target_temperature} & enabled cooling on {self}."
                 self.logger.debug(msg)
             else:
-                msg = "Setting a target temperature on uncooled camera {}".format(self)
+                msg = f"Setting a target temperature on uncooled camera {self}"
                 self.logger.warning(msg)
 
     def __del__(self):

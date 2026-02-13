@@ -4,8 +4,11 @@ Provides small interactive commands that call into the configured mount driver
 for safe parking, homing, slewing to a named target, and setting the park
 position. These commands are intended for manual use during setup or recovery.
 """
+
 import re
+import subprocess
 from pathlib import Path
+from typing import Annotated
 
 import serial
 import typer
@@ -18,7 +21,6 @@ from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.utils.time import CountdownTimer, current_time
 from pick import pick
 from rich import print
-from typing_extensions import Annotated
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
@@ -94,7 +96,8 @@ def set_park_position(
     # Confirm that they have previously set the home position.
     if not typer.confirm("Have you previously set the home position?"):
         print(
-            'Please set the home position before setting the park position by running "pocs mount search-home".'
+            "Please set the home position before setting the park position by running "
+            '"pocs mount search-home".'
         )
         return typer.Exit()
 
@@ -134,9 +137,10 @@ def set_park_position(
         print("[red]Sorry! Please try again or ask the PANOPTES team.[/red]")
     else:
         print(
-            "Park position set. If the directions are correct but the mount is not parked in the correct position, "
-            "then you may need to adjust the number of seconds the mount moves in each direction. If you are unsure, "
-            "please ask the PANOPTES team for help."
+            "Park position set. If the directions are correct but the mount is not "
+            "parked in the correct position, then you may need to adjust the number of "
+            "seconds the mount moves in each direction. If you are unsure, please ask "
+            "the PANOPTES team for help."
         )
 
 
@@ -176,9 +180,7 @@ def slew_to_home(
 
 @app.command(name="slew-to-target")
 def slew_to_target(
-    confirm: Annotated[
-        bool, typer.Option(..., "--confirm", help="Confirm slew to target.")
-    ] = False,
+    confirm: Annotated[bool, typer.Option(..., "--confirm", help="Confirm slew to target.")] = False,
     target: Annotated[
         str,
         typer.Option(
@@ -264,9 +266,7 @@ def slew_to_target(
         timer = CountdownTimer(30)
         while mount.is_tracking:
             if timer.expired():
-                print(
-                    f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}"
-                )
+                print(f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}")
                 timer.restart()
             timer.sleep(1)
     except KeyboardInterrupt:
@@ -398,18 +398,31 @@ def setup_mount(
 
                             # The name we want it known by.
                             udev_str += 'SYMLINK+="ioptron"'
+                            # Add a newline to the end of the file.
+                            udev_str += "\n"
 
                             udev_fn = Path("92-panoptes.rules")
                             udev_fn.write_text(udev_str)
                             write_port = "/dev/ioptron"
 
-                            print(f"Wrote udev entry to [green]{udev_fn}[/green].")
-                            print(
-                                "Run the following command and then reboot for changes to take effect:"
+                            # Use sudo to write the udev entry to the correct location.
+                            subprocess.run(
+                                ["sudo", "tee", f"/etc/udev/rules.d/{udev_fn}"],
+                                input=udev_str.encode(),
+                                check=True,
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.PIPE,
                             )
+
+                            print(f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green].")
+
+                            # Reload the udev rules.
+                            subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
                             print(
-                                f"\t[green]cat {udev_fn} | sudo tee /etc/udev/rules.d/{udev_fn}[/green]"
+                                "Reloaded udev rules. Please unplug and replug the mount to use "
+                                "the new udev entry."
                             )
+
                         except Exception:
                             pass
 
@@ -420,9 +433,7 @@ def setup_mount(
                         set_config("mount.serial.port", write_port)
                         set_config("mount.serial.baudrate", baudrate)
                         set_config("mount.model", mount_type.name.lower())
-                        set_config(
-                            "mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}"
-                        )
+                        set_config("mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}")
                         set_config("mount.commands_file", f"ioptron/{command_set}")
 
                     return typer.Exit()

@@ -4,13 +4,15 @@ Provides a Focuser implementation that controls Canon EF/EF-S lenses via the
 Birger EF-232 adapter over a serial connection, implementing the
 AbstractSerialFocuser protocol used by POCS.
 """
-import re
-import serial
+
 import glob
+import re
 from contextlib import suppress
 
-from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+import serial
 from panoptes.utils import error
+
+from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 
 # Birger adaptor serial numbers should be 5 digits
 SERIAL_NUMBER_PATTERN = re.compile(r"^\d{5}$")
@@ -177,7 +179,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command("fa{:d}".format(int(position)), response_length=1)
+            response = self._send_command(f"fa{int(position):d}", response_length=1)
             new_position = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -199,7 +201,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command("mf{:d}".format(int(increment)), response_length=1)
+            response = self._send_command(f"mf{int(increment):d}", response_length=1)
             moved_by = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -256,7 +258,7 @@ class Focuser(AbstractSerialFocuser):
                 adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(f"Attempt to send command to {self} when not connected!")
             return
 
         for i in range(self._max_command_retries):
@@ -317,11 +319,9 @@ class Focuser(AbstractSerialFocuser):
             hit_limit = bool(int(response[-1]))
             assert reply == "DONE"
         except (IndexError, AssertionError):
-            raise error.PanError(
-                "{} got response '{}', expected 'DONENNNNN,N'!".format(self, response)
-            )
+            raise error.PanError(f"{self} got response '{response}', expected 'DONENNNNN,N'!")
         if hit_limit:
-            self.logger.warning("{} reported hitting a focus stop".format(self))
+            self.logger.warning(f"{self} reported hitting a focus stop")
 
         return amount
 
@@ -333,27 +333,17 @@ class Focuser(AbstractSerialFocuser):
     def _get_library_version(self):
         response = self._send_command("lv", response_length=1)
         self._library_version = response[0].rstrip()
-        self.logger.debug(
-            "Got library version '{}' for {} on {}".format(
-                self._library_version, self.name, self.port
-            )
-        )
+        self.logger.debug(f"Got library version '{self._library_version}' for {self.name} on {self.port}")
 
     def _get_hardware_version(self):
         response = self._send_command("hv", response_length=1)
         self._hardware_version = response[0].rstrip()
-        self.logger.debug(
-            "Got hardware version {} for {} on {}".format(
-                self._hardware_version, self.name, self.port
-            )
-        )
+        self.logger.debug(f"Got hardware version {self._hardware_version} for {self.name} on {self.port}")
 
     def _get_lens_info(self):
         response = self._send_command("id", response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug(
-            "Got lens info '{}' for {} on {}".format(self._lens_info, self.name, self.port)
-        )
+        self.logger.debug(f"Got lens info '{self._lens_info}' for {self.name} on {self.port}")
 
     def _initialise_aperture(self):
         self.logger.debug("Initialising aperture motor")

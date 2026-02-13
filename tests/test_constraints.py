@@ -1,29 +1,26 @@
-import pytest
-
-from astroplan import Observer
-from astropy import units as u
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import get_body
-from astropy.time import Time
-
 from collections import OrderedDict
 
+import pytest
+from astroplan import Observer
+from astropy import units as u
+from astropy.coordinates import EarthLocation, get_body
+from astropy.time import Time
+from panoptes.utils import horizon as horizon_utils
+from panoptes.utils.config.client import get_config
 from panoptes.utils.error import PanError
+from panoptes.utils.serializers import from_yaml
 
 from panoptes.pocs.scheduler import create_constraints_from_config
+from panoptes.pocs.scheduler.constraint import (
+    AlreadyVisited,
+    Altitude,
+    BaseConstraint,
+    Duration,
+    MoonAvoidance,
+    TimeWindow,
+)
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
-
-from panoptes.pocs.scheduler.constraint import Altitude
-from panoptes.pocs.scheduler.constraint import BaseConstraint
-from panoptes.pocs.scheduler.constraint import Duration
-from panoptes.pocs.scheduler.constraint import MoonAvoidance
-from panoptes.pocs.scheduler.constraint import AlreadyVisited
-from panoptes.pocs.scheduler.constraint import TimeWindow
-
-from panoptes.utils.config.client import get_config
-from panoptes.utils import horizon as horizon_utils
-from panoptes.utils.serializers import from_yaml
 
 
 @pytest.fixture(scope="function")
@@ -38,9 +35,7 @@ def horizon_line() -> horizon_utils.Horizon:
     obstruction_list = get_config("location.obstructions", default=list())
     default_horizon = get_config("location.horizon")
 
-    horizon_line = horizon_utils.Horizon(
-        obstructions=obstruction_list, default_horizon=default_horizon
-    )
+    horizon_line = horizon_utils.Horizon(obstructions=obstruction_list, default_horizon=default_horizon)
     return horizon_line
 
 

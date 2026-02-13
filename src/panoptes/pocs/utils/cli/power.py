@@ -3,6 +3,7 @@
 Provides commands to query relay status and readings, and to toggle relays via
 HTTP calls to the FastAPI service implemented in panoptes.pocs.utils.service.power.
 """
+
 import os
 import subprocess
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ class HostInfo:
         host (str): Hostname or IP address of the power service.
         port (str): TCP port for the service (string for simple concatenation).
     """
+
     host: str = "localhost"
     port: str = "6564"
 
@@ -156,9 +158,7 @@ def off(
 def control(
     context: typer.Context,
     relay: str = typer.Option(..., help="The label or index of the relay to control."),
-    command: str = typer.Option(
-        ..., help='The control action to perform, either "turn_on" or "turn_off"'
-    ),
+    command: str = typer.Option(..., help='The control action to perform, either "turn_on" or "turn_off"'),
 ):
     """Control a relay by label or relay index.
 

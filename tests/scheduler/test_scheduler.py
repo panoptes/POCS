@@ -1,19 +1,17 @@
 import pytest
 import requests
-
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
+from panoptes.utils.serializers import to_json
+
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils.serializers import to_json
 
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 

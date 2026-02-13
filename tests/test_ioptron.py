@@ -2,12 +2,13 @@ import os
 from contextlib import suppress
 
 import pytest
-from astropy.coordinates import EarthLocation
 from astropy import units as u
+from astropy.coordinates import EarthLocation
+from panoptes.utils.config.client import get_config
+
 from panoptes.pocs.images import OffsetError
 from panoptes.pocs.mount.ioptron.cem40 import Mount
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils.config.client import get_config
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def test_loading_without_config():
 
 
 @pytest.mark.with_mount
-class TestMount(object):
+class TestMount:
     """Test the mount"""
 
     @pytest.fixture(autouse=True)

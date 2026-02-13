@@ -3,6 +3,7 @@
 Implements a mount driver that communicates with Software Bisque's TheSkyX via
 its TCP scripting interface, using small JavaScript templates for commands.
 """
+
 import json
 import os
 import time
@@ -11,9 +12,10 @@ from threading import Lock
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from panoptes.utils import error
+
 from panoptes.pocs.mount import AbstractMount
 from panoptes.pocs.utils import theskyx
-from panoptes.utils import error
 
 
 class Mount(AbstractMount):
@@ -22,6 +24,7 @@ class Mount(AbstractMount):
     Uses small JavaScript template files to issue commands over TheSkyX's TCP
     interface and parses JSON-like responses to update status and execute slews.
     """
+
     def __init__(self, *args, **kwargs):
         """Initialize the Bisque mount driver and connect to TheSkyX client."""
         super().__init__(*args, **kwargs)
@@ -121,7 +124,7 @@ class Mount(AbstractMount):
             self.connect()
 
         if self.is_connected and not self.is_initialized:
-            self.logger.info("Initializing {} mount".format(__name__))
+            self.logger.info(f"Initializing {__name__} mount")
 
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `serial_query` method will test
@@ -133,7 +136,7 @@ class Mount(AbstractMount):
             if unpark:
                 self.unpark()
 
-        self.logger.info("Mount initialized: {}".format(self.is_initialized))
+        self.logger.info(f"Mount initialized: {self.is_initialized}")
 
         return self.is_initialized
 
@@ -185,7 +188,7 @@ class Mount(AbstractMount):
             self.logger.info("Mount is parked")
         else:
             # Save the skycoord coordinates
-            self.logger.debug("Setting target coordinates: {}".format(coords))
+            self.logger.debug(f"Setting target coordinates: {coords}")
 
             # Get coordinate format from mount specific class
             mount_coords = self._skycoord_to_mount_coord(coords)
@@ -205,7 +208,7 @@ class Mount(AbstractMount):
                     self._target_coordinates = coords
                     self.logger.debug(response["msg"])
                 else:
-                    raise Exception("Problem setting mount coordinates: {}".format(mount_coords))
+                    raise Exception(f"Problem setting mount coordinates: {mount_coords}")
             except Exception as e:
                 self.logger.warning(e)
 
@@ -214,7 +217,7 @@ class Mount(AbstractMount):
     def set_park_position(self):
         """Send command to set current position as park in TheSkyX."""
         self.query("set_park_position")
-        self.logger.info("Mount park position set: {}".format(self._park_coordinates))
+        self.logger.info(f"Mount park position set: {self._park_coordinates}")
 
     ##########################################################################
     # Movement methods
@@ -328,8 +331,8 @@ class Mount(AbstractMount):
         seconds = float(seconds)
         assert direction in ["north", "south", "east", "west", "left", "right", "up", "down"]
 
-        move_command = "move_{}".format(direction)
-        self.logger.debug("Move command: {}".format(move_command))
+        move_command = f"move_{direction}"
+        self.logger.debug(f"Move command: {move_command}")
 
         if rate is None:
             rate = 15.04  # (u.arcsec / u.second)
@@ -338,7 +341,7 @@ class Mount(AbstractMount):
             arcmin = (rate * seconds) / 60.0
 
         try:
-            self.logger.debug("Moving {} for {} arcmins. ".format(direction, arcmin))
+            self.logger.debug(f"Moving {direction} for {arcmin} arcmins. ")
             self.query(
                 move_command,
                 params={"direction": direction.upper()[0], "arcmin": arcmin},
@@ -347,9 +350,7 @@ class Mount(AbstractMount):
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning(
-                "Problem moving command!! Make sure mount has stopped moving: {}".format(e)
-            )
+            self.logger.warning(f"Problem moving command!! Make sure mount has stopped moving: {e}")
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -388,11 +389,7 @@ class Mount(AbstractMount):
         try:
             response_obj = json.loads(response)
         except TypeError as e:
-            self.logger.warning(
-                "Error: {}".format(
-                    e,
-                )
-            )
+            self.logger.warning(f"Error: {e}")
         except json.JSONDecodeError as e:
             response_obj = {"response": response, "success": False, "error": e}
 
@@ -417,10 +414,10 @@ class Mount(AbstractMount):
 
         template = ""
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(f"Problem reading TheSkyX template {filename}: {e}")
 
         if params is None:
             params = {}
@@ -482,7 +479,7 @@ class Mount(AbstractMount):
         ra = coords.ra.to(u.hourangle).to_string()
         dec = coords.dec.to_string()
 
-        self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
+        self.logger.debug(f"RA: {ra} \t Dec: {dec}")
 
         mount_coords = (ra, dec)
 

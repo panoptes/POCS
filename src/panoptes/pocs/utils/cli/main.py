@@ -4,6 +4,7 @@ Aggregates feature subcommands (camera, mount, config, network, etc.) and
 provides a shared callback to set common options like config server host/port
 and verbosity.
 """
+
 import os
 import subprocess
 import sys
@@ -111,14 +112,10 @@ def update_repo():
             # Find the commits between the current state and the remote
             new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
 
-            progress.update(
-                t_update, description="Updates found. Pulling latest changes...", advance=1
-            )
+            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
             origin.pull()
 
-            progress.update(
-                t_update, description="Successfully pulled the latest changes.", advance=1
-            )
+            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
         except GitCommandError as e:
             progress.update(
                 t_update,
@@ -130,9 +127,7 @@ def update_repo():
             progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
             raise typer.Abort()
         else:
-            progress.update(
-                t_update, description="[green]Update process complete![/green]", advance=1
-            )
+            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
 
             # After pulling, show any update messages and sync dependencies
             if len(new_commits):
@@ -143,7 +138,7 @@ def update_repo():
                 repo.git.stash("pop")
 
         # Sync dependencies with the new pyproject.toml by showing message updates.
-        run_hatch_command(["run", "pocs", "update-deps"])
+        run_uv_command(["run", "pocs", "update-deps"])
 
 
 @app.command(name="show-messages")
@@ -201,30 +196,28 @@ def update_dependencies(context: typer.Context):
         print("Dependencies updated")
 
 
-def run_hatch_command(command: list):
-    """Run a hatch command using subprocess and handle potential errors.
+def run_uv_command(command: list):
+    """Run a uv command using subprocess and handle potential errors.
 
     Args:
-        command: The list of arguments to pass to the hatch executable, e.g.,
+        command: The list of arguments to pass to the uv executable, e.g.,
             ["run", "pocs", "update-deps"].
 
     Returns:
         None
 
     Raises:
-        subprocess.CalledProcessError: If the hatch command exits with a non-zero status.
-        FileNotFoundError: If hatch is not installed or not found in PATH.
+        subprocess.CalledProcessError: If the uv command exits with a non-zero status.
+        FileNotFoundError: If uv is not installed or not found in PATH.
     """
     try:
-        process = subprocess.run(
-            ["hatch"] + command, capture_output=True, text=True, check=True, timeout=120
-        )
+        process = subprocess.run(["uv"] + command, capture_output=True, text=True, check=True, timeout=120)
         print(process.stdout)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing hatch command: {e.stderr}", file=sys.stderr)
+        print(f"Error executing uv command: {e.stderr}", file=sys.stderr)
         raise
     except FileNotFoundError:
-        print("Hatch is not installed or not in PATH.", file=sys.stderr)
+        print("uv is not installed or not in PATH.", file=sys.stderr)
         raise
 
 

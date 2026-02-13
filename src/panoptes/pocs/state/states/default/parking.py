@@ -4,6 +4,7 @@ Transition to safely park the system: clear current observation context, close
 the dome if present, and command the mount to park, then proceed to 'parked'.
 """
 
+
 def on_enter(event_data):
     """Handle transition into the parking state."""
     pocs = event_data.model

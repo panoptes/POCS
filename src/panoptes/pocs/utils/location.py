@@ -4,16 +4,18 @@ This module provides utilities to construct an astroplan Observer and related
 astropy EarthLocation from PANOPTES configuration, and to configure IERS table
 fetching used by astropy/astroplan for accurate time/earth orientation.
 """
+
 from dataclasses import dataclass
+
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.utils.iers import Conf as iers_conf
-
 from panoptes.utils import error
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -27,6 +29,7 @@ class SiteDetails:
         earth_location (astropy.coordinates.EarthLocation): The underlying EarthLocation.
         location (dict): Raw location configuration values used to construct the above.
     """
+
     observer: Observer
     earth_location: EarthLocation
     location: dict
@@ -102,12 +105,8 @@ def create_location_from_config() -> SiteDetails:
 
         horizon = get_config_with_unit("horizon", default_value=30, default_unit=u.degree)
         flat_horizon = get_config_with_unit("flat_horizon", default_value=-6, default_unit=u.degree)
-        focus_horizon = get_config_with_unit(
-            "focus_horizon", default_value=-12, default_unit=u.degree
-        )
-        observe_horizon = get_config_with_unit(
-            "observe_horizon", default_value=-18, default_unit=u.degree
-        )
+        focus_horizon = get_config_with_unit("focus_horizon", default_value=-12, default_unit=u.degree)
+        observe_horizon = get_config_with_unit("observe_horizon", default_value=-18, default_unit=u.degree)
 
         location = {
             "name": name,
@@ -127,9 +126,7 @@ def create_location_from_config() -> SiteDetails:
         earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
         observer = Observer(location=earth_location, name=name, timezone=timezone)
 
-        site_details = SiteDetails(
-            location=location, earth_location=earth_location, observer=observer
-        )
+        site_details = SiteDetails(location=location, earth_location=earth_location, observer=observer)
 
         return site_details
 

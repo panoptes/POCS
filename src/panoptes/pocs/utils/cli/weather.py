@@ -2,12 +2,14 @@
 
 Provides commands to query status/config and to restart the service.
 """
-import human_readable
-import requests
+
 import subprocess
-import typer
 from dataclasses import dataclass
 from datetime import datetime
+
+import human_readable
+import requests
+import typer
 from rich import print
 from rich.console import Console
 from rich.table import Table
@@ -141,9 +143,7 @@ def display_weather_table(data: dict):
     # Get the timestamp and format so it's readable.
     time0 = datetime.fromisoformat(data.get("timestamp"))
     td0 = datetime.now() - time0
-    formatted_time = (
-        f"{time0.isoformat(sep=' ', timespec='seconds')} - ({human_readable.date_time(td0)})"
-    )
+    formatted_time = f"{time0.isoformat(sep=' ', timespec='seconds')} - ({human_readable.date_time(td0)})"
     is_time_safe = str(td0.total_seconds() < 180)
     table.add_row("Time", formatted_time, is_time_safe, style="green" if is_time_safe else "red")
 
@@ -211,7 +211,8 @@ def get_page(page, base_url):
         console.print("  • Network connectivity issues")
         console.print("\n[green]Try:[/green]")
         console.print(
-            "  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check if the service is running"
+            "  • Running [bold]supervisorctl status pocs-weather-reader[/bold] to check "
+            "if the service is running"
         )
         console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
         console.print("  • Checking your network connection")

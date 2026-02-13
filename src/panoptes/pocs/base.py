@@ -3,11 +3,13 @@
 Provides PanBase, which centralizes access to configuration, logging, and the
 shared lightweight database handle used throughout the project.
 """
+
 import os
+from typing import Any
+
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
 from requests.exceptions import ConnectionError
-from typing import Any
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
@@ -19,7 +21,7 @@ PAN_DB_OBJ = None
 PAN_CONFIG_CACHE = {}
 
 
-class PanBase(object):
+class PanBase:
     """Base class for other classes within the PANOPTES ecosystem
 
     Defines common properties for each class (e.g. logger, config, db).

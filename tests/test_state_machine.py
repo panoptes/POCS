@@ -1,10 +1,11 @@
 import os
+
 import pytest
+from panoptes.utils import error
+from panoptes.utils.serializers import to_yaml
 
 from panoptes.pocs.core import POCS
 from panoptes.pocs.observatory import Observatory
-from panoptes.utils import error
-from panoptes.utils.serializers import to_yaml
 
 
 @pytest.fixture

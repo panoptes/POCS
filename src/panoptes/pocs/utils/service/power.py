@@ -4,11 +4,11 @@ This module initializes a PowerBoard instance during application lifespan and
 periodically records telemetry to the database. It exposes simple REST endpoints
 for querying current status/readings and for toggling relays via POST/GET.
 """
+
 import time
 from contextlib import asynccontextmanager
 from enum import auto
 from threading import Thread
-from typing import Union
 
 from fastapi import FastAPI
 from fastapi_utils.enums import StrEnum
@@ -33,7 +33,7 @@ class RelayCommand(BaseModel):
         command (RelayAction): Action to perform on the relay.
     """
 
-    relay: Union[str, int]
+    relay: str | int
     command: RelayAction
 
 
@@ -112,7 +112,7 @@ def control_relay(relay_command: RelayCommand):
 
 
 @app.get("/relay/{relay}/control/{command}")
-def control_relay_url(relay: Union[int, str], command: str = "turn_on"):
+def control_relay_url(relay: int | str, command: str = "turn_on"):
     """Control a relay via a GET request.
 
     Args:

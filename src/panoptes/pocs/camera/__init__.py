@@ -4,7 +4,6 @@ import shutil
 import subprocess
 from collections import OrderedDict
 from contextlib import suppress
-from typing import Optional
 
 import requests
 from panoptes.utils import error
@@ -23,7 +22,7 @@ def get_gphoto2_cmd():
     return shutil.which("gphoto2") or shutil.which("gphoto2", path="/usr/local/bin")
 
 
-def list_connected_gphoto2_cameras(endpoint: Optional[AnyHttpUrl] = None):
+def list_connected_gphoto2_cameras(endpoint: AnyHttpUrl | None = None):
     """Detect connected cameras.
 
     Uses gphoto2 to try and detect which cameras are connected. Cameras should

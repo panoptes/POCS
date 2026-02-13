@@ -5,20 +5,19 @@ autofocus utilities shared by concrete focuser drivers (serial, FocusLynx,
 astromechanics, simulator). Includes methods to sweep focus positions,
 measure sharpness, and optionally generate diagnostic plots.
 """
+
 import os
-from abc import ABCMeta
-from abc import abstractmethod
-from threading import Event
-from threading import Thread
+from abc import ABCMeta, abstractmethod
+from threading import Event, Thread
 
 import numpy as np
-from scipy.ndimage import binary_dilation
-from astropy.modeling import models
-from astropy.modeling import fitting
-from panoptes.pocs.base import PanBase
-from panoptes.utils.time import current_time
+from astropy.modeling import fitting, models
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images.misc import mask_saturated
+from panoptes.utils.time import current_time
+from scipy.ndimage import binary_dilation
+
+from panoptes.pocs.base import PanBase
 from panoptes.pocs.utils.plotting import make_autofocus_plot
 
 
@@ -105,7 +104,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         self._camera = camera
 
-        self.logger.debug("Focuser created: {} on {}".format(self.name, self.port))
+        self.logger.debug(f"Focuser created: {self.name} on {self.port}")
 
     ##################################################################################################
     # Properties
@@ -149,8 +148,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         if self._camera:
             if self._camera != camera:
                 self.logger.warning(
-                    f"{self} already assigned to {self._camera}, "
-                    f"skipping attempted assignment to {camera}!"
+                    f"{self} already assigned to {self._camera}, skipping attempted assignment to {camera}!"
                 )
         else:
             self._camera = camera
@@ -270,9 +268,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             ValueError: If invalid values are passed for any of the focus parameters.
         """
         self.logger.debug("Starting autofocus")
-        assert self._camera.is_connected, self.logger.error(
-            "Camera must be connected for autofocus!"
-        )
+        assert self._camera.is_connected, self.logger.error("Camera must be connected for autofocus!")
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 
@@ -280,33 +276,25 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             if self.autofocus_range:
                 focus_range = self.autofocus_range
             else:
-                raise ValueError(
-                    "No focus_range specified, aborting autofocus of {}!".format(self._camera)
-                )
+                raise ValueError(f"No focus_range specified, aborting autofocus of {self._camera}!")
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
-                raise ValueError(
-                    "No focus_step specified, aborting autofocus of {}!".format(self._camera)
-                )
+                raise ValueError(f"No focus_step specified, aborting autofocus of {self._camera}!")
 
         if not seconds:
             if self.autofocus_seconds:
                 seconds = self.autofocus_seconds
             else:
-                raise ValueError(
-                    "No focus exposure time specified, aborting autofocus of {}!", self._camera
-                )
+                raise ValueError("No focus exposure time specified, aborting autofocus of {}!", self._camera)
 
         if not cutout_size:
             if self.autofocus_size:
                 cutout_size = self.autofocus_size
             else:
-                raise ValueError(
-                    "No focus thumbnail size specified, aborting autofocus of {}!", self._camera
-                )
+                raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!", self._camera)
 
         if keep_files is None:
             if self.autofocus_keep_files:
@@ -347,19 +335,15 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 if filter_name is None:
                     # NOTE: The camera will move the FW to the last light position automatically
                     self.logger.warning(
-                        f"Filter name not provided for autofocus on {self}. Using"
-                        " last light position."
+                        f"Filter name not provided for autofocus on {self}. Using last light position."
                     )
                 else:
-                    self.logger.info(
-                        f"Moving filterwheel to {filter_name} for autofocusing on {self}."
-                    )
+                    self.logger.info(f"Moving filterwheel to {filter_name} for autofocusing on {self}.")
                     self.camera.filterwheel.move_to(filter_name, blocking=True)
 
             elif filter_name is None:
                 self.logger.warning(
-                    f"Filter {filter_name} requiested for autofocus but"
-                    f" {self.camera} has no filterwheel."
+                    f"Filter {filter_name} requiested for autofocus but {self.camera} has no filterwheel."
                 )
 
         # Set up the focus parameters
@@ -414,8 +398,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
         initial_focus = self.position
         self.logger.debug(
-            f"Beginning {focus_type} autofocus of {self._camera} - "
-            f"initial position: {initial_focus}"
+            f"Beginning {focus_type} autofocus of {self._camera} - initial position: {initial_focus}"
         )
 
         # Set up paths for temporary focus files, and plots if requested.
@@ -434,9 +417,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                     seconds, dark_path, cutout_size, keep_file=True, dark=True
                 )
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_cutout = mask_saturated(
-                    dark_cutout, threshold=0.3, bit_depth=self.camera.bit_depth
-                )
+                dark_cutout = mask_saturated(dark_cutout, threshold=0.3, bit_depth=self.camera.bit_depth)
             except Exception as err:
                 self.logger.error(f"Error taking dark frame: {err!r}")
                 self._autofocus_error = repr(err)
@@ -448,9 +429,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
         initial_path = os.path.join(file_path_root, initial_fn)
 
         try:
-            initial_cutout = self._camera.get_cutout(
-                seconds, initial_path, cutout_size, keep_file=True
-            )
+            initial_cutout = self._camera.get_cutout(seconds, initial_path, cutout_size, keep_file=True)
             initial_cutout = mask_saturated(initial_cutout, bit_depth=self.camera.bit_depth)
             if dark_cutout is not None:
                 initial_cutout = initial_cutout.astype(np.int32) - dark_cutout
@@ -493,9 +472,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
             # Take exposure.
             try:
-                cutouts[i] = self._camera.get_cutout(
-                    seconds, file_path, cutout_size, keep_file=keep_files
-                )
+                cutouts[i] = self._camera.get_cutout(seconds, file_path, cutout_size, keep_file=keep_files)
             except Exception as err:
                 self.logger.error(f"Error taking image {i + 1}: {err!r}")
                 self._autofocus_error = repr(err)
@@ -570,15 +547,11 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
             min_focus = focus_positions[0]
             max_focus = focus_positions[-1]
             if best_focus < min_focus:
-                self.logger.warning(
-                    f"Fitting failure: best focus {best_focus} below sweep limit {min_focus}"
-                )
+                self.logger.warning(f"Fitting failure: best focus {best_focus} below sweep limit {min_focus}")
                 best_focus = focus_positions[1]
 
             if best_focus > max_focus:
-                self.logger.warning(
-                    f"Fitting failure: best focus {best_focus} above sweep limit {max_focus}"
-                )
+                self.logger.warning(f"Fitting failure: best focus {best_focus} above sweep limit {max_focus}")
                 best_focus = focus_positions[-2]
 
         else:
@@ -632,9 +605,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
                 f"{focus_type.capitalize()} focus plot for {self._camera} written to  {plot_path}"
             )
 
-        self.logger.debug(
-            f"Autofocus of {self._camera} complete - final focus position: {final_focus}"
-        )
+        self.logger.debug(f"Autofocus of {self._camera} complete - final focus position: {final_focus}")
 
         if focus_event:
             focus_event.set()
@@ -683,7 +654,7 @@ class AbstractFocuser(PanBase, metaclass=ABCMeta):
 
     def __str__(self):
         try:
-            s = "{} ({}) on {}".format(self.name, self.uid, self.port)
+            s = f"{self.name} ({self.uid}) on {self.port}"
         except Exception:
             s = str(__class__)
 

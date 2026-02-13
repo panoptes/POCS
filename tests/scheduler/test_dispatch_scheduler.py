@@ -1,18 +1,16 @@
 import os
-import yaml
-import pytest
 import time
 
+import pytest
+import yaml
+from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
-from astroplan import Observer
-
-from panoptes.pocs.scheduler.dispatch import Scheduler
-from panoptes.pocs.scheduler.constraint import Duration
-from panoptes.pocs.scheduler.constraint import MoonAvoidance
-
 from panoptes.utils.config.client import get_config
+
+from panoptes.pocs.scheduler.constraint import Duration, MoonAvoidance
+from panoptes.pocs.scheduler.dispatch import Scheduler
 
 
 @pytest.fixture
@@ -46,7 +44,7 @@ def field_list():
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
       observation:
-        priority: 100      
+        priority: 100
         constraints:
           - name: panoptes.pocs.scheduler.constraint.TimeWindow
             options:

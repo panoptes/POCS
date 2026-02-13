@@ -3,6 +3,7 @@
 Implements the AbstractDome interface with in-memory state transitions for
 open/close/connect, returning canned status values.
 """
+
 import random
 
 from panoptes.pocs.dome import AbstractDome

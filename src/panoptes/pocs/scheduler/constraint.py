@@ -6,12 +6,14 @@ Each constraint returns a (veto, score) tuple where veto indicates the target
 should be excluded and score is a normalized [0–1] value multiplied by the
 constraint weight.
 """
+
 from contextlib import suppress
 
 from astropy import units as u
 from astropy.time import Time
 from dateutil.parser import parse as parse_date
-from panoptes.utils import error, horizon as horizon_utils
+from panoptes.utils import error
+from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.base import PanBase
@@ -25,6 +27,7 @@ class BaseConstraint(PanBase):
     score is a float typically in [0, 1] that will be multiplied by this
     constraint's weight.
     """
+
     def __init__(self, weight=1.0, default_score=0.0, *args, **kwargs):
         """Base constraint
 
@@ -45,9 +48,7 @@ class BaseConstraint(PanBase):
         assert isinstance(weight, float), self.logger.error(
             "Constraint weight must be a float greater than 0.0"
         )
-        assert weight >= 0.0, self.logger.error(
-            "Constraint weight must be a float greater than 0.0"
-        )
+        assert weight >= 0.0, self.logger.error("Constraint weight must be a float greater than 0.0")
 
         self.weight = weight
         self._score = default_score
@@ -134,6 +135,7 @@ class Altitude(BaseConstraint):
 
 class Duration(BaseConstraint):
     """Constraint that favors targets with longer remaining observing time."""
+
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -179,9 +181,7 @@ class Duration(BaseConstraint):
 
             # else:
             # Get the next set time
-            target_end_time = observer.target_set_time(
-                time, target, which="next", horizon=self.horizon
-            )
+            target_end_time = observer.target_set_time(time, target, which="next", horizon=self.horizon)
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
@@ -204,6 +204,7 @@ class Duration(BaseConstraint):
 
 class MoonAvoidance(BaseConstraint):
     """Constraint that vetoes/penalizes fields too close to the Moon."""
+
     def __init__(self, separation=15 * u.degree, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(separation, u.Unit):
@@ -232,9 +233,7 @@ class MoonAvoidance(BaseConstraint):
         except KeyError:
             raise error.PanError("Moon must be set for MoonAvoidance constraint")
 
-        moon_sep = get_quantity_value(
-            moon.separation(observation.field.coord, origin_mismatch="ignore")
-        )
+        moon_sep = get_quantity_value(moon.separation(observation.field.coord, origin_mismatch="ignore"))
 
         # Check we are a certain number of degrees from moon.
         if moon_sep < get_quantity_value(self.separation):
@@ -288,6 +287,7 @@ class AlreadyVisited(BaseConstraint):
 
 class TimeWindow(BaseConstraint):
     """Constraint that boosts observations within a specific time interval."""
+
     def __init__(self, start_time: str | Time, end_time: str | Time, *args, **kwargs):
         """Constraint that changes the weight of the field during a given time window.
 
@@ -320,9 +320,7 @@ class TimeWindow(BaseConstraint):
             if isinstance(end_time, str):
                 end_time = Time(parse_date(end_time))
         except ValueError:
-            raise error.PanError(
-                f"Invalid time format for start_time or end_time: {start_time}, {end_time}"
-            )
+            raise error.PanError(f"Invalid time format for start_time or end_time: {start_time}, {end_time}")
 
         # Make sure end time is after start time
         if end_time <= start_time:

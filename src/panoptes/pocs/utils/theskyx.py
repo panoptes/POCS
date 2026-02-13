@@ -3,13 +3,15 @@
 Provides a minimal wrapper (TheSkyX) to connect, write commands, and read
 responses from a running TheSkyX instance over TCP.
 """
+
 import socket
 
 from panoptes.utils import error
+
 from panoptes.pocs.utils.logger import get_logger
 
 
-class TheSkyX(object):
+class TheSkyX:
     """A socket connection for communicating with TheSkyX."""
 
     def __init__(self, host="localhost", port=3040, connect=True, *args, **kwargs):
@@ -35,7 +37,7 @@ class TheSkyX(object):
 
     def connect(self):
         """Establish a TCP connection to TheSkyX."""
-        self.logger.debug("Making TheSkyX connection at {}:{}".format(self._host, self._port))
+        self.logger.debug(f"Making TheSkyX connection at {self._host}:{self._port}")
         if not self.is_connected:
             try:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,7 +46,7 @@ class TheSkyX(object):
                 self.logger.warning("Cannot create connection to TheSkyX")
             else:
                 self._is_connected = True
-                self.logger.info("Connected to TheSkyX via {}:{}".format(self._host, self._port))
+                self.logger.info(f"Connected to TheSkyX via {self._host}:{self._port}")
 
     def write(self, value):
         """Send a command string to TheSkyX.
@@ -94,7 +96,7 @@ class TheSkyX(object):
                         raise error.TheSkyXKeyError("Invalid TheSkyX key")
 
                     raise error.TheSkyXError(err)
-            except socket.timeout:  # pragma: no cover
+            except TimeoutError:  # pragma: no cover
                 raise error.TheSkyXTimeout()
 
             return response

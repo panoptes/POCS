@@ -1,5 +1,4 @@
 import pytest
-
 from astropy import units as u
 from astropy.coordinates import Latitude, Longitude
 
@@ -58,7 +57,7 @@ def test_create_field():
     for name in names:
         for ra_str, ra in right_ascensions:
             for dec_str, dec in declinations:
-                field = Field(name, "%s %s" % (ra_str, dec_str))
+                field = Field(name, f"{ra_str} {dec_str}")
                 assert field.name == name
                 assert field.coord.ra == ra
                 assert field.coord.dec == dec
