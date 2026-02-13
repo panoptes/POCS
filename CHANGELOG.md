@@ -4,11 +4,24 @@
 
 ## Added
 
-- Beginner documentation: conceptual overview, architecture guide, glossary, and CLI examples
-- Beginner Resources section in main README (top-level)
+- Beginner documentation: conceptual overview, architecture guide, glossary, and CLI examples #173
+- Beginner Resources section in main README (top-level) #173
+- Enhanced installation script with visual progress indicators, spinner animations, and colored output
+- Automated udev rule creation and installation for iOptron mounts in `pocs mount setup` #1320
 
 ## Changed
 
+- **Breaking**: Migrated from Hatch to UV package manager for faster dependency management
+  - Updated README with UV installation and usage instructions
+  - Renamed `install-hatch.sh` to `install-uv.sh`
+  - Updated `install-pocs.sh` to use `uv sync` instead of Hatch
+  - Updated CLI commands to use `run_uv_command()` instead of `run_hatch_command()`
+- Reorganized `pyproject.toml` to use UV-compatible dependency groups (testing, lint, dev)
+- Updated dependency versions: `certifi>=2024.2.2`, `requests>=2.32.0`, `urllib3>=2.0.7`
+- Improved installation scripts with better error handling and user feedback
+- Enhanced `install.sh` with step-by-step progress tracking and live log tailing
+- Improved ZSH installation script with better shell switching logic
+- Updated system dependency installation for better compatibility
 - `examples/beginner_simulation.py`: use local config, display devices, fix simulators parameter
 - Documentation: clickable links, CLI-first approach, plain language
 
