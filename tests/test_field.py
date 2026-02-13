@@ -38,6 +38,32 @@ def test_create_field_Observation_name():
     assert field.field_name == "TestField32B"
 
 
+def test_create_field_numeric_name():
+    """Test that field names that are all numbers are handled correctly.
+    
+    This tests the fix for the issue where YAML parsing converts all-number
+    field names to integers, which would cause an AttributeError when calling
+    .title() on the name.
+    """
+    # Test with integer name (as would come from YAML parsing)
+    field = Field(123456, "20h00m43.7135s +22d42m39.0645s")
+    assert field.name == "123456"
+    assert isinstance(field.name, str)
+    assert field.field_name == "123456"
+    
+    # Test with string numeric name
+    field = Field("123456", "20h00m43.7135s +22d42m39.0645s")
+    assert field.name == "123456"
+    assert isinstance(field.name, str)
+    assert field.field_name == "123456"
+    
+    # Test with float name
+    field = Field(123.456, "20h00m43.7135s +22d42m39.0645s")
+    assert field.name == "123.456"
+    assert isinstance(field.name, str)
+    assert field.field_name == "123.456"
+
+
 def test_create_field():
     names = ["oneWord", "Two Words", "3 Whole - Words"]
     right_ascensions = [

@@ -33,6 +33,9 @@ class Field(FixedTarget, PanBase):
         # Force an equinox if they pass None (legacy).
         equinox = equinox or "J2000"
 
+        # Convert name to string to handle numeric names from YAML
+        name = str(name)
+
         super().__init__(SkyCoord(position, equinox=equinox, frame="icrs"), name=name, **kwargs)
 
         self._field_name = self.name.title().replace(" ", "").replace("-", "")
