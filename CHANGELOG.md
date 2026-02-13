@@ -4,6 +4,7 @@
 
 ## Added
 
+- `AGENTS.md` file documenting available AI agents and their capabilities
 - Beginner documentation: conceptual overview, architecture guide, glossary, and CLI examples #173
 - Beginner Resources section in main README (top-level) #173
 - Enhanced installation script with visual progress indicators, spinner animations, and colored output
