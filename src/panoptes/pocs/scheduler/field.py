@@ -30,6 +30,9 @@ class Field(FixedTarget, PanBase):
         """
         PanBase.__init__(self, *args, **kwargs)
 
+        # Ensure the name is always a string, even if YAML parsed it as a number.
+        name = str(name)
+
         # Force an equinox if they pass None (legacy).
         equinox = equinox or "J2000"
 
