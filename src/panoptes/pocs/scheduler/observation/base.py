@@ -85,7 +85,7 @@ class Observation(PanBase):
             constraints (list, optional): List of `Constraints` to apply to this observation.
                 These constraints will be applied in addition to any global constraints.
             tags (list[str], optional): List of string tags to associate with this observation
-                for metadata and searching purposes (default: None).
+                for metadata and searching purposes. Default: empty list.
         """
         super().__init__(*args, **kwargs)
 
