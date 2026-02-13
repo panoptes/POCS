@@ -4,15 +4,17 @@ Provides EFWDriver, a thin ctypes-based interface around libEFWFilter used by
 ZWO electronic filter wheels. Exposes helpers to enumerate devices, open/close,
 read properties/position, move, and set unidirectional mode.
 """
+
 import ctypes
 import enum
 import threading
 import time
 
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.utils.time import CountdownTimer
+
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 
 class EFWDriver(AbstractSDKDriver):
@@ -23,6 +25,7 @@ class EFWDriver(AbstractSDKDriver):
     and toggling unidirectional mode. Intended for use by higher-level
     AbstractFilterWheel implementations.
     """
+
     # Because ZWO EFW library isn't linked properly have to manually load libudev
     # in global mode first, otherwise get undefined symbol errors.
     _libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
@@ -219,32 +222,28 @@ class EFWDriver(AbstractSDKDriver):
             # No status query function in the SDK. Only way to check on progress of move
             # is to keep issuing the same move command until we stop getting the MOVING
             # error code back.
-            error_code = self._CDLL.EFWSetPosition(
-                ctypes.c_int(filterwheel_ID), ctypes.c_int(position)
-            )
+            error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
             while error_code == ErrorCode.MOVING:
                 if timeout is not None and timer.expired():
-                    msg = "Timeout waiting for filterwheel {} to move to {}".format(
-                        filterwheel_ID, position
-                    )
+                    msg = f"Timeout waiting for filterwheel {filterwheel_ID} to move to {position}"
                     raise error.Timeout(msg)
                 time.sleep(0.1)
-                error_code = self._CDLL.EFWSetPosition(
-                    ctypes.c_int(filterwheel_ID), ctypes.c_int(position)
-                )
+                error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
 
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
-                msg = "Error while moving filterwheel {} to {}: {}".format(
-                    filterwheel_ID, position, ErrorCode(error_code).name
+                msg = (
+                    f"Error while moving filterwheel {filterwheel_ID} to {position}: "
+                    f"{ErrorCode(error_code).name}"
                 )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
             final_position = self.get_position(filterwheel_ID)
             if final_position != position:
-                msg = "Tried to move filterwheel {} to {}, but ended up at {}.".format(
-                    filterwheel_ID, position, final_position
+                msg = (
+                    f"Tried to move filterwheel {filterwheel_ID} to {position}, "
+                    f"but ended up at {final_position}."
                 )
                 self.logger.error(msg)
                 raise error.PanError(msg)
@@ -260,7 +259,7 @@ class EFWDriver(AbstractSDKDriver):
         function = getattr(self._CDLL, function_name)
         error_code = function(ctypes.c_int(filterwheel_ID), *args)
         if error_code != ErrorCode.SUCCESS:
-            msg = "Error calling {}: {}".format(function_name, ErrorCode(error_code).name)
+            msg = f"Error calling {function_name}: {ErrorCode(error_code).name}"
             self.logger.error(msg)
             raise error.PanError(msg)
 
@@ -283,6 +282,7 @@ class EFWInfo(ctypes.Structure):
 @enum.unique
 class ErrorCode(enum.IntEnum):
     """Return codes from the ZWO EFW SDK functions."""
+
     SUCCESS = 0
     INVALID_INDEX = enum.auto()
     INVALID_ID = enum.auto()

@@ -1,26 +1,22 @@
 from contextlib import suppress
 
 import pytest
-from astropy.utils.iers import Conf as iers_conf
-from panoptes.pocs import hardware
-from panoptes.pocs.mount import AbstractMount
-from panoptes.pocs.mount import create_mount_from_config
-from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils import error
-from panoptes.utils.config.client import get_config
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json
 import requests
+from astropy.utils.iers import Conf as iers_conf
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.serializers import to_json
+
+from panoptes.pocs import hardware
+from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
+from panoptes.pocs.utils.location import create_location_from_config
 
 iers_conf.iers_degraded_accuracy.set_temp("warn")
 
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 
@@ -70,10 +66,7 @@ def test_create_mount_with_earth_location(config_host, config_port):
     # Set config to not have a location.
     set_config("location", None)
     set_config("simulator", hardware.get_all_names())
-    assert (
-        isinstance(create_mount_from_config(earth_location=loc.earth_location), AbstractMount)
-        is True
-    )
+    assert isinstance(create_mount_from_config(earth_location=loc.earth_location), AbstractMount) is True
 
     reset_conf(config_host, config_port)
 

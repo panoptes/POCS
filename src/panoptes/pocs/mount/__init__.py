@@ -1,19 +1,18 @@
 from contextlib import suppress
 from glob import glob
 
+from panoptes.utils import error
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.library import load_module
+
 from panoptes.pocs.mount.mount import AbstractMount  # noqa
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
-from panoptes.utils import error
-from panoptes.utils.library import load_module
-from panoptes.utils.config.client import get_config, set_config
 
 logger = get_logger()
 
 
-def create_mount_from_config(
-    mount_info=None, earth_location=None, *args, **kwargs
-) -> AbstractMount:
+def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwargs) -> AbstractMount:
     """Create a mount instance based on the provided config.
 
     Creates an instance of the AbstractMount sub-class in the module specified in the config.

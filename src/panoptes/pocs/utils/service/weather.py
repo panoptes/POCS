@@ -4,6 +4,7 @@ This module wires up a FastAPI app with a lifespan hook that connects to the
 weather station and periodically records readings. Two simple endpoints expose
 current status and the active configuration.
 """
+
 import os
 import time
 from contextlib import asynccontextmanager, suppress

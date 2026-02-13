@@ -3,12 +3,10 @@ from contextlib import suppress
 
 import pytest
 import serial
+from panoptes.utils.config.client import set_config
 
 from panoptes.pocs import hardware
-from panoptes.pocs.dome import astrohaven
-from panoptes.pocs.dome import create_dome_simulator
-
-from panoptes.utils.config.client import set_config
+from panoptes.pocs.dome import astrohaven, create_dome_simulator
 
 
 @pytest.fixture(scope="function")

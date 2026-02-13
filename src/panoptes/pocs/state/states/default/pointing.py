@@ -3,9 +3,11 @@
 Capture a short exposure, solve it, measure pointing error, optionally correct,
 then proceed to 'tracking'.
 """
+
 import numpy as np
-from panoptes.pocs.images import Image
 from panoptes.utils.time import wait_for_events
+
+from panoptes.pocs.images import Image
 
 MAX_EXTRA_TIME = 60  # second
 
@@ -99,9 +101,7 @@ def on_enter(event_data):
 
                     # Tell the mount we are at the field, which is the center
                     pocs.say("Syncing with the latest image...")
-                    has_field = pocs.observatory.mount.set_target_coordinates(
-                        pointing_image.pointing
-                    )
+                    has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
                     pocs.logger.debug("Coords set, calibrating")
 
                     # Calibrate the mount - Sync the mount's known position
@@ -112,9 +112,7 @@ def on_enter(event_data):
                     if has_field:
                         if observation.field is not None:
                             pocs.logger.debug("Slewing back to target")
-                            target_set = pocs.observatory.mount.set_target_coordinates(
-                                observation.field
-                            )
+                            target_set = pocs.observatory.mount.set_target_coordinates(observation.field)
 
                             # Check if target was set.
                             if target_set is False:

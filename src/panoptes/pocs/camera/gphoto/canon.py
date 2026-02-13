@@ -4,12 +4,12 @@ Provides a concrete Camera subclass for Canon EOS models controlled via gphoto2.
 Implements exposure sequencing, property setup, and a shutterspeed index helper
 compatible with the CLI-driven gphoto2 interface.
 """
+
 from functools import lru_cache
 
 from astropy import units as u
-from panoptes.utils.error import PanError
-
 from panoptes.utils import error
+from panoptes.utils.error import PanError
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import get_quantity_value
 
@@ -22,6 +22,7 @@ class Camera(AbstractGPhotoCamera):
     Provides Canon-specific property defaults and exposure sequencing on top of
     AbstractGPhotoCamera.
     """
+
     def __init__(
         self,
         readout_time: float = 1.0,
@@ -112,9 +113,7 @@ class Camera(AbstractGPhotoCamera):
 
         self.model = self.get_property("model")
 
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, iso=100, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, iso=100, *args, **kwargs):
         """Start the exposure.
 
         Tested With:

@@ -5,6 +5,7 @@ state, safety, and darkness, decides whether to proceed to housekeeping,
 wait and retry, or return to ready.
 """
 
+
 def on_enter(event_data):
     """Handle transition into the parked state."""
     pocs = event_data.model

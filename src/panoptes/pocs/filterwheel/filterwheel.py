@@ -3,16 +3,17 @@
 Defines AbstractFilterWheel with common properties (position, current_filter,
 ready state) and movement helpers shared by concrete wheel drivers.
 """
+
 import threading
+from abc import ABCMeta, abstractmethod
 from collections import abc
-from abc import ABCMeta
-from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils.utils import listify
+
+from panoptes.pocs.base import PanBase
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -83,7 +84,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         self._move_event = threading.Event()
         self._move_event.set()
 
-        self.logger.debug("Filter wheel created: {}".format(self))
+        self.logger.debug(f"Filter wheel created: {self}")
 
     ##################################################################################################
     # Properties
@@ -138,8 +139,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         """
         if self._camera and self._camera.uid != camera.uid:
             self.logger.warning(
-                f"{self} assigned to {self.camera.name}, "
-                f"skipping attempted assignment to {camera.name}!"
+                f"{self} assigned to {self.camera.name}, skipping attempted assignment to {camera.name}!"
             )
         elif self._camera:
             self._camera = camera
@@ -269,9 +269,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
-            self.logger.debug(
-                f"{self} already at position {new_position} ({self.filter_name(new_position)})"
-            )
+            self.logger.debug(f"{self} already at position {new_position} ({self.filter_name(new_position)})")
             return self._move_event
 
         # Store current position so we can revert back with move_to_light_position()
@@ -280,11 +278,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         else:
             self._last_light_position = new_position
 
-        self.logger.info(
-            "Moving {} to position {} ({})".format(
-                self, new_position, self.filter_name(new_position)
-            )
-        )
+        self.logger.info(f"Moving {self} to position {new_position} ({self.filter_name(new_position)})")
         self._move_event.clear()
         self._move_to(new_position)  # Private method to actually perform the move.
 
@@ -308,10 +302,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             self.logger.debug(f"Ensuring filterwheel {self} is not at dark position.")
             return self.move_to(self._last_light_position, blocking=blocking)
         except ValueError:
-            msg = (
-                f"Request to revert to last light position but {self} has"
-                + "no light position stored."
-            )
+            msg = f"Request to revert to last light position but {self} has" + "no light position stored."
             raise error.NotFound(msg)
 
     ##################################################################################################
@@ -339,8 +330,9 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                         int_position = i + 1  # 1 based numbering for filter wheel positions
                     else:
                         # Already matched at least once
-                        msg = "More than one filter name matches '{}', using '{}'".format(
-                            position, self.filter_names[int_position - 1]
+                        msg = (
+                            f"More than one filter name matches '{position}', "
+                            f"using '{self.filter_names[int_position - 1]}'"
                         )
                         self.logger.warning(msg)
                         break

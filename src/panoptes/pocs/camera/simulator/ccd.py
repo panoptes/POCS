@@ -4,21 +4,23 @@ Provides a minimal SDKDriver shim (loading libc) and a Camera implementation
 that simulates cooling behavior (temperature, cooling power) and connects like
 an SDK-backed device for use in tests and simulations.
 """
+
 import math
 import random
 import time
 from abc import ABC
-
 from contextlib import suppress
-import astropy.units as u
 
-from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
-from panoptes.pocs.camera.sdk import AbstractSDKDriver, AbstractSDKCamera
+import astropy.units as u
 from panoptes.utils.config.client import get_config
+
+from panoptes.pocs.camera.sdk import AbstractSDKCamera, AbstractSDKDriver
+from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 
 
 class SDKDriver(AbstractSDKDriver):
     """Lightweight simulated SDK driver used for the simulator camera."""
+
     def __init__(self, library_path=None, **kwargs):
         # Get library loader to load libc, which should usually be present...
         super().__init__(name="c", library_path=library_path, **kwargs)
@@ -52,6 +54,7 @@ class Camera(AbstractSDKCamera, SimCamera, ABC):
     Combines the DSLR simulator behavior with SDK-style cooling controls to
     emulate a cooled scientific camera for testing pipeline behavior.
     """
+
     def __init__(
         self,
         name="Simulated SDK camera",

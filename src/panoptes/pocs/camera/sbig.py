@@ -3,14 +3,14 @@
 Provides a Camera class that uses the ctypes-based SBIGDriver to control cooled
 SBIG CCD/CMOS cameras and integrate with the AbstractSDKCamera interface.
 """
+
 from contextlib import suppress
 
 from astropy.io import fits
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
-from panoptes.pocs.camera.sbigudrv import SBIGDriver
 from panoptes.utils import error
+
+from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 
 
 class Camera(AbstractSDKCamera):
@@ -19,13 +19,14 @@ class Camera(AbstractSDKCamera):
     Wraps SBIGDriver calls to provide cooling, exposure, and readout control
     consistent with AbstractSDKCamera.
     """
+
     _driver = None
     _cameras = {}
     _assigned_cameras = set()
 
     def __init__(self, name="SBIG Camera", *args, **kwargs):
         super().__init__(name, SBIGDriver, *args, **kwargs)
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     def __del__(self):
         with suppress(AttributeError):
@@ -90,7 +91,7 @@ class Camera(AbstractSDKCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug("Connecting to {}".format(self))
+        self.logger.debug(f"Connecting to {self}")
         # This will close device and driver, ensuring it is ready to access a new camera
         self._driver.set_handle(handle=INVALID_HANDLE_VALUE)
         self._driver.open_driver()
@@ -98,10 +99,10 @@ class Camera(AbstractSDKCamera):
         self._driver.establish_link()
         link_status = self._driver.get_link_status()
         if not link_status["established"]:
-            raise error.PanError("Could not establish link to {}.".format(self))
+            raise error.PanError(f"Could not establish link to {self}.")
         self._handle = self._driver.get_driver_handle()
         if self._handle == INVALID_HANDLE_VALUE:
-            raise error.PanError("Could not connect to {}.".format(self))
+            raise error.PanError(f"Could not connect to {self}.")
 
         self._info = self._driver.get_ccd_info(self._handle)
         self.model = self.properties["camera name"]
@@ -163,9 +164,7 @@ class Camera(AbstractSDKCamera):
         exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == "CS_INTEGRATION_COMPLETE":
             try:
-                image_data = self._driver.readout(
-                    self._handle, readout_mode, top, left, height, width
-                )
+                image_data = self._driver.readout(self._handle, readout_mode, top, left, height, width)
             except RuntimeError as err:
                 raise error.PanError(f"Readout error on {self}, {err}")
             else:
@@ -183,9 +182,7 @@ class Camera(AbstractSDKCamera):
         readout_mode = "RM_1X1"
 
         header.set("CAM-FW", self.properties["firmware version"], "Camera firmware version")
-        header.set(
-            "XPIXSZ", self.properties["readout modes"][readout_mode]["pixel width"].value, "Microns"
-        )
+        header.set("XPIXSZ", self.properties["readout modes"][readout_mode]["pixel width"].value, "Microns")
         header.set(
             "YPIXSZ",
             self.properties["readout modes"][readout_mode]["pixel height"].value,

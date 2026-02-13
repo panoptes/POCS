@@ -1,5 +1,6 @@
-from panoptes.pocs.base import PAN_CONFIG_CACHE, PanBase
 from panoptes.utils.database import PanDB
+
+from panoptes.pocs.base import PAN_CONFIG_CACHE, PanBase
 
 
 def test_with_logger():

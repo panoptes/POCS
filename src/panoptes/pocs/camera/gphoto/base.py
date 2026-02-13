@@ -4,18 +4,19 @@ Provides AbstractGPhotoCamera, a concrete AbstractCamera subclass that shells ou
 to the system gphoto2 binary for exposure control and property management. This
 module is used by gphoto-based DSLR drivers.
 """
+
 import re
 import subprocess
 import time
 from abc import ABC
 from pathlib import Path
-from typing import Dict, List, Union
 
-from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
 from panoptes.utils import error
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
+
+from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
 
 file_save_re = re.compile(r"Saving file as (.*)")
 
@@ -109,10 +110,10 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             time.sleep(0.5)
 
         metadata["filepath"] = metadata["filepath"].replace(".cr2", ".fits")
-        super(AbstractGPhotoCamera, self).process_exposure(metadata, **kwargs)
+        super().process_exposure(metadata, **kwargs)
         self._command_proc = None
 
-    def command(self, cmd: Union[List[str], str], check_exposing: bool = True):
+    def command(self, cmd: list[str] | str, check_exposing: bool = True):
         """Run a gphoto2 command and start tracking the subprocess.
 
         Args:
@@ -157,7 +158,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             except Exception as e:
                 raise error.PanError(e)
 
-    def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
+    def get_command_result(self, timeout: float = 10) -> list[str] | None:
         """Retrieve stdout lines from the last gphoto2 subprocess.
 
         Args:
@@ -191,9 +192,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
 
         return outs
 
-    def set_property(
-        self, prop: str, val: Union[str, int], is_value: bool = False, is_index: bool = False
-    ):
+    def set_property(self, prop: str, val: str | int, is_value: bool = False, is_index: bool = False):
         """Set a property on the camera.
 
         Args:
@@ -218,7 +217,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
         # Forces the command to wait
         self.get_command_result()
 
-    def set_properties(self, prop2index: Dict[str, int] = None, prop2value: Dict[str, str] = None):
+    def set_properties(self, prop2index: dict[str, int] = None, prop2value: dict[str, str] = None):
         """Sets a number of properties all at once, by index or value.
 
         Args:

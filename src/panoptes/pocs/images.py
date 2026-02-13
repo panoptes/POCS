@@ -4,17 +4,17 @@ Provides the Image class, a lightweight utility that loads FITS headers, lazily
 solves for WCS (via panoptes-utils), and offers helpers to compute the pointing
 and pointing error between images.
 """
-from contextlib import suppress
+
 from collections import namedtuple
+from contextlib import suppress
 from pathlib import Path
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import FK5
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import FK5, EarthLocation, SkyCoord
 from astropy.io import fits
 from astropy.time import Time
 from panoptes.utils.images import fits as fits_utils
+
 from panoptes.pocs.base import PanBase
 
 OffsetError = namedtuple("OffsetError", ["delta_ra", "delta_dec", "magnitude"])
@@ -27,6 +27,7 @@ class Image(PanBase):
     and exposes convenience properties for header pointing vs. WCS pointing and
     their differences.
     """
+
     def __init__(self, fits_file: Path, wcs_file=None, location=None, *args, **kwargs):
         """Object to represent a single image from a PANOPTES camera.
 
@@ -148,9 +149,7 @@ class Image(PanBase):
             d_dec = self.pointing.dec - self.header_pointing.dec
             d_ra = self.pointing.ra - self.header_pointing.ra
 
-            self._pointing_error = OffsetError(
-                d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec)
-            )
+            self._pointing_error = OffsetError(d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
 
         return self._pointing_error
 
@@ -178,12 +177,11 @@ class Image(PanBase):
                 # TODO(wtgee): This conversion doesn't seem to be correct.
                 # wtgee: I'm not sure what I meant by the above. May 2020.
                 self.header_ha = (
-                    self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle)
-                    - self.sidereal
+                    self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
                 )
 
         except Exception as e:
-            self.logger.warning("Cannot get header pointing information: {}".format(e))
+            self.logger.warning(f"Cannot get header pointing information: {e}")
 
     def get_wcs_pointing(self):
         """Get the pointing information from the WCS
@@ -237,9 +235,7 @@ class Image(PanBase):
         Returns:
             OffsetError: Named tuple of (delta_ra, delta_dec, magnitude) in arcseconds.
         """
-        assert isinstance(ref_image, Image), self.logger.warning(
-            "Must pass an Image class for reference"
-        )
+        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

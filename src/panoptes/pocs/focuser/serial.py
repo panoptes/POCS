@@ -4,6 +4,7 @@ Provides AbstractSerialFocuser, a small helper that wires up a SerialData
 connection and common connect/reconnect/cleanup behavior for serial-backed
 focusers.
 """
+
 from abc import abstractmethod
 from contextlib import suppress
 
@@ -18,6 +19,7 @@ class AbstractSerialFocuser(AbstractFocuser):
     Handles serial port lifecycle and basic movement flags shared by concrete
     serial focusers; concrete subclasses must implement _initialize().
     """
+
     # Class variable to cache the device node scanning results
     _adaptor_nodes = None
 

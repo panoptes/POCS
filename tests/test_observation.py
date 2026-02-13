@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import pytest
-
 from astropy import units as u
 
 from panoptes.pocs.scheduler.field import Field
-from panoptes.pocs.scheduler.observation.base import Observation, Exposure
+from panoptes.pocs.scheduler.observation.base import Exposure, Observation
 
 
 @pytest.fixture

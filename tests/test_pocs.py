@@ -5,25 +5,23 @@ import time
 import pytest
 import requests
 from astropy import units as u
+from panoptes.utils.config.client import set_config
+from panoptes.utils.serializers import to_json, to_yaml
 from panoptes.utils.time import current_time
 
 from panoptes.pocs import hardware
-from panoptes.pocs.core import POCS
-from panoptes.pocs.observatory import Observatory
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json, to_yaml
-from panoptes.pocs.mount import create_mount_simulator
-from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.core import POCS
+from panoptes.pocs.dome import create_dome_simulator
+from panoptes.pocs.mount import create_mount_simulator
+from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
 def reset_conf(config_host, config_port):
     url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(
-        url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"}
-    )
+    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
     assert response.ok
 
 
@@ -503,9 +501,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     pocs_thread.start()
 
     while pocs.next_state != "slewing":
-        pocs.logger.debug(
-            f"Waiting to get to slewing state. Currently next_state={pocs.next_state}"
-        )
+        pocs.logger.debug(f"Waiting to get to slewing state. Currently next_state={pocs.next_state}")
         time.sleep(1)
 
     pocs.logger.warning("Stopping states via pocs.DO_STATES")

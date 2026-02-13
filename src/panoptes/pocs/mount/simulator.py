@@ -3,13 +3,15 @@
 Implements the AbstractMount interface with timed state changes and canned
 responses so higher-level logic can be exercised without hardware.
 """
+
 import time
 from threading import Timer
 
 from astropy import units as u
-from panoptes.pocs.mount import AbstractMount
 from panoptes.utils import error
 from panoptes.utils.time import current_time
+
+from panoptes.pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):
@@ -222,9 +224,7 @@ class Mount(AbstractMount):
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first."""
         assert self.is_initialized, self.logger.warning("Mount has not been initialized")
-        assert self.location is not None, self.logger.warning(
-            "Please set a location before attempting setup"
-        )
+        assert self.location is not None, self.logger.warning("Please set a location before attempting setup")
 
         self.logger.debug("Setting up mount for location")
 

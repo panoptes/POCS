@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from panoptes.pocs.dome.bisque import Dome
 from panoptes.pocs.utils.theskyx import TheSkyX
 

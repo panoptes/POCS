@@ -3,7 +3,9 @@
 Controls Canon EF/EF-S lenses via the Astromechanics adapter over a serial
 connection, implementing the AbstractSerialFocuser interface.
 """
+
 from panoptes.utils.serial.device import find_serial_port
+
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 
 

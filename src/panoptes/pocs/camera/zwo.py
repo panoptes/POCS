@@ -4,19 +4,20 @@ Exposes a Camera class that wraps the ASIDriver to control cooled ZWO cameras,
 including ROI/image type, binning, gain, bandwidth, cooling, single exposures,
 and basic video capture.
 """
-import numpy as np
+
 import threading
 import time
+from contextlib import suppress
+
+import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from contextlib import suppress
-from typing import Tuple
+from panoptes.utils import error
+from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.camera.libasi import ASIDriver
 from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.utils import error
-from panoptes.utils.utils import get_quantity_value
 
 
 class Camera(AbstractSDKCamera):
@@ -25,6 +26,7 @@ class Camera(AbstractSDKCamera):
     Provides convenience properties for ROI, binning, image type, gain, and
     bandwidth settings, and supports single exposures and basic video capture.
     """
+
     _driver = None  # Class variable to store the ASI driver interface
     _cameras = []  # Cache of camera string IDs
     _assigned_cameras = set()  # Camera string IDs already in use.
@@ -49,8 +51,10 @@ class Camera(AbstractSDKCamera):
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
-            bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 2, which is quad binning.
+            bandwidthoverload (int, optional): bandwidth overload setting in percent,
+                default is 99.
+            binning (int, optional): binning factor to use for the camera, default is 2,
+                which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -89,7 +93,7 @@ class Camera(AbstractSDKCamera):
         if binning is not None:
             self.binning = binning
 
-        self.logger.info("{} initialised".format(self))
+        self.logger.info(f"{self} initialised")
 
     def __del__(self):
         """Attempt some clean up"""
@@ -160,7 +164,7 @@ class Camera(AbstractSDKCamera):
             self.logger.error(f"Failed to set binning '{new_binning}': {e}")
 
     @property
-    def image_size(self) -> Tuple[u.Quantity, u.Quantity]:
+    def image_size(self) -> tuple[u.Quantity, u.Quantity]:
         """Current camera image size, either `(width, height)`."""
         width = self.roi.get("width")
         height = self.roi.get("height")
@@ -262,7 +266,7 @@ class Camera(AbstractSDKCamera):
         Gets 'camera_ID' (needed for all driver commands), camera properties and details
         of available camera commands/parameters.
         """
-        self.logger.debug("Connecting to {}".format(self))
+        self.logger.debug(f"Connecting to {self}")
         self._refresh_info()
         self._handle = self.properties["camera_ID"]
         self.model, _, _ = self.properties["name"].partition("(")
@@ -316,13 +320,13 @@ class Camera(AbstractSDKCamera):
         self._driver.start_video_capture(self._handle)
         self._video_event.clear()
         video_thread.start()
-        self.logger.debug("Video capture started on {}".format(self))
+        self.logger.debug(f"Video capture started on {self}")
 
     def stop_video(self):
         """Stop video capture and signal the reader thread to finish."""
         self._video_event.set()
         self._driver.stop_video_capture(self._handle)
-        self.logger.debug("Video capture stopped on {}".format(self))
+        self.logger.debug(f"Video capture stopped on {self}")
 
     # Private methods
 
@@ -350,9 +354,7 @@ class Camera(AbstractSDKCamera):
             if self._video_event.is_set():
                 break
             # This call will block for up to timeout milliseconds waiting for a frame
-            video_data = self._driver.get_video_data(
-                self._handle, width, height, image_type, timeout
-            )
+            video_data = self._driver.get_video_data(self._handle, width, height, image_type, timeout)
             if video_data is not None:
                 now = Time.now()
                 header.set("DATE-OBS", now.fits, "End of exposure + readout")
@@ -371,18 +373,12 @@ class Camera(AbstractSDKCamera):
 
         elapsed_time = (time.monotonic() - start_time) * u.second
         self.logger.debug(
-            "Captured {} of {} frames in {:.2f} ({:.2f} fps), {} frames lost".format(
-                good_frames,
-                max_frames,
-                elapsed_time,
-                get_quantity_value(good_frames / elapsed_time),
-                bad_frames,
-            )
+            f"Captured {good_frames} of {max_frames} frames in {elapsed_time:.2f} "
+            f"({get_quantity_value(good_frames / elapsed_time):.2f} fps), "
+            f"{bad_frames} frames lost"
         )
 
-    def _start_exposure(
-        self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs
-    ):
+    def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         self._control_setter("EXPOSURE", seconds)
         roi_format = self._driver.get_roi_format(self._handle)
         self._driver.start_exposure(self._handle)
@@ -393,9 +389,7 @@ class Camera(AbstractSDKCamera):
         exposure_status = self._driver.get_exposure_status(self._handle)
         if exposure_status == "SUCCESS":
             try:
-                image_data = self._driver.get_exposure_data(
-                    self._handle, width, height, self.image_type
-                )
+                image_data = self._driver.get_exposure_data(self._handle, width, height, self.image_type)
             except RuntimeError as err:
                 raise error.PanError(f"Error getting image data from {self}: {err}")
             else:
@@ -427,15 +421,15 @@ class Camera(AbstractSDKCamera):
         if control_type in self._control_info:
             return self._driver.get_control_value(self._handle, control_type)
         else:
-            raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
+            raise error.NotSupported(f"{self.model} has no '{control_type}' parameter")
 
     def _control_setter(self, control_type, value):
         if control_type not in self._control_info:
-            raise error.NotSupported("{} has no '{}' parameter".format(self.model, control_type))
+            raise error.NotSupported(f"{self.model} has no '{control_type}' parameter")
 
         control_name = self._control_info[control_type]["name"]
         if not self._control_info[control_type]["is_writable"]:
-            raise error.NotSupported("{} cannot set {} parameter'".format(self.model, control_name))
+            raise error.NotSupported(f"{self.model} cannot set {control_name} parameter'")
 
         if value != "AUTO":
             # Check limits.

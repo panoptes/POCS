@@ -4,13 +4,14 @@ Implements a simple timing-based filter wheel that moves between indexed
 positions and optionally enforces unidirectional motion, matching the
 AbstractFilterWheel protocol without requiring hardware.
 """
+
 import math
 import random
 import threading
 
 from astropy import units as u
-
 from panoptes.utils import error
+
 from panoptes.pocs.filterwheel import AbstractFilterWheel
 
 
@@ -63,7 +64,7 @@ class FilterWheel(AbstractFilterWheel):
             self._move_time = move_time
         self._unidirectional = bool(unidirectional)
         self.connect()
-        self.logger.info("Filter wheel {} initialised".format(self))
+        self.logger.info(f"Filter wheel {self} initialised")
 
     ##################################################################################################
     # Properties
@@ -96,7 +97,7 @@ class FilterWheel(AbstractFilterWheel):
 
     def connect(self):
         """Connect to the filter wheel"""
-        self._serial_number = "SW{:04d}".format(random.randint(0, 9999))
+        self._serial_number = f"SW{random.randint(0, 9999):04d}"
         self._position = 1
         self._moving = False
         self._connected = True
@@ -121,9 +122,7 @@ class FilterWheel(AbstractFilterWheel):
             move_distance = abs(move_distance)
         move_duration = move_distance * self._move_time
 
-        move = threading.Timer(
-            interval=move_duration, function=self._complete_move, args=(position,)
-        )
+        move = threading.Timer(interval=move_duration, function=self._complete_move, args=(position,))
         self._position = float("nan")
         self._moving = True
         move.start()

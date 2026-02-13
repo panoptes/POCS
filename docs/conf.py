@@ -8,8 +8,8 @@
 # serve to show the default.
 
 import os
-import sys
 import shutil
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
@@ -52,7 +52,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration ---------------------------------------------------
 
@@ -245,9 +245,7 @@ latex_elements = {
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [
-    ("index", "user_guide.tex", "panoptes-pocs Documentation", "Project PANOPTES", "manual")
-]
+latex_documents = [("index", "user_guide.tex", "panoptes-pocs Documentation", "Project PANOPTES", "manual")]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.

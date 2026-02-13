@@ -4,16 +4,21 @@ Defines the Observatory class, which wires together the mount, cameras, dome,
 location/observer objects, and scheduler, and exposes convenience helpers for
 status, darkness checks, and common operations.
 """
+
+import os
 from collections import OrderedDict
+from contextlib import suppress
+from pathlib import Path
 
 import numpy as np
-import os
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
-from contextlib import suppress
-from pathlib import Path
-from typing import Dict, Optional
+from panoptes.utils import error
+from panoptes.utils import images as img_utils
+from panoptes.utils.images import fits as fits_utils
+from panoptes.utils.time import CountdownTimer, current_time, flatten_time
+from panoptes.utils.utils import get_quantity_value
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -27,14 +32,11 @@ from panoptes.pocs.scheduler.observation.compound import Observation as Compound
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
-from panoptes.utils import error, images as img_utils
-from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.time import CountdownTimer, current_time, flatten_time
-from panoptes.utils.utils import get_quantity_value
 
 
 class Observatory(PanBase):
     """High-level container coordinating site, hardware, and scheduling."""
+
     def __init__(self, cameras=None, scheduler=None, dome=None, mount=None, *args, **kwargs):
         """Main Observatory class.
 
@@ -78,9 +80,7 @@ class Observatory(PanBase):
 
         # Do some one-time calculations
         now = current_time()
-        self._local_sun_pos = self.observer.altaz(
-            now, target=get_body("sun", now)
-        ).alt  # Re-calculated
+        self._local_sun_pos = self.observer.altaz(now, target=get_body("sun", now)).alt  # Re-calculated
         self._local_sunrise = self.observer.sun_rise_time(now)
         self._local_sunset = self.observer.sun_set_time(now)
         self._evening_astro_time = self.observer.twilight_evening_astronomical(now, which="next")
@@ -88,8 +88,8 @@ class Observatory(PanBase):
 
         # Set up some of the hardware.
         self.set_mount(mount)
-        self.cameras: Dict[str, AbstractCamera] = OrderedDict()
-        self._primary_camera: Optional[AbstractCamera] = None
+        self.cameras: dict[str, AbstractCamera] = OrderedDict()
+        self._primary_camera: AbstractCamera | None = None
 
         if cameras:
             self.logger.info(f"Adding cameras to the observatory: {cameras}")
@@ -185,7 +185,7 @@ class Observatory(PanBase):
         self._primary_camera = cam
 
     @property
-    def current_observation(self) -> Optional[Observation]:
+    def current_observation(self) -> Observation | None:
         """The currently active observation from the scheduler, if any.
 
         Returns:
@@ -352,9 +352,7 @@ class Observatory(PanBase):
                 )
                 break
 
-            self.logger.debug(
-                f"Waiting for cameras to finish observing, please be patient...{wait_timer}"
-            )
+            self.logger.debug(f"Waiting for cameras to finish observing, please be patient...{wait_timer}")
             wait_timer.sleep(max_sleep=5)
 
         if self.mount:
@@ -381,9 +379,7 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     target_coords = self.mount.get_target_coordinates()
                     target_ha = self.observer.target_hour_angle(now, target_coords)
-                    status["mount"]["mount_target_ha"] = get_quantity_value(
-                        target_ha, unit="degree"
-                    )
+                    status["mount"]["mount_target_ha"] = get_quantity_value(target_ha, unit="degree")
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get mount status: {e!r}")
 
@@ -410,9 +406,7 @@ class Observatory(PanBase):
                 "local_sun_set_time": self._local_sunset,
                 "local_sun_rise_time": self._local_sunrise,
                 "local_sun_position": get_quantity_value(self._local_sun_pos, unit="degree"),
-                "local_moon_alt": get_quantity_value(
-                    self.observer.moon_altaz(now).alt, unit="degree"
-                ),
+                "local_moon_alt": get_quantity_value(self.observer.moon_altaz(now).alt, unit="degree"),
                 "local_moon_illumination": self.observer.moon_illumination(now),
                 "local_moon_phase": get_quantity_value(self.observer.moon_phase(now)) / np.pi,
             }
@@ -482,9 +476,7 @@ class Observatory(PanBase):
             try:
                 camera.take_observation(self.current_observation, headers=headers, blocking=False)
             except Exception:
-                self.logger.warning(
-                    f"Can't take observation for camera {cam_name}. Removing the camera"
-                )
+                self.logger.warning(f"Can't take observation for camera {cam_name}. Removing the camera")
                 del self.cameras[cam_name]
 
         if blocking:
@@ -516,11 +508,11 @@ class Observatory(PanBase):
 
     def process_observation(
         self,
-        compress_fits: Optional[bool] = None,
-        record_observations: Optional[bool] = None,
-        make_pretty_images: Optional[bool] = None,
-        plate_solve: Optional[bool] = None,
-        upload_image: Optional[bool] = None,
+        compress_fits: bool | None = None,
+        record_observations: bool | None = None,
+        make_pretty_images: bool | None = None,
+        plate_solve: bool | None = None,
+        upload_image: bool | None = None,
     ):
         """Process an individual observation.
 
@@ -614,16 +606,12 @@ class Observatory(PanBase):
             bucket_name = self.get_config("panoptes_network.buckets.upload")
             # Get the images directory.
             images_dir = (
-                Path(self.get_config("directories.images", default=Path("~/images")))
-                .expanduser()
-                .as_posix()
+                Path(self.get_config("directories.images", default=Path("~/images"))).expanduser().as_posix()
             )
 
             pretty_image_path = None
             if make_pretty_images is None:
-                make_pretty_images = self.get_config(
-                    "observations.make_pretty_images", default=False
-                )
+                make_pretty_images = self.get_config("observations.make_pretty_images", default=False)
 
             if make_pretty_images:
                 try:
@@ -669,18 +657,14 @@ class Observatory(PanBase):
                     if pretty_image_path:
                         metadata["pretty_image_url"] = image_uploader(
                             file_path=pretty_image_path,
-                            bucket_path=bucket_path.with_suffix(".jpg")
-                            .as_posix()
-                            .replace(".fits", ""),
+                            bucket_path=bucket_path.with_suffix(".jpg").as_posix().replace(".fits", ""),
                             bucket_name=bucket_name,
                         )
                 except Exception as e:
                     self.logger.warning(f"Problem uploading exposure: {e!r}")
 
             if record_observations is None:
-                record_observations = self.get_config(
-                    "observations.record_observations", default=False
-                )
+                record_observations = self.get_config("observations.record_observations", default=False)
             if record_observations:
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
@@ -771,7 +755,7 @@ class Observatory(PanBase):
             except AttributeError:
                 pass
 
-            self.logger.debug("Pointing HA: {:.02f}".format(pointing_ha))
+            self.logger.debug(f"Pointing HA: {pointing_ha:.02f}")
             correction_info = self.mount.get_tracking_correction(
                 self.current_offset_info, pointing_ha, **kwargs
             )
@@ -807,7 +791,7 @@ class Observatory(PanBase):
 
         headers = {
             "airmass": self.observer.altaz(t0, field).secz.value,
-            "creator": "POCSv{}".format(self.__version__),
+            "creator": f"POCSv{self.__version__}",
             "elevation": self.location.get("elevation").value,
             "ha_mnt": self.observer.target_hour_angle(t0, field).value,
             "latitude": self.location.get("latitude").value,
@@ -1036,11 +1020,7 @@ class Observatory(PanBase):
             # Block until done exposing on all cameras.
             flat_field_timer = CountdownTimer(exptime + readout, name="Flat Field Images")
             while any(
-                [
-                    cam.is_observing
-                    for cam_name, cam in self.cameras.items()
-                    if cam_name in camera_list
-                ]
+                [cam.is_observing for cam_name, cam in self.cameras.items() if cam_name in camera_list]
             ):
                 if flat_field_timer.expired():
                     self.logger.warning(f"{flat_field_timer} expired while waiting for flat fields")
@@ -1107,8 +1087,7 @@ class Observatory(PanBase):
                 self.logger.debug(f"Checking for long exposures on {cam_name}")
                 if suggested_exptime >= max_exptime:
                     self.logger.info(
-                        f"Suggested exposure time greater than max, "
-                        f"stopping flat fields for {cam_name}"
+                        f"Suggested exposure time greater than max, stopping flat fields for {cam_name}"
                     )
                     camera_list.remove(cam_name)
 

@@ -9,10 +9,11 @@ import os
 
 import numpy as np
 from astropy import units as u
-from panoptes.pocs.camera import libfliconstants as c
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
 
 valid_values = {
     "interface type": (
@@ -51,6 +52,7 @@ class FLIDriver(AbstractSDKDriver):
     Exposes a subset of the FLIDriver C API to Python with simple argument and
     return value handling, suitable for use by higher-level camera classes.
     """
+
     def __init__(self, library_path=None, **kwargs):
         """
         Main class representing the FLI library interface. On construction loads
@@ -103,14 +105,12 @@ class FLIDriver(AbstractSDKDriver):
             try:
                 handle = self.FLIOpen(port)
             except RuntimeError as err:
-                self.logger.error("Couldn't open FLI camera at {}: {}".format(port, err))
+                self.logger.error(f"Couldn't open FLI camera at {port}: {err}")
             else:
                 try:
                     serial_number = self.FLIGetSerialString(handle)
                 except RuntimeError as err:
-                    self.logger.error(
-                        "Couldn't get serial number from FLI camera at {}: {}".format(port, err)
-                    )
+                    self.logger.error(f"Couldn't get serial number from FLI camera at {port}: {err}")
                 else:
                     cameras[serial_number] = port
             finally:
@@ -312,9 +312,7 @@ class FLIDriver(AbstractSDKDriver):
         temperature = get_quantity_value(temperature, unit=u.Celsius)
         temperature = ctypes.c_double(temperature)
 
-        self._call_function(
-            "setting temperature", self._CDLL.FLISetTemperature, handle, temperature
-        )
+        self._call_function("setting temperature", self._CDLL.FLISetTemperature, handle, temperature)
 
     def FLIGetCoolerPower(self, handle):
         """
@@ -327,9 +325,7 @@ class FLIDriver(AbstractSDKDriver):
             float: cooler power, in percent.
         """
         power = ctypes.c_double()
-        self._call_function(
-            "getting cooler power", self._CDLL.FLIGetCoolerPower, handle, ctypes.byref(power)
-        )
+        self._call_function("getting cooler power", self._CDLL.FLIGetCoolerPower, handle, ctypes.byref(power))
         return power.value * u.percent
 
     def FLISetExposureTime(self, handle, exposure_time):
@@ -344,9 +340,7 @@ class FLIDriver(AbstractSDKDriver):
         """
         exposure_time = get_quantity_value(exposure_time, unit=u.second)
         milliseconds = ctypes.c_long(int(exposure_time * 1000))
-        self._call_function(
-            "setting exposure time", self._CDLL.FLISetExposureTime, handle, milliseconds
-        )
+        self._call_function("setting exposure time", self._CDLL.FLISetExposureTime, handle, milliseconds)
 
     def FLISetFrameType(self, handle, frame_type):
         """
@@ -451,7 +445,7 @@ class FLIDriver(AbstractSDKDriver):
             bin_factor (int): horizontal bin factor. The valid range is from 1 to 16 inclusive.
         """
         if bin_factor < 1 or bin_factor > 16:
-            raise ValueError("bin_factor must be in the range 1 to 16, got {}!".format(bin_factor))
+            raise ValueError(f"bin_factor must be in the range 1 to 16, got {bin_factor}!")
         self._call_function(
             "setting horizontal bin factor",
             self._CDLL.FLISetHBin,
@@ -468,7 +462,7 @@ class FLIDriver(AbstractSDKDriver):
             bin_factor (int): vertical bin factor. The valid range is from 1 to 16 inclusive.
         """
         if bin_factor < 1 or bin_factor > 16:
-            raise ValueError("bin factor must be in the range 1 to 16, got {}!".format(bin_factor))
+            raise ValueError(f"bin factor must be in the range 1 to 16, got {bin_factor}!")
         self._call_function(
             "setting vertical bin factor", self._CDLL.FLISetVBin, handle, ctypes.c_long(bin_factor)
         )
@@ -487,7 +481,7 @@ class FLIDriver(AbstractSDKDriver):
                 range is from 0 to 16 inclusive.
         """
         if n_flushes < 0 or n_flushes > 16:
-            raise ValueError("n_flishes must be in the range 0 to 16, got {}!".format(n_flushes))
+            raise ValueError(f"n_flishes must be in the range 0 to 16, got {n_flushes}!")
         self._call_function(
             "setting number of flushes", self._CDLL.FLISetNFlushes, handle, ctypes.c_long(n_flushes)
         )
@@ -583,9 +577,7 @@ class FLIDriver(AbstractSDKDriver):
 
         if bytes_grabbed.value != image_data.nbytes:
             self.logger.error(
-                "FLI camera readout error: expected {} bytes, got {}!".format(
-                    image_data.nbytes, bytes_grabbed.value
-                )
+                f"FLI camera readout error: expected {image_data.nbytes} bytes, got {bytes_grabbed.value}!"
             )
 
         return image_data
@@ -596,11 +588,9 @@ class FLIDriver(AbstractSDKDriver):
         error_code = function(*args, *kwargs)
         if error_code != 0:
             # FLI library functions return the negative of OS error codes.
-            raise RuntimeError(
-                "Error {}: '{}' (OS error {})".format(name, os.strerror(-error_code), -error_code)
-            )
+            raise RuntimeError(f"Error {name}: '{os.strerror(-error_code)}' (OS error {-error_code})")
 
     def _check_valid(self, value, name):
         if value not in valid_values[name]:
-            raise ValueError("Got invalid {}, {}!".format(name, value))
+            raise ValueError(f"Got invalid {name}, {value}!")
         return value

@@ -5,8 +5,8 @@ constraints from PANOPTES configuration. The module avoids importing concrete
 classes directly; instead it dynamically loads the configured scheduler and
 constraints using panoptes.utils.library.load_module.
 """
+
 from pathlib import Path
-from typing import List
 
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
@@ -84,7 +84,7 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     return pocs_scheduler
 
 
-def create_constraints_from_config(config=None) -> List[BaseConstraint]:
+def create_constraints_from_config(config=None) -> list[BaseConstraint]:
     """Build a list of constraint instances from scheduler configuration.
 
     Reads the 'scheduler.constraints' list from the provided config (or global
