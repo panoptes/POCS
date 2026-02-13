@@ -6,6 +6,7 @@
 
 - Beginner documentation: conceptual overview, architecture guide, glossary, and CLI examples
 - Beginner Resources section in main README (top-level)
+- Tags support for observations: observations can now be tagged with arbitrary string labels for metadata searching and filtering. Tags are specified in field YAML files under the `observation` key and are included in observation status, serialization, and FITS headers.
 
 ## Changed
 
