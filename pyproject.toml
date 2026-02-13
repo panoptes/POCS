@@ -1,9 +1,9 @@
 [build-system]
 requires = [
-    "hatchling>=1.25.0",
-    "hatch-vcs>=0.4",
+    "setuptools>=64",
+    "setuptools-scm>=8",
 ]
-build-backend = "hatchling.build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "panoptes-pocs"
@@ -103,32 +103,18 @@ dev = [
     { include-group = "lint" },
 ]
 
-[tool.hatch.version]
-source = "vcs"
+[tool.setuptools]
+package-dir = {"" = "src"}
 
-[tool.hatch.envs.default]
-features = ["all"]
-dependencies = [
-    { include-group = "testing" },
-    { include-group = "lint" },
-]
-installer = "uv"
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
 
-[tool.hatch.envs.default.scripts]
-lint = "ruff check ."
-lint-fix = "ruff check --fix ."
-fmt = "ruff format ."
-fmt-check = "ruff format --check ."
+[tool.setuptools.dynamic]
+version = {attr = "panoptes.pocs._version.__version__"}
 
-[tool.hatch.envs.hatch-test]
-features = ["testing"]
-installer = "uv"
-
-[[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.12", "3.13"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/panoptes"]
+[tool.setuptools_scm]
+version_file = "src/panoptes/pocs/_version.py"
 
 [tool.pytest.ini_options]
 addopts = [
@@ -197,3 +183,21 @@ extend-exclude = [
     "resources",
     "conf_files"
 ]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.uv]
+# Modern uv configuration
+dev-dependencies = []  # Use dependency-groups instead

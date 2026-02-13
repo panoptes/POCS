@@ -11,12 +11,16 @@
 
 ## Changed
 
-- **Breaking**: Migrated from Hatch to UV package manager for faster dependency management
+- **Breaking**: Migrated from Hatch to UV package manager with setuptools build backend
+  - Replaced Hatch build system with setuptools + setuptools-scm for versioning
+  - Updated `pyproject.toml` to use modern PEP 735 dependency groups (testing, lint, dev)
+  - Migrated from `hatch-vcs` to `setuptools-scm` for git-based versioning
   - Updated README with UV installation and usage instructions
   - Renamed `install-hatch.sh` to `install-uv.sh`
-  - Updated `install-pocs.sh` to use `uv sync` instead of Hatch
+  - Updated `install-pocs.sh` to use `uv sync` instead of Hatch commands
   - Updated CLI commands to use `run_uv_command()` instead of `run_hatch_command()`
-- Reorganized `pyproject.toml` to use UV-compatible dependency groups (testing, lint, dev)
+  - Removed Hatch environment configurations in favor of UV's dependency group system
+- Reorganized `pyproject.toml` to use modern setuptools automatic package discovery
 - Updated dependency versions: `certifi>=2024.2.2`, `requests>=2.32.0`, `urllib3>=2.0.7`
 - Improved installation scripts with better error handling and user feedback
 - Enhanced `install.sh` with step-by-step progress tracking and live log tailing
