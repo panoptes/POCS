@@ -5,6 +5,7 @@ for safe parking, homing, slewing to a named target, and setting the park
 position. These commands are intended for manual use during setup or recovery.
 """
 import re
+import subprocess
 from pathlib import Path
 
 import serial
@@ -398,18 +399,25 @@ def setup_mount(
 
                             # The name we want it known by.
                             udev_str += 'SYMLINK+="ioptron"'
+                            # Add a newline to the end of the file.
+                            udev_str += '\n'
 
                             udev_fn = Path("92-panoptes.rules")
                             udev_fn.write_text(udev_str)
                             write_port = "/dev/ioptron"
 
-                            print(f"Wrote udev entry to [green]{udev_fn}[/green].")
-                            print(
-                                "Run the following command and then reboot for changes to take effect:"
-                            )
-                            print(
-                                f"\t[green]cat {udev_fn} | sudo tee /etc/udev/rules.d/{udev_fn}[/green]"
-                            )
+                            # Use sudo to write the udev entry to the correct location.
+                            subprocess.run(
+                                ['sudo', 'tee', f'/etc/udev/rules.d/{udev_fn}'], input=udev_str.encode(), check=True,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+                                )
+
+                            print(f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green].")
+
+                            # Reload the udev rules.
+                            subprocess.run(['sudo', 'udevadm', 'control', '--reload'], check=True)
+                            print("Reloaded udev rules. Please unplug and replug the mount to use the new udev entry.")
+
                         except Exception:
                             pass
 

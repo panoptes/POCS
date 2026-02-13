@@ -160,73 +160,99 @@ For more CLI commands, run `pocs --help` or see the beginner documentation above
 
 See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
 
-### Development with Hatch
+### Development with UV
 
-This project uses the Hatch build system and environment management.
+This project uses UV for fast Python package and environment management with modern PEP 735 dependency groups.
 
 Prerequisites:
 - Python 3.12+
-- Hatch: https://hatch.pypa.io (install via `pipx install hatch` or `pip install --user hatch`).
+- UV: https://docs.astral.sh/uv/ (install via `curl -LsSf https://astral.sh/uv/install.sh | sh` or `pipx install uv`).
 
 Basic workflow:
 
-- Create and enter a dev environment with all testing tools:
+- Create and sync a dev environment with all dependencies:
   ```bash
-  hatch env create
-  hatch shell
-  # or run commands without activating the shell using `hatch run ...`
+  # Install all optional extras and dev dependencies (recommended for development)
+  uv sync --all-extras --group dev
+  
+  # Or install only base dependencies
+  uv sync
+  
+  # Activate the virtual environment
+  source .venv/bin/activate
+  # or run commands without activating using `uv run ...`
   ```
 
-- Install optional extras as needed (choose any):
+- Install specific dependency groups as needed:
   ```bash
-  # Examples: google, focuser, sensors, weather
-  hatch run pip install -e ".[google,focuser,sensors,weather,testing]"
+  # Install testing dependencies
+  uv sync --group testing
+  
+  # Install linting tools
+  uv sync --group lint
+  
+  # Install all dev dependencies (includes testing + lint)
+  uv sync --group dev
+  ```
+
+- Install specific optional extras as needed (choose any):
+  ```bash
+  # Examples: google, focuser, weather
+  uv sync --extra google --extra focuser --extra weather
+  
+  # Or install the 'all' extra which includes everything
+  uv sync --extra all
   ```
 
 - Run tests:
   ```bash
   # All tests with coverage, using pytest options from pyproject.toml
-  hatch run pytest
+  uv run pytest
 
   # Single test file
-  hatch run pytest tests/test_mount.py
+  uv run pytest tests/test_mount.py
   ```
 
 - Lint / style checks:
   ```bash
-  # Lint (Ruff)
-  hatch run lint
-  # Format (Ruff)
-  hatch run fmt
-  # Check formatting without changes
-  hatch run fmt-check
+  # Lint with Ruff
+  uv run ruff check .
+  
+  # Auto-fix linting issues
+  uv run ruff check --fix .
+  
+  # Format code with Ruff
+  uv run ruff format .
+  
+  # Check formatting without making changes
+  uv run ruff format --check .
   ```
 
 - Build the package (wheel and sdist):
   ```bash
-  hatch build
+  uv build
   ```
 
 - Run the CLI locally (Typer app):
   ```bash
-  hatch run pocs --help
+  uv run pocs --help
   ```
 
 - Versioning:
-  Version is derived from git tags via hatch-vcs. To produce a new version, create and push a tag (e.g., `v0.1.0`).
+  Version is derived from git tags via setuptools-scm. To produce a new version, create and push a tag (e.g., `v0.1.0`).
 
 #### [Testing]
 
-To test the software, prefer running via Hatch so the right environment and options are used:
+To test the software, use `uv run` to execute pytest with the configured environment:
 
 ```bash
-hatch run pytest
+uv run pytest
 ```
 
 By default all tests will be run. If you want to run one specific test, give the specific filename as an argument to `pytest`:
 
 ```bash
-hatch run pytest tests/test_mount.py
+uv run pytest tests/test_mount.py
 ```
 
 Links

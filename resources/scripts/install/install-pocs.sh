@@ -17,7 +17,7 @@ fi
 
 echo "Installing POCS"
 cd "$PANDIR"
-"${HOME}/.local/bin/hatch" run pip install -e ".[all]"
+"${HOME}/.local/bin/uv" sync --all-extras --group dev
 
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
@@ -31,6 +31,6 @@ ln -s "${PANDIR}/resources" "${HOME}"
 ln -s "${PANDIR}/notebooks" "${HOME}"
 
 # Create a symlink to the bin dir for our hatch environment.
-ln -s "$($HOME/.local/bin/hatch env find default)/bin/" "${HOME}/"
+ln -s "${PANDIR}/.venv/bin/" "${HOME}/"
 echo "source ${HOME}/bin/activate" >> "${HOME}/.bashrc"
 echo "source ${HOME}/bin/activate" >> "${HOME}/.zshrc"
