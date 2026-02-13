@@ -284,8 +284,7 @@ def take_pictures(
         group = Group(prog, Text(""), recent_renderable)  # blank line spacer
         panels.append(Panel(group, title=f"{cam_name} {exptime=}s", border_style="cyan"))
 
-    # Set up queues and processing thread. Pass per-camera progress so it can update
-    # from the worker thread.
+    # Set up queues and processing thread. Pass per-camera progress so it can update from the worker thread.
     process_queue = queue.Queue()
     complete_queue = queue.Queue()
     t = threading.Thread(

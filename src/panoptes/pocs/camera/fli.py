@@ -177,10 +177,7 @@ class Camera(AbstractSDKCamera):
                 image_data[i] = self._driver.FLIGrabRow(self._handle, image_data.shape[1])
                 rows_got += 1
         except RuntimeError as err:
-            message = (
-                f"Readout error on {self}, expected {image_data.shape[0]} rows, "
-                f"got {rows_got}: {err}"
-            )
+            message = f"Readout error on {self}, expected {image_data.shape[0]} rows, got {rows_got}: {err}"
             raise error.PanError(message)
         else:
             self.write_fits(data=image_data, header=header, filename=filename)

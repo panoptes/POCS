@@ -585,8 +585,7 @@ class FLIDriver(AbstractSDKDriver):
 
         if bytes_grabbed.value != image_data.nbytes:
             self.logger.error(
-                f"FLI camera readout error: expected {image_data.nbytes} bytes, "
-                f"got {bytes_grabbed.value}!"
+                f"FLI camera readout error: expected {image_data.nbytes} bytes, got {bytes_grabbed.value}!"
             )
 
         return image_data

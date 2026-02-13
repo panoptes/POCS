@@ -51,10 +51,8 @@ class Camera(AbstractSDKCamera):
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
                 or 'Y8'). Default is to use 'RAW16' if supported by the camera, otherwise
                 the camera's own default will be used.
-            bandwidthoverload (int, optional): bandwidth overload setting in percent,
-                default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 2,
-                which is quad binning.
+            bandwidthoverload (int, optional): bandwidth overload setting in percent, default is 99.
+            binning (int, optional): binning factor to use for the camera, default is 2, which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -375,9 +373,7 @@ class Camera(AbstractSDKCamera):
 
         elapsed_time = (time.monotonic() - start_time) * u.second
         self.logger.debug(
-            f"Captured {good_frames} of {max_frames} frames in {elapsed_time:.2f} "
-            f"({get_quantity_value(good_frames / elapsed_time):.2f} fps), "
-            f"{bad_frames} frames lost"
+            f"Captured {good_frames} of {max_frames} frames in {elapsed_time:.2f} ({get_quantity_value(good_frames / elapsed_time):.2f} fps), {bad_frames} frames lost"
         )
 
     def _start_exposure(

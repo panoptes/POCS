@@ -116,8 +116,7 @@ class AlignmentResult:
             f"Rotate Radius: {self.rotate_radius:.02f}\n"
             f"Pixel Scale: {self.pix_scale:.02f}\n"
             f"Target Name: {self.target_name}\n"
-            f"Target Points: "
-            f"{[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
+            f"Target Points: {[(n, (int(p[0]), int(p[1]))) for n, p in self.target_points.items()]}\n"
             f"Delta (degrees): {self.az_deg:.02f} {self.alt_deg:.02f}\n"
         )
 

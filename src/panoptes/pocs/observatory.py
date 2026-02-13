@@ -655,8 +655,7 @@ class Observatory(PanBase):
                     image_path = exposure.path.as_posix()
                     self.logger.debug(f"Preparing {image_path=} for upload to {bucket_name=}")
 
-                    # Remove images directory from path so it's stored in bucket relative to
-                    # images directory.
+                    # Remove images directory from path so it's stored in bucket relative to images directory.
                     bucket_path = Path(image_path[image_path.find(images_dir) + len(images_dir) :])
 
                     self.logger.debug(f"Adding {unit_id=} to {bucket_path=}")

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from collections import OrderedDict
 from contextlib import suppress
+from typing import Optional
 
 import requests
 from panoptes.utils import error

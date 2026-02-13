@@ -235,8 +235,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         pass
                     else:  # pragma: no cover
                         self.logger.warning(
-                            f"Unexpected value from dome! send={send!r} "
-                            f"target_feedback={target_feedback!r} data={data!r}"
+                            f"Unexpected value from dome! send={send!r} target_feedback={target_feedback!r} data={data!r}"
                         )
                 if time.time() < end_by:
                     continue

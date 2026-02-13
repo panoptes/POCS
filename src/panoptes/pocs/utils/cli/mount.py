@@ -96,14 +96,12 @@ def set_park_position(
     # Confirm that they have previously set the home position.
     if not typer.confirm("Have you previously set the home position?"):
         print(
-            "Please set the home position before setting the park position by running "
-            '"pocs mount search-home".'
+            'Please set the home position before setting the park position by running "pocs mount search-home".'
         )
         return typer.Exit()
 
     print(
-        "The mount will first park at the default position and then ask you to confirm "
-        "the new park position."
+        "The mount will first park at the default position and then ask you to confirm the new park position."
     )
     mount.unpark()
     mount.park()
@@ -138,10 +136,9 @@ def set_park_position(
         print("[red]Sorry! Please try again or ask the PANOPTES team.[/red]")
     else:
         print(
-            "Park position set. If the directions are correct but the mount is not parked "
-            "in the correct position, then you may need to adjust the number of seconds the "
-            "mount moves in each direction. If you are unsure, please ask the PANOPTES team "
-            "for help."
+            "Park position set. If the directions are correct but the mount is not parked in the correct position, "
+            "then you may need to adjust the number of seconds the mount moves in each direction. If you are unsure, "
+            "please ask the PANOPTES team for help."
         )
 
 
@@ -270,8 +267,7 @@ def slew_to_target(
         while mount.is_tracking:
             if timer.expired():
                 print(
-                    f"Coordinates: {mount.status['current_ra']:5.02f} "
-                    f"{mount.status['current_dec']:+5.02f}"
+                    f"Coordinates: {mount.status['current_ra']:5.02f} {mount.status['current_dec']:+5.02f}"
                 )
                 timer.restart()
             timer.sleep(1)
@@ -427,8 +423,7 @@ def setup_mount(
                             # Reload the udev rules.
                             subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
                             print(
-                                "Reloaded udev rules. Please unplug and replug the mount to use "
-                                "the new udev entry."
+                                "Reloaded udev rules. Please unplug and replug the mount to use the new udev entry."
                             )
 
                         except Exception:
