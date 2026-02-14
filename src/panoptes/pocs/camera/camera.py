@@ -1031,6 +1031,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         }
         if observation.filter_name is not None:
             metadata["filter_request"] = observation.filter_name
+        if observation.tags:
+            metadata["tags"] = ",".join(observation.tags)
 
         if headers is not None:
             self.logger.trace(f"Updating {file_path} metadata with provided headers")
@@ -1065,6 +1067,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             "observer": {"keyword": "OBSERVER", "comment": "PANOPTES Unit ID"},
             "origin": {"keyword": "ORIGIN"},
             "tracking_rate_ra": {"keyword": "RA-RATE", "comment": "RA Tracking Rate"},
+            "tags": {"keyword": "TAGS", "comment": "Comma-separated tags"},
         }
 
         self.logger.debug(f"Updating FITS headers {file_path} with {metadata=!r}")

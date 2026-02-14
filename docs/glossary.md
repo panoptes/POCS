@@ -101,6 +101,9 @@ Quick reference for terms you'll encounter in POCS documentation and code.
 **Observation**
 : The complete process of observing one target: slewing, tracking, taking exposures, analyzing images.
 
+**Tags**
+: String labels that can be attached to observations for categorization and searching (e.g., "exoplanet", "variable_star"). Tags are specified in field configuration files and stored in FITS headers.
+
 **Sequence**
 : A series of exposures of the same target.
 

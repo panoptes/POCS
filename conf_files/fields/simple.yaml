@@ -7,11 +7,17 @@
     exptime: 30
     min_nexp: 10
     exp_set_size: 5
+    tags:
+      - recurrent_nova
+      - bright_star
 - field:
     name: "KIC 8462852"
     position: "20h06m15.4536s +44d27m24.75s"
   observation:
     priority: 100
+    tags:
+      - exoplanet
+      - tabby_star
 - field:
     name: "Wasp 77"
     position: "02h28m37.22s -07d03m38.45s"
