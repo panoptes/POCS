@@ -93,6 +93,7 @@ class Camera(AbstractCamera):
         exptime = kwargs.get("exptime", observation.exptime.value)
         if exptime > 1:
             kwargs["exptime"] = 1
+            kwargs["simulator_exptime"] = 1
             self.logger.debug("Trimming camera simulator exposure to 1 s")
 
         return super().take_observation(observation, headers, filename, **kwargs)
