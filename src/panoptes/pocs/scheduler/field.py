@@ -50,7 +50,7 @@ class Field(FixedTarget, PanBase):
         """Serialize the field to a dict."""
         return {
             "name": self.name,
-            "position": self.coord.to_string('hmsdms'),
+            "position": self.coord.to_string("hmsdms"),
         }
 
     def __str__(self):
