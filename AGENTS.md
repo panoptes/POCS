@@ -236,6 +236,166 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 4. Test command functionality
 5. Update `docs/cli-guide.md`
 
+### Creating a Release
+
+**This process should be followed to create a new release of POCS.**
+
+**Prerequisites:**
+- Ensure you have write access to the repository
+- Ensure all CI tests are passing on `develop` branch
+- Determine the new version number (see Version Numbering below)
+
+**Version Numbering:**
+- Use semantic versioning: `vX.Y.Z`
+- Get the current version: `git describe --tags --abbrev=0`
+- Increment appropriately:
+  - **X (Major):** Breaking changes
+  - **Y (Minor):** New features, backward compatible
+  - **Z (Patch):** Bug fixes, backward compatible
+
+**Release Process:**
+
+1. **Ensure `develop` is clean:**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git status  # Should show "nothing to commit, working tree clean"
+   ```
+
+2. **Determine version number:**
+   ```bash
+   # Get current version
+   CURRENT_VERSION=$(git describe --tags --abbrev=0)
+   echo "Current version: $CURRENT_VERSION"
+   
+   # Set new version (example: v0.8.10 -> v0.8.11)
+   NEW_VERSION="v0.8.11"  # Update as appropriate
+   echo "New version: $NEW_VERSION"
+   ```
+
+3. **Create release branch:**
+   ```bash
+   git checkout -b release-${NEW_VERSION} origin/develop
+   ```
+
+4. **Update `CHANGELOG.md`:**
+   - Add release header with version and date: `## X.Y.Z - YYYY-MM-DD`
+   - Ensure all changes are documented under appropriate sections (Added, Changed, Fixed, Removed)
+   - Move any "Unreleased" changes under the new version
+   - Verify all PR numbers are referenced
+   - Example:
+     ```markdown
+     ## 0.8.11 - 2026-02-13
+     
+     ### Added
+     - New feature description. #123
+     
+     ### Fixed
+     - Bug fix description. #124
+     ```
+
+5. **Commit changelog updates:**
+   ```bash
+   git add CHANGELOG.md
+   git commit -m "Update CHANGELOG for ${NEW_VERSION}"
+   ```
+
+6. **Merge release branch into `main`:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git merge --no-ff release-${NEW_VERSION} -m "Merge release-${NEW_VERSION}"
+   ```
+
+7. **Resolve conflicts if necessary:**
+   - If conflicts occur, resolve them carefully
+   - Ensure `CHANGELOG.md` and `pyproject.toml` are correct
+   - Commit resolved conflicts:
+     ```bash
+     git add .
+     git commit -m "Resolve merge conflicts for ${NEW_VERSION}"
+     ```
+
+8. **Test and build on `main`:**
+   ```bash
+   # Ensure environment is up to date
+   uv sync --all-extras --group dev
+   
+   # Run all tests (allow 5-10 minutes)
+   uv run pytest
+   
+   # Check code style
+   uv run ruff check .
+   uv run ruff format --check .
+   
+   # Build the package
+   uv build
+   ```
+
+9. **Verify distribution files:**
+   ```bash
+   # Check the built distribution files
+   uv run --with twine twine check dist/*
+   
+   # Should show: "Checking dist/panoptes_pocs-X.Y.Z.tar.gz: PASSED"
+   # and "Checking dist/panoptes_pocs-X.Y.Z-py3-none-any.whl: PASSED"
+   ```
+
+10. **Tag `main` with new version:**
+    ```bash
+    git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}"
+    ```
+
+11. **Push `main` and tags to origin:**
+    ```bash
+    git push origin main
+    git push origin ${NEW_VERSION}
+    ```
+
+12. **Merge release branch into `develop`:**
+    ```bash
+    git checkout develop
+    git pull origin develop
+    git merge --no-ff release-${NEW_VERSION} -m "Merge release-${NEW_VERSION} into develop"
+    ```
+
+13. **Tag `develop` with next development version:**
+    ```bash
+    # Set next development version (example: v0.8.11 -> v0.8.12.dev0)
+    NEXT_DEV_VERSION="v0.8.12.dev0"
+    git tag -a ${NEXT_DEV_VERSION} -m "Start development for ${NEXT_DEV_VERSION}"
+    ```
+
+14. **Push `develop` and tags to origin:**
+    ```bash
+    git push origin develop
+    git push origin ${NEXT_DEV_VERSION}
+    ```
+
+15. **Clean up release branch:**
+    ```bash
+    git branch -d release-${NEW_VERSION}
+    ```
+
+**Post-Release:**
+- Verify the new tag appears on GitHub releases page
+- Monitor CI/CD for any issues
+- Confirm the GitHub Actions workflow has successfully built and published the release to PyPI (triggered on tag push)
+- Announce release on forum/communications channels
+
+**Common Issues:**
+- **Merge conflicts:** Most common in `CHANGELOG.md`. Keep both sets of changes and organize chronologically.
+- **Test failures:** Fix on the release branch before merging to `main`.
+- **Twine check failures:** Usually due to missing or malformed metadata in `pyproject.toml`.
+
+**Automation Notes for AI Agents:**
+- Parse version from `git describe --tags --abbrev=0`
+- Calculate next version based on changelog entries or commit messages
+- Extract date automatically: `date +%Y-%m-%d`
+- Validate version format matches `vX.Y.Z` pattern
+- Ensure CHANGELOG has proper section headers before merging
+- Verify all tests pass before tagging
+
 ## Error Handling
 
 **Best Practices:**
