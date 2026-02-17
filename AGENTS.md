@@ -57,7 +57,7 @@ POCS/
 
 **Style and Formatting:**
 - Use Ruff for linting and formatting (configured in `pyproject.toml`)
-- Line length: 100 characters
+- Line length: 110 characters
 - Quote style: double quotes
 - Follow PEP 8 conventions
 
