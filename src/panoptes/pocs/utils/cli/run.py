@@ -421,8 +421,8 @@ def run_take_flats(
         initial_exptime: Initial exposure time in seconds.
         min_exptime: Minimum exposure time in seconds.
         max_exptime: Maximum exposure time before stopping.
-        readout: Camera readout time in seconds.
-        bias: Default bias for the cameras.
+        readout: Camera readout time in seconds. Default matches Observatory method default.
+        bias: Default bias for the cameras. Default matches Observatory method default.
         max_num_exposures: Maximum number of flat field exposures to take.
         no_tracking: If True, stops tracking for drift flats.
 

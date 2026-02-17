@@ -150,7 +150,7 @@ Options:
 - `--min-exptime`: Minimum exposure time in seconds (default: 0.0)
 - `--max-exptime`: Maximum exposure time in seconds (default: 60.0)
 - `--max-exposures, -n`: Maximum number of flats to take (default: 10)
-- `--no-tracking/--tracking`: Stop tracking for drift flats (default: --no-tracking)
+- `--no-tracking/--tracking`: Control tracking during flats. Use `--no-tracking` (default) to stop tracking for drift flats, or `--tracking` to keep tracking enabled
 
 What it does:
 1. Slews mount to specified altitude/azimuth (or uses config for evening/morning)
