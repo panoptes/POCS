@@ -154,7 +154,7 @@ Options:
 
 What it does:
 1. Slews mount to specified altitude/azimuth (or uses config for evening/morning)
-2. Stops tracking (for drift flats)
+2. Stops tracking by default (for drift flats), unless `--tracking` is used
 3. Takes series of flat field images
 4. Automatically adjusts exposure time to achieve target ADU counts
 
