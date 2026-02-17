@@ -158,7 +158,7 @@ What it does:
 3. Takes series of flat field images
 4. Automatically adjusts exposure time to achieve target ADU counts
 
-**For beginners:** Flat fields are important calibration images taken of a uniformly illuminated surface (like the twilight sky) to correct for dust, vignetting, and variations in pixel sensitivity.
+**For Beginners:** Flat fields are important calibration images taken of a uniformly illuminated surface (like the twilight sky) to correct for dust, vignetting, and variations in pixel sensitivity.
 
 ---
 

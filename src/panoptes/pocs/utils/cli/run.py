@@ -401,7 +401,7 @@ def run_take_flats(
     readout: float = typer.Option(5.0, "--readout", help="Camera readout time in seconds"),
     bias: int = typer.Option(2048, "--bias", help="Default bias for cameras"),
     max_num_exposures: int = typer.Option(10, "--max-exposures", "-n", help="Maximum number of flat fields to take"),
-    no_tracking: bool = typer.Option(True, "--no-tracking/--tracking", help="Stop tracking for drift flats"),
+    no_tracking: bool = typer.Option(True, "--no-tracking/--tracking", help="If enabled, stops tracking for drift flats. Use --tracking to keep tracking enabled"),
 ) -> None:
     """Take flat field images using the Observatory.take_flat_fields method.
 
