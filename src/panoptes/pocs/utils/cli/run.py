@@ -454,6 +454,8 @@ def run_take_flats(
     pocs = get_pocs(context)
     print(f"[bold yellow]Starting flat field acquisition ({which}).[/bold yellow]")
 
+    pocs.observatory.mount.unpark()
+
     try:
         pocs.observatory.take_flat_fields(
             which=which,

@@ -951,13 +951,16 @@ class Observatory(PanBase):
             min_exptime (float, optional): Minimum exposure time to use, default 0 seconds.
             max_exptime (float, optional): Maximum exposure time before stopping.
             readout (float, optional): Time to wait for readout after exposure, default 5 seconds.
-            camera_list (list, optional): List of cameras to use for flat-fielding.
+            camera_list (list, optional): List of cameras to use for flat-fielding. If None
+                (the default), use all cameras.
             bias (int, optional): Default bias for the cameras.
             max_num_exposures (int, optional): Maximum number of flats to take.
             no_tracking (bool, optional): If tracking should be stopped for drift flats,
                 default True.
         """
         camera_list = listify(camera_list)
+        if not camera_list:
+            camera_list = list(self.cameras.keys())
 
         target_adu = target_adu_percentage * (min_counts + max_counts)
 
