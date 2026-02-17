@@ -391,17 +391,29 @@ def run_take_flats(
     context: typer.Context,
     which: str = typer.Option("evening", "--which", "-w", help="Either 'evening' or 'morning'"),
     alt: float = typer.Option(None, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
-    az: float = typer.Option(None, "--az", "-z", help="Azimuth for flats in degrees (default: 180° opposite sun position)"),
+    az: float = typer.Option(
+        None, "--az", "-z", help="Azimuth for flats in degrees (default: 180° opposite sun)"
+    ),
     min_counts: int = typer.Option(1000, "--min-counts", help="Minimum ADU count"),
     max_counts: int = typer.Option(12000, "--max-counts", help="Maximum ADU count"),
-    target_adu_percentage: float = typer.Option(0.5, "--target-adu", help="Target ADU as percentage of (min + max)"),
-    initial_exptime: float = typer.Option(3.0, "--initial-exptime", "-e", help="Initial exposure time in seconds"),
+    target_adu_percentage: float = typer.Option(
+        0.5, "--target-adu", help="Target ADU as percentage of (min + max)"
+    ),
+    initial_exptime: float = typer.Option(
+        3.0, "--initial-exptime", "-e", help="Initial exposure time in seconds"
+    ),
     min_exptime: float = typer.Option(0.0, "--min-exptime", help="Minimum exposure time in seconds"),
     max_exptime: float = typer.Option(60.0, "--max-exptime", help="Maximum exposure time in seconds"),
     readout: float = typer.Option(5.0, "--readout", help="Camera readout time in seconds"),
     bias: int = typer.Option(2048, "--bias", help="Default bias for cameras"),
-    max_num_exposures: int = typer.Option(10, "--max-exposures", "-n", help="Maximum number of flat fields to take"),
-    no_tracking: bool = typer.Option(True, "--no-tracking/--tracking", help="Control mount tracking. Default is --no-tracking (stops tracking for drift flats). Use --tracking to keep tracking enabled"),
+    max_num_exposures: int = typer.Option(
+        10, "--max-exposures", "-n", help="Maximum number of flat fields to take"
+    ),
+    no_tracking: bool = typer.Option(
+        True,
+        "--no-tracking/--tracking",
+        help="Control mount tracking. Default --no-tracking stops tracking for drift flats",
+    ),
 ) -> None:
     """Take flat field images using the Observatory.take_flat_fields method.
 
@@ -414,7 +426,7 @@ def run_take_flats(
         context: Typer context carrying shared options.
         which: Either 'evening' or 'morning' to lookup coordinates in config.
         alt: Optional altitude for flats in degrees. If None, defaults to 70 degrees.
-        az: Optional azimuth for flats in degrees. If None, defaults to 180 degrees 
+        az: Optional azimuth for flats in degrees. If None, defaults to 180 degrees
             opposite the sun position at the time of observation.
         min_counts: Minimum acceptable ADU count for flats.
         max_counts: Maximum acceptable ADU count for flats.
