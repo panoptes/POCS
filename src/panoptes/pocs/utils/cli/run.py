@@ -399,9 +399,9 @@ def run_take_flats(
     which: str = typer.Option(
         "evening", "--which", "-w", help="Either 'evening' or 'morning'", callback=validate_which
     ),
-    alt: float = typer.Option(None, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
+    alt: float = typer.Option(70.0, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
     az: float = typer.Option(
-        None, "--az", "-z", help="Azimuth for flats in degrees (default: 180° opposite sun)"
+        None, "--az", "-z", help="Azimuth for flats in degrees (default: None computes 180° opposite sun)"
     ),
     min_counts: int = typer.Option(1000, "--min-counts", help="Minimum ADU count"),
     max_counts: int = typer.Option(12000, "--max-counts", help="Maximum ADU count"),
@@ -434,7 +434,7 @@ def run_take_flats(
     Args:
         context: Typer context carrying shared options.
         which: Either 'evening' or 'morning' to lookup coordinates in config.
-        alt: Optional altitude for flats in degrees. If None, defaults to 70 degrees.
+        alt: Optional altitude for flats in degrees. Default  70 degrees.
         az: Optional azimuth for flats in degrees. If None, defaults to 180 degrees
             opposite the sun position at the time of observation.
         min_counts: Minimum acceptable ADU count for flats.
