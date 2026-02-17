@@ -1086,9 +1086,8 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 try:
                     hdu.header.set(fits_key, fits_value, fits_comment)
                 except ValueError as e:
-                    self.logger.warning(
-                        f"Problem setting FITS header for {fits_key}={fits_value} with {e=!r}"
-                    )
+                    self.logger.warning(f"Problem setting FITS header for "
+                                        f"{fits_key}={fits_value} with {e=!r}")
 
         self.logger.debug(f"Finished FITS headers: {file_path}")
 
